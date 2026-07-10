@@ -220,7 +220,10 @@ class Config:
 
     APP_NAME = 'KAORI'
 
-    APP_VERSION = '1.0.0'
+    APP_VERSION = _env_str(
+        'APP_VERSION',
+        '1.0.0',
+    )
 
     # Reports storage.
     # Supported values:

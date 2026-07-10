@@ -3,6 +3,7 @@ from datetime import datetime
 
 from flask import Flask, render_template
 from flask_login import current_user
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from app.alertmanager.routes import alertmanager_bp
 from app.analytics.routes import analytics_bp
@@ -54,6 +55,16 @@ def create_app(config_name: str | None = None):
         raise ValueError(f'Invalid APP_ENV: {env}. Must be one of: {", ".join(CONFIG_MAP.keys())}')
 
     app.config.from_object(CONFIG_MAP[env])
+
+    if app.config.get('PROXY_FIX_ENABLED'):
+        app.wsgi_app = ProxyFix(
+            app.wsgi_app,
+            x_for=app.config.get('PROXY_FIX_X_FOR', 1),
+            x_proto=app.config.get('PROXY_FIX_X_PROTO', 1),
+            x_host=app.config.get('PROXY_FIX_X_HOST', 1),
+            x_port=app.config.get('PROXY_FIX_X_PORT', 1),
+            x_prefix=app.config.get('PROXY_FIX_X_PREFIX', 0),
+        )
 
     # Initialize database
     db.init_app(app)
