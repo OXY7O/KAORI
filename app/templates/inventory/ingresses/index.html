@@ -1,0 +1,9 @@
+{% extends "layouts/app.html" %}
+{% block title %}Ingress Inventory{% endblock title %}
+{% block dashboard_content %}
+    <div class="space-y-6">
+        {% include "inventory/ingresses/partials/_hero.html" %}
+        {% include "inventory/ingresses/partials/_summary_cards.html" %}
+        {% include "inventory/ingresses/partials/_table_card.html" %}
+    </div>
+{% endblock dashboard_content %}

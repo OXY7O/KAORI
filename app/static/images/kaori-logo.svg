@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="512"
+     height="512"
+     viewBox="0 0 120 120"
+     fill="none"
+     role="img"
+     aria-labelledby="title desc">
+  <title id="title">KAORI logo</title>
+  <desc id="desc">
+    Three evenly spaced operational nodes connected by a symmetrical open orbit
+    around an upward intelligence mark.
+  </desc>
+
+  <defs>
+    <linearGradient id="orbit"
+                    x1="22"
+                    y1="16"
+                    x2="101"
+                    y2="103"
+                    gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#22D3EE"/>
+      <stop offset="0.48" stop-color="#0EA5E9"/>
+      <stop offset="1" stop-color="#2563EB"/>
+    </linearGradient>
+
+    <linearGradient id="arrowLeft"
+                    x1="38"
+                    y1="36"
+                    x2="61"
+                    y2="85"
+                    gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#BAE6FD"/>
+      <stop offset="1" stop-color="#38BDF8"/>
+    </linearGradient>
+
+    <linearGradient id="arrowRight"
+                    x1="60"
+                    y1="34"
+                    x2="83"
+                    y2="85"
+                    gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#60A5FA"/>
+      <stop offset="1" stop-color="#1D4ED8"/>
+    </linearGradient>
+
+    <linearGradient id="nodes"
+                    x1="31"
+                    y1="17"
+                    x2="99"
+                    y2="92"
+                    gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#67E8F9"/>
+      <stop offset="0.55" stop-color="#0EA5E9"/>
+      <stop offset="1" stop-color="#4F46E5"/>
+    </linearGradient>
+  </defs>
+
+  <!--
+    Orbit geometry:
+    - center: 60,60
+    - radius: 43
+    - three nodes separated evenly by 120 degrees
+    - equal 24-degree gaps around every node
+  -->
+
+  <!-- Orbit segment: top node to lower-right node -->
+  <path d="M68.94 17.94
+           A43 43 0 0 1 100.895 73.288"
+        stroke="url(#orbit)"
+        stroke-width="6.5"
+        stroke-linecap="round"/>
+
+  <!-- Orbit segment: lower-right node to lower-left node -->
+  <path d="M91.955 88.773
+           A43 43 0 0 1 28.045 88.773"
+        stroke="url(#orbit)"
+        stroke-width="6.5"
+        stroke-linecap="round"/>
+
+  <!-- Orbit segment: lower-left node to top node -->
+  <path d="M19.105 73.288
+           A43 43 0 0 1 51.06 17.94"
+        stroke="url(#orbit)"
+        stroke-width="6.5"
+        stroke-linecap="round"/>
+
+  <!-- Three equal nodes at -90°, 30°, and 150° -->
+  <circle cx="60" cy="17" r="7.5" fill="url(#nodes)"/>
+  <circle cx="97.239" cy="81.5" r="7.5" fill="url(#nodes)"/>
+  <circle cx="22.761" cy="81.5" r="7.5" fill="url(#nodes)"/>
+
+  <!-- Central upward intelligence mark -->
+  <path d="M60 34L83 84L68 75L60 58L52 75L37 84L60 34Z"
+        fill="url(#arrowRight)"/>
+
+  <path d="M60 34L60 58L52 75L37 84L60 34Z"
+        fill="url(#arrowLeft)"/>
+
+  <!-- Inner correlation core -->
+  <path d="M60 61L67 76L60 83L53 76L60 61Z"
+        fill="#E0F2FE"/>
+</svg>

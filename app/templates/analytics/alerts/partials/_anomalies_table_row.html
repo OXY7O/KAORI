@@ -1,0 +1,140 @@
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+    <td class="px-6 py-4 align-top">
+        <div class="flex items-start gap-3">
+            <div class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+                <i data-lucide="radar" class="h-4 w-4"></i>
+            </div>
+            <div>
+                <div class="font-semibold text-slate-900 dark:text-white">{{ anomaly.name }}</div>
+                <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ anomaly.summary }}</div>
+            </div>
+        </div>
+    </td>
+    <td class="px-6 py-4 align-top">
+        <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
+            <i data-lucide="alert-triangle" class="h-3.5 w-3.5"></i>
+            {{ anomaly.severity | title }}
+        </span>
+    </td>
+    <td class="px-6 py-4 align-top">
+        <span class="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-500/10 dark:text-blue-300">
+            <i data-lucide="box" class="h-3.5 w-3.5"></i>
+            {{ anomaly.namespace }}
+        </span>
+    </td>
+    <td class="px-6 py-4 align-top text-sm text-slate-700 dark:text-slate-300">{{ anomaly.signal }}</td>
+    <td class="px-6 py-4 align-top text-left">
+        <button type="button"
+                @click="openAnomaly = openAnomaly === '{{ row_key }}' ? null : '{{ row_key }}'"
+                class="inline-flex min-w-[116px] items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-blue-800 dark:hover:bg-blue-950/30 dark:hover:text-blue-300">
+            <i data-lucide="chevron-down"
+               class="h-3.5 w-3.5 transition"
+               :class="{ 'rotate-180': openAnomaly === '{{ row_key }}' }"></i>
+            <span x-text="openAnomaly === '{{ row_key }}' ? 'Hide Details' : 'View More'">View More</span>
+        </button>
+    </td>
+</tr>
+<tr x-show="openAnomaly === '{{ row_key }}'"
+    x-cloak
+    class="bg-slate-50 dark:bg-slate-800/40">
+    <td colspan="5" class="px-6 py-4">
+        <div class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm ring-1 ring-slate-100/70 dark:border-slate-700 dark:bg-slate-900 dark:ring-slate-800/70">
+            <div class="border-b border-slate-200 bg-gradient-to-r from-white via-cyan-50/70 to-blue-50/60 px-5 py-4 dark:border-slate-700 dark:from-slate-900 dark:via-cyan-950/20 dark:to-slate-900">
+                <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-cyan-600 text-white shadow-sm shadow-cyan-600/20">
+                            <i data-lucide="radar" class="h-5 w-5"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <h3 class="break-words text-base font-semibold text-slate-900 dark:text-white">{{ anomaly.name }}</h3>
+                                <span class="rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-500/10 dark:text-blue-300">{{ anomaly.namespace }}</span>
+                                <span class="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">{{ anomaly.severity|title }}</span>
+                            </div>
+                            <p class="mt-1 max-w-3xl text-sm leading-6 text-slate-600 dark:text-slate-300">{{ anomaly.description }}</p>
+                        </div>
+                    </div>
+                    <span class="inline-flex w-fit items-center gap-1.5 rounded-full bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-700 ring-1 ring-cyan-100 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-500/20">
+                        <i data-lucide="activity" class="h-3.5 w-3.5"></i>
+                        {{ anomaly.signal }}
+                    </span>
+                </div>
+            </div>
+            <div class="p-5">
+                <div class="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
+                    <div class="space-y-4">
+                        <div class="grid gap-3 sm:grid-cols-3">
+                            <div class="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-700 dark:bg-slate-950/40">
+                                <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                                    <i data-lucide="crosshair" class="h-3.5 w-3.5"></i>
+                                    Target
+                                </div>
+                                <div class="mt-2 break-all text-sm font-semibold text-slate-900 dark:text-white">{{ anomaly.target }}</div>
+                            </div>
+                            <div class="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-700 dark:bg-slate-950/40">
+                                <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                                    <i data-lucide="activity" class="h-3.5 w-3.5"></i>
+                                    Signal
+                                </div>
+                                <div class="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{{ anomaly.signal }}</div>
+                            </div>
+                            <div class="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-700 dark:bg-slate-950/40">
+                                <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                                    <i data-lucide="database" class="h-3.5 w-3.5"></i>
+                                    Source
+                                </div>
+                                <div class="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{{ anomaly.source if anomaly.source else 'Prometheus' }}</div>
+                            </div>
+                        </div>
+
+                        <div class="rounded-2xl border border-cyan-100 bg-cyan-50/70 p-4 dark:border-cyan-500/20 dark:bg-cyan-950/20">
+                            <div class="flex items-start gap-3">
+                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-cyan-600 shadow-sm dark:bg-cyan-500/10 dark:text-cyan-300">
+                                    <i data-lucide="search" class="h-4 w-4"></i>
+                                </span>
+                                <div class="min-w-0">
+                                    <h4 class="text-sm font-semibold text-slate-900 dark:text-white">Recommended anomaly review</h4>
+                                    <p class="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                                        Validate whether this deviation is workload-driven, capacity-driven, or caused by source gaps. Compare the target with recent deployment changes, namespace density, and node pressure before creating an incident.
+                                    </p>
+                                    <div class="mt-3 grid gap-2 sm:grid-cols-3">
+                                        <div class="rounded-xl bg-white px-3 py-2 text-xs text-slate-600 shadow-sm dark:bg-slate-900 dark:text-slate-300">
+                                            <span class="font-semibold text-slate-900 dark:text-white">Scope:</span> {{ anomaly.namespace }}
+                                        </div>
+                                        <div class="rounded-xl bg-white px-3 py-2 text-xs text-slate-600 shadow-sm dark:bg-slate-900 dark:text-slate-300">
+                                            <span class="font-semibold text-slate-900 dark:text-white">Signal:</span> {{ anomaly.signal }}
+                                        </div>
+                                        <div class="rounded-xl bg-white px-3 py-2 text-xs text-slate-600 shadow-sm dark:bg-slate-900 dark:text-slate-300">
+                                            <span class="font-semibold text-slate-900 dark:text-white">Priority:</span> {{ anomaly.severity|title }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-950/40">
+                        <div class="flex items-center gap-2">
+                            <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                                <i data-lucide="route" class="h-4 w-4"></i>
+                            </span>
+                            <h4 class="text-sm font-semibold text-slate-900 dark:text-white">Next operational action</h4>
+                        </div>
+                        <ul class="mt-4 space-y-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                            <li class="flex gap-2"><span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500"></span><span>Open workload context to verify whether the signal maps to a specific namespace, workload, or placement pattern.</span></li>
+                            <li class="flex gap-2"><span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-500"></span><span>Compare this anomaly with alert pressure and recent utilization trend before escalating.</span></li>
+                            <li class="flex gap-2"><span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500"></span><span>Confirm the source is healthy so missing samples are not interpreted as resource behavior.</span></li>
+                        </ul>
+                        <div class="mt-5">
+                            <a href="{{ url_for('analytics.workload', cluster_id=selected_cluster_id, namespace=anomaly.namespace if anomaly.namespace != '-' else '') }}"
+                               class="inline-flex items-center gap-2 rounded-xl bg-slate-700 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-800 dark:bg-slate-600 dark:hover:bg-slate-500">
+                                <i data-lucide="boxes" class="h-3.5 w-3.5"></i>
+                                Review Workload
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </td>
+</tr>

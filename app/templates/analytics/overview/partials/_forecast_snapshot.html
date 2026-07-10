@@ -1,0 +1,129 @@
+<section class="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+    <div class="mb-5 flex items-center justify-between">
+        <div>
+            <h2 class="text-lg font-semibold text-slate-950 dark:text-white">Forecast & Trend Snapshot</h2>
+            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                Trend direction and forecast risk for core resource metrics.
+            </p>
+        </div>
+        <a href="{{ payload.forecast_snapshot.href }}?cluster_id={{ payload.selected_cluster_id }}&time_range={{ payload.selected_time_range }}"
+           class="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
+            View forecast
+            <i data-lucide="arrow-right" class="h-4 w-4"></i>
+        </a>
+    </div>
+
+    <div class="flex flex-1 flex-col justify-between space-y-5">
+        <div class="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200 dark:bg-slate-950/60 dark:ring-slate-700">
+            {% if payload.forecast_snapshot.series %}
+                <div class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+                    <div class="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <p class="text-sm font-bold text-slate-800 dark:text-slate-100">30-day Forecast Projection</p>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">
+                                Solid line is historical trend, dashed line is projected trend.
+                            </p>
+                        </div>
+                        <span class="w-fit rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:text-slate-300">
+                            {{ payload.forecast_snapshot.forecast_horizon }}
+                        </span>
+                    </div>
+                    <div class="relative h-44">
+                        <svg viewBox="0 0 100 100"
+                             preserveAspectRatio="none"
+                             class="h-full w-full overflow-visible">
+                            <line x1="0" y1="10" x2="100" y2="10" class="stroke-slate-200 dark:stroke-slate-700" stroke-width="0.5"></line>
+                            <line x1="0" y1="25" x2="100" y2="25" class="stroke-amber-200 dark:stroke-amber-800" stroke-width="0.6" stroke-dasharray="2 2"></line>
+                            <line x1="0" y1="50" x2="100" y2="50" class="stroke-slate-200 dark:stroke-slate-700" stroke-width="0.5"></line>
+                            <line x1="0" y1="75" x2="100" y2="75" class="stroke-slate-200 dark:stroke-slate-700" stroke-width="0.5"></line>
+                            <line x1="0" y1="90" x2="100" y2="90" class="stroke-red-200 dark:stroke-red-900" stroke-width="0.6" stroke-dasharray="2 2"></line>
+                            {% for item in payload.forecast_snapshot.series %}
+                                {% set stroke_class = "stroke-slate-500" %}
+                                {% if item.key == "cpu" %}
+                                    {% set stroke_class = "stroke-blue-500" %}
+                                {% elif item.key == "memory" %}
+                                    {% set stroke_class = "stroke-violet-500" %}
+                                {% elif item.key == "storage" %}
+                                    {% set stroke_class = "stroke-emerald-500" %}
+                                {% elif item.key == "pods" %}
+                                    {% set stroke_class = "stroke-cyan-500" %}
+                                {% endif %}
+                                {% if item.historical_points %}
+                                    <polyline points="{{ item.historical_points }}" fill="none" class="{{ stroke_class }}" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"></polyline>
+                                {% endif %}
+                                {% if item.forecast_points %}
+                                    <polyline points="{{ item.forecast_points }}" fill="none" class="{{ stroke_class }}" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="4 4"></polyline>
+                                {% endif %}
+                            {% endfor %}
+                        </svg>
+                        <div class="pointer-events-none absolute inset-y-0 left-0 flex flex-col justify-between text-[10px] font-semibold text-slate-400">
+                            <span>90%</span>
+                            <span>75%</span>
+                            <span>50%</span>
+                            <span>25%</span>
+                            <span>10%</span>
+                        </div>
+                    </div>
+                    <div class="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                        {% for item in payload.forecast_snapshot.series %}
+                            <div class="rounded-xl border border-slate-200 px-3 py-2 dark:border-slate-700">
+                                <div class="flex items-center gap-2">
+                                    <span class="h-2 w-2 rounded-full {% if item.key == 'cpu' %}bg-blue-500 {% elif item.key == 'memory' %}bg-violet-500 {% elif item.key == 'storage' %}bg-emerald-500 {% elif item.key == 'pods' %}bg-cyan-500 {% else %}bg-slate-500{% endif %}"></span>
+                                    <span class="text-xs font-bold text-slate-700 dark:text-slate-200">{{ item.label }}</span>
+                                </div>
+                                <p class="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                                    {{ item.latest_percent }}% → {{ item.projected_percent }}%
+                                </p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% else %}
+                <div class="flex h-36 items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-900">
+                    <div class="text-center">
+                        <i data-lucide="line-chart" class="mx-auto h-8 w-8 text-slate-400"></i>
+                        <p class="mt-2 text-sm font-semibold text-slate-600 dark:text-slate-300">Forecast chart not available</p>
+                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Connect forecast data to show trend visualization.</p>
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="mt-4 rounded-xl border {% if payload.forecast_snapshot.risk_count > 0 %}border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/40 {% else %}border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/40{% endif %} px-4 py-3">
+                <div class="flex items-start gap-2">
+                    <i data-lucide="{% if payload.forecast_snapshot.risk_count > 0 %}triangle-alert{% else %}check-circle{% endif %}"
+                       class="mt-0.5 h-4 w-4 {% if payload.forecast_snapshot.risk_count > 0 %}text-amber-600 dark:text-amber-400 {% else %}text-emerald-600 dark:text-emerald-400{% endif %}"></i>
+                    <p class="text-sm font-medium {% if payload.forecast_snapshot.risk_count > 0 %}text-amber-800 dark:text-amber-200 {% else %}text-emerald-800 dark:text-emerald-200{% endif %}">
+                        {{ payload.forecast_snapshot.risk_note }}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="rounded-2xl border border-slate-200 p-4 dark:border-slate-700">
+            <div class="mb-4">
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white">Trend Summary</h3>
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Current trend direction for each core resource.</p>
+            </div>
+            <div class="space-y-3">
+                {% set trends = [
+                    {"label": "CPU Trend", "value": payload.forecast_snapshot.cpu_trend, "icon": "cpu"},
+                    {"label": "Memory Trend", "value": payload.forecast_snapshot.memory_trend, "icon": "memory-stick"},
+                    {"label": "Storage Trend", "value": payload.forecast_snapshot.storage_trend, "icon": "database"},
+                    {"label": "Pod Trend", "value": payload.forecast_snapshot.pod_trend, "icon": "boxes"}
+                ] %}
+                {% for trend in trends %}
+                    <div class="flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2 dark:border-slate-700">
+                        <span class="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                            <i data-lucide="{{ trend.icon }}"
+                               class="h-4 w-4 text-blue-600 dark:text-blue-400"></i>
+                            {{ trend.label }}
+                        </span>
+                        <span class="text-xs font-bold {% if trend.value|lower == 'increasing' %}text-amber-600 dark:text-amber-400 {% elif trend.value|lower == 'decreasing' %}text-emerald-600 dark:text-emerald-400 {% elif trend.value|lower == 'stable' %}text-blue-600 dark:text-blue-400 {% else %}text-slate-500 dark:text-slate-400{% endif %}">
+                            {{ trend.value }}
+                        </span>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</section>

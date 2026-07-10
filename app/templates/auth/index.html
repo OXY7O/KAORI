@@ -1,0 +1,16 @@
+{% extends "layouts/auth.html" %}
+{% block title %}Sign in · KAORI{% endblock title %}
+{% block content %}
+    <main class="kaori-auth-shell">
+        <div class="kaori-auth-backdrop" aria-hidden="true">
+            <span class="kaori-auth-glow kaori-auth-glow--one"></span>
+            <span class="kaori-auth-glow kaori-auth-glow--two"></span>
+            <span class="kaori-auth-grid"></span>
+        </div>
+
+        <section class="kaori-auth-layout" aria-label="KAORI sign in">
+            {% include "auth/partials/_brand_panel.html" %}
+            {% include "auth/partials/_login_form.html" %}
+        </section>
+    </main>
+{% endblock content %}

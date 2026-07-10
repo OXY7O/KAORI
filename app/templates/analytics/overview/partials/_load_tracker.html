@@ -1,0 +1,164 @@
+<div id="analytics-overview-load-tracker"
+     class="overflow-hidden rounded-2xl border border-blue-100 bg-white px-5 py-4 shadow-sm dark:border-blue-900/40 dark:bg-slate-900"
+     data-overview-load-tracker="true">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex items-center gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-300">
+                <i data-lucide="loader-2" class="h-5 w-5 animate-spin"></i>
+            </div>
+            <div>
+                <p class="text-sm font-semibold text-slate-900 dark:text-white" data-overview-load-title>Loading analytics overview</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400" data-overview-load-description>
+                    Loading Prometheus and Alertmanager sections in the background.
+                </p>
+            </div>
+        </div>
+        <div class="text-xs font-semibold text-blue-600 dark:text-blue-300" data-overview-load-counter>0/0 sections</div>
+    </div>
+    <div class="mt-4 h-1.5 overflow-hidden rounded-full bg-blue-100 dark:bg-blue-950/60">
+        <div class="h-full w-[4%] rounded-full bg-blue-600 transition-all duration-300 ease-out dark:bg-blue-400"
+             data-overview-load-progress></div>
+    </div>
+</div>
+
+<script>
+(function () {
+    function getOverviewPage() {
+        return document.getElementById('analytics-overview-page');
+    }
+
+    function getTracker() {
+        return document.getElementById('analytics-overview-load-tracker');
+    }
+
+    function getSections() {
+        var page = getOverviewPage();
+        if (!page) {
+            return [];
+        }
+        return Array.prototype.slice.call(page.querySelectorAll('[data-overview-lazy-section="true"]'));
+    }
+
+    function getSectionFromEvent(event) {
+        var element = event.detail && event.detail.elt ? event.detail.elt : event.target;
+        if (!element || !element.closest) {
+            return null;
+        }
+        return element.closest('[data-overview-lazy-section="true"]');
+    }
+
+    function setProgress(done, total) {
+        var tracker = getTracker();
+        if (!tracker || total === 0) {
+            return;
+        }
+
+        var title = tracker.querySelector('[data-overview-load-title]');
+        var description = tracker.querySelector('[data-overview-load-description]');
+        var counter = tracker.querySelector('[data-overview-load-counter]');
+        var progress = tracker.querySelector('[data-overview-load-progress]');
+        var percent = Math.max(4, Math.round((done / total) * 100));
+
+        tracker.classList.remove('hidden');
+
+        if (counter) {
+            counter.textContent = done + '/' + total + ' sections';
+        }
+        if (progress) {
+            progress.style.width = percent + '%';
+        }
+
+        if (done >= total) {
+            if (title) {
+                title.textContent = 'Analytics overview fully loaded';
+            }
+            if (description) {
+                description.textContent = 'All Prometheus and Alertmanager sections have finished loading.';
+            }
+            tracker.dataset.overviewLoadState = 'complete';
+            window.setTimeout(function () {
+                if (tracker.dataset.overviewLoadState === 'complete') {
+                    tracker.classList.add('hidden');
+                }
+            }, 2200);
+        } else {
+            if (title) {
+                title.textContent = 'Loading analytics overview';
+            }
+            if (description) {
+                description.textContent = 'Loading Prometheus and Alertmanager sections in the background.';
+            }
+            tracker.dataset.overviewLoadState = 'loading';
+        }
+    }
+
+    function updateOverviewLoadProgress() {
+        var sections = getSections();
+        if (!sections.length) {
+            return;
+        }
+
+        var done = sections.filter(function (section) {
+            return section.dataset.overviewLoaded === 'true' || section.dataset.overviewLoadFailed === 'true';
+        }).length;
+
+        setProgress(done, sections.length);
+    }
+
+    function initOverviewLoadTracker() {
+        var sections = getSections();
+        var tracker = getTracker();
+        if (!tracker || !sections.length) {
+            return;
+        }
+
+        tracker.classList.remove('hidden');
+        tracker.dataset.overviewLoadState = 'loading';
+        sections.forEach(function (section) {
+            section.dataset.overviewLoaded = 'false';
+            section.dataset.overviewLoadFailed = 'false';
+        });
+        setProgress(0, sections.length);
+    }
+
+    window.kubeReportInitOverviewLoadTracker = initOverviewLoadTracker;
+
+    if (!window.kubeReportOverviewLoadTrackerBound) {
+        window.kubeReportOverviewLoadTrackerBound = true;
+
+        document.body.addEventListener('htmx:afterSettle', function (event) {
+            var section = getSectionFromEvent(event);
+            if (section) {
+                section.dataset.overviewLoaded = 'true';
+                updateOverviewLoadProgress();
+            }
+
+            if (event.target && event.target.id === 'analytics-overview-page') {
+                window.setTimeout(initOverviewLoadTracker, 0);
+            }
+        });
+
+        document.body.addEventListener('htmx:responseError', function (event) {
+            var section = getSectionFromEvent(event);
+            if (section) {
+                section.dataset.overviewLoadFailed = 'true';
+                updateOverviewLoadProgress();
+            }
+        });
+
+        document.body.addEventListener('htmx:sendError', function (event) {
+            var section = getSectionFromEvent(event);
+            if (section) {
+                section.dataset.overviewLoadFailed = 'true';
+                updateOverviewLoadProgress();
+            }
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initOverviewLoadTracker);
+    } else {
+        initOverviewLoadTracker();
+    }
+})();
+</script>

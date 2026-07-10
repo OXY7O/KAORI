@@ -1,0 +1,36 @@
+<aside class="kaori-brand-panel">
+    <div class="kaori-brand-network" aria-hidden="true">
+        <span class="kaori-node kaori-node--one"></span>
+        <span class="kaori-node kaori-node--two"></span>
+        <span class="kaori-node kaori-node--three"></span>
+        <span class="kaori-node kaori-node--four"></span>
+        <span class="kaori-network-line kaori-network-line--one"></span>
+        <span class="kaori-network-line kaori-network-line--two"></span>
+        <span class="kaori-network-line kaori-network-line--three"></span>
+    </div>
+
+    <div class="kaori-brand-content">
+        <div class="kaori-brand-identity" aria-label="KAORI">
+            <img src="{{ url_for('static', filename='images/kaori-logo.svg') }}"
+                 alt="KAORI logo"
+                 class="kaori-brand-logo" />
+            <span class="kaori-brand-wordmark">KAORI</span>
+        </div>
+
+        <div class="kaori-brand-divider"></div>
+
+        <p class="kaori-brand-description">
+            Unified observability, analytics, governance, and intelligent
+            recommendations for modern infrastructure.
+        </p>
+
+        <div class="kaori-feature-list">
+            {% include "auth/partials/_feature_cards.html" %}
+        </div>
+    </div>
+
+    <div class="kaori-brand-footnote">
+        <span class="kaori-status-dot"></span>
+        Observe · Analyze · Govern · Optimize
+    </div>
+</aside>

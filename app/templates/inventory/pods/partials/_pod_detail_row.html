@@ -1,0 +1,127 @@
+<tr id="pod-detail-{{ pod.id }}"
+    class="border-t border-blue-100 bg-blue-50/40 dark:border-blue-500/20 dark:bg-blue-500/5">
+    <td colspan="8" class="px-4 py-4">
+        <div class="rounded-2xl border border-blue-100 bg-white p-4 shadow-sm dark:border-blue-500/20 dark:bg-slate-900/80">
+            <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300">
+                            <i data-lucide="box" class="h-4 w-4"></i>
+                        </span>
+                        <div>
+                            <h3 class="text-sm font-semibold text-slate-950 dark:text-white">{{ pod.name }}</h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Expanded pod runtime details</p>
+                        </div>
+                    </div>
+                </div>
+                <button type="button"
+                        class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                        hx-swap-oob="outerHTML:#pod-detail-{{ pod.id }}"
+                        onclick="document.getElementById('pod-detail-{{ pod.id }}').outerHTML = '<tr id=&quot;pod-detail-{{ pod.id }}&quot; class=&quot;hidden&quot;></tr>'">
+                    <i data-lucide="x" class="h-4 w-4"></i>
+                    Close
+                </button>
+            </div>
+            <div class="grid gap-3 md:grid-cols-4">
+                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
+                    <div class="mb-1 text-xs font-medium text-slate-500 dark:text-slate-400">Pod IP</div>
+                    {% if pod.ip %}
+                        <span class="inline-flex items-center gap-1 rounded-full bg-cyan-100 px-2.5 py-1 text-[11px] font-medium text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300">
+                            <i data-lucide="network" class="h-3 w-3"></i>
+                            {{ pod.ip }}
+                        </span>
+                    {% else %}
+                        <span class="text-sm text-slate-400 dark:text-slate-500">No IP assigned</span>
+                    {% endif %}
+                </div>
+                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
+                    <div class="mb-1 text-xs font-medium text-slate-500 dark:text-slate-400">Age</div>
+                    <span class="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2.5 py-1 text-[11px] font-medium text-violet-700 dark:bg-violet-500/10 dark:text-violet-300">
+                        <i data-lucide="clock-3" class="h-3 w-3"></i>
+                        {{ pod.age }}
+                    </span>
+                </div>
+                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
+                    <div class="mb-1 text-xs font-medium text-slate-500 dark:text-slate-400">Created</div>
+                    <div class="text-xs font-medium text-slate-700 dark:text-slate-200">
+                        {{ pod.created_at.strftime("%Y-%m-%d %H:%M:%S") if pod.created_at else '-' }}
+                    </div>
+                </div>
+                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
+                    <div class="mb-1 text-xs font-medium text-slate-500 dark:text-slate-400">Last Collected</div>
+                    <div class="text-xs font-medium text-slate-700 dark:text-slate-200">
+                        {{ pod.collected_at.strftime("%Y-%m-%d %H:%M:%S") if pod.collected_at else '-' }}
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 grid gap-4 lg:grid-cols-2">
+                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/70">
+                    <div class="mb-3 flex items-center justify-between">
+                        <div>
+                            <h4 class="text-sm font-semibold text-slate-900 dark:text-white">Container images</h4>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Main container image references.</p>
+                        </div>
+                        <span class="rounded-full bg-fuchsia-100 px-2.5 py-1 text-[11px] font-medium text-fuchsia-700 dark:bg-fuchsia-500/10 dark:text-fuchsia-300">
+                            {{ pod.container_images|length }}
+                        </span>
+                    </div>
+                    {% if pod.container_images %}
+                        <div class="flex flex-wrap gap-2">
+                            {% for image in pod.container_images %}
+                                <span class="inline-flex max-w-full items-center gap-1 rounded-full bg-fuchsia-100 px-2.5 py-1 text-[11px] font-medium text-fuchsia-700 dark:bg-fuchsia-500/10 dark:text-fuchsia-300"
+                                      title="{{ image }}">
+                                    <i data-lucide="image" class="h-3 w-3 shrink-0"></i>
+                                    <span class="break-all">{{ image }}</span>
+                                </span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-sm text-slate-400 dark:text-slate-500">No container images recorded.</div>
+                    {% endif %}
+                </div>
+                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/70">
+                    <div class="mb-3 flex items-center justify-between">
+                        <div>
+                            <h4 class="text-sm font-semibold text-slate-900 dark:text-white">Init container images</h4>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Init container image references.</p>
+                        </div>
+                        <span class="rounded-full bg-rose-100 px-2.5 py-1 text-[11px] font-medium text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">
+                            {{ pod.init_container_images|length }}
+                        </span>
+                    </div>
+                    {% if pod.init_container_images %}
+                        <div class="flex flex-wrap gap-2">
+                            {% for image in pod.init_container_images %}
+                                <span class="inline-flex max-w-full items-center gap-1 rounded-full bg-rose-100 px-2.5 py-1 text-[11px] font-medium text-rose-700 dark:bg-rose-500/10 dark:text-rose-300"
+                                      title="{{ image }}">
+                                    <i data-lucide="image-plus" class="h-3 w-3 shrink-0"></i>
+                                    <span class="break-all">{{ image }}</span>
+                                </span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-sm text-slate-400 dark:text-slate-500">No init container images recorded.</div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="mt-4 grid gap-3 md:grid-cols-4">
+                <div class="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900/70">
+                    <div class="text-xs text-slate-500 dark:text-slate-400">Cluster</div>
+                    <div class="mt-1 truncate text-sm font-semibold text-slate-800 dark:text-slate-100">{{ pod.cluster_name }}</div>
+                </div>
+                <div class="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900/70">
+                    <div class="text-xs text-slate-500 dark:text-slate-400">Namespace</div>
+                    <div class="mt-1 truncate text-sm font-semibold text-slate-800 dark:text-slate-100">{{ pod.namespace }}</div>
+                </div>
+                <div class="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900/70">
+                    <div class="text-xs text-slate-500 dark:text-slate-400">Node</div>
+                    <div class="mt-1 truncate text-sm font-semibold text-slate-800 dark:text-slate-100">{{ pod.node or '-' }}</div>
+                </div>
+                <div class="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900/70">
+                    <div class="text-xs text-slate-500 dark:text-slate-400">Readiness / Restarts</div>
+                    <div class="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">{{ pod.ready }} · {{ pod.restarts }} restart(s)</div>
+                </div>
+            </div>
+        </div>
+    </td>
+</tr>

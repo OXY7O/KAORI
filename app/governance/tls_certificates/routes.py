@@ -1,0 +1,159 @@
+from __future__ import annotations
+
+from flask import flash, redirect, render_template, request, url_for
+
+from app.governance.tls_certificates.service import (
+    apply_bulk_update,
+    apply_certificate_update,
+    get_tls_certificate_detail,
+    get_tls_certificate_page,
+    preview_uploaded_pair,
+    sync_tls_certificates,
+)
+from app.rbac.decorators import permission_required
+
+
+@permission_required('tls_certificates.view')
+def tls_certificates_index():
+    payload = get_tls_certificate_page(request.args)
+    partial_mode = request.args.get('partial_mode')
+
+    if partial_mode == 'content':
+        return render_template(
+            'governance/tls_certificates/partials/_content.html',
+            payload=payload,
+        )
+
+    if partial_mode == 'table':
+        return render_template(
+            'governance/tls_certificates/partials/_table.html',
+            payload=payload,
+        )
+
+    return render_template(
+        'governance/tls_certificates/index.html',
+        payload=payload,
+    )
+
+
+@permission_required('tls_certificates.view')
+def tls_certificates_detail(certificate_id: int):
+    record = get_tls_certificate_detail(certificate_id)
+    if record is None:
+        flash('TLS certificate record was not found.', 'warning')
+        return redirect(url_for('governance.tls_certificates'))
+
+    return render_template(
+        'governance/tls_certificates/detail.html',
+        record=record,
+    )
+
+
+@permission_required('tls_certificates.sync')
+def tls_certificates_sync():
+    result = sync_tls_certificates(request.form.get('cluster_id') or None)
+
+    if result['errors']:
+        flash('TLS certificate sync completed with warnings: ' + '; '.join(result['errors']), 'warning')
+    else:
+        flash(f"TLS certificate sync completed. {result['total']} TLS Secrets collected.", 'success')
+
+    return redirect(url_for('governance.tls_certificates', cluster_id=request.form.get('cluster_id') or ''))
+
+
+@permission_required('tls_certificates.update')
+def tls_certificates_update_preview(certificate_id: int):
+    record = get_tls_certificate_detail(certificate_id)
+    if record is None:
+        flash('TLS certificate record was not found.', 'warning')
+        return redirect(url_for('governance.tls_certificates'))
+
+    payload = preview_uploaded_pair(request.files, [certificate_id])
+    return render_template(
+        'governance/tls_certificates/partials/_update_preview.html',
+        record=record,
+        payload=payload,
+    )
+
+
+@permission_required('tls_certificates.update')
+def tls_certificates_update_apply(certificate_id: int):
+    result = apply_certificate_update(certificate_id, request.files)
+    flash(result['message'], 'success' if result['status'] == 'success' else 'danger')
+    return redirect(url_for('governance.tls_certificates_detail', certificate_id=certificate_id))
+
+
+@permission_required('tls_certificates.bulk_update')
+def tls_certificates_bulk_page():
+    payload = get_tls_certificate_page(request.args)
+    partial_mode = request.args.get('partial_mode')
+
+    if partial_mode == 'bulk_workspace':
+        return render_template(
+            'governance/tls_certificates/partials/_bulk_target_workspace.html',
+            payload=payload,
+            selected_ids=request.args.getlist('certificate_ids'),
+        )
+
+    if partial_mode == 'bulk_table':
+        return render_template(
+            'governance/tls_certificates/partials/_bulk_target_table.html',
+            payload=payload,
+            selected_ids=request.args.getlist('certificate_ids'),
+        )
+
+    return render_template(
+        'governance/tls_certificates/bulk_update.html',
+        payload=payload,
+        preview=None,
+        apply_result=None,
+        selected_ids=[],
+    )
+
+
+@permission_required('tls_certificates.bulk_update')
+def tls_certificates_bulk_preview():
+    payload = get_tls_certificate_page(request.form)
+    selected_ids = request.form.getlist('certificate_ids')
+    preview = preview_uploaded_pair(request.files, selected_ids)
+
+    if request.headers.get('HX-Request'):
+        return render_template(
+            'governance/tls_certificates/partials/_bulk_feedback.html',
+            payload=payload,
+            preview=preview,
+            apply_result=None,
+            selected_ids=selected_ids,
+        )
+
+    return render_template(
+        'governance/tls_certificates/bulk_update.html',
+        payload=payload,
+        preview=preview,
+        apply_result=None,
+        selected_ids=selected_ids,
+    )
+
+
+@permission_required('tls_certificates.bulk_update')
+def tls_certificates_bulk_apply():
+    payload = get_tls_certificate_page(request.form)
+    selected_ids = request.form.getlist('certificate_ids')
+    apply_result = apply_bulk_update(request.files, selected_ids)
+
+    if request.headers.get('HX-Request'):
+        return render_template(
+            'governance/tls_certificates/partials/_bulk_feedback.html',
+            payload=payload,
+            preview=None,
+            apply_result=apply_result,
+            selected_ids=selected_ids,
+        )
+
+    return render_template(
+        'governance/tls_certificates/bulk_update.html',
+        payload=payload,
+        preview=None,
+        apply_result=apply_result,
+        selected_ids=selected_ids,
+    )

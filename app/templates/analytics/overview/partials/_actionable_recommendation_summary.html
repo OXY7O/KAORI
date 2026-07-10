@@ -1,0 +1,103 @@
+{% set summary = payload.actionable_recommendations %}
+{% set summary_class = {
+    'green': 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-400/20',
+    'amber': 'bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-950/50 dark:text-amber-300 dark:ring-amber-400/20',
+    'red': 'bg-rose-50 text-rose-700 ring-rose-600/20 dark:bg-rose-950/50 dark:text-rose-300 dark:ring-rose-400/20',
+    'gray': 'bg-slate-100 text-slate-700 ring-slate-600/20 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-400/20'
+}.get(summary.tone, 'bg-slate-100 text-slate-700 ring-slate-600/20 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-400/20') %}
+{% set top_sources = summary.sources|sort(attribute='count', reverse=true) %}
+<section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+    <details class="group">
+        <summary class="flex cursor-pointer list-none flex-col gap-4 px-6 py-5 transition hover:bg-slate-50 dark:hover:bg-slate-950/40 lg:flex-row lg:items-center lg:justify-between">
+            <div class="flex items-start gap-3">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                    <i data-lucide="list-checks" class="h-5 w-5"></i>
+                </div>
+                <div>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <h2 class="text-lg font-semibold text-slate-950 dark:text-white">Actionable Recommendations</h2>
+                        <span class="inline-flex w-fit items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold ring-1 ring-inset {{ summary_class }}">
+                            <i data-lucide="activity" class="h-3.5 w-3.5"></i>
+                            {{ summary.total_count }} actionable · {{ summary.status }}
+                        </span>
+                    </div>
+                    <p class="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">
+                        Top actionable signals across capacity, utilization, storage, workload, forecast, consumers, and alerts.
+                    </p>
+                </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-3">
+                {% for source in top_sources[:3] %}
+                    {% set source_class = {
+                        'green': 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300',
+                        'amber': 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300',
+                        'red': 'bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300',
+                        'gray': 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                    }.get(source.tone, 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300') %}
+                    <span class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
+                        {{ source.label }}
+                        <span class="rounded-lg px-2 py-1 text-xs font-bold {{ source_class }}">{{ source.count }}</span>
+                    </span>
+                {% endfor %}
+                <span class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
+                    <i data-lucide="chevron-down" class="h-4 w-4 transition group-open:rotate-180"></i>
+                    Details
+                </span>
+            </div>
+        </summary>
+
+        <div class="border-t border-slate-200 p-6 dark:border-slate-700">
+            <div class="grid items-stretch gap-4 lg:grid-cols-[1.4fr_0.6fr]">
+                <div class="grid items-stretch gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    {% for source in summary.sources %}
+                        {% set source_class = {
+                            'green': 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300',
+                            'amber': 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300',
+                            'red': 'bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300',
+                            'gray': 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                        }.get(source.tone, 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300') %}
+                        <a href="{{ source.href }}?cluster_id={{ payload.selected_cluster_id }}&time_range={{ payload.selected_time_range }}"
+                           class="flex h-full rounded-2xl border border-slate-200 p-4 transition hover:border-blue-200 hover:bg-slate-50 dark:border-slate-700 dark:hover:border-blue-700 dark:hover:bg-slate-950">
+                            <div class="flex w-full items-center justify-between gap-4">
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ source.label }}</p>
+                                    <p class="mt-1 line-clamp-2 text-xs leading-5 text-slate-500 dark:text-slate-400">{{ source.description }}</p>
+                                </div>
+                                <span class="shrink-0 rounded-xl px-3 py-2 text-sm font-bold {{ source_class }}">{{ source.count }}</span>
+                            </div>
+                        </a>
+                    {% endfor %}
+                </div>
+                <div class="flex h-full flex-col justify-between overflow-hidden rounded-2xl bg-gradient-to-br from-blue-700 via-blue-600 to-cyan-500 p-5 text-white shadow-sm shadow-blue-500/20">
+                    <div>
+                        <div class="flex items-center justify-between gap-3">
+                            <div>
+                                <p class="text-sm font-bold text-white">Priority Summary</p>
+                                <p class="mt-1 text-xs leading-5 text-blue-50/85">Triage order for the most important operational signals.</p>
+                            </div>
+                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15 text-white ring-1 ring-white/20">
+                                <i data-lucide="gauge" class="h-5 w-5"></i>
+                            </div>
+                        </div>
+                        <div class="mt-4 grid grid-cols-2 gap-3">
+                            <div class="rounded-xl bg-white/15 p-3 ring-1 ring-white/15">
+                                <p class="text-xs text-blue-50/80">Critical</p>
+                                <p class="mt-1 text-2xl font-bold text-white">{{ summary.priority_summary.critical }}</p>
+                            </div>
+                            <div class="rounded-xl bg-white/15 p-3 ring-1 ring-white/15">
+                                <p class="text-xs text-blue-50/80">Warning</p>
+                                <p class="mt-1 text-2xl font-bold text-white">{{ summary.priority_summary.warning }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <ul class="mt-5 space-y-2 text-xs leading-5 text-blue-50/90">
+                        <li class="flex gap-2"><i data-lucide="check-circle-2" class="mt-0.5 h-3.5 w-3.5 shrink-0"></i><span>Review critical items first before optimization tasks.</span></li>
+                        <li class="flex gap-2"><i data-lucide="route" class="mt-0.5 h-3.5 w-3.5 shrink-0"></i><span>Use source cards to jump directly into the related analytics page.</span></li>
+                        <li class="flex gap-2"><i data-lucide="clock-3" class="mt-0.5 h-3.5 w-3.5 shrink-0"></i><span>Recheck warning items during the next operational review cycle.</span></li>
+                    </ul>
+                    <p class="mt-4 border-t border-white/15 pt-3 text-xs leading-5 text-blue-50/85">{{ summary.description }}</p>
+                </div>
+            </div>
+        </div>
+    </details>
+</section>

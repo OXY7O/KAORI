@@ -1,0 +1,65 @@
+{% extends "layouts/app.html" %}
+{% set page_title = "Kubernetes Cluster" %}
+{% block title %}Kubernetes Cluster{% endblock title %}
+{% block dashboard_content %}
+    <div x-data="{ deleteModal: false, deleteUrl: '', deleteName: '' }"
+         class="space-y-6">
+        <!-- Header -->
+        <div class="relative overflow-hidden rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-600 via-blue-500 to-sky-400 p-6 shadow-sm dark:border-blue-900/50 dark:from-blue-950 dark:via-blue-900 dark:to-slate-900">
+            <div class="pointer-events-none absolute -right-16 -top-16 h-44 w-44 rounded-full bg-white/20 blur-3xl"></div>
+            <div class="pointer-events-none absolute bottom-0 right-32 h-28 w-28 rounded-full bg-cyan-200/20 blur-2xl"></div>
+            <div class="relative flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div class="flex items-start gap-4">
+                    <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15 text-white ring-1 ring-white/25 backdrop-blur">
+                        <i data-lucide="server" class="h-7 w-7"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-bold tracking-tight text-white">Kubernetes Cluster Management</h1>
+                        <p class="mt-2 max-w-3xl text-sm leading-6 text-blue-50/90 sm:text-base">
+                            Manage Kubernetes clusters, connectivity, inventory synchronization, Prometheus, and Alertmanager integration.
+                        </p>
+                        <div class="mt-4 flex flex-wrap gap-2">
+                            <span class="inline-flex items-center gap-1.5 rounded-lg bg-white/15 px-3 py-1 text-xs font-semibold text-white ring-1 ring-white/20 backdrop-blur">
+                                <i data-lucide="server" class="h-3.5 w-3.5"></i>
+                                {{ total_clusters }} Kubernetes Clusters
+                            </span>
+                            <span class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-300/20 px-3 py-1 text-xs font-semibold text-white ring-1 ring-emerald-100/30 backdrop-blur">
+                                <i data-lucide="check-circle-2" class="h-3.5 w-3.5"></i>
+                                {{ connected_clusters }} Connected
+                            </span>
+                            <span class="inline-flex items-center gap-1.5 rounded-lg bg-sky-200/20 px-3 py-1 text-xs font-semibold text-white ring-1 ring-sky-100/30 backdrop-blur">
+                                <i data-lucide="database" class="h-3.5 w-3.5"></i>
+                                {{ synced_clusters }} Synced
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Kubernetes Cluster Inventory Card -->
+        <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+            <div class="flex flex-col gap-4 border-b border-slate-200 px-6 py-5 lg:flex-row lg:items-center lg:justify-between dark:border-slate-700">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+                        <i data-lucide="database" class="h-5 w-5"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-semibold text-slate-950 dark:text-white">Kubernetes Cluster Inventory</h2>
+                        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                            Compact overview of registered Kubernetes clusters and integration readiness.
+                        </p>
+                    </div>
+                </div>
+                {% if current_user.has_permission('clusters.manage') %}
+                    <a href="{{ url_for('cluster.add_cluster') }}"
+                       class="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 hover:shadow-md focus:outline-none focus:ring-4 focus:ring-blue-500/20 dark:bg-blue-600 dark:hover:bg-blue-500">
+                        <i data-lucide="plus" class="h-4 w-4"></i>
+                        <span>Add Kubernetes Cluster</span>
+                    </a>
+                {% endif %}
+            </div>
+            {% include "cluster/partials/_table.html" %}
+        </div>
+        {% include "cluster/partials/_delete_modal.html" %}
+    </div>
+{% endblock dashboard_content %}

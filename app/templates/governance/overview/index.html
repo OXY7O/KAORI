@@ -1,0 +1,63 @@
+{% extends "layouts/app.html" %}
+{% block title %}Governance{% endblock title %}
+{% block dashboard_content %}
+    <div class="space-y-6">
+        <div class="relative overflow-hidden min-h-[13.25rem] rounded-3xl bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 px-6 py-6 text-white shadow-lg shadow-blue-500/20 sm:px-7 sm:py-7">
+            <div class="absolute inset-y-0 right-0 hidden w-1/3 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.22),transparent_55%)] lg:block"></div>
+            <div class="absolute -top-16 right-10 h-40 w-40 rounded-full bg-white/10 blur-3xl"></div>
+            <div class="absolute -bottom-20 right-32 h-48 w-48 rounded-full bg-cyan-300/20 blur-3xl"></div>
+
+            <div class="relative flex min-h-[10rem] flex-col gap-6 xl:flex-row xl:items-stretch xl:justify-between">
+                <div class="flex min-w-0 flex-1 flex-col justify-between gap-4 xl:pr-8">
+                    <div class="flex items-start gap-4">
+                        <div class="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/20 bg-white/15 backdrop-blur">
+                            <i data-lucide="shield-check" class="h-7 w-7"></i>
+                        </div>
+                        <div>
+                            <div class="inline-flex whitespace-nowrap items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-medium tracking-wide text-blue-50">
+                                <i data-lucide="layout-dashboard" class="h-3.5 w-3.5"></i>
+                                Governance workspace
+                            </div>
+                            <h1 class="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">Kubernetes Governance Workspace</h1>
+                            <p class="mt-2 max-w-4xl text-sm leading-6 text-blue-50/90 sm:text-base">
+                                Central workspace for operational governance signals, starting with TLS certificate expiry, usage mapping, and controlled update workflows.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex min-h-10 flex-wrap items-center gap-3 sm:ml-[4.5rem] xl:max-w-4xl">
+                        <div class="inline-flex whitespace-nowrap items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-medium">
+                            <i data-lucide="server-cog" class="h-4 w-4"></i>
+                            K8s Operation
+                        </div>
+                        <div class="inline-flex whitespace-nowrap items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-medium">
+                            <i data-lucide="badge-check" class="h-4 w-4"></i>
+                            TLS certificate lifecycle
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex w-full flex-col gap-3 sm:max-w-[360px] xl:w-[360px] xl:flex-shrink-0">
+                    <div class="flex min-h-[7rem] flex-col justify-center rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
+                        <p class="text-xs font-medium uppercase tracking-[0.2em] text-blue-50/80">Active capability</p>
+                        <div class="mt-3 flex min-h-[4.5rem] items-end justify-between gap-4">
+                            <div class="min-w-0">
+                                <div class="text-3xl font-bold leading-none">TLS</div>
+                                <p class="mt-2 whitespace-nowrap text-sm text-blue-50/80">Certificate governance</p>
+                            </div>
+                            <div class="w-[7.5rem] flex-shrink-0 rounded-xl bg-white/10 px-2.5 py-2 text-right">
+                                <div class="whitespace-nowrap text-[9px] font-medium uppercase tracking-[0.05em] text-blue-50/75">Menu</div>
+                                <div class="text-lg font-semibold leading-6">K8s Ops</div>
+                            </div>
+                        </div>
+                    </div>
+                    <a href="{{ url_for('governance.tls_certificates') }}"
+                       class="inline-flex min-h-[3.25rem] items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-blue-700 shadow-sm transition hover:bg-blue-50">
+                        Open TLS Certificates
+                        <i data-lucide="arrow-right" class="h-4 w-4"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock dashboard_content %}

@@ -1,0 +1,42 @@
+{% set actionable = payload.actionable_recommendations|default({}) %}
+{% set active_alerts = payload.health_summary.active_alerts.value|default(0) %}
+{% set posture = payload.health_summary.cluster_health %}
+{% set posture_status = posture.status|default('unknown')|lower %}
+{% set posture_badge_class = {
+    'normal': 'bg-emerald-500 text-white ring-emerald-200/40',
+    'healthy': 'bg-emerald-500 text-white ring-emerald-200/40',
+    'warning': 'bg-amber-500 text-white ring-amber-200/50',
+    'critical': 'bg-red-500 text-white ring-red-200/50',
+    'unknown': 'bg-slate-500 text-white ring-white/20'
+}.get(posture_status, 'bg-slate-500 text-white ring-white/20') %}
+{% set posture_short_description = {
+    'normal': 'Signals are stable.',
+    'healthy': 'Signals are stable.',
+    'warning': 'Needs review.',
+    'critical': 'Immediate attention required.',
+    'unknown': 'Signal status unavailable.'
+}.get(posture_status, posture.description) %}
+<div class="rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur xl:min-h-[176px]">
+    <div class="flex h-full flex-col justify-start gap-3">
+        <div class="flex items-start justify-between gap-4">
+            <div class="min-w-0">
+                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-50/80">Operational posture</p>
+                <div class="mt-2 text-4xl font-bold leading-none">{{ posture.value }}</div>
+                <p class="mt-1 text-sm leading-5 text-blue-50/85">{{ posture_short_description }}</p>
+            </div>
+            <span class="inline-flex shrink-0 rounded-full px-3 py-1.5 text-xs font-bold capitalize ring-1 ring-inset {{ posture_badge_class }}">
+                {{ posture.status }}
+            </span>
+        </div>
+        <div class="mt-2 grid grid-cols-2 gap-3">
+            <div class="rounded-xl bg-white/10 px-4 py-3">
+                <p class="text-xs text-blue-50/75">Actionable</p>
+                <p class="mt-1 text-2xl font-semibold">{{ actionable.total_count|default(0) }}</p>
+            </div>
+            <div class="rounded-xl bg-white/10 px-4 py-3">
+                <p class="text-xs text-blue-50/75">Active Alerts</p>
+                <p class="mt-1 text-2xl font-semibold">{{ active_alerts }}</p>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,279 @@
+<div id="users-table"
+     class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+    <div class="border-b border-slate-200 px-6 py-5 dark:border-slate-700">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div class="flex items-center gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+                    <i data-lucide="database" class="h-5 w-5"></i>
+                </div>
+                <div>
+                    <h2 class="text-lg font-semibold text-slate-950 dark:text-white">User Directory</h2>
+                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                        Review user identities, access status, authentication source, and RBAC assignment in one directory.
+                    </p>
+                </div>
+            </div>
+            <a href="{{ url_for('settings.new_user') }}"
+               class="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 hover:shadow-md focus:outline-none focus:ring-4 focus:ring-blue-100 dark:bg-blue-600 dark:hover:bg-blue-500 dark:focus:ring-blue-900/30">
+                <i data-lucide="user-plus" class="h-4 w-4"></i>
+                <span>Add User</span>
+            </a>
+        </div>
+        <div id="users-refresh-indicator"
+             class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-blue-100 dark:bg-blue-950/60">
+            <div class="h-full w-1/3 animate-pulse rounded-full bg-blue-600 dark:bg-blue-400"></div>
+        </div>
+    </div>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="space-y-2 border-b border-slate-200 bg-slate-50 px-6 py-4 dark:border-slate-700 dark:bg-slate-900/40">
+                {% for category, message in messages %}
+                    {% set tone = 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-300' if category == 'success' else 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-300' if category == 'warning' else 'border-red-200 bg-red-50 text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-300' %}
+                    <div class="flex items-start gap-2 rounded-xl border px-3 py-2 text-sm font-medium {{ tone }}">
+                        <i data-lucide="{{ 'check-circle-2' if category == 'success' else 'alert-triangle' }}"
+                           class="mt-0.5 h-4 w-4 shrink-0"></i>
+                        <span>{{ message }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-700">
+            <thead class="bg-slate-50 text-left text-xs font-bold uppercase tracking-wider text-slate-500 dark:bg-slate-900/60 dark:text-slate-400">
+                <tr>
+                    <th class="px-6 py-3.5">User</th>
+                    <th class="px-6 py-3.5">Role</th>
+                    <th class="px-6 py-3.5">Auth Source</th>
+                    <th class="px-6 py-3.5">Status</th>
+                    <th class="px-6 py-3.5">Last Login</th>
+                    <th class="px-6 py-3.5 text-left">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                {% for user in users %}
+                    {% set actions = user_actions.get(user.id, {}) %}
+                    <tr class="transition hover:bg-slate-50 dark:hover:bg-slate-900/50">
+                        <td class="px-6 py-4 align-top">
+                            <div class="flex items-start gap-3">
+                                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 ring-1 ring-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-700">
+                                    <i data-lucide="{{ 'shield-check' if user.is_super_admin else 'shield' if user.role_name == 'admin' else 'user' }}"
+                                       class="h-5 w-5"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <span class="font-semibold text-slate-950 dark:text-white">{{ user.display_label }}</span>
+                                        {% if not user.has_display_name %}
+                                            <span title="No display name is set. Username is used as the visible account label."
+                                                  class="inline-flex items-center gap-1 rounded-full bg-slate-50 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-slate-500 ring-1 ring-slate-200 dark:bg-slate-950/50 dark:text-slate-400 dark:ring-slate-800">
+                                                <i data-lucide="user-round" class="h-3 w-3"></i> Username label
+                                            </span>
+                                        {% endif %}
+                                        {% if user.is_super_admin %}
+                                            <span title="Break-glass administrator with elevated control over admin-level accounts."
+                                                  class="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-purple-700 ring-1 ring-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:ring-purple-900/60">
+                                                <i data-lucide="shield-check" class="h-3 w-3"></i> Super Admin
+                                            </span>
+                                        {% elif user.role_name == 'admin' %}
+                                            <span title="Administrator role without super admin break-glass privileges."
+                                                  class="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-blue-700 ring-1 ring-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:ring-blue-900/60">
+                                                <i data-lucide="shield" class="h-3 w-3"></i> Admin
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="mt-1 truncate text-xs text-slate-500 dark:text-slate-400">{{ user.username }} · {{ user.email }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 align-top">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700 dark:bg-slate-900 dark:text-slate-200">{{ user.role_display_name }}</span>
+                                {% if user.is_super_admin %}
+                                    <span class="rounded-full bg-purple-100 px-2.5 py-1 text-xs font-bold text-purple-700 dark:bg-purple-950/50 dark:text-purple-300">Break-glass</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 align-top">
+                            <span class="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700 ring-1 ring-blue-100 dark:bg-blue-950/50 dark:text-blue-300 dark:ring-blue-900/60">
+                                <i data-lucide="{{ 'database' if user.auth_source == 'database' else 'network' }}"
+                                   class="h-3 w-3"></i>
+                                {{ user.auth_source|upper }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 align-top">
+                            {% if user.deleted_at %}
+                                <span class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-500 dark:bg-slate-900 dark:text-slate-400"><i data-lucide="archive" class="h-3 w-3"></i> Deleted</span>
+                            {% elif user.is_active %}
+                                <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:ring-emerald-900/60"><i data-lucide="check-circle-2" class="h-3 w-3"></i> Active</span>
+                            {% else %}
+                                <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700 ring-1 ring-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:ring-amber-900/60"><i data-lucide="pause-circle" class="h-3 w-3"></i> Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 align-top text-slate-500 dark:text-slate-400">{{ user.last_login_at.strftime("%Y-%m-%d %H:%M") if user.last_login_at else 'Never' }}</td>
+                        <td class="px-6 py-4 align-top">
+                            <div class="flex flex-wrap justify-start gap-2">
+                                {% if actions.get('can_edit') %}
+                                    <a href="{{ url_for('settings.edit_user', user_id=user.id) }}"
+                                       class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-900"><i data-lucide="pencil" class="h-3.5 w-3.5"></i>Edit</a>
+                                {% else %}
+                                    <button type="button"
+                                            title="{{ actions.get('edit_reason', 'Edit is restricted for this account.') }}"
+                                            disabled
+                                            class="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-bold text-slate-400 opacity-60 dark:border-slate-700"><i data-lucide="pencil" class="h-3.5 w-3.5"></i>Edit</button>
+                                {% endif %}
+                                {% if actions.get('can_reset_password') %}
+                                    <a href="{{ url_for('settings.reset_user_password', user_id=user.id) }}"
+                                       class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-900"><i data-lucide="key-round" class="h-3.5 w-3.5"></i>Reset</a>
+                                {% elif user.auth_source == 'database' %}
+                                    <button type="button"
+                                            title="{{ actions.get('reset_reason', 'Password reset is restricted for this account.') }}"
+                                            disabled
+                                            class="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-bold text-slate-400 opacity-60 dark:border-slate-700"><i data-lucide="key-round" class="h-3.5 w-3.5"></i>Reset</button>
+                                {% endif %}
+                                {% if user.deleted_at %}
+                                    {% if actions.get('can_restore') %}
+                                        <form method="post"
+                                              action="{{ url_for('settings.restore_deleted_user', user_id=user.id) }}"
+                                              hx-post="{{ url_for('settings.restore_deleted_user', user_id=user.id) }}"
+                                              hx-target="#users-page-content"
+                                              hx-swap="outerHTML settle:150ms"
+                                              hx-indicator="#users-refresh-indicator"
+                                              hx-include="#users-filter-form">
+                                            {% if csrf_token is defined %}
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            {% endif %}
+                                            <button class="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 px-2.5 py-1.5 text-xs font-bold text-emerald-700 transition hover:bg-emerald-50 dark:border-emerald-900/60 dark:text-emerald-300 dark:hover:bg-emerald-950/30">
+                                                <i data-lucide="rotate-ccw" class="h-3.5 w-3.5"></i>Restore
+                                            </button>
+                                        </form>
+                                    {% else %}
+                                        <button type="button"
+                                                title="{{ actions.get('restore_reason', 'Restore is restricted for this account.') }}"
+                                                disabled
+                                                class="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-emerald-100 px-2.5 py-1.5 text-xs font-bold text-emerald-300 opacity-60 dark:border-emerald-950/60 dark:text-emerald-700"><i data-lucide="rotate-ccw" class="h-3.5 w-3.5"></i>Restore</button>
+                                    {% endif %}
+                                {% elif user.is_active %}
+                                    {% if actions.get('can_deactivate') %}
+                                        <form method="post"
+                                              action="{{ url_for('settings.deactivate_user', user_id=user.id) }}"
+                                              hx-post="{{ url_for('settings.deactivate_user', user_id=user.id) }}"
+                                              hx-target="#users-page-content"
+                                              hx-swap="outerHTML settle:150ms"
+                                              hx-indicator="#users-refresh-indicator"
+                                              hx-include="#users-filter-form">
+                                            {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                            <button class="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 px-2.5 py-1.5 text-xs font-bold text-amber-700 transition hover:bg-amber-50 dark:border-amber-900/60 dark:text-amber-300 dark:hover:bg-amber-950/30"><i data-lucide="pause-circle" class="h-3.5 w-3.5"></i>Deactivate</button>
+                                        </form>
+                                    {% else %}
+                                        <button type="button"
+                                                title="{{ actions.get('deactivate_reason', 'Deactivate is restricted for this account.') }}"
+                                                disabled
+                                                class="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-amber-100 px-2.5 py-1.5 text-xs font-bold text-amber-300 opacity-60 dark:border-amber-950/60 dark:text-amber-700"><i data-lucide="pause-circle" class="h-3.5 w-3.5"></i>Deactivate</button>
+                                    {% endif %}
+                                {% else %}
+                                    {% if actions.get('can_activate') %}
+                                        <form method="post"
+                                              action="{{ url_for('settings.activate_user', user_id=user.id) }}"
+                                              hx-post="{{ url_for('settings.activate_user', user_id=user.id) }}"
+                                              hx-target="#users-page-content"
+                                              hx-swap="outerHTML settle:150ms"
+                                              hx-indicator="#users-refresh-indicator"
+                                              hx-include="#users-filter-form">
+                                            {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                            <button class="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 px-2.5 py-1.5 text-xs font-bold text-emerald-700 transition hover:bg-emerald-50 dark:border-emerald-900/60 dark:text-emerald-300 dark:hover:bg-emerald-950/30"><i data-lucide="play-circle" class="h-3.5 w-3.5"></i>Activate</button>
+                                        </form>
+                                    {% else %}
+                                        <button type="button"
+                                                title="{{ actions.get('activate_reason', 'Activate is restricted for this account.') }}"
+                                                disabled
+                                                class="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-emerald-100 px-2.5 py-1.5 text-xs font-bold text-emerald-300 opacity-60 dark:border-emerald-950/60 dark:text-emerald-700"><i data-lucide="play-circle" class="h-3.5 w-3.5"></i>Activate</button>
+                                    {% endif %}
+                                {% endif %}
+                                {% if not user.deleted_at %}
+                                    {% if actions.get('can_delete') %}
+                                        <button type="button"
+                                                title="Delete user"
+                                                data-delete-user-button
+                                                data-delete-url="{{ url_for('settings.delete_user', user_id=user.id) }}"
+                                                data-delete-name="{{ user.display_label }}"
+                                                data-delete-meta="{{ user.username }} · {{ user.email }} · {{ user.role_display_name }}"
+                                                class="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-2.5 py-1.5 text-xs font-bold text-red-700 transition hover:bg-red-50 dark:border-red-900/60 dark:text-red-300 dark:hover:bg-red-950/30">
+                                            <i data-lucide="trash-2" class="h-3.5 w-3.5"></i>Delete
+                                        </button>
+                                    {% else %}
+                                        <button type="button"
+                                                title="{{ actions.get('delete_reason', 'Delete is restricted for this account.') }}"
+                                                disabled
+                                                class="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-red-100 px-2.5 py-1.5 text-xs font-bold text-red-300 opacity-60 dark:border-red-950/60 dark:text-red-700"><i data-lucide="trash-2" class="h-3.5 w-3.5"></i>Delete</button>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-14 text-center">
+                            <div class="mx-auto flex max-w-sm flex-col items-center">
+                                <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 dark:bg-slate-900 dark:text-slate-500">
+                                    <i data-lucide="users" class="h-6 w-6"></i>
+                                </div>
+                                <p class="mt-3 font-semibold text-slate-700 dark:text-slate-200">No users found</p>
+                                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Adjust the filters or add a new local user.</p>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="flex flex-col gap-3 border-t border-slate-200 bg-white px-6 py-4 text-sm sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:bg-slate-800">
+        <form id="users-pagination-form"
+              method="get"
+              action="{{ url_for('settings.users') }}"
+              class="flex flex-wrap items-center gap-3 text-slate-600 dark:text-slate-300"
+              hx-get="{{ url_for('settings.users') }}"
+              hx-trigger="change from:select[name='per_page']"
+              hx-target="#users-page-content"
+              hx-swap="outerHTML settle:150ms"
+              hx-push-url="true"
+              hx-indicator="#users-refresh-indicator">
+            <input type="hidden" name="page" value="1">
+            <input type="hidden" name="search" value="{{ filters.search }}">
+            <input type="hidden" name="status" value="{{ filters.status }}">
+            <input type="hidden" name="auth_source" value="{{ filters.auth_source }}">
+            <input type="hidden" name="role_id" value="{{ filters.role_id or 'all' }}">
+            <span class="font-medium">Viewing {{ pagination.start_item }} - {{ pagination.end_item }} of {{ pagination.total_items }} matching user accounts</span>
+            <select name="per_page"
+                    aria-label="Rows per page"
+                    class="h-9 rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:focus:ring-blue-900/30">
+                {% for option in per_page_options %}
+                    <option value="{{ option }}"
+                            {% if filters.per_page == option %}selected{% endif %}>{{ option }}</option>
+                {% endfor %}
+            </select>
+        </form>
+        <div class="flex items-center gap-2">
+            <a href="{{ url_for('settings.users', page=pagination.prev_page, per_page=filters.per_page, search=filters.search, status=filters.status, auth_source=filters.auth_source, role_id=filters.role_id or 'all') }}"
+               hx-get="{{ url_for('settings.users', page=pagination.prev_page, per_page=filters.per_page, search=filters.search, status=filters.status, auth_source=filters.auth_source, role_id=filters.role_id or 'all') }}"
+               hx-target="#users-page-content"
+               hx-swap="outerHTML settle:150ms"
+               hx-push-url="true"
+               hx-indicator="#users-refresh-indicator"
+               class="inline-flex h-9 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 {{ 'pointer-events-none opacity-50' if not pagination.has_prev else '' }} dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800">
+                <i data-lucide="chevron-left" class="h-4 w-4"></i>
+                Previous
+            </a>
+            <span class="inline-flex h-9 items-center rounded-xl bg-blue-50 px-3 text-xs font-extrabold text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">Page {{ pagination.page }} of {{ pagination.total_pages }}</span>
+            <a href="{{ url_for('settings.users', page=pagination.next_page, per_page=filters.per_page, search=filters.search, status=filters.status, auth_source=filters.auth_source, role_id=filters.role_id or 'all') }}"
+               hx-get="{{ url_for('settings.users', page=pagination.next_page, per_page=filters.per_page, search=filters.search, status=filters.status, auth_source=filters.auth_source, role_id=filters.role_id or 'all') }}"
+               hx-target="#users-page-content"
+               hx-swap="outerHTML settle:150ms"
+               hx-push-url="true"
+               hx-indicator="#users-refresh-indicator"
+               class="inline-flex h-9 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 {{ 'pointer-events-none opacity-50' if not pagination.has_next else '' }} dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800">
+                Next
+                <i data-lucide="chevron-right" class="h-4 w-4"></i>
+            </a>
+        </div>
+    </div>
+</div>

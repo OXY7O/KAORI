@@ -1,0 +1,9 @@
+{% extends "layouts/app.html" %}
+{% block title %}Pod Inventory{% endblock title %}
+{% block dashboard_content %}
+    <div class="space-y-6">
+        {% include "inventory/pods/partials/_hero.html" %}
+        {% include "inventory/pods/partials/_summary_cards.html" %}
+        {% include "inventory/pods/partials/_table_card.html" %}
+    </div>
+{% endblock dashboard_content %}

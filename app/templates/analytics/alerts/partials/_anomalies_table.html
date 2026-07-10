@@ -1,0 +1,43 @@
+<div id="anomalies-table-container">
+<div class="overflow-x-auto">
+    <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
+        <thead class="bg-slate-50 dark:bg-slate-800/60">
+            <tr>
+                <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Anomaly</th>
+                <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Severity</th>
+                <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Namespace</th>
+                <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Signal</th>
+                <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Details</th>
+            </tr>
+        </thead>
+        <tbody x-data="{ openAnomaly: null }"
+               class="divide-y divide-slate-200 bg-white dark:divide-slate-800 dark:bg-slate-900">
+            {% if anomalies %}
+                {% for anomaly in anomalies %}
+                    {% set row_key = 'anomaly-' ~ loop.index0 %}
+                    {% include "analytics/alerts/partials/_anomalies_table_row.html" %}
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="5" class="px-6 py-12 text-center">
+                        <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 dark:bg-slate-800">
+                            <i data-lucide="radar" class="h-6 w-6"></i>
+                        </div>
+                        <h3 class="mt-3 text-sm font-semibold text-slate-900 dark:text-white">No anomalies detected</h3>
+                        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">No metric deviation candidate matched the current analysis window.</p>
+                    </td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+{% set pagination = anomalies_pagination %}
+{% set endpoint_name = "analytics.alerts_anomalies_table" %}
+{% set target_id = "#anomalies-table-container" %}
+{% set row_label = "anomalies" %}
+{% set page_size_name = "anomalies_per_page" %}
+{% set sibling_page_size_name = "alerts_per_page" %}
+{% set sibling_page_size_value = selected_alerts_per_page %}
+{% include "analytics/alerts/partials/_pagination.html" %}
+
+</div>

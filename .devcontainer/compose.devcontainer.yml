@@ -1,0 +1,37 @@
+services:
+  workspace:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    user: root
+    command: >-
+      sh -c "mkdir -p /workspace/kaori/instance /workspace/kaori/node_modules
+      && chown -R vscode:vscode /workspace/kaori/instance /workspace/kaori/node_modules
+      && exec sleep infinity"
+    init: true
+    env_file:
+      - .env
+    environment:
+      APP_ENV: development
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-kaori}
+      REDIS_URL: redis://redis:6379/0
+      RATELIMIT_STORAGE_URI: redis://redis:6379/2
+      POSTGRES_HOST: db
+      POSTGRES_INTERNAL_PORT: 5432
+      WAIT_FOR_DB: "false"
+    volumes:
+      - .:/workspace/kaori
+      - kaori_instance_data:/workspace/kaori/instance
+      - kaori_node_modules:/workspace/kaori/node_modules
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "5000:5000"
+
+volumes:
+  kaori_instance_data:
+  kaori_node_modules:

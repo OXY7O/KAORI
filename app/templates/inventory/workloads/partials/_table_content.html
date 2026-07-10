@@ -1,0 +1,158 @@
+<div class="overflow-x-auto">
+    <table class="min-w-full text-slate-900 dark:text-slate-100">
+        <thead>
+            <tr class="border-b border-slate-200 bg-slate-50 text-center text-xs tracking-wide text-slate-600 uppercase dark:border-slate-700 dark:bg-slate-700/40 dark:text-slate-300">
+                <th class="px-6 py-4 text-left">Cluster</th>
+                <th class="px-6 py-4 text-left">Namespace</th>
+                <th class="px-6 py-4 text-left">Name</th>
+                <th class="px-6 py-4 text-center">Type</th>
+                <th class="px-6 py-4 text-center">Ready</th>
+                <th class="px-6 py-4 text-center">Status</th>
+                <th class="px-6 py-4 text-center">Age</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for workload in inventory.workloads %}
+                <tr class="border-t border-slate-200 text-sm transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-700/30">
+                    <td class="px-6 py-4">
+                        <div class="flex max-w-[240px] items-center gap-2">
+                            <span class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+                                <i data-lucide="server" class="h-3.5 w-3.5"></i>
+                            </span>
+                            <span class="truncate font-medium text-slate-900 dark:text-white"
+                                  title="{{ workload.cluster_name }}">{{ workload.cluster_name }}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex max-w-[240px] items-center gap-2">
+                            <span class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300">
+                                <i data-lucide="folder-tree" class="h-3.5 w-3.5"></i>
+                            </span>
+                            <span class="truncate font-medium text-slate-700 dark:text-slate-300"
+                                  title="{{ workload.namespace }}">{{ workload.namespace }}</span>
+                        </div>
+                    </td>
+                    <td class="max-w-[320px] px-6 py-4">
+                        <div class="flex max-w-[320px] items-center gap-2">
+                            <span class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-orange-100 text-orange-700 dark:bg-orange-500/10 dark:text-orange-300">
+                                <i data-lucide="box" class="h-3.5 w-3.5"></i>
+                            </span>
+                            <span class="truncate font-semibold text-slate-800 dark:text-slate-100"
+                                  title="{{ workload.name }}">{{ workload.name }}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        {% if workload.type == 'Deployment' %}
+                            <span class="inline-flex rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700 dark:bg-green-500/10 dark:text-green-300">Deployment</span>
+                        {% elif workload.type == 'StatefulSet' %}
+                            <span class="inline-flex rounded-full bg-purple-100 px-3 py-1 text-xs font-medium text-purple-700 dark:bg-purple-500/10 dark:text-purple-300">StatefulSet</span>
+                        {% elif workload.type == 'DaemonSet' %}
+                            <span class="inline-flex rounded-full bg-orange-100 px-3 py-1 text-xs font-medium text-orange-700 dark:bg-orange-500/10 dark:text-orange-300">DaemonSet</span>
+                        {% else %}
+                            <span class="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:bg-slate-700 dark:text-slate-300">{{ workload.type }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-center text-slate-600 dark:text-slate-300">{{ workload.ready }}</td>
+                    <td class="px-6 py-4 text-center">
+                        {% if workload.status == 'Running' %}
+                            <span class="inline-flex rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700 dark:bg-green-500/10 dark:text-green-300">Running</span>
+                        {% elif workload.status == 'Progressing' %}
+                            <span class="inline-flex rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700 dark:bg-blue-500/10 dark:text-blue-300">Progressing</span>
+                        {% elif workload.status == 'Failed' %}
+                            <span class="inline-flex rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-700 dark:bg-red-500/10 dark:text-red-300">Failed</span>
+                        {% else %}
+                            <span class="inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">{{ workload.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-center text-slate-500 dark:text-slate-400">{{ workload.age }}</td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="7"
+                        class="py-16 text-center text-slate-400 dark:text-slate-500">
+                        <div class="flex flex-col items-center gap-3">
+                            <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 dark:bg-slate-700 dark:text-slate-500">
+                                <i data-lucide="boxes" class="h-6 w-6"></i>
+                            </div>
+                            <div>
+                                <div class="font-medium text-slate-700 dark:text-slate-300">No workload inventory found</div>
+                                <div class="text-sm text-slate-500 dark:text-slate-400">Adjust the filter or sync cluster inventory to collect Kubernetes workload data.</div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<div class="flex flex-col gap-4 border-t border-slate-200 bg-slate-50 px-6 py-4 text-sm text-slate-500 lg:flex-row lg:items-center lg:justify-between dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+        <div>
+            Showing
+            <span class="font-semibold text-slate-700 dark:text-slate-200">{{ pagination.start_item }}</span>
+            -
+            <span class="font-semibold text-slate-700 dark:text-slate-200">{{ pagination.end_item }}</span>
+            of
+            <span class="font-semibold text-slate-700 dark:text-slate-200">{{ pagination.total_items }}</span>
+            {{ 'workload' if pagination.total_items == 1 else 'workloads' }}
+        </div>
+        <form hx-get="{{ url_for('inventory.workloads') }}"
+              hx-target="#workloads-table-content"
+              hx-swap="innerHTML"
+              hx-indicator="#workloads-table-loading"
+              class="flex items-center gap-2">
+            <input type="hidden" name="page" value="1">
+            <input type="hidden" name="cluster_id" value="{{ selected_cluster_id }}">
+            <input type="hidden" name="type" value="{{ selected_type }}">
+            <input type="hidden" name="status" value="{{ selected_status }}">
+            <input type="hidden" name="search" value="{{ search }}">
+            <select name="per_page"
+                    onchange="this.form.requestSubmit()"
+                    class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
+                {% for option in pagination.allowed_per_page %}
+                    <option value="{{ option }}"
+                            {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+        {% if pagination.has_prev %}
+            {% set prev_url = url_for('inventory.workloads', cluster_id=selected_cluster_id, type=selected_type, status=selected_status, search=search, page=pagination.prev_page, per_page=pagination.per_page) %}
+            <a href="{{ prev_url }}"
+               hx-get="{{ prev_url }}"
+               hx-target="#workloads-table-content"
+               hx-swap="innerHTML"
+               hx-indicator="#workloads-table-loading"
+               class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
+                <i data-lucide="chevron-left" class="h-4 w-4"></i>
+                Previous
+            </a>
+        {% else %}
+            <span class="inline-flex cursor-not-allowed items-center gap-2 rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-sm font-medium text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-600">
+                <i data-lucide="chevron-left" class="h-4 w-4"></i>
+                Previous
+            </span>
+        {% endif %}
+        <span class="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+            Page {{ pagination.page }} / {{ pagination.total_pages }}
+        </span>
+        {% if pagination.has_next %}
+            {% set next_url = url_for('inventory.workloads', cluster_id=selected_cluster_id, type=selected_type, status=selected_status, search=search, page=pagination.next_page, per_page=pagination.per_page) %}
+            <a href="{{ next_url }}"
+               hx-get="{{ next_url }}"
+               hx-target="#workloads-table-content"
+               hx-swap="innerHTML"
+               hx-indicator="#workloads-table-loading"
+               class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
+                Next
+                <i data-lucide="chevron-right" class="h-4 w-4"></i>
+            </a>
+        {% else %}
+            <span class="inline-flex cursor-not-allowed items-center gap-2 rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-sm font-medium text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-600">
+                Next
+                <i data-lucide="chevron-right" class="h-4 w-4"></i>
+            </span>
+        {% endif %}
+    </div>
+</div>

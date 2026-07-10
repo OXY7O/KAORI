@@ -1,0 +1,158 @@
+<div id="notification-center"
+     class="relative"
+     {% if notification_oob|default(false) %}hx-swap-oob="outerHTML:#notification-center"{% endif %}>
+    <button @click="notificationOpen = !notificationOpen; quickOpen = false; userOpen = false"
+            type="button"
+            class="relative inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-blue-500/30 dark:hover:bg-blue-500/10 dark:hover:text-blue-300"
+            aria-label="Open notification center"
+            :aria-expanded="notificationOpen.toString()"
+            title="Notifications">
+        <i data-lucide="bell" class="h-5 w-5"></i>
+        {% if navigation_unread_count|default(0) > 0 %}
+            <span class="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-blue-600 px-1 text-[9px] font-bold text-white ring-2 ring-white dark:ring-slate-900">
+                {{ '9+' if navigation_unread_count > 9 else navigation_unread_count }}
+            </span>
+        {% endif %}
+    </button>
+
+    <div x-cloak
+         x-show="notificationOpen"
+         @click.outside="notificationOpen = false"
+         x-transition.origin.top.right
+         style="width:min(26rem, calc(100vw - 2rem));"
+         class="absolute right-0 mt-3 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/15 dark:border-slate-700 dark:bg-slate-900 dark:shadow-slate-950/50">
+        <div class="border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+            <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                    <div class="flex items-center gap-2">
+                        <p class="text-sm font-bold text-slate-950 dark:text-white">Notifications</p>
+                        {% if navigation_unread_count|default(0) > 0 %}
+                            <span class="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700 dark:bg-blue-500/10 dark:text-blue-300">
+                                {{ navigation_unread_count }} unread
+                            </span>
+                        {% endif %}
+                    </div>
+                    <p class="mt-1 text-[11px] leading-4 text-slate-500 dark:text-slate-400">
+                        Operational activity and completed actions for your account.
+                    </p>
+                </div>
+
+                {% if navigation_unread_count|default(0) > 0 %}
+                    <form method="POST"
+                          action="{{ url_for('notifications.mark_all_read') }}">
+                        {% if csrf_token is defined %}
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        {% endif %}
+                        <button type="submit"
+                                hx-post="{{ url_for('notifications.mark_all_read') }}"
+                                hx-target="#notification-center"
+                                hx-swap="outerHTML"
+                                class="whitespace-nowrap rounded-xl px-2.5 py-1.5 text-[10px] font-bold text-blue-600 transition hover:bg-blue-50 dark:text-blue-300 dark:hover:bg-blue-500/10">
+                            Mark all read
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="max-h-[28rem] overflow-y-auto p-2">
+            {% if navigation_notifications %}
+                <div class="space-y-1.5">
+                    {% for notification in navigation_notifications %}
+                        {% set is_success = notification.status == 'success' %}
+                        {% set is_warning = notification.status == 'warning' %}
+                        {% set is_error = notification.status == 'error' %}
+                        <article class="rounded-2xl border p-3 transition {% if not notification.is_read %}border-blue-100 bg-blue-50/50 dark:border-blue-500/20 dark:bg-blue-500/5{% else %}border-transparent bg-slate-50/70 dark:bg-slate-800/50{% endif %}">
+                            <div class="flex items-start gap-3">
+                                <span class="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl {% if is_success %}bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300{% elif is_warning %}bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-300{% elif is_error %}bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-300{% else %}bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300{% endif %}">
+                                    {% if is_success %}
+                                        <i data-lucide="check-circle-2" class="h-4 w-4"></i>
+                                    {% elif is_warning %}
+                                        <i data-lucide="alert-triangle" class="h-4 w-4"></i>
+                                    {% elif is_error %}
+                                        <i data-lucide="x-circle" class="h-4 w-4"></i>
+                                    {% else %}
+                                        <i data-lucide="info" class="h-4 w-4"></i>
+                                    {% endif %}
+                                </span>
+
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex items-start justify-between gap-3">
+                                        <div class="min-w-0">
+                                            <div class="flex items-center gap-2">
+                                                <p class="truncate text-xs font-bold text-slate-900 dark:text-white">{{ notification.title }}</p>
+                                                {% if not notification.is_read %}
+                                                    <span class="h-2 w-2 flex-shrink-0 rounded-full bg-blue-500"></span>
+                                                {% endif %}
+                                            </div>
+                                            <p class="mt-1 text-[11px] leading-4 text-slate-600 dark:text-slate-300">
+                                                {{ notification.message }}
+                                            </p>
+                                        </div>
+                                        <span class="whitespace-nowrap text-[10px] font-medium text-slate-400">
+                                            {{ notification.created_label }}
+                                        </span>
+                                    </div>
+
+                                    {% if notification.synced_count is not none and notification.total_count is not none %}
+                                        <div class="mt-2 flex flex-wrap gap-1.5">
+                                            <span class="rounded-lg bg-white px-2 py-1 text-[10px] font-semibold text-slate-600 shadow-sm dark:bg-slate-900 dark:text-slate-300">
+                                                {{ notification.synced_count }}/{{ notification.total_count }} synced
+                                            </span>
+                                            {% if notification.failed_count %}
+                                                <span class="rounded-lg bg-red-50 px-2 py-1 text-[10px] font-semibold text-red-600 dark:bg-red-500/10 dark:text-red-300">
+                                                    {{ notification.failed_count }} failed
+                                                </span>
+                                            {% endif %}
+                                            {% if notification.duration_seconds is not none %}
+                                                <span class="rounded-lg bg-white px-2 py-1 text-[10px] font-semibold text-slate-500 shadow-sm dark:bg-slate-900 dark:text-slate-400">
+                                                    {{ notification.duration_seconds }}s
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+
+                                    <div class="mt-2 flex items-center gap-2">
+                                        {% if notification.action_url %}
+                                            <a href="{{ notification.action_url }}"
+                                               class="inline-flex items-center gap-1 text-[10px] font-bold text-blue-600 hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-200">
+                                                View details
+                                                <i data-lucide="arrow-up-right" class="h-3 w-3"></i>
+                                            </a>
+                                        {% endif %}
+
+                                        {% if not notification.is_read %}
+                                            <form method="POST"
+                                                  action="{{ url_for('notifications.mark_read', notification_id=notification.id) }}">
+                                                {% if csrf_token is defined %}
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                {% endif %}
+                                                <button type="submit"
+                                                        hx-post="{{ url_for('notifications.mark_read', notification_id=notification.id) }}"
+                                                        hx-target="#notification-center"
+                                                        hx-swap="outerHTML"
+                                                        class="text-[10px] font-semibold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
+                                                    Mark read
+                                                </button>
+                                            </form>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="flex min-h-52 flex-col items-center justify-center px-6 text-center">
+                    <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500">
+                        <i data-lucide="bell-off" class="h-5 w-5"></i>
+                    </span>
+                    <p class="mt-3 text-xs font-bold text-slate-800 dark:text-slate-100">No notifications yet</p>
+                    <p class="mt-1 max-w-64 text-[11px] leading-5 text-slate-500 dark:text-slate-400">
+                        Completed sync actions and other operational activity will appear here.
+                    </p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>

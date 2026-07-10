@@ -1,0 +1,2 @@
+class OverviewQueries:
+    pass

@@ -1,0 +1,280 @@
+from flask import Blueprint, redirect, render_template, url_for
+from flask.typing import ResponseReturnValue
+
+from app.rbac.decorators import permission_required
+from app.reports.export.routes import download_report_pdf, generate_report_pdf
+from app.reports.generate.routes import generate_report
+from app.reports.generated.routes import (
+    archive_generated_report,
+    bulk_archive_generated_reports,
+    generated_report_detail,
+    generated_reports,
+    restore_generated_report,
+)
+from app.reports.overview.service import get_reports_overview_payload
+from app.reports.report_templates.routes import (
+    create_report_template,
+    delete_report_template,
+    duplicate_custom_report_template,
+    duplicate_system_report_template,
+    report_templates,
+    update_report_template,
+)
+from app.reports.schedules.routes import (
+    create_schedule,
+    delete_schedule,
+    run_schedule,
+    schedules,
+    toggle_schedule,
+    update_schedule,
+)
+from app.reports.storage.routes import storage
+
+reports_bp = Blueprint(
+    'reports',
+    __name__,
+    url_prefix='/reports',
+)
+
+
+@reports_bp.route('/')
+@permission_required('reports.view')
+def overview() -> ResponseReturnValue:
+    payload = get_reports_overview_payload()
+
+    return render_template(
+        'reports/overview/index.html',
+        payload=payload,
+    )
+
+
+@reports_bp.route('/overview')
+@permission_required('reports.view')
+def overview_alias() -> ResponseReturnValue:
+    return redirect(
+        url_for(
+            'reports.overview',
+        )
+    )
+
+
+@reports_bp.route('/history')
+@permission_required('reports.view')
+def generated_reports_alias() -> ResponseReturnValue:
+    return redirect(
+        url_for(
+            'reports.generated_reports',
+        )
+    )
+
+
+@reports_bp.route('/report-templates')
+@permission_required('reports.manage_templates')
+def report_templates_alias() -> ResponseReturnValue:
+    return redirect(
+        url_for(
+            'reports.report_templates',
+        )
+    )
+
+
+@reports_bp.route('/artifacts')
+@permission_required('reports.manage_storage')
+def storage_alias() -> ResponseReturnValue:
+    return redirect(
+        url_for(
+            'reports.storage',
+        )
+    )
+
+
+reports_bp.add_url_rule(
+    '/generated',
+    endpoint='generated_reports',
+    view_func=generated_reports,
+    methods=[
+        'GET',
+    ],
+)
+
+reports_bp.add_url_rule(
+    '/generated/<int:report_id>',
+    endpoint='generated_report_detail',
+    view_func=generated_report_detail,
+    methods=[
+        'GET',
+    ],
+)
+
+reports_bp.add_url_rule(
+    '/generated/<int:report_id>/generate-pdf',
+    endpoint='generate_report_pdf',
+    view_func=generate_report_pdf,
+    methods=[
+        'POST',
+    ],
+)
+
+reports_bp.add_url_rule(
+    '/generated/<int:report_id>/download',
+    endpoint='download_report_pdf',
+    view_func=download_report_pdf,
+    methods=[
+        'GET',
+    ],
+)
+
+
+reports_bp.add_url_rule(
+    '/generated/bulk-archive',
+    endpoint='bulk_archive_generated_reports',
+    view_func=bulk_archive_generated_reports,
+    methods=[
+        'POST',
+    ],
+)
+
+reports_bp.add_url_rule(
+    '/generated/<int:report_id>/archive',
+    endpoint='archive_generated_report',
+    view_func=archive_generated_report,
+    methods=[
+        'POST',
+    ],
+)
+
+reports_bp.add_url_rule(
+    '/generated/<int:report_id>/restore',
+    endpoint='restore_generated_report',
+    view_func=restore_generated_report,
+    methods=[
+        'POST',
+    ],
+)
+
+reports_bp.add_url_rule(
+    '/generate',
+    endpoint='generate_report',
+    view_func=generate_report,
+    methods=[
+        'GET',
+        'POST',
+    ],
+)
+
+reports_bp.add_url_rule(
+    '/templates',
+    endpoint='report_templates',
+    view_func=report_templates,
+    methods=[
+        'GET',
+    ],
+)
+
+reports_bp.add_url_rule(
+    '/templates/create',
+    endpoint='create_report_template',
+    view_func=create_report_template,
+    methods=[
+        'POST',
+    ],
+)
+
+reports_bp.add_url_rule(
+    '/templates/<int:template_id>/update',
+    endpoint='update_report_template',
+    view_func=update_report_template,
+    methods=[
+        'POST',
+    ],
+)
+
+reports_bp.add_url_rule(
+    '/templates/<int:template_id>/delete',
+    endpoint='delete_report_template',
+    view_func=delete_report_template,
+    methods=[
+        'POST',
+    ],
+)
+
+reports_bp.add_url_rule(
+    '/templates/system/<string:template_id>/duplicate',
+    endpoint='duplicate_system_template',
+    view_func=duplicate_system_report_template,
+    methods=[
+        'POST',
+    ],
+)
+
+reports_bp.add_url_rule(
+    '/templates/custom/<int:template_id>/duplicate',
+    endpoint='duplicate_custom_template',
+    view_func=duplicate_custom_report_template,
+    methods=[
+        'POST',
+    ],
+)
+
+reports_bp.add_url_rule(
+    '/schedules',
+    endpoint='schedules',
+    view_func=schedules,
+    methods=[
+        'GET',
+    ],
+)
+
+reports_bp.add_url_rule(
+    '/schedules/create',
+    endpoint='create_schedule',
+    view_func=create_schedule,
+    methods=[
+        'POST',
+    ],
+)
+
+reports_bp.add_url_rule(
+    '/schedules/<int:schedule_id>/update',
+    endpoint='update_schedule',
+    view_func=update_schedule,
+    methods=[
+        'POST',
+    ],
+)
+
+reports_bp.add_url_rule(
+    '/schedules/<int:schedule_id>/toggle',
+    endpoint='toggle_schedule',
+    view_func=toggle_schedule,
+    methods=[
+        'POST',
+    ],
+)
+
+reports_bp.add_url_rule(
+    '/schedules/<int:schedule_id>/delete',
+    endpoint='delete_schedule',
+    view_func=delete_schedule,
+    methods=[
+        'POST',
+    ],
+)
+
+reports_bp.add_url_rule(
+    '/schedules/<int:schedule_id>/run-now',
+    endpoint='run_schedule',
+    view_func=run_schedule,
+    methods=[
+        'POST',
+    ],
+)
+
+reports_bp.add_url_rule(
+    '/storage',
+    endpoint='storage',
+    view_func=storage,
+    methods=[
+        'GET',
+    ],
+)

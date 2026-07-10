@@ -1,0 +1,42 @@
+<section class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 p-6 text-white shadow-lg shadow-blue-500/20">
+    <div class="absolute inset-y-0 right-0 hidden w-1/3 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.22),transparent_55%)] lg:block">
+    </div>
+    <div class="absolute -top-14 right-16 h-36 w-36 rounded-full bg-white/10 blur-3xl"></div>
+    <div class="absolute -bottom-16 right-40 h-44 w-44 rounded-full bg-cyan-300/20 blur-3xl"></div>
+    <div class="relative mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div class="flex items-start gap-3">
+            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-white/15 text-white backdrop-blur">
+                <i data-lucide="server-cog" class="h-5 w-5"></i>
+            </div>
+            <div>
+                <h2 class="text-lg font-semibold text-white">Worker Capacity Snapshot</h2>
+                <p class="mt-1 text-sm text-blue-50/85">Worker-only allocatable capacity and remaining headroom.</p>
+            </div>
+        </div>
+        <a href="/analytics/capacity?cluster_id={{ payload.selected_cluster_id }}&time_range={{ payload.selected_time_range }}"
+           class="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm transition hover:bg-blue-50">
+            View capacity
+            <i data-lucide="arrow-right" class="h-4 w-4"></i>
+        </a>
+    </div>
+    <div class="relative grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {% for item in [payload.capacity_snapshot.cpu_headroom, payload.capacity_snapshot.memory_headroom, payload.capacity_snapshot.pod_capacity_remaining, payload.capacity_snapshot.recommendations] %}
+            <a href="{{ item.href }}?cluster_id={{ payload.selected_cluster_id }}&time_range={{ payload.selected_time_range }}"
+               class="group rounded-2xl border border-white/15 bg-white/10 p-5 shadow-sm backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/15 hover:shadow-md">
+                <div class="flex items-start gap-4">
+                    <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/15 bg-white/15 text-white">
+                        <i data-lucide="{{ item.icon }}" class="h-5 w-5"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-sm font-semibold text-blue-50/85">{{ item.label }}</p>
+                        <div class="mt-2 flex items-baseline gap-2">
+                            <p class="text-3xl font-bold tracking-tight text-white">{{ item.value }}</p>
+                            <p class="text-sm font-semibold text-blue-50/75">{{ item.unit }}</p>
+                        </div>
+                        <p class="mt-1 text-xs leading-5 text-blue-50/75">{{ item.description }}</p>
+                    </div>
+                </div>
+            </a>
+        {% endfor %}
+    </div>
+</section>

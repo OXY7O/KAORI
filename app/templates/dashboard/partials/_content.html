@@ -1,0 +1,107 @@
+{% set dashboard_cluster_query = 'cluster_id=' ~ (dashboard.selected_cluster_id or '') ~ '&cluster_health_page=' ~ dashboard.cluster_health_pagination.page %}
+<div class="space-y-6">
+    {% include "dashboard/partials/_hero.html" %}
+
+    <div id="dashboard-kpi-cards"
+         hx-get="{{ url_for('dashboard.section', section='kpi_cards') }}?{{ dashboard_cluster_query }}"
+         hx-trigger="load"
+         hx-target="this"
+         hx-swap="outerHTML"
+         hx-indicator="#dashboard-loading-bar">
+        {% with title="Dashboard KPIs", description="Preparing inventory KPIs and selected-cluster live signal cards.", icon="layout-dashboard" %}
+            {% include "dashboard/partials/_section_loading.html" %}
+        {% endwith %}
+    </div>
+
+    <div id="dashboard-cluster-health-section"
+         hx-get="{{ url_for('dashboard.section', section='cluster_health') }}?{{ dashboard_cluster_query }}"
+         hx-trigger="load"
+         hx-target="this"
+         hx-swap="outerHTML"
+         hx-indicator="#dashboard-loading-bar">
+        {% with title="Cluster Health Summary", description="Preparing per-cluster live health, metrics, and alert source signals.", icon="heart-pulse" %}
+            {% include "dashboard/partials/_section_loading.html" %}
+        {% endwith %}
+    </div>
+
+    <div class="grid items-stretch gap-6 xl:grid-cols-12">
+        <div class="xl:col-span-6">
+            <div id="dashboard-capacity-snapshot"
+                 hx-get="{{ url_for('dashboard.section', section='capacity_snapshot') }}?{{ dashboard_cluster_query }}"
+                 hx-trigger="load"
+                 hx-target="this"
+                 hx-swap="outerHTML"
+                 hx-indicator="#dashboard-loading-bar">
+                {% with title="Capacity Snapshot", description="Preparing worker-node capacity and headroom summary.", icon="gauge" %}
+                    {% include "dashboard/partials/_section_loading.html" %}
+                {% endwith %}
+            </div>
+        </div>
+        <div class="xl:col-span-6">
+            <div id="dashboard-alerts-summary"
+                 hx-get="{{ url_for('dashboard.section', section='alerts_summary') }}?{{ dashboard_cluster_query }}"
+                 hx-trigger="load"
+                 hx-target="this"
+                 hx-swap="outerHTML"
+                 hx-indicator="#dashboard-loading-bar">
+                {% with title="Alerts Summary", description="Preparing AlertManager and Prometheus alert visibility.", icon="bell-ring" %}
+                    {% include "dashboard/partials/_section_loading.html" %}
+                {% endwith %}
+            </div>
+        </div>
+    </div>
+
+    <div id="dashboard-top-consumers"
+         hx-get="{{ url_for('dashboard.section', section='top_consumers') }}?{{ dashboard_cluster_query }}"
+         hx-trigger="load"
+         hx-target="this"
+         hx-swap="outerHTML"
+         hx-indicator="#dashboard-loading-bar">
+        {% with title="Top Consumers", description="Preparing top CPU and memory consumer snapshot.", icon="bar-chart-3" %}
+            {% include "dashboard/partials/_section_loading.html" %}
+        {% endwith %}
+    </div>
+
+    <div class="grid items-stretch gap-6 xl:grid-cols-12">
+        <div class="xl:col-span-6">
+            <div id="dashboard-forecast-risk"
+                 hx-get="{{ url_for('dashboard.section', section='forecast_risk') }}?{{ dashboard_cluster_query }}"
+                 hx-trigger="load"
+                 hx-target="this"
+                 hx-swap="outerHTML"
+                 hx-indicator="#dashboard-loading-bar">
+                {% with title="Forecast & Growth Risk", description="Preparing compact capacity growth risk snapshot.", icon="trending-up" %}
+                    {% include "dashboard/partials/_section_loading.html" %}
+                {% endwith %}
+            </div>
+        </div>
+        <div class="xl:col-span-6">{% include "dashboard/partials/_reporting_summary.html" %}</div>
+    </div>
+
+    <div class="grid items-stretch gap-6 xl:grid-cols-12">
+        <div class="xl:col-span-6">{% include "dashboard/partials/_inventory_summary.html" %}</div>
+        <div class="xl:col-span-6">
+            <div id="dashboard-data-freshness"
+                 hx-get="{{ url_for('dashboard.section', section='data_freshness') }}?{{ dashboard_cluster_query }}"
+                 hx-trigger="load"
+                 hx-target="this"
+                 hx-swap="outerHTML"
+                 hx-indicator="#dashboard-loading-bar">
+                {% with title="Data Freshness", description="Preparing source readiness and live-data freshness signals.", icon="refresh-cw" %}
+                    {% include "dashboard/partials/_section_loading.html" %}
+                {% endwith %}
+            </div>
+        </div>
+    </div>
+
+    <div id="dashboard-recommended-actions"
+         hx-get="{{ url_for('dashboard.section', section='recommended_actions') }}?{{ dashboard_cluster_query }}"
+         hx-trigger="load"
+         hx-target="this"
+         hx-swap="outerHTML"
+         hx-indicator="#dashboard-loading-bar">
+        {% with title="Recommended Actions", description="Preparing active catalog-backed findings from Intelligence recommendations.", icon="list-checks" %}
+            {% include "dashboard/partials/_section_loading.html" %}
+        {% endwith %}
+    </div>
+</div>

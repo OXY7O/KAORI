@@ -1,0 +1,9 @@
+{% extends "layouts/app.html" %}
+{% block title %}Inventory Overview{% endblock title %}
+{% block dashboard_content %}
+    <div class="space-y-6">
+        {% include "inventory/overview/partials/_hero.html" %}
+        {% include "inventory/overview/partials/_kpi_cards.html" %}
+        {% include "inventory/overview/partials/_resources_by_cluster.html" %}
+    </div>
+{% endblock dashboard_content %}

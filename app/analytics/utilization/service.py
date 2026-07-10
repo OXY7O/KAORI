@@ -1,0 +1,1233 @@
+from __future__ import annotations
+
+from datetime import UTC, datetime, timedelta
+from time import perf_counter
+from typing import Any
+
+from app.analytics.utilization import queries
+from app.models import Cluster
+from app.prometheus.service import PrometheusService
+
+
+def get_utilization_clusters() -> list[Cluster]:
+    return Cluster.query.order_by(
+        Cluster.name,
+    ).all()
+
+
+def get_selected_cluster(
+    cluster_id: str | None,
+) -> Cluster | None:
+    if cluster_id:
+        cluster = Cluster.query.filter_by(
+            id=cluster_id,
+        ).first()
+
+        if cluster:
+            return cluster
+
+    return Cluster.query.order_by(
+        Cluster.name,
+    ).first()
+
+
+class UtilizationService:
+    def __init__(
+        self,
+        prometheus: PrometheusService,
+    ) -> None:
+        self.prometheus = prometheus
+
+    @staticmethod
+    def _extract_scalar(
+        response: dict[str, Any],
+    ) -> float:
+        try:
+            result = response['data']['result']
+
+            if not result:
+                return 0.0
+
+            return float(result[0]['value'][1])
+
+        except (
+            KeyError,
+            IndexError,
+            TypeError,
+            ValueError,
+        ):
+            return 0.0
+
+    def get_prometheus_status(
+        self,
+    ) -> dict[str, bool | int | str]:
+        start = perf_counter()
+
+        self.prometheus.instant_query(
+            queries.PROMETHEUS_HEALTH,
+        )
+
+        response_time_ms = int((perf_counter() - start) * 1000)
+
+        return {
+            'connected': True,
+            'response_time_ms': response_time_ms,
+            'label': 'Prometheus Connected',
+            'description': 'Last query completed successfully.',
+        }
+
+    @staticmethod
+    def _extract_consumers(
+        response: dict[str, Any],
+    ) -> list[dict[str, str | float]]:
+        results = response.get(
+            'data',
+            {},
+        ).get(
+            'result',
+            [],
+        )
+
+        consumers: list[dict[str, str | float]] = []
+
+        for item in results:
+            metric = item.get(
+                'metric',
+                {},
+            )
+
+            try:
+                value = float(item['value'][1])
+            except (
+                KeyError,
+                IndexError,
+                TypeError,
+                ValueError,
+            ):
+                value = 0.0
+
+            consumers.append(
+                {
+                    'namespace': metric.get(
+                        'namespace',
+                        '-',
+                    ),
+                    'pod': metric.get(
+                        'pod',
+                        '-',
+                    ),
+                    'value': value,
+                }
+            )
+
+        return consumers
+
+    @staticmethod
+    def _extract_label_values(
+        response: dict[str, Any],
+        label_name: str,
+    ) -> list[str]:
+        results = response.get(
+            'data',
+            {},
+        ).get(
+            'result',
+            [],
+        )
+
+        values = {
+            item.get(
+                'metric',
+                {},
+            ).get(
+                label_name,
+            )
+            for item in results
+        }
+
+        return sorted(value for value in values if value)
+
+    @staticmethod
+    def _extract_series(
+        response: dict[str, Any],
+    ) -> list[dict[str, float]]:
+        try:
+            results = response['data']['result']
+
+            if not results:
+                return []
+
+            values = results[0]['values']
+
+            return [
+                {
+                    'timestamp': float(item[0]),
+                    'value': float(item[1]),
+                }
+                for item in values
+            ]
+
+        except (
+            KeyError,
+            IndexError,
+            TypeError,
+            ValueError,
+        ):
+            return []
+
+    @staticmethod
+    def _escape_label_value(
+        value: str,
+    ) -> str:
+        return value.replace(
+            '\\',
+            '\\\\',
+        ).replace(
+            '"',
+            '\\"',
+        )
+
+    def _format_node_query(
+        self,
+        query_template: str,
+        node_name: str | None = None,
+    ) -> str:
+        if not node_name:
+            return query_template
+
+        return query_template.replace(
+            '{node}',
+            self._escape_label_value(
+                node_name,
+            ),
+        )
+
+    def _format_instance_query(
+        self,
+        query_template: str,
+        instance: str | None = None,
+    ) -> str:
+        if not instance:
+            return query_template
+
+        return query_template.replace(
+            '{instance}',
+            self._escape_label_value(
+                instance,
+            ),
+        )
+
+    def _query_series(
+        self,
+        query: str,
+        hours: int = 1,
+        step: str = '5m',
+    ) -> list[dict[str, float]]:
+        end = datetime.now(
+            UTC,
+        )
+
+        start = end - timedelta(
+            hours=hours,
+        )
+
+        response = self.prometheus.range_query(
+            query=query,
+            start=start.isoformat(),
+            end=end.isoformat(),
+            step=step,
+        )
+
+        return self._extract_series(
+            response,
+        )
+
+    def _query_scalar(
+        self,
+        query: str,
+    ) -> float:
+        response = self.prometheus.instant_query(
+            query,
+        )
+
+        return round(
+            self._extract_scalar(response),
+            2,
+        )
+
+    @staticmethod
+    def bytes_to_gib(
+        value: int | float,
+    ) -> float:
+        return round(
+            float(value) / 1024**3,
+            2,
+        )
+
+    def get_cpu_capacity(
+        self,
+        node_name: str | None = None,
+    ) -> float:
+        query = queries.CPU_CAPACITY
+
+        if node_name:
+            query = self._format_node_query(
+                queries.CPU_CAPACITY_BY_NODE,
+                node_name,
+            )
+
+        return self._query_scalar(
+            query,
+        )
+
+    def get_cpu_usage(
+        self,
+        node_name: str | None = None,
+    ) -> float:
+        query = queries.CPU_USAGE
+
+        if node_name:
+            query = self._format_node_query(
+                queries.CPU_USAGE_BY_NODE,
+                node_name,
+            )
+
+        return self._query_scalar(
+            query,
+        )
+
+    def get_cpu_utilization(
+        self,
+        node_name: str | None = None,
+    ) -> float:
+        query = queries.CPU_UTILIZATION
+
+        if node_name:
+            query = self._format_node_query(
+                queries.CPU_UTILIZATION_BY_NODE,
+                node_name,
+            )
+
+        return self._query_scalar(
+            query,
+        )
+
+    def get_memory_capacity(
+        self,
+        node_name: str | None = None,
+    ) -> float:
+        query = queries.MEMORY_CAPACITY
+
+        if node_name:
+            query = self._format_node_query(
+                queries.MEMORY_CAPACITY_BY_NODE,
+                node_name,
+            )
+
+        return self._query_scalar(
+            query,
+        )
+
+    def get_memory_usage(
+        self,
+        node_name: str | None = None,
+    ) -> float:
+        query = queries.MEMORY_USAGE
+
+        if node_name:
+            query = self._format_node_query(
+                queries.MEMORY_USAGE_BY_NODE,
+                node_name,
+            )
+
+        return self._query_scalar(
+            query,
+        )
+
+    def get_memory_utilization(
+        self,
+        node_name: str | None = None,
+    ) -> float:
+        query = queries.MEMORY_UTILIZATION
+
+        if node_name:
+            query = self._format_node_query(
+                queries.MEMORY_UTILIZATION_BY_NODE,
+                node_name,
+            )
+
+        return self._query_scalar(
+            query,
+        )
+
+    def get_storage_capacity(
+        self,
+        filesystem_instance: str | None = None,
+    ) -> float:
+        query = queries.STORAGE_CAPACITY
+
+        if filesystem_instance:
+            query = self._format_instance_query(
+                queries.STORAGE_CAPACITY_BY_INSTANCE,
+                filesystem_instance,
+            )
+
+        return self._query_scalar(
+            query,
+        )
+
+    def get_storage_available(
+        self,
+        filesystem_instance: str | None = None,
+    ) -> float:
+        query = queries.STORAGE_AVAILABLE
+
+        if filesystem_instance:
+            query = self._format_instance_query(
+                queries.STORAGE_AVAILABLE_BY_INSTANCE,
+                filesystem_instance,
+            )
+
+        return self._query_scalar(
+            query,
+        )
+
+    def get_storage_usage(
+        self,
+        filesystem_instance: str | None = None,
+    ) -> float:
+        query = queries.STORAGE_USAGE
+
+        if filesystem_instance:
+            query = self._format_instance_query(
+                queries.STORAGE_USAGE_BY_INSTANCE,
+                filesystem_instance,
+            )
+
+        return self._query_scalar(
+            query,
+        )
+
+    def get_storage_utilization(
+        self,
+        filesystem_instance: str | None = None,
+    ) -> float:
+        query = queries.STORAGE_UTILIZATION
+
+        if filesystem_instance:
+            query = self._format_instance_query(
+                queries.STORAGE_UTILIZATION_BY_INSTANCE,
+                filesystem_instance,
+            )
+
+        return self._query_scalar(
+            query,
+        )
+
+    def get_pod_count(
+        self,
+        node_name: str | None = None,
+    ) -> int:
+        query = queries.POD_COUNT
+
+        if node_name:
+            query = self._format_node_query(
+                queries.POD_COUNT_BY_NODE,
+                node_name,
+            )
+
+        return int(
+            self._query_scalar(
+                query,
+            )
+        )
+
+    def get_pod_capacity(
+        self,
+        node_name: str | None = None,
+    ) -> int:
+        query = queries.POD_CAPACITY
+
+        if node_name:
+            query = self._format_node_query(
+                queries.POD_CAPACITY_BY_NODE,
+                node_name,
+            )
+
+        return int(
+            self._query_scalar(
+                query,
+            )
+        )
+
+    def get_pod_utilization(
+        self,
+        node_name: str | None = None,
+    ) -> float:
+        query = queries.POD_UTILIZATION
+
+        if node_name:
+            query = self._format_node_query(
+                queries.POD_UTILIZATION_BY_NODE,
+                node_name,
+            )
+
+        return self._query_scalar(
+            query,
+        )
+
+    def get_total_nodes(
+        self,
+    ) -> int:
+        return int(
+            self._query_scalar(
+                queries.TOTAL_NODES,
+            )
+        )
+
+    def get_ready_nodes(
+        self,
+    ) -> int:
+        return int(
+            self._query_scalar(
+                queries.READY_NODES,
+            )
+        )
+
+    def get_not_ready_nodes(
+        self,
+    ) -> int:
+        return int(
+            self._query_scalar(
+                queries.NOT_READY_NODES,
+            )
+        )
+
+    def get_master_nodes(
+        self,
+    ) -> int:
+        return int(
+            self._query_scalar(
+                queries.MASTER_NODES,
+            )
+        )
+
+    def get_worker_nodes(
+        self,
+    ) -> int:
+        return int(
+            self._query_scalar(
+                queries.WORKER_NODES,
+            )
+        )
+
+    def get_node_names(
+        self,
+    ) -> list[str]:
+        response = self.prometheus.instant_query(
+            queries.NODE_LIST,
+        )
+
+        return self._extract_label_values(
+            response,
+            'node',
+        )
+
+    def get_worker_node_names(
+        self,
+    ) -> list[str]:
+        response = self.prometheus.instant_query(
+            queries.WORKER_NODE_LIST,
+        )
+
+        return self._extract_label_values(
+            response,
+            'node',
+        )
+
+    def get_filesystem_instances(
+        self,
+    ) -> list[str]:
+        response = self.prometheus.instant_query(
+            queries.FILESYSTEM_INSTANCE_LIST,
+        )
+
+        return self._extract_label_values(
+            response,
+            'instance',
+        )
+
+    def get_kubernetes_version(
+        self,
+    ) -> str:
+        response = self.prometheus.instant_query(
+            queries.KUBERNETES_VERSION,
+        )
+
+        try:
+            result = response['data']['result']
+
+            if not result:
+                return '-'
+
+            return result[0]['metric'].get(
+                'git_version',
+                '-',
+            )
+
+        except (
+            KeyError,
+            IndexError,
+            TypeError,
+        ):
+            return '-'
+
+    def get_cpu_trend(
+        self,
+        hours: int = 1,
+        step: str = '5m',
+        node_name: str | None = None,
+    ) -> list[dict[str, float]]:
+        query = queries.CPU_UTILIZATION_HISTORY
+
+        if node_name:
+            query = self._format_node_query(
+                queries.CPU_UTILIZATION_HISTORY_BY_NODE,
+                node_name,
+            )
+
+        return self._query_series(
+            query,
+            hours,
+            step,
+        )
+
+    def get_memory_trend(
+        self,
+        hours: int = 1,
+        step: str = '5m',
+        node_name: str | None = None,
+    ) -> list[dict[str, float]]:
+        query = queries.MEMORY_UTILIZATION_HISTORY
+
+        if node_name:
+            query = self._format_node_query(
+                queries.MEMORY_UTILIZATION_HISTORY_BY_NODE,
+                node_name,
+            )
+
+        return self._query_series(
+            query,
+            hours,
+            step,
+        )
+
+    def get_pod_trend(
+        self,
+        hours: int = 1,
+        step: str = '5m',
+        node_name: str | None = None,
+    ) -> list[dict[str, float]]:
+        query = queries.POD_UTILIZATION_HISTORY
+
+        if node_name:
+            query = self._format_node_query(
+                queries.POD_UTILIZATION_HISTORY_BY_NODE,
+                node_name,
+            )
+
+        return self._query_series(
+            query,
+            hours,
+            step,
+        )
+
+    def get_trends(
+        self,
+        hours: int = 1,
+        step: str = '5m',
+        node_name: str | None = None,
+    ) -> dict[str, list[dict[str, float]]]:
+        return {
+            'cpu': self.get_cpu_trend(
+                hours,
+                step,
+                node_name,
+            ),
+            'memory': self.get_memory_trend(
+                hours,
+                step,
+                node_name,
+            ),
+            'pods': self.get_pod_trend(
+                hours,
+                step,
+                node_name,
+            ),
+        }
+
+    def get_summary(
+        self,
+    ) -> dict[str, int | float]:
+        storage_capacity = self.get_storage_capacity()
+        storage_usage = self.get_storage_usage()
+        storage_available = self.get_storage_available()
+
+        return {
+            'cpu_capacity': self.get_cpu_capacity(),
+            'cpu_usage': self.get_cpu_usage(),
+            'cpu_utilization': self.get_cpu_utilization(),
+            'memory_capacity': self.get_memory_capacity(),
+            'memory_usage': self.get_memory_usage(),
+            'memory_utilization': self.get_memory_utilization(),
+            'storage_capacity': storage_capacity,
+            'storage_usage': storage_usage,
+            'storage_available': storage_available,
+            'storage_utilization': self.get_storage_utilization(),
+            'storage_capacity_gib': self.bytes_to_gib(
+                storage_capacity,
+            ),
+            'storage_usage_gib': self.bytes_to_gib(
+                storage_usage,
+            ),
+            'storage_available_gib': self.bytes_to_gib(
+                storage_available,
+            ),
+            'pod_count': self.get_pod_count(),
+            'pod_capacity': self.get_pod_capacity(),
+            'pod_utilization': self.get_pod_utilization(),
+        }
+
+    def get_detail_summary(
+        self,
+        node_name: str | None = None,
+        filesystem_instance: str | None = None,
+    ) -> dict[str, int | float | str | None]:
+        storage_capacity = self.get_storage_capacity(
+            filesystem_instance,
+        )
+        storage_usage = self.get_storage_usage(
+            filesystem_instance,
+        )
+        storage_available = self.get_storage_available(
+            filesystem_instance,
+        )
+
+        return {
+            'node_name': node_name,
+            'filesystem_instance': filesystem_instance,
+            'cpu_capacity': self.get_cpu_capacity(
+                node_name,
+            ),
+            'cpu_usage': self.get_cpu_usage(
+                node_name,
+            ),
+            'cpu_utilization': self.get_cpu_utilization(
+                node_name,
+            ),
+            'memory_capacity': self.get_memory_capacity(
+                node_name,
+            ),
+            'memory_usage': self.get_memory_usage(
+                node_name,
+            ),
+            'memory_utilization': self.get_memory_utilization(
+                node_name,
+            ),
+            'storage_capacity': storage_capacity,
+            'storage_usage': storage_usage,
+            'storage_available': storage_available,
+            'storage_utilization': self.get_storage_utilization(
+                filesystem_instance,
+            ),
+            'storage_capacity_gib': self.bytes_to_gib(
+                storage_capacity,
+            ),
+            'storage_usage_gib': self.bytes_to_gib(
+                storage_usage,
+            ),
+            'storage_available_gib': self.bytes_to_gib(
+                storage_available,
+            ),
+            'pod_count': self.get_pod_count(
+                node_name,
+            ),
+            'pod_capacity': self.get_pod_capacity(
+                node_name,
+            ),
+            'pod_utilization': self.get_pod_utilization(
+                node_name,
+            ),
+        }
+
+    def get_summary_table(
+        self,
+        summary: dict[str, int | float],
+    ) -> list[dict[str, str | float]]:
+        return [
+            {
+                'resource': 'CPU',
+                'capacity': summary['cpu_capacity'],
+                'usage': summary['cpu_usage'],
+                'utilization': summary['cpu_utilization'],
+                'scope': 'All nodes',
+            },
+            {
+                'resource': 'Memory',
+                'capacity': summary['memory_capacity'],
+                'usage': summary['memory_usage'],
+                'utilization': summary['memory_utilization'],
+                'scope': 'All nodes',
+            },
+            {
+                'resource': 'Disk /var or /',
+                'capacity': summary['storage_capacity'],
+                'usage': summary['storage_usage'],
+                'utilization': summary['storage_utilization'],
+                'scope': 'node_filesystem mountpoint=/var when available, otherwise mountpoint=/ for scraped instances',
+            },
+            {
+                'resource': 'Pods',
+                'capacity': summary['pod_capacity'],
+                'usage': summary['pod_count'],
+                'utilization': summary['pod_utilization'],
+                'scope': 'All nodes',
+            },
+        ]
+
+    def get_memory_pressure_nodes(
+        self,
+        node_name: str | None = None,
+    ) -> int:
+        query = queries.MEMORY_PRESSURE_NODES
+
+        if node_name:
+            query = self._format_node_query(
+                queries.MEMORY_PRESSURE_NODES_BY_NODE,
+                node_name,
+            )
+
+        return int(
+            self._query_scalar(
+                query,
+            )
+        )
+
+    def get_disk_pressure_nodes(
+        self,
+        node_name: str | None = None,
+    ) -> int:
+        query = queries.DISK_PRESSURE_NODES
+
+        if node_name:
+            query = self._format_node_query(
+                queries.DISK_PRESSURE_NODES_BY_NODE,
+                node_name,
+            )
+
+        return int(
+            self._query_scalar(
+                query,
+            )
+        )
+
+    def get_pid_pressure_nodes(
+        self,
+        node_name: str | None = None,
+    ) -> int:
+        query = queries.PID_PRESSURE_NODES
+
+        if node_name:
+            query = self._format_node_query(
+                queries.PID_PRESSURE_NODES_BY_NODE,
+                node_name,
+            )
+
+        return int(
+            self._query_scalar(
+                query,
+            )
+        )
+
+    @staticmethod
+    def _risk_from_utilization(
+        utilization: float,
+    ) -> str:
+        if utilization > 90:
+            return 'Critical'
+
+        if utilization >= 75:
+            return 'Warning'
+
+        return 'Normal'
+
+    @staticmethod
+    def _utilization_reason(
+        utilization: float,
+    ) -> str:
+        return f'Utilization {utilization:.2f}%'
+
+    @staticmethod
+    def _pressure_reason(
+        condition: str,
+        pressure_nodes: int,
+        node_name: str | None = None,
+    ) -> str:
+        if node_name:
+            return f'{condition} detected on selected node'
+
+        return f'{condition} detected on {pressure_nodes} node(s)'
+
+    def get_capacity_pressure_risk(
+        self,
+        summary: dict[str, int | float],
+        node_name: str | None = None,
+    ) -> dict[str, dict[str, int | float | str]]:
+        cpu_utilization = float(
+            summary.get(
+                'cpu_utilization',
+                0,
+            )
+        )
+
+        memory_utilization = float(
+            summary.get(
+                'memory_utilization',
+                0,
+            )
+        )
+
+        storage_utilization = float(
+            summary.get(
+                'storage_utilization',
+                0,
+            )
+        )
+
+        pod_utilization = float(
+            summary.get(
+                'pod_utilization',
+                0,
+            )
+        )
+
+        memory_pressure_nodes = self.get_memory_pressure_nodes(
+            node_name,
+        )
+        disk_pressure_nodes = self.get_disk_pressure_nodes(
+            node_name,
+        )
+        pid_pressure_nodes = self.get_pid_pressure_nodes(
+            node_name,
+        )
+
+        memory_status = self._risk_from_utilization(
+            memory_utilization,
+        )
+        memory_reason = self._utilization_reason(
+            memory_utilization,
+        )
+
+        if memory_pressure_nodes > 0:
+            memory_status = 'Critical'
+            memory_reason = self._pressure_reason(
+                'MemoryPressure',
+                memory_pressure_nodes,
+                node_name,
+            )
+
+        storage_status = self._risk_from_utilization(
+            storage_utilization,
+        )
+        storage_reason = self._utilization_reason(
+            storage_utilization,
+        )
+
+        if disk_pressure_nodes > 0:
+            storage_status = 'Critical'
+            storage_reason = self._pressure_reason(
+                'DiskPressure',
+                disk_pressure_nodes,
+                node_name,
+            )
+
+        pod_status = self._risk_from_utilization(
+            pod_utilization,
+        )
+        pod_reason = self._utilization_reason(
+            pod_utilization,
+        )
+
+        if pid_pressure_nodes > 0:
+            pod_status = 'Critical'
+            pod_reason = self._pressure_reason(
+                'PIDPressure',
+                pid_pressure_nodes,
+                node_name,
+            )
+
+        return {
+            'cpu': {
+                'status': self._risk_from_utilization(
+                    cpu_utilization,
+                ),
+                'reason': self._utilization_reason(
+                    cpu_utilization,
+                ),
+                'pressure_nodes': 0,
+                'utilization': cpu_utilization,
+            },
+            'memory': {
+                'status': memory_status,
+                'reason': memory_reason,
+                'pressure_nodes': memory_pressure_nodes,
+                'utilization': memory_utilization,
+            },
+            'storage': {
+                'status': storage_status,
+                'reason': storage_reason,
+                'pressure_nodes': disk_pressure_nodes,
+                'utilization': storage_utilization,
+            },
+            'pods': {
+                'status': pod_status,
+                'reason': pod_reason,
+                'pressure_nodes': pid_pressure_nodes,
+                'utilization': pod_utilization,
+            },
+        }
+
+    def get_top_cpu_consumers(
+        self,
+    ) -> list[dict[str, str | float]]:
+        response = self.prometheus.instant_query(
+            queries.TOP_CPU_CONSUMERS,
+        )
+
+        return self._extract_consumers(
+            response,
+        )
+
+    def get_top_memory_consumers(
+        self,
+    ) -> list[dict[str, str | float]]:
+        response = self.prometheus.instant_query(
+            queries.TOP_MEMORY_CONSUMERS,
+        )
+
+        return self._extract_consumers(
+            response,
+        )
+
+    def get_cluster_info(
+        self,
+        summary: dict[str, int | float],
+    ) -> dict[str, int | float | str]:
+        return {
+            'kubernetes_version': self.get_kubernetes_version(),
+            'total_nodes': self.get_total_nodes(),
+            'ready_nodes': self.get_ready_nodes(),
+            'not_ready_nodes': self.get_not_ready_nodes(),
+            'worker_nodes': self.get_worker_nodes(),
+            'master_nodes': self.get_master_nodes(),
+            'cpu_capacity': summary['cpu_capacity'],
+            'memory_capacity': summary['memory_capacity'],
+            'pod_capacity': summary['pod_capacity'],
+        }
+
+
+def get_prometheus_status_snapshot(
+    cluster_id: str,
+) -> dict[str, Any]:
+    cluster = get_selected_cluster(
+        cluster_id,
+    )
+
+    if not cluster:
+        return {
+            'configured': False,
+            'connected': False,
+            'status': 'not_configured',
+            'status_label': 'Not configured',
+            'status_tone': 'gray',
+            'endpoint': '',
+            'response_time_ms': None,
+            'message': 'Cluster is not available.',
+        }
+
+    try:
+        service = _build_utilization_service(
+            cluster,
+        )
+
+        status = service.get_prometheus_status()
+        connected = bool(
+            status.get(
+                'connected',
+                False,
+            )
+        )
+
+        return {
+            'configured': True,
+            'connected': connected,
+            'status': 'connected' if connected else 'disconnected',
+            'status_label': 'Connected' if connected else 'Disconnected',
+            'status_tone': 'green' if connected else 'red',
+            'endpoint': _get_cluster_prometheus_endpoint(
+                cluster,
+            ),
+            'response_time_ms': status.get(
+                'response_time_ms',
+            ),
+            'message': str(
+                status.get(
+                    'description',
+                    'Prometheus query completed successfully.',
+                )
+            ),
+        }
+
+    except Exception as exc:
+        return {
+            'configured': True,
+            'connected': False,
+            'status': 'error',
+            'status_label': 'Disconnected',
+            'status_tone': 'red',
+            'endpoint': _get_cluster_prometheus_endpoint(
+                cluster,
+            ),
+            'response_time_ms': None,
+            'message': str(
+                exc,
+            ),
+        }
+
+
+def get_utilization_snapshot(
+    cluster_id: str,
+    time_range: str = '24h',
+) -> dict[str, float]:
+    _ = time_range
+
+    cluster = get_selected_cluster(
+        cluster_id,
+    )
+
+    if not cluster:
+        return _empty_utilization_snapshot()
+
+    try:
+        service = _build_utilization_service(
+            cluster,
+        )
+
+        summary = service.get_summary()
+
+        return {
+            'cpu_percent': _safe_float(
+                summary.get(
+                    'cpu_utilization',
+                    0,
+                )
+            ),
+            'memory_percent': _safe_float(
+                summary.get(
+                    'memory_utilization',
+                    0,
+                )
+            ),
+            'storage_percent': _safe_float(
+                summary.get(
+                    'storage_utilization',
+                    0,
+                )
+            ),
+            'pod_percent': _safe_float(
+                summary.get(
+                    'pod_utilization',
+                    0,
+                )
+            ),
+        }
+
+    except Exception:
+        return _empty_utilization_snapshot()
+
+
+def _empty_utilization_snapshot() -> dict[str, float]:
+    return {
+        'cpu_percent': 0.0,
+        'memory_percent': 0.0,
+        'storage_percent': 0.0,
+        'pod_percent': 0.0,
+    }
+
+
+def _build_utilization_service(
+    cluster: Cluster,
+) -> UtilizationService:
+    prometheus_service = _build_prometheus_service(
+        cluster,
+    )
+
+    return UtilizationService(
+        prometheus_service,
+    )
+
+
+def _build_prometheus_service(
+    cluster: Cluster,
+) -> PrometheusService:
+    return PrometheusService(
+        cluster=cluster,
+    )
+
+
+def _get_cluster_prometheus_endpoint(
+    cluster: Cluster,
+) -> str:
+    prometheus_config = getattr(
+        cluster,
+        'prometheus_config',
+        None,
+    )
+
+    endpoint = getattr(
+        prometheus_config,
+        'endpoint',
+        '',
+    )
+
+    if isinstance(
+        endpoint,
+        str,
+    ):
+        return endpoint
+
+    return ''
+
+
+def _safe_float(
+    value: Any,
+) -> float:
+    if value is None:
+        return 0.0
+
+    if isinstance(
+        value,
+        int | float | str | bytes,
+    ):
+        try:
+            return round(
+                float(value),
+                2,
+            )
+        except (
+            TypeError,
+            ValueError,
+        ):
+            return 0.0
+
+    return 0.0

@@ -1,0 +1,137 @@
+{% set can_dashboard = current_user.is_authenticated and current_user.has_permission('dashboard.view') %}
+{% set can_clusters = current_user.is_authenticated and current_user.has_permission('clusters.view') %}
+{% set can_inventory = current_user.is_authenticated and current_user.has_permission('inventory.view') %}
+{% set can_analytics = current_user.is_authenticated and current_user.has_permission('analytics.view') %}
+{% set can_intelligence = current_user.is_authenticated and current_user.has_permission('intelligence.view') %}
+{% set can_governance = current_user.is_authenticated and (
+    current_user.has_permission('governance.view')
+    or current_user.has_permission('tls_certificates.view')
+    or current_user.has_permission('tls_certificates.sync')
+    or current_user.has_permission('tls_certificates.update')
+    or current_user.has_permission('tls_certificates.bulk_update')
+) %}
+{% set can_reports = current_user.is_authenticated and (
+    current_user.has_permission('reports.view')
+    or current_user.has_permission('reports.generate')
+    or current_user.has_permission('reports.manage_templates')
+    or current_user.has_permission('reports.manage_schedules')
+    or current_user.has_permission('reports.manage_storage')
+) %}
+<aside class="kubereport-sidebar flex min-h-0 flex-col border-r border-slate-800/80 bg-slate-950 text-white shadow-xl shadow-slate-950/20">
+    <!-- Brand -->
+    <div class="border-b border-slate-800/80 px-2 py-4">
+        <div class="sidebar-brand-card flex items-center justify-start gap-3 rounded-2xl border border-slate-800/80 bg-slate-900/80 p-3 shadow-sm">
+            <div class="sidebar-brand-icon flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/25">
+                <i data-lucide="boxes" class="h-5 w-5"></i>
+            </div>
+            <div class="sidebar-expanded-only min-w-0">
+                <h1 class="truncate text-base font-bold leading-6 tracking-tight text-white">KAORI</h1>
+                <p class="truncate text-[11px] font-medium text-slate-400">Observability</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="flex-1 space-y-5 overflow-y-auto overscroll-contain px-3 py-4 [scrollbar-gutter:stable]">
+        {% if current_user.is_authenticated %}
+            <!-- MAIN -->
+            <div class="sidebar-nav-section">
+                <div class="sidebar-expanded-only mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
+                    Main
+                </div>
+                <div class="space-y-1">
+                    <a href="{{ url_for('dashboard.welcome') }}"
+                       class="{{ 'bg-blue-600/15 text-blue-300 ring-1 ring-blue-500/20' if request.endpoint == 'dashboard.welcome' else 'text-slate-300 hover:bg-slate-900 hover:text-white' }} sidebar-parent-link group flex items-center gap-3 rounded-2xl px-3 py-3 text-[13px] font-semibold">
+                        <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl {{ 'bg-blue-600 text-white shadow-lg shadow-blue-600/25' if request.endpoint == 'dashboard.welcome' else 'bg-slate-900 text-slate-400 group-hover:bg-slate-800 group-hover:text-white' }} transition">
+                            <i data-lucide="sparkles" class="h-4 w-4"></i>
+                        </span>
+                        <span class="sidebar-expanded-only truncate whitespace-nowrap text-[13px] leading-5">Welcome</span>
+                    </a>
+                    {% if can_dashboard %}
+                        <a href="{{ url_for('dashboard.index') }}"
+                           class="{{ 'bg-blue-600/15 text-blue-300 ring-1 ring-blue-500/20' if request.endpoint == 'dashboard.index' else 'text-slate-300 hover:bg-slate-900 hover:text-white' }} sidebar-parent-link group flex items-center gap-3 rounded-2xl px-3 py-3 text-[13px] font-semibold">
+                            <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl {{ 'bg-blue-600 text-white shadow-lg shadow-blue-600/25' if request.endpoint == 'dashboard.index' else 'bg-slate-900 text-slate-400 group-hover:bg-slate-800 group-hover:text-white' }} transition">
+                                <i data-lucide="layout-dashboard" class="h-4 w-4"></i>
+                            </span>
+                            <span class="sidebar-expanded-only truncate whitespace-nowrap text-[13px] leading-5">K8s Dashboard</span>
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+
+        {% if can_clusters or can_inventory %}
+            <!-- OPERATIONS -->
+            <div class="sidebar-nav-section">
+                <div class="sidebar-expanded-only mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
+                    Operations
+                </div>
+                <div class="space-y-1">
+                    {% if can_clusters %}
+                        <a href="{{ url_for('cluster.list_clusters') }}"
+                           class="{{ 'bg-blue-600/15 text-blue-300 ring-1 ring-blue-500/20' if request.endpoint and request.endpoint.startswith('cluster.') else 'text-slate-300 hover:bg-slate-900 hover:text-white' }} sidebar-parent-link group flex items-center gap-3 rounded-2xl px-3 py-3 text-[13px] font-semibold">
+                            <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl {{ 'bg-blue-600 text-white shadow-lg shadow-blue-600/25' if request.endpoint and request.endpoint.startswith('cluster.') else 'bg-slate-900 text-slate-400 group-hover:bg-slate-800 group-hover:text-white' }} transition">
+                                <i data-lucide="server" class="h-4 w-4"></i>
+                            </span>
+                            <span class="sidebar-expanded-only truncate whitespace-nowrap text-[13px] leading-5">K8s Cluster</span>
+                        </a>
+                    {% endif %}
+                    {% if can_inventory %}
+                        {% include "components/navigation/inventory_menu.html" %}
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+
+
+        {% if can_governance %}
+            <!-- GOVERNANCE -->
+            <div class="sidebar-nav-section">
+                <div class="sidebar-expanded-only mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
+                    Governance
+                </div>
+                <div class="space-y-1">
+                    {% include "components/navigation/governance_menu.html" %}
+                </div>
+            </div>
+        {% endif %}
+
+        {% if can_analytics or can_intelligence %}
+            <!-- INSIGHTS -->
+            <div class="sidebar-nav-section">
+                <div class="sidebar-expanded-only mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
+                    Insights
+                </div>
+                <div class="space-y-1">
+                    {% if can_analytics %}
+                        {% include "components/navigation/analytics_menu.html" %}
+                    {% endif %}
+                    {% if can_intelligence %}
+                        {% include "components/navigation/intelligence_menu.html" %}
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+
+        {% if can_reports %}
+            <!-- REPORTING -->
+            <div class="sidebar-nav-section">
+                <div class="sidebar-expanded-only mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
+                    Reporting
+                </div>
+                {% include "components/navigation/reports_menu.html" %}
+            </div>
+        {% endif %}
+
+        <!-- ADMINISTRATION -->
+        <div class="sidebar-nav-section">
+            <div class="sidebar-expanded-only mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
+                Administration
+            </div>
+            <div class="space-y-1">
+                {% include "components/navigation/access_management_menu.html" %}
+                {% include "components/navigation/settings_menu.html" %}
+            </div>
+        </div>
+    </nav>
+</aside>

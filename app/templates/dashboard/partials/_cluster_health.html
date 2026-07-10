@@ -1,0 +1,132 @@
+<section id="dashboard-cluster-health-section" class="rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <div class="flex flex-col gap-4 border-b border-slate-100 px-6 py-5 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex items-center gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300">
+                <i data-lucide="heart-pulse" class="h-5 w-5"></i>
+            </div>
+            <div>
+                <h2 class="font-semibold text-slate-950 dark:text-white">Cluster Health Summary</h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                    Showing {{ dashboard.cluster_health_pagination.start_item }}-{{ dashboard.cluster_health_pagination.end_item }} of {{ dashboard.cluster_health_pagination.total_items }} clusters. Node, CPU, and memory signals prefer live Prometheus data.
+                </p>
+            </div>
+        </div>
+        <a href="/clusters"
+           class="text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-300">View clusters</a>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-100 text-sm dark:divide-slate-800">
+            <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-950/40 dark:text-slate-400">
+                <tr>
+                    <th class="px-6 py-3 text-left font-semibold">Cluster</th>
+                    <th class="px-4 py-3 text-left font-semibold">Status</th>
+                    <th class="px-4 py-3 text-left font-semibold">Nodes</th>
+                    <th class="px-4 py-3 text-left font-semibold">CPU</th>
+                    <th class="px-4 py-3 text-left font-semibold">Memory</th>
+                    <th class="px-4 py-3 text-left font-semibold">Alerts</th>
+                    <th class="px-6 py-3 text-left font-semibold">Sources</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                {% if dashboard.cluster_health_snapshot %}
+                    {% for row in dashboard.cluster_health_snapshot %}
+                        <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
+                            <td class="px-6 py-4">
+                                <div class="font-medium text-slate-900 dark:text-white">{{ row.cluster_name }}</div>
+                                <div class="mt-0.5 max-w-[280px] truncate text-xs text-slate-400"
+                                     title="{{ row.cluster_endpoint }}">{{ row.cluster_endpoint }}</div>
+                            </td>
+                            <td class="px-4 py-4">
+                                <div class="space-y-1">
+                                    <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {% if row.status == 'Healthy' %}bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 {% elif row.status == 'Warning' %}bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 {% elif row.status == 'Critical' %}bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300 {% else %}bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300{% endif %}">
+                                        {{ row.status }}
+                                    </span>
+                                    <p class="max-w-[180px] text-xs leading-4 text-slate-500 dark:text-slate-400"
+                                       title="{{ row.status_reason }}">{{ row.status_reason }}</p>
+                                </div>
+                            </td>
+                            <td class="px-4 py-4">
+                                {% if row.nodes_ready is not none and row.nodes_total is not none %}
+                                    <div class="font-semibold text-slate-800 dark:text-slate-100">{{ row.nodes_ready }}/{{ row.nodes_total }} Ready</div>
+                                    <div class="text-xs text-emerald-600 dark:text-emerald-400">{{ row.nodes_status }}</div>
+                                {% else %}
+                                    <div class="font-semibold text-slate-400">N/A</div>
+                                    <div class="text-xs text-slate-400">{{ row.nodes_status }}</div>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-4">
+                                {% if row.cpu_percent is not none %}
+                                    <div class="font-semibold text-slate-800 dark:text-slate-100">{{ row.cpu_percent|round(0) }}%</div>
+                                    <div class="text-xs text-emerald-600 dark:text-emerald-400">{{ row.cpu_status }}</div>
+                                {% else %}
+                                    <div class="font-semibold text-slate-400">N/A</div>
+                                    <div class="text-xs text-slate-400">{{ row.cpu_status }}</div>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-4">
+                                {% if row.memory_percent is not none %}
+                                    <div class="font-semibold text-slate-800 dark:text-slate-100">{{ row.memory_percent|round(0) }}%</div>
+                                    <div class="text-xs text-emerald-600 dark:text-emerald-400">{{ row.memory_status }}</div>
+                                {% else %}
+                                    <div class="font-semibold text-slate-400">N/A</div>
+                                    <div class="text-xs text-slate-400">{{ row.memory_status }}</div>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-4">
+                                {% if row.active_alerts is not none %}
+                                    <div class="font-semibold {% if row.active_alerts > 0 %}text-red-600 dark:text-red-300{% else %}text-emerald-600 dark:text-emerald-300{% endif %}">{{ row.active_alerts }}</div>
+                                    <div class="text-xs text-emerald-600 dark:text-emerald-400">{{ row.alerts_status }}</div>
+                                {% else %}
+                                    <div class="font-semibold text-slate-400">N/A</div>
+                                    <div class="text-xs text-slate-400">{{ row.alerts_status }}</div>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="space-y-1 text-xs">
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="h-1.5 w-1.5 rounded-full {% if row.cpu_status == 'Live' or row.memory_status == 'Live' or row.nodes_status == 'Live' %}bg-emerald-500{% else %}bg-slate-300 dark:bg-slate-600{% endif %}"></span>
+                                        <span class="text-slate-500 dark:text-slate-400">Prometheus</span>
+                                    </div>
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="h-1.5 w-1.5 rounded-full {% if row.alerts_status == 'Live' %}bg-emerald-500{% else %}bg-slate-300 dark:bg-slate-600{% endif %}"></span>
+                                        <span class="text-slate-500 dark:text-slate-400">AlertManager</span>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="7"
+                            class="px-6 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
+                            No cluster inventory data yet. Add a cluster and run inventory sync to populate this section.
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+    {% if dashboard.cluster_health_pagination.total_pages > 1 %}
+        <div class="flex flex-col gap-3 border-t border-slate-100 px-6 py-4 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+                Page {{ dashboard.cluster_health_pagination.page }} of {{ dashboard.cluster_health_pagination.total_pages }} · {{ dashboard.cluster_health_pagination.per_page }} clusters per page
+            </p>
+            <div class="flex items-center gap-2">
+                {% set prev_url = url_for('dashboard.section', section='cluster_health', cluster_id=dashboard.selected_cluster_id or '', cluster_health_page=dashboard.cluster_health_pagination.prev_page) %}
+                {% set next_url = url_for('dashboard.section', section='cluster_health', cluster_id=dashboard.selected_cluster_id or '', cluster_health_page=dashboard.cluster_health_pagination.next_page) %}
+                <button type="button"
+                        {% if dashboard.cluster_health_pagination.has_prev %} hx-get="{{ prev_url }}" hx-target="#dashboard-cluster-health-section" hx-swap="outerHTML" hx-indicator="#dashboard-loading-bar" {% else %}disabled{% endif %}
+                        class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold transition dark:border-slate-700 {% if dashboard.cluster_health_pagination.has_prev %}text-slate-700 hover:border-blue-200 hover:text-blue-700 dark:text-slate-200 dark:hover:border-blue-800 dark:hover:text-blue-300{% else %}cursor-not-allowed text-slate-300 dark:text-slate-600{% endif %}">
+                    <i data-lucide="chevron-left" class="h-4 w-4"></i>
+                    Previous
+                </button>
+                <button type="button"
+                        {% if dashboard.cluster_health_pagination.has_next %} hx-get="{{ next_url }}" hx-target="#dashboard-cluster-health-section" hx-swap="outerHTML" hx-indicator="#dashboard-loading-bar" {% else %}disabled{% endif %}
+                        class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold transition dark:border-slate-700 {% if dashboard.cluster_health_pagination.has_next %}text-slate-700 hover:border-blue-200 hover:text-blue-700 dark:text-slate-200 dark:hover:border-blue-800 dark:hover:text-blue-300{% else %}cursor-not-allowed text-slate-300 dark:text-slate-600{% endif %}">
+                    Next
+                    <i data-lucide="chevron-right" class="h-4 w-4"></i>
+                </button>
+            </div>
+        </div>
+    {% endif %}
+</section>

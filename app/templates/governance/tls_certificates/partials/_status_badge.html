@@ -1,0 +1,14 @@
+{% set status = status or 'unknown' %}
+{% if status == 'healthy' %}
+    {% set badge_class = 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' %}
+{% elif status == 'warning' %}
+    {% set badge_class = 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300' %}
+{% elif status in ['critical', 'expired', 'invalid'] %}
+    {% set badge_class = 'bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300' %}
+{% else %}
+    {% set badge_class = 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300' %}
+{% endif %}
+<span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide {{ badge_class }}">
+    <span class="h-1.5 w-1.5 rounded-full bg-current"></span>
+    {{ status.replace('_', ' ')|title }}
+</span>

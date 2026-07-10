@@ -1,0 +1,533 @@
+{% extends "layouts/app.html" %}
+{% block title %}Report Templates{% endblock title %}
+{% block dashboard_content %}
+    <div class="space-y-5">
+        <section class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 p-6 text-white shadow-sm">
+            <div class="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-white/10 blur-3xl"></div>
+            <div class="pointer-events-none absolute bottom-0 left-1/3 h-24 w-24 rounded-full bg-cyan-200/20 blur-2xl"></div>
+            <div class="relative grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-stretch">
+                <div class="flex items-start gap-4">
+                    <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white ring-1 ring-white/20">
+                        <i data-lucide="layout-template" class="h-7 w-7"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <span class="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-blue-50 ring-1 ring-white/20">
+                            <i data-lucide="library" class="h-3.5 w-3.5"></i>
+                            Infrastructure template library
+                        </span>
+                        <h1 class="mt-3 text-3xl font-bold tracking-tight md:text-4xl">{{ payload.page_title }}</h1>
+                        <p class="mt-2 max-w-3xl text-sm leading-6 text-blue-50/90 sm:text-base">{{ payload.page_subtitle }}</p>
+                        <div class="mt-4 flex flex-wrap gap-2 text-xs font-semibold text-blue-50">
+                            <span class="rounded-full bg-white/15 px-3 py-1 ring-1 ring-white/20">Protected system templates</span>
+                            <span class="rounded-full bg-white/15 px-3 py-1 ring-1 ring-white/20">Custom report layouts</span>
+                            <span class="rounded-full bg-white/15 px-3 py-1 ring-1 ring-white/20">PDF-ready sections</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="rounded-2xl bg-white/12 p-4 ring-1 ring-white/20 backdrop-blur">
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-wide text-blue-100">Template posture</p>
+                            <h2 class="mt-2 text-2xl font-bold">Ready</h2>
+                            <p class="mt-1 text-sm leading-6 text-blue-50/90">Build reusable report layouts from protected base templates or custom section checklists.</p>
+                        </div>
+                        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/20">
+                            <i data-lucide="shield-check" class="h-5 w-5"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+                        <a href="{{ url_for('reports.generate_report') }}" class="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-blue-700 shadow-sm transition hover:bg-blue-50">
+                            <i data-lucide="plus-circle" class="h-4 w-4"></i>
+                            Generate
+                        </a>
+                        <a href="#custom-template-form" class="inline-flex items-center justify-center gap-2 rounded-xl border border-white/30 px-3 py-2 text-sm font-semibold text-white transition hover:bg-white/10">
+                            <i data-lucide="pencil-ruler" class="h-4 w-4"></i>
+                            Create Template
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {% for card in payload.summary_cards %}
+                {% set tone_class = {
+                    'blue': 'bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300',
+                    'green': 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-300',
+                    'purple': 'bg-violet-50 text-violet-600 dark:bg-violet-950/50 dark:text-violet-300',
+                    'amber': 'bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-300'
+                }.get(card.tone, 'bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-300') %}
+                <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                    <div class="flex items-start gap-4">
+                        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl {{ tone_class }}">
+                            <i data-lucide="{{ card.icon }}" class="h-6 w-6"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-sm font-semibold text-slate-600 dark:text-slate-300">{{ card.label }}</p>
+                            <p class="mt-2 text-3xl font-bold tracking-tight text-slate-950 dark:text-white">{{ card.value }}</p>
+                            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ card.caption }}</p>
+                        </div>
+                    </div>
+                </article>
+            {% endfor %}
+        </section>
+
+        <section x-data="{ open: false }" class="rounded-2xl border border-blue-100 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+            <button type="button" @click="open = !open" class="flex w-full items-center justify-between gap-4 px-5 py-4 text-left">
+                <span class="flex min-w-0 items-center gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                        <i data-lucide="shield-check" class="h-[18px] w-[18px]"></i>
+                    </span>
+                    <span class="min-w-0">
+                        <span class="block text-base font-semibold text-slate-950 dark:text-white">Base Template Guardrail</span>
+                        <span class="block text-xs text-slate-500 dark:text-slate-400">Protected defaults for safe report customization.</span>
+                    </span>
+                </span>
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-500 dark:border-slate-700 dark:text-slate-300">
+                    <i x-show="!open" data-lucide="chevron-down" class="h-4 w-4"></i>
+                    <i x-show="open" data-lucide="chevron-up" class="h-4 w-4"></i>
+                </span>
+            </button>
+            <div x-show="open" x-collapse class="border-t border-slate-100 px-5 pb-5 pt-4 dark:border-slate-800">
+                <div class="grid gap-3 md:grid-cols-3">
+                    <div class="rounded-2xl bg-blue-50 p-4 dark:bg-blue-950/30">
+                        <p class="text-sm font-semibold text-blue-900 dark:text-blue-100">Immutable baseline</p>
+                        <p class="mt-2 text-sm leading-6 text-blue-800 dark:text-blue-200">System templates cannot be edited or deleted. They define the default report contract for infrastructure reporting.</p>
+                    </div>
+                    <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
+                        <p class="text-sm font-semibold text-slate-900 dark:text-white">Safe customization</p>
+                        <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">Duplicate a base template or create a custom template, then choose the sections that should appear in the generated PDF.</p>
+                    </div>
+                    <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
+                        <p class="text-sm font-semibold text-slate-900 dark:text-white">Domain ownership</p>
+                        <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">KubeReport owns current Kubernetes templates. ServerReport templates are reserved for future VM, server, and HCI reporting.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
+            <div class="space-y-6">
+                <section id="templates-registry" class="space-y-4">
+                    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                        <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                            <div class="flex min-w-0 items-center gap-3">
+                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                                    <i data-lucide="list-filter" class="h-[18px] w-[18px]"></i>
+                                </span>
+                                <div class="min-w-0">
+                                    <h2 class="text-base font-semibold text-slate-950 dark:text-white">Template Filters</h2>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400">Filter templates by type, status, or keyword without reloading the page.</p>
+                                </div>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                                <span class="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 font-semibold text-blue-700 dark:bg-blue-500/10 dark:text-blue-300">
+                                    <i data-lucide="library" class="h-3.5 w-3.5"></i>
+                                    {{ payload.pagination.total_items }} templates matched
+                                </span>
+                                {% if payload.active_filter_count > 0 %}
+                                    <a href="{{ url_for('reports.report_templates') }}"
+                                       hx-get="{{ url_for('reports.report_templates') }}"
+                                       hx-target="#templates-registry"
+                                       hx-select="#templates-registry"
+                                       hx-swap="outerHTML"
+                                       hx-push-url="true"
+                                       class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-2.5 py-1 font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
+                                        <i data-lucide="x" class="h-3.5 w-3.5"></i>
+                                        Clear {{ payload.active_filter_count }} filters
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <form method="GET"
+                              action="{{ url_for('reports.report_templates') }}"
+                              hx-get="{{ url_for('reports.report_templates') }}"
+                              hx-target="#templates-registry"
+                              hx-select="#templates-registry"
+                              hx-swap="outerHTML"
+                              hx-push-url="true"
+                              hx-trigger="change from:select, keyup changed delay:500ms from:input[name='search']"
+                              class="grid gap-3 lg:grid-cols-[220px_180px_minmax(0,1fr)] lg:items-end">
+                            <input type="hidden" name="page" value="1">
+                            <label class="block">
+                                <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Report Type</span>
+                                <select name="report_type" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                                    {% for option in payload.filter_options.report_types %}
+                                        <option value="{{ option.value }}" {% if payload.selected_filters.report_type == option.value %}selected{% endif %}>{{ option.label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </label>
+                            <label class="block">
+                                <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Status</span>
+                                <select name="status" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                                    {% for option in payload.filter_options.statuses %}
+                                        <option value="{{ option.value }}" {% if payload.selected_filters.status == option.value %}selected{% endif %}>{{ option.label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </label>
+                            <label class="block">
+                                <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Search</span>
+                                <div class="relative mt-1">
+                                    <i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"></i>
+                                    <input type="search" name="search" value="{{ payload.selected_filters.search }}" placeholder="Search template..." class="w-full rounded-xl border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                                </div>
+                            </label>
+                        </form>
+                    </div>
+
+                    <div class="space-y-4">
+                        {% for template in payload.templates %}
+                            {% set status_class = {
+                                'blue': 'bg-blue-50 text-blue-700 ring-blue-600/20 dark:bg-blue-950/50 dark:text-blue-300 dark:ring-blue-400/20',
+                                'green': 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-400/20',
+                                'purple': 'bg-violet-50 text-violet-700 ring-violet-600/20 dark:bg-violet-950/50 dark:text-violet-300 dark:ring-violet-400/20',
+                                'gray': 'bg-slate-100 text-slate-700 ring-slate-600/20 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-400/20'
+                            }.get(template.status_tone, 'bg-slate-100 text-slate-700 ring-slate-600/20 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-400/20') %}
+                            <article x-data="{ detailsOpen: false }" class="rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:border-blue-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:hover:border-blue-800">
+                                <div class="p-5">
+                                    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                                        <div class="flex min-w-0 items-start gap-4">
+                                            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                                                <i data-lucide="{{ template.icon }}" class="h-6 w-6"></i>
+                                            </div>
+                                            <div class="min-w-0">
+                                                <div class="flex flex-wrap items-center gap-2">
+                                                    <h3 class="text-base font-semibold text-slate-950 dark:text-white">{{ template.name }}</h3>
+                                                    <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset {{ status_class }}">
+                                                        <i data-lucide="{% if template.source == 'system' %}shield-check{% else %}pencil-ruler{% endif %}" class="h-3.5 w-3.5"></i>
+                                                        {{ template.status_label }}
+                                                    </span>
+                                                </div>
+                                                <p class="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">{{ template.description }}</p>
+                                                <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                                                    <span class="rounded-lg bg-slate-100 px-2.5 py-1 font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">{{ template.report_type_label }}</span>
+                                                    <span class="rounded-lg bg-slate-100 px-2.5 py-1 font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">{{ template.section_count }} sections</span>
+                                                    <span class="rounded-lg bg-emerald-50 px-2.5 py-1 font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">{{ template.renderer_label }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="flex shrink-0 flex-wrap items-center gap-2">
+                                            <button type="button" @click="detailsOpen = !detailsOpen" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
+                                                <i x-show="!detailsOpen" data-lucide="chevron-down" class="h-4 w-4"></i>
+                                                <i x-show="detailsOpen" data-lucide="chevron-up" class="h-4 w-4"></i>
+                                                <span x-text="detailsOpen ? 'Hide details' : 'View more'"></span>
+                                            </button>
+                                            <a href="{{ template.generate_href }}" class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">
+                                                <i data-lucide="plus-circle" class="h-4 w-4"></i>
+                                                Generate
+                                            </a>
+                                            {% if template.can_edit %}
+                                                <a href="{{ template.edit_href }}#custom-template-form" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
+                                                    <i data-lucide="pencil" class="h-4 w-4"></i>
+                                                    Edit
+                                                </a>
+                                            {% endif %}
+                                            {% if template.can_duplicate %}
+                                                <form method="POST" action="{{ template.duplicate_href }}">
+                                                    {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                                    <button type="submit" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
+                                                        <i data-lucide="copy" class="h-4 w-4"></i>
+                                                        Duplicate
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                            {% if template.can_delete %}
+                                                <form method="POST" action="{{ template.delete_href }}" onsubmit="return confirm('Delete this custom template?');">
+                                                    {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                                    <button type="submit" class="inline-flex items-center gap-2 rounded-xl border border-red-200 px-3 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50 dark:border-red-900/60 dark:text-red-300 dark:hover:bg-red-950/30">
+                                                        <i data-lucide="trash-2" class="h-4 w-4"></i>
+                                                        Delete
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div x-show="detailsOpen" x-collapse class="mt-5 border-t border-slate-100 pt-4 dark:border-slate-800">
+                                        <div class="grid gap-3 text-sm md:grid-cols-2 xl:grid-cols-3">
+                                            <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
+                                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Domain</p>
+                                                <p class="mt-1 font-semibold text-slate-800 dark:text-slate-100">{{ template.report_domain_label }} / {{ template.source_kind_label }}</p>
+                                            </div>
+                                            <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
+                                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Output</p>
+                                                <p class="mt-1 font-semibold text-slate-800 dark:text-slate-100">{{ template.output_format }} · {{ template.customization_status }}</p>
+                                            </div>
+                                            <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
+                                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Ownership</p>
+                                                <p class="mt-1 font-semibold text-slate-800 dark:text-slate-100">{{ template.created_by_label }}</p>
+                                                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Updated {{ template.updated_label }}</p>
+                                            </div>
+                                        </div>
+                                        <div class="mt-4">
+                                            <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Template Sections</p>
+                                            <div class="mt-3 flex flex-wrap gap-2">
+                                                {% for section in template.sections %}
+                                                    <span class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
+                                                        <i data-lucide="check" class="h-3.5 w-3.5 text-blue-500"></i>
+                                                        {{ section }}
+                                                    </span>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </article>
+                        {% else %}
+                            <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                                <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+                                    <i data-lucide="search-x" class="h-6 w-6"></i>
+                                </div>
+                                <h3 class="mt-4 text-base font-semibold text-slate-900 dark:text-white">No templates matched the selected filters</h3>
+                                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Clear filters or search with a different report type or template keyword.</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                            <form method="GET"
+                                  action="{{ url_for('reports.report_templates') }}"
+                                  hx-get="{{ url_for('reports.report_templates') }}"
+                                  hx-target="#templates-registry"
+                                  hx-select="#templates-registry"
+                                  hx-swap="outerHTML"
+                                  hx-push-url="true"
+                                  class="flex flex-wrap items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                                <input type="hidden" name="report_type" value="{{ payload.selected_filters.report_type }}">
+                                <input type="hidden" name="status" value="{{ payload.selected_filters.status }}">
+                                <input type="hidden" name="search" value="{{ payload.selected_filters.search }}">
+                                <input type="hidden" name="page" value="1">
+                                <span>{{ payload.pagination.label }}</span>
+                                <select name="per_page"
+                                        hx-get="{{ url_for('reports.report_templates') }}"
+                                        hx-target="#templates-registry"
+                                        hx-select="#templates-registry"
+                                        hx-swap="outerHTML"
+                                        hx-push-url="true"
+                                        hx-include="closest form"
+                                        class="rounded-lg border border-slate-300 bg-white px-2 py-1 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                                    {% for option in payload.pagination.per_page_options %}
+                                        <option value="{{ option }}" {% if payload.pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
+                                    {% endfor %}
+                                </select>
+                            </form>
+                            <div class="flex items-center gap-2">
+                                <a href="{{ payload.pagination.previous_href }}"
+                                   hx-get="{{ payload.pagination.previous_href }}"
+                                   hx-target="#templates-registry"
+                                   hx-select="#templates-registry"
+                                   hx-swap="outerHTML"
+                                   hx-push-url="true"
+                                   class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold transition dark:border-slate-700 {% if not payload.pagination.has_previous %}pointer-events-none text-slate-300 dark:text-slate-600{% else %}text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800{% endif %}">
+                                    <i data-lucide="chevron-left" class="h-4 w-4"></i>
+                                    Prev
+                                </a>
+                                <span class="rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">{{ payload.pagination.page }} / {{ payload.pagination.total_pages }}</span>
+                                <a href="{{ payload.pagination.next_href }}"
+                                   hx-get="{{ payload.pagination.next_href }}"
+                                   hx-target="#templates-registry"
+                                   hx-select="#templates-registry"
+                                   hx-swap="outerHTML"
+                                   hx-push-url="true"
+                                   class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold transition dark:border-slate-700 {% if not payload.pagination.has_next %}pointer-events-none text-slate-300 dark:text-slate-600{% else %}text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800{% endif %}">
+                                    Next
+                                    <i data-lucide="chevron-right" class="h-4 w-4"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <aside class="space-y-6">
+                {% set form = payload.edit_template or payload.create_form %}
+                <section id="custom-template-form" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                    <div class="flex items-start justify-between gap-4">
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                                <i data-lucide="pencil-ruler" class="h-4 w-4"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-base font-semibold text-slate-950 dark:text-white">{% if payload.edit_template %}Edit Custom Template{% else %}Create Custom Template{% endif %}</h2>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">Custom templates pre-fill Generate Report with selected sections.</p>
+                            </div>
+                        </div>
+                        {% if payload.edit_template %}
+                            <a href="{{ url_for('reports.report_templates') }}#custom-template-form" class="text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-300">New</a>
+                        {% endif %}
+                    </div>
+                    <form method="POST"
+                          action="{% if payload.edit_template %}{{ url_for('reports.update_report_template', template_id=form.id) }}{% else %}{{ url_for('reports.create_report_template') }}{% endif %}"
+                          class="mt-5 space-y-4"
+                          data-template-form>
+                        {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                        <label class="block">
+                            <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Template Name</span>
+                            <input type="text" name="name" required value="{{ form.name }}" placeholder="Example: Weekly Capacity Review" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                        </label>
+                        <label class="block">
+                            <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Description</span>
+                            <textarea name="description" rows="3" placeholder="Describe when this template should be used." class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">{{ form.description }}</textarea>
+                        </label>
+                        <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+                            <label class="block">
+                                <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Report Type</span>
+                                <select name="report_type" data-template-report-type class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                                    {% for option in payload.filter_options.report_types %}
+                                        {% if option.value %}<option value="{{ option.value }}" {% if form.report_type == option.value %}selected{% endif %}>{{ option.label }}</option>{% endif %}
+                                    {% endfor %}
+                                </select>
+                            </label>
+                            <label class="block">
+                                <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Status</span>
+                                <select name="status" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                                    <option value="draft" {% if form.status == 'draft' %}selected{% endif %}>Draft</option>
+                                    <option value="active" {% if form.status == 'active' %}selected{% endif %}>Active</option>
+                                </select>
+                            </label>
+                        </div>
+                        <div>
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Sections</span>
+                                <button type="button" data-template-reset-sections class="text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-300">Reset default</button>
+                            </div>
+                            <div class="mt-2 space-y-2" data-template-section-list>
+                                {% for report_type, options in payload.section_options_by_report_type.items() %}
+                                    <div data-template-section-group="{{ report_type }}" class="space-y-2 {% if form.report_type != report_type %}hidden{% endif %}">
+                                        {% for option in options %}
+                                            <label class="flex gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm transition hover:border-blue-200 dark:border-slate-700 dark:bg-slate-950 dark:hover:border-blue-800">
+                                                <input type="checkbox" name="sections" value="{{ option.value }}" {% if option.value in form.sections %}checked{% endif %} class="mt-1 rounded border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-900">
+                                                <span>
+                                                    <span class="font-semibold text-slate-700 dark:text-slate-200">{{ option.label }}</span>
+                                                    <span class="block text-xs leading-5 text-slate-500 dark:text-slate-400">{{ option.description }}</span>
+                                                </span>
+                                            </label>
+                                        {% endfor %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">
+                            <i data-lucide="save" class="h-4 w-4"></i>
+                            {% if payload.edit_template %}Save Template{% else %}Create Template{% endif %}
+                        </button>
+                    </form>
+                </section>
+
+                <section x-data="{ open: false }" class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                    <button type="button" @click="open = !open" class="flex w-full items-center justify-between gap-4 px-5 py-4 text-left">
+                        <span class="flex min-w-0 items-center gap-3">
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                                <i data-lucide="book-open" class="h-[18px] w-[18px]"></i>
+                            </span>
+                            <span class="min-w-0">
+                                <span class="block text-base font-semibold text-slate-950 dark:text-white">Template Context</span>
+                                <span class="block text-xs text-slate-500 dark:text-slate-400">How templates are used by the report workflow.</span>
+                            </span>
+                        </span>
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-500 dark:border-slate-700 dark:text-slate-300">
+                            <i x-show="!open" data-lucide="chevron-down" class="h-4 w-4"></i>
+                            <i x-show="open" data-lucide="chevron-up" class="h-4 w-4"></i>
+                        </span>
+                    </button>
+                    <div x-show="open" x-collapse class="border-t border-slate-100 px-5 pb-5 pt-4 dark:border-slate-800">
+                        <ul class="space-y-3">
+                            {% for item in payload.template_context %}
+                                <li class="flex gap-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                                    <span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500"></span>
+                                    <span>{{ item }}</span>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </section>
+
+                <section x-data="{ open: false }" class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                    <button type="button" @click="open = !open" class="flex w-full items-center justify-between gap-4 px-5 py-4 text-left">
+                        <span class="flex min-w-0 items-center gap-3">
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                                <i data-lucide="workflow" class="h-[18px] w-[18px]"></i>
+                            </span>
+                            <span class="min-w-0">
+                                <span class="block text-base font-semibold text-slate-950 dark:text-white">Renderer Readiness</span>
+                                <span class="block text-xs text-slate-500 dark:text-slate-400">PDF output readiness for system and custom templates.</span>
+                            </span>
+                        </span>
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-500 dark:border-slate-700 dark:text-slate-300">
+                            <i x-show="!open" data-lucide="chevron-down" class="h-4 w-4"></i>
+                            <i x-show="open" data-lucide="chevron-up" class="h-4 w-4"></i>
+                        </span>
+                    </button>
+                    <div x-show="open" x-collapse class="divide-y divide-slate-100 border-t border-slate-100 dark:divide-slate-800 dark:border-slate-800">
+                        {% for item in payload.renderer_readiness %}
+                            {% set tone_class = {
+                                'blue': 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300',
+                                'green': 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300',
+                                'gray': 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
+                                'amber': 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300'
+                            }.get(item.tone, 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300') %}
+                            <div class="px-5 py-4">
+                                <div class="flex items-center justify-between gap-3">
+                                    <div class="flex items-center gap-2">
+                                        <i data-lucide="{{ item.icon }}" class="h-4 w-4 text-blue-500"></i>
+                                        <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ item.label }}</p>
+                                    </div>
+                                    <span class="rounded-lg px-2 py-1 text-xs font-semibold {{ tone_class }}">{{ item.status }}</span>
+                                </div>
+                                <p class="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">{{ item.description }}</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </section>
+            </aside>
+        </section>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const form = document.querySelector('[data-template-form]');
+            if (!form) return;
+
+            const reportTypeSelect = form.querySelector('[data-template-report-type]');
+            const resetButton = form.querySelector('[data-template-reset-sections]');
+            const defaultSectionsByType = {{ payload.default_sections_by_report_type | tojson }};
+
+            function syncSectionGroups(resetToDefault) {
+                const selectedType = reportTypeSelect.value;
+                form.querySelectorAll('[data-template-section-group]').forEach(function (group) {
+                    const isActive = group.dataset.templateSectionGroup === selectedType;
+                    group.classList.toggle('hidden', !isActive);
+                    group.querySelectorAll('input[type="checkbox"]').forEach(function (checkbox) {
+                        checkbox.disabled = !isActive;
+                        if (resetToDefault && isActive) {
+                            checkbox.checked = (defaultSectionsByType[selectedType] || []).includes(checkbox.value);
+                        }
+                    });
+                });
+            }
+
+            reportTypeSelect.addEventListener('change', function () {
+                syncSectionGroups(true);
+            });
+
+            resetButton.addEventListener('click', function () {
+                syncSectionGroups(true);
+            });
+
+            form.addEventListener('submit', function (event) {
+                syncSectionGroups(false);
+                const activeChecked = form.querySelectorAll('[data-template-section-group]:not(.hidden) input[type="checkbox"]:checked');
+                if (activeChecked.length === 0) {
+                    event.preventDefault();
+                    alert('Please select at least one template section.');
+                }
+            });
+
+            syncSectionGroups(false);
+        });
+        document.body.addEventListener('htmx:afterSwap', function (event) {
+            if (window.lucide && event.detail && event.detail.target && event.detail.target.id === 'templates-registry') {
+                window.lucide.createIcons();
+            }
+        });
+    </script>
+{% endblock dashboard_content %}

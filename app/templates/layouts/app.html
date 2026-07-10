@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full overflow-hidden">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="icon"
+              type="image/svg+xml"
+              href="{{ url_for('static', filename='favicon.svg') }}" />
+        <title>{% block title %}KAORI{% endblock title %}</title>
+        <script>
+            ;(function () {
+                const theme = localStorage.getItem('theme')
+                const sidebarOpen = localStorage.getItem('kubereport.sidebarOpen')
+
+                if (theme === 'dark') {
+                    document.documentElement.classList.add('dark')
+                }
+
+                if (sidebarOpen === 'false') {
+                    document.documentElement.classList.add('sidebar-collapsed')
+                }
+            })()
+        </script>
+        <style>
+            html {
+                font-size: 12px;
+            }
+
+            @media (min-width: 1536px) {
+                html {
+                    font-size: 13px;
+                }
+            }
+
+            @media (min-width: 1920px) {
+                html {
+                    font-size: 14px;
+                }
+            }
+
+            [x-cloak] {
+                display: none !important;
+            }
+
+            .kubereport-sidebar {
+                width: 260px;
+            }
+
+            .sidebar-collapsed .kubereport-sidebar {
+                width: 72px;
+            }
+
+            .app-content-shell {
+                padding: 24px;
+            }
+
+            @media (min-width: 1024px) {
+                .app-content-shell {
+                    padding: 28px;
+                }
+            }
+
+            @media (min-width: 1536px) {
+                .app-content-shell {
+                    padding: 32px;
+                }
+            }
+
+            .sidebar-collapsed .sidebar-expanded-only {
+                display: none !important;
+            }
+
+            .sidebar-collapsed .sidebar-nav-section {
+                margin-bottom: 0.5rem;
+            }
+
+            .sidebar-collapsed .sidebar-brand-card {
+                justify-content: center;
+                gap: 0;
+                padding: 0.5rem;
+            }
+
+            .sidebar-collapsed .sidebar-brand-icon {
+                height: 2.5rem;
+                width: 2.5rem;
+                border-radius: 0.75rem;
+            }
+
+            .sidebar-collapsed .sidebar-parent-link {
+                justify-content: center;
+            }
+
+
+            .sidebar-menu > summary {
+                list-style: none;
+            }
+
+            .sidebar-menu > summary::-webkit-details-marker {
+                display: none;
+            }
+
+            .sidebar-menu-chevron {
+                transform: rotate(0deg);
+                transition: transform 150ms ease;
+            }
+
+            .sidebar-menu[open] > summary .sidebar-menu-chevron {
+                transform: rotate(90deg);
+            }
+
+            .sidebar-collapsed .sidebar-menu-chevron,
+            .sidebar-collapsed .sidebar-submenu {
+                display: none !important;
+            }
+
+            .sidebar-toggle-collapsed-icon {
+                display: none;
+            }
+
+            .sidebar-collapsed .sidebar-toggle-expanded-icon {
+                display: none;
+            }
+
+            .sidebar-collapsed .sidebar-toggle-collapsed-icon {
+                display: block;
+            }
+
+            .htmx-indicator {
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 150ms ease-in;
+                visibility: hidden;
+            }
+
+            .htmx-request .htmx-indicator,
+            .htmx-request.htmx-indicator {
+                opacity: 1;
+                visibility: visible;
+            }
+
+
+            .quick-sync-progress-track {
+                position: relative;
+                overflow: hidden;
+            }
+
+            .quick-sync-progress-track::after {
+                position: absolute;
+                inset: 0 auto 0 -45%;
+                width: 45%;
+                border-radius: inherit;
+                background: linear-gradient(90deg, transparent, rgb(37 99 235), transparent);
+                content: '';
+                animation: quick-sync-progress 1.5s ease-in-out infinite;
+            }
+
+            @keyframes quick-sync-progress {
+                from {
+                    transform: translateX(0);
+                }
+                to {
+                    transform: translateX(325%);
+                }
+            }
+        </style>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+              rel="stylesheet" />
+        <link rel="stylesheet"
+              href="{{ url_for('static', filename='css/output.css') }}" />
+        <style>
+            /* KAORI sidebar density standard */
+            .kubereport-sidebar nav > :not([hidden]) ~ :not([hidden]) {
+                margin-top: 16px !important;
+            }
+
+            .sidebar-brand-card {
+                gap: 10px !important;
+                padding: 10px !important;
+            }
+
+            .sidebar-brand-icon {
+                width: 40px !important;
+                height: 40px !important;
+                border-radius: 12px !important;
+            }
+
+            .sidebar-brand-icon svg {
+                width: 17px !important;
+                height: 17px !important;
+            }
+
+            .sidebar-brand-card h1 {
+                font-size: 13px !important;
+                line-height: 18px !important;
+            }
+
+            .sidebar-brand-card p {
+                font-size: 10px !important;
+                line-height: 15px !important;
+            }
+
+            .sidebar-nav-section > .sidebar-expanded-only:first-child {
+                margin-bottom: 6px !important;
+                padding-right: 10px !important;
+                padding-left: 10px !important;
+                font-size: 9px !important;
+                line-height: 14px !important;
+                letter-spacing: 0.14em !important;
+            }
+
+            .sidebar-parent-link {
+                min-height: 48px;
+                gap: 10px !important;
+                padding: 8px 10px !important;
+                border-radius: 13px !important;
+                font-size: 12px !important;
+                line-height: 18px !important;
+            }
+
+            summary.sidebar-parent-link > div {
+                gap: 10px !important;
+            }
+
+            .sidebar-parent-link > span:first-child,
+            .sidebar-parent-link > div > span:first-child {
+                width: 32px !important;
+                height: 32px !important;
+                border-radius: 10px !important;
+            }
+
+            .sidebar-parent-link > span:first-child svg,
+            .sidebar-parent-link > div > span:first-child svg {
+                width: 15px !important;
+                height: 15px !important;
+            }
+
+            .sidebar-parent-link .sidebar-expanded-only:not(.sidebar-menu-chevron) {
+                font-size: 12px !important;
+                line-height: 18px !important;
+            }
+
+            .sidebar-menu-chevron {
+                width: 14px !important;
+                height: 14px !important;
+            }
+
+            .sidebar-submenu {
+                margin-left: 24px !important;
+                padding-left: 12px !important;
+            }
+
+            .sidebar-submenu a {
+                gap: 7px !important;
+                padding: 6px 9px !important;
+                border-radius: 10px !important;
+                font-size: 11px !important;
+                line-height: 16px !important;
+            }
+
+            .sidebar-submenu a > span:first-child {
+                width: 5px !important;
+                height: 5px !important;
+            }
+
+            .sidebar-submenu a svg {
+                width: 13px !important;
+                height: 13px !important;
+            }
+
+            .sidebar-collapsed .sidebar-parent-link {
+                min-height: 44px;
+                padding: 6px !important;
+            }
+
+            .sidebar-collapsed .sidebar-parent-link > span:first-child,
+            .sidebar-collapsed .sidebar-parent-link > div > span:first-child {
+                width: 32px !important;
+                height: 32px !important;
+            }
+        </style>
+    </head>
+    <body class="h-full overflow-hidden bg-slate-50 font-sans text-slate-900 antialiased transition-colors duration-300 dark:bg-slate-900 dark:text-slate-100">
+        <div x-data="{
+                 sidebarOpen: localStorage.getItem('kubereport.sidebarOpen') !== 'false',
+                 init() {
+                     document.documentElement.classList.toggle('sidebar-collapsed', !this.sidebarOpen)
+
+                     this.$watch('sidebarOpen', value => {
+                         localStorage.setItem('kubereport.sidebarOpen', value ? 'true' : 'false')
+                         document.documentElement.classList.toggle('sidebar-collapsed', !value)
+                     })
+                 }
+             }"
+             @toggle-sidebar.window="sidebarOpen = !sidebarOpen"
+             class="flex h-full min-h-0 overflow-hidden">
+            {% include "components/navigation/sidebar.html" %}
+            <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
+                {% include "components/navigation/navbar.html" %}
+                <main class="min-h-0 flex-1 overflow-y-auto bg-slate-50 transition-colors duration-300 dark:bg-slate-900">
+                    <div class="app-content-shell">
+                        {% block dashboard_content %}
+                        {% endblock dashboard_content %}
+                    </div>
+                </main>
+            </div>
+        </div>
+        <div id="quick-action-feedback"
+             style="width:min(28rem, calc(100vw - 2rem));"
+             class="pointer-events-none fixed right-4 top-20 z-50 space-y-3 sm:right-6 lg:right-8"></div>
+        <div id="quick-sync-processing"
+             style="width:min(28rem, calc(100vw - 2rem));"
+             class="htmx-indicator pointer-events-none fixed right-4 top-20 z-[60] sm:right-6 lg:right-8"
+             role="status"
+             aria-live="polite">
+            <div class="pointer-events-auto overflow-hidden rounded-2xl border border-blue-200 bg-white shadow-2xl shadow-slate-900/15 dark:border-blue-500/30 dark:bg-slate-900 dark:shadow-slate-950/50">
+                <div class="h-1 bg-blue-100 dark:bg-blue-500/10">
+                    <div class="quick-sync-progress-track h-full w-full rounded-full"></div>
+                </div>
+
+                <div class="p-4">
+                    <div class="flex items-start gap-3">
+                        <span class="mt-0.5 flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-sm shadow-blue-600/20">
+                            <i data-lucide="refresh-cw" class="h-5 w-5 animate-spin"></i>
+                        </span>
+
+                        <div class="min-w-0 flex-1">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <div>
+                                    <p class="text-sm font-bold text-slate-950 dark:text-white">Kubernetes sync is running</p>
+                                    <p class="mt-1 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                                        Refreshing inventory from all registered clusters.
+                                    </p>
+                                </div>
+                                <span class="rounded-lg bg-blue-50 px-2 py-1 text-[9px] font-bold uppercase tracking-wide text-blue-700 dark:bg-blue-500/10 dark:text-blue-300">
+                                    In progress
+                                </span>
+                            </div>
+
+                            <div class="mt-3 rounded-xl border border-blue-100 bg-blue-50/60 p-3 dark:border-blue-500/20 dark:bg-blue-500/5">
+                                <div class="flex items-center justify-between gap-3">
+                                    <span class="text-[10px] font-bold uppercase tracking-wide text-blue-700 dark:text-blue-300">Collection scope</span>
+                                    <span id="quick-sync-elapsed" class="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-500 dark:text-slate-400">
+                                        <i data-lucide="timer" class="h-3.5 w-3.5"></i>
+                                        0s elapsed
+                                    </span>
+                                </div>
+                                <div class="mt-2 flex flex-wrap gap-1.5">
+                                    <span class="rounded-lg bg-white px-2 py-1 text-[10px] font-semibold text-slate-600 shadow-sm dark:bg-slate-900 dark:text-slate-300">Cluster metadata</span>
+                                    <span class="rounded-lg bg-white px-2 py-1 text-[10px] font-semibold text-slate-600 shadow-sm dark:bg-slate-900 dark:text-slate-300">Nodes & namespaces</span>
+                                    <span class="rounded-lg bg-white px-2 py-1 text-[10px] font-semibold text-slate-600 shadow-sm dark:bg-slate-900 dark:text-slate-300">Workloads & pods</span>
+                                    <span class="rounded-lg bg-white px-2 py-1 text-[10px] font-semibold text-slate-600 shadow-sm dark:bg-slate-900 dark:text-slate-300">Services & ingress</span>
+                                    <span class="rounded-lg bg-white px-2 py-1 text-[10px] font-semibold text-slate-600 shadow-sm dark:bg-slate-900 dark:text-slate-300">Storage</span>
+                                </div>
+                            </div>
+
+                            <div class="mt-3 flex items-start gap-2 text-[10px] leading-4 text-slate-500 dark:text-slate-400">
+                                <i data-lucide="info" class="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-blue-500"></i>
+                                <p>
+                                    Progress is indeterminate because clusters are currently synchronized in one server request. The final result will show successful and failed clusters and will also be saved in Notifications.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script defer
+                src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+        <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+        <script src="https://unpkg.com/lucide@latest"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                if (window.lucide) {
+                    window.lucide.createIcons()
+                }
+            })
+
+            document.body.addEventListener('htmx:afterSwap', (event) => {
+                if (window.Alpine && event.detail && event.detail.elt) {
+                    window.Alpine.initTree(event.detail.elt)
+                }
+
+                if (window.lucide) {
+                    window.lucide.createIcons()
+                }
+            })
+
+            document.addEventListener('click', (event) => {
+                const closeButton = event.target.closest('[data-quick-action-toast-close]')
+
+                if (!closeButton) {
+                    return
+                }
+
+                event.preventDefault()
+                event.stopPropagation()
+
+                const toast = closeButton.closest('[data-quick-action-toast]')
+
+                if (toast) {
+                    toast.remove()
+                }
+            }, true)
+        </script>
+        <script>
+            ;(() => {
+                let quickSyncTimer = null
+                let quickSyncStartedAt = null
+
+                const stopQuickSyncTimer = () => {
+                    if (quickSyncTimer) {
+                        window.clearInterval(quickSyncTimer)
+                        quickSyncTimer = null
+                    }
+                    quickSyncStartedAt = null
+                }
+
+                const updateQuickSyncElapsed = () => {
+                    const elapsedNode = document.getElementById('quick-sync-elapsed')
+                    if (!elapsedNode || quickSyncStartedAt === null) {
+                        return
+                    }
+
+                    const elapsedSeconds = Math.max(
+                        0,
+                        Math.floor((Date.now() - quickSyncStartedAt) / 1000),
+                    )
+
+                    elapsedNode.innerHTML = `<i data-lucide="timer" class="h-3.5 w-3.5"></i>${elapsedSeconds}s elapsed`
+
+                    if (window.lucide) {
+                        window.lucide.createIcons()
+                    }
+                }
+
+                document.body.addEventListener('htmx:beforeRequest', (event) => {
+                    const trigger = event.detail?.elt
+                    if (!trigger || !trigger.closest('#quick-sync-form')) {
+                        return
+                    }
+
+                    stopQuickSyncTimer()
+                    quickSyncStartedAt = Date.now()
+                    updateQuickSyncElapsed()
+                    quickSyncTimer = window.setInterval(updateQuickSyncElapsed, 1000)
+                })
+
+                document.body.addEventListener('htmx:afterRequest', (event) => {
+                    const trigger = event.detail?.elt
+                    if (!trigger || !trigger.closest('#quick-sync-form')) {
+                        return
+                    }
+
+                    stopQuickSyncTimer()
+                })
+            })()
+        </script>
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const button = document.getElementById('theme-toggle')
+
+                if (!button) {
+                    return
+                }
+
+                button.addEventListener('click', () => {
+                    document.documentElement.classList.toggle('dark')
+
+                    const dark = document.documentElement.classList.contains('dark')
+
+                    localStorage.setItem('theme', dark ? 'dark' : 'light')
+                })
+            })
+        </script>
+        {% block scripts %}
+        {% endblock scripts %}
+    </body>
+</html>

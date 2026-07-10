@@ -1,0 +1,123 @@
+{% extends "layouts/app.html" %}
+{% set page_title = "Welcome" %}
+{% block title %}Welcome · KAORI{% endblock title %}
+{% block dashboard_content %}
+    <div class="space-y-6">
+        <section class="relative overflow-hidden rounded-3xl border border-blue-200/70 bg-gradient-to-br from-slate-950 via-blue-950 to-blue-700 p-6 text-white shadow-sm shadow-blue-500/20 dark:border-blue-500/30 lg:p-8">
+            <div class="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-cyan-300/20 blur-3xl"></div>
+            <div class="pointer-events-none absolute bottom-0 left-1/3 h-40 w-40 rounded-full bg-white/10 blur-2xl"></div>
+            <div class="relative grid gap-8 xl:grid-cols-12 xl:items-center">
+                <div class="xl:col-span-7">
+                    <div class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-blue-50 shadow-sm backdrop-blur">
+                        <i data-lucide="sparkles" class="h-4 w-4 text-cyan-100"></i>
+                        KAORI Workspace
+                    </div>
+                    <h1 class="mt-5 max-w-4xl text-3xl font-bold tracking-tight text-white sm:text-4xl lg:text-5xl">
+                        Welcome back, {{ current_user.display_name or current_user.username }}.
+                    </h1>
+                    <p class="mt-4 max-w-3xl text-sm leading-6 text-blue-50/90 sm:text-base">
+                        Start from the Kubernetes operations dashboard today, with room to expand into HCI and VM-based infrastructure observability later without renaming the platform again.
+                    </p>
+                    <div class="mt-6 flex flex-wrap gap-3">
+                        {% if current_user.has_permission('dashboard.view') %}
+                            <a href="{{ url_for('dashboard.index') }}"
+                               class="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2.5 text-sm font-bold text-blue-700 shadow-sm transition hover:bg-blue-50">
+                                <i data-lucide="layout-dashboard" class="h-4 w-4"></i>
+                                Open Kubernetes Operations Dashboard
+                            </a>
+                        {% endif %}
+                        {% if current_user.has_permission('analytics.view') %}
+                            <a href="{{ url_for('analytics.overview') }}"
+                               class="inline-flex items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-bold text-white shadow-sm backdrop-blur transition hover:bg-white/15">
+                                <i data-lucide="chart-column" class="h-4 w-4"></i>
+                                Review K8s Analytics
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="xl:col-span-5">
+                    <div class="rounded-3xl border border-white/15 bg-white/10 p-5 shadow-sm backdrop-blur-md">
+                        <div class="flex items-start gap-4">
+                            <span class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-white text-blue-700 shadow-sm">
+                                <i data-lucide="boxes" class="h-6 w-6"></i>
+                            </span>
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-[0.16em] text-blue-100/80">Current focus</p>
+                                <h2 class="mt-1 text-xl font-bold text-white">Kubernetes operations first</h2>
+                                <p class="mt-2 text-sm leading-6 text-blue-50/85">
+                                    Cluster inventory, resource utilization, capacity posture, alert visibility, and reporting stay as the primary workflow while the product identity becomes broader.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="mt-5 grid gap-3 sm:grid-cols-3 xl:grid-cols-1 2xl:grid-cols-3">
+                            <div class="rounded-2xl border border-white/15 bg-white/10 p-3">
+                                <p class="text-[11px] font-semibold uppercase tracking-wide text-blue-100/80">Now</p>
+                                <p class="mt-1 text-sm font-bold text-white">K8s Ops</p>
+                            </div>
+                            <div class="rounded-2xl border border-white/15 bg-white/10 p-3">
+                                <p class="text-[11px] font-semibold uppercase tracking-wide text-blue-100/80">Next</p>
+                                <p class="mt-1 text-sm font-bold text-white">HCI / VM</p>
+                            </div>
+                            <div class="rounded-2xl border border-white/15 bg-white/10 p-3">
+                                <p class="text-[11px] font-semibold uppercase tracking-wide text-blue-100/80">Platform</p>
+                                <p class="mt-1 text-sm font-bold text-white">KAORI</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="grid gap-4 xl:grid-cols-3">
+            {% set cards = [
+                {
+                    'title': 'Kubernetes Operations Dashboard',
+                    'description': 'Open the primary command center for cluster health, capacity, alerts, top consumers, and operational recommendations.',
+                    'icon': 'layout-dashboard',
+                    'href': url_for('dashboard.index'),
+                    'enabled': current_user.has_permission('dashboard.view')
+                },
+                {
+                    'title': 'K8s Cluster',
+                    'description': 'Manage registered Kubernetes clusters, connectivity tests, inventory sync status, Prometheus, and Alertmanager readiness.',
+                    'icon': 'server',
+                    'href': url_for('cluster.list_clusters'),
+                    'enabled': current_user.has_permission('clusters.view')
+                },
+                {
+                    'title': 'K8s Analytics',
+                    'description': 'Review utilization, capacity, workload efficiency, forecasting, top consumers, and alert intelligence.',
+                    'icon': 'chart-column',
+                    'href': url_for('analytics.overview'),
+                    'enabled': current_user.has_permission('analytics.view')
+                }
+            ] %}
+            {% for card in cards %}
+                <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition dark:border-slate-800 dark:bg-slate-900">
+                    <div class="flex items-start gap-4">
+                        <span class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+                            <i data-lucide="{{ card.icon }}" class="h-5 w-5"></i>
+                        </span>
+                        <div class="min-w-0 flex-1">
+                            <h3 class="text-base font-bold text-slate-950 dark:text-white">{{ card.title }}</h3>
+                            <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">{{ card.description }}</p>
+                        </div>
+                    </div>
+                    <div class="mt-5">
+                        {% if card.enabled %}
+                            <a href="{{ card.href }}"
+                               class="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-blue-500">
+                                Open
+                                <i data-lucide="arrow-right" class="h-4 w-4"></i>
+                            </a>
+                        {% else %}
+                            <span class="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-400 dark:border-slate-800 dark:bg-slate-950/70">
+                                No access
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </section>
+    </div>
+{% endblock dashboard_content %}

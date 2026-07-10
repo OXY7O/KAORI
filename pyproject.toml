@@ -1,0 +1,24 @@
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.format]
+quote-style = "single"
+indent-style = "space"
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "F",
+    "I",
+    "UP",
+]
+
+[tool.djlint]
+profile = "jinja"
+extension = "html"
+indent = 4
+max_line_length = 120
+format_css = false
+format_js = false
+ignore = "H006,H029,H030,H031"

@@ -1,0 +1,87 @@
+<section class="kaori-login-panel">
+    <div class="kaori-login-card">
+        <header class="kaori-login-header">
+            <div class="kaori-login-mark" aria-hidden="true">
+                <i data-lucide="fingerprint"></i>
+            </div>
+            <p class="kaori-login-eyebrow">Secure workspace access</p>
+            <h1>Welcome back</h1>
+            <p>Sign in to continue to your KAORI workspace.</p>
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="kaori-flash-stack">
+                    {% for category, message in messages %}
+                        {% if category == "success" %}
+                            <div class="kaori-flash kaori-flash--success" role="status">
+                                <i data-lucide="circle-check" aria-hidden="true"></i>
+                                <span>{{ message }}</span>
+                            </div>
+                        {% else %}
+                            <div class="kaori-flash kaori-flash--error" role="alert">
+                                <i data-lucide="triangle-alert" aria-hidden="true"></i>
+                                <span>{{ message }}</span>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <form class="kaori-login-form" method="POST">
+            {{ form.hidden_tag() }}
+
+            <div class="kaori-field">
+                <label for="{{ form.username.id }}">Username</label>
+                <div class="kaori-input-wrap">
+                    <i data-lucide="user-round" class="kaori-input-icon" aria-hidden="true"></i>
+                    {{ form.username(
+                        class="kaori-input",
+                        placeholder="Enter your username",
+                        autocomplete="username",
+                        autofocus=true
+                    ) }}
+                </div>
+                {% if form.username.errors %}
+                    <p class="kaori-field-error">{{ form.username.errors[0] }}</p>
+                {% endif %}
+            </div>
+
+            <div class="kaori-field">
+                <label for="{{ form.password.id }}">Password</label>
+                <div class="kaori-input-wrap">
+                    <i data-lucide="key-round" class="kaori-input-icon" aria-hidden="true"></i>
+                    {{ form.password(
+                        class="kaori-input kaori-input--password",
+                        placeholder="Enter your password",
+                        autocomplete="current-password",
+                        data_password_input=""
+                    ) }}
+                    <button type="button"
+                            class="kaori-password-toggle"
+                            data-password-toggle
+                            aria-label="Show password">
+                        <i data-lucide="eye"
+                           data-password-icon
+                           aria-hidden="true"></i>
+                    </button>
+                </div>
+                {% if form.password.errors %}
+                    <p class="kaori-field-error">{{ form.password.errors[0] }}</p>
+                {% endif %}
+            </div>
+
+            <div class="kaori-form-options">
+                <label class="kaori-remember">
+                    {{ form.remember(class="kaori-checkbox") }}
+                    <span>Remember me</span>
+                </label>
+            </div>
+
+            {{ form.submit(class="kaori-submit") }}
+        </form>
+
+        {% include "auth/partials/_footer_meta.html" %}
+    </div>
+</section>

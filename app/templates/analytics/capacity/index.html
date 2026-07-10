@@ -1,0 +1,513 @@
+{% extends "layouts/app.html" %}
+{% block title %}Capacity Analysis{% endblock title %}
+{% block dashboard_content %}
+    {% macro capacity_width(value) %}
+        {% set percentage = value|default(0)|float %}
+        {% if percentage < 0 %}
+            0
+        {% elif percentage > 100 %}
+            100
+        {% else %}
+            {{ percentage }}
+        {% endif %}
+    {% endmacro %}
+
+    <div id="capacity-page" class="space-y-6" data-analytics-page-tracker="capacity-load-tracker" data-analytics-page-request-tracking="false">
+        {% include "analytics/capacity/partials/_hero.html" %}
+
+        {% set analytics_tracker_id = 'capacity-load-tracker' %}
+        {% set analytics_page_id = 'capacity-page' %}
+        {% set analytics_load_title = 'Loading capacity analysis' %}
+        {% set analytics_load_description = 'Loading Prometheus-backed capacity signals.' %}
+        {% set analytics_load_complete_title = 'Capacity analysis fully loaded' %}
+        {% set analytics_load_complete_description = 'All capacity analysis sections have finished loading.' %}
+        {% include "analytics/partials/_load_tracker.html" %}
+
+        {% if error %}
+            <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
+                <div class="flex items-start gap-3">
+                    <i data-lucide="triangle-alert" class="mt-0.5 h-5 w-5"></i>
+                    <div>
+                        <div class="font-semibold">Prometheus connection issue</div>
+                        <div class="mt-1">{{ error }}</div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+        {% if cluster %}
+            <!-- Worker Capacity Summary -->
+            {% set cpu_headroom = capacity_summary.cpu.headroom|default(0) %}
+            {% set memory_headroom = capacity_summary.memory.headroom|default(0) %}
+            {% set pod_headroom = capacity_summary.pods.headroom|default(0) %}
+            <section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                <div class="border-b border-slate-200 bg-gradient-to-r from-slate-50 via-white to-blue-50/50 px-6 py-5 dark:border-slate-700 dark:from-slate-950 dark:via-slate-900 dark:to-blue-950/20">
+                    <div class="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+                        <div class="flex items-start gap-3">
+                            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 ring-1 ring-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:ring-blue-900">
+                                <i data-lucide="server-cog" class="h-5 w-5"></i>
+                            </div>
+                            <div>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Worker Capacity Summary</h2>
+                                    <span class="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-blue-700 ring-1 ring-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:ring-blue-900">
+                                        Ready worker capacity
+                                    </span>
+                                </div>
+                                <p class="mt-1 max-w-3xl text-sm leading-6 text-slate-500 dark:text-slate-400">
+                                    Schedulable capacity is calculated from Ready worker nodes only. Use this summary as the baseline before comparing workload requests, limits, usage, and placement pressure.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="grid gap-2 sm:grid-cols-3 xl:min-w-[460px]">
+                            <div class="rounded-2xl border border-blue-100 bg-white/80 px-4 py-3 shadow-sm dark:border-blue-900/60 dark:bg-slate-950/60">
+                                <div class="flex items-center justify-between gap-3">
+                                    <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">CPU Headroom</span>
+                                    <span class="h-2 w-2 rounded-full bg-blue-500"></span>
+                                </div>
+                                <div class="mt-1 text-xl font-bold tracking-tight text-slate-950 dark:text-white">{{ "%.1f"|format(cpu_headroom) }}%</div>
+                            </div>
+                            <div class="rounded-2xl border border-indigo-100 bg-white/80 px-4 py-3 shadow-sm dark:border-indigo-900/60 dark:bg-slate-950/60">
+                                <div class="flex items-center justify-between gap-3">
+                                    <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Memory Headroom</span>
+                                    <span class="h-2 w-2 rounded-full bg-indigo-500"></span>
+                                </div>
+                                <div class="mt-1 text-xl font-bold tracking-tight text-slate-950 dark:text-white">{{ "%.1f"|format(memory_headroom) }}%</div>
+                            </div>
+                            <div class="rounded-2xl border border-cyan-100 bg-white/80 px-4 py-3 shadow-sm dark:border-cyan-900/60 dark:bg-slate-950/60">
+                                <div class="flex items-center justify-between gap-3">
+                                    <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Pod Headroom</span>
+                                    <span class="h-2 w-2 rounded-full bg-cyan-500"></span>
+                                </div>
+                                <div class="mt-1 text-xl font-bold tracking-tight text-slate-950 dark:text-white">{{ "%.1f"|format(pod_headroom) }}%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid gap-0 divide-y divide-slate-200 dark:divide-slate-700 xl:grid-cols-4 xl:divide-x xl:divide-y-0">
+                    {% for card in kpi_cards %}
+                        {% if loop.index0 == 0 %}
+                            {% set icon_tone = 'bg-blue-50 text-blue-600 ring-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:ring-blue-900' %}
+                            {% set bar_tone = 'bg-blue-500' %}
+                        {% elif loop.index0 == 1 %}
+                            {% set icon_tone = 'bg-indigo-50 text-indigo-600 ring-indigo-100 dark:bg-indigo-950/40 dark:text-indigo-300 dark:ring-indigo-900' %}
+                            {% set bar_tone = 'bg-indigo-500' %}
+                        {% elif loop.index0 == 2 %}
+                            {% set icon_tone = 'bg-cyan-50 text-cyan-600 ring-cyan-100 dark:bg-cyan-950/40 dark:text-cyan-300 dark:ring-cyan-900' %}
+                            {% set bar_tone = 'bg-cyan-500' %}
+                        {% else %}
+                            {% set icon_tone = 'bg-violet-50 text-violet-600 ring-violet-100 dark:bg-violet-950/40 dark:text-violet-300 dark:ring-violet-900' %}
+                            {% set bar_tone = 'bg-violet-500' %}
+                        {% endif %}
+                        <article class="relative bg-white px-6 py-5 transition hover:bg-slate-50/80 dark:bg-slate-900 dark:hover:bg-slate-950/40">
+                            <div class="absolute inset-x-6 top-0 h-0.5 rounded-full {{ bar_tone }}"></div>
+                            <div class="flex min-h-[128px] flex-col justify-between gap-5">
+                                <div class="flex items-start justify-between gap-4">
+                                    <div class="min-w-0">
+                                        <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ card['label'] }}</div>
+                                        <div class="mt-1 text-3xl font-bold tracking-tight text-slate-950 dark:text-white">{{ card['value'] }}</div>
+                                    </div>
+                                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ring-1 {{ icon_tone }}">
+                                        <i data-lucide="{{ card['icon'] }}" class="h-5 w-5"></i>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p class="text-xs leading-5 text-slate-500 dark:text-slate-400">{{ card['caption'] }}</p>
+                                    {% if card.get('footer') %}
+                                        <div class="mt-3 inline-flex max-w-full items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                                            <span class="h-1.5 w-1.5 rounded-full {{ bar_tone }}"></span>
+                                            <span class="truncate">{{ card['footer'] }}</span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+            </section>
+            <!-- Allocation and Risk -->
+            <div class="grid gap-6 xl:grid-cols-[1.35fr_1fr]">
+                <section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                    <div class="border-b border-slate-200 px-6 py-5 dark:border-slate-700">
+                        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                            <div class="flex items-start gap-3">
+                                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 ring-1 ring-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:ring-blue-900">
+                                    <i data-lucide="activity" class="h-5 w-5"></i>
+                                </div>
+                                <div>
+                                    <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Cluster Resource Allocation &amp; Headroom</h2>
+                                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                                        Compare capacity, requests, limits, usage, peaks, and headroom.
+                                    </p>
+                                </div>
+                            </div>
+                            <span class="inline-flex w-fit items-center gap-2 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:ring-blue-900">
+                                <i data-lucide="gauge" class="h-3.5 w-3.5"></i>
+                                Requests, limits &amp; usage signals
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4 p-6">
+                        {% for key, section in allocation_summary.items() %}
+                            {% if key == 'cpu' %}
+                                {% set section_icon = 'cpu' %}
+                                {% set icon_class = 'bg-blue-50 text-blue-600 ring-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:ring-blue-900' %}
+                                {% set summary_tone = 'bg-blue-50 text-blue-700 ring-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:ring-blue-900' %}
+                            {% elif key == 'memory' %}
+                                {% set section_icon = 'memory-stick' %}
+                                {% set icon_class = 'bg-emerald-50 text-emerald-600 ring-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:ring-emerald-900' %}
+                                {% set summary_tone = 'bg-emerald-50 text-emerald-700 ring-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:ring-emerald-900' %}
+                            {% else %}
+                                {% set section_icon = 'boxes' %}
+                                {% set icon_class = 'bg-cyan-50 text-cyan-600 ring-cyan-100 dark:bg-cyan-950/40 dark:text-cyan-300 dark:ring-cyan-900' %}
+                                {% set summary_tone = 'bg-cyan-50 text-cyan-700 ring-cyan-100 dark:bg-cyan-950/40 dark:text-cyan-300 dark:ring-cyan-900' %}
+                            {% endif %}
+
+                            {% set allocatable_item = section['items'][0] if section['items']|length > 0 else {} %}
+                            {% set actual_item = section['items'][3] if section['items']|length > 3 else {} %}
+                            {% set peak_item = section['items'][4] if section['items']|length > 4 else actual_item %}
+
+                            <details class="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900" {% if loop.first %}open{% endif %}>
+                                <summary class="cursor-pointer list-none px-4 py-4 transition hover:bg-slate-50 dark:hover:bg-slate-950/40">
+                                    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                        <div class="flex min-w-0 items-center gap-3">
+                                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ring-1 {{ icon_class }}">
+                                                <i data-lucide="{{ section_icon }}" class="h-5 w-5"></i>
+                                            </div>
+                                            <div class="min-w-0">
+                                                <div class="flex flex-wrap items-center gap-2">
+                                                    <h3 class="font-semibold text-slate-900 dark:text-white">{{ section['title'] }}</h3>
+                                                    <span class="shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold {{ section['status']['class'] }}">
+                                                        {{ section['status']['label'] }}
+                                                    </span>
+                                                </div>
+                                                <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                                                    Allocation, current usage, and peak pressure.
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div class="grid gap-2 sm:grid-cols-3 sm:min-w-[360px]">
+                                            <div class="rounded-xl px-3 py-2 ring-1 {{ summary_tone }}">
+                                                <div class="text-[11px] font-medium opacity-80">Capacity</div>
+                                                <div class="mt-0.5 truncate text-xs font-bold">{{ allocatable_item.get('display', '-') }}</div>
+                                            </div>
+                                            <div class="rounded-xl bg-slate-50 px-3 py-2 text-slate-700 ring-1 ring-slate-200 dark:bg-slate-950/50 dark:text-slate-200 dark:ring-slate-700">
+                                                <div class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Actual</div>
+                                                <div class="mt-0.5 truncate text-xs font-bold">{{ actual_item.get('display', '-') }}</div>
+                                            </div>
+                                            <div class="rounded-xl bg-slate-50 px-3 py-2 text-slate-700 ring-1 ring-slate-200 dark:bg-slate-950/50 dark:text-slate-200 dark:ring-slate-700">
+                                                <div class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Peak</div>
+                                                <div class="mt-0.5 truncate text-xs font-bold">{{ peak_item.get('display', '-') }}</div>
+                                            </div>
+                                        </div>
+
+                                        <span class="inline-flex w-fit items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 transition group-open:bg-blue-50 group-open:text-blue-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:group-open:bg-blue-950/50 dark:group-open:text-blue-300">
+                                            <i data-lucide="chevron-down" class="h-4 w-4 transition group-open:rotate-180"></i>
+                                            Details
+                                        </span>
+                                    </div>
+                                </summary>
+
+                                <div class="border-t border-slate-200 bg-slate-50/60 p-4 dark:border-slate-700 dark:bg-slate-950/30">
+                                    <div class="space-y-3">
+                                        {% for item in section['items'] %}
+                                            <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900">
+                                                <div class="mb-1.5 flex items-center justify-between gap-3">
+                                                    <span class="truncate text-xs font-medium text-slate-500 dark:text-slate-400">{{ item['label'] }}</span>
+                                                    <span class="shrink-0 text-xs font-semibold text-slate-700 dark:text-slate-200">{{ item['display'] }}</span>
+                                                </div>
+                                                <div class="h-2.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                                                    <div class="capacity-progress h-2.5 rounded-full {{ item['bar_class'] }}"
+                                                         data-progress="{{ item['percent'] }}"></div>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </details>
+                        {% endfor %}
+                    </div>
+
+                    <div class="border-t border-slate-200 bg-slate-50 px-6 py-4 dark:border-slate-700 dark:bg-slate-950/40">
+                        <div class="flex flex-wrap gap-4 text-xs text-slate-500 dark:text-slate-400">
+                            <span class="inline-flex items-center gap-2">
+                                <span class="h-2.5 w-2.5 rounded-full bg-slate-300"></span>
+                                Allocatable / Capacity
+                            </span>
+                            <span class="inline-flex items-center gap-2">
+                                <span class="h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                                Configured Requests
+                            </span>
+                            <span class="inline-flex items-center gap-2">
+                                <span class="h-2.5 w-2.5 rounded-full bg-blue-300"></span>
+                                Configured Limits
+                            </span>
+                            <span class="inline-flex items-center gap-2">
+                                <span class="h-2.5 w-2.5 rounded-full bg-indigo-500"></span>
+                                Actual Avg Usage
+                            </span>
+                            <span class="inline-flex items-center gap-2">
+                                <span class="h-2.5 w-2.5 rounded-full bg-slate-800"></span>
+                                Peak Usage
+                            </span>
+                        </div>
+                    </div>
+                </section>
+                <section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                    <div class="relative overflow-hidden bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 px-6 py-5 text-white">
+                        <div class="absolute -right-12 -top-14 h-36 w-36 rounded-full bg-white/10 blur-3xl"></div>
+                        <div class="absolute -bottom-16 left-16 h-40 w-40 rounded-full bg-cyan-300/20 blur-3xl"></div>
+                        <div class="relative flex items-center gap-3">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/20 bg-white/15 text-white backdrop-blur">
+                                <i data-lucide="radar" class="h-5 w-5"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-lg font-semibold text-white">Capacity Risk Summary</h2>
+                                <p class="mt-1 text-sm text-blue-50/85">
+                                    Current compute and scheduling headroom, plus governance findings.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid gap-4 md:grid-cols-3">
+                            {% for item in risk_summary %}
+                                {% if item['resource'] == 'cpu' %}
+                                    {% set icon_class = 'bg-blue-50 text-blue-600 ring-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:ring-blue-900' %}
+                                    {% set progress_class = 'bg-blue-600' %}
+                                {% elif item['resource'] == 'memory' %}
+                                    {% set icon_class = 'bg-indigo-50 text-indigo-600 ring-indigo-100 dark:bg-indigo-950/40 dark:text-indigo-300 dark:ring-indigo-900' %}
+                                    {% set progress_class = 'bg-indigo-600' %}
+                                {% else %}
+                                    {% set icon_class = 'bg-cyan-50 text-cyan-600 ring-cyan-100 dark:bg-cyan-950/40 dark:text-cyan-300 dark:ring-cyan-900' %}
+                                    {% set progress_class = 'bg-cyan-600' %}
+                                {% endif %}
+                                <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                                    <div class="flex h-full flex-col">
+                                        <div class="flex items-start justify-between gap-3">
+                                            <div class="flex min-w-0 items-center gap-3">
+                                                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ring-1 {{ icon_class }}">
+                                                    <i data-lucide="{{ item['icon'] }}" class="h-5 w-5"></i>
+                                                </div>
+                                                <div class="min-w-0">
+                                                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">{{ item['label'] }}</p>
+                                                    <p class="mt-1 text-sm font-medium text-slate-700 dark:text-slate-200">Current headroom</p>
+                                                </div>
+                                            </div>
+                                            <span class="inline-flex shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold {{ item['status']['class'] }}">
+                                                {{ item['status']['label'] }}
+                                            </span>
+                                        </div>
+
+                                        <div class="mt-6">
+                                            <div class="text-4xl font-bold tracking-tight text-slate-950 dark:text-white">
+                                                {{ "%.1f"|format(item['headroom']) }}%
+                                            </div>
+                                            <p class="mt-2 text-sm leading-5 text-slate-500 dark:text-slate-400">
+                                                Remaining worker {{ item['label']|lower }} capacity.
+                                            </p>
+                                        </div>
+
+                                        <div class="mt-6">
+                                            <div class="mb-2 flex items-center justify-between text-xs font-medium text-slate-500 dark:text-slate-400">
+                                                <span>Headroom</span>
+                                                <span>{{ "%.1f"|format(item['headroom']) }}%</span>
+                                            </div>
+                                            <div class="h-2.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                                                <div class="h-full rounded-full {{ progress_class }}" style="width: {{ item['headroom'] }}%;"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </article>
+                            {% endfor %}
+                        </div>
+                        <div class="mt-6 overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-50 via-white to-blue-50/60 p-5 dark:border-slate-700 dark:from-slate-950 dark:via-slate-900 dark:to-blue-950/20">
+                            <div class="mb-4 flex items-center justify-between gap-3">
+                                <div>
+                                    <h3 class="font-semibold text-slate-900 dark:text-white">Headroom Overview</h3>
+                                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Visual summary of current CPU, memory, and pod headroom.</p>
+                                </div>
+                                <div class="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 text-white"><i data-lucide="gauge" class="h-5 w-5"></i></div>
+                            </div>
+                            <div class="grid gap-4 sm:grid-cols-3">
+                                {% for item in risk_summary %}
+                                    <div class="rounded-3xl border border-slate-200 bg-white p-5 text-center shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                                        <div class="mx-auto h-28 w-28">
+                                            <svg viewBox="0 0 36 36" class="h-28 w-28 drop-shadow-sm">
+                                                <circle cx="18" cy="18" r="15.9155" fill="none" stroke="currentColor" stroke-width="3" class="text-slate-200 dark:text-slate-800"></circle>
+                                                <circle cx="18" cy="18" r="15.9155" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-dasharray="0 100" transform="rotate(-90 18 18)" data-progress="{{ item['headroom'] }}" class="capacity-ring
+                                                {% if item['resource'] == 'cpu' %}
+                                                    text-emerald-500
+                                                {% elif item['resource'] == 'memory' %}
+                                                    text-violet-500
+                                                {% else %}
+                                                    text-cyan-500
+                                                {% endif %}
+                                                "></circle>
+                                                <text x="18" y="17" text-anchor="middle" class="fill-slate-900 text-[0.42rem] font-bold dark:fill-white">
+                                                {{ "%.0f"|format(item['headroom']) }}%
+                                                </text>
+                                                <text x="18" y="22" text-anchor="middle" class="fill-slate-500 text-[0.22rem] font-semibold uppercase dark:fill-slate-400">
+                                                Headroom
+                                                </text>
+                                            </svg>
+                                        </div>
+                                        <div class="mt-3 text-sm font-semibold text-slate-900 dark:text-white">{{ item['label'] }}</div>
+                                        <div class="mt-1">
+                                            <span class="rounded-full px-2.5 py-1 text-xs font-semibold {{ item['status']['class'] }}">
+                                                {{ item['status']['label'] }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="mt-6 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                            <div class="border-b border-slate-200 bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 px-5 py-4 text-white dark:border-slate-700">
+                                <div class="flex items-center gap-3">
+                                    <div class="flex h-9 w-9 items-center justify-center rounded-2xl border border-white/20 bg-white/15 text-white">
+                                        <i data-lucide="shield-alert" class="h-5 w-5"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-semibold text-white">Governance Findings</h3>
+                                        <p class="mt-0.5 text-xs text-blue-50/75">Capacity, allocation, and related governance signals.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="divide-y divide-slate-200 dark:divide-slate-700">
+                                {% for finding in governance_findings %}
+                                    <div class="flex items-center justify-between gap-3 px-5 py-4 transition hover:bg-blue-50/50 dark:hover:bg-blue-950/20">
+                                        <div class="flex items-center gap-3">
+                                            {% if finding['severity'] == 'critical' %}
+                                                <i data-lucide="{{ finding['icon'] }}" class="h-4 w-4 text-red-500"></i>
+                                            {% elif finding['severity'] == 'warning' %}
+                                                <i data-lucide="{{ finding['icon'] }}" class="h-4 w-4 text-amber-500"></i>
+                                            {% elif finding['severity'] == 'info' %}
+                                                <i data-lucide="{{ finding['icon'] }}" class="h-4 w-4 text-blue-500"></i>
+                                            {% else %}
+                                                <i data-lucide="{{ finding['icon'] }}" class="h-4 w-4 text-emerald-500"></i>
+                                            {% endif %}
+                                            <span class="text-sm text-slate-700 dark:text-slate-200">{{ finding['label'] }}</span>
+                                        </div>
+                                        {% if finding['filter'] == 'storage-analysis' %}
+                                            {% set finding_url = url_for(
+                                                                                            'analytics.storage',
+                                                                                            cluster_id=cluster.id if cluster else '',
+                                                                                            time_range=selected_time_range
+                                                                                        ) %}
+                                        {% elif finding['filter'] in [
+                                            'workload-analysis',
+                                            'missing-quota',
+                                            'missing-request',
+                                            'missing-limit',
+                                            'best-effort',
+                                            'over-requested'
+                                            ] %}
+                                            {% set finding_url = url_for(
+                                                                                            'analytics.workload',
+                                                                                            cluster_id=cluster.id if cluster else '',
+                                                                                            time_range=selected_time_range
+                                                                                        ) %}
+                                        {% else %}
+                                            {% set finding_url = url_for(
+                                                                                            'analytics.capacity',
+                                                                                            cluster_id=cluster.id if cluster else '',
+                                                                                            time_range=selected_time_range
+                                                                                        ) %}
+                                        {% endif %}
+                                        <a href="{{ finding_url }}"
+                                           class="inline-flex shrink-0 items-center rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-100 hover:bg-blue-100 dark:bg-blue-950/50 dark:text-blue-300 dark:ring-blue-900 dark:hover:bg-blue-950">
+                                            View details
+                                        </a>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            <div class="border-t border-slate-200 px-4 py-3 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                                View details opens the relevant analysis view.
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            {% include "analytics/capacity/partials/_recommendations.html" %}
+{% else %}
+            <div class="rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+                    <i data-lucide="database-zap" class="h-7 w-7"></i>
+                </div>
+                <h2 class="mt-4 text-lg font-semibold text-slate-900 dark:text-white">No cluster configured</h2>
+                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    Add a Kubernetes cluster before opening Capacity Analysis.
+                </p>
+            </div>
+        {% endif %}
+    </div>
+    {% block scripts %}
+        <script>
+    function hydrateCapacityUi() {
+        document
+            .querySelectorAll(
+                '.capacity-progress'
+            )
+            .forEach(
+                function (element) {
+                    const rawValue = Number(
+                        element.dataset.progress || 0
+                    );
+
+                    const value = Math.max(
+                        0,
+                        Math.min(
+                            rawValue,
+                            100
+                        )
+                    );
+
+                    element.style.width = `${value}%`;
+                }
+            );
+
+        document
+            .querySelectorAll(
+                '.capacity-ring'
+            )
+            .forEach(
+                function (element) {
+                    const rawValue = Number(
+                        element.dataset.progress || 0
+                    );
+
+                    const value = Math.max(
+                        0,
+                        Math.min(
+                            rawValue,
+                            100
+                        )
+                    );
+
+                    element.setAttribute(
+                        'stroke-dasharray',
+                        `${value} 100`
+                    );
+                }
+            );
+
+        if (window.lucide) {
+            window.lucide.createIcons();
+        }
+    }
+
+    document.addEventListener(
+        'DOMContentLoaded',
+        hydrateCapacityUi
+    );
+
+    document.body.addEventListener(
+        'htmx:afterSwap',
+        hydrateCapacityUi
+    );
+        </script>
+    {% endblock scripts %}
+{% endblock dashboard_content %}

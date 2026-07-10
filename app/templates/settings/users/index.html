@@ -1,0 +1,10 @@
+{% extends "layouts/app.html" %}
+{% block title %}User Management{% endblock title %}
+{% block dashboard_content %}
+    <div class="space-y-6"
+         hx-on::after-swap="if (window.lucide) { window.lucide.createIcons(); }">
+        {% include "settings/users/partials/_hero.html" %}
+        {% include "settings/users/partials/_content.html" %}
+        {% include "settings/users/partials/_delete_modal.html" %}
+    </div>
+{% endblock dashboard_content %}

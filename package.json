@@ -1,0 +1,14 @@
+{
+    "scripts": {
+        "watch-css": "tailwindcss -i ./frontend/src/input.css -o ./app/static/css/output.css --watch",
+        "build-css": "tailwindcss -i ./frontend/src/input.css -o ./app/static/css/output.css --minify",
+        "format": "prettier . --write",
+        "check-format": "prettier . --check"
+    },
+    "devDependencies": {
+        "@tailwindcss/cli": "^4.3.1",
+        "prettier": "^3.8.4",
+        "prettier-plugin-tailwindcss": "^0.8.0",
+        "tailwindcss": "^4.3.1"
+    }
+}

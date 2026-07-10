@@ -1,0 +1,9 @@
+{% if inventory_summary.get(cluster.id, {}).get('synced_at') %}
+    <span class="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700 dark:bg-green-500/10 dark:text-green-300">
+        Synced
+    </span>
+{% else %}
+    <span class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:bg-slate-700 dark:text-slate-300">
+        Never Synced
+    </span>
+{% endif %}

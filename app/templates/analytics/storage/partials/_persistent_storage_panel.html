@@ -1,0 +1,342 @@
+<div id="persistent-storage-panel"
+     class="rounded-2xl border border-slate-200 dark:border-slate-700">
+    <div class="border-b border-slate-200 px-5 py-4 dark:border-slate-700">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+                <h3 class="font-semibold text-slate-900 dark:text-white">Persistent Storage</h3>
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    Compare PersistentVolume capacity and PersistentVolumeClaim request/utilization.
+                </p>
+            </div>
+            <div class="flex rounded-xl bg-slate-100 p-1 dark:bg-slate-950">
+                {% set pvc_tab_url = url_for(
+                                    'analytics.storage_persistent_summary',
+                                    cluster_id=cluster.id if cluster else '',
+                                    namespace=selected_namespace,
+                                    time_range=selected_time_range,
+                                    storage_tab='pvc'
+                                ) %}
+                {% set pv_tab_url = url_for(
+                                    'analytics.storage_persistent_summary',
+                                    cluster_id=cluster.id if cluster else '',
+                                    namespace=selected_namespace,
+                                    time_range=selected_time_range,
+                                    storage_tab='pv'
+                                ) %}
+                <a href="{{ pvc_tab_url }}"
+                   hx-get="{{ pvc_tab_url }}"
+                   hx-target="#persistent-storage-panel"
+                   hx-swap="outerHTML"
+                   hx-indicator="#storage-refresh-indicator"
+                   class="{% if selected_storage_tab == 'pvc' %}bg-white text-blue-600 shadow-sm dark:bg-slate-800 dark:text-blue-300{% else %}text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white{% endif %} rounded-lg px-4 py-2 text-sm font-semibold transition">
+                    PVC
+                </a>
+                <a href="{{ pv_tab_url }}"
+                   hx-get="{{ pv_tab_url }}"
+                   hx-target="#persistent-storage-panel"
+                   hx-swap="outerHTML"
+                   hx-indicator="#storage-refresh-indicator"
+                   class="{% if selected_storage_tab == 'pv' %}bg-white text-blue-600 shadow-sm dark:bg-slate-800 dark:text-blue-300{% else %}text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white{% endif %} rounded-lg px-4 py-2 text-sm font-semibold transition">
+                    PV
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="p-5">
+        {% if selected_storage_tab == 'pvc' %}
+            <div class="mb-5 grid gap-4 md:grid-cols-3">
+                <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 p-4 text-white shadow-sm shadow-blue-500/10">
+                    <div class="absolute -right-8 -top-8 h-20 w-20 rounded-full bg-white/10 blur-2xl"></div>
+                    <div class="relative flex items-center gap-3">
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white ring-1 ring-white/20">
+                            <i data-lucide="box" class="h-5 w-5"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs font-medium text-blue-50/80">PVC Requested</div>
+                            <div class="mt-1 text-xl font-bold text-white">{{ storage_summary.persistent_storage.pvc.requested }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-700 via-blue-600 to-sky-500 p-4 text-white shadow-sm shadow-blue-500/10">
+                    <div class="absolute -right-8 -top-8 h-20 w-20 rounded-full bg-white/10 blur-2xl"></div>
+                    <div class="relative flex items-center gap-3">
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white ring-1 ring-white/20">
+                            <i data-lucide="hard-drive-download" class="h-5 w-5"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs font-medium text-blue-50/80">PVC Used</div>
+                            <div class="mt-1 text-xl font-bold text-white">{{ storage_summary.persistent_storage.pvc.used }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-sky-700 via-cyan-600 to-blue-500 p-4 text-white shadow-sm shadow-blue-500/10">
+                    <div class="absolute -right-8 -top-8 h-20 w-20 rounded-full bg-white/10 blur-2xl"></div>
+                    <div class="relative flex items-center gap-3">
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white ring-1 ring-white/20">
+                            <i data-lucide="hard-drive" class="h-5 w-5"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs font-medium text-blue-50/80">PVC Free</div>
+                            <div class="mt-1 text-xl font-bold text-white">{{ storage_summary.persistent_storage.pvc.free }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <form id="persistent-storage-filter-form"
+                  method="GET"
+                  action="{{ url_for('analytics.storage') }}"
+                  class="mb-5 grid gap-3 lg:grid-cols-[1fr_180px_220px]">
+                <input type="hidden"
+                       name="cluster_id"
+                       value="{{ cluster.id if cluster else '' }}" />
+                <input type="hidden" name="namespace" value="{{ selected_namespace }}" />
+                <input type="hidden" name="time_range" value="{{ selected_time_range }}" />
+                <input type="hidden" name="storage_tab" value="pvc" />
+                <input type="hidden" name="pvc_page" value="1" />
+                <input type="text"
+                       name="pvc_search"
+                       value="{{ selected_pvc_search }}"
+                       placeholder="Search PVC or namespace"
+                       class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200"
+                       hx-get="{{ url_for('analytics.storage_persistent_summary') }}"
+                       hx-trigger="keyup changed delay:500ms"
+                       hx-target="#persistent-storage-panel"
+                       hx-swap="outerHTML"
+                       hx-include="#persistent-storage-filter-form"
+                       hx-indicator="#storage-refresh-indicator" />
+                <select name="pvc_status"
+                        class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200"
+                        hx-get="{{ url_for('analytics.storage_persistent_summary') }}"
+                        hx-trigger="change"
+                        hx-target="#persistent-storage-panel"
+                        hx-swap="outerHTML"
+                        hx-include="#persistent-storage-filter-form"
+                        hx-indicator="#storage-refresh-indicator">
+                    <option value="">All Status</option>
+                    {% for status in storage_summary.persistent_storage.pvc_status_options %}
+                        <option value="{{ status }}"
+                                {% if selected_pvc_status == status %}selected{% endif %}>{{ status }}</option>
+                    {% endfor %}
+                </select>
+                <select name="pvc_storage_class"
+                        class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200"
+                        hx-get="{{ url_for('analytics.storage_persistent_summary') }}"
+                        hx-trigger="change"
+                        hx-target="#persistent-storage-panel"
+                        hx-swap="outerHTML"
+                        hx-include="#persistent-storage-filter-form"
+                        hx-indicator="#storage-refresh-indicator">
+                    <option value="">All StorageClass</option>
+                    {% for storage_class in storage_summary.persistent_storage.pvc_storage_class_options %}
+                        <option value="{{ storage_class }}"
+                                {% if selected_pvc_storage_class == storage_class %}selected{% endif %}>
+                            {{ storage_class }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </form>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-700">
+                    <thead>
+                        <tr class="text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                            <th class="px-3 py-3">PVC</th>
+                            <th class="px-3 py-3">Namespace</th>
+                            <th class="px-3 py-3">Status</th>
+                            <th class="px-3 py-3">StorageClass</th>
+                            <th class="px-3 py-3">Requested</th>
+                            <th class="px-3 py-3">Used</th>
+                            <th class="px-3 py-3">Free</th>
+                            <th class="px-3 py-3">Risk</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                        {% for row in storage_summary.persistent_storage.pvc_rows %}
+                            <tr class="text-slate-700 dark:text-slate-200">
+                                <td class="px-3 py-3 font-medium">
+                                    <div class="flex items-center gap-2">
+                                        <span class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-cyan-100 text-cyan-600 dark:bg-cyan-500/10 dark:text-cyan-300">
+                                            <i data-lucide="box" class="h-4 w-4"></i>
+                                        </span>
+                                        <span>{{ row.name }}</span>
+                                    </div>
+                                </td>
+                                <td class="px-3 py-3">{{ row.namespace }}</td>
+                                <td class="px-3 py-3">
+                                    <span class="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700">
+                                        {{ row.status }}
+                                    </span>
+                                </td>
+                                <td class="px-3 py-3">
+                                    <span class="inline-flex rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 ring-1 ring-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:ring-blue-900">
+                                        {{ row.storage_class }}
+                                    </span>
+                                </td>
+                                <td class="px-3 py-3">{{ row.requested }}</td>
+                                <td class="px-3 py-3">{{ row.used }}</td>
+                                <td class="px-3 py-3">{{ row.free }}</td>
+                                <td class="px-3 py-3">
+                                    <span class="rounded-full px-2.5 py-1 text-xs font-semibold {{ row.risk.class }}">{{ row.risk.label }}</span>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="8"
+                                    class="px-3 py-8 text-center text-sm text-slate-500 dark:text-slate-400">
+                                    No PVC metrics available.
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% set pagination = storage_summary.persistent_storage.pvc_pagination %}
+            {% include "analytics/storage/partials/_persistent_pagination.html" %}
+        {% else %}
+            <div class="mb-5 grid gap-4 md:grid-cols-3">
+                <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 p-4 text-white shadow-sm shadow-blue-500/10">
+                    <div class="absolute -right-8 -top-8 h-20 w-20 rounded-full bg-white/10 blur-2xl"></div>
+                    <div class="relative flex items-center gap-3">
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white ring-1 ring-white/20">
+                            <i data-lucide="box" class="h-5 w-5"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs font-medium text-blue-50/80">PVC Requested</div>
+                            <div class="mt-1 text-xl font-bold text-white">{{ storage_summary.persistent_storage.pvc.requested }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-700 via-blue-600 to-sky-500 p-4 text-white shadow-sm shadow-blue-500/10">
+                    <div class="absolute -right-8 -top-8 h-20 w-20 rounded-full bg-white/10 blur-2xl"></div>
+                    <div class="relative flex items-center gap-3">
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white ring-1 ring-white/20">
+                            <i data-lucide="hard-drive-download" class="h-5 w-5"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs font-medium text-blue-50/80">PVC Used</div>
+                            <div class="mt-1 text-xl font-bold text-white">{{ storage_summary.persistent_storage.pvc.used }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-sky-700 via-cyan-600 to-blue-500 p-4 text-white shadow-sm shadow-blue-500/10">
+                    <div class="absolute -right-8 -top-8 h-20 w-20 rounded-full bg-white/10 blur-2xl"></div>
+                    <div class="relative flex items-center gap-3">
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white ring-1 ring-white/20">
+                            <i data-lucide="hard-drive" class="h-5 w-5"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs font-medium text-blue-50/80">PVC Free</div>
+                            <div class="mt-1 text-xl font-bold text-white">{{ storage_summary.persistent_storage.pvc.free }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <form id="persistent-storage-filter-form"
+                  method="GET"
+                  action="{{ url_for('analytics.storage') }}"
+                  class="mb-5 grid gap-3 lg:grid-cols-[1fr_180px_220px]">
+                <input type="hidden"
+                       name="cluster_id"
+                       value="{{ cluster.id if cluster else '' }}" />
+                <input type="hidden" name="namespace" value="{{ selected_namespace }}" />
+                <input type="hidden" name="time_range" value="{{ selected_time_range }}" />
+                <input type="hidden" name="storage_tab" value="pv" />
+                <input type="hidden" name="pv_page" value="1" />
+                <input type="text"
+                       name="pv_search"
+                       value="{{ selected_pv_search }}"
+                       placeholder="Search PV or claim"
+                       class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200"
+                       hx-get="{{ url_for('analytics.storage_persistent_summary') }}"
+                       hx-trigger="keyup changed delay:500ms"
+                       hx-target="#persistent-storage-panel"
+                       hx-swap="outerHTML"
+                       hx-include="#persistent-storage-filter-form"
+                       hx-indicator="#storage-refresh-indicator" />
+                <select name="pv_status"
+                        class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200"
+                        hx-get="{{ url_for('analytics.storage_persistent_summary') }}"
+                        hx-trigger="change"
+                        hx-target="#persistent-storage-panel"
+                        hx-swap="outerHTML"
+                        hx-include="#persistent-storage-filter-form"
+                        hx-indicator="#storage-refresh-indicator">
+                    <option value="">All Status</option>
+                    {% for status in storage_summary.persistent_storage.pv_status_options %}
+                        <option value="{{ status }}"
+                                {% if selected_pv_status == status %}selected{% endif %}>{{ status }}</option>
+                    {% endfor %}
+                </select>
+                <select name="pv_storage_class"
+                        class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200"
+                        hx-get="{{ url_for('analytics.storage_persistent_summary') }}"
+                        hx-trigger="change"
+                        hx-target="#persistent-storage-panel"
+                        hx-swap="outerHTML"
+                        hx-include="#persistent-storage-filter-form"
+                        hx-indicator="#storage-refresh-indicator">
+                    <option value="">All StorageClass</option>
+                    {% for storage_class in storage_summary.persistent_storage.pv_storage_class_options %}
+                        <option value="{{ storage_class }}"
+                                {% if selected_pv_storage_class == storage_class %}selected{% endif %}>
+                            {{ storage_class }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </form>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-700">
+                    <thead>
+                        <tr class="text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                            <th class="px-3 py-3">PV</th>
+                            <th class="px-3 py-3">Status</th>
+                            <th class="px-3 py-3">Capacity</th>
+                            <th class="px-3 py-3">StorageClass</th>
+                            <th class="px-3 py-3">Claim</th>
+                            <th class="px-3 py-3">Reclaim Policy</th>
+                            <th class="px-3 py-3">Risk</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                        {% for row in storage_summary.persistent_storage.pv_rows %}
+                            <tr class="text-slate-700 dark:text-slate-200">
+                                <td class="px-3 py-3 font-medium">
+                                    <div class="flex items-center gap-2">
+                                        <span class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-600 dark:bg-violet-500/10 dark:text-violet-300">
+                                            <i data-lucide="database" class="h-4 w-4"></i>
+                                        </span>
+                                        <span>{{ row.name }}</span>
+                                    </div>
+                                </td>
+                                <td class="px-3 py-3">
+                                    <span class="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700">
+                                        {{ row.status }}
+                                    </span>
+                                </td>
+                                <td class="px-3 py-3">{{ row.capacity }}</td>
+                                <td class="px-3 py-3">
+                                    <span class="inline-flex rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 ring-1 ring-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:ring-blue-900">
+                                        {{ row.storage_class }}
+                                    </span>
+                                </td>
+                                <td class="px-3 py-3">{{ row.claim }}</td>
+                                <td class="px-3 py-3">{{ row.reclaim_policy }}</td>
+                                <td class="px-3 py-3">
+                                    <span class="rounded-full px-2.5 py-1 text-xs font-semibold {{ row.risk.class }}">{{ row.risk.label }}</span>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="7"
+                                    class="px-3 py-8 text-center text-sm text-slate-500 dark:text-slate-400">
+                                    No PV metrics available.
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% set pagination = storage_summary.persistent_storage.pv_pagination %}
+            {% include "analytics/storage/partials/_persistent_pagination.html" %}
+        {% endif %}
+    </div>
+</div>

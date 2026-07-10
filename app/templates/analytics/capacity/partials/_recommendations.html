@@ -1,0 +1,109 @@
+<section class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+    <details class="group">
+        <summary class="flex cursor-pointer list-none flex-col gap-4 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-300">
+                    <i data-lucide="list-checks" class="h-5 w-5"></i>
+                </div>
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Capacity Recommendations</h2>
+                        <span class="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700 ring-1 ring-blue-100 dark:bg-blue-950/60 dark:text-blue-300 dark:ring-blue-900">
+                            {{ recommendation_count|default(0) }} actionable
+                        </span>
+                    </div>
+                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                        Actionable steps generated from capacity risk, allocation status, and governance findings.
+                    </p>
+                </div>
+            </div>
+            <span class="inline-flex w-fit items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700 transition group-open:bg-blue-50 group-open:text-blue-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:group-open:bg-blue-950/50 dark:group-open:text-blue-300">
+                <i data-lucide="chevron-down"
+                   class="h-4 w-4 transition group-open:rotate-180"></i>
+                Details
+            </span>
+        </summary>
+        <div class="border-t border-slate-200 p-6 dark:border-slate-700">
+            {% if recommendation_cards %}
+                <div class="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
+                    {% for item in recommendation_cards %}
+                        {% set action_type = item.get('action_type', '') %}
+                        {% set source = item.get('source', '') %}
+                        {% if 'storage' in action_type or 'storage' in source %}
+                            {% set recommendation_url = url_for(
+                                                            'analytics.storage',
+                                                            cluster_id=cluster.id if cluster else '',
+                                                            time_range=selected_time_range
+                                                        ) %}
+                            {% set recommendation_label = "Open Storage Analysis" %}
+                        {% elif 'workload' in action_type or 'governance' in source or action_type in [
+                            'right_size_requests',
+                            'workload_governance',
+                            'quota_review'
+                            ] %}
+                            {% set recommendation_url = url_for(
+                                                            'analytics.workload',
+                                                            cluster_id=cluster.id if cluster else '',
+                                                            time_range=selected_time_range
+                                                        ) %}
+                            {% set recommendation_label = "Open Workload Analysis" %}
+                        {% else %}
+                            {% set recommendation_url = url_for(
+                                                            'analytics.capacity',
+                                                            cluster_id=cluster.id if cluster else '',
+                                                            time_range=selected_time_range
+                                                        ) %}
+                            {% set recommendation_label = "Review Capacity" %}
+                        {% endif %}
+                        <article class="rounded-2xl border border-slate-200 p-5 transition hover:border-blue-200 hover:bg-blue-50/40 dark:border-slate-700 dark:hover:border-blue-800 dark:hover:bg-blue-950/20">
+                            <div class="flex h-full flex-col justify-between gap-4">
+                                <div class="flex items-start gap-4">
+                                    <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl {{ item['icon_class'] }}">
+                                        <i data-lucide="{{ item['icon'] }}" class="h-5 w-5"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-semibold text-slate-900 dark:text-white">{{ item['title'] }}</h3>
+                                        <div class="mt-2 flex flex-wrap gap-2">
+                                            {% if item.get('priority') %}
+                                                {% set priority_class = {
+                                                                                                    'Critical': 'bg-red-50 text-red-700 ring-red-600/20 dark:bg-red-950/50 dark:text-red-300 dark:ring-red-400/20',
+                                                                                                    'Warning': 'bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-950/50 dark:text-amber-300 dark:ring-amber-400/20',
+                                                                                                    'Normal': 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-400/20',
+                                                                                                    'Info': 'bg-blue-50 text-blue-700 ring-blue-600/20 dark:bg-blue-950/50 dark:text-blue-300 dark:ring-blue-400/20'
+                                                                                                }.get(item.get('priority'), 'bg-slate-100 text-slate-700 ring-slate-600/20 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-400/20') %}
+                                                <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset {{ priority_class }}">
+                                                    {{ item['priority'] }}
+                                                </span>
+                                            {% endif %}
+                                            {% if item.get('source') %}
+                                                <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                                                    {{ item['source'] }}
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                        <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">{{ item['description'] }}</p>
+                                    </div>
+                                </div>
+                                <a href="{{ recommendation_url }}"
+                                   class="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400">
+                                    {{ recommendation_label }}
+                                    <i data-lucide="arrow-right" class="h-4 w-4"></i>
+                                </a>
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center dark:border-slate-700 dark:bg-slate-900/40">
+                    <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300">
+                        <i data-lucide="check-circle-2" class="h-6 w-6"></i>
+                    </div>
+                    <h3 class="mt-4 font-semibold text-slate-900 dark:text-white">No actionable capacity recommendation</h3>
+                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                        Current capacity and allocation signals do not require immediate action.
+                    </p>
+                </div>
+            {% endif %}
+        </div>
+    </details>
+</section>

@@ -1,0 +1,464 @@
+{% extends "layouts/app.html" %}
+{% block title %}Report Detail{% endblock title %}
+{% block dashboard_content %}
+    <div class="space-y-6">
+        <!-- Hero -->
+        <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+            <div class="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+                <div class="flex items-start gap-4">
+                    <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-300">
+                        <i data-lucide="file-text" class="h-6 w-6"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="mb-2 flex flex-wrap items-center gap-2">
+                            {% set status_class = {
+                                                            'blue': 'bg-blue-50 text-blue-700 ring-blue-600/20 dark:bg-blue-950/50 dark:text-blue-300 dark:ring-blue-400/20',
+                                                            'purple': 'bg-violet-50 text-violet-700 ring-violet-600/20 dark:bg-violet-950/50 dark:text-violet-300 dark:ring-violet-400/20',
+                                                            'green': 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-400/20',
+                                                            'red': 'bg-rose-50 text-rose-700 ring-rose-600/20 dark:bg-rose-950/50 dark:text-rose-300 dark:ring-rose-400/20',
+                                                            'gray': 'bg-slate-100 text-slate-700 ring-slate-600/20 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-400/20'
+                                                        }.get(payload.report.status_meta.tone, 'bg-slate-100 text-slate-700 ring-slate-600/20 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-400/20') %}
+                            {% set file_state_class = {
+                                                            'green': 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-400/20',
+                                                            'blue': 'bg-blue-50 text-blue-700 ring-blue-600/20 dark:bg-blue-950/50 dark:text-blue-300 dark:ring-blue-400/20',
+                                                            'purple': 'bg-violet-50 text-violet-700 ring-violet-600/20 dark:bg-violet-950/50 dark:text-violet-300 dark:ring-violet-400/20',
+                                                            'amber': 'bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-950/50 dark:text-amber-300 dark:ring-amber-400/20',
+                                                            'red': 'bg-rose-50 text-rose-700 ring-rose-600/20 dark:bg-rose-950/50 dark:text-rose-300 dark:ring-rose-400/20'
+                                                        }.get(payload.report.file_state.tone, 'bg-slate-100 text-slate-700 ring-slate-600/20 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-400/20') %}
+                            <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset {{ status_class }}">
+                                <i data-lucide="{{ payload.report.status_meta.icon }}"
+                                   class="h-3.5 w-3.5"></i>
+                                {{ payload.report.status_meta.label }}
+                            </span>
+                            <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset {{ file_state_class }}">
+                                <i data-lucide="{{ payload.report.file_state.icon }}"
+                                   class="h-3.5 w-3.5"></i>
+                                {{ payload.report.file_state.label }}
+                            </span>
+                        </div>
+                        <h1 class="text-3xl font-bold text-slate-900 dark:text-white">{{ payload.report.name }}</h1>
+                        <p class="mt-1 max-w-3xl text-sm leading-6 text-slate-500 sm:text-base dark:text-slate-400">{{ payload.page_subtitle }}</p>
+                    </div>
+                </div>
+                <div id="report-actions" class="flex flex-wrap items-center gap-3">
+                    <a href="{{ url_for('reports.generated_reports') }}"
+                       class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-blue-200 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-blue-700 dark:hover:text-blue-300">
+                        <i data-lucide="arrow-left" class="h-4 w-4"></i>
+                        Back
+                    </a>
+                    {% if payload.report.can_download_pdf %}
+                        <a href="{{ url_for('reports.download_report_pdf', report_id=payload.report.id) }}"
+                           class="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-500/20 dark:bg-blue-500 dark:hover:bg-blue-600">
+                            <i data-lucide="download" class="h-4 w-4"></i>
+                            Download PDF
+                        </a>
+                    {% elif payload.report.raw_status == 'ready' and payload.report.file_path and not payload.report.file_exists %}
+                        <button type="button"
+                                disabled
+                                title="Generated artifact is missing in configured storage. Regenerate PDF to recreate the artifact."
+                                class="inline-flex items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-500 shadow-sm dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300">
+                            <i data-lucide="triangle-alert" class="h-4 w-4"></i>
+                            Missing File
+                        </button>
+                    {% else %}
+                        <button type="button"
+                                disabled
+                                class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-400 shadow-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-600">
+                            <i data-lucide="download" class="h-4 w-4"></i>
+                            Download PDF
+                        </button>
+                    {% endif %}
+                    {% if payload.report.can_generate_pdf %}
+                        <form method="POST"
+                              action="{{ url_for('reports.generate_report_pdf', report_id=payload.report.id) }}">
+                            {% if csrf_token is defined %}
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            {% endif %}
+                            <button type="submit"
+                                    class="inline-flex items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm transition hover:bg-blue-100 focus:outline-none focus:ring-4 focus:ring-blue-500/20 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-300 dark:hover:bg-blue-900/50">
+                                <i data-lucide="file-text" class="h-4 w-4"></i>
+                                {% if payload.report.raw_status == 'ready' %}
+                                    Regenerate PDF
+                                {% else %}
+                                    Generate PDF
+                                {% endif %}
+                            </button>
+                        </form>
+                    {% else %}
+                        <button type="button"
+                                disabled
+                                class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-400 shadow-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-600">
+                            <i data-lucide="file-text" class="h-4 w-4"></i>
+                            Generate PDF
+                        </button>
+                    {% endif %}
+                    {% if payload.report.can_archive_report %}
+                        <form method="POST"
+                              action="{{ url_for('reports.archive_generated_report', report_id=payload.report.id) }}">
+                            {% if csrf_token is defined %}
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            {% endif %}
+                            <button type="submit"
+                                    class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-900">
+                                <i data-lucide="archive" class="h-4 w-4"></i>
+                                Archive Report
+                            </button>
+                        </form>
+                    {% endif %}
+                    {% if payload.report.can_restore_report %}
+                        <form method="POST"
+                              action="{{ url_for('reports.restore_generated_report', report_id=payload.report.id) }}">
+                            {% if csrf_token is defined %}
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            {% endif %}
+                            <button type="submit"
+                                    class="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 shadow-sm transition hover:bg-emerald-100 focus:outline-none focus:ring-4 focus:ring-emerald-500/20 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-900/50">
+                                <i data-lucide="rotate-ccw" class="h-4 w-4"></i>
+                                Restore Report
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+        {% if payload.report.raw_status == 'ready' and payload.report.file_path and not payload.report.file_exists %}
+            <section class="rounded-2xl border border-rose-200 bg-rose-50 p-5 shadow-sm dark:border-rose-900 dark:bg-rose-950/40">
+                <div class="flex items-start gap-3">
+                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-rose-600 shadow-sm dark:bg-rose-950 dark:text-rose-300">
+                        <i data-lucide="triangle-alert" class="h-5 w-5"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-sm font-semibold text-rose-800 dark:text-rose-200">Generated report artifact is missing</h2>
+                        <p class="mt-1 text-sm leading-6 text-rose-700 dark:text-rose-300">
+                            This report is marked Ready and has file_path metadata, but the generated report artifact is not available in the configured storage backend.
+                            Download is disabled until the artifact is regenerated.
+                        </p>
+                    </div>
+                </div>
+            </section>
+        {% endif %}
+        <!-- Main Layout -->
+        <section class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
+            <div class="space-y-6">
+                <!-- Metadata -->
+                <section id="metadata"
+                         class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                    <div class="border-b border-slate-200 px-5 py-4 dark:border-slate-700">
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                                <i data-lucide="info" class="h-4 w-4"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-base font-semibold text-slate-950 dark:text-white">Report Metadata</h2>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">
+                                    Stored report request scope, type, owner, and lifecycle metadata.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid gap-4 p-5 md:grid-cols-2">
+                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950">
+                            <p class="text-xs font-medium uppercase tracking-wide text-slate-400">Report Type</p>
+                            <p class="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">{{ payload.report.report_type }}</p>
+                        </div>
+                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950">
+                            <p class="text-xs font-medium uppercase tracking-wide text-slate-400">Cluster</p>
+                            <p class="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">{{ payload.report.cluster }}</p>
+                        </div>
+                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950">
+                            <p class="text-xs font-medium uppercase tracking-wide text-slate-400">Namespace</p>
+                            <p class="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">{{ payload.report.namespace }}</p>
+                        </div>
+                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950">
+                            <p class="text-xs font-medium uppercase tracking-wide text-slate-400">Period</p>
+                            <p class="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">{{ payload.report.period }}</p>
+                        </div>
+                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950">
+                            <p class="text-xs font-medium uppercase tracking-wide text-slate-400">Output Format</p>
+                            <p class="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">{{ payload.report.output_format }}</p>
+                        </div>
+                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950">
+                            <p class="text-xs font-medium uppercase tracking-wide text-slate-400">Generated By</p>
+                            {% set owner_tone_class = {
+                                                            'emerald': 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-400/20',
+                                                            'amber': 'bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-950/50 dark:text-amber-300 dark:ring-amber-400/20',
+                                                            'rose': 'bg-rose-50 text-rose-700 ring-rose-600/20 dark:bg-rose-950/50 dark:text-rose-300 dark:ring-rose-400/20',
+                                                            'slate': 'bg-slate-100 text-slate-700 ring-slate-600/20 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-400/20'
+                                                        }.get(payload.report.generated_by_meta.status_tone, 'bg-slate-100 text-slate-700 ring-slate-600/20 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-400/20') %}
+                            <div class="mt-1 flex flex-wrap items-center gap-2">
+                                <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ payload.report.generated_by }}</p>
+                                <span class="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset {{ owner_tone_class }}">
+                                    <i data-lucide="user-check" class="h-3 w-3"></i>
+                                    {{ payload.report.generated_by_meta.status_label }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950">
+                            <p class="text-xs font-medium uppercase tracking-wide text-slate-400">Created At</p>
+                            <p class="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">{{ payload.report.created_at }}</p>
+                        </div>
+                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950">
+                            <p class="text-xs font-medium uppercase tracking-wide text-slate-400">Updated At</p>
+                            <p class="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">{{ payload.report.updated_at }}</p>
+                        </div>
+                    </div>
+                </section>
+                <!-- Selected Sections -->
+                <section id="sections"
+                         class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                    <div class="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 dark:border-slate-700 md:flex-row md:items-center md:justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                                <i data-lucide="layout-list" class="h-4 w-4"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-base font-semibold text-slate-950 dark:text-white">Selected Sections</h2>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">Sections requested for this generated report record.</p>
+                            </div>
+                        </div>
+                        <span class="inline-flex w-fit items-center gap-2 rounded-xl bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                            <i data-lucide="list-checks" class="h-3.5 w-3.5"></i>
+                            {{ payload.report.sections_count }} sections
+                        </span>
+                    </div>
+                    <div class="grid gap-3 p-5 md:grid-cols-2">
+                        {% if payload.report.sections %}
+                            {% for section in payload.report.sections %}
+                                <div class="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-950">
+                                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                                        <i data-lucide="check-circle-2" class="h-4 w-4"></i>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ section.label }}</p>
+                                        <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{{ section.value }}</p>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="md:col-span-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center dark:border-slate-700 dark:bg-slate-950">
+                                <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">No sections selected</p>
+                                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                                    This report request does not contain selected report sections.
+                                </p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </section>
+                <!-- File Output -->
+                <section id="file-output"
+                         class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                    <div class="border-b border-slate-200 px-5 py-4 dark:border-slate-700">
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                                <i data-lucide="hard-drive" class="h-4 w-4"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-base font-semibold text-slate-950 dark:text-white">File Output</h2>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">
+                                    Generated report artifact metadata and configured storage availability.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid gap-4 p-5 md:grid-cols-2">
+                        <div class="md:col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950">
+                            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                <div>
+                                    <p class="text-xs font-medium uppercase tracking-wide text-slate-400">File State</p>
+                                    <div class="mt-2">
+                                        <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset {{ file_state_class }}">
+                                            <i data-lucide="{{ payload.report.file_state.icon }}"
+                                               class="h-3.5 w-3.5"></i>
+                                            {{ payload.report.file_state.label }}
+                                        </span>
+                                    </div>
+                                    <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">{{ payload.report.file_state.description }}</p>
+                                </div>
+                                {% if payload.report.raw_status == 'ready' and payload.report.file_path and not payload.report.file_exists %}
+                                    <div class="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300">
+                                        Regenerate PDF required
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950">
+                            <p class="text-xs font-medium uppercase tracking-wide text-slate-400">File Size</p>
+                            <p class="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">{{ payload.report.file_size }}</p>
+                        </div>
+                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950">
+                            <p class="text-xs font-medium uppercase tracking-wide text-slate-400">File Exists</p>
+                            <p class="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">
+                                {% if payload.report.file_exists %}
+                                    Yes
+                                {% else %}
+                                    No
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950">
+                            <p class="text-xs font-medium uppercase tracking-wide text-slate-400">Storage Backend</p>
+                            <p class="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">{{ payload.report.storage_backend_label }}</p>
+                        </div>
+                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950">
+                            <p class="text-xs font-medium uppercase tracking-wide text-slate-400">Storage URI</p>
+                            <p class="mt-1 break-all text-sm font-semibold text-slate-800 dark:text-slate-100">{{ payload.report.storage_uri_display }}</p>
+                        </div>
+                        <div class="md:col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950">
+                            <p class="text-xs font-medium uppercase tracking-wide text-slate-400">Object Key / Legacy Path</p>
+                            <p class="mt-1 break-all text-sm font-semibold text-slate-800 dark:text-slate-100">{{ payload.report.storage_object_key or 'Not generated yet' }}</p>
+                        </div>
+                    </div>
+                </section>
+                <!-- Error Message -->
+                <section id="status"
+                         class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                    <div class="border-b border-slate-200 px-5 py-4 dark:border-slate-700">
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                                <i data-lucide="bug" class="h-4 w-4"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-base font-semibold text-slate-950 dark:text-white">Error Message</h2>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">Latest error recorded during report generation.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-5">
+                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950">
+                            <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">{{ payload.report.error_message }}</p>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            <!-- Right Panel -->
+            <aside class="space-y-6">
+                <!-- Status Context -->
+                <section class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                    <div class="border-b border-slate-200 px-5 py-4 dark:border-slate-700">
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                                <i data-lucide="activity" class="h-4 w-4"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-base font-semibold text-slate-950 dark:text-white">Status Context</h2>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">Current report lifecycle interpretation.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="divide-y divide-slate-100 dark:divide-slate-800">
+                        {% for item in payload.status_context %}
+                            {% set item_class = {
+                                                            'blue': 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300',
+                                                            'purple': 'bg-violet-50 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300',
+                                                            'green': 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300',
+                                                            'amber': 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300',
+                                                            'red': 'bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300',
+                                                            'gray': 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
+                                                        }.get(item.tone, 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300') %}
+                            <div class="px-5 py-4">
+                                <div class="flex items-center justify-between gap-3">
+                                    <div class="flex items-center gap-2">
+                                        <i data-lucide="{{ item.icon }}" class="h-4 w-4 text-blue-500"></i>
+                                        <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ item.label }}</p>
+                                    </div>
+                                    <span class="rounded-lg px-2 py-1 text-xs font-semibold {{ item_class }}">{{ item.status }}</span>
+                                </div>
+                                <p class="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">{{ item.description }}</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </section>
+                <!-- Export Readiness -->
+                <section class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                    <div class="border-b border-slate-200 px-5 py-4 dark:border-slate-700">
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                                <i data-lucide="download" class="h-4 w-4"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-base font-semibold text-slate-950 dark:text-white">Export Readiness</h2>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">PDF renderer, artifact, and download readiness.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="divide-y divide-slate-100 dark:divide-slate-800">
+                        {% for item in payload.export_readiness %}
+                            {% set item_class = {
+                                                            'blue': 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300',
+                                                            'purple': 'bg-violet-50 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300',
+                                                            'green': 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300',
+                                                            'amber': 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300',
+                                                            'red': 'bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300',
+                                                            'gray': 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
+                                                        }.get(item.tone, 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300') %}
+                            <div class="px-5 py-4">
+                                <div class="flex items-center justify-between gap-3">
+                                    <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ item.label }}</p>
+                                    <span class="rounded-lg px-2 py-1 text-xs font-semibold {{ item_class }}">{{ item.status }}</span>
+                                </div>
+                                <p class="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">{{ item.description }}</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </section>
+                <!-- Storage Context -->
+                <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                    <div class="flex items-center gap-3">
+                        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                            <i data-lucide="hard-drive" class="h-4 w-4"></i>
+                        </div>
+                        <h2 class="text-base font-semibold text-slate-950 dark:text-white">Storage Context</h2>
+                    </div>
+                    <div class="mt-4 space-y-3">
+                        {% for item in payload.storage_context %}
+                            {% set dot_class = {
+                                                            'gray': 'bg-slate-400',
+                                                            'amber': 'bg-amber-500',
+                                                            'blue': 'bg-blue-500',
+                                                            'green': 'bg-emerald-500',
+                                                            'red': 'bg-rose-500'
+                                                        }.get(item.tone, 'bg-slate-400') %}
+                            <div class="rounded-xl bg-slate-50 px-3 py-3 dark:bg-slate-950">
+                                <div class="flex items-center gap-3">
+                                    <span class="h-2.5 w-2.5 rounded-full {{ dot_class }}"></span>
+                                    <span class="text-sm font-semibold text-slate-700 dark:text-slate-200">{{ item.label }}</span>
+                                </div>
+                                <p class="mt-1 pl-5 text-xs leading-5 text-slate-500 dark:text-slate-400">{{ item.description }}</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </section>
+                <!-- Recommended Actions -->
+                <section class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                    <div class="border-b border-slate-200 px-5 py-4 dark:border-slate-700">
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                                <i data-lucide="list-checks" class="h-4 w-4"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-base font-semibold text-slate-950 dark:text-white">Recommended Actions</h2>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">Suggested next actions for this report.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="divide-y divide-slate-100 dark:divide-slate-800">
+                        {% for action in payload.recommended_actions %}
+                            <a href="{{ action.href }}"
+                               class="flex items-center justify-between gap-4 px-5 py-4 transition hover:bg-slate-50 dark:hover:bg-slate-950">
+                                <div class="flex min-w-0 items-start gap-3">
+                                    <div class="mt-1 h-4 w-4 shrink-0 rounded border border-slate-300 bg-white dark:border-slate-600 dark:bg-slate-950">
+                                    </div>
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ action.label }}</p>
+                                        <p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">{{ action.description }}</p>
+                                    </div>
+                                </div>
+                                <i data-lucide="chevron-right" class="h-4 w-4 shrink-0 text-slate-400"></i>
+                            </a>
+                        {% endfor %}
+                    </div>
+                </section>
+            </aside>
+        </section>
+    </div>
+{% endblock dashboard_content %}

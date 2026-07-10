@@ -1,0 +1,23 @@
+<section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+    <div class="flex items-center gap-3">
+        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+            <i data-lucide="activity" class="h-4 w-4"></i>
+        </div>
+        <h2 class="text-base font-semibold text-slate-950 dark:text-white">Current Status</h2>
+    </div>
+    <div class="mt-4 space-y-3">
+        {% for item in payload.current_status %}
+            {% set dot_class = {
+                            'gray': 'bg-slate-400',
+                            'amber': 'bg-amber-500',
+                            'blue': 'bg-blue-500',
+                            'green': 'bg-emerald-500',
+                            'red': 'bg-rose-500'
+                        }.get(item.tone, 'bg-slate-400') %}
+            <div class="flex items-center gap-3 rounded-xl bg-slate-50 px-3 py-2.5 dark:bg-slate-950">
+                <span class="h-2.5 w-2.5 rounded-full {{ dot_class }}"></span>
+                <span class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ item.label }}</span>
+            </div>
+        {% endfor %}
+    </div>
+</section>

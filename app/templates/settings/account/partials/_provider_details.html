@@ -1,0 +1,48 @@
+<section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <button type="button"
+            @click="providerOpen = !providerOpen"
+            class="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition hover:bg-slate-50 dark:hover:bg-slate-950/40">
+        <div class="flex items-center gap-3">
+            <span class="flex h-9 w-9 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+                <i data-lucide="shield-check" class="h-4 w-4"></i>
+            </span>
+            <div>
+                <h2 class="text-base font-extrabold text-slate-950 dark:text-white">Provider Details</h2>
+                <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Readiness notes for database, LDAP, and SSO / OIDC login sources.</p>
+            </div>
+        </div>
+        <i data-lucide="chevron-down"
+           class="h-5 w-5 text-slate-400 transition"
+           :class="providerOpen ? 'rotate-180' : ''"></i>
+    </button>
+    <div x-show="providerOpen"
+         x-cloak
+         class="border-t border-slate-200 p-5 dark:border-slate-800">
+        <div class="grid gap-4 lg:grid-cols-3">
+            <div class="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-950/40">
+                <div class="flex items-center gap-2 text-sm font-extrabold text-slate-950 dark:text-white">
+                    <i data-lucide="database"
+                       class="h-4 w-4 text-blue-600 dark:text-blue-300"></i>
+                    Database Provider
+                </div>
+                <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">Always enabled for local administration and break-glass recovery access.</p>
+            </div>
+            <div class="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-950/40">
+                <div class="flex items-center gap-2 text-sm font-extrabold text-slate-950 dark:text-white">
+                    <i data-lucide="network"
+                       class="h-4 w-4 text-blue-600 dark:text-blue-300"></i>
+                    LDAP Provider
+                </div>
+                <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">Not configured yet. When enabled, LDAP will operate as an additional login source.</p>
+            </div>
+            <div class="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-950/40">
+                <div class="flex items-center gap-2 text-sm font-extrabold text-slate-950 dark:text-white">
+                    <i data-lucide="key-round"
+                       class="h-4 w-4 text-blue-600 dark:text-blue-300"></i>
+                    SSO / OIDC Provider
+                </div>
+                <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">Not configured yet. When enabled, identity mapping and role assignment controls will be required.</p>
+            </div>
+        </div>
+    </div>
+</section>

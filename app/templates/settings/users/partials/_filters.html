@@ -1,0 +1,59 @@
+<form id="users-filter-form"
+      method="get"
+      action="{{ url_for('settings.users') }}"
+      class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800"
+      hx-get="{{ url_for('settings.users') }}"
+      hx-trigger="submit, change delay:120ms from:select, keyup changed delay:450ms from:input[name='search']"
+      hx-target="#users-page-content"
+      hx-swap="outerHTML settle:150ms"
+      hx-push-url="true"
+      hx-indicator="#users-refresh-indicator"
+      hx-sync="#users-filter-form:replace">
+    <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+        <div class="grid flex-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
+            <label class="space-y-1.5 xl:col-span-2">
+                <span class="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Search</span>
+                <div class="relative">
+                    <i data-lucide="search"
+                       class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"></i>
+                    <input type="text"
+                           name="search"
+                           value="{{ filters.search }}"
+                           placeholder="Search username, display name, or email"
+                           class="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-9 pr-3 text-sm text-slate-900 transition focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:ring-blue-900/30">
+                </div>
+            </label>
+            <label class="space-y-1.5">
+                <span class="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Status</span>
+                <select name="status"
+                        class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 transition focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:ring-blue-900/30">
+                    {% for option in status_options %}
+                        <option value="{{ option }}"
+                                {% if filters.status == option %}selected{% endif %}>{{ option|title }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label class="space-y-1.5">
+                <span class="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Source</span>
+                <select name="auth_source"
+                        class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 transition focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:ring-blue-900/30">
+                    {% for option in auth_source_options %}
+                        <option value="{{ option }}"
+                                {% if filters.auth_source == option %}selected{% endif %}>{{ option|upper if option != 'all' else 'All Sources' }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label class="space-y-1.5">
+                <span class="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Role</span>
+                <select name="role_id"
+                        class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 transition focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:ring-blue-900/30">
+                    <option value="all">All Roles</option>
+                    {% for role in roles %}
+                        <option value="{{ role.id }}"
+                                {% if filters.role_id == role.id %}selected{% endif %}>{{ role.display_name }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+        </div>
+    </div>
+</form>
