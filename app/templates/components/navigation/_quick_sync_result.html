@@ -77,10 +77,12 @@
                                 {{ duration_seconds }}s
                             </span>
                         {% endif %}
-                        <span class="inline-flex items-center gap-1.5">
-                            <i data-lucide="bell" class="h-3.5 w-3.5"></i>
-                            Saved to notifications
-                        </span>
+                        {% if notification_saved|default(true) %}
+                            <span class="inline-flex items-center gap-1.5">
+                                <i data-lucide="bell" class="h-3.5 w-3.5"></i>
+                                Saved to notifications
+                            </span>
+                        {% endif %}
                     </div>
 
                     <a href="{{ view_url }}"

@@ -10,5 +10,7 @@ Production principles:
 - Validate production environment variables before migration.
 - Back up PostgreSQL before every schema migration.
 - Run migration once, separately from web startup.
+- Run the Celery `inventory` worker as a separate production service.
+- Use dedicated Redis logical databases for Celery broker, rate limiting, and task results.
 - Bootstrap the first administrator only during initial installation.
 - Place Gunicorn behind a trusted HTTPS reverse proxy.

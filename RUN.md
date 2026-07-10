@@ -20,10 +20,12 @@ This file is the operational reference for local development and container-based
    APP_ENV=development
    DATABASE_URL=postgresql://postgres:<password>@db:5432/kaori
    REDIS_URL=redis://redis:6379/0
+   CELERY_BROKER_URL=redis://redis:6379/1
    RATELIMIT_STORAGE_URI=redis://redis:6379/2
+   CELERY_RESULT_BACKEND=redis://redis:6379/3
    ```
 
-5. Run **Dev Containers: Rebuild Without Cache and Reopen in Container**.
+5. Run **Dev Containers: Rebuild Without Cache and Reopen in Container**. The `worker` service starts automatically with the Dev Container and listens to the Celery `inventory` queue.
 6. In the Dev Container terminal, initialize a fresh database and the first administrator:
 
    ```bash
@@ -42,7 +44,27 @@ This file is the operational reference for local development and container-based
    bash scripts/run_dev.sh
    ```
 
-9. Open <http://localhost:5000>.
+9. Verify the Celery worker from the Dev Container terminal through Redis:
+
+   ```bash
+   celery --app celery_worker:celery_app inspect ping
+   ```
+
+   To inspect the worker container itself, run these commands from Windows PowerShell in the repository root:
+
+   ```powershell
+   docker compose `
+     -f compose.yml `
+     -f .devcontainer/compose.devcontainer.yml `
+     ps worker
+
+   docker compose `
+     -f compose.yml `
+     -f .devcontainer/compose.devcontainer.yml `
+     logs --tail=100 worker
+   ```
+
+10. Open <http://localhost:5000>.
 
 ### Daily development
 
@@ -52,7 +74,45 @@ Use **Dev Containers: Reopen in Container**, then run:
 npm run watch-css
 ```
 
-Start Flask using `F5`. Do not create or activate a Windows `.venv`.
+Start Flask using `F5`. The Celery worker is managed by Docker Compose; do not start another worker in the VS Code terminal unless the Compose worker is stopped. Do not create or activate a Windows `.venv`.
+
+### Sync All Cluster background behavior
+
+`Sync all clusters` is executed by Celery, not by the Flask request process. Redis stores the queue, task result, progress metadata, and a distributed lock that prevents duplicate global sync runs.
+
+- Reloading or navigating away does not stop the task.
+- KAORI restores the active progress toast from Redis after a page reload.
+- The UI polls Celery task state every two seconds while the task is active.
+- The completion summary is saved to Notifications for the user who started the task.
+
+Check broker connectivity from the Dev Container:
+
+```bash
+celery --app celery_worker:celery_app inspect ping
+```
+
+Check the worker service from Windows PowerShell in the repository root:
+
+```powershell
+docker compose `
+  -f compose.yml `
+  -f .devcontainer/compose.devcontainer.yml `
+  ps worker
+
+docker compose `
+  -f compose.yml `
+  -f .devcontainer/compose.devcontainer.yml `
+  logs -f worker
+```
+
+After changing Celery task code, restart the worker from Windows PowerShell so it loads the new Python code:
+
+```powershell
+docker compose `
+  -f compose.yml `
+  -f .devcontainer/compose.devcontainer.yml `
+  restart worker
+```
 
 ### Reset the development database
 
@@ -126,7 +186,9 @@ SECRET_KEY=<64-or-more-random-characters>
 TRUSTED_HOSTS=kaori.example.com,127.0.0.1,localhost
 DATABASE_URL=postgresql://...
 REDIS_URL=redis://...
-RATELIMIT_STORAGE_URI=redis://...
+CELERY_BROKER_URL=redis://.../1
+RATELIMIT_STORAGE_URI=redis://.../2
+CELERY_RESULT_BACKEND=redis://.../3
 ```
 
 Generate a secret example:
@@ -173,7 +235,7 @@ Remove `ADMIN_PASSWORD` from `.env.production` immediately afterward.
 ### 6. Start or upgrade KAORI
 
 ```bash
-docker compose --env-file .env.production -f compose.production.yml up -d web
+docker compose --env-file .env.production -f compose.production.yml up -d web worker
 ```
 
 Verify:
@@ -182,6 +244,7 @@ Verify:
 docker compose --env-file .env.production -f compose.production.yml ps
 
 docker compose --env-file .env.production -f compose.production.yml logs --tail=200 web
+docker compose --env-file .env.production -f compose.production.yml logs --tail=200 worker
 
 curl --fail http://127.0.0.1:5000/health/live
 curl --fail http://127.0.0.1:5000/health/ready
@@ -213,7 +276,7 @@ docker compose --env-file .env.production -f compose.production.yml run --rm val
 
 docker compose --env-file .env.production -f compose.production.yml run --rm migrate
 
-docker compose --env-file .env.production -f compose.production.yml up -d web
+docker compose --env-file .env.production -f compose.production.yml up -d web worker
 ```
 
 Do not run `bootstrap-admin` again.
@@ -225,7 +288,7 @@ Set `KAORI_IMAGE` back to the previous immutable tag and run:
 ```bash
 docker compose --env-file .env.production -f compose.production.yml pull
 
-docker compose --env-file .env.production -f compose.production.yml up -d web
+docker compose --env-file .env.production -f compose.production.yml up -d web worker
 ```
 
 Database rollback is separate. Restore a tested database backup only when the migration itself is not backward compatible.

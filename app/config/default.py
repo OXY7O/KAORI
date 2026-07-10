@@ -172,6 +172,64 @@ class Config:
         'REDIS_URL',
     )
 
+    CELERY_BROKER_URL = _env_str(
+        'CELERY_BROKER_URL',
+        REDIS_URL or 'redis://redis:6379/1',
+    )
+
+    CELERY_RESULT_BACKEND = _env_str(
+        'CELERY_RESULT_BACKEND',
+        REDIS_URL or 'redis://redis:6379/3',
+    )
+
+    CELERY_RESULT_EXPIRES_SECONDS = _env_int(
+        'CELERY_RESULT_EXPIRES_SECONDS',
+        86400,
+    )
+
+    CELERY_VISIBILITY_TIMEOUT_SECONDS = _env_int(
+        'CELERY_VISIBILITY_TIMEOUT_SECONDS',
+        10800,
+    )
+
+    CLUSTER_SYNC_LOCK_TTL_SECONDS = _env_int(
+        'CLUSTER_SYNC_LOCK_TTL_SECONDS',
+        10800,
+    )
+
+    CLUSTER_SYNC_COMPLETED_TTL_SECONDS = _env_int(
+        'CLUSTER_SYNC_COMPLETED_TTL_SECONDS',
+        300,
+    )
+
+    CELERY = {
+        'broker_url': CELERY_BROKER_URL,
+        'result_backend': CELERY_RESULT_BACKEND,
+        'task_track_started': True,
+        'result_expires': CELERY_RESULT_EXPIRES_SECONDS,
+        'broker_connection_retry_on_startup': True,
+        'worker_prefetch_multiplier': 1,
+        'task_serializer': 'json',
+        'result_serializer': 'json',
+        'accept_content': ['json'],
+        'timezone': 'UTC',
+        'enable_utc': True,
+        'imports': ('app.cluster.tasks',),
+        'task_routes': {
+            'app.cluster.tasks.sync_all_clusters': {
+                'queue': 'inventory',
+            },
+        },
+        'visibility_timeout': CELERY_VISIBILITY_TIMEOUT_SECONDS,
+        'broker_transport_options': {
+            'visibility_timeout': CELERY_VISIBILITY_TIMEOUT_SECONDS,
+        },
+        'result_backend_transport_options': {
+            'global_keyprefix': 'kaori:celery:',
+            'visibility_timeout': CELERY_VISIBILITY_TIMEOUT_SECONDS,
+        },
+    }
+
     WTF_CSRF_ENABLED = True
 
     # Authentication providers.
@@ -310,7 +368,6 @@ class Config:
         'REPORT_S3_FORCE_PATH_STYLE',
         False,
     )
-
 
     # Report artifact retention and cleanup policy. MVP2 defines the policy and
     # exposes dry-run visibility in the UI; destructive deletion remains guarded

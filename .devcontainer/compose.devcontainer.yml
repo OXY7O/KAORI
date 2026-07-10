@@ -16,6 +16,8 @@ services:
       APP_ENV: development
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-kaori}
       REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/3
       RATELIMIT_STORAGE_URI: redis://redis:6379/2
       POSTGRES_HOST: db
       POSTGRES_INTERNAL_PORT: 5432
@@ -31,6 +33,42 @@ services:
         condition: service_healthy
     ports:
       - "5000:5000"
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    init: true
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      APP_ENV: development
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-kaori}
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/3
+      RATELIMIT_STORAGE_URI: redis://redis:6379/2
+      POSTGRES_HOST: db
+      POSTGRES_INTERNAL_PORT: 5432
+      WAIT_FOR_DB: "true"
+    command:
+      - sh
+      - -c
+      - >-
+        exec celery --app celery_worker:celery_app worker
+        --queues=inventory
+        --loglevel="$${CELERY_LOG_LEVEL:-INFO}"
+        --concurrency="$${CELERY_WORKER_CONCURRENCY:-1}"
+    volumes:
+      - .:/workspace/kaori
+      - kaori_instance_data:/workspace/kaori/instance
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
 volumes:
   kaori_instance_data:

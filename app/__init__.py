@@ -12,7 +12,7 @@ from app.cluster.routes import cluster_bp
 from app.commands import register_commands
 from app.config import CONFIG_MAP
 from app.dashboard.routes import dashboard_bp
-from app.extensions import db, limiter, login_manager, migrate, register_rate_limit_handlers
+from app.extensions import db, init_celery, limiter, login_manager, migrate, register_rate_limit_handlers
 from app.governance.routes import governance_bp
 from app.health import health_bp
 from app.intelligence.routes import intelligence_bp
@@ -65,6 +65,9 @@ def create_app(config_name: str | None = None):
             x_port=app.config.get('PROXY_FIX_X_PORT', 1),
             x_prefix=app.config.get('PROXY_FIX_X_PREFIX', 0),
         )
+
+    # Initialize Celery before request handlers enqueue background tasks.
+    init_celery(app)
 
     # Initialize database
     db.init_app(app)

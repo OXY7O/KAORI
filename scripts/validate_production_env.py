@@ -4,7 +4,6 @@ import os
 import sys
 from urllib.parse import urlparse
 
-
 TRUE_VALUES = {'1', 'true', 'yes', 'y', 'on'}
 PLACEHOLDER_FRAGMENTS = {
     'change-me',
@@ -59,11 +58,7 @@ def main() -> int:
     elif _contains_placeholder(database_url):
         errors.append('DATABASE_URL still contains a placeholder value.')
 
-    trusted_hosts = [
-        value.strip()
-        for value in _value('TRUSTED_HOSTS').split(',')
-        if value.strip()
-    ]
+    trusted_hosts = [value.strip() for value in _value('TRUSTED_HOSTS').split(',') if value.strip()]
     if not trusted_hosts:
         errors.append('TRUSTED_HOSTS must contain at least one production hostname.')
     elif any('://' in value or '/' in value for value in trusted_hosts):
@@ -81,6 +76,37 @@ def main() -> int:
     redis_url = _value('REDIS_URL')
     if not redis_url:
         errors.append('REDIS_URL is required for production readiness and shared state.')
+
+    celery_broker_url = _value('CELERY_BROKER_URL')
+    celery_result_backend = _value('CELERY_RESULT_BACKEND')
+
+    for name, value in (
+        ('CELERY_BROKER_URL', celery_broker_url),
+        ('CELERY_RESULT_BACKEND', celery_result_backend),
+    ):
+        if not value:
+            errors.append(f'{name} is required for background cluster synchronization.')
+        elif urlparse(value).scheme not in {'redis', 'rediss'}:
+            errors.append(f'{name} must use a Redis URL.')
+        elif _contains_placeholder(value):
+            errors.append(f'{name} still contains a placeholder value.')
+
+    if celery_broker_url and celery_result_backend and celery_broker_url == celery_result_backend:
+        warnings.append('Use separate Redis logical databases for Celery broker and task results.')
+
+    for name, minimum in (
+        ('CELERY_RESULT_EXPIRES_SECONDS', 300),
+        ('CELERY_VISIBILITY_TIMEOUT_SECONDS', 300),
+        ('CLUSTER_SYNC_LOCK_TTL_SECONDS', 300),
+        ('CLUSTER_SYNC_COMPLETED_TTL_SECONDS', 30),
+        ('CELERY_WORKER_CONCURRENCY', 1),
+    ):
+        raw = _value(name)
+        try:
+            if not raw or int(raw) < minimum:
+                raise ValueError
+        except ValueError:
+            errors.append(f'{name} must be an integer greater than or equal to {minimum}.')
 
     storage_backend = _value('PROD_REPORT_STORAGE_BACKEND').lower() or 'local'
     if storage_backend not in {'local', 's3'}:

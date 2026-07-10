@@ -1,10 +1,23 @@
 from __future__ import annotations
 
+import logging
+from datetime import UTC, datetime
 from time import perf_counter
+from uuid import uuid4
 
-from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
+from flask import (
+    Blueprint,
+    abort,
+    current_app,
+    flash,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
+from redis.exceptions import RedisError
 
 from app.cluster.forms import ClusterCreateForm, ClusterEditForm
 from app.cluster.service import (
@@ -15,13 +28,22 @@ from app.cluster.service import (
     run_test_cluster,
     update_cluster,
 )
-from app.inventory.service import sync_inventory
+from app.cluster.sync_state import (
+    CLUSTER_SYNC_QUEUE,
+    CLUSTER_SYNC_TASK_NAME,
+    acquire_cluster_sync_lock,
+    build_cluster_sync_snapshot,
+    get_active_cluster_sync_task_id,
+    release_cluster_sync_lock,
+)
 from app.models import Cluster
 from app.notifications.service import (
     create_notification,
     get_navigation_notification_context,
 )
 from app.rbac.decorators import permission_required
+
+logger = logging.getLogger(__name__)
 
 cluster_bp = Blueprint(
     'cluster',
@@ -69,6 +91,69 @@ def cluster_table() -> ResponseReturnValue:
     )
 
 
+def _render_sync_snapshot(
+    snapshot: dict,
+    *,
+    response_status: int = 200,
+) -> ResponseReturnValue:
+    if snapshot['is_active']:
+        return (
+            render_template(
+                'components/navigation/_quick_sync_status.html',
+                sync=snapshot,
+            ),
+            response_status,
+        )
+
+    notification_context = get_navigation_notification_context(
+        user_id=current_user.id,
+    )
+
+    return (
+        render_template(
+            'components/navigation/_quick_sync_result.html',
+            status=snapshot.get('status') or 'info',
+            title=snapshot.get('title') or 'Kubernetes sync finished',
+            message=snapshot.get('message') or 'The background synchronization task has finished.',
+            detail=snapshot.get('detail'),
+            view_url=url_for('cluster.list_clusters'),
+            total_count=snapshot.get('total_count', 0),
+            synced_count=snapshot.get('synced_count', 0),
+            failed_count=snapshot.get('failed_count', 0),
+            duration_seconds=snapshot.get('duration_seconds'),
+            completed_label='Completed just now',
+            notification_context=notification_context,
+            notification_saved=(snapshot.get('requested_by_user_id') == current_user.id),
+        ),
+        response_status,
+    )
+
+
+def _render_enqueue_error(
+    *,
+    message: str,
+    detail: str,
+    response_status: int,
+) -> ResponseReturnValue:
+    return (
+        render_template(
+            'components/navigation/_quick_sync_result.html',
+            status='error',
+            title='Kubernetes sync could not start',
+            message=message,
+            detail=detail,
+            view_url=url_for('cluster.list_clusters'),
+            total_count=None,
+            synced_count=0,
+            failed_count=0,
+            duration_seconds=None,
+            completed_label='Not started',
+            notification_saved=False,
+        ),
+        response_status,
+    )
+
+
 @cluster_bp.route(
     '/sync-all',
     methods=[
@@ -78,19 +163,11 @@ def cluster_table() -> ResponseReturnValue:
 @permission_required('clusters.sync')
 def sync_all_clusters() -> ResponseReturnValue:
     started_at = perf_counter()
-    clusters = Cluster.query.order_by(
-        Cluster.name.asc(),
-    ).all()
+    is_htmx = request.headers.get('HX-Request') == 'true'
+    view_url = url_for('cluster.list_clusters')
+    total_count = Cluster.query.count()
 
-    is_htmx = request.headers.get(
-        'HX-Request',
-    ) == 'true'
-
-    view_url = url_for(
-        'cluster.list_clusters',
-    )
-
-    if not clusters:
+    if total_count == 0:
         status = 'warning'
         title = 'Sync skipped'
         message = 'No Kubernetes clusters are registered yet.'
@@ -134,108 +211,193 @@ def sync_all_clusters() -> ResponseReturnValue:
                 duration_seconds=duration_seconds,
                 completed_label='Completed just now',
                 notification_context=notification_context,
+                notification_saved=True,
             )
 
         flash(
             message,
-            'danger' if status == 'error' else status,
+            status,
         )
         return redirect(
             request.referrer or view_url,
         )
 
-    synced_count = 0
-    failed_clusters: list[str] = []
+    try:
+        active_task_id = get_active_cluster_sync_task_id()
 
-    for cluster in clusters:
-        try:
-            sync_inventory(
-                cluster,
-            )
-            synced_count += 1
-        except Exception:
-            failed_clusters.append(
-                cluster.name,
+        if active_task_id:
+            active_snapshot = build_cluster_sync_snapshot(
+                active_task_id,
             )
 
-    total_count = len(clusters)
-    failed_count = len(
-        failed_clusters,
-    )
-    duration_seconds = round(
-        perf_counter() - started_at,
-        1,
-    )
+            if active_snapshot['is_active']:
+                if is_htmx:
+                    return _render_sync_snapshot(
+                        active_snapshot,
+                        response_status=202,
+                    )
 
-    if failed_count == total_count:
-        status = 'error'
-        title = 'Kubernetes sync failed'
-        message = f'All {total_count} registered clusters failed to synchronize.'
-        failed_preview = ', '.join(
-            failed_clusters[:3],
-        )
-        if failed_count > 3:
-            failed_preview = f'{failed_preview}, +{failed_count - 3} more'
-        detail = f'Failed clusters: {failed_preview}. Review cluster access, TLS settings, and Kubernetes API compatibility.'
-    elif failed_count:
-        status = 'warning'
-        title = 'Sync completed with warnings'
-        message = f'{synced_count} clusters synced and {failed_count} failed.'
-        failed_preview = ', '.join(
-            failed_clusters[:3],
-        )
-        if failed_count > 3:
-            failed_preview = f'{failed_preview}, +{failed_count - 3} more'
-        detail = f'Failed clusters: {failed_preview}. Successful cluster inventory has still been refreshed.'
-    else:
-        status = 'success'
-        title = 'Kubernetes sync completed'
-        message = f'All {synced_count} registered clusters synchronized successfully.'
-        detail = 'Cluster metadata, nodes, namespaces, workloads, pods, services, ingress, and storage inventory are now refreshed.'
+                flash(
+                    'A Kubernetes inventory synchronization is already running.',
+                    'info',
+                )
+                return redirect(
+                    request.referrer or view_url,
+                )
 
-    create_notification(
-        user_id=current_user.id,
-        event_type='kubernetes_inventory_sync',
-        status=status,
-        title=title,
-        message=message,
-        detail=detail,
-        action_url=view_url,
-        metadata={
+            release_cluster_sync_lock(
+                active_task_id,
+            )
+
+        task_id = str(
+            uuid4(),
+        )
+        created_at = datetime.now(
+            UTC,
+        ).isoformat()
+        metadata = {
+            'requested_by_user_id': current_user.id,
+            'created_at': created_at,
             'total_count': total_count,
-            'synced_count': synced_count,
-            'failed_count': failed_count,
-            'duration_seconds': duration_seconds,
-            'failed_clusters': failed_clusters,
-        },
-    )
+            'processed_count': 0,
+            'synced_count': 0,
+            'failed_count': 0,
+            'current_cluster_name': None,
+        }
 
-    if is_htmx:
-        notification_context = get_navigation_notification_context(
-            user_id=current_user.id,
+        acquired = acquire_cluster_sync_lock(
+            task_id=task_id,
+            metadata=metadata,
         )
 
-        return render_template(
-            'components/navigation/_quick_sync_result.html',
-            status=status,
-            title=title,
-            message=message,
-            detail=detail,
-            view_url=view_url,
-            total_count=total_count,
-            synced_count=synced_count,
-            failed_count=failed_count,
-            duration_seconds=duration_seconds,
-            completed_label='Completed just now',
-            notification_context=notification_context,
+        if not acquired:
+            active_task_id = get_active_cluster_sync_task_id()
+            if active_task_id:
+                snapshot = build_cluster_sync_snapshot(
+                    active_task_id,
+                )
+                if is_htmx:
+                    return _render_sync_snapshot(
+                        snapshot,
+                        response_status=202,
+                    )
+
+            flash(
+                'A Kubernetes inventory synchronization is already running.',
+                'info',
+            )
+            return redirect(
+                request.referrer or view_url,
+            )
+
+        try:
+            current_app.extensions['celery'].send_task(
+                CLUSTER_SYNC_TASK_NAME,
+                kwargs={
+                    'requested_by_user_id': current_user.id,
+                },
+                task_id=task_id,
+                queue=CLUSTER_SYNC_QUEUE,
+            )
+        except Exception:
+            release_cluster_sync_lock(
+                task_id,
+            )
+            raise
+
+        snapshot = build_cluster_sync_snapshot(
+            task_id,
         )
 
-    flash(
-        f'{title}. {message}',
-        'danger' if status == 'error' else status,
-    )
-    return redirect(
-        request.referrer or view_url,
+        if is_htmx:
+            return _render_sync_snapshot(
+                snapshot,
+                response_status=202,
+            )
+
+        flash(
+            'Kubernetes inventory synchronization started in the Celery worker.',
+            'success',
+        )
+        return redirect(
+            request.referrer or view_url,
+        )
+    except RedisError:
+        logger.exception(
+            'Redis could not create or read the cluster synchronization state.',
+        )
+        if is_htmx:
+            return _render_enqueue_error(
+                message='Redis is unavailable, so KAORI cannot persist the synchronization state.',
+                detail='Verify the Redis container and CELERY_BROKER_URL before retrying.',
+                response_status=503,
+            )
+
+        flash(
+            'Redis is unavailable. Cluster synchronization was not started.',
+            'danger',
+        )
+        return redirect(
+            request.referrer or view_url,
+        )
+    except Exception:
+        logger.exception(
+            'Celery could not enqueue the cluster synchronization task.',
+        )
+        if is_htmx:
+            return _render_enqueue_error(
+                message='The Celery task could not be added to the inventory queue.',
+                detail='Verify the Celery worker and Redis broker, then retry the operation.',
+                response_status=503,
+            )
+
+        flash(
+            'Celery could not start the cluster synchronization task.',
+            'danger',
+        )
+        return redirect(
+            request.referrer or view_url,
+        )
+
+
+@cluster_bp.route('/sync-all/status')
+@permission_required('clusters.sync')
+def active_sync_all_status() -> ResponseReturnValue:
+    try:
+        task_id = get_active_cluster_sync_task_id()
+        if not task_id:
+            return ''
+
+        return _render_sync_snapshot(
+            build_cluster_sync_snapshot(task_id),
+        )
+    except RedisError:
+        logger.exception(
+            'Redis could not restore the active cluster synchronization state.',
+        )
+        return ''
+
+
+@cluster_bp.route('/sync-all/status/<string:task_id>')
+@permission_required('clusters.sync')
+def sync_all_status(task_id: str) -> ResponseReturnValue:
+    try:
+        snapshot = build_cluster_sync_snapshot(
+            task_id,
+        )
+    except RedisError:
+        logger.exception(
+            'Redis could not read cluster synchronization task %s.',
+            task_id,
+        )
+        return _render_enqueue_error(
+            message='KAORI could not read the synchronization progress from Redis.',
+            detail='The Celery task may still be running. Verify Redis connectivity and reload the page.',
+            response_status=503,
+        )
+
+    return _render_sync_snapshot(
+        snapshot,
     )
 
 
