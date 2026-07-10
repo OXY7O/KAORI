@@ -1,10 +1,13 @@
 {% set endpoint = request.endpoint or '' %}
 {% set reports_active = endpoint.startswith('reports.') %}
+{% set overview_active = endpoint in ['reports.overview', 'reports.overview_alias'] %}
+{% set generate_active = endpoint == 'reports.generate_report' %}
 {% set generated_active = endpoint in [
     'reports.generated_reports',
     'reports.generated_report_detail',
     'reports.generate_report_pdf',
     'reports.download_report_pdf',
+    'reports.bulk_archive_generated_reports',
     'reports.archive_generated_report',
     'reports.restore_generated_report',
     'reports.generated_reports_alias',
@@ -26,84 +29,67 @@
     'reports.delete_schedule',
     'reports.run_schedule',
 ] %}
-{% set storage_active = endpoint in [
-    'reports.storage',
-    'reports.storage_alias',
-] %}
-<details class="sidebar-menu space-y-1" {% if reports_active %}open{% endif %}>
-    <!-- Reports Parent -->
-    <summary class="{{ 'bg-blue-600/15 text-blue-300 ring-1 ring-blue-500/20' if reports_active else 'text-slate-300 hover:bg-slate-900 hover:text-white' }} sidebar-parent-link group flex cursor-pointer select-none items-center justify-between rounded-2xl px-3 py-3 text-[13px] leading-5 font-semibold">
-        <div class="flex min-w-0 items-center gap-3">
+{% set storage_active = endpoint in ['reports.storage', 'reports.storage_alias'] %}
+<details class="sidebar-menu space-y-1" open>
+    <summary class="{{ 'bg-blue-600/15 text-blue-300 ring-1 ring-blue-500/20' if reports_active else 'text-slate-300 hover:bg-slate-900 hover:text-white' }} sidebar-parent-link group flex cursor-pointer select-none items-center justify-between rounded-2xl px-3 py-3 text-[13px] font-semibold leading-5">
+        <span class="flex min-w-0 items-center gap-3">
             <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl {{ 'bg-blue-600 text-white shadow-lg shadow-blue-600/25' if reports_active else 'bg-slate-900 text-slate-400 group-hover:bg-slate-800 group-hover:text-white' }} transition">
                 <i data-lucide="file-bar-chart" class="h-4 w-4"></i>
             </span>
             <span class="sidebar-expanded-only truncate whitespace-nowrap text-[13px] leading-5">Reports</span>
-        </div>
+        </span>
         <i data-lucide="chevron-right"
            class="sidebar-expanded-only sidebar-menu-chevron h-4 w-4 {{ 'text-blue-300' if reports_active else 'text-slate-500' }}"></i>
     </summary>
 
-    <!-- Reports Sub Menu -->
-<div class="sidebar-expanded-only sidebar-submenu ml-7 mt-1 space-y-1 border-l border-slate-800 pl-4">
+    <div class="sidebar-expanded-only sidebar-submenu ml-7 mt-1 space-y-1 border-l border-slate-800 pl-4">
         {% if current_user.has_permission('reports.view') %}
-        <a href="{{ url_for('reports.overview') }}"
-           class="{{ 'bg-slate-900 text-blue-300' if endpoint in ['reports.overview', 'reports.overview_alias'] else 'text-slate-400 hover:bg-slate-900 hover:text-white' }} group flex items-center justify-between gap-2 rounded-xl px-3 py-2 text-[12px] leading-4 transition">
-            <span class="flex min-w-0 items-center gap-2">
-                <span class="h-1.5 w-1.5 rounded-full {{ 'bg-blue-400' if endpoint in ['reports.overview', 'reports.overview_alias'] else 'bg-slate-700 group-hover:bg-slate-500' }}"></span>
+            <a href="{{ url_for('reports.overview') }}"
+               class="{{ 'bg-slate-900 text-blue-300' if overview_active else 'text-slate-400 hover:bg-slate-900 hover:text-white' }} group flex items-center gap-2 rounded-xl px-3 py-2 text-[12px] leading-4 transition">
+                <span class="h-1.5 w-1.5 rounded-full {{ 'bg-blue-400' if overview_active else 'bg-slate-700 group-hover:bg-slate-500' }}"></span>
                 <i data-lucide="layout-dashboard" class="h-3.5 w-3.5"></i>
-                <span class="truncate">Overview</span>
-            </span>
-        </a>
+                <span class="truncate whitespace-nowrap">Overview</span>
+            </a>
         {% endif %}
         {% if current_user.has_permission('reports.generate') %}
-        <a href="{{ url_for('reports.generate_report') }}"
-           class="{{ 'bg-slate-900 text-blue-300' if endpoint == 'reports.generate_report' else 'text-slate-400 hover:bg-slate-900 hover:text-white' }} group flex items-center justify-between gap-2 rounded-xl px-3 py-2 text-[12px] leading-4 transition">
-            <span class="flex min-w-0 items-center gap-2">
-                <span class="h-1.5 w-1.5 rounded-full {{ 'bg-blue-400' if endpoint == 'reports.generate_report' else 'bg-slate-700 group-hover:bg-slate-500' }}"></span>
+            <a href="{{ url_for('reports.generate_report') }}"
+               class="{{ 'bg-slate-900 text-blue-300' if generate_active else 'text-slate-400 hover:bg-slate-900 hover:text-white' }} group flex items-center gap-2 rounded-xl px-3 py-2 text-[12px] leading-4 transition">
+                <span class="h-1.5 w-1.5 rounded-full {{ 'bg-blue-400' if generate_active else 'bg-slate-700 group-hover:bg-slate-500' }}"></span>
                 <i data-lucide="file-plus-2" class="h-3.5 w-3.5"></i>
-                <span class="truncate">Generate</span>
-            </span>
-        </a>
+                <span class="truncate whitespace-nowrap">Generate</span>
+            </a>
         {% endif %}
         {% if current_user.has_permission('reports.view') %}
-        <a href="{{ url_for('reports.generated_reports') }}"
-           class="{{ 'bg-slate-900 text-blue-300' if generated_active else 'text-slate-400 hover:bg-slate-900 hover:text-white' }} group flex items-center justify-between gap-2 rounded-xl px-3 py-2 text-[12px] leading-4 transition">
-            <span class="flex min-w-0 items-center gap-2">
+            <a href="{{ url_for('reports.generated_reports') }}"
+               class="{{ 'bg-slate-900 text-blue-300' if generated_active else 'text-slate-400 hover:bg-slate-900 hover:text-white' }} group flex items-center gap-2 rounded-xl px-3 py-2 text-[12px] leading-4 transition">
                 <span class="h-1.5 w-1.5 rounded-full {{ 'bg-blue-400' if generated_active else 'bg-slate-700 group-hover:bg-slate-500' }}"></span>
                 <i data-lucide="files" class="h-3.5 w-3.5"></i>
-                <span class="truncate">Generated</span>
-            </span>
-        </a>
+                <span class="truncate whitespace-nowrap">Generated</span>
+            </a>
         {% endif %}
         {% if current_user.has_permission('reports.manage_templates') %}
-        <a href="{{ url_for('reports.report_templates') }}"
-           class="{{ 'bg-slate-900 text-blue-300' if templates_active else 'text-slate-400 hover:bg-slate-900 hover:text-white' }} group flex items-center justify-between gap-2 rounded-xl px-3 py-2 text-[12px] leading-4 transition">
-            <span class="flex min-w-0 items-center gap-2">
+            <a href="{{ url_for('reports.report_templates') }}"
+               class="{{ 'bg-slate-900 text-blue-300' if templates_active else 'text-slate-400 hover:bg-slate-900 hover:text-white' }} group flex items-center gap-2 rounded-xl px-3 py-2 text-[12px] leading-4 transition">
                 <span class="h-1.5 w-1.5 rounded-full {{ 'bg-blue-400' if templates_active else 'bg-slate-700 group-hover:bg-slate-500' }}"></span>
                 <i data-lucide="layout-template" class="h-3.5 w-3.5"></i>
-                <span class="truncate">Templates</span>
-            </span>
-        </a>
+                <span class="truncate whitespace-nowrap">Templates</span>
+            </a>
         {% endif %}
         {% if current_user.has_permission('reports.manage_storage') %}
-        <a href="{{ url_for('reports.storage') }}"
-           class="{{ 'bg-slate-900 text-blue-300' if storage_active else 'text-slate-400 hover:bg-slate-900 hover:text-white' }} group flex items-center justify-between gap-2 rounded-xl px-3 py-2 text-[12px] leading-4 transition">
-            <span class="flex min-w-0 items-center gap-2">
+            <a href="{{ url_for('reports.storage') }}"
+               class="{{ 'bg-slate-900 text-blue-300' if storage_active else 'text-slate-400 hover:bg-slate-900 hover:text-white' }} group flex items-center gap-2 rounded-xl px-3 py-2 text-[12px] leading-4 transition">
                 <span class="h-1.5 w-1.5 rounded-full {{ 'bg-blue-400' if storage_active else 'bg-slate-700 group-hover:bg-slate-500' }}"></span>
                 <i data-lucide="hard-drive" class="h-3.5 w-3.5"></i>
-                <span class="truncate">Storage</span>
-            </span>
-        </a>
+                <span class="truncate whitespace-nowrap">Storage</span>
+            </a>
         {% endif %}
         {% if current_user.has_permission('reports.manage_schedules') %}
-        <a href="{{ url_for('reports.schedules') }}"
-           class="{{ 'bg-slate-900 text-blue-300' if schedules_active else 'text-slate-400 hover:bg-slate-900 hover:text-white' }} group flex items-center justify-between gap-2 rounded-xl px-3 py-2 text-[12px] leading-4 transition">
-            <span class="flex min-w-0 items-center gap-2">
+            <a href="{{ url_for('reports.schedules') }}"
+               class="{{ 'bg-slate-900 text-blue-300' if schedules_active else 'text-slate-400 hover:bg-slate-900 hover:text-white' }} group flex items-center gap-2 rounded-xl px-3 py-2 text-[12px] leading-4 transition">
                 <span class="h-1.5 w-1.5 rounded-full {{ 'bg-blue-400' if schedules_active else 'bg-slate-700 group-hover:bg-slate-500' }}"></span>
                 <i data-lucide="calendar-clock" class="h-3.5 w-3.5"></i>
-                <span class="truncate">Schedules</span>
-            </span>
-        </a>
+                <span class="truncate whitespace-nowrap">Schedules</span>
+            </a>
         {% endif %}
     </div>
 </details>

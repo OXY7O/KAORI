@@ -3,19 +3,20 @@ from __future__ import annotations
 from typing import Any, cast
 
 from flask import current_app, render_template, request
-from app.rbac.decorators import permission_required
 
-from app.intelligence.recommendation_engine import (
-    build_utilization_actionable_recommendations,
-    count_actionable_recommendations,
-    format_recommendation_cards,
-)
 from app.analytics.utilization.service import (
     UtilizationService,
     get_selected_cluster,
     get_utilization_clusters,
 )
+from app.intelligence.recommendation_engine import (
+    build_utilization_actionable_recommendations,
+    count_actionable_recommendations,
+    format_recommendation_cards,
+)
+from app.prometheus.exceptions import PrometheusError
 from app.prometheus.service import PrometheusService
+from app.rbac.decorators import permission_required
 
 ALLOWED_TREND_HOURS = [
     1,
@@ -172,6 +173,11 @@ def utilization_trend() -> str:
             node_name=selected_trend_node or None,
         )
 
+    except PrometheusError as exc:
+        error = (
+            'Prometheus is not configured or available for the selected cluster. '
+            f'{exc}'
+        )
     except Exception as exc:
         current_app.logger.exception(
             exc,
@@ -420,6 +426,18 @@ def utilization() -> str:
             top_memory_consumers=top_memory_consumers,
         )
 
+    except PrometheusError as exc:
+        message = str(exc) or 'Prometheus is not configured for the selected cluster.'
+        prometheus_status = {
+            'connected': False,
+            'response_time_ms': None,
+            'label': 'Prometheus Not Configured',
+            'description': message,
+        }
+        error = (
+            'Prometheus is not configured or available for the selected cluster. '
+            'Configure the integration to load live utilization signals.'
+        )
     except Exception as exc:
         current_app.logger.exception(
             exc,
@@ -537,6 +555,11 @@ def utilization_node_detail() -> str:
             selected_node or None,
         )
 
+    except PrometheusError as exc:
+        error = (
+            'Prometheus is not configured or available for the selected cluster. '
+            f'{exc}'
+        )
     except Exception as exc:
         current_app.logger.exception(
             exc,

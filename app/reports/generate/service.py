@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from werkzeug.datastructures import ImmutableMultiDict, MultiDict
 
 from app.extensions import db
@@ -505,13 +505,15 @@ def get_generate_report_payload(
     selected_report_type = _get_report_type_context(
         form_state['report_type'],
     )
+    cluster_options = _get_cluster_options()
 
     return {
         'page_title': 'Generate Report',
         'page_subtitle': (
             'Configure scope, source domain, period, and selected sections before creating standalone infrastructure report requests.'
         ),
-        'clusters': _get_cluster_options(),
+        'clusters': cluster_options,
+        'has_clusters': len(cluster_options) > 1,
         'report_type_options': REPORT_TYPE_OPTIONS,
         'period_options': PERIOD_OPTIONS,
         'output_format_options': OUTPUT_FORMAT_OPTIONS,
@@ -818,6 +820,15 @@ def validate_form_state(
     if form_state['report_type'] not in allowed_report_types:
         errors.append(
             'Please select a valid report type.',
+        )
+
+    cluster_count = db.session.scalar(
+        select(func.count(Cluster.id)),
+    ) or 0
+
+    if cluster_count == 0:
+        errors.append(
+            'Add at least one Kubernetes cluster before creating reports or report schedules.',
         )
 
     if report_requires_specific_cluster(

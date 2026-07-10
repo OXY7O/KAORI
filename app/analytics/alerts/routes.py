@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from flask import render_template, request
 from flask.typing import ResponseReturnValue
-from app.rbac.decorators import permission_required
 
 from app.analytics.alerts.service import get_alerts_context
+from app.rbac.decorators import permission_required
 
 
 def _context_from_request() -> dict:

@@ -277,6 +277,9 @@
                 {% include "components/navigation/navbar.html" %}
                 <main class="min-h-0 flex-1 overflow-y-auto bg-slate-50 transition-colors duration-300 dark:bg-slate-900">
                     <div class="app-content-shell">
+                        {% if cluster_onboarding.show_banner %}
+                            {% include "components/cluster/_onboarding_banner.html" %}
+                        {% endif %}
                         {% block dashboard_content %}
                         {% endblock dashboard_content %}
                     </div>
@@ -284,7 +287,7 @@
             </div>
         </div>
         <div id="quick-action-feedback"
-             {% if current_user.is_authenticated and current_user.has_permission('clusters.sync') %}
+             {% if current_user.is_authenticated and current_user.has_permission('clusters.sync') and cluster_onboarding.has_clusters %}
                  hx-get="{{ url_for('cluster.active_sync_all_status') }}"
                  hx-trigger="load"
                  hx-swap="innerHTML"

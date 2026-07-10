@@ -237,13 +237,17 @@ def build_storage_retention_policy() -> dict[str, Any]:
         'REPORT_ARCHIVE_RETENTION_DAYS',
         180,
     )
-    cleanup_mode = str(
-        current_app.config.get(
-            'REPORT_CLEANUP_MODE',
-            'dry-run-only',
+    cleanup_mode = (
+        str(
+            current_app.config.get(
+                'REPORT_CLEANUP_MODE',
+                'dry-run-only',
+            )
+            or 'dry-run-only'
         )
-        or 'dry-run-only'
-    ).strip().lower()
+        .strip()
+        .lower()
+    )
     cleanup_scope = str(
         current_app.config.get(
             'REPORT_CLEANUP_SCOPE',
@@ -279,7 +283,9 @@ def build_storage_retention_policy() -> dict[str, Any]:
         'archive_retention_days': f'{archive_retention_days} days',
         'archive_retention_days_value': archive_retention_days,
         'cleanup_scope': cleanup_scope,
-        'audit_status': 'Required before destructive cleanup' if not destructive_actions_enabled else 'Required for every cleanup run',
+        'audit_status': 'Required before destructive cleanup'
+        if not destructive_actions_enabled
+        else 'Required for every cleanup run',
         'safe_regenerate_behavior': (
             'Regeneration creates a new artifact. Previous artifacts remain available until they exceed the defined retention window and an approved cleanup workflow is enabled.'  # noqa: E501
         ),
@@ -290,8 +296,8 @@ def build_storage_retention_policy() -> dict[str, Any]:
             f'Ready/generated artifacts are retention candidates after {retention_days} days.',
             f'Archived artifacts are long-term evidence and are reviewed after {archive_retention_days} days.',
             'Missing database references are reported by integrity scan before any cleanup decision.',
-            'S3-compatible and local artifacts use the same retention rule, but storage backend prefixes are preserved.',
-            'No file or object is deleted unless REPORT_DESTRUCTIVE_CLEANUP_ENABLED is explicitly enabled in configuration.',
+            'S3-compatible and local artifacts use the same retention rule, but storage backend prefixes are preserved.',  # noqa: E501
+            'No file or object is deleted unless REPORT_DESTRUCTIVE_CLEANUP_ENABLED is explicitly enabled in configuration.',  # noqa: E501
         ],
         'next_steps': [
             'Use Cleanup Dry Run to review candidate reports before enabling any delete action.',
@@ -380,7 +386,7 @@ def build_storage_summary_cards(
             'value': str(
                 artifact_summary['reports_with_files'],
             ),
-            'caption': f"{artifact_summary['total_size']} tracked in database",
+            'caption': f'{artifact_summary["total_size"]} tracked in database',
             'icon': 'files',
             'tone': 'blue',
         },

@@ -541,6 +541,7 @@
                 const sectionOptionsByReportType = {{ payload.section_options_by_report_type|tojson }};
                 const reportTypeOptions = {{ payload.report_type_options|tojson }};
                 const singleClusterRequiredTypes = {{ payload.single_cluster_required_report_types|tojson }};
+                const hasRegisteredClusters = {{ payload.has_clusters|tojson }};
                 const initialSelectedSections = {{ payload.form_state.sections|tojson }};
 
                 const reportTypeSelect = document.getElementById('report-type-select');
@@ -709,7 +710,7 @@
                     const isAllClusters = !clusterSelect.value;
                     const hasSelectedSections = getSelectedSections().length > 0;
                     const shouldBlockCluster = requiresSpecificCluster && isAllClusters;
-                    const shouldBlock = shouldBlockCluster || !hasSelectedSections;
+                    const shouldBlock = !hasRegisteredClusters || shouldBlockCluster || !hasSelectedSections;
                     const clusterLabel = clusterSelect.options[clusterSelect.selectedIndex]
                         ? clusterSelect.options[clusterSelect.selectedIndex].text.trim()
                         : 'All Clusters';

@@ -209,8 +209,13 @@ def new_user():
         user = create_or_update_user(form) if allowed else None
         if not allowed:
             flash(message or 'This account cannot be created.', 'warning')
-        elif user and user.auth_source == 'database' and not form.password.data:
-            form.password.errors.append('Password is required for database-managed users.')
+        elif user is None:
+            flash('The user account could not be prepared.', 'danger')
+        elif user.auth_source == 'database' and not form.password.data:
+            form.password.errors = [
+                *form.password.errors,
+                'Password is required for database-managed users.',
+            ]
         else:
             try:
                 db.session.flush()

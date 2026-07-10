@@ -251,7 +251,7 @@ def get_report_storage_payload() -> dict[str, Any]:
             'Secrets should be provided through environment variables or Kubernetes Secrets.',
             'The UI is read-only for configuration; it only displays status and can run a verification check.',
             'Existing report records keep their backend prefix, so local and S3 artifacts can coexist.',
-            'Retention is defined for MVP2. Cleanup remains dry-run/read-only unless destructive cleanup is explicitly enabled in configuration.',
+            'Retention is defined for MVP2. Cleanup remains dry-run/read-only unless destructive cleanup is explicitly enabled in configuration.',  # noqa: E501
         ],
         'recommended_actions': build_storage_recommended_actions(
             backend_name,
@@ -383,7 +383,7 @@ def build_storage_lifecycle_summary(
                 )
             ),
             'status': 'info',
-            'description': 'Retention is defined; destructive cleanup remains guarded by configuration and approval workflow.',
+            'description': 'Retention is defined; destructive cleanup remains guarded by configuration and approval workflow.',  # noqa: E501
         },
     ]
 

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from math import ceil
-import re
 from time import perf_counter
 from typing import Any
 
@@ -12,17 +12,17 @@ from app.alertmanager.service import (
     get_alertmanager_silences,
     get_alertmanager_status,
 )
-from app.intelligence.recommendation_engine import (
-    build_alerts_actionable_recommendations,
-    count_actionable_recommendations,
-    format_recommendation_cards,
-)
 from app.analytics.alerts.queries import (
     POD_NOT_READY_ANOMALY_QUERY,
     POD_RESTART_ANOMALY_QUERY,
     PROMETHEUS_ALERTS_QUERY,
 )
 from app.extensions import db
+from app.intelligence.recommendation_engine import (
+    build_alerts_actionable_recommendations,
+    count_actionable_recommendations,
+    format_recommendation_cards,
+)
 from app.models import Cluster, NamespaceInventory
 from app.prometheus.exceptions import PrometheusError
 from app.prometheus.service import PrometheusService
@@ -836,7 +836,6 @@ def load_prometheus_alerts(
         }
 
 
-
 def get_source_status_message(
     status: dict[str, Any],
     *,
@@ -846,20 +845,26 @@ def get_source_status_message(
         'error',
     )
 
-    if isinstance(
-        error,
-        str,
-    ) and error:
+    if (
+        isinstance(
+            error,
+            str,
+        )
+        and error
+    ):
         return error
 
     label = status.get(
         'label',
     )
 
-    if isinstance(
-        label,
-        str,
-    ) and label:
+    if (
+        isinstance(
+            label,
+            str,
+        )
+        and label
+    ):
         return label
 
     return default
@@ -947,9 +952,7 @@ def load_alerts_by_source(
         ),
         'connected': False,
         'fallback_used': True,
-        'fallback_reason': (
-            f'Alertmanager unavailable: {alertmanager_reason}. Prometheus fallback also unavailable.'
-        ),
+        'fallback_reason': (f'Alertmanager unavailable: {alertmanager_reason}. Prometheus fallback also unavailable.'),
         'error': f'{alertmanager_reason} | {prometheus_reason}',
         'response_time_ms': None,
         'last_checked_at': datetime.now(
@@ -1554,7 +1557,6 @@ def build_integration_status(
     }
 
 
-
 def build_source_health(
     *,
     cluster: Cluster | None,
@@ -1670,7 +1672,9 @@ def build_source_health(
         score = 20
         level = 'unavailable'
         label = 'Alert Sources Not Configured'
-        description = 'Configure Alertmanager as the primary source and Prometheus as fallback before relying on alert analysis.'
+        description = (
+            'Configure Alertmanager as the primary source and Prometheus as fallback before relying on alert analysis.'
+        )
         icon = 'plug-zap'
         class_name = 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
 
@@ -1726,7 +1730,6 @@ def build_source_health(
         'resolved_source': resolved_source,
         'fallback_used': fallback_used,
     }
-
 
 
 def normalize_alert_receiver(
@@ -1869,10 +1872,13 @@ def build_count_groups(
                 alert,
             )
 
-        counts[value] = counts.get(
-            value,
-            0,
-        ) + 1
+        counts[value] = (
+            counts.get(
+                value,
+                0,
+            )
+            + 1
+        )
 
     total = sum(
         counts.values(),
@@ -2030,9 +2036,7 @@ def build_routing_summary(
         enabled = False
         level = 'unavailable'
         label = 'Routing Context Unavailable'
-        description = (
-            'Alert routing cannot be evaluated because no alert source is currently connected.'
-        )
+        description = 'Alert routing cannot be evaluated because no alert source is currently connected.'
         icon = 'circle-alert'
         class_name = 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-300'
 
@@ -2121,10 +2125,13 @@ def load_alertmanager_silences(
 def parse_alertmanager_datetime(
     value: Any,
 ) -> datetime | None:
-    if not isinstance(
-        value,
-        str,
-    ) or not value:
+    if (
+        not isinstance(
+            value,
+            str,
+        )
+        or not value
+    ):
         return None
 
     try:
@@ -2347,10 +2354,13 @@ def silence_matches_alert(
 
         if is_regex:
             try:
-                matched = re.search(
-                    expected_value,
-                    actual_value,
-                ) is not None
+                matched = (
+                    re.search(
+                        expected_value,
+                        actual_value,
+                    )
+                    is not None
+                )
             except re.error:
                 matched = expected_value in actual_value
         else:
@@ -2471,9 +2481,12 @@ def build_silence_summary(
         ]
 
         for matcher in matchers:
-            if matcher.get(
-                'name',
-            ) == 'namespace':
+            if (
+                matcher.get(
+                    'name',
+                )
+                == 'namespace'
+            ):
                 silenced_namespaces.add(
                     str(
                         matcher.get(
@@ -2501,7 +2514,7 @@ def build_silence_summary(
                     'fingerprint',
                     '',
                 )
-                or f"{alert.get('name', '')}/{alert.get('namespace', '')}/{alert.get('target', '')}"
+                or f'{alert.get("name", "")}/{alert.get("namespace", "")}/{alert.get("target", "")}'
             )
 
             if fingerprint:
@@ -2568,9 +2581,7 @@ def build_silence_summary(
         'enabled': True,
         'level': 'available',
         'label': 'Alertmanager Silence Context Available',
-        'description': (
-            'Active, pending, and expired Alertmanager silences are visible for the selected cluster.'
-        ),
+        'description': ('Active, pending, and expired Alertmanager silences are visible for the selected cluster.'),
         'class': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300',
         'icon': 'volume-x',
         'source': resolved_source,
@@ -2580,16 +2591,8 @@ def build_silence_summary(
         'matched_alerts': len(
             matched_alert_fingerprints,
         ),
-        'silenced_namespaces': sorted(
-            namespace
-            for namespace in silenced_namespaces
-            if namespace
-        )[:6],
-        'silenced_matchers': sorted(
-            matcher
-            for matcher in silenced_matchers
-            if matcher
-        )[:8],
+        'silenced_namespaces': sorted(namespace for namespace in silenced_namespaces if namespace)[:6],
+        'silenced_matchers': sorted(matcher for matcher in silenced_matchers if matcher)[:8],
         'items': active_items[:5],
     }
 
@@ -2693,7 +2696,8 @@ def build_inhibition_summary(
                 'severity',
                 'job',
             ]
-            if label in (
+            if label
+            in (
                 alert.get(
                     'labels',
                     {},
@@ -2756,17 +2760,13 @@ def build_inhibition_summary(
         'enabled': True,
         'level': 'available',
         'label': 'Alertmanager Inhibition Context Available',
-        'description': (
-            'Inhibition visibility is derived from Alertmanager alert lifecycle metadata.'
-        ),
+        'description': ('Inhibition visibility is derived from Alertmanager alert lifecycle metadata.'),
         'class': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300',
         'icon': 'shield-alert',
         'source': resolved_source,
         'rules_detected': len(
             {
-                str(
-                    item
-                )
+                str(item)
                 for alert in inhibited_alerts
                 for item in (
                     alert.get(
@@ -3085,10 +3085,13 @@ def build_ownership_summary(
 
         if has_owner:
             owner_count += 1
-            owner_groups[owner] = owner_groups.get(
-                owner,
-                0,
-            ) + 1
+            owner_groups[owner] = (
+                owner_groups.get(
+                    owner,
+                    0,
+                )
+                + 1
+            )
 
         if has_runbook:
             runbook_count += 1
@@ -3298,8 +3301,6 @@ def clamp_score(
     )
 
 
-
-
 def build_incident_readiness(
     *,
     signal_overview: dict[str, Any],
@@ -3395,8 +3396,12 @@ def build_incident_readiness(
     if score >= 80:
         level = 'ready'
         label = 'Incident Ready'
-        description = 'Alert source, routing, ownership, and current signal posture are ready for normal operational monitoring.'
-        recommended_action = 'Continue monitoring. No immediate incident escalation is required from the current alert posture.'
+        description = (
+            'Alert source, routing, ownership, and current signal posture are ready for normal operational monitoring.'
+        )
+        recommended_action = (
+            'Continue monitoring. No immediate incident escalation is required from the current alert posture.'
+        )
         icon = 'shield-check'
         class_name = 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300'
     elif score >= 60:
@@ -3409,14 +3414,18 @@ def build_incident_readiness(
     elif score >= 40:
         level = 'degraded'
         label = 'Incident Readiness Degraded'
-        description = 'Alert readiness is degraded because one or more source, routing, metadata, or signal checks are weak.'
+        description = (
+            'Alert readiness is degraded because one or more source, routing, metadata, or signal checks are weak.'
+        )
         recommended_action = 'Triage active alerts, verify Alertmanager routing, and complete owner/runbook/contact metadata for affected services.'
         icon = 'alert-triangle'
         class_name = 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'
     else:
         level = 'incident_risk'
         label = 'Incident Risk'
-        description = 'Current alert posture has critical signals or significant readiness gaps that may require escalation.'
+        description = (
+            'Current alert posture has critical signals or significant readiness gaps that may require escalation.'
+        )
         recommended_action = 'Escalate critical alerts, assign owner, validate runbook coverage, and inspect muted or inhibited alerts immediately.'
         icon = 'siren'
         class_name = 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-300'
@@ -3516,6 +3525,7 @@ def build_empty_incident_readiness() -> dict[str, Any]:
         'checks': [],
     }
 
+
 def build_resource_links(
     *,
     cluster: Cluster | None,
@@ -3552,7 +3562,7 @@ def build_resource_links(
             'configured': False,
             'label': 'Runbook Portal',
             'url': None,
-            'description': ('Runbook portal URL is not configured yet. This will be managed ' 'from Settings later.'),
+            'description': ('Runbook portal URL is not configured yet. This will be managed from Settings later.'),
         },
         'contact_point': {
             'configured': False,
@@ -3561,7 +3571,7 @@ def build_resource_links(
             'email': None,
             'url': None,
             'description': (
-                'Escalation contact point or PIC is not configured yet. This will ' 'be managed from Settings later.'
+                'Escalation contact point or PIC is not configured yet. This will be managed from Settings later.'
             ),
         },
     }
@@ -4140,9 +4150,7 @@ def get_alerts_context(
         default_action_type='alert_review',
     )
 
-    selected_cluster_signal_overview = actionable_payload[
-        'selected_cluster_signal_overview'
-    ]
+    selected_cluster_signal_overview = actionable_payload['selected_cluster_signal_overview']
 
     integration_status = build_integration_status(
         cluster=selected_cluster,

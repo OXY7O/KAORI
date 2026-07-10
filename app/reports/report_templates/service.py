@@ -26,7 +26,7 @@ SYSTEM_TEMPLATE_ITEMS: list[dict[str, Any]] = [
         'name': 'Analytics Overview Template',
         'report_type': 'analytics_overview',
         'report_type_label': 'Analytics Overview',
-        'description': 'High-level analytics summary across utilization, capacity, forecast, top consumers, and alerts.',
+        'description': 'High-level analytics summary across utilization, capacity, forecast, top consumers, and alerts.',  # noqa: E501
         'status': 'system',
         'report_domain': DEFAULT_REPORT_DOMAIN,
         'source_kind': DEFAULT_REPORT_SOURCE_KIND,
@@ -66,7 +66,7 @@ SYSTEM_TEMPLATE_ITEMS: list[dict[str, Any]] = [
         'name': 'Capacity Analysis Template',
         'report_type': 'capacity_analysis',
         'report_type_label': 'Capacity Analysis',
-        'description': 'Worker capacity, allocation, schedulable headroom, and pressure risk aligned with the Capacity Analysis generator.',
+        'description': 'Worker capacity, allocation, schedulable headroom, and pressure risk aligned with the Capacity Analysis generator.',  # noqa: E501
         'status': 'system',
         'report_domain': DEFAULT_REPORT_DOMAIN,
         'source_kind': DEFAULT_REPORT_SOURCE_KIND,
@@ -167,7 +167,7 @@ SYSTEM_TEMPLATE_ITEMS: list[dict[str, Any]] = [
         'name': 'Alerts & Anomalies Template',
         'report_type': 'alerts_anomalies',
         'report_type_label': 'Alerts & Anomalies',
-        'description': 'Alert Intelligence report covering alert source health, routing, silence, ownership, incident readiness, anomaly context, and recommendations.',
+        'description': 'Alert Intelligence report covering alert source health, routing, silence, ownership, incident readiness, anomaly context, and recommendations.',  # noqa: E501
         'status': 'system',
         'report_domain': DEFAULT_REPORT_DOMAIN,
         'source_kind': DEFAULT_REPORT_SOURCE_KIND,
@@ -201,7 +201,7 @@ def get_report_templates_payload(
         template for template in all_templates if template_matches_filters(template, selected_filters)
     ]
     pagination = build_templates_pagination(args, selected_filters, len(filtered_templates))
-    templates = filtered_templates[pagination['offset']:pagination['offset'] + pagination['per_page']]
+    templates = filtered_templates[pagination['offset'] : pagination['offset'] + pagination['per_page']]
     edit_template = get_edit_template_context(args) if args is not None else None
 
     return {
@@ -239,7 +239,9 @@ def get_custom_templates() -> list[ReportTemplate]:
                 ReportTemplate.updated_at.desc(),
                 ReportTemplate.name.asc(),
             )
-        ).scalars().all()
+        )
+        .scalars()
+        .all()
     )
 
 
@@ -302,7 +304,9 @@ def build_custom_template_item(template: ReportTemplate) -> dict[str, Any]:
         'delete_href': url_for('reports.delete_report_template', template_id=template.id),
         'customization_status': 'Editable custom template',
         'updated_label': format_datetime(template.updated_at),
-        'created_by_label': template.created_by_display_name_snapshot or template.created_by_username_snapshot or 'Unknown user',
+        'created_by_label': template.created_by_display_name_snapshot
+        or template.created_by_username_snapshot
+        or 'Unknown user',
         'can_edit': True,
         'can_delete': True,
         'can_duplicate': True,
@@ -311,7 +315,9 @@ def build_custom_template_item(template: ReportTemplate) -> dict[str, Any]:
 
 def get_template_form_context(template: ReportTemplate | None = None) -> dict[str, Any]:
     report_type = template.report_type if template else 'analytics_overview'
-    sections = sanitize_sections(report_type, template.sections_as_list()) if template else get_default_sections(report_type)
+    sections = (
+        sanitize_sections(report_type, template.sections_as_list()) if template else get_default_sections(report_type)
+    )
     return {
         'id': template.id if template else None,
         'name': template.name if template else '',
@@ -548,7 +554,9 @@ def get_summary_cards(templates: list[dict[str, Any]]) -> list[dict[str, str]]:
 def get_filter_options() -> dict[str, list[dict[str, str]]]:
     report_type_options = [{'value': '', 'label': 'All Types'}]
     for option in REPORT_TYPE_OPTIONS:
-        report_type_options.append({'value': str(option['value']), 'label': str(option['label']).replace(' Report', '')})
+        report_type_options.append(
+            {'value': str(option['value']), 'label': str(option['label']).replace(' Report', '')}
+        )
 
     return {
         'report_types': report_type_options,
@@ -617,7 +625,7 @@ def build_templates_page_href(filters: dict[str, str], page: int, per_page: int)
         value = filters.get(key, '').strip()
         if value:
             params[key] = value
-    return f"{url_for('reports.report_templates')}?{urlencode(params)}"
+    return f'{url_for("reports.report_templates")}?{urlencode(params)}'
 
 
 def parse_positive_int(value: str | None, default: int) -> int:
@@ -643,12 +651,13 @@ def get_report_architecture_context() -> dict[str, Any]:
         'status': 'KubeReport ready · ServerReport and HCIReport integration scope',
     }
 
+
 def get_template_context() -> list[str]:
     return [
-        'System templates provide protected defaults for repeatable infrastructure reports and cannot be modified directly.',
-        'Custom templates store a report type, selected sections, owner snapshot, status, and source template reference.',
-        'Templates pre-fill Generate Report so users can create consistent PDF artifacts without rebuilding the section checklist every time.',
-        'Template sections are validated against each report type so the PDF renderer receives a supported output contract.',
+        'System templates provide protected defaults for repeatable infrastructure reports and cannot be modified directly.',  # noqa: E501
+        'Custom templates store a report type, selected sections, owner snapshot, status, and source template reference.',  # noqa: E501
+        'Templates pre-fill Generate Report so users can create consistent PDF artifacts without rebuilding the section checklist every time.',  # noqa: E501
+        'Template sections are validated against each report type so the PDF renderer receives a supported output contract.',  # noqa: E501
     ]
 
 
@@ -663,21 +672,21 @@ def get_renderer_readiness() -> list[dict[str, str]]:
         },
         {
             'label': 'Custom template workspace',
-            'description': 'Custom templates can be created, duplicated, edited, deleted, and used to pre-fill Generate Report.',
+            'description': 'Custom templates can be created, duplicated, edited, deleted, and used to pre-fill Generate Report.',  # noqa: E501
             'status': 'Ready',
             'tone': 'green',
             'icon': 'pencil-ruler',
         },
         {
             'label': 'PDF output mapping',
-            'description': 'Template sections are mapped to ReportLab sections and the corresponding report payload builders.',
+            'description': 'Template sections are mapped to ReportLab sections and the corresponding report payload builders.',  # noqa: E501
             'status': 'Ready',
             'tone': 'green',
             'icon': 'file-check-2',
         },
         {
             'label': 'Template ownership',
-            'description': 'Custom templates retain creator snapshots, status, source template reference, timestamps, and selected sections.',
+            'description': 'Custom templates retain creator snapshots, status, source template reference, timestamps, and selected sections.',  # noqa: E501
             'status': 'Ready',
             'tone': 'green',
             'icon': 'git-branch',
@@ -752,7 +761,7 @@ def build_generate_href(report_type: str, sections: list[str], name: str | None 
     if name:
         params.append(('name', name))
     params.extend(('sections', section) for section in sections)
-    return f"{url_for('reports.generate_report')}?{urlencode(params)}"
+    return f'{url_for("reports.generate_report")}?{urlencode(params)}'
 
 
 def build_copy_name(name: str) -> str:

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-
 REPORT_DOMAIN_KUBEREPORT = 'kubereport'
 REPORT_DOMAIN_SERVERREPORT = 'serverreport'
 REPORT_DOMAIN_HCIREPORT = 'hcireport'
@@ -55,11 +54,10 @@ REPORT_TYPE_DESCRIPTIONS = {
         'risk context, and recommended follow-up actions.'
     ),
     'resource_utilization': (
-        'Resource usage report focused on CPU, memory, storage, and pod utilization '
-        'patterns across the selected scope.'
+        'Resource usage report focused on CPU, memory, storage, and pod utilization patterns across the selected scope.'
     ),
     'capacity_analysis': (
-        'Capacity and headroom report focused on allocatable resources, usage pressure, ' 'and scheduling risk.'
+        'Capacity and headroom report focused on allocatable resources, usage pressure, and scheduling risk.'
     ),
     'storage_analysis': (
         'Storage-focused report covering filesystem, persistent volume, persistent volume claim, '
@@ -73,7 +71,7 @@ REPORT_TYPE_DESCRIPTIONS = {
         'Forecast report designed to summarize projected resource growth and capacity planning signals.'
     ),
     'top_consumers': (
-        'Top consumer report for identifying high-impact namespaces, workloads, pods, ' 'and resource hotspots.'
+        'Top consumer report for identifying high-impact namespaces, workloads, pods, and resource hotspots.'
     ),
     'alerts_anomalies': (
         'Alert and anomaly report focused on active alert state, severity distribution, '

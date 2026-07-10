@@ -371,6 +371,12 @@ def active_sync_all_status() -> ResponseReturnValue:
         return _render_sync_snapshot(
             build_cluster_sync_snapshot(task_id),
         )
+    except RuntimeError as exc:
+        logger.warning(
+            'Cluster synchronization state is unavailable: %s',
+            exc,
+        )
+        return ''
     except RedisError:
         logger.exception(
             'Redis could not restore the active cluster synchronization state.',
@@ -384,6 +390,16 @@ def sync_all_status(task_id: str) -> ResponseReturnValue:
     try:
         snapshot = build_cluster_sync_snapshot(
             task_id,
+        )
+    except RuntimeError as exc:
+        logger.warning(
+            'Cluster synchronization task state is unavailable: %s',
+            exc,
+        )
+        return _render_enqueue_error(
+            message='KAORI could not read the synchronization progress.',
+            detail='Redis state storage is not configured. Verify REDIS_URL and reload the page.',
+            response_status=503,
         )
     except RedisError:
         logger.exception(

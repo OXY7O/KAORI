@@ -22,16 +22,15 @@ from app.analytics.common.params import (
     get_selected_time_range,
 )
 from app.analytics.common.payloads import get_empty_capacity_payload
+from app.analytics.utilization.service import UtilizationService
 from app.intelligence.recommendation_engine import (
     build_capacity_actionable_recommendations,
     count_actionable_recommendations,
     format_recommendation_cards,
 )
-from app.analytics.utilization.service import UtilizationService
 from app.models import Cluster
+from app.prometheus.exceptions import PrometheusError
 from app.prometheus.service import PrometheusService
-
-
 
 CAPACITY_TIME_RANGE_STEP_MAP = {
     '1h': '5m',
@@ -78,23 +77,25 @@ def get_capacity_page_context(
         selected_time_range=selected_time_range,
     )
 
+    prometheus_status = {
+        'connected': False,
+        'response_time_ms': None,
+        'label': 'Prometheus Not Available',
+        'description': 'Add a Kubernetes cluster and configure Prometheus to load capacity signals.',
+    }
+
     if not cluster:
         return {
-            'clusters': [],
+            'clusters': clusters,
             'cluster': None,
-            'error': 'No cluster configured',
+            'error': None,
             'prometheus_connected': False,
+            'prometheus_status': prometheus_status,
             **empty_capacity_payload,
         }
 
     error = None
     prometheus_connected = False
-    prometheus_status = {
-        'connected': False,
-        'response_time_ms': None,
-        'label': 'Prometheus Disconnected',
-        'description': 'Prometheus unavailable',
-    }
     capacity_payload = empty_capacity_payload.copy()
 
     try:
@@ -123,6 +124,19 @@ def get_capacity_page_context(
             )
         )
 
+    except PrometheusError as exc:
+        message = str(exc) or 'Prometheus is not configured for the selected cluster.'
+        prometheus_status = {
+            'connected': False,
+            'response_time_ms': None,
+            'label': 'Prometheus Not Configured',
+            'description': message,
+            'error': message,
+        }
+        error = (
+            'Prometheus is not configured or available for the selected cluster. '
+            'Configure the integration to load live capacity signals.'
+        )
     except Exception as exc:
         current_app.logger.exception(
             exc,

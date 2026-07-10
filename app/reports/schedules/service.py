@@ -337,19 +337,22 @@ def execute_schedule(
 
     success, message = generate_pdf_for_report(report.id)
 
-    run = db.session.get(ReportScheduleRun, run.id)
-    schedule = db.session.get(ReportSchedule, schedule.id)
+    refreshed_run = db.session.get(ReportScheduleRun, run.id)
+    refreshed_schedule = db.session.get(ReportSchedule, schedule.id)
 
-    if run is not None:
-        run.status = 'success' if success else 'failed'
-        run.finished_at = datetime.now(UTC)
-        run.error_message = None if success else message
+    if refreshed_run is not None:
+        refreshed_run.status = 'success' if success else 'failed'
+        refreshed_run.finished_at = datetime.now(UTC)
+        refreshed_run.error_message = None if success else message
 
-    if schedule is not None:
-        schedule.last_status = 'success' if success else 'failed'
-        schedule.last_run_at = datetime.now(UTC)
-        schedule.last_report_id = report.id
-        schedule.next_run_at = calculate_next_run_at(schedule, base=datetime.now(UTC))
+    if refreshed_schedule is not None:
+        refreshed_schedule.last_status = 'success' if success else 'failed'
+        refreshed_schedule.last_run_at = datetime.now(UTC)
+        refreshed_schedule.last_report_id = report.id
+        refreshed_schedule.next_run_at = calculate_next_run_at(
+            refreshed_schedule,
+            base=datetime.now(UTC),
+        )
 
     db.session.commit()
 

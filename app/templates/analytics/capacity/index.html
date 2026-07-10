@@ -438,9 +438,16 @@
                     <i data-lucide="database-zap" class="h-7 w-7"></i>
                 </div>
                 <h2 class="mt-4 text-lg font-semibold text-slate-900 dark:text-white">No cluster configured</h2>
-                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                    Add a Kubernetes cluster before opening Capacity Analysis.
+                <p class="mx-auto mt-1 max-w-xl text-sm leading-6 text-slate-500 dark:text-slate-400">
+                    Add at least one Kubernetes cluster to display worker capacity, allocation pressure, scheduling risk, and Prometheus-backed headroom data.
                 </p>
+                {% if current_user.has_permission('clusters.manage') %}
+                    <a href="{{ url_for('cluster.add_cluster') }}"
+                       class="mt-5 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600">
+                        <i data-lucide="plus" class="h-4 w-4"></i>
+                        Add first cluster
+                    </a>
+                {% endif %}
             </div>
         {% endif %}
     </div>

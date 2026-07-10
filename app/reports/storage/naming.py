@@ -36,7 +36,6 @@ def slugify_storage_part(
     return text or fallback
 
 
-
 def get_report_domain_slug(
     report: Report,
 ) -> str:
@@ -53,6 +52,7 @@ def get_report_source_kind_slug(
         getattr(report, 'source_kind', None) or 'kubernetes',
         fallback='kubernetes',
     )
+
 
 def get_report_cluster_slug(
     report: Report,

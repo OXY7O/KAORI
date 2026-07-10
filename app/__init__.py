@@ -8,6 +8,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from app.alertmanager.routes import alertmanager_bp
 from app.analytics.routes import analytics_bp
 from app.auth.routes import auth_bp
+from app.cluster.onboarding import build_cluster_onboarding_context
 from app.cluster.routes import cluster_bp
 from app.commands import register_commands
 from app.config import CONFIG_MAP
@@ -46,6 +47,7 @@ def create_app(config_name: str | None = None):
             'app_version': app.config['APP_VERSION'],
             'current_year': datetime.now().year,
             'load_navigation_notification_context': load_navigation_notification_context,
+            'cluster_onboarding': build_cluster_onboarding_context(),
         }
 
     # Load configuration based on APP_ENV environment variable

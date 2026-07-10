@@ -289,7 +289,7 @@
                                 <i data-lucide="server-off" class="h-12 w-12"></i>
                                 <div>
                                     <div class="font-medium text-slate-700 dark:text-slate-300">No Clusters Found</div>
-                                    <div class="text-sm text-slate-500 dark:text-slate-400">Adjust your filters or add your first Kubernetes cluster.</div>
+                                    <div class="text-sm text-slate-500 dark:text-slate-400">Add at least one Kubernetes cluster to display operational data, or adjust the active filters.</div>
                                     {% if current_user.has_permission('clusters.manage') %}
                                         <a href="{{ url_for('cluster.add_cluster') }}"
                                            class="mt-4 inline-flex items-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 dark:hover:bg-blue-500">

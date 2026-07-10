@@ -22,11 +22,16 @@ class UserForm(FlaskForm):
     is_active = BooleanField('Active')
     is_super_admin = BooleanField('Super Admin')
     password = PasswordField('Password', validators=[Optional(), Length(min=8)])
-    confirm_password = PasswordField('Confirm Password', validators=[EqualTo('password', message='Password confirmation does not match.')])
+    confirm_password = PasswordField(
+        'Confirm Password', validators=[EqualTo('password', message='Password confirmation does not match.')]
+    )
     submit = SubmitField('Save User')
 
 
 class ResetPasswordForm(FlaskForm):
     password = PasswordField('New Password', validators=[DataRequired(), Length(min=8)])
-    confirm_password = PasswordField('Confirm Password', validators=[DataRequired(), EqualTo('password', message='Password confirmation does not match.')])
+    confirm_password = PasswordField(
+        'Confirm Password',
+        validators=[DataRequired(), EqualTo('password', message='Password confirmation does not match.')],
+    )
     submit = SubmitField('Reset Password')

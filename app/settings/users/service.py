@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from datetime import UTC, datetime
 from typing import Any
 
@@ -17,7 +18,7 @@ def normalize_optional_text(value: str | None) -> str | None:
     return normalized or None
 
 
-def normalize_user_filters(args: dict[str, str | None]) -> dict[str, Any]:
+def normalize_user_filters(args: Mapping[str, str | None]) -> dict[str, Any]:
     status = (args.get('status') or 'all').strip().lower()
     auth_source = (args.get('auth_source') or 'all').strip().lower()
     role_id_raw = (args.get('role_id') or 'all').strip()

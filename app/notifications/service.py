@@ -6,7 +6,6 @@ from typing import Any
 from app.extensions import db
 from app.models.notification import Notification
 
-
 _ALLOWED_STATUSES = {
     'success',
     'warning',
@@ -28,16 +27,15 @@ def create_notification(
 ) -> Notification:
     normalized_status = status if status in _ALLOWED_STATUSES else 'info'
 
-    notification = Notification(
-        user_id=user_id,
-        event_type=event_type,
-        status=normalized_status,
-        title=title,
-        message=message,
-        detail=detail,
-        action_url=action_url,
-        metadata_json=metadata,
-    )
+    notification = Notification()
+    notification.user_id = user_id
+    notification.event_type = event_type
+    notification.status = normalized_status
+    notification.title = title
+    notification.message = message
+    notification.detail = detail
+    notification.action_url = action_url
+    notification.metadata_json = metadata
 
     db.session.add(notification)
     db.session.commit()
