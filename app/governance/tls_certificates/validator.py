@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import base64
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Iterable, Any
+from typing import Any, NamedTuple
 
 from app.governance.tls_certificates.constants import (
     TLS_STATUS_CRITICAL,
@@ -35,7 +36,19 @@ class CertificatePairValidation:
     warnings: list[str]
 
 
-def _load_crypto() -> tuple[Any, Any, Any, Any, Any, Any, Any, Any]:
+class _CryptoModules(NamedTuple):
+    x509: Any
+    invalid_signature: Any
+    hashes: Any
+    serialization: Any
+    ec: Any
+    ed25519: Any
+    ed448: Any
+    padding: Any
+    rsa: Any
+
+
+def _load_crypto() -> _CryptoModules:
     """Import cryptography lazily so Flask can boot and migrations can run.
 
     The TLS Governance feature needs cryptography for X.509 parsing and
@@ -46,15 +59,24 @@ def _load_crypto() -> tuple[Any, Any, Any, Any, Any, Any, Any, Any]:
         from cryptography import x509
         from cryptography.exceptions import InvalidSignature
         from cryptography.hazmat.primitives import hashes, serialization
-        from cryptography.hazmat.primitives.asymmetric import ec, ed25519, ed448, padding, rsa
+        from cryptography.hazmat.primitives.asymmetric import ec, ed448, ed25519, padding, rsa
     except ModuleNotFoundError as exc:
         if exc.name == 'cryptography':
             raise RuntimeError(
-                "TLS Certificates requires the 'cryptography' package. "
-                "Install it with: pip install cryptography"
+                "TLS Certificates requires the 'cryptography' package. Install it with: pip install cryptography"
             ) from exc
         raise
-    return x509, InvalidSignature, hashes, serialization, ec, ed25519, ed448, padding, rsa
+    return _CryptoModules(
+        x509=x509,
+        invalid_signature=InvalidSignature,
+        hashes=hashes,
+        serialization=serialization,
+        ec=ec,
+        ed25519=ed25519,
+        ed448=ed448,
+        padding=padding,
+        rsa=rsa,
+    )
 
 
 def _ensure_aware(value: datetime) -> datetime:
@@ -70,11 +92,11 @@ def decode_secret_data(value: str | None) -> bytes:
 
 
 def parse_certificate(cert_bytes: bytes) -> ParsedCertificate:
-    x509, _InvalidSignature, hashes, _serialization, _ec, _ed25519, _ed448, _padding, _rsa = _load_crypto()
-    certificate = x509.load_pem_x509_certificate(cert_bytes)
+    crypto = _load_crypto()
+    certificate = crypto.x509.load_pem_x509_certificate(cert_bytes)
 
     common_name = None
-    common_name_attributes = certificate.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
+    common_name_attributes = certificate.subject.get_attributes_for_oid(crypto.x509.NameOID.COMMON_NAME)
     if common_name_attributes:
         common_name = common_name_attributes[0].value
 
@@ -82,9 +104,9 @@ def parse_certificate(cert_bytes: bytes) -> ParsedCertificate:
 
     dns_names: list[str] = []
     try:
-        san = certificate.extensions.get_extension_for_class(x509.SubjectAlternativeName)
-        dns_names = list(san.value.get_values_for_type(x509.DNSName))
-    except x509.ExtensionNotFound:
+        san = certificate.extensions.get_extension_for_class(crypto.x509.SubjectAlternativeName)
+        dns_names = list(san.value.get_values_for_type(crypto.x509.DNSName))
+    except crypto.x509.ExtensionNotFound:
         dns_names = []
 
     not_before_value = getattr(certificate, 'not_valid_before_utc', None) or certificate.not_valid_before
@@ -111,7 +133,7 @@ def parse_certificate(cert_bytes: bytes) -> ParsedCertificate:
         common_name=common_name,
         issuer=issuer or None,
         serial_number=format(certificate.serial_number, 'x'),
-        fingerprint_sha256=certificate.fingerprint(hashes.SHA256()).hex(),
+        fingerprint_sha256=certificate.fingerprint(crypto.hashes.SHA256()).hex(),
         dns_names=dns_names,
         not_before=not_before,
         not_after=not_after,
@@ -122,31 +144,33 @@ def parse_certificate(cert_bytes: bytes) -> ParsedCertificate:
 
 
 def _public_key_matches_certificate(cert_bytes: bytes, key_bytes: bytes) -> bool:
-    x509, InvalidSignature, hashes, serialization, ec, ed25519, ed448, padding, rsa = _load_crypto()
-    certificate = x509.load_pem_x509_certificate(cert_bytes)
-    private_key = serialization.load_pem_private_key(key_bytes, password=None)
+    crypto = _load_crypto()
+    certificate = crypto.x509.load_pem_x509_certificate(cert_bytes)
+    private_key = crypto.serialization.load_pem_private_key(key_bytes, password=None)
     public_key = certificate.public_key()
 
-    if isinstance(private_key, rsa.RSAPrivateKey) and isinstance(public_key, rsa.RSAPublicKey):
+    if isinstance(private_key, crypto.rsa.RSAPrivateKey) and isinstance(public_key, crypto.rsa.RSAPublicKey):
         return private_key.public_key().public_numbers() == public_key.public_numbers()
 
-    if isinstance(private_key, ec.EllipticCurvePrivateKey) and isinstance(public_key, ec.EllipticCurvePublicKey):
+    if isinstance(private_key, crypto.ec.EllipticCurvePrivateKey) and isinstance(
+        public_key, crypto.ec.EllipticCurvePublicKey
+    ):
         return private_key.public_key().public_numbers() == public_key.public_numbers()
 
-    if isinstance(private_key, (ed25519.Ed25519PrivateKey, ed448.Ed448PrivateKey)):
+    if isinstance(private_key, (crypto.ed25519.Ed25519PrivateKey, crypto.ed448.Ed448PrivateKey)):
         message = b'kaori-tls-validation'
         signature = private_key.sign(message)
         try:
             public_key.verify(signature, message)  # type: ignore[attr-defined]
             return True
-        except InvalidSignature:
+        except crypto.invalid_signature:
             return False
 
     try:
         message = b'kaori-tls-validation'
-        if isinstance(private_key, rsa.RSAPrivateKey):
-            signature = private_key.sign(message, padding.PKCS1v15(), hashes.SHA256())
-            public_key.verify(signature, message, padding.PKCS1v15(), hashes.SHA256())  # type: ignore[attr-defined]
+        if isinstance(private_key, crypto.rsa.RSAPrivateKey):
+            signature = private_key.sign(message, crypto.padding.PKCS1v15(), crypto.hashes.SHA256())
+            public_key.verify(signature, message, crypto.padding.PKCS1v15(), crypto.hashes.SHA256())  # type: ignore[attr-defined]
             return True
     except Exception:
         return False
@@ -173,8 +197,8 @@ def validate_certificate_pair(cert_bytes: bytes, key_bytes: bytes) -> Certificat
         errors.append(f'Certificate cannot be parsed as a valid PEM X.509 certificate: {exc}')
 
     try:
-        _x509, _InvalidSignature, _hashes, serialization, _ec, _ed25519, _ed448, _padding, _rsa = _load_crypto()
-        serialization.load_pem_private_key(key_bytes, password=None)
+        crypto = _load_crypto()
+        crypto.serialization.load_pem_private_key(key_bytes, password=None)
     except Exception as exc:
         errors.append(f'Private key cannot be parsed as an unencrypted PEM key: {exc}')
 
@@ -212,7 +236,9 @@ def hostname_matches_pattern(hostname: str, pattern: str) -> bool:
 
 
 def find_uncovered_hosts(hosts: Iterable[str], parsed_certificate: ParsedCertificate) -> list[str]:
-    patterns = parsed_certificate.dns_names or ([parsed_certificate.common_name] if parsed_certificate.common_name else [])
+    patterns = parsed_certificate.dns_names or (
+        [parsed_certificate.common_name] if parsed_certificate.common_name else []
+    )
     uncovered: list[str] = []
 
     for host in sorted({item for item in hosts if item}):

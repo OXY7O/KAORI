@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, cast
 
 from celery.result import AsyncResult
 from flask import current_app
@@ -109,7 +109,7 @@ def get_active_cluster_sync_task_id() -> str | None:
         CLUSTER_SYNC_LOCK_KEY,
     )
 
-    return task_id or None
+    return cast(str | None, task_id) or None
 
 
 def claim_cluster_sync_lock(task_id: str) -> bool:
@@ -143,7 +143,7 @@ def refresh_cluster_sync_lock(task_id: str) -> bool:
             1,
             CLUSTER_SYNC_LOCK_KEY,
             task_id,
-            _lock_ttl_seconds(),
+            str(_lock_ttl_seconds()),
         )
     )
 
@@ -155,7 +155,7 @@ def mark_cluster_sync_completed(task_id: str) -> bool:
             1,
             CLUSTER_SYNC_LOCK_KEY,
             task_id,
-            _completed_ttl_seconds(),
+            str(_completed_ttl_seconds()),
         )
     )
 
@@ -196,7 +196,7 @@ def get_cluster_sync_metadata(task_id: str) -> dict[str, Any]:
 
     try:
         parsed = json.loads(
-            raw_metadata,
+            cast(str | bytes | bytearray, raw_metadata),
         )
     except json.JSONDecodeError:
         return {}

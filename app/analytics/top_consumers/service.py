@@ -3,24 +3,23 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Any
+from typing import Any, TypedDict
 
 from app.analytics.common.base_service import AnalyticsBaseService, raw_percent, safe_round
 from app.analytics.common.context import build_analysis_utilization_context
-from app.intelligence.recommendation_engine import (
-    build_top_consumers_actionable_recommendations,
-    count_actionable_recommendations,
-    format_recommendation_cards,
-)
 from app.analytics.common.params import (
     ALLOWED_PER_PAGE_VALUES,
     get_per_page_arg,
     get_positive_int_arg,
     get_query_value,
-    get_selected_time_range,
 )
 from app.analytics.top_consumers import queries
 from app.analytics.utilization.service import UtilizationService
+from app.intelligence.recommendation_engine import (
+    build_top_consumers_actionable_recommendations,
+    count_actionable_recommendations,
+    format_recommendation_cards,
+)
 from app.models import Cluster
 from app.prometheus.exceptions import PrometheusError
 from app.prometheus.service import PrometheusService
@@ -86,6 +85,13 @@ RISK_RANK = {
     'normal': 1,
     'unknown': 0,
 }
+
+
+class TopConsumersSnapshot(TypedDict):
+    cpu: list[dict[str, Any]]
+    memory: list[dict[str, Any]]
+    storage: list[dict[str, Any]]
+    recommendation_count: int
 
 
 def get_selected_resource(
@@ -1885,7 +1891,7 @@ def format_bytes(
 def get_top_consumers_snapshot(
     cluster_id: str,
     time_range: str = '24h',
-) -> dict[str, Any]:
+) -> TopConsumersSnapshot:
     _ = time_range
 
     cluster = Cluster.query.filter_by(
@@ -1953,7 +1959,7 @@ def get_top_consumers_snapshot(
         return _empty_top_consumers_snapshot()
 
 
-def _empty_top_consumers_snapshot() -> dict[str, list[dict[str, Any]]]:
+def _empty_top_consumers_snapshot() -> TopConsumersSnapshot:
     return {
         'cpu': [],
         'memory': [],

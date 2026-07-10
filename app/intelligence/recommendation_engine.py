@@ -1779,9 +1779,6 @@ def build_alerts_actionable_recommendations(
     critical_anomalies = [
         item for item in anomalies if isinstance(item, dict) and str(item.get('severity', '')).lower() == 'critical'
     ]
-    warning_anomalies = [
-        item for item in anomalies if isinstance(item, dict) and str(item.get('severity', '')).lower() == 'warning'
-    ]
 
     if not bool(source_status.get('connected', False)):
         recommendations.append(
@@ -1885,7 +1882,7 @@ def build_alerts_actionable_recommendations(
         )
 
     if not recommendations:
-        priority = signal_overview.get('priority') if isinstance(signal_overview.get('priority'), dict) else {}
+        priority = _as_dict(signal_overview.get('priority'))
         recommendations.extend(
             [
                 build_recommendation(

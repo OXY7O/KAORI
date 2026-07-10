@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from datetime import UTC, datetime
 from typing import Any
 
@@ -9,6 +10,16 @@ from app.governance.tls_certificates.constants import TLS_CRT_KEY, TLS_SECRET_TY
 from app.governance.tls_certificates.validator import decode_secret_data, parse_certificate
 from app.kubernetes.client import KubernetesClient
 from app.models import Cluster
+
+
+def _response_items(response: Any) -> list[Any]:
+    if isinstance(response, Mapping):
+        raw_items = response.get('items')
+    else:
+        raw_items = getattr(response, 'items', None)
+    if not isinstance(raw_items, list):
+        return []
+    return raw_items
 
 
 def build_kubernetes_client(cluster: Cluster) -> KubernetesClient:
@@ -55,7 +66,7 @@ def collect_ingress_tls_usage(cluster: Cluster) -> dict[tuple[str, str], dict[st
     response = networking_api.list_ingress_for_all_namespaces()
 
     usage_map: dict[tuple[str, str], dict[str, Any]] = {}
-    for ingress in response.items or []:
+    for ingress in _response_items(response):
         for usage in _ingress_tls_usage(ingress):
             key = _secret_key(usage.get('namespace'), usage.get('secret_name'))
             if key is None:
@@ -150,7 +161,7 @@ def collect_tls_certificates(cluster: Cluster) -> list[dict[str, Any]]:
     response = core_api.list_secret_for_all_namespaces()
 
     records: list[dict[str, Any]] = []
-    for secret in response.items or []:
+    for secret in _response_items(response):
         if secret.type == TLS_SECRET_TYPE:
             records.append(parse_tls_secret(secret, usage_map))
 

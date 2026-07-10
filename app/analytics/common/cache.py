@@ -1,17 +1,16 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from copy import deepcopy
 from threading import RLock
 from time import monotonic
-from typing import Any, Callable, TypeVar
-
-T = TypeVar('T')
+from typing import Any
 
 _CACHE: dict[str, tuple[float, Any]] = {}
 _LOCK = RLock()
 
 
-def get_or_set_cache(
+def get_or_set_cache[T](
     key: str,
     ttl_seconds: int,
     loader: Callable[[], T],

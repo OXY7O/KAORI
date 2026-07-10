@@ -13,6 +13,11 @@ from app.governance.tls_certificates.service import (
 from app.rbac.decorators import permission_required
 
 
+def _parse_certificate_ids(values: list[str]) -> list[int]:
+    normalized_values = (value.strip() for value in values)
+    return [int(value) for value in normalized_values if value.isdigit()]
+
+
 @permission_required('tls_certificates.view')
 def tls_certificates_index():
     payload = get_tls_certificate_page(request.args)
@@ -56,7 +61,7 @@ def tls_certificates_sync():
     if result['errors']:
         flash('TLS certificate sync completed with warnings: ' + '; '.join(result['errors']), 'warning')
     else:
-        flash(f"TLS certificate sync completed. {result['total']} TLS Secrets collected.", 'success')
+        flash(f'TLS certificate sync completed. {result["total"]} TLS Secrets collected.', 'success')
 
     return redirect(url_for('governance.tls_certificates', cluster_id=request.form.get('cluster_id') or ''))
 
@@ -115,7 +120,7 @@ def tls_certificates_bulk_page():
 def tls_certificates_bulk_preview():
     payload = get_tls_certificate_page(request.form)
     selected_ids = request.form.getlist('certificate_ids')
-    preview = preview_uploaded_pair(request.files, selected_ids)
+    preview = preview_uploaded_pair(request.files, _parse_certificate_ids(selected_ids))
 
     if request.headers.get('HX-Request'):
         return render_template(
@@ -139,7 +144,7 @@ def tls_certificates_bulk_preview():
 def tls_certificates_bulk_apply():
     payload = get_tls_certificate_page(request.form)
     selected_ids = request.form.getlist('certificate_ids')
-    apply_result = apply_bulk_update(request.files, selected_ids)
+    apply_result = apply_bulk_update(request.files, _parse_certificate_ids(selected_ids))
 
     if request.headers.get('HX-Request'):
         return render_template(

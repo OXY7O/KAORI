@@ -74,6 +74,10 @@ def _clean(value: str | None) -> str:
     return (value or '').strip()
 
 
+def _as_dict(value: Any) -> dict[str, Any]:
+    return value if isinstance(value, dict) else {}
+
+
 def _to_int(value: str | None, default: int) -> int:
     try:
         return int(value or default)
@@ -345,7 +349,7 @@ def _clone_rule_as_finding(
 
 
 def _format_affected_summary(item: dict[str, Any]) -> str:
-    evidence = item.get('evidence') if isinstance(item.get('evidence'), dict) else {}
+    evidence = _as_dict(item.get('evidence'))
     affected_count = evidence.get('affected_pods') or evidence.get('affected_count') or evidence.get('count')
     namespace = str(evidence.get('namespace') or '').strip()
     cluster_id = str(evidence.get('cluster_id') or '').strip()
@@ -365,7 +369,7 @@ def _format_affected_summary(item: dict[str, Any]) -> str:
 
 
 def _build_affected_items(item: dict[str, Any]) -> list[dict[str, str]]:
-    evidence = item.get('evidence') if isinstance(item.get('evidence'), dict) else {}
+    evidence = _as_dict(item.get('evidence'))
     source_kind = str(item.get('source_kind_label') or item.get('source_kind') or 'Resource')
     output: list[dict[str, str]] = [
         {'label': 'Asset', 'value': str(item.get('domain_label') or item.get('domain') or '-')},

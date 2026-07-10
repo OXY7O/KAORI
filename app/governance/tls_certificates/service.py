@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import base64
 import uuid
+from collections.abc import Iterable
 from datetime import UTC, datetime
 from math import ceil
-from typing import Any, Iterable, cast
+from typing import Any, cast
 
 from flask import current_app
 from flask_login import current_user
@@ -20,8 +21,50 @@ from app.governance.tls_certificates.constants import (
     TLS_SECRET_TYPE,
     TLS_STATUS_OPTIONS,
 )
-from app.governance.tls_certificates.validator import find_uncovered_hosts, parse_certificate, validate_certificate_pair
+from app.governance.tls_certificates.validator import find_uncovered_hosts, validate_certificate_pair
 from app.models import Cluster, TLSCertificateInventory, TLSCertificateUpdateEvent, User
+
+
+def _new_tls_inventory_record(
+    *,
+    cluster_id: str,
+    namespace: str,
+    secret_name: str,
+) -> TLSCertificateInventory:
+    record = TLSCertificateInventory()
+    record.cluster_id = cluster_id
+    record.namespace = namespace
+    record.secret_name = secret_name
+    return record
+
+
+def _new_tls_update_event(
+    *,
+    cluster_id: str,
+    namespace: str,
+    secret_name: str,
+    old_fingerprint_sha256: str | None,
+    new_fingerprint_sha256: str | None,
+    old_not_after: datetime | None,
+    new_not_after: datetime | None,
+    status: str,
+    message: str | None,
+    actor_user_id: int | None,
+    bulk_job_id: str | None = None,
+) -> TLSCertificateUpdateEvent:
+    event = TLSCertificateUpdateEvent()
+    event.cluster_id = cluster_id
+    event.namespace = namespace
+    event.secret_name = secret_name
+    event.old_fingerprint_sha256 = old_fingerprint_sha256
+    event.new_fingerprint_sha256 = new_fingerprint_sha256
+    event.old_not_after = old_not_after
+    event.new_not_after = new_not_after
+    event.status = status
+    event.message = message
+    event.actor_user_id = actor_user_id
+    event.bulk_job_id = bulk_job_id
+    return event
 
 
 def _normalize_per_page(value: str | None) -> int:
@@ -98,7 +141,7 @@ def _base_query(filters: dict[str, Any]):
         query = query.filter(TLSCertificateInventory.status == filters['status'])
 
     if filters['search']:
-        search = f"%{filters['search']}%"
+        search = f'%{filters["search"]}%'
         query = query.filter(
             or_(
                 TLSCertificateInventory.secret_name.ilike(search),
@@ -131,10 +174,7 @@ def get_tls_certificate_page(args: Any) -> dict[str, Any]:
     if filters['cluster_id']:
         namespace_query = namespace_query.filter(TLSCertificateInventory.cluster_id == filters['cluster_id'])
 
-    namespaces = [
-        row[0]
-        for row in namespace_query.order_by(TLSCertificateInventory.namespace.asc()).all()
-    ]
+    namespaces = [row[0] for row in namespace_query.order_by(TLSCertificateInventory.namespace.asc()).all()]
 
     # Cluster is the parent filter for namespace. When users switch cluster,
     # an old namespace value from the previous cluster must not keep filtering
@@ -155,9 +195,7 @@ def get_tls_certificate_page(args: Any) -> dict[str, Any]:
         per_page=filters['per_page'],
         total_items=total_items,
     )
-    records = (
-        query.offset((pagination['page'] - 1) * pagination['per_page']).limit(pagination['per_page']).all()
-    )
+    records = query.offset((pagination['page'] - 1) * pagination['per_page']).limit(pagination['per_page']).all()
 
     return {
         'records': records,
@@ -192,7 +230,7 @@ def sync_tls_certificates_for_cluster(cluster: Cluster) -> tuple[int, str | None
         seen.add(key)
         record = existing.get(key)
         if record is None:
-            record = TLSCertificateInventory(
+            record = _new_tls_inventory_record(
                 cluster_id=cluster.id,
                 namespace=payload['namespace'],
                 secret_name=payload['secret_name'],
@@ -328,7 +366,7 @@ def apply_certificate_update(certificate_id: int, files: Any) -> dict[str, Any]:
         record.updated_at = datetime.now(UTC)
 
         db.session.add(
-            TLSCertificateUpdateEvent(
+            _new_tls_update_event(
                 cluster_id=record.cluster_id,
                 namespace=record.namespace,
                 secret_name=record.secret_name,
@@ -347,7 +385,7 @@ def apply_certificate_update(certificate_id: int, files: Any) -> dict[str, Any]:
         db.session.rollback()
         current_app.logger.exception('TLS certificate update failed')
         db.session.add(
-            TLSCertificateUpdateEvent(
+            _new_tls_update_event(
                 cluster_id=record.cluster_id,
                 namespace=record.namespace,
                 secret_name=record.secret_name,
@@ -399,7 +437,7 @@ def apply_bulk_update(files: Any, target_ids: Iterable[int]) -> dict[str, Any]:
             target.updated_at = datetime.now(UTC)
 
             db.session.add(
-                TLSCertificateUpdateEvent(
+                _new_tls_update_event(
                     cluster_id=target.cluster_id,
                     namespace=target.namespace,
                     secret_name=target.secret_name,
@@ -417,7 +455,7 @@ def apply_bulk_update(files: Any, target_ids: Iterable[int]) -> dict[str, Any]:
         except Exception as exc:
             current_app.logger.exception('Bulk TLS update failed for %s/%s', target.namespace, target.secret_name)
             db.session.add(
-                TLSCertificateUpdateEvent(
+                _new_tls_update_event(
                     cluster_id=target.cluster_id,
                     namespace=target.namespace,
                     secret_name=target.secret_name,
