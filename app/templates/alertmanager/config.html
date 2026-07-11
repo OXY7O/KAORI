@@ -166,114 +166,26 @@
                     </p>
                     <div class="flex justify-end gap-3">
                         <button type="button"
-                                id="test-connection-btn"
-                                class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-70 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
-                            <i data-lucide="plug-zap" class="h-4 w-4"></i>
+                                hx-post="{{ url_for('alertmanager.test_cluster_alertmanager', cluster_id=cluster.id) }}"
+                                hx-target="#quick-action-feedback"
+                                hx-swap="beforeend"
+                                hx-disabled-elt="this"
+                                class="group inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-wait disabled:opacity-70 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
+                            <i data-lucide="plug-zap" class="h-4 w-4 group-[.htmx-request]:animate-spin"></i>
                             Test Connection
                         </button>
                         <button type="submit"
                                 name="action"
                                 value="save"
+                                data-operation-submit
+                                data-loading-label="Saving Alertmanager..."
                                 class="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 dark:hover:bg-blue-500">
                             <i data-lucide="save" class="h-4 w-4"></i>
-                            Save Configuration
+                            <span data-operation-submit-label>Save Configuration</span>
                         </button>
                     </div>
                 </div>
             </div>
         </form>
-        <!-- Test Result -->
-        <div id="test-result"
-             class="hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-        </div>
     </div>
-    <script>
-    document.getElementById('test-connection-btn').addEventListener('click', async () => {
-        const button = document.getElementById('test-connection-btn')
-        const resultDiv = document.getElementById('test-result')
-        const originalButtonText = button.innerHTML
-
-        resultDiv.classList.remove('hidden')
-        resultDiv.innerHTML = `
-            <div class="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
-                <span class="inline-block h-2 w-2 animate-pulse rounded-full bg-blue-500"></span>
-                Testing Alertmanager connection...
-            </div>
-        `
-
-        button.disabled = true
-        button.innerHTML = `
-            <span class="inline-flex items-center gap-2">
-                <span class="inline-block h-2 w-2 animate-pulse rounded-full bg-slate-500 dark:bg-slate-200"></span>
-                Testing...
-            </span>
-        `
-
-        try {
-            const response = await fetch("{{ url_for('alertmanager.test_cluster_alertmanager', cluster_id=cluster.id) }}", {
-                method: 'POST',
-            })
-
-            const data = await response.json()
-
-            if (data.success) {
-                resultDiv.innerHTML = `
-                    <div class="flex items-start gap-3">
-                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300">
-                            ✓
-                        </div>
-                        <div>
-                            <div class="font-semibold text-emerald-600 dark:text-emerald-400">
-                                Alertmanager Connected
-                            </div>
-                            <div class="mt-2 text-sm text-slate-600 dark:text-slate-300">
-                                Version:
-                                ${data.version || 'unknown'}
-                            </div>
-                            <div class="text-sm text-slate-600 dark:text-slate-300">
-                                Response Time:
-                                ${data.response_time_ms || 0} ms
-                            </div>
-                        </div>
-                    </div>
-                `
-            } else {
-                resultDiv.innerHTML = `
-                    <div class="flex items-start gap-3">
-                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-300">
-                            ✗
-                        </div>
-                        <div>
-                            <div class="font-semibold text-red-600 dark:text-red-400">
-                                Alertmanager Connection Failed
-                            </div>
-                            <div class="mt-2 text-sm text-slate-600 dark:text-slate-300">
-                                ${data.error || 'Unknown error'}
-                            </div>
-                        </div>
-                    </div>
-                `
-            }
-        } catch (err) {
-            resultDiv.innerHTML = `
-                <div class="flex items-start gap-3">
-                    <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-300">
-                        ✗
-                    </div>
-                    <div>
-                        <div class="font-semibold text-red-600 dark:text-red-400">
-                            Connection Failed
-                        </div>
-                        <div class="mt-2 text-sm text-slate-600 dark:text-slate-300">
-                            Failed to call Alertmanager test endpoint.
-                        </div>
-                    </div>
-                </div>
-            `
-        } finally {
-            button.disabled = false
-            button.innerHTML = originalButtonText
-        }
-    })
-    </script>
 {% endblock dashboard_content %}

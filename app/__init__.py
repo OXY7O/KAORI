@@ -20,7 +20,10 @@ from app.health import health_bp
 from app.intelligence.routes import intelligence_bp
 from app.inventory.routes import inventory_bp
 from app.notifications.routes import notifications_bp
-from app.notifications.service import get_navigation_notification_context
+from app.notifications.service import (
+    get_navigation_notification_context,
+    pop_quick_action_feedback,
+)
 from app.prometheus.routes import prometheus_bp
 from app.reports.routes import reports_bp
 from app.settings import bp as settings_bp
@@ -46,6 +49,12 @@ def create_app(config_name: str | None = None):
                 user_id=current_user.id,
             )
 
+        def load_quick_action_feedback():
+            if not current_user.is_authenticated:
+                return None
+
+            return pop_quick_action_feedback()
+
         current_timezone = (
             normalize_timezone_name(getattr(current_user, 'timezone', 'UTC'))
             if current_user.is_authenticated
@@ -57,6 +66,7 @@ def create_app(config_name: str | None = None):
             'current_year': datetime.now().year,
             'current_timezone': current_timezone,
             'load_navigation_notification_context': load_navigation_notification_context,
+            'load_quick_action_feedback': load_quick_action_feedback,
             'cluster_onboarding': build_cluster_onboarding_context(),
         }
 

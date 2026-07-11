@@ -97,9 +97,11 @@
                     Cancel
                 </a>
                 <button type="submit"
+                        data-operation-submit
+                        data-loading-label="Saving cluster..."
                         class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 font-medium text-white transition hover:bg-blue-700">
                     <i data-lucide="save" class="h-4 w-4"></i>
-                    <span>{{ submit_label }}</span>
+                    <span data-operation-submit-label>{{ submit_label }}</span>
                 </button>
             </div>
         </div>

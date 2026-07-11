@@ -31,8 +31,11 @@
             </button>
             <form :action="deleteUrl" method="POST">
                 <button type="submit"
-                        class="rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-500">
-                    Delete Cluster
+                        data-operation-submit
+                        data-loading-label="Deleting cluster..."
+                        class="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700 disabled:cursor-wait disabled:opacity-75 dark:bg-red-600 dark:hover:bg-red-500">
+                    <i data-lucide="trash-2" class="h-4 w-4"></i>
+                    <span data-operation-submit-label>Delete Cluster</span>
                 </button>
             </form>
         </div>

@@ -284,14 +284,33 @@
                 </main>
             </div>
         </div>
+        {% set queued_quick_action_feedback = load_quick_action_feedback() %}
         <div id="quick-action-feedback"
-             {% if current_user.is_authenticated and current_user.has_permission('clusters.sync') and cluster_onboarding.has_clusters %}
-                 hx-get="{{ url_for('cluster.active_sync_all_status') }}"
-                 hx-trigger="load"
-                 hx-swap="innerHTML"
-             {% endif %}
              style="width:min(28rem, calc(100vw - 2rem));"
-             class="pointer-events-none fixed right-4 top-20 z-50 space-y-3 sm:right-6 lg:right-8"></div>
+             class="pointer-events-none fixed right-4 top-20 z-50 space-y-3 sm:right-6 lg:right-8">
+            {% if queued_quick_action_feedback %}
+                {% with
+                    status=queued_quick_action_feedback.status,
+                    title=queued_quick_action_feedback.title,
+                    message=queued_quick_action_feedback.message,
+                    detail=queued_quick_action_feedback.detail,
+                    view_url=queued_quick_action_feedback.view_url,
+                    action_label=queued_quick_action_feedback.action_label,
+                    action_icon=queued_quick_action_feedback.action_icon,
+                    completed_label=queued_quick_action_feedback.completed_label,
+                    notification_saved=queued_quick_action_feedback.notification_saved
+                %}
+                    {% include "components/navigation/_quick_sync_result.html" %}
+                {% endwith %}
+            {% endif %}
+
+            <div id="quick-sync-feedback"
+                 {% if current_user.is_authenticated and current_user.has_permission('clusters.sync') and cluster_onboarding.has_clusters %}
+                     hx-get="{{ url_for('cluster.active_sync_all_status') }}"
+                     hx-trigger="load"
+                     hx-swap="innerHTML"
+                 {% endif %}></div>
+        </div>
         <script defer
                 src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
         <script src="https://unpkg.com/htmx.org@2.0.4"></script>
@@ -381,6 +400,29 @@
                     toast.remove()
                 }
             }, true)
+
+            document.addEventListener('submit', (event) => {
+                const submitButton = event.submitter
+
+                if (!submitButton || !submitButton.matches('[data-operation-submit]')) {
+                    return
+                }
+
+                submitButton.disabled = true
+                submitButton.classList.add('cursor-wait', 'opacity-75')
+
+                const icon = submitButton.querySelector('[data-lucide]')
+                const label = submitButton.querySelector('[data-operation-submit-label]')
+                const loadingLabel = submitButton.dataset.loadingLabel
+
+                if (icon) {
+                    icon.classList.add('animate-spin')
+                }
+
+                if (label && loadingLabel) {
+                    label.textContent = loadingLabel
+                }
+            })
         </script>
         <script>
             document.addEventListener('DOMContentLoaded', () => {

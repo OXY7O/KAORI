@@ -1,4 +1,7 @@
-from flask import Blueprint, abort, render_template, request
+import logging
+
+from flask import Blueprint, abort, redirect, render_template, request, url_for
+from flask_login import current_user
 
 from app.cluster.onboarding import has_registered_clusters
 from app.cluster.service import build_cluster_context
@@ -34,7 +37,14 @@ from app.inventory.service import (
     get_workload_inventory,
     sync_inventory,
 )
+from app.notifications.service import (
+    get_navigation_notification_context,
+    queue_quick_action_feedback,
+    record_operational_activity,
+)
 from app.rbac.decorators import permission_required
+
+logger = logging.getLogger(__name__)
 
 inventory_bp = Blueprint(
     'inventory',
@@ -69,24 +79,65 @@ def sync(cluster_id: str):
 
     try:
         sync_inventory(cluster)
-        feedback = {
-            'message': f'Synchronized {cluster.name} inventory successfully.',
-            'category': 'success',
-        }
+        feedback = record_operational_activity(
+            user_id=current_user.id,
+            event_type='kubernetes_inventory_sync',
+            status='success',
+            title='Cluster inventory synchronized',
+            message=f'{cluster.name} inventory was refreshed successfully.',
+            detail='Cluster metadata, nodes, namespaces, workloads, pods, services, ingress, and storage snapshots are now up to date.',
+            action_url=url_for('cluster.list_clusters'),
+            action_label='View clusters',
+            action_icon='server',
+            metadata={
+                'cluster_id': cluster.id,
+                'cluster_name': cluster.name,
+                'scope': 'single_cluster',
+            },
+        )
     except Exception as exc:
-        feedback = {
-            'message': (
-                f'Inventory sync failed for {cluster.name}: {type(exc).__name__}. '
-                'Review Kubernetes API compatibility and cluster access.'
+        logger.exception(
+            'Inventory synchronization failed for cluster %s.',
+            cluster.id,
+        )
+        feedback = record_operational_activity(
+            user_id=current_user.id,
+            event_type='kubernetes_inventory_sync',
+            status='error',
+            title='Cluster inventory sync failed',
+            message=f'{cluster.name} inventory could not be refreshed.',
+            detail=(
+                f'{type(exc).__name__}: review Kubernetes API compatibility, cluster credentials, TLS settings, '
+                'and application logs before retrying.'
             ),
-            'category': 'warning',
-        }
+            action_url=url_for('cluster.edit_cluster', cluster_id=cluster.id),
+            action_label='Review cluster settings',
+            action_icon='settings-2',
+            metadata={
+                'cluster_id': cluster.id,
+                'cluster_name': cluster.name,
+                'scope': 'single_cluster',
+                'reason': type(exc).__name__,
+            },
+        )
 
-    return render_template(
-        'cluster/partials/_table.html',
-        cluster_action_feedback=feedback,
-        **_build_cluster_context_from_request(),
-    )
+    if request.headers.get('HX-Request') == 'true':
+        table_html = render_template(
+            'cluster/partials/_table.html',
+            **_build_cluster_context_from_request(),
+        )
+        toast_html = render_template(
+            'components/navigation/_quick_sync_result.html',
+            **feedback,
+            toast_oob=True,
+            notification_context=get_navigation_notification_context(
+                user_id=current_user.id,
+            ),
+        )
+        return f'{table_html}{toast_html}'
+
+    queue_quick_action_feedback(feedback)
+    return redirect(request.referrer or url_for('cluster.list_clusters'))
 
 
 def _paginate_resource_clusters(rows, page: int, per_page: int) -> tuple[list[dict], dict]:

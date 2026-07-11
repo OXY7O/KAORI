@@ -1,14 +1,23 @@
 from __future__ import annotations
 
-from flask import Blueprint, abort, flash, jsonify, redirect, render_template, url_for
+import logging
+
+from flask import Blueprint, abort, jsonify, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
+from flask_login import current_user
 
 from app.cluster.service import get_cluster_by_id
 from app.models import Cluster
 from app.prometheus.exceptions import PrometheusError
 from app.prometheus.forms import PrometheusConfigForm
 from app.prometheus.service import PrometheusService
+from app.notifications.service import (
+    get_navigation_notification_context,
+    record_operational_activity,
+)
 from app.rbac.decorators import permission_required
+
+logger = logging.getLogger(__name__)
 
 prometheus_bp = Blueprint(
     'prometheus',
@@ -53,14 +62,31 @@ def configuration(
 
     if form.validate_on_submit():
         try:
-            PrometheusService.save_config(
+            was_configured = bool(config and config.endpoint)
+            saved_config = PrometheusService.save_config(
                 cluster,
                 form,
             )
 
-            flash(
-                'Prometheus configuration saved.',
-                'success',
+            record_operational_activity(
+                user_id=current_user.id,
+                event_type='prometheus_configuration_update' if was_configured else 'prometheus_configuration_create',
+                status='success',
+                title='Prometheus configuration updated' if was_configured else 'Prometheus configured',
+                message=f'Prometheus settings for {cluster.name} were saved successfully.',
+                detail='KAORI will use the saved endpoint, authentication method, timeout, and TLS verification settings for metric queries.',
+                action_url=url_for('prometheus.configuration', cluster_id=cluster.id),
+                action_label='View Prometheus settings',
+                action_icon='activity',
+                metadata={
+                    'cluster_id': cluster.id,
+                    'cluster_name': cluster.name,
+                    'endpoint': saved_config.endpoint,
+                    'auth_type': saved_config.auth_type,
+                    'timeout_seconds': saved_config.timeout,
+                    'verify_ssl': saved_config.verify_ssl,
+                },
+                queue_feedback=True,
             )
 
             return redirect(
@@ -71,12 +97,64 @@ def configuration(
             )
 
         except PrometheusError as exc:
-            flash(
-                str(
-                    exc,
-                ),
-                'danger',
+            record_operational_activity(
+                user_id=current_user.id,
+                event_type='prometheus_configuration_update' if config else 'prometheus_configuration_create',
+                status='error',
+                title='Prometheus configuration not saved',
+                message=str(exc),
+                detail='Review the endpoint, authentication fields, timeout, and TLS configuration before saving again.',
+                action_url=url_for('prometheus.configuration', cluster_id=cluster.id),
+                action_label='Review Prometheus settings',
+                action_icon='activity',
+                metadata={
+                    'cluster_id': cluster.id,
+                    'cluster_name': cluster.name,
+                    'reason': type(exc).__name__,
+                },
+                queue_feedback=True,
             )
+        except Exception as exc:
+            logger.exception(
+                'Prometheus configuration save failed for cluster %s.',
+                cluster.id,
+            )
+            record_operational_activity(
+                user_id=current_user.id,
+                event_type='prometheus_configuration_update' if config else 'prometheus_configuration_create',
+                status='error',
+                title='Prometheus configuration not saved',
+                message=f'KAORI could not save Prometheus settings for {cluster.name}.',
+                detail='Review application logs and database connectivity before retrying the configuration save.',
+                action_url=url_for('prometheus.configuration', cluster_id=cluster.id),
+                action_label='Review Prometheus settings',
+                action_icon='activity',
+                metadata={
+                    'cluster_id': cluster.id,
+                    'cluster_name': cluster.name,
+                    'reason': type(exc).__name__,
+                },
+                queue_feedback=True,
+            )
+
+    elif request.method == 'POST' and form.errors:
+        record_operational_activity(
+            user_id=current_user.id,
+            event_type='prometheus_configuration_update' if config else 'prometheus_configuration_create',
+            status='warning',
+            title='Prometheus configuration needs attention',
+            message='The submitted Prometheus configuration contains validation errors.',
+            detail='Correct the highlighted fields before saving the integration.',
+            action_url=url_for('prometheus.configuration', cluster_id=cluster.id),
+            action_label='Review Prometheus settings',
+            action_icon='activity',
+            metadata={
+                'cluster_id': cluster.id,
+                'cluster_name': cluster.name,
+                'validation_fields': sorted(form.errors.keys()),
+            },
+            queue_feedback=True,
+        )
 
     elif config:
         form.endpoint.data = config.endpoint
@@ -114,16 +192,104 @@ def test_connection(
             cluster,
         )
 
-        return jsonify(
-            service.test_connection(),
+        result = service.test_connection()
+        response_time = result.get('response_time', 0)
+        feedback = record_operational_activity(
+            user_id=current_user.id,
+            event_type='prometheus_connection_test',
+            status='success',
+            title='Prometheus connection verified',
+            message=f'KAORI connected to Prometheus for {cluster.name}.',
+            detail=f'Prometheus version {result.get("version", "unknown")} responded in {response_time}s.',
+            action_url=url_for('prometheus.configuration', cluster_id=cluster.id),
+            action_label='View Prometheus settings',
+            action_icon='activity',
+            metadata={
+                'cluster_id': cluster.id,
+                'cluster_name': cluster.name,
+                'version': result.get('version', 'unknown'),
+                'response_time_seconds': response_time,
+            },
         )
 
+        if request.headers.get('HX-Request') == 'true':
+            return render_template(
+                'components/navigation/_quick_sync_result.html',
+                **feedback,
+                notification_context=get_navigation_notification_context(
+                    user_id=current_user.id,
+                ),
+            )
+
+        return jsonify(result)
+
     except PrometheusError as exc:
+        feedback = record_operational_activity(
+            user_id=current_user.id,
+            event_type='prometheus_connection_test',
+            status='error',
+            title='Prometheus connection failed',
+            message=f'KAORI could not connect to Prometheus for {cluster.name}.',
+            detail=str(exc),
+            action_url=url_for('prometheus.configuration', cluster_id=cluster.id),
+            action_label='Review Prometheus settings',
+            action_icon='activity',
+            metadata={
+                'cluster_id': cluster.id,
+                'cluster_name': cluster.name,
+                'reason': type(exc).__name__,
+            },
+        )
+
+        if request.headers.get('HX-Request') == 'true':
+            return render_template(
+                'components/navigation/_quick_sync_result.html',
+                **feedback,
+                notification_context=get_navigation_notification_context(
+                    user_id=current_user.id,
+                ),
+            )
+
         return jsonify(
             {
                 'success': False,
-                'error': str(
-                    exc,
-                ),
+                'error': str(exc),
             }
         ), 400
+    except Exception as exc:
+        logger.exception(
+            'Prometheus connection test failed unexpectedly for cluster %s.',
+            cluster.id,
+        )
+        feedback = record_operational_activity(
+            user_id=current_user.id,
+            event_type='prometheus_connection_test',
+            status='error',
+            title='Prometheus connection test failed',
+            message=f'The Prometheus test for {cluster.name} could not complete.',
+            detail='Review application logs, endpoint reachability, authentication, and TLS settings before retrying.',
+            action_url=url_for('prometheus.configuration', cluster_id=cluster.id),
+            action_label='Review Prometheus settings',
+            action_icon='activity',
+            metadata={
+                'cluster_id': cluster.id,
+                'cluster_name': cluster.name,
+                'reason': type(exc).__name__,
+            },
+        )
+
+        if request.headers.get('HX-Request') == 'true':
+            return render_template(
+                'components/navigation/_quick_sync_result.html',
+                **feedback,
+                notification_context=get_navigation_notification_context(
+                    user_id=current_user.id,
+                ),
+            )
+
+        return jsonify(
+            {
+                'success': False,
+                'error': 'Prometheus connection test could not complete.',
+            }
+        ), 500

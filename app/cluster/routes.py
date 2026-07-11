@@ -43,6 +43,8 @@ from app.models import Cluster
 from app.notifications.service import (
     create_notification,
     get_navigation_notification_context,
+    queue_quick_action_feedback,
+    record_operational_activity,
 )
 from app.rbac.decorators import permission_required
 
@@ -72,6 +74,21 @@ def _build_cluster_context_from_request() -> dict:
         environment=request.args.get(
             'environment',
             'all',
+        ),
+    )
+
+
+def _render_operational_toast(
+    feedback: dict,
+    *,
+    toast_oob: bool = False,
+) -> str:
+    return render_template(
+        'components/navigation/_quick_sync_result.html',
+        **feedback,
+        toast_oob=toast_oob,
+        notification_context=get_navigation_notification_context(
+            user_id=current_user.id,
         ),
     )
 
@@ -492,9 +509,22 @@ def add_cluster() -> ResponseReturnValue:
         kube_file = form.kubeconfig.data
 
         if kube_file is None:
-            flash(
-                'Kubeconfig file is required',
-                'danger',
+            record_operational_activity(
+                user_id=current_user.id,
+                event_type='cluster_create',
+                status='error',
+                title='Cluster could not be added',
+                message='Kubeconfig file is required.',
+                detail='Select a valid kubeconfig file before saving the cluster registration.',
+                action_url=url_for('cluster.add_cluster'),
+                action_label='Review cluster form',
+                action_icon='server-cog',
+                metadata={
+                    'cluster_name': form.name.data or '-',
+                    'environment': form.environment.data or '-',
+                    'reason': 'missing_kubeconfig',
+                },
+                queue_feedback=True,
             )
 
             return render_template(
@@ -511,7 +541,7 @@ def add_cluster() -> ResponseReturnValue:
             assert form.environment.data is not None
             assert form.kubeconfig.data is not None
 
-            create_cluster(
+            cluster = create_cluster(
                 name=form.name.data,
                 environment=form.environment.data,
                 description=form.description.data,
@@ -524,9 +554,23 @@ def add_cluster() -> ResponseReturnValue:
                 ),
             )
 
-            flash(
-                'Cluster added successfully',
-                'success',
+            record_operational_activity(
+                user_id=current_user.id,
+                event_type='cluster_create',
+                status='success',
+                title='Cluster added',
+                message=f'{cluster.name} is now registered in KAORI.',
+                detail='The cluster is ready for connection testing, inventory synchronization, and observability integration setup.',
+                action_url=url_for('cluster.list_clusters'),
+                action_label='View clusters',
+                action_icon='server',
+                metadata={
+                    'cluster_id': cluster.id,
+                    'cluster_name': cluster.name,
+                    'environment': cluster.environment,
+                    'server': cluster.server,
+                },
+                queue_feedback=True,
             )
 
             return redirect(
@@ -536,12 +580,64 @@ def add_cluster() -> ResponseReturnValue:
             )
 
         except ValueError as exc:
-            flash(
-                str(
-                    exc,
-                ),
-                'danger',
+            record_operational_activity(
+                user_id=current_user.id,
+                event_type='cluster_create',
+                status='error',
+                title='Cluster could not be added',
+                message=str(exc),
+                detail='Review the cluster name and kubeconfig content, then submit the form again.',
+                action_url=url_for('cluster.add_cluster'),
+                action_label='Review cluster form',
+                action_icon='server-cog',
+                metadata={
+                    'cluster_name': form.name.data or '-',
+                    'environment': form.environment.data or '-',
+                    'reason': type(exc).__name__,
+                },
+                queue_feedback=True,
             )
+        except Exception as exc:
+            logger.exception(
+                'Cluster creation failed for submitted name %s.',
+                form.name.data,
+            )
+            record_operational_activity(
+                user_id=current_user.id,
+                event_type='cluster_create',
+                status='error',
+                title='Cluster could not be added',
+                message='KAORI could not save the cluster registration.',
+                detail='Review the application logs and database connectivity before retrying the operation.',
+                action_url=url_for('cluster.add_cluster'),
+                action_label='Review cluster form',
+                action_icon='server-cog',
+                metadata={
+                    'cluster_name': form.name.data or '-',
+                    'environment': form.environment.data or '-',
+                    'reason': type(exc).__name__,
+                },
+                queue_feedback=True,
+            )
+
+    if request.method == 'POST' and form.errors:
+        record_operational_activity(
+            user_id=current_user.id,
+            event_type='cluster_create',
+            status='warning',
+            title='Cluster registration needs attention',
+            message='The submitted cluster form contains validation errors.',
+            detail='Correct the highlighted fields and attach a valid kubeconfig before saving again.',
+            action_url=url_for('cluster.add_cluster'),
+            action_label='Review cluster form',
+            action_icon='server-cog',
+            metadata={
+                'cluster_name': form.name.data or '-',
+                'environment': form.environment.data or '-',
+                'validation_fields': sorted(form.errors.keys()),
+            },
+            queue_feedback=True,
+        )
 
     return render_template(
         'cluster/add.html',
@@ -560,20 +656,68 @@ def test_cluster(cluster_id: str) -> ResponseReturnValue:
     cluster = _get_cluster_or_404(
         cluster_id,
     )
-    result = run_test_cluster(
-        cluster,
-    )
+    try:
+        result = run_test_cluster(
+            cluster,
+        )
+    except Exception as exc:
+        logger.exception(
+            'Cluster connection test failed unexpectedly for %s.',
+            cluster.id,
+        )
+        result = {
+            'success': False,
+            'error': (
+                f'{type(exc).__name__}: the Kubernetes connection test could not complete. '
+                'Review cluster credentials, TLS settings, and application logs.'
+            ),
+        }
 
-    feedback = {
-        'message': 'Cluster connected successfully.' if result['success'] else result['error'],
-        'category': 'success' if result['success'] else 'danger',
-    }
+    if result['success']:
+        feedback = record_operational_activity(
+            user_id=current_user.id,
+            event_type='cluster_connection_test',
+            status='success',
+            title='Cluster connection verified',
+            message=f'KAORI connected to {cluster.name} successfully.',
+            detail=f'Kubernetes API access is available and {result.get("node_count", 0)} node(s) were reported.',
+            action_url=url_for('cluster.list_clusters'),
+            action_label='View clusters',
+            action_icon='server',
+            metadata={
+                'cluster_id': cluster.id,
+                'cluster_name': cluster.name,
+                'node_count': result.get('node_count', 0),
+                'server': cluster.server,
+            },
+        )
+    else:
+        feedback = record_operational_activity(
+            user_id=current_user.id,
+            event_type='cluster_connection_test',
+            status='error',
+            title='Cluster connection failed',
+            message=f'KAORI could not connect to {cluster.name}.',
+            detail=result.get('error') or 'Review Kubernetes API access, kubeconfig credentials, and TLS settings.',
+            action_url=url_for('cluster.edit_cluster', cluster_id=cluster.id),
+            action_label='Review cluster settings',
+            action_icon='settings-2',
+            metadata={
+                'cluster_id': cluster.id,
+                'cluster_name': cluster.name,
+                'server': cluster.server,
+            },
+        )
 
-    return render_template(
-        'cluster/partials/_table.html',
-        cluster_action_feedback=feedback,
-        **_build_cluster_context_from_request(),
-    )
+    if request.headers.get('HX-Request') == 'true':
+        table_html = render_template(
+            'cluster/partials/_table.html',
+            **_build_cluster_context_from_request(),
+        )
+        return f'{table_html}{_render_operational_toast(feedback, toast_oob=True)}'
+
+    queue_quick_action_feedback(feedback)
+    return redirect(request.referrer or url_for('cluster.list_clusters'))
 
 
 @cluster_bp.route(
@@ -601,6 +745,8 @@ def edit_cluster(cluster_id: str) -> ResponseReturnValue:
         assert environment is not None
 
         try:
+            previous_name = cluster.name
+            previous_environment = cluster.environment
             update_cluster(
                 cluster=cluster,
                 name=name,
@@ -614,9 +760,26 @@ def edit_cluster(cluster_id: str) -> ResponseReturnValue:
                 ),
             )
 
-            flash(
-                'Cluster updated successfully',
-                'success',
+            record_operational_activity(
+                user_id=current_user.id,
+                event_type='cluster_update',
+                status='success',
+                title='Cluster updated',
+                message=f'{cluster.name} configuration was updated successfully.',
+                detail='Cluster identity, environment, description, and Kubernetes API TLS settings now use the saved values.',
+                action_url=url_for('cluster.list_clusters'),
+                action_label='View clusters',
+                action_icon='server',
+                metadata={
+                    'cluster_id': cluster.id,
+                    'cluster_name': cluster.name,
+                    'previous_name': previous_name,
+                    'environment': cluster.environment,
+                    'previous_environment': previous_environment,
+                    'verify_ssl': cluster.kube_verify_ssl,
+                    'allow_weak_tls': cluster.kube_allow_weak_tls,
+                },
+                queue_feedback=True,
             )
 
             return redirect(
@@ -626,12 +789,68 @@ def edit_cluster(cluster_id: str) -> ResponseReturnValue:
             )
 
         except ValueError as exc:
-            flash(
-                str(
-                    exc,
-                ),
-                'danger',
+            record_operational_activity(
+                user_id=current_user.id,
+                event_type='cluster_update',
+                status='error',
+                title='Cluster update failed',
+                message=str(exc),
+                detail='Review the cluster name and submitted configuration before saving again.',
+                action_url=url_for('cluster.edit_cluster', cluster_id=cluster.id),
+                action_label='Review cluster settings',
+                action_icon='settings-2',
+                metadata={
+                    'cluster_id': cluster.id,
+                    'cluster_name': cluster.name,
+                    'submitted_name': name,
+                    'submitted_environment': environment,
+                    'reason': type(exc).__name__,
+                },
+                queue_feedback=True,
             )
+        except Exception as exc:
+            logger.exception(
+                'Cluster update failed for %s.',
+                cluster.id,
+            )
+            record_operational_activity(
+                user_id=current_user.id,
+                event_type='cluster_update',
+                status='error',
+                title='Cluster update failed',
+                message=f'{cluster.name} configuration could not be saved.',
+                detail='Review application logs and database connectivity before retrying the update.',
+                action_url=url_for('cluster.edit_cluster', cluster_id=cluster.id),
+                action_label='Review cluster settings',
+                action_icon='settings-2',
+                metadata={
+                    'cluster_id': cluster.id,
+                    'cluster_name': cluster.name,
+                    'submitted_name': name,
+                    'submitted_environment': environment,
+                    'reason': type(exc).__name__,
+                },
+                queue_feedback=True,
+            )
+
+    if request.method == 'POST' and form.errors:
+        record_operational_activity(
+            user_id=current_user.id,
+            event_type='cluster_update',
+            status='warning',
+            title='Cluster update needs attention',
+            message='The submitted cluster form contains validation errors.',
+            detail='Correct the highlighted fields before saving the cluster configuration again.',
+            action_url=url_for('cluster.edit_cluster', cluster_id=cluster.id),
+            action_label='Review cluster settings',
+            action_icon='settings-2',
+            metadata={
+                'cluster_id': cluster.id,
+                'cluster_name': cluster.name,
+                'validation_fields': sorted(form.errors.keys()),
+            },
+            queue_feedback=True,
+        )
 
     return render_template(
         'cluster/edit.html',
@@ -652,14 +871,55 @@ def delete_cluster_route(cluster_id: str) -> ResponseReturnValue:
         cluster_id,
     )
 
-    delete_cluster(
-        cluster,
-    )
+    cluster_name = cluster.name
+    cluster_environment = cluster.environment
+    cluster_server = cluster.server
 
-    flash(
-        'Cluster deleted successfully',
-        'success',
-    )
+    try:
+        delete_cluster(
+            cluster,
+        )
+    except Exception as exc:
+        logger.exception(
+            'Cluster deletion failed for %s.',
+            cluster_id,
+        )
+        record_operational_activity(
+            user_id=current_user.id,
+            event_type='cluster_delete',
+            status='error',
+            title='Cluster deletion failed',
+            message=f'{cluster_name} could not be deleted.',
+            detail='The database rejected the delete operation. Review dependent records and application logs before retrying.',
+            action_url=url_for('cluster.list_clusters'),
+            action_label='View clusters',
+            action_icon='server',
+            metadata={
+                'cluster_id': cluster_id,
+                'cluster_name': cluster_name,
+                'reason': type(exc).__name__,
+            },
+            queue_feedback=True,
+        )
+    else:
+        record_operational_activity(
+            user_id=current_user.id,
+            event_type='cluster_delete',
+            status='success',
+            title='Cluster deleted',
+            message=f'{cluster_name} was removed from KAORI.',
+            detail='Stored cluster registration, inventory, and associated observability configuration were removed according to database relationships.',
+            action_url=url_for('cluster.list_clusters'),
+            action_label='View clusters',
+            action_icon='server',
+            metadata={
+                'cluster_id': cluster_id,
+                'cluster_name': cluster_name,
+                'environment': cluster_environment,
+                'server': cluster_server,
+            },
+            queue_feedback=True,
+        )
 
     return redirect(
         url_for(

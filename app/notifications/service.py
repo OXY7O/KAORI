@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import logging
 from datetime import UTC, datetime
 from typing import Any
 
+from flask import has_request_context, session
 from sqlalchemy import or_
 
 from app.extensions import db
@@ -17,6 +19,9 @@ _ALLOWED_STATUSES = {
 }
 _NAVIGATION_NOTIFICATION_LIMIT = 8
 _ACTIVITY_PER_PAGE_OPTIONS = (5, 10, 25, 50)
+_QUICK_ACTION_FEEDBACK_SESSION_KEY = 'quick_action_feedback'
+
+logger = logging.getLogger(__name__)
 
 
 def create_notification(
@@ -46,6 +51,134 @@ def create_notification(
     db.session.commit()
 
     return notification
+
+
+def build_quick_action_feedback(
+    *,
+    status: str,
+    title: str,
+    message: str,
+    detail: str | None = None,
+    action_url: str | None = None,
+    action_label: str = 'View details',
+    action_icon: str = 'arrow-up-right',
+    completed_label: str = 'Completed just now',
+    notification_saved: bool = True,
+) -> dict[str, Any]:
+    """Build the shared top-right operational result payload."""
+    return {
+        'status': status if status in _ALLOWED_STATUSES else 'info',
+        'title': title,
+        'message': message,
+        'detail': detail,
+        'view_url': action_url,
+        'action_label': action_label,
+        'action_icon': action_icon,
+        'completed_label': completed_label,
+        'notification_saved': notification_saved,
+    }
+
+
+def queue_quick_action_feedback(feedback: dict[str, Any]) -> None:
+    """Persist one operational result across a normal redirect."""
+    if not has_request_context():
+        return
+
+    session[_QUICK_ACTION_FEEDBACK_SESSION_KEY] = feedback
+    session.modified = True
+
+
+def pop_quick_action_feedback() -> dict[str, Any] | None:
+    """Return and clear the pending redirect result for the current request."""
+    if not has_request_context():
+        return None
+
+    feedback = session.pop(
+        _QUICK_ACTION_FEEDBACK_SESSION_KEY,
+        None,
+    )
+    if feedback is not None:
+        session.modified = True
+
+    return feedback
+
+
+def record_operational_activity(
+    *,
+    user_id: int,
+    event_type: str,
+    status: str,
+    title: str,
+    message: str,
+    detail: str | None = None,
+    action_url: str | None = None,
+    action_label: str = 'View details',
+    action_icon: str = 'arrow-up-right',
+    metadata: dict[str, Any] | None = None,
+    queue_feedback: bool = False,
+) -> dict[str, Any]:
+    """Save an activity record and return the matching top-right toast context.
+
+    Notification persistence is deliberately isolated from the primary operation.
+    A notification storage failure must not turn a successful cluster or integration
+    change into a failed user action.
+    """
+    notification_saved = True
+
+    try:
+        create_notification(
+            user_id=user_id,
+            event_type=event_type,
+            status=status,
+            title=title,
+            message=message,
+            detail=detail,
+            action_url=action_url,
+            metadata=metadata,
+        )
+    except Exception:
+        db.session.rollback()
+        logger.exception(
+            'Initial notification persistence failed for event %s; retrying after rollback.',
+            event_type,
+        )
+
+        try:
+            create_notification(
+                user_id=user_id,
+                event_type=event_type,
+                status=status,
+                title=title,
+                message=message,
+                detail=detail,
+                action_url=action_url,
+                metadata=metadata,
+            )
+        except Exception:
+            db.session.rollback()
+            notification_saved = False
+            logger.exception(
+                'Could not persist operational notification for event %s.',
+                event_type,
+            )
+
+    feedback = build_quick_action_feedback(
+        status=status,
+        title=title,
+        message=message,
+        detail=detail,
+        action_url=action_url,
+        action_label=action_label,
+        action_icon=action_icon,
+        notification_saved=notification_saved,
+    )
+
+    if queue_feedback:
+        queue_quick_action_feedback(
+            feedback,
+        )
+
+    return feedback
 
 
 def _normalize_created_at(created_at: datetime) -> datetime:
