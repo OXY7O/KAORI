@@ -12,6 +12,7 @@ CLUSTER_SYNC_TASK_NAME = 'app.cluster.tasks.sync_all_clusters'
 CLUSTER_SYNC_QUEUE = 'inventory'
 CLUSTER_SYNC_LOCK_KEY = 'kaori:cluster-sync:lock'
 CLUSTER_SYNC_METADATA_PREFIX = 'kaori:cluster-sync:metadata:'
+CLUSTER_SYNC_DISMISSED_PREFIX = 'kaori:cluster-sync:dismissed:'
 ACTIVE_CELERY_STATES = {
     'PENDING',
     'RECEIVED',
@@ -49,6 +50,14 @@ def _redis_client() -> Redis:
 
 def _metadata_key(task_id: str) -> str:
     return f'{CLUSTER_SYNC_METADATA_PREFIX}{task_id}'
+
+
+def _dismissed_key(
+    *,
+    task_id: str,
+    user_id: int,
+) -> str:
+    return f'{CLUSTER_SYNC_DISMISSED_PREFIX}{user_id}:{task_id}'
 
 
 def _result_ttl_seconds() -> int:
@@ -202,6 +211,36 @@ def get_cluster_sync_metadata(task_id: str) -> dict[str, Any]:
         return {}
 
     return parsed if isinstance(parsed, dict) else {}
+
+
+def dismiss_cluster_sync_result(
+    *,
+    task_id: str,
+    user_id: int,
+) -> None:
+    _redis_client().set(
+        _dismissed_key(
+            task_id=task_id,
+            user_id=user_id,
+        ),
+        '1',
+        ex=_result_ttl_seconds(),
+    )
+
+
+def is_cluster_sync_result_dismissed(
+    *,
+    task_id: str,
+    user_id: int,
+) -> bool:
+    return bool(
+        _redis_client().exists(
+            _dismissed_key(
+                task_id=task_id,
+                user_id=user_id,
+            )
+        )
+    )
 
 
 def _safe_int(

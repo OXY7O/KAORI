@@ -66,19 +66,17 @@
                     <td class="px-4 py-4 text-center">{{ cluster.service_count or 0 }}</td>
                     <td class="px-4 py-4 text-center">{{ cluster.ingress_count or 0 }}</td>
                     <td class="px-4 py-4 text-center">{{ cluster.storage_count or 0 }}</td>
-                    <td class="px-4 py-4 text-xs text-slate-500 dark:text-slate-400">
-                        <div class="space-y-1.5">
+                    <td class="px-4 py-4 text-slate-500 dark:text-slate-400">
+                        <div class="flex min-w-[10.5rem] items-center gap-1.5 whitespace-nowrap">
                             {% if synced_at %}
-                                <div>{{ synced_at.strftime("%d %b %Y %H:%M") }}</div>
-                            {% else %}
-                                <div>Never synced</div>
+                                <span class="text-[11px] font-medium">{{ synced_at.strftime("%d %b %Y %H:%M") }}</span>
                             {% endif %}
                             {% if cluster.sync_status_tone == 'green' %}
-                                <span class="inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">{{ cluster.sync_status_label }}</span>
+                                <span class="inline-flex rounded-full bg-emerald-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">{{ cluster.sync_status_label }}</span>
                             {% elif cluster.sync_status_tone == 'amber' %}
-                                <span class="inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">{{ cluster.sync_status_label }}</span>
+                                <span class="inline-flex rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">{{ cluster.sync_status_label }}</span>
                             {% else %}
-                                <span class="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-600 dark:bg-slate-700 dark:text-slate-300">{{ cluster.sync_status_label }}</span>
+                                <span class="inline-flex rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-slate-600 dark:bg-slate-700 dark:text-slate-300">{{ cluster.sync_status_label }}</span>
                             {% endif %}
                         </div>
                     </td>

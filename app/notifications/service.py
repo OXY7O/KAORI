@@ -3,6 +3,8 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any
 
+from sqlalchemy import or_
+
 from app.extensions import db
 from app.models.notification import Notification
 
@@ -12,6 +14,8 @@ _ALLOWED_STATUSES = {
     'error',
     'info',
 }
+_NAVIGATION_NOTIFICATION_LIMIT = 8
+_ACTIVITY_PER_PAGE_OPTIONS = (10, 25, 50)
 
 
 def create_notification(
@@ -43,79 +47,263 @@ def create_notification(
     return notification
 
 
+def _normalize_created_at(created_at: datetime) -> datetime:
+    if created_at.tzinfo is None:
+        return created_at.replace(tzinfo=UTC)
+
+    return created_at.astimezone(UTC)
+
+
+def _created_label(created_at: datetime) -> str:
+    normalized_created_at = _normalize_created_at(created_at)
+    age_seconds = max(
+        0,
+        int((datetime.now(UTC) - normalized_created_at).total_seconds()),
+    )
+
+    if age_seconds < 60:
+        return 'Just now'
+    if age_seconds < 3600:
+        minutes = age_seconds // 60
+        return f'{minutes} min ago'
+    if age_seconds < 86400:
+        hours = age_seconds // 3600
+        return f'{hours} hr ago'
+
+    days = age_seconds // 86400
+    return f'{days} day ago' if days == 1 else f'{days} days ago'
+
+
+def _event_label(event_type: str) -> str:
+    return event_type.replace('_', ' ').strip().title() or 'Operational Activity'
+
+
+def _metadata_value(value: Any) -> str:
+    if isinstance(value, list):
+        return ', '.join(str(item) for item in value) if value else '-'
+    if isinstance(value, bool):
+        return 'Yes' if value else 'No'
+    if value is None:
+        return '-'
+    return str(value)
+
+
+def _metadata_items(metadata: dict[str, Any]) -> list[dict[str, str]]:
+    preferred_order = (
+        'task_id',
+        'total_count',
+        'synced_count',
+        'failed_count',
+        'failed_clusters',
+        'duration_seconds',
+    )
+    keys = [key for key in preferred_order if key in metadata]
+    keys.extend(sorted(key for key in metadata if key not in preferred_order))
+
+    return [
+        {
+            'label': key.replace('_', ' ').title(),
+            'value': _metadata_value(metadata[key]),
+        }
+        for key in keys
+    ]
+
+
+def _serialize_notification(
+    notification: Notification,
+    *,
+    include_metadata: bool,
+) -> dict[str, Any]:
+    metadata = notification.metadata_json or {}
+    created_at = _normalize_created_at(notification.created_at)
+
+    item: dict[str, Any] = {
+        'id': notification.id,
+        'event_type': notification.event_type,
+        'event_label': _event_label(notification.event_type),
+        'status': notification.status,
+        'title': notification.title,
+        'message': notification.message,
+        'detail': notification.detail,
+        'action_url': notification.action_url,
+        'created_label': _created_label(created_at),
+        'created_display': created_at.strftime('%d %b %Y %H:%M UTC'),
+        'is_read': notification.is_read,
+        'read_label': 'Read' if notification.is_read else 'Unread',
+        'synced_count': metadata.get('synced_count'),
+        'failed_count': metadata.get('failed_count'),
+        'total_count': metadata.get('total_count'),
+        'duration_seconds': metadata.get('duration_seconds'),
+    }
+
+    if include_metadata:
+        item['metadata_items'] = _metadata_items(metadata)
+
+    return item
+
+
 def get_navigation_notification_context(
     *,
     user_id: int,
-    limit: int = 8,
+    limit: int = _NAVIGATION_NOTIFICATION_LIMIT,
 ) -> dict[str, Any]:
-    unread_count = (
-        Notification.query.filter(
-            Notification.user_id == user_id,
-            Notification.read_at.is_(None),
-        )
-        .count()
+    normalized_limit = max(1, min(limit, _NAVIGATION_NOTIFICATION_LIMIT))
+    base_query = Notification.query.filter(
+        Notification.user_id == user_id,
     )
+    unread_count = base_query.filter(
+        Notification.read_at.is_(None),
+    ).count()
+    total_count = base_query.count()
 
     notifications = (
-        Notification.query.filter(
-            Notification.user_id == user_id,
-        )
-        .order_by(
+        base_query.order_by(
             Notification.created_at.desc(),
             Notification.id.desc(),
         )
-        .limit(limit)
+        .limit(normalized_limit)
         .all()
     )
 
-    now = datetime.now(UTC)
-    items: list[dict[str, Any]] = []
+    return {
+        'items': [
+            _serialize_notification(
+                notification,
+                include_metadata=False,
+            )
+            for notification in notifications
+        ],
+        'unread_count': unread_count,
+        'total_count': total_count,
+        'display_limit': normalized_limit,
+    }
 
-    for notification in notifications:
-        created_at = notification.created_at
 
-        if created_at.tzinfo is None:
-            created_at = created_at.replace(tzinfo=UTC)
+def get_notification_activity_context(
+    *,
+    user_id: int,
+    page: int,
+    per_page: int,
+    status: str,
+    event_type: str,
+    read_state: str,
+    search: str,
+) -> dict[str, Any]:
+    normalized_page = max(page, 1)
+    normalized_per_page = per_page if per_page in _ACTIVITY_PER_PAGE_OPTIONS else _ACTIVITY_PER_PAGE_OPTIONS[0]
+    normalized_status = status if status in _ALLOWED_STATUSES else 'all'
+    normalized_event_type = event_type.strip() or 'all'
+    normalized_read_state = read_state if read_state in {'all', 'read', 'unread'} else 'all'
+    normalized_search = search.strip()
 
-        age_seconds = max(
-            0,
-            int((now - created_at).total_seconds()),
+    base_query = Notification.query.filter(
+        Notification.user_id == user_id,
+    )
+    filtered_query = base_query
+
+    if normalized_status != 'all':
+        filtered_query = filtered_query.filter(
+            Notification.status == normalized_status,
         )
 
-        if age_seconds < 60:
-            created_label = 'Just now'
-        elif age_seconds < 3600:
-            minutes = age_seconds // 60
-            created_label = f'{minutes} min ago'
-        elif age_seconds < 86400:
-            hours = age_seconds // 3600
-            created_label = f'{hours} hr ago'
-        else:
-            days = age_seconds // 86400
-            created_label = f'{days} day ago' if days == 1 else f'{days} days ago'
-
-        metadata = notification.metadata_json or {}
-
-        items.append(
-            {
-                'id': notification.id,
-                'status': notification.status,
-                'title': notification.title,
-                'message': notification.message,
-                'detail': notification.detail,
-                'action_url': notification.action_url,
-                'created_label': created_label,
-                'is_read': notification.is_read,
-                'synced_count': metadata.get('synced_count'),
-                'failed_count': metadata.get('failed_count'),
-                'total_count': metadata.get('total_count'),
-                'duration_seconds': metadata.get('duration_seconds'),
-            }
+    if normalized_event_type != 'all':
+        filtered_query = filtered_query.filter(
+            Notification.event_type == normalized_event_type,
         )
+
+    if normalized_read_state == 'read':
+        filtered_query = filtered_query.filter(
+            Notification.read_at.is_not(None),
+        )
+    elif normalized_read_state == 'unread':
+        filtered_query = filtered_query.filter(
+            Notification.read_at.is_(None),
+        )
+
+    if normalized_search:
+        pattern = f'%{normalized_search}%'
+        filtered_query = filtered_query.filter(
+            or_(
+                Notification.title.ilike(pattern),
+                Notification.message.ilike(pattern),
+                Notification.detail.ilike(pattern),
+                Notification.event_type.ilike(pattern),
+            )
+        )
+
+    pagination = filtered_query.order_by(
+        Notification.created_at.desc(),
+        Notification.id.desc(),
+    ).paginate(
+        page=normalized_page,
+        per_page=normalized_per_page,
+        error_out=False,
+    )
+
+    event_types = [
+        row[0]
+        for row in (
+            db.session.query(Notification.event_type)
+            .filter(Notification.user_id == user_id)
+            .distinct()
+            .order_by(Notification.event_type.asc())
+            .all()
+        )
+    ]
+
+    total_count = base_query.count()
+    unread_count = base_query.filter(
+        Notification.read_at.is_(None),
+    ).count()
+    success_count = base_query.filter(
+        Notification.status == 'success',
+    ).count()
+    attention_count = base_query.filter(
+        Notification.status.in_(['warning', 'error']),
+    ).count()
+    pagination_total = int(pagination.total or 0)
+    pagination_pages = max(int(pagination.pages or 0), 1)
 
     return {
-        'items': items,
-        'unread_count': unread_count,
+        'items': [
+            _serialize_notification(
+                notification,
+                include_metadata=True,
+            )
+            for notification in pagination.items
+        ],
+        'summary': {
+            'total_count': total_count,
+            'unread_count': unread_count,
+            'success_count': success_count,
+            'attention_count': attention_count,
+        },
+        'filters': {
+            'status': normalized_status,
+            'event_type': normalized_event_type,
+            'read_state': normalized_read_state,
+            'search': normalized_search,
+        },
+        'event_types': [
+            {
+                'value': value,
+                'label': _event_label(value),
+            }
+            for value in event_types
+        ],
+        'pagination': {
+            'page': pagination.page,
+            'per_page': pagination.per_page,
+            'total_items': pagination_total,
+            'total_pages': pagination_pages,
+            'start_item': ((pagination.page - 1) * pagination.per_page + 1) if pagination_total else 0,
+            'end_item': min(pagination.page * pagination.per_page, pagination_total),
+            'has_prev': pagination.has_prev,
+            'has_next': pagination.has_next,
+            'prev_page': pagination.prev_num,
+            'next_page': pagination.next_num,
+            'allowed_per_page': _ACTIVITY_PER_PAGE_OPTIONS,
+        },
     }
 
 

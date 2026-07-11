@@ -33,13 +33,29 @@
                         <p class="mt-1 text-xs font-semibold leading-5 text-slate-600 dark:text-slate-300">{{ message }}</p>
                     </div>
 
-                    <button type="button"
-                            data-quick-action-toast-close
-                            onclick="event.preventDefault(); event.stopPropagation(); this.closest('[data-quick-action-toast]')?.remove(); return false;"
-                            class="relative z-10 pointer-events-auto rounded-xl p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-                            aria-label="Close sync result">
-                        <i data-lucide="x" class="h-4 w-4"></i>
-                    </button>
+                    {% if task_id is defined and task_id %}
+                        <form method="POST"
+                              action="{{ url_for('cluster.dismiss_sync_all_status', task_id=task_id) }}"
+                              hx-post="{{ url_for('cluster.dismiss_sync_all_status', task_id=task_id) }}"
+                              hx-target="closest [data-quick-action-toast]"
+                              hx-swap="outerHTML">
+                            {% if csrf_token is defined %}
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            {% endif %}
+                            <button type="submit"
+                                    class="relative z-10 pointer-events-auto rounded-xl p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                                    aria-label="Close sync result">
+                                <i data-lucide="x" class="h-4 w-4"></i>
+                            </button>
+                        </form>
+                    {% else %}
+                        <button type="button"
+                                data-quick-action-toast-close
+                                class="relative z-10 pointer-events-auto rounded-xl p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                                aria-label="Close sync result">
+                            <i data-lucide="x" class="h-4 w-4"></i>
+                        </button>
+                    {% endif %}
                 </div>
 
                 {% if total_count is defined and total_count is not none %}
@@ -97,7 +113,7 @@
 </div>
 
 {% if notification_context is defined %}
-    {% with navigation_notifications=notification_context['items'], navigation_unread_count=notification_context['unread_count'], notification_oob=true %}
+    {% with navigation_notifications=notification_context['items'], navigation_unread_count=notification_context['unread_count'], navigation_total_count=notification_context['total_count'], navigation_display_limit=notification_context['display_limit'], notification_oob=true %}
         {% include "components/navigation/_notification_center.html" %}
     {% endwith %}
 {% endif %}

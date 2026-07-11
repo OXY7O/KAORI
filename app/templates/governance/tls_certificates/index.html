@@ -2,15 +2,7 @@
 {% block title %}Kubernetes TLS Secret{% endblock title %}
 {% block dashboard_content %}
     <div class="space-y-6">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <div class="space-y-2">
-                    {% for category, message in messages %}
-                        <div class="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-200">{{ message }}</div>
-                    {% endfor %}
-                </div>
-            {% endif %}
-        {% endwith %}
+        {% include "components/states/_flash_messages.html" %}
         {% include "governance/tls_certificates/partials/_hero.html" %}
         {% if cluster_onboarding.is_blocked %}
             {% include "components/cluster/_onboarding_banner.html" %}

@@ -34,7 +34,9 @@ from app.cluster.sync_state import (
     CLUSTER_SYNC_TASK_NAME,
     acquire_cluster_sync_lock,
     build_cluster_sync_snapshot,
+    dismiss_cluster_sync_result,
     get_active_cluster_sync_task_id,
+    is_cluster_sync_result_dismissed,
     release_cluster_sync_lock,
 )
 from app.models import Cluster
@@ -118,6 +120,7 @@ def _render_sync_snapshot(
     return (
         render_template(
             'components/navigation/_quick_sync_result.html',
+            task_id=snapshot.get('task_id'),
             status=snapshot.get('status') or 'info',
             title=snapshot.get('title') or 'Kubernetes sync finished',
             message=snapshot.get('message') or 'The background synchronization task has finished.',
@@ -374,9 +377,14 @@ def active_sync_all_status() -> ResponseReturnValue:
         if not task_id:
             return ''
 
-        return _render_sync_snapshot(
-            build_cluster_sync_snapshot(task_id),
-        )
+        snapshot = build_cluster_sync_snapshot(task_id)
+        if not snapshot['is_active'] and is_cluster_sync_result_dismissed(
+            task_id=task_id,
+            user_id=current_user.id,
+        ):
+            return ''
+
+        return _render_sync_snapshot(snapshot)
     except RuntimeError as exc:
         logger.warning(
             'Cluster synchronization state is unavailable: %s',
@@ -388,6 +396,39 @@ def active_sync_all_status() -> ResponseReturnValue:
             'Redis could not restore the active cluster synchronization state.',
         )
         return ''
+
+
+@cluster_bp.post('/sync-all/status/<string:task_id>/dismiss')
+@permission_required('clusters.sync')
+def dismiss_sync_all_status(task_id: str) -> ResponseReturnValue:
+    is_htmx = request.headers.get('HX-Request') == 'true'
+
+    try:
+        snapshot = build_cluster_sync_snapshot(task_id)
+        if snapshot['is_active']:
+            return ('', 409) if is_htmx else redirect(url_for('cluster.list_clusters'))
+
+        dismiss_cluster_sync_result(
+            task_id=task_id,
+            user_id=current_user.id,
+        )
+    except (RuntimeError, RedisError):
+        logger.exception(
+            'KAORI could not persist dismissal for cluster synchronization task %s.',
+            task_id,
+        )
+        if is_htmx:
+            return '', 503
+
+        flash(
+            'The synchronization result could not be dismissed because Redis is unavailable.',
+            'danger',
+        )
+
+    if is_htmx:
+        return ''
+
+    return redirect(request.referrer or url_for('cluster.list_clusters'))
 
 
 @cluster_bp.route('/sync-all/status/<string:task_id>')

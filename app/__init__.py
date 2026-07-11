@@ -37,6 +37,8 @@ def create_app(config_name: str | None = None):
                 return {
                     'items': [],
                     'unread_count': 0,
+                    'total_count': 0,
+                    'display_limit': 8,
                 }
 
             return get_navigation_notification_context(
