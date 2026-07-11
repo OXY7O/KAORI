@@ -85,6 +85,36 @@ class NodeInventory(db.Model):
         nullable=True,
     )
 
+    unschedulable: Mapped[bool | None] = mapped_column(
+        Boolean,
+        nullable=True,
+    )
+
+    memory_pressure: Mapped[str | None] = mapped_column(
+        String(20),
+        nullable=True,
+    )
+
+    disk_pressure: Mapped[str | None] = mapped_column(
+        String(20),
+        nullable=True,
+    )
+
+    pid_pressure: Mapped[str | None] = mapped_column(
+        String(20),
+        nullable=True,
+    )
+
+    network_unavailable: Mapped[str | None] = mapped_column(
+        String(20),
+        nullable=True,
+    )
+
+    taints: Mapped[list[str] | None] = mapped_column(
+        JSON,
+        nullable=True,
+    )
+
     ephemeral_storage: Mapped[str | None] = mapped_column(
         db.String(50),
         nullable=True,

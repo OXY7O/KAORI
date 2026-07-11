@@ -22,7 +22,7 @@
         </div>
     </div>
 
-    <div class="border-b border-slate-200 px-6 py-4 dark:border-slate-700">
+    <div class="border-b border-slate-200 bg-slate-50 px-6 py-4 dark:border-slate-700 dark:bg-slate-900/20">
         <form
             hx-get="{{ url_for('inventory.nodes') }}"
             hx-target="#nodes-table-content"
@@ -74,11 +74,18 @@
                     <input type="text"
                            name="search"
                            value="{{ search }}"
-                           placeholder="Search node..."
+                           placeholder="Search name, IP, or hostname..."
                            class="w-full rounded-xl border border-slate-300 bg-white py-2 pr-3 pl-10 text-sm text-slate-900 transition outline-none placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-blue-400 dark:focus:ring-blue-400/10" />
                 </div>
             </div>
+
         </form>
+        <div class="mt-3 flex items-center gap-2 text-xs font-medium text-blue-700 dark:text-blue-300">
+            <span class="flex h-6 w-6 items-center justify-center rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300">
+                <i data-lucide="database" class="h-3.5 w-3.5"></i>
+            </span>
+            Inventory snapshot data only. Utilization and trend analysis remain in Analytics.
+        </div>
     </div>
 
     <div id="nodes-table-content">

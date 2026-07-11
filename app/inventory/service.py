@@ -233,6 +233,49 @@ def get_node_ready_status(
     return 'Unknown'
 
 
+def _get_node_condition_status(
+    node: V1Node,
+    condition_type: str,
+) -> str | None:
+    status = node.status
+
+    if status is None:
+        return None
+
+    for condition in status.conditions or []:
+        if condition.type == condition_type:
+            return condition.status or 'Unknown'
+
+    return None
+
+
+def _extract_node_taints(
+    node: V1Node,
+) -> list[str]:
+    spec = node.spec
+    taints = spec.taints if spec and spec.taints else []
+    result: list[str] = []
+
+    for taint in taints:
+        key = getattr(taint, 'key', None)
+        if not key:
+            continue
+
+        value = getattr(taint, 'value', None)
+        effect = getattr(taint, 'effect', None)
+        label = key
+
+        if value:
+            label = f'{label}={value}'
+
+        if effect:
+            label = f'{label}:{effect}'
+
+        result.append(label)
+
+    return result
+
+
 def save_cluster_info(
     cluster: Cluster,
     api: CoreV1Api,
@@ -304,6 +347,30 @@ def save_nodes(
         node_inventory.node_name = metadata.name
         node_inventory.role = get_node_role(node)
         node_inventory.status = ready_status
+        node_inventory.unschedulable = bool(
+            node.spec.unschedulable
+            if node.spec and node.spec.unschedulable is not None
+            else False
+        )
+        node_inventory.memory_pressure = _get_node_condition_status(
+            node,
+            'MemoryPressure',
+        )
+        node_inventory.disk_pressure = _get_node_condition_status(
+            node,
+            'DiskPressure',
+        )
+        node_inventory.pid_pressure = _get_node_condition_status(
+            node,
+            'PIDPressure',
+        )
+        node_inventory.network_unavailable = _get_node_condition_status(
+            node,
+            'NetworkUnavailable',
+        )
+        node_inventory.taints = _extract_node_taints(
+            node,
+        )
 
         node_addresses = _extract_node_addresses(
             node,
@@ -1404,6 +1471,7 @@ def get_node_inventory(
                 ),
                 'os_image': node.os_image,
                 'runtime_display': runtime_display,
+                'collected_at': node.collected_at,
             }
         )
 
@@ -1483,11 +1551,23 @@ def get_node_detail(node_id: int) -> dict[str, Any] | None:
     )
     scheduled_pod_count = db.session.query(func.count(PodInventory.id)).filter(*pod_scope).scalar() or 0
 
-    network_context_tip = (
-        'Internal IP identifies the node inside the cluster network, while the '
-        'hostname is the Kubernetes node identity used for scheduling and operations. '
-        f'This inventory snapshot currently maps {scheduled_pod_count} Pod(s) to this node.'
-    )
+    if node.unschedulable is True:
+        scheduling_display = 'Cordoned'
+    elif node.unschedulable is False:
+        scheduling_display = 'Schedulable'
+    else:
+        scheduling_display = 'Not reported'
+
+    network_availability = 'Not reported'
+    if node.network_unavailable == 'True':
+        network_availability = 'Unavailable'
+    elif node.network_unavailable == 'False':
+        network_availability = 'Available'
+
+    ready_condition = {
+        'Ready': 'True',
+        'NotReady': 'False',
+    }.get(node.status or '', 'Unknown')
 
     return {
         'id': node.id,
@@ -1503,7 +1583,13 @@ def get_node_detail(node_id: int) -> dict[str, Any] | None:
         'external_ip': node.external_ip,
         'hostname_address': node.hostname_address,
         'scheduled_pod_count': scheduled_pod_count,
-        'network_context_tip': network_context_tip,
+        'network_availability': network_availability,
+        'scheduling_display': scheduling_display,
+        'ready_condition': ready_condition,
+        'memory_pressure': node.memory_pressure or 'Not reported',
+        'disk_pressure': node.disk_pressure or 'Not reported',
+        'pid_pressure': node.pid_pressure or 'Not reported',
+        'taints': node.taints or [],
         'cpu': node.cpu,
         'memory_display': format_kubernetes_size(node.memory),
         'ephemeral_storage_display': format_kubernetes_size(node.ephemeral_storage),
