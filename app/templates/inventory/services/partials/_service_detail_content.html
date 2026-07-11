@@ -1,19 +1,27 @@
 {% from 'inventory/components/_detail_macros.html' import detail_shell, detail_card, detail_row %}
-{% call detail_shell('Service detail overview', 'Simple summary of service scope, exposure type, and network endpoints.', 'network', 'bg-teal-50 text-teal-700 dark:bg-teal-500/10 dark:text-teal-300') %}
-    {% call detail_card('Overview', 'network', 'bg-teal-50 text-teal-700 dark:bg-teal-500/10 dark:text-teal-300') %}
+{% call detail_shell(
+    service.service_name,
+    'Service scope, exposure type, endpoints, and lifecycle information.',
+    'network',
+    'bg-teal-50 text-teal-600 dark:bg-teal-950/40 dark:text-teal-300',
+    service.namespace,
+    'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+    service.service_type,
+    'bg-teal-50 text-teal-700 dark:bg-teal-500/10 dark:text-teal-300'
+) %}
+    {% call detail_card('Service identity', 'badge-info', 'bg-teal-50 text-teal-600 dark:bg-teal-950/40 dark:text-teal-300') %}
         {{ detail_row('Cluster', service.cluster_name) }}
         {{ detail_row('Namespace', service.namespace) }}
-        {{ detail_row('Service', service.service_name) }}
         {{ detail_row('Type', service.service_type) }}
     {% endcall %}
-    {% call detail_card('Endpoints', 'globe', 'bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300') %}
+    {% call detail_card('Network endpoints', 'globe', 'bg-cyan-50 text-cyan-600 dark:bg-cyan-950/40 dark:text-cyan-300') %}
         {{ detail_row('Cluster IP', service.cluster_ip, mono=True) }}
         {{ detail_row('External IP', service.external_ip, mono=True) }}
         {{ detail_row('Ports', service.ports) }}
     {% endcall %}
-    {% call detail_card('Lifecycle', 'clock-3', 'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300') %}
+    {% call detail_card('Lifecycle', 'clock-3', 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300', service.age, 'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300') %}
         {{ detail_row('Age', service.age) }}
-        {{ detail_row('Created at', service.created_at.strftime('%Y-%m-%d %H:%M:%S') if service.created_at else '-') }}
-        {{ detail_row('Collected at', service.collected_at.strftime('%Y-%m-%d %H:%M:%S') if service.collected_at else '-') }}
+        {{ detail_row('Created', service.created_at.strftime('%Y-%m-%d %H:%M:%S') if service.created_at else '-') }}
+        {{ detail_row('Collected', service.collected_at.strftime('%Y-%m-%d %H:%M:%S') if service.collected_at else '-') }}
     {% endcall %}
 {% endcall %}

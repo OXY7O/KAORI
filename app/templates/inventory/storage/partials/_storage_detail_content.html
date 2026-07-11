@@ -1,19 +1,27 @@
 {% from 'inventory/components/_detail_macros.html' import detail_shell, detail_card, detail_row %}
-{% call detail_shell('Storage detail overview', 'Simple summary of storage scope, capacity, and lifecycle metadata.', 'database', 'bg-lime-50 text-lime-700 dark:bg-lime-500/10 dark:text-lime-300') %}
-    {% call detail_card('Overview', 'database', 'bg-lime-50 text-lime-700 dark:bg-lime-500/10 dark:text-lime-300') %}
+{% call detail_shell(
+    item.name,
+    'Storage scope, capacity, binding posture, and lifecycle information.',
+    'database',
+    'bg-lime-50 text-lime-600 dark:bg-lime-950/40 dark:text-lime-300',
+    item.type,
+    'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+    item.status,
+    'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' if item.status in ['Bound', 'Available', 'Active'] else 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'
+) %}
+    {% call detail_card('Storage identity', 'badge-info', 'bg-lime-50 text-lime-600 dark:bg-lime-950/40 dark:text-lime-300') %}
         {{ detail_row('Cluster', item.cluster_name) }}
         {{ detail_row('Namespace scope', item.namespace) }}
-        {{ detail_row('Name', item.name) }}
         {{ detail_row('Type', item.type) }}
     {% endcall %}
-    {% call detail_card('Capacity and status', 'hard-drive', 'bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300') %}
+    {% call detail_card('Capacity and class', 'hard-drive', 'bg-sky-50 text-sky-600 dark:bg-sky-950/40 dark:text-sky-300', item.capacity, 'bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300') %}
         {{ detail_row('Storage class', item.storage_class) }}
         {{ detail_row('Capacity', item.capacity) }}
         {{ detail_row('Status', item.status) }}
     {% endcall %}
-    {% call detail_card('Lifecycle', 'clock-3', 'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300') %}
+    {% call detail_card('Lifecycle', 'clock-3', 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300', item.age, 'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300') %}
         {{ detail_row('Age', item.age) }}
-        {{ detail_row('Created at', item.created_at.strftime('%Y-%m-%d %H:%M:%S') if item.created_at else '-') }}
-        {{ detail_row('Collected at', item.collected_at.strftime('%Y-%m-%d %H:%M:%S') if item.collected_at else '-') }}
+        {{ detail_row('Created', item.created_at.strftime('%Y-%m-%d %H:%M:%S') if item.created_at else '-') }}
+        {{ detail_row('Collected', item.collected_at.strftime('%Y-%m-%d %H:%M:%S') if item.collected_at else '-') }}
     {% endcall %}
 {% endcall %}

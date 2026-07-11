@@ -1,26 +1,28 @@
-{% from 'inventory/components/_detail_macros.html' import detail_shell, detail_card, detail_row, metric_tile %}
-{% call detail_shell('Node detail overview', 'Clean summary of node identity, network endpoints, and allocatable capacity.', 'server-cog', 'bg-teal-50 text-teal-700 dark:bg-teal-500/10 dark:text-teal-300') %}
-    {% call detail_card('Overview', 'shield-check', 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300') %}
-        <div class="grid gap-3 sm:grid-cols-2">
-            {{ metric_tile('Status', node.status, 'activity', 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300') }}
-            {{ metric_tile('Role', node.role, 'badge-check', 'bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300') }}
-        </div>
-        {{ detail_row('Cluster', node.cluster_name) }}
-        {{ detail_row('Node name', node.node_name) }}
-        {{ detail_row('Collected at', node.collected_at.strftime('%Y-%m-%d %H:%M:%S') if node.collected_at else '-') }}
-    {% endcall %}
-    {% call detail_card('Network', 'network', 'bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300') %}
+{% from 'inventory/components/_detail_macros.html' import detail_shell, detail_card, detail_row %}
+{% call detail_shell(
+    node.node_name,
+    'Operating system, network identity, and capacity collected from the latest node inventory snapshot.',
+    'server-cog',
+    'bg-teal-50 text-teal-600 dark:bg-teal-950/40 dark:text-teal-300',
+    node.cluster_name,
+    'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+    node.status,
+    'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' if node.status == 'Ready' else 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'
+) %}
+    {% call detail_card('Network identity', 'network', 'bg-cyan-50 text-cyan-600 dark:bg-cyan-950/40 dark:text-cyan-300', node.role, 'bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300') %}
         {{ detail_row('Internal IP', node.internal_ip, mono=True) }}
         {{ detail_row('External IP', node.external_ip, mono=True) }}
         {{ detail_row('Hostname', node.hostname_address) }}
     {% endcall %}
-    {% call detail_card('Capacity', 'cpu', 'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300') %}
-        {{ detail_row('Operating system', node.os_image) }}
-        {{ detail_row('Kernel version', node.kernel_version) }}
-        {{ detail_row('Container runtime', node.container_runtime) }}
-        {{ detail_row('CPU', node.cpu) }}
+    {% call detail_card('Platform profile', 'monitor-cog', 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300') %}
+        {{ detail_row('OS image', node.os_image) }}
+        {{ detail_row('Kernel', node.kernel_version) }}
+        {{ detail_row('Runtime', node.container_runtime) }}
+    {% endcall %}
+    {% call detail_card('Capacity', 'gauge', 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300', node.cpu ~ ' CPU', 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300') %}
         {{ detail_row('Memory', node.memory_display) }}
         {{ detail_row('Ephemeral storage', node.ephemeral_storage_display) }}
         {{ detail_row('Allocatable storage', node.allocatable_storage_display) }}
+        {{ detail_row('Collected', node.collected_at.strftime('%Y-%m-%d %H:%M:%S') if node.collected_at else '-') }}
     {% endcall %}
 {% endcall %}

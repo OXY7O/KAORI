@@ -1,42 +1,41 @@
-{% from 'inventory/components/_detail_macros.html' import detail_shell, detail_card, detail_row, metric_tile, detail_badge %}
-{% call detail_shell('Ingress detail overview', 'Simple summary of ingress exposure, backend routes, and lifecycle context.', 'route', 'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300') %}
-    {% call detail_card('Overview', 'globe', 'bg-teal-50 text-teal-700 dark:bg-teal-500/10 dark:text-teal-300') %}
-        <div class="grid gap-3 sm:grid-cols-2">
-            {{ metric_tile('TLS', 'Enabled' if ingress.tls else 'Not configured', 'shield', 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300') }}
-            {{ metric_tile('Hosts', ingress.host_count, 'globe-2', 'bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300') }}
-        </div>
+{% from 'inventory/components/_detail_macros.html' import detail_shell, detail_card, detail_row, detail_badge %}
+{% call detail_shell(
+    ingress.name,
+    'Exposure, backend routing, TLS posture, and lifecycle information.',
+    'route',
+    'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300',
+    ingress.namespace,
+    'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+    'TLS enabled' if ingress.tls else 'TLS not configured',
+    'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' if ingress.tls else 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'
+) %}
+    {% call detail_card('Exposure', 'globe', 'bg-teal-50 text-teal-600 dark:bg-teal-950/40 dark:text-teal-300', ingress.class, 'bg-teal-50 text-teal-700 dark:bg-teal-500/10 dark:text-teal-300') %}
         {{ detail_row('Cluster', ingress.cluster_name) }}
-        {{ detail_row('Namespace', ingress.namespace) }}
-        {{ detail_row('Ingress', ingress.name) }}
-        {{ detail_row('Class', ingress.class) }}
+        {{ detail_row('Host', ingress.host) }}
         {{ detail_row('Address', ingress.address) }}
+        {{ detail_row('Class', ingress.class) }}
     {% endcall %}
-    {% call detail_card('Backend routes', 'git-branch', 'bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300') %}
-        <div class="flex flex-wrap gap-2">
-            {{ detail_badge(ingress.backend_count ~ ' path(s)', 'violet') }}
-            {{ detail_badge(ingress.service_count ~ ' service(s)', 'emerald') }}
-        </div>
+    {% call detail_card('Backend routes', 'git-branch', 'bg-sky-50 text-sky-600 dark:bg-sky-950/40 dark:text-sky-300', ingress.backend_count ~ ' path(s)', 'bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300') %}
         {% if ingress.backend_paths %}
             <div class="space-y-2">
                 {% for backend in ingress.backend_paths %}
-                    <div class="rounded-xl bg-white/85 px-3 py-3 text-xs dark:bg-slate-900/60">
-                        <div class="flex flex-wrap gap-2">
+                    <div class="rounded-xl bg-slate-50 px-3 py-2.5 dark:bg-slate-900/70">
+                        <div class="flex flex-wrap gap-1.5">
                             {{ detail_badge(backend.host, 'cyan') }}
                             {{ detail_badge(backend.path, 'violet') }}
                             {{ detail_badge(backend.service_name ~ ':' ~ backend.service_port, 'emerald') }}
-                            {{ detail_badge(backend.path_type, 'slate') }}
                         </div>
                     </div>
                 {% endfor %}
             </div>
         {% else %}
-            <div class="text-sm text-slate-400 dark:text-slate-500">No backend service paths recorded.</div>
+            <p class="text-xs text-slate-500 dark:text-slate-400">No backend routes recorded.</p>
         {% endif %}
     {% endcall %}
-    {% call detail_card('Lifecycle', 'clock-3', 'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300') %}
+    {% call detail_card('Lifecycle', 'clock-3', 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300', ingress.age, 'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300') %}
         {{ detail_row('Age', ingress.age) }}
-        {{ detail_row('Created at', ingress.created_at.strftime('%Y-%m-%d %H:%M:%S') if ingress.created_at else '-') }}
-        {{ detail_row('Collected at', ingress.collected_at.strftime('%Y-%m-%d %H:%M:%S') if ingress.collected_at else '-') }}
-        {{ detail_row('Host', ingress.host) }}
+        {{ detail_row('Created', ingress.created_at.strftime('%Y-%m-%d %H:%M:%S') if ingress.created_at else '-') }}
+        {{ detail_row('Collected', ingress.collected_at.strftime('%Y-%m-%d %H:%M:%S') if ingress.collected_at else '-') }}
+        {{ detail_row('Services', ingress.service_count) }}
     {% endcall %}
 {% endcall %}

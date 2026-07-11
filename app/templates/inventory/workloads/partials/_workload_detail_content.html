@@ -1,20 +1,26 @@
-{% from 'inventory/components/_detail_macros.html' import detail_shell, detail_card, detail_row, metric_tile %}
-{% call detail_shell('Workload detail overview', 'Summary of workload scope, replica readiness, and lifecycle information.', 'boxes', 'bg-orange-50 text-orange-700 dark:bg-orange-500/10 dark:text-orange-300') %}
-    {% call detail_card('Overview', 'badge-info', 'bg-orange-50 text-orange-700 dark:bg-orange-500/10 dark:text-orange-300') %}
+{% from 'inventory/components/_detail_macros.html' import detail_shell, detail_card, detail_row %}
+{% call detail_shell(
+    workload.name,
+    'Scope, replica readiness, and lifecycle information for this workload.',
+    'boxes',
+    'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300',
+    workload.namespace,
+    'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+    workload.status,
+    'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' if workload.status == 'Running' else 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'
+) %}
+    {% call detail_card('Workload identity', 'badge-info', 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300', workload.type, 'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300') %}
         {{ detail_row('Cluster', workload.cluster_name) }}
         {{ detail_row('Namespace', workload.namespace) }}
-        {{ detail_row('Workload', workload.name) }}
         {{ detail_row('Type', workload.type) }}
     {% endcall %}
-    {% call detail_card('Status', 'activity', 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300') %}
-        <div class="grid gap-3 sm:grid-cols-2">
-            {{ metric_tile('Ready', workload.ready, 'check', 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300') }}
-            {{ metric_tile('Status', workload.status, 'pulse', 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300') }}
-        </div>
+    {% call detail_card('Replica posture', 'activity', 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300', workload.ready, 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300') %}
+        {{ detail_row('Ready replicas', workload.ready) }}
+        {{ detail_row('Status', workload.status) }}
     {% endcall %}
-    {% call detail_card('Lifecycle', 'clock-3', 'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300') %}
+    {% call detail_card('Lifecycle', 'clock-3', 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300', workload.age, 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300') %}
         {{ detail_row('Age', workload.age) }}
-        {{ detail_row('Created at', workload.created_at.strftime('%Y-%m-%d %H:%M:%S') if workload.created_at else '-') }}
-        {{ detail_row('Collected at', workload.collected_at.strftime('%Y-%m-%d %H:%M:%S') if workload.collected_at else '-') }}
+        {{ detail_row('Created', workload.created_at.strftime('%Y-%m-%d %H:%M:%S') if workload.created_at else '-') }}
+        {{ detail_row('Collected', workload.collected_at.strftime('%Y-%m-%d %H:%M:%S') if workload.collected_at else '-') }}
     {% endcall %}
 {% endcall %}
