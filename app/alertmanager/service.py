@@ -115,6 +115,7 @@ def test_alertmanager_connection(
             'response_time_ms': None,
             'version': None,
             'error': 'Alertmanager endpoint is not configured.',
+            'reason': 'AlertmanagerNotConfigured',
         }
 
     client = build_alertmanager_client(
@@ -141,6 +142,7 @@ def test_alertmanager_connection(
             'error': str(
                 exc,
             ),
+            'reason': type(exc).__name__,
         }
     except Exception as exc:
         mark_alertmanager_status(
@@ -160,6 +162,7 @@ def test_alertmanager_connection(
             'error': str(
                 exc,
             ),
+            'reason': type(exc).__name__,
         }
 
     mark_alertmanager_status(
@@ -185,6 +188,7 @@ def test_alertmanager_connection(
             'version',
         ),
         'error': None,
+        'reason': None,
     }
 
 

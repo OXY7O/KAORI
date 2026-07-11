@@ -257,7 +257,7 @@ def test_cluster_alertmanager(
             metadata={
                 'cluster_id': cluster.id,
                 'cluster_name': cluster.name,
-                'reason': result.get('error') or 'connection_failed',
+                'reason': result.get('reason') or 'AlertmanagerConnectionFailed',
             },
         )
 
