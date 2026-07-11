@@ -7,16 +7,13 @@
     'settings.new_role',
     'settings.edit_role',
     'settings.permission_catalog',
-    'settings.login_activity'
+    'settings.login_activity',
+    'notifications.activity_log'
 ] or (request.endpoint and (
     request.endpoint.startswith('settings.users')
     or request.endpoint.startswith('settings.roles')
 )) %}
-{% set can_access_management = current_user.is_authenticated and (
-    current_user.has_permission('users.view')
-    or current_user.has_permission('roles.view')
-    or current_user.has_permission('settings.view_login_activity')
-) %}
+{% set can_access_management = current_user.is_authenticated %}
 
 {% if can_access_management %}
 <details class="sidebar-menu space-y-1" {% if access_management_active %}open{% endif %}>
@@ -52,6 +49,10 @@
                 <span class="h-1.5 w-1.5 rounded-full {{ 'bg-blue-400' if request.endpoint == 'settings.login_activity' else 'bg-slate-700 group-hover:bg-slate-500' }}"></span><i data-lucide="clipboard-list" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">Login Activity</span>
             </a>
         {% endif %}
+
+        <a href="{{ url_for('notifications.activity_log') }}" class="{{ 'bg-slate-900 text-blue-300' if request.endpoint == 'notifications.activity_log' else 'text-slate-400 hover:bg-slate-900 hover:text-white' }} group flex items-center gap-2 rounded-xl px-3 py-2 text-[12px] leading-4 transition">
+            <span class="h-1.5 w-1.5 rounded-full {{ 'bg-blue-400' if request.endpoint == 'notifications.activity_log' else 'bg-slate-700 group-hover:bg-slate-500' }}"></span><i data-lucide="history" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">Operational Activity</span>
+        </a>
     </div>
 </details>
 {% endif %}

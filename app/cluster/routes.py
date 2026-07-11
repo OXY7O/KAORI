@@ -564,19 +564,14 @@ def test_cluster(cluster_id: str) -> ResponseReturnValue:
         cluster,
     )
 
-    if result['success']:
-        flash(
-            'Cluster connected successfully',
-            'success',
-        )
-    else:
-        flash(
-            result['error'],
-            'danger',
-        )
+    feedback = {
+        'message': 'Cluster connected successfully.' if result['success'] else result['error'],
+        'category': 'success' if result['success'] else 'danger',
+    }
 
     return render_template(
         'cluster/partials/_table.html',
+        cluster_action_feedback=feedback,
         **_build_cluster_context_from_request(),
     )
 

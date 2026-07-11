@@ -59,7 +59,7 @@ def configuration(
             )
 
             flash(
-                'Prometheus configuration saved',
+                'Prometheus configuration saved.',
                 'success',
             )
 

@@ -1,4 +1,4 @@
-from flask import Blueprint, abort, flash, render_template, request
+from flask import Blueprint, abort, render_template, request
 
 from app.cluster.onboarding import has_registered_clusters
 from app.cluster.service import build_cluster_context
@@ -62,18 +62,22 @@ def sync(cluster_id: str):
 
     try:
         sync_inventory(cluster)
-        flash(
-            f'Synchronized {cluster.name} inventory successfully.',
-            'success',
-        )
+        feedback = {
+            'message': f'Synchronized {cluster.name} inventory successfully.',
+            'category': 'success',
+        }
     except Exception as exc:
-        flash(
-            f'Inventory sync failed for {cluster.name}: {type(exc).__name__}. Review Kubernetes API compatibility and cluster access.',
-            'warning',
-        )
+        feedback = {
+            'message': (
+                f'Inventory sync failed for {cluster.name}: {type(exc).__name__}. '
+                'Review Kubernetes API compatibility and cluster access.'
+            ),
+            'category': 'warning',
+        }
 
     return render_template(
         'cluster/partials/_table.html',
+        cluster_action_feedback=feedback,
         **_build_cluster_context_from_request(),
     )
 

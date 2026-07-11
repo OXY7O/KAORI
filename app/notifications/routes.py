@@ -55,12 +55,18 @@ def activity_log() -> ResponseReturnValue:
     context = get_notification_activity_context(
         user_id=current_user.id,
         page=_request_int('page', 1),
-        per_page=_request_int('per_page', 10),
+        per_page=_request_int('per_page', 5),
         status=request.args.get('status', 'all'),
         event_type=request.args.get('event_type', 'all'),
         read_state=request.args.get('read_state', 'all'),
         search=request.args.get('search', ''),
     )
+
+    if request.headers.get('HX-Request') == 'true':
+        return render_template(
+            'notifications/partials/_activity_table_content.html',
+            **context,
+        )
 
     return render_template(
         'notifications/activity.html',

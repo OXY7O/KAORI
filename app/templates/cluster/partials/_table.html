@@ -1,4 +1,13 @@
 <div id="cluster-table-container" class="overflow-hidden">
+    {% if cluster_action_feedback is defined and cluster_action_feedback %}
+        {% set feedback_category = cluster_action_feedback.category|default('info') %}
+        <div class="border-b px-6 py-3 text-sm font-semibold {% if feedback_category == 'success' %}border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200{% elif feedback_category == 'warning' %}border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200{% else %}border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200{% endif %}">
+            <span class="inline-flex items-center gap-2">
+                <i data-lucide="{% if feedback_category == 'success' %}check-circle-2{% elif feedback_category == 'warning' %}alert-triangle{% else %}x-circle{% endif %}" class="h-4 w-4"></i>
+                {{ cluster_action_feedback.message }}
+            </span>
+        </div>
+    {% endif %}
     <!-- Filter Bar -->
     <form id="cluster-filter-form"
           class="border-b border-slate-200 px-6 py-4 dark:border-slate-700"

@@ -1,6 +1,6 @@
 {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
-        <div class="space-y-2" aria-live="polite">
+        <div id="global-flash-messages" class="mb-5 space-y-2" aria-live="polite">
             {% for category, message in messages %}
                 {% set normalized_category = category|lower %}
                 {% if normalized_category in ['success'] %}

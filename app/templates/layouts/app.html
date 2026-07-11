@@ -277,6 +277,7 @@
                 {% include "components/navigation/navbar.html" %}
                 <main class="min-h-0 flex-1 overflow-y-auto bg-slate-50 transition-colors duration-300 dark:bg-slate-900">
                     <div class="app-content-shell">
+                        {% include "components/states/_flash_messages.html" %}
                         {% block dashboard_content %}
                         {% endblock dashboard_content %}
                     </div>
