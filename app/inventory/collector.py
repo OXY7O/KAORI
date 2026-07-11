@@ -11,6 +11,7 @@ from kubernetes.client import (
     V1CronJobList,
     V1DaemonSetList,
     V1DeploymentList,
+    V1EndpointsList,
     V1IngressList,
     V1JobList,
     V1Node,
@@ -286,6 +287,7 @@ def get_workloads(
 
     deployments = cast(
         V1DeploymentList,
+    V1EndpointsList,
         api.list_deployment_for_all_namespaces(),
     )
 
@@ -1087,6 +1089,70 @@ def get_pods(
 
     return pods
 
+def _service_endpoint_map(api: CoreV1Api) -> dict[tuple[str, str], dict]:
+    endpoint_map: dict[tuple[str, str], dict] = {}
+
+    try:
+        result = cast(
+            V1EndpointsList,
+            api.list_endpoints_for_all_namespaces(),
+        )
+    except ApiException:
+        return endpoint_map
+
+    for endpoint in result.items or []:
+        metadata = endpoint.metadata
+        if metadata is None or not metadata.namespace or not metadata.name:
+            continue
+
+        ready_addresses: list[dict[str, str]] = []
+        not_ready_addresses: list[dict[str, str]] = []
+        endpoint_ports: list[dict[str, str | int]] = []
+
+        for subset in endpoint.subsets or []:
+            for address in subset.addresses or []:
+                target_ref = getattr(address, 'target_ref', None)
+                ready_addresses.append(
+                    {
+                        'ip': _string_value(getattr(address, 'ip', None)),
+                        'hostname': _string_value(getattr(address, 'hostname', None)),
+                        'node_name': _string_value(getattr(address, 'node_name', None)),
+                        'target_kind': _string_value(getattr(target_ref, 'kind', None)),
+                        'target_name': _string_value(getattr(target_ref, 'name', None)),
+                    }
+                )
+
+            for address in subset.not_ready_addresses or []:
+                target_ref = getattr(address, 'target_ref', None)
+                not_ready_addresses.append(
+                    {
+                        'ip': _string_value(getattr(address, 'ip', None)),
+                        'hostname': _string_value(getattr(address, 'hostname', None)),
+                        'node_name': _string_value(getattr(address, 'node_name', None)),
+                        'target_kind': _string_value(getattr(target_ref, 'kind', None)),
+                        'target_name': _string_value(getattr(target_ref, 'name', None)),
+                    }
+                )
+
+            for port in subset.ports or []:
+                endpoint_ports.append(
+                    {
+                        'name': _string_value(getattr(port, 'name', None)),
+                        'port': int(getattr(port, 'port', 0) or 0),
+                        'protocol': _string_value(getattr(port, 'protocol', None), 'TCP'),
+                    }
+                )
+
+        endpoint_map[(metadata.namespace, metadata.name)] = {
+            'reported': True,
+            'ready_addresses': ready_addresses,
+            'not_ready_addresses': not_ready_addresses,
+            'ports': endpoint_ports,
+        }
+
+    return endpoint_map
+
+
 def get_services(
     api: CoreV1Api,
 ) -> list[dict]:
@@ -1094,23 +1160,83 @@ def get_services(
         V1ServiceList,
         api.list_service_for_all_namespaces(),
     )
-
-    services = []
+    endpoint_map = _service_endpoint_map(api)
+    services: list[dict] = []
 
     for svc in result.items or []:
         metadata = svc.metadata
         spec = svc.spec
+        status = svc.status
 
-        if metadata is None:
+        if metadata is None or spec is None:
             continue
 
-        if spec is None:
-            continue
-
-        ports = []
+        port_details: list[dict[str, Any]] = []
+        compact_ports: list[str] = []
 
         for port in spec.ports or []:
-            ports.append(f'{port.port}/{port.protocol}')
+            target_port = getattr(port, 'target_port', None)
+            target_port_value = (
+                getattr(target_port, 'value', None)
+                if target_port is not None
+                else None
+            )
+            if target_port_value is None and target_port is not None:
+                target_port_value = str(target_port)
+
+            port_value = int(getattr(port, 'port', 0) or 0)
+            protocol = _string_value(getattr(port, 'protocol', None), 'TCP')
+            compact_ports.append(f'{port_value}/{protocol}')
+            port_details.append(
+                {
+                    'name': _string_value(getattr(port, 'name', None)),
+                    'protocol': protocol,
+                    'port': port_value,
+                    'target_port': _string_value(target_port_value),
+                    'node_port': int(getattr(port, 'node_port', 0) or 0),
+                    'app_protocol': _string_value(getattr(port, 'app_protocol', None)),
+                }
+            )
+
+        external_addresses: list[str] = []
+        for value in spec.external_ips or []:
+            if value and value not in external_addresses:
+                external_addresses.append(value)
+
+        load_balancer = getattr(status, 'load_balancer', None)
+        for item in getattr(load_balancer, 'ingress', None) or []:
+            value = getattr(item, 'ip', None) or getattr(item, 'hostname', None)
+            if value and value not in external_addresses:
+                external_addresses.append(value)
+
+        metadata_details = _metadata_details(metadata)
+        endpoints = endpoint_map.get(
+            (metadata.namespace, metadata.name),
+            {
+                'reported': False,
+                'ready_addresses': [],
+                'not_ready_addresses': [],
+                'ports': [],
+            },
+        )
+
+        details = {
+            **metadata_details,
+            'generation': int(getattr(metadata, 'generation', 0) or 0),
+            'cluster_ips': list(getattr(spec, 'cluster_ips', None) or []),
+            'ip_families': list(getattr(spec, 'ip_families', None) or []),
+            'ip_family_policy': _string_value(getattr(spec, 'ip_family_policy', None)),
+            'external_name': _string_value(getattr(spec, 'external_name', None)),
+            'session_affinity': _string_value(getattr(spec, 'session_affinity', None), 'None'),
+            'internal_traffic_policy': _string_value(getattr(spec, 'internal_traffic_policy', None)),
+            'external_traffic_policy': _string_value(getattr(spec, 'external_traffic_policy', None)),
+            'publish_not_ready_addresses': bool(getattr(spec, 'publish_not_ready_addresses', False)),
+            'health_check_node_port': int(getattr(spec, 'health_check_node_port', 0) or 0),
+            'load_balancer_class': _string_value(getattr(spec, 'load_balancer_class', None)),
+            'allocate_load_balancer_node_ports': getattr(spec, 'allocate_load_balancer_node_ports', None),
+            'ports': port_details,
+            'endpoints': endpoints,
+        }
 
         services.append(
             {
@@ -1118,9 +1244,10 @@ def get_services(
                 'service_name': metadata.name,
                 'service_type': spec.type,
                 'cluster_ip': spec.cluster_ip,
-                'external_ip': (','.join(spec.external_ips) if spec.external_ips else '-'),
-                'ports': ','.join(ports),
+                'external_ip': ','.join(external_addresses) if external_addresses else '-',
+                'ports': ','.join(compact_ports),
                 'selector': dict(spec.selector or {}),
+                'details': details,
                 'created_at': metadata.creation_timestamp,
             }
         )
@@ -1136,7 +1263,7 @@ def get_ingresses(
         api.list_ingress_for_all_namespaces(),
     )
 
-    ingresses = []
+    ingresses: list[dict] = []
 
     for ingress in result.items or []:
         metadata = ingress.metadata
@@ -1146,90 +1273,48 @@ def get_ingresses(
         if metadata is None:
             continue
 
-        host = '-'
-        backend_paths = []
+        backend_paths: list[dict[str, str]] = []
+        hosts: list[str] = []
 
         def _backend_to_dict(backend):
-            service = getattr(
-                backend,
-                'service',
-                None,
-            )
-
+            service = getattr(backend, 'service', None)
             if service is None:
-                return {
-                    'service_name': '-',
-                    'service_port': '-',
-                }
+                return {'service_name': '-', 'service_port': '-'}
 
-            port = getattr(
-                service,
-                'port',
-                None,
-            )
-
+            port = getattr(service, 'port', None)
             port_value = '-'
-
             if port is not None:
-                port_value = (
-                    getattr(
-                        port,
-                        'name',
-                        None,
-                    )
-                    or getattr(
-                        port,
-                        'number',
-                        None,
-                    )
-                    or '-'
-                )
+                port_value = getattr(port, 'name', None) or getattr(port, 'number', None) or '-'
 
             return {
-                'service_name': getattr(
-                    service,
-                    'name',
-                    None,
-                )
-                or '-',
-                'service_port': str(
-                    port_value,
-                ),
+                'service_name': getattr(service, 'name', None) or '-',
+                'service_port': str(port_value),
             }
 
+        default_backend = None
         if spec and spec.default_backend:
-            backend_info = _backend_to_dict(
-                spec.default_backend,
-            )
-
+            default_backend = _backend_to_dict(spec.default_backend)
             backend_paths.append(
                 {
                     'host': '-',
                     'path': '/',
                     'path_type': 'DefaultBackend',
-                    **backend_info,
+                    **default_backend,
                 }
             )
 
         if spec and spec.rules:
-            host = spec.rules[0].host or '-'
-
             for rule in spec.rules:
                 rule_host = rule.host or '-'
-                http_rule = getattr(
-                    rule,
-                    'http',
-                    None,
-                )
+                if rule_host != '-' and rule_host not in hosts:
+                    hosts.append(rule_host)
 
+                http_rule = getattr(rule, 'http', None)
                 if not http_rule or not http_rule.paths:
                     continue
 
                 for path in http_rule.paths:
-                    backend_info = _backend_to_dict(
-                        path.backend,
-                    )
-
+                    backend_info = _backend_to_dict(path.backend)
                     backend_paths.append(
                         {
                             'host': rule_host,
@@ -1239,19 +1324,33 @@ def get_ingresses(
                         }
                     )
 
-        addresses = []
-
+        addresses: list[str] = []
         if status and status.load_balancer and status.load_balancer.ingress:
             for item in status.load_balancer.ingress:
-                if item.ip:
-                    addresses.append(item.ip)
+                value = item.ip or item.hostname
+                if value and value not in addresses:
+                    addresses.append(value)
 
-                elif item.hostname:
-                    addresses.append(item.hostname)
+        tls_entries: list[dict[str, Any]] = []
+        if spec and spec.tls:
+            for tls in spec.tls:
+                tls_entries.append(
+                    {
+                        'secret_name': _string_value(getattr(tls, 'secret_name', None)),
+                        'hosts': list(getattr(tls, 'hosts', None) or []),
+                    }
+                )
 
-        address = ', '.join(addresses) if addresses else '-'
-
-        tls_enabled = bool(spec and spec.tls)
+        metadata_details = _metadata_details(metadata)
+        details = {
+            **metadata_details,
+            'generation': int(getattr(metadata, 'generation', 0) or 0),
+            'hosts': hosts,
+            'tls': tls_entries,
+            'rule_count': len(spec.rules or []) if spec else 0,
+            'default_backend': default_backend,
+            'finalizers': list(getattr(metadata, 'finalizers', None) or []),
+        }
 
         ingresses.append(
             {
@@ -1262,16 +1361,16 @@ def get_ingresses(
                     if spec and spec.ingress_class_name
                     else (metadata.annotations or {}).get('kubernetes.io/ingress.class')
                 ),
-                'host': host,
-                'address': address,
-                'tls_enabled': tls_enabled,
+                'host': hosts[0] if hosts else '-',
+                'address': ', '.join(addresses) if addresses else '-',
+                'tls_enabled': bool(tls_entries),
                 'backend_paths': backend_paths,
+                'details': details,
                 'created_at': metadata.creation_timestamp,
             }
         )
 
     return ingresses
-
 
 def get_configuration_inventory(
     api: CoreV1Api,
@@ -1386,11 +1485,85 @@ def get_resource_quotas(
     return items
 
 
+def _persistent_volume_source_details(spec) -> dict[str, Any]:
+    sources = [
+        ('CSI', 'csi'),
+        ('Local', 'local'),
+        ('NFS', 'nfs'),
+        ('HostPath', 'host_path'),
+        ('iSCSI', 'iscsi'),
+        ('FibreChannel', 'fc'),
+        ('CephFS', 'cephfs'),
+        ('RBD', 'rbd'),
+        ('AzureDisk', 'azure_disk'),
+        ('AzureFile', 'azure_file'),
+        ('AWSElasticBlockStore', 'aws_elastic_block_store'),
+        ('GCEPersistentDisk', 'gce_persistent_disk'),
+        ('vSphereVolume', 'vsphere_volume'),
+        ('PortworxVolume', 'portworx_volume'),
+        ('FlexVolume', 'flex_volume'),
+    ]
+
+    for display_name, attribute in sources:
+        source = _model_value(spec, attribute)
+        if source is None:
+            continue
+
+        details: dict[str, Any] = {'type': display_name}
+        if display_name == 'CSI':
+            details.update(
+                {
+                    'driver': _string_value(_model_value(source, 'driver')),
+                    'volume_handle': _string_value(_model_value(source, 'volume_handle', 'volumeHandle')),
+                    'read_only': bool(_model_value(source, 'read_only', 'readOnly', default=False)),
+                    'fs_type': _string_value(_model_value(source, 'fs_type', 'fsType')),
+                }
+            )
+        elif display_name == 'Local':
+            details['path'] = _string_value(_model_value(source, 'path'))
+        elif display_name == 'NFS':
+            details.update(
+                {
+                    'server': _string_value(_model_value(source, 'server')),
+                    'path': _string_value(_model_value(source, 'path')),
+                    'read_only': bool(_model_value(source, 'read_only', 'readOnly', default=False)),
+                }
+            )
+        elif display_name == 'HostPath':
+            details.update(
+                {
+                    'path': _string_value(_model_value(source, 'path')),
+                    'host_path_type': _string_value(_model_value(source, 'type')),
+                }
+            )
+
+        return details
+
+    return {'type': 'Other'}
+
+
+def _pvc_conditions(status) -> list[dict[str, str]]:
+    rows: list[dict[str, str]] = []
+    for condition in _model_value(status, 'conditions', default=[]) or []:
+        rows.append(
+            {
+                'type': _string_value(_model_value(condition, 'type')),
+                'status': _string_value(_model_value(condition, 'status')),
+                'reason': _string_value(_model_value(condition, 'reason')),
+                'message': _string_value(_model_value(condition, 'message')),
+                'last_transition_time': _isoformat_datetime(
+                    _model_value(condition, 'last_transition_time', 'lastTransitionTime')
+                ),
+            }
+        )
+    return rows
+
+
 def get_storage_inventory(
     core_api: CoreV1Api,
     storage_api: StorageV1Api,
 ) -> list[dict]:
-    items = []
+    items: list[dict] = []
 
     storage_classes = cast(
         V1StorageClassList,
@@ -1399,9 +1572,31 @@ def get_storage_inventory(
 
     for storage_class in storage_classes.items or []:
         metadata = storage_class.metadata
-
         if metadata is None:
             continue
+
+        annotations = dict(metadata.annotations or {})
+        metadata_details = _metadata_details(metadata)
+        is_default = any(
+            annotations.get(key) == 'true'
+            for key in (
+                'storageclass.kubernetes.io/is-default-class',
+                'storageclass.beta.kubernetes.io/is-default-class',
+            )
+        )
+
+        details = {
+            **metadata_details,
+            'finalizers': list(metadata.finalizers or []),
+            'provisioner': storage_class.provisioner,
+            'reclaim_policy': storage_class.reclaim_policy,
+            'volume_binding_mode': storage_class.volume_binding_mode,
+            'allow_volume_expansion': bool(storage_class.allow_volume_expansion),
+            'parameters': dict(sorted((storage_class.parameters or {}).items())),
+            'mount_options': list(storage_class.mount_options or []),
+            'allowed_topology_count': len(storage_class.allowed_topologies or []),
+            'is_default': is_default,
+        }
 
         items.append(
             {
@@ -1411,12 +1606,7 @@ def get_storage_inventory(
                 'storage_class': metadata.name,
                 'capacity': '-',
                 'status': 'Available',
-                'details': {
-                    'provisioner': storage_class.provisioner,
-                    'reclaim_policy': storage_class.reclaim_policy,
-                    'volume_binding_mode': storage_class.volume_binding_mode,
-                    'allow_volume_expansion': bool(storage_class.allow_volume_expansion),
-                },
+                'details': details,
                 'created_at': metadata.creation_timestamp,
             }
         )
@@ -1435,28 +1625,33 @@ def get_storage_inventory(
             continue
 
         capacity = '-'
-
         if spec and spec.capacity:
-            capacity = spec.capacity.get(
-                'storage',
-                '-',
-            )
+            capacity = spec.capacity.get('storage', '-')
+
+        source = _persistent_volume_source_details(spec)
+        metadata_details = _metadata_details(metadata)
+        details = {
+            **metadata_details,
+            'finalizers': list(metadata.finalizers or []),
+            'claim_namespace': spec.claim_ref.namespace if spec and spec.claim_ref else None,
+            'claim_name': spec.claim_ref.name if spec and spec.claim_ref else None,
+            'reclaim_policy': spec.persistent_volume_reclaim_policy if spec else None,
+            'access_modes': list(spec.access_modes or []) if spec else [],
+            'volume_mode': spec.volume_mode if spec else None,
+            'mount_options': list(spec.mount_options or []) if spec else [],
+            'node_affinity_configured': bool(spec and spec.node_affinity),
+            'source': source,
+        }
 
         items.append(
             {
                 'namespace': None,
                 'name': metadata.name,
                 'storage_type': 'PersistentVolume',
-                'storage_class': (spec.storage_class_name if spec else None),
+                'storage_class': spec.storage_class_name if spec else None,
                 'capacity': capacity,
-                'status': (status.phase if status else None),
-                'details': {
-                    'claim_namespace': (spec.claim_ref.namespace if spec and spec.claim_ref else None),
-                    'claim_name': (spec.claim_ref.name if spec and spec.claim_ref else None),
-                    'reclaim_policy': (spec.persistent_volume_reclaim_policy if spec else None),
-                    'access_modes': list(spec.access_modes or []) if spec else [],
-                    'volume_mode': spec.volume_mode if spec else None,
-                },
+                'status': status.phase if status else None,
+                'details': details,
                 'created_at': metadata.creation_timestamp,
             }
         )
@@ -1475,34 +1670,48 @@ def get_storage_inventory(
             continue
 
         capacity = '-'
-
         if status and status.capacity:
-            capacity = status.capacity.get(
-                'storage',
-                '-',
-            )
+            capacity = status.capacity.get('storage', '-')
+
+        selector = _model_value(spec, 'selector')
+        data_source = _model_value(spec, 'data_source', 'dataSource')
+        metadata_details = _metadata_details(metadata)
+        details = {
+            **metadata_details,
+            'finalizers': list(metadata.finalizers or []),
+            'volume_name': spec.volume_name if spec else None,
+            'access_modes': list(spec.access_modes or []) if spec else [],
+            'volume_mode': spec.volume_mode if spec else None,
+            'requested_storage': (
+                str(spec.resources.requests.get('storage'))
+                if spec
+                and spec.resources
+                and spec.resources.requests
+                and spec.resources.requests.get('storage')
+                else None
+            ),
+            'selector': dict(_model_value(selector, 'match_labels', 'matchLabels', default={}) or {}),
+            'data_source': (
+                {
+                    'kind': _string_value(_model_value(data_source, 'kind')),
+                    'name': _string_value(_model_value(data_source, 'name')),
+                    'api_group': _string_value(_model_value(data_source, 'api_group', 'apiGroup')),
+                }
+                if data_source is not None
+                else None
+            ),
+            'conditions': _pvc_conditions(status),
+        }
 
         items.append(
             {
                 'namespace': metadata.namespace,
                 'name': metadata.name,
                 'storage_type': 'PersistentVolumeClaim',
-                'storage_class': (spec.storage_class_name if spec else None),
+                'storage_class': spec.storage_class_name if spec else None,
                 'capacity': capacity,
-                'status': (status.phase if status else None),
-                'details': {
-                    'volume_name': spec.volume_name if spec else None,
-                    'access_modes': list(spec.access_modes or []) if spec else [],
-                    'volume_mode': spec.volume_mode if spec else None,
-                    'requested_storage': (
-                        str(spec.resources.requests.get('storage'))
-                        if spec
-                        and spec.resources
-                        and spec.resources.requests
-                        and spec.resources.requests.get('storage')
-                        else None
-                    ),
-                },
+                'status': status.phase if status else None,
+                'details': details,
                 'created_at': metadata.creation_timestamp,
             }
         )

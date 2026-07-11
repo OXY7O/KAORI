@@ -691,6 +691,11 @@ def save_services(
             {},
         )
 
+        service_inventory.details = service.get(
+            'details',
+            {},
+        )
+
         service_inventory.created_at = service['created_at']
 
         db.session.add(service_inventory)
@@ -730,6 +735,11 @@ def save_ingresses(
         ingress_inventory.backend_paths = ingress.get(
             'backend_paths',
             [],
+        )
+
+        ingress_inventory.details = ingress.get(
+            'details',
+            {},
         )
 
         ingress_inventory.created_at = ingress['created_at']
@@ -1989,6 +1999,44 @@ def _selector_matches(
     return bool(selector) and all(labels.get(key) == value for key, value in selector.items())
 
 
+def _service_port_rows(service: ServiceInventory) -> list[dict[str, Any]]:
+    details = service.details or {}
+    ports = details.get('ports') or []
+    rows: list[dict[str, Any]] = []
+
+    for port in ports:
+        if not isinstance(port, dict):
+            continue
+        rows.append(
+            {
+                'name': str(port.get('name') or '-'),
+                'protocol': str(port.get('protocol') or 'TCP'),
+                'port': int(port.get('port') or 0),
+                'target_port': str(port.get('target_port') or '-'),
+                'node_port': int(port.get('node_port') or 0),
+                'app_protocol': str(port.get('app_protocol') or '-'),
+            }
+        )
+
+    if rows:
+        return rows
+
+    for value in _split_inventory_values(service.ports):
+        port_value, _, protocol = value.partition('/')
+        rows.append(
+            {
+                'name': '-',
+                'protocol': protocol or 'TCP',
+                'port': int(port_value) if port_value.isdigit() else 0,
+                'target_port': '-',
+                'node_port': 0,
+                'app_protocol': '-',
+            }
+        )
+
+    return rows
+
+
 def get_service_detail(service_id: int) -> dict[str, Any] | None:
     result = (
         db.session.query(
@@ -2006,6 +2054,10 @@ def get_service_detail(service_id: int) -> dict[str, Any] | None:
     service, cluster_name = result
     service_type = service.service_type or 'Unknown'
     selector = service.selector or {}
+    details = dict(service.details or {})
+    endpoints = dict(details.get('endpoints') or {})
+    ready_endpoints = [item for item in endpoints.get('ready_addresses') or [] if isinstance(item, dict)]
+    not_ready_endpoints = [item for item in endpoints.get('not_ready_addresses') or [] if isinstance(item, dict)]
 
     candidate_pods = (
         PodInventory.query.filter_by(
@@ -2015,10 +2067,14 @@ def get_service_detail(service_id: int) -> dict[str, Any] | None:
         .order_by(PodInventory.pod_name)
         .all()
     )
-
     matched_pods = [pod for pod in candidate_pods if _selector_matches(selector, pod.labels or {})]
 
     effective_type = 'Headless' if service_type == 'ClusterIP' and service.cluster_ip == 'None' else service_type
+    labels = details.get('labels') or {}
+    annotations = details.get('annotations') or {}
+    cluster_ips = details.get('cluster_ips') or []
+    if not cluster_ips and service.cluster_ip:
+        cluster_ips = [service.cluster_ip]
 
     return {
         'id': service.id,
@@ -2030,10 +2086,25 @@ def get_service_detail(service_id: int) -> dict[str, Any] | None:
             effective_type,
             'Exposes a stable network endpoint for an application or external destination.',
         ),
+        'uid': details.get('uid') or '-',
+        'generation': int(details.get('generation') or 0),
         'cluster_ip': service.cluster_ip or '-',
+        'cluster_ips': cluster_ips,
         'external_ips': _split_inventory_values(service.external_ip),
-        'ports': _split_inventory_values(service.ports),
+        'external_name': details.get('external_name') or '-',
+        'ip_families': details.get('ip_families') or [],
+        'ip_family_policy': details.get('ip_family_policy') or '-',
+        'session_affinity': details.get('session_affinity') or 'None',
+        'internal_traffic_policy': details.get('internal_traffic_policy') or '-',
+        'external_traffic_policy': details.get('external_traffic_policy') or '-',
+        'publish_not_ready_addresses': bool(details.get('publish_not_ready_addresses')),
+        'health_check_node_port': int(details.get('health_check_node_port') or 0),
+        'load_balancer_class': details.get('load_balancer_class') or '-',
+        'allocate_load_balancer_node_ports': details.get('allocate_load_balancer_node_ports'),
+        'ports': _service_port_rows(service),
+        'port_count': len(_service_port_rows(service)),
         'selector': selector,
+        'selectors': [f'{key}={value}' for key, value in sorted(selector.items())],
         'age': format_age(service.created_at),
         'created_at': service.created_at,
         'collected_at': service.collected_at,
@@ -2041,7 +2112,23 @@ def get_service_detail(service_id: int) -> dict[str, Any] | None:
         'pods': [_pod_summary(pod) for pod in matched_pods[:8]],
         'pods_truncated': len(matched_pods) > 8,
         'has_selector': bool(selector),
+        'endpoints_reported': bool(endpoints.get('reported')),
+        'ready_endpoint_count': len(ready_endpoints),
+        'not_ready_endpoint_count': len(not_ready_endpoints),
+        'endpoints': ready_endpoints[:12],
+        'not_ready_endpoints': not_ready_endpoints[:12],
+        'endpoints_truncated': len(ready_endpoints) > 12 or len(not_ready_endpoints) > 12,
+        'labels': sorted(labels.items()),
+        'annotations': sorted(annotations.items()),
+        'details_reported': bool(details),
     }
+
+
+STORAGE_TYPE_DESCRIPTIONS = {
+    'StorageClass': 'Defines dynamic volume provisioning behavior and lifecycle defaults for PersistentVolumes.',
+    'PersistentVolume': 'Represents cluster-scoped storage capacity that can be bound to a PersistentVolumeClaim.',
+    'PersistentVolumeClaim': 'Represents a namespace-scoped request for storage consumed by one or more Pods.',
+}
 
 
 def _storage_bound_pods(
@@ -2121,11 +2208,24 @@ def get_storage_detail(storage_id: int) -> dict[str, Any] | None:
 
     bound_pods, claims = _storage_bound_pods(item)
     details = dict(item.details or {})
+    labels = details.get('labels') or {}
+    annotations = details.get('annotations') or {}
+    source = details.get('source') or {}
 
-    if details.get('requested_storage'):
-        details['requested_storage'] = format_kubernetes_size(
-            details['requested_storage'],
+    requested_storage = details.get('requested_storage')
+    if requested_storage:
+        requested_storage = format_kubernetes_size(requested_storage)
+
+    if item.storage_type == 'PersistentVolume':
+        binding_reference = (
+            f"{details.get('claim_namespace')}/{details.get('claim_name')}"
+            if details.get('claim_namespace') and details.get('claim_name')
+            else 'Unbound'
         )
+    elif item.storage_type == 'PersistentVolumeClaim':
+        binding_reference = details.get('volume_name') or 'Unbound'
+    else:
+        binding_reference = f'{len(claims)} claim(s)'
 
     return {
         'id': item.id,
@@ -2133,20 +2233,46 @@ def get_storage_detail(storage_id: int) -> dict[str, Any] | None:
         'namespace': namespace or '-',
         'name': item.name,
         'type': item.storage_type,
+        'type_description': STORAGE_TYPE_DESCRIPTIONS.get(
+            item.storage_type,
+            'Kubernetes storage metadata from the latest inventory snapshot.',
+        ),
         'storage_class': item.storage_class or '-',
         'capacity': format_kubernetes_size(item.capacity),
+        'requested_storage': requested_storage or '-',
         'status': item.status or 'Unknown',
         'details': details,
+        'uid': details.get('uid') or '-',
+        'finalizers': details.get('finalizers') or [],
+        'access_modes': details.get('access_modes') or [],
+        'volume_mode': details.get('volume_mode') or '-',
+        'reclaim_policy': details.get('reclaim_policy') or '-',
+        'binding_mode': details.get('volume_binding_mode') or '-',
+        'allow_expansion': bool(details.get('allow_volume_expansion')),
+        'provisioner': details.get('provisioner') or '-',
+        'parameters': sorted((details.get('parameters') or {}).items()),
+        'mount_options': details.get('mount_options') or [],
+        'allowed_topology_count': int(details.get('allowed_topology_count') or 0),
+        'is_default': bool(details.get('is_default')),
+        'node_affinity_configured': bool(details.get('node_affinity_configured')),
+        'source': source,
+        'selector': sorted((details.get('selector') or {}).items()),
+        'data_source': details.get('data_source'),
+        'conditions': details.get('conditions') or [],
+        'binding_reference': binding_reference,
         'age': format_age(item.created_at),
         'created_at': item.created_at,
         'collected_at': item.collected_at,
         'claim_count': len(claims),
         'claims': claims[:8],
+        'claims_truncated': len(claims) > 8,
         'pod_count': len(bound_pods),
         'pods': [_pod_summary(pod) for pod in bound_pods[:8]],
         'pods_truncated': len(bound_pods) > 8,
+        'labels': sorted(labels.items()),
+        'annotations': sorted(annotations.items()),
+        'details_reported': bool(details),
     }
-
 
 def get_namespace_filter_statuses(
     cluster_id: str | None = None,
@@ -3289,25 +3415,37 @@ def get_pod_detail(
 
 def get_service_filter_types(
     cluster_id: str | None = None,
+    namespace: str | None = None,
 ) -> list[str]:
-    query = db.session.query(
-        ServiceInventory.service_type,
-    )
+    query = db.session.query(ServiceInventory.service_type)
 
     if cluster_id:
-        query = query.filter(
+        query = query.filter(ServiceInventory.cluster_id == cluster_id)
+    if namespace:
+        query = query.filter(ServiceInventory.namespace == namespace)
+
+    rows = query.distinct().order_by(ServiceInventory.service_type).all()
+    types = [row[0] for row in rows if row[0]]
+
+    headless_query = db.session.query(
+        ServiceInventory.id,
+    ).filter(
+        ServiceInventory.service_type == 'ClusterIP',
+        ServiceInventory.cluster_ip == 'None',
+    )
+    if cluster_id:
+        headless_query = headless_query.filter(
             ServiceInventory.cluster_id == cluster_id,
         )
-
-    rows = (
-        query.distinct()
-        .order_by(
-            ServiceInventory.service_type,
+    if namespace:
+        headless_query = headless_query.filter(
+            ServiceInventory.namespace == namespace,
         )
-        .all()
-    )
 
-    return [row[0] for row in rows if row[0]]
+    if headless_query.first() is not None and 'Headless' not in types:
+        types.append('Headless')
+
+    return sorted(types)
 
 
 def get_service_inventory(
@@ -3316,27 +3454,41 @@ def get_service_inventory(
     service_type=None,
     search=None,
 ):
-    query = db.session.query(
-        ServiceInventory,
-        Cluster.name.label(
-            'cluster_name',
-        ),
-    ).join(
-        Cluster,
-        Cluster.id == ServiceInventory.cluster_id,
+    query = (
+        db.session.query(
+            ServiceInventory,
+            Cluster.name.label('cluster_name'),
+        )
+        .join(Cluster, Cluster.id == ServiceInventory.cluster_id)
     )
 
     if cluster_id:
         query = query.filter(ServiceInventory.cluster_id == cluster_id)
-
     if namespace:
         query = query.filter(ServiceInventory.namespace == namespace)
-
     if service_type:
-        query = query.filter(ServiceInventory.service_type == service_type)
-
+        if service_type == 'Headless':
+            query = query.filter(
+                ServiceInventory.service_type == 'ClusterIP',
+                ServiceInventory.cluster_ip == 'None',
+            )
+        elif service_type == 'ClusterIP':
+            query = query.filter(
+                ServiceInventory.service_type == 'ClusterIP',
+                ServiceInventory.cluster_ip != 'None',
+            )
+        else:
+            query = query.filter(ServiceInventory.service_type == service_type)
     if search:
-        query = query.filter(ServiceInventory.service_name.ilike(f'%{search}%'))
+        pattern = f'%{search}%'
+        query = query.filter(
+            or_(
+                ServiceInventory.service_name.ilike(pattern),
+                ServiceInventory.cluster_ip.ilike(pattern),
+                ServiceInventory.external_ip.ilike(pattern),
+                ServiceInventory.ports.ilike(pattern),
+            )
+        )
 
     services = query.order_by(
         Cluster.name,
@@ -3344,55 +3496,63 @@ def get_service_inventory(
         ServiceInventory.service_name,
     ).all()
 
-    namespace_query = db.session.query(
-        ServiceInventory.namespace,
-    ).distinct()
-
+    namespace_query = db.session.query(ServiceInventory.namespace).distinct()
     if cluster_id:
         namespace_query = namespace_query.filter(ServiceInventory.cluster_id == cluster_id)
-
     namespaces = sorted([ns for (ns,) in namespace_query.all() if ns])
 
-    services_data = []
-
+    services_data: list[dict[str, Any]] = []
     cluster_ip_count = 0
     node_port_count = 0
     load_balancer_count = 0
-
-    service_types = {
-        'ClusterIP': 0,
-        'NodePort': 0,
-        'LoadBalancer': 0,
-    }
+    external_name_count = 0
+    headless_count = 0
+    service_types: dict[str, int] = {}
 
     for service, cluster_name in services:
-        service_type = service.service_type or 'Unknown'
+        raw_type = service.service_type or 'Unknown'
+        effective_type = 'Headless' if raw_type == 'ClusterIP' and service.cluster_ip == 'None' else raw_type
+        service_types[effective_type] = service_types.get(effective_type, 0) + 1
 
-        if service_type in service_types:
-            service_types[service_type] += 1
-
-        if service_type == 'ClusterIP':
+        if effective_type == 'ClusterIP':
             cluster_ip_count += 1
-
-        elif service_type == 'NodePort':
+        elif effective_type == 'NodePort':
             node_port_count += 1
-
-        elif service_type == 'LoadBalancer':
+        elif effective_type == 'LoadBalancer':
             load_balancer_count += 1
+        elif effective_type == 'ExternalName':
+            external_name_count += 1
+        elif effective_type == 'Headless':
+            headless_count += 1
 
+        details = service.details or {}
+        endpoints = details.get('endpoints') or {}
+        ready_endpoint_count = len(endpoints.get('ready_addresses') or [])
+        not_ready_endpoint_count = len(endpoints.get('not_ready_addresses') or [])
+        port_rows = _service_port_rows(service)
+        port_summary = '-'
+        if port_rows:
+            first = port_rows[0]
+            port_summary = f"{first['port']}/{first['protocol']}"
+            if len(port_rows) > 1:
+                port_summary = f'{port_summary} +{len(port_rows) - 1}'
+
+        external_addresses = _split_inventory_values(service.external_ip)
         services_data.append(
             {
                 'id': service.id,
                 'cluster_name': cluster_name,
                 'namespace': service.namespace,
                 'service_name': service.service_name,
-                'service_type': service_type,
-                'cluster_ip': (service.cluster_ip or '-'),
-                'external_ip': (service.external_ip or '-'),
-                'ports': (service.ports or '-'),
-                'age': format_age(
-                    service.created_at,
-                ),
+                'service_type': effective_type,
+                'cluster_ip': service.cluster_ip or '-',
+                'external_address': external_addresses[0] if external_addresses else '-',
+                'external_address_count': len(external_addresses),
+                'port_count': len(port_rows),
+                'port_summary': port_summary,
+                'endpoint_count': ready_endpoint_count,
+                'not_ready_endpoint_count': not_ready_endpoint_count,
+                'endpoints_reported': bool(endpoints.get('reported')),
                 'created_at': service.created_at,
                 'collected_at': service.collected_at,
             }
@@ -3403,9 +3563,12 @@ def get_service_inventory(
         'cluster_ip': cluster_ip_count,
         'node_port': node_port_count,
         'load_balancer': load_balancer_count,
+        'external_name': external_name_count,
+        'headless': headless_count,
         'namespaces': namespaces,
         'service_filter_types': get_service_filter_types(
             cluster_id=cluster_id,
+            namespace=namespace,
         ),
         'service_types': service_types,
         'services': services_data,
@@ -3414,24 +3577,15 @@ def get_service_inventory(
 
 def get_ingress_filter_classes(
     cluster_id: str | None = None,
+    namespace: str | None = None,
 ) -> list[str]:
-    query = db.session.query(
-        IngressInventory.ingress_class,
-    )
-
+    query = db.session.query(IngressInventory.ingress_class)
     if cluster_id:
-        query = query.filter(
-            IngressInventory.cluster_id == cluster_id,
-        )
+        query = query.filter(IngressInventory.cluster_id == cluster_id)
+    if namespace:
+        query = query.filter(IngressInventory.namespace == namespace)
 
-    rows = (
-        query.distinct()
-        .order_by(
-            IngressInventory.ingress_class,
-        )
-        .all()
-    )
-
+    rows = query.distinct().order_by(IngressInventory.ingress_class).all()
     return [row[0] for row in rows if row[0]]
 
 
@@ -3439,29 +3593,37 @@ def get_ingress_inventory(
     cluster_id=None,
     namespace=None,
     ingress_class=None,
+    tls_status=None,
     search=None,
 ):
-    query = db.session.query(
-        IngressInventory,
-        Cluster.name.label(
-            'cluster_name',
-        ),
-    ).join(
-        Cluster,
-        Cluster.id == IngressInventory.cluster_id,
+    query = (
+        db.session.query(
+            IngressInventory,
+            Cluster.name.label('cluster_name'),
+        )
+        .join(Cluster, Cluster.id == IngressInventory.cluster_id)
     )
 
     if cluster_id:
         query = query.filter(IngressInventory.cluster_id == cluster_id)
-
     if namespace:
         query = query.filter(IngressInventory.namespace == namespace)
-
     if ingress_class:
         query = query.filter(IngressInventory.ingress_class == ingress_class)
-
+    if tls_status == 'enabled':
+        query = query.filter(IngressInventory.tls_enabled.is_(True))
+    elif tls_status == 'disabled':
+        query = query.filter(IngressInventory.tls_enabled.is_(False))
     if search:
-        query = query.filter(IngressInventory.ingress_name.ilike(f'%{search}%'))
+        pattern = f'%{search}%'
+        query = query.filter(
+            or_(
+                IngressInventory.ingress_name.ilike(pattern),
+                IngressInventory.host.ilike(pattern),
+                IngressInventory.address.ilike(pattern),
+                IngressInventory.ingress_class.ilike(pattern),
+            )
+        )
 
     ingresses = query.order_by(
         Cluster.name,
@@ -3469,34 +3631,28 @@ def get_ingress_inventory(
         IngressInventory.ingress_name,
     ).all()
 
-    namespace_query = db.session.query(
-        IngressInventory.namespace,
-    ).distinct()
-
+    namespace_query = db.session.query(IngressInventory.namespace).distinct()
     if cluster_id:
         namespace_query = namespace_query.filter(IngressInventory.cluster_id == cluster_id)
-
     namespaces = sorted([ns for (ns,) in namespace_query.all() if ns])
 
-    ingress_data = []
-
-    tls_enabled = 0
-    hosts = set()
-    classes = set()
+    ingress_data: list[dict[str, Any]] = []
+    tls_enabled_count = 0
+    hosts: set[str] = set()
+    classes: set[str] = set()
 
     for ingress, cluster_name in ingresses:
+        details = ingress.details or {}
+        ingress_hosts = [value for value in (details.get('hosts') or []) if value]
+        if not ingress_hosts and ingress.host and ingress.host != '-':
+            ingress_hosts = [ingress.host]
+
+        tls_entries = details.get('tls') or []
         if ingress.tls_enabled:
-            tls_enabled += 1
-
-        if ingress.host:
-            hosts.add(
-                ingress.host,
-            )
-
+            tls_enabled_count += 1
+        hosts.update(ingress_hosts)
         if ingress.ingress_class:
-            classes.add(
-                ingress.ingress_class,
-            )
+            classes.add(ingress.ingress_class)
 
         ingress_data.append(
             {
@@ -3505,31 +3661,32 @@ def get_ingress_inventory(
                 'namespace': ingress.namespace,
                 'name': ingress.ingress_name,
                 'class': ingress.ingress_class or '-',
-                'ingress_class': ingress.ingress_class or '-',
-                'host': ingress.host or '-',
-                'host_url': (
-                    f'{"https" if ingress.tls_enabled else "http"}://{ingress.host}'
-                    if ingress.host and ingress.host != '-'
-                    else None
-                ),
+                'host': ingress_hosts[0] if ingress_hosts else '-',
+                'host_count': len(ingress_hosts),
                 'address': ingress.address or '-',
                 'tls': ingress.tls_enabled,
-                'backend_count': len(
-                    ingress.backend_paths or [],
+                'tls_secret_count': len(
+                    {
+                        item.get('secret_name')
+                        for item in tls_entries
+                        if isinstance(item, dict) and item.get('secret_name') not in (None, '', '-')
+                    }
                 ),
-                'age': format_age(
-                    ingress.created_at,
-                ),
+                'backend_count': len(ingress.backend_paths or []),
+                'created_at': ingress.created_at,
+                'collected_at': ingress.collected_at,
             }
         )
 
     return {
         'total_ingresses': len(ingresses),
-        'tls_enabled': tls_enabled,
+        'tls_enabled': tls_enabled_count,
+        'tls_disabled': len(ingresses) - tls_enabled_count,
         'total_hosts': len(hosts),
         'ingress_classes': len(classes),
         'classes': get_ingress_filter_classes(
             cluster_id=cluster_id,
+            namespace=namespace,
         ),
         'namespaces': namespaces,
         'ingresses': ingress_data,
@@ -3543,17 +3700,10 @@ def get_ingress_detail(
     result = (
         db.session.query(
             IngressInventory,
-            Cluster.name.label(
-                'cluster_name',
-            ),
+            Cluster.name.label('cluster_name'),
         )
-        .join(
-            Cluster,
-            Cluster.id == IngressInventory.cluster_id,
-        )
-        .filter(
-            IngressInventory.id == ingress_id,
-        )
+        .join(Cluster, Cluster.id == IngressInventory.cluster_id)
+        .filter(IngressInventory.id == ingress_id)
         .first()
     )
 
@@ -3561,46 +3711,34 @@ def get_ingress_detail(
         return None
 
     ingress, cluster_name = result
-
     backend_paths = ingress.backend_paths or []
-
-    hosts = sorted(
-        {
-            item.get(
-                'host',
-                '-',
-            )
-            for item in backend_paths
-            if item.get(
-                'host',
-                '-',
-            )
-            and item.get(
-                'host',
-                '-',
-            )
-            != '-'
-        }
-    )
-
+    details = dict(ingress.details or {})
+    raw_hosts = [value for value in (details.get('hosts') or []) if value]
+    if not raw_hosts:
+        raw_hosts = sorted(
+            {
+                item.get('host')
+                for item in backend_paths
+                if isinstance(item, dict) and item.get('host') not in (None, '', '-')
+            }
+        )
     services = sorted(
         {
-            item.get(
-                'service_name',
-                '-',
-            )
+            item.get('service_name')
             for item in backend_paths
-            if item.get(
-                'service_name',
-                '-',
-            )
-            and item.get(
-                'service_name',
-                '-',
-            )
-            != '-'
+            if isinstance(item, dict) and item.get('service_name') not in (None, '', '-')
         }
     )
+    tls_entries = [item for item in (details.get('tls') or []) if isinstance(item, dict)]
+    tls_secrets = sorted(
+        {
+            item.get('secret_name')
+            for item in tls_entries
+            if item.get('secret_name') not in (None, '', '-')
+        }
+    )
+    labels = details.get('labels') or {}
+    annotations = details.get('annotations') or {}
 
     return {
         'id': ingress.id,
@@ -3608,54 +3746,62 @@ def get_ingress_detail(
         'namespace': ingress.namespace,
         'name': ingress.ingress_name,
         'class': ingress.ingress_class or '-',
+        'uid': details.get('uid') or '-',
+        'generation': int(details.get('generation') or 0),
         'host': ingress.host or '-',
         'hosts': [
             {
                 'value': host,
                 'url': f'{"https" if ingress.tls_enabled else "http"}://{host}',
             }
-            for host in hosts
+            for host in raw_hosts
         ],
         'address': ingress.address or '-',
         'tls': ingress.tls_enabled,
+        'tls_entries': tls_entries,
+        'tls_secrets': tls_secrets,
         'backend_paths': backend_paths,
-        'backend_count': len(
-            backend_paths,
-        ),
-        'host_count': len(
-            hosts,
-        ),
-        'service_count': len(
-            services,
-        ),
-        'age': format_age(
-            ingress.created_at,
-        ),
+        'backend_count': len(backend_paths),
+        'host_count': len(raw_hosts),
+        'service_count': len(services),
+        'rule_count': int(details.get('rule_count') or 0),
+        'default_backend': details.get('default_backend'),
+        'finalizers': details.get('finalizers') or [],
+        'age': format_age(ingress.created_at),
         'created_at': ingress.created_at,
         'collected_at': ingress.collected_at,
+        'labels': sorted(labels.items()),
+        'annotations': sorted(annotations.items()),
+        'details_reported': bool(details),
     }
 
 
 def get_storage_filter_types(
     cluster_id: str | None = None,
+    namespace: str | None = None,
 ) -> list[str]:
-    query = db.session.query(
-        StorageInventory.storage_type,
-    )
-
+    query = db.session.query(StorageInventory.storage_type)
     if cluster_id:
-        query = query.filter(
-            StorageInventory.cluster_id == cluster_id,
-        )
+        query = query.filter(StorageInventory.cluster_id == cluster_id)
+    if namespace:
+        query = query.filter(StorageInventory.namespace == namespace)
+    rows = query.distinct().order_by(StorageInventory.storage_type).all()
+    return [row[0] for row in rows if row[0]]
 
-    rows = (
-        query.distinct()
-        .order_by(
-            StorageInventory.storage_type,
-        )
-        .all()
-    )
 
+def get_storage_filter_statuses(
+    cluster_id: str | None = None,
+    namespace: str | None = None,
+    storage_type: str | None = None,
+) -> list[str]:
+    query = db.session.query(StorageInventory.status)
+    if cluster_id:
+        query = query.filter(StorageInventory.cluster_id == cluster_id)
+    if namespace:
+        query = query.filter(StorageInventory.namespace == namespace)
+    if storage_type:
+        query = query.filter(StorageInventory.storage_type == storage_type)
+    rows = query.distinct().order_by(StorageInventory.status).all()
     return [row[0] for row in rows if row[0]]
 
 
@@ -3663,29 +3809,34 @@ def get_storage_inventory_view(
     cluster_id=None,
     namespace=None,
     storage_type=None,
+    status=None,
     search=None,
 ):
-    query = db.session.query(
-        StorageInventory,
-        Cluster.name.label(
-            'cluster_name',
-        ),
-    ).join(
-        Cluster,
-        Cluster.id == StorageInventory.cluster_id,
+    query = (
+        db.session.query(
+            StorageInventory,
+            Cluster.name.label('cluster_name'),
+        )
+        .join(Cluster, Cluster.id == StorageInventory.cluster_id)
     )
 
     if cluster_id:
         query = query.filter(StorageInventory.cluster_id == cluster_id)
-
     if namespace:
         query = query.filter(StorageInventory.namespace == namespace)
-
     if storage_type:
         query = query.filter(StorageInventory.storage_type == storage_type)
-
+    if status:
+        query = query.filter(StorageInventory.status == status)
     if search:
-        query = query.filter(StorageInventory.name.ilike(f'%{search}%'))
+        pattern = f'%{search}%'
+        query = query.filter(
+            or_(
+                StorageInventory.name.ilike(pattern),
+                StorageInventory.storage_class.ilike(pattern),
+                StorageInventory.status.ilike(pattern),
+            )
+        )
 
     items = query.order_by(
         Cluster.name,
@@ -3693,24 +3844,16 @@ def get_storage_inventory_view(
         StorageInventory.name,
     ).all()
 
-    namespace_query = db.session.query(
-        StorageInventory.namespace,
-    ).distinct()
-
+    namespace_query = db.session.query(StorageInventory.namespace).distinct()
     if cluster_id:
-        namespace_query = namespace_query.filter(
-            StorageInventory.cluster_id == cluster_id,
-        )
-
+        namespace_query = namespace_query.filter(StorageInventory.cluster_id == cluster_id)
     namespaces = sorted([ns for (ns,) in namespace_query.all() if ns])
 
-    data = []
-
+    data: list[dict[str, Any]] = []
     storage_classes = 0
     persistent_volumes = 0
     persistent_volume_claims = 0
-
-    storage_types = {
+    storage_types: dict[str, int] = {
         'StorageClass': 0,
         'PersistentVolume': 0,
         'PersistentVolumeClaim': 0,
@@ -3719,26 +3862,34 @@ def get_storage_inventory_view(
     for item, cluster_name in items:
         if item.storage_type in storage_types:
             storage_types[item.storage_type] += 1
-
         if item.storage_type == 'StorageClass':
             storage_classes += 1
-
         elif item.storage_type == 'PersistentVolume':
             persistent_volumes += 1
-
         elif item.storage_type == 'PersistentVolumeClaim':
             persistent_volume_claims += 1
 
         namespace_display = item.namespace
-
-        if item.storage_type in [
-            'StorageClass',
-            'PersistentVolume',
-        ]:
+        if item.storage_type in {'StorageClass', 'PersistentVolume'}:
             namespace_display = 'Cluster-wide'
-
         elif not namespace_display:
             namespace_display = '-'
+
+        details = item.details or {}
+        if item.storage_type == 'PersistentVolume':
+            binding = (
+                f"{details.get('claim_namespace')}/{details.get('claim_name')}"
+                if details.get('claim_namespace') and details.get('claim_name')
+                else 'Unbound'
+            )
+        elif item.storage_type == 'PersistentVolumeClaim':
+            binding = details.get('volume_name') or 'Unbound'
+        else:
+            binding = details.get('provisioner') or '-'
+
+        capacity = item.capacity
+        if item.storage_type == 'PersistentVolumeClaim' and details.get('requested_storage'):
+            capacity = details.get('requested_storage')
 
         data.append(
             {
@@ -3747,12 +3898,11 @@ def get_storage_inventory_view(
                 'namespace': namespace_display,
                 'name': item.name,
                 'type': item.storage_type,
-                'storage_class': (item.storage_class or '-'),
-                'capacity': format_kubernetes_size(item.capacity),
-                'status': (item.status or '-'),
-                'age': format_age(
-                    item.created_at,
-                ),
+                'storage_class': item.storage_class or '-',
+                'capacity': format_kubernetes_size(capacity),
+                'status': item.status or 'Unknown',
+                'binding': binding,
+                'is_default': bool(details.get('is_default')),
                 'created_at': item.created_at,
                 'collected_at': item.collected_at,
             }
@@ -3766,7 +3916,14 @@ def get_storage_inventory_view(
         'namespaces': namespaces,
         'storage_filter_types': get_storage_filter_types(
             cluster_id=cluster_id,
+            namespace=namespace,
+        ),
+        'storage_filter_statuses': get_storage_filter_statuses(
+            cluster_id=cluster_id,
+            namespace=namespace,
+            storage_type=storage_type,
         ),
         'storage_types': storage_types,
         'storage_items': data,
     }
+

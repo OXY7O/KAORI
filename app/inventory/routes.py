@@ -31,6 +31,7 @@ from app.inventory.service import (
     get_service_filter_types,
     get_service_inventory,
     get_storage_detail,
+    get_storage_filter_statuses,
     get_storage_filter_types,
     get_storage_inventory_view,
     get_workload_detail,
@@ -895,109 +896,49 @@ def pod_details(pod_id: int):
 @inventory_bp.route('/services')
 @permission_required('inventory.view')
 def services():
-    cluster_id = request.args.get(
-        'cluster_id',
-        '',
-        type=str,
-    )
+    cluster_id = request.args.get('cluster_id', '', type=str)
+    namespace = request.args.get('namespace', '', type=str)
+    service_type = request.args.get('type', '', type=str)
+    search = request.args.get('search', '', type=str).strip()
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 5, type=int)
+    allowed_per_page = [5, 10, 25, 50]
 
-    namespace = request.args.get(
-        'namespace',
-        '',
-        type=str,
-    )
+    def load_inventory():
+        data = get_service_inventory(
+            cluster_id=cluster_id,
+            namespace=namespace,
+            service_type=service_type,
+            search=search,
+        )
+        data['service_filter_types'] = get_service_filter_types(
+            cluster_id=cluster_id,
+            namespace=namespace,
+        )
+        return data
 
-    service_type = request.args.get(
-        'type',
-        '',
-        type=str,
-    )
-
-    search = request.args.get(
-        'search',
-        '',
-        type=str,
-    ).strip()
-
-    page = request.args.get(
-        'page',
-        1,
-        type=int,
-    )
-
-    per_page = request.args.get(
-        'per_page',
-        5,
-        type=int,
-    )
-
-    allowed_per_page = [
-        5,
-        10,
-        25,
-        50,
-    ]
-
-    inventory = get_service_inventory(
-        cluster_id=cluster_id,
-        namespace=namespace,
-        service_type=service_type,
-        search=search,
-    )
-
-    inventory['service_filter_types'] = get_service_filter_types(
-        cluster_id=cluster_id,
-    )
+    inventory = load_inventory()
 
     if namespace and namespace not in inventory.get('namespaces', []):
         namespace = ''
-        inventory = get_service_inventory(
-            cluster_id=cluster_id,
-            namespace=namespace,
-            service_type=service_type,
-            search=search,
-        )
-        inventory['service_filter_types'] = get_service_filter_types(
-            cluster_id=cluster_id,
-        )
+        inventory = load_inventory()
 
-    if service_type and service_type not in inventory['service_filter_types']:
+    if service_type and service_type not in inventory.get('service_filter_types', []):
         service_type = ''
-        inventory = get_service_inventory(
-            cluster_id=cluster_id,
-            namespace=namespace,
-            service_type=service_type,
-            search=search,
-        )
-        inventory['service_filter_types'] = get_service_filter_types(
-            cluster_id=cluster_id,
-        )
+        inventory = load_inventory()
 
-    all_services = inventory.get(
-        'services',
-        [],
-    )
-
+    all_services = inventory.get('services', [])
     start_index, end_index, pagination = _build_pagination(
-        total_items=len(
-            all_services,
-        ),
+        total_items=len(all_services),
         page=page,
         per_page=per_page,
         allowed_per_page=allowed_per_page,
     )
-
     inventory['services'] = all_services[start_index:end_index]
-
     clusters = get_inventory_clusters()
 
     if request.headers.get('HX-Request') == 'true':
-        partial_mode = request.args.get(
-            'partial_mode',
-            '',
-            type=str,
-        )
-
+        partial_mode = request.args.get('partial_mode', '', type=str)
         template_name = (
             'inventory/services/partials/_table_content.html'
             if partial_mode == 'table_content'
@@ -1033,109 +974,54 @@ def service_details(service_id: int):
 @inventory_bp.route('/ingresses')
 @permission_required('inventory.view')
 def ingresses():
-    cluster_id = request.args.get(
-        'cluster_id',
-        '',
-        type=str,
-    )
+    cluster_id = request.args.get('cluster_id', '', type=str)
+    namespace = request.args.get('namespace', '', type=str)
+    ingress_class = request.args.get('class', '', type=str)
+    tls_status = request.args.get('tls', '', type=str)
+    search = request.args.get('search', '', type=str).strip()
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 5, type=int)
+    allowed_per_page = [5, 10, 25, 50]
 
-    namespace = request.args.get(
-        'namespace',
-        '',
-        type=str,
-    )
+    if tls_status not in {'', 'enabled', 'disabled'}:
+        tls_status = ''
 
-    ingress_class = request.args.get(
-        'class',
-        '',
-        type=str,
-    )
+    def load_inventory():
+        data = get_ingress_inventory(
+            cluster_id=cluster_id,
+            namespace=namespace,
+            ingress_class=ingress_class,
+            tls_status=tls_status,
+            search=search,
+        )
+        data['classes'] = get_ingress_filter_classes(
+            cluster_id=cluster_id,
+            namespace=namespace,
+        )
+        return data
 
-    search = request.args.get(
-        'search',
-        '',
-        type=str,
-    ).strip()
-
-    page = request.args.get(
-        'page',
-        1,
-        type=int,
-    )
-
-    per_page = request.args.get(
-        'per_page',
-        5,
-        type=int,
-    )
-
-    allowed_per_page = [
-        5,
-        10,
-        25,
-        50,
-    ]
-
-    inventory = get_ingress_inventory(
-        cluster_id=cluster_id,
-        namespace=namespace,
-        ingress_class=ingress_class,
-        search=search,
-    )
-
-    inventory['classes'] = get_ingress_filter_classes(
-        cluster_id=cluster_id,
-    )
+    inventory = load_inventory()
 
     if namespace and namespace not in inventory.get('namespaces', []):
         namespace = ''
-        inventory = get_ingress_inventory(
-            cluster_id=cluster_id,
-            namespace=namespace,
-            ingress_class=ingress_class,
-            search=search,
-        )
-        inventory['classes'] = get_ingress_filter_classes(
-            cluster_id=cluster_id,
-        )
+        inventory = load_inventory()
 
-    if ingress_class and ingress_class not in inventory['classes']:
+    if ingress_class and ingress_class not in inventory.get('classes', []):
         ingress_class = ''
-        inventory = get_ingress_inventory(
-            cluster_id=cluster_id,
-            namespace=namespace,
-            ingress_class=ingress_class,
-            search=search,
-        )
-        inventory['classes'] = get_ingress_filter_classes(
-            cluster_id=cluster_id,
-        )
+        inventory = load_inventory()
 
-    all_ingresses = inventory.get(
-        'ingresses',
-        [],
-    )
-
+    all_ingresses = inventory.get('ingresses', [])
     start_index, end_index, pagination = _build_pagination(
-        total_items=len(
-            all_ingresses,
-        ),
+        total_items=len(all_ingresses),
         page=page,
         per_page=per_page,
         allowed_per_page=allowed_per_page,
     )
-
     inventory['ingresses'] = all_ingresses[start_index:end_index]
-
     clusters = get_inventory_clusters()
 
     if request.headers.get('HX-Request') == 'true':
-        partial_mode = request.args.get(
-            'partial_mode',
-            '',
-            type=str,
-        )
-
+        partial_mode = request.args.get('partial_mode', '', type=str)
         template_name = (
             'inventory/ingresses/partials/_table_content.html'
             if partial_mode == 'table_content'
@@ -1151,6 +1037,7 @@ def ingresses():
         selected_cluster_id=cluster_id,
         selected_namespace=namespace,
         selected_class=ingress_class,
+        selected_tls=tls_status,
         search=search,
         pagination=pagination,
     )
@@ -1159,13 +1046,9 @@ def ingresses():
 @inventory_bp.get('/ingresses/<int:ingress_id>/details')
 @permission_required('inventory.view')
 def ingress_details(ingress_id: int):
-    ingress = get_ingress_detail(
-        ingress_id,
-    )
-
+    ingress = get_ingress_detail(ingress_id)
     if ingress is None:
         abort(404)
-
     return render_template(
         'inventory/ingresses/partials/_ingress_detail_content.html',
         ingress=ingress,
@@ -1175,109 +1058,60 @@ def ingress_details(ingress_id: int):
 @inventory_bp.route('/storage')
 @permission_required('inventory.view')
 def storage():
-    cluster_id = request.args.get(
-        'cluster_id',
-        '',
-        type=str,
-    )
+    cluster_id = request.args.get('cluster_id', '', type=str)
+    namespace = request.args.get('namespace', '', type=str)
+    storage_type = request.args.get('type', '', type=str)
+    status = request.args.get('status', '', type=str)
+    search = request.args.get('search', '', type=str).strip()
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 5, type=int)
+    allowed_per_page = [5, 10, 25, 50]
 
-    namespace = request.args.get(
-        'namespace',
-        '',
-        type=str,
-    )
+    def load_inventory():
+        data = get_storage_inventory_view(
+            cluster_id=cluster_id,
+            namespace=namespace,
+            storage_type=storage_type,
+            status=status,
+            search=search,
+        )
+        data['storage_filter_types'] = get_storage_filter_types(
+            cluster_id=cluster_id,
+            namespace=namespace,
+        )
+        data['storage_filter_statuses'] = get_storage_filter_statuses(
+            cluster_id=cluster_id,
+            namespace=namespace,
+            storage_type=storage_type,
+        )
+        return data
 
-    storage_type = request.args.get(
-        'type',
-        '',
-        type=str,
-    )
-
-    search = request.args.get(
-        'search',
-        '',
-        type=str,
-    ).strip()
-
-    page = request.args.get(
-        'page',
-        1,
-        type=int,
-    )
-
-    per_page = request.args.get(
-        'per_page',
-        5,
-        type=int,
-    )
-
-    allowed_per_page = [
-        5,
-        10,
-        25,
-        50,
-    ]
-
-    inventory = get_storage_inventory_view(
-        cluster_id=cluster_id,
-        namespace=namespace,
-        storage_type=storage_type,
-        search=search,
-    )
-
-    inventory['storage_filter_types'] = get_storage_filter_types(
-        cluster_id=cluster_id,
-    )
+    inventory = load_inventory()
 
     if namespace and namespace not in inventory.get('namespaces', []):
         namespace = ''
-        inventory = get_storage_inventory_view(
-            cluster_id=cluster_id,
-            namespace=namespace,
-            storage_type=storage_type,
-            search=search,
-        )
-        inventory['storage_filter_types'] = get_storage_filter_types(
-            cluster_id=cluster_id,
-        )
+        inventory = load_inventory()
 
-    if storage_type and storage_type not in inventory['storage_filter_types']:
+    if storage_type and storage_type not in inventory.get('storage_filter_types', []):
         storage_type = ''
-        inventory = get_storage_inventory_view(
-            cluster_id=cluster_id,
-            namespace=namespace,
-            storage_type=storage_type,
-            search=search,
-        )
-        inventory['storage_filter_types'] = get_storage_filter_types(
-            cluster_id=cluster_id,
-        )
+        inventory = load_inventory()
 
-    all_storage = inventory.get(
-        'storage_items',
-        [],
-    )
+    if status and status not in inventory.get('storage_filter_statuses', []):
+        status = ''
+        inventory = load_inventory()
 
+    all_storage = inventory.get('storage_items', [])
     start_index, end_index, pagination = _build_pagination(
-        total_items=len(
-            all_storage,
-        ),
+        total_items=len(all_storage),
         page=page,
         per_page=per_page,
         allowed_per_page=allowed_per_page,
     )
-
     inventory['storage_items'] = all_storage[start_index:end_index]
-
     clusters = get_inventory_clusters()
 
     if request.headers.get('HX-Request') == 'true':
-        partial_mode = request.args.get(
-            'partial_mode',
-            '',
-            type=str,
-        )
-
+        partial_mode = request.args.get('partial_mode', '', type=str)
         template_name = (
             'inventory/storage/partials/_table_content.html'
             if partial_mode == 'table_content'
@@ -1293,6 +1127,7 @@ def storage():
         selected_cluster_id=cluster_id,
         selected_namespace=namespace,
         selected_type=storage_type,
+        selected_status=status,
         search=search,
         pagination=pagination,
     )
@@ -1301,14 +1136,13 @@ def storage():
 @inventory_bp.get('/storage/<int:storage_id>/details')
 @permission_required('inventory.view')
 def storage_details(storage_id: int):
-    storage = get_storage_detail(storage_id)
-    if storage is None:
+    storage_item = get_storage_detail(storage_id)
+    if storage_item is None:
         abort(404)
     return render_template(
         'inventory/storage/partials/_storage_detail_content.html',
-        item=storage,
+        item=storage_item,
     )
-
 
 def _build_cluster_context_from_request() -> dict:
     return build_cluster_context(

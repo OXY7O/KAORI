@@ -456,6 +456,12 @@ class ServiceInventory(db.Model):
         default=dict,
     )
 
+    details: Mapped[dict] = mapped_column(
+        JSON,
+        nullable=False,
+        default=dict,
+    )
+
     created_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
     )
@@ -523,6 +529,12 @@ class IngressInventory(db.Model):
         JSON,
         nullable=False,
         default=list,
+    )
+
+    details: Mapped[dict] = mapped_column(
+        JSON,
+        nullable=False,
+        default=dict,
     )
 
     created_at: Mapped[datetime | None] = mapped_column(
