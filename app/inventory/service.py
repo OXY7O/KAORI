@@ -3,7 +3,7 @@ from decimal import Decimal, InvalidOperation
 from typing import Any, cast
 
 from kubernetes.client import AppsV1Api, BatchV1Api, CoreV1Api, NetworkingV1Api, StorageV1Api, V1NamespaceList, V1Node
-from sqlalchemy import func
+from sqlalchemy import func, select
 
 from app.extensions import db
 from app.inventory.collector import (
@@ -653,6 +653,19 @@ def save_resource_quotas(
         db.session.add(inventory)
 
 
+def _lock_cluster_inventory_sync(
+    cluster_id: str,
+) -> None:
+    """Serialize inventory replacement for one cluster within the DB transaction."""
+    db.session.execute(
+        select(Cluster.id)
+        .where(
+            Cluster.id == cluster_id,
+        )
+        .with_for_update(),
+    ).scalar_one()
+
+
 def sync_inventory(
     cluster: Cluster,
 ) -> None:
@@ -672,7 +685,13 @@ def sync_inventory(
         )
     )
 
+    current_stage = 'cluster lock'
+
     try:
+        _lock_cluster_inventory_sync(
+            cluster.id,
+        )
+
         with legacy_tls_context(
             enabled=allow_weak_tls,
         ):
@@ -693,64 +712,86 @@ def sync_inventory(
 
             storage_api = client.storage_api()
 
+            current_stage = 'cluster information'
             save_cluster_info(
                 cluster,
                 core_api,
             )
+            db.session.flush()
 
+            current_stage = 'nodes'
             save_nodes(
                 cluster,
                 core_api,
             )
+            db.session.flush()
 
+            current_stage = 'namespaces'
             save_namespaces(
                 cluster,
                 core_api,
             )
+            db.session.flush()
 
+            current_stage = 'workloads'
             save_workloads(
                 cluster,
                 apps_api,
                 batch_api,
             )
+            db.session.flush()
 
+            current_stage = 'pods'
             save_pods(
                 cluster,
                 core_api,
                 apps_api,
                 batch_api,
             )
+            db.session.flush()
 
+            current_stage = 'services'
             save_services(
                 cluster,
                 core_api,
             )
+            db.session.flush()
 
+            current_stage = 'ingresses'
             save_ingresses(
                 cluster,
                 networking_api,
             )
+            db.session.flush()
 
+            current_stage = 'storage'
             save_storage_inventory(
                 cluster,
                 core_api,
                 storage_api,
             )
+            db.session.flush()
 
+            current_stage = 'configuration'
             save_configuration_inventory(
                 cluster,
                 core_api,
             )
+            db.session.flush()
 
+            current_stage = 'resource quotas'
             save_resource_quotas(
                 cluster,
                 core_api,
             )
+            db.session.flush()
 
+        current_stage = 'commit'
         db.session.commit()
 
     except Exception as exc:
         print('=== INVENTORY SYNC EXCEPTION ===')
+        print(f'Stage: {current_stage}')
         print(type(exc).__name__)
         print(str(exc))
 
