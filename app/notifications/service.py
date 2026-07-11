@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from datetime import UTC, datetime
 from typing import Any
 
@@ -212,6 +213,184 @@ def _event_label(event_type: str) -> str:
     return event_type.replace('_', ' ').strip().title() or 'Operational Activity'
 
 
+def _string_metadata(
+    metadata: dict[str, Any],
+    *keys: str,
+) -> str | None:
+    for key in keys:
+        value = metadata.get(key)
+        if value is None:
+            continue
+
+        normalized = str(value).strip()
+        if normalized:
+            return normalized
+
+    return None
+
+
+def _actor_initials(label: str) -> str:
+    normalized = re.sub(r'[^A-Za-z0-9 ]+', ' ', label).strip()
+    parts = [part for part in normalized.split() if part]
+
+    if not parts:
+        return 'US'
+    if len(parts) == 1:
+        return parts[0][:2].upper()
+
+    return f'{parts[0][0]}{parts[-1][0]}'.upper()
+
+
+def _auth_source_label(value: str | None) -> str:
+    normalized = (value or 'database').strip().lower()
+    labels = {
+        'database': 'Local',
+        'local': 'Local',
+        'ldap': 'LDAP',
+        'oidc': 'OIDC / SSO',
+        'saml': 'SAML / SSO',
+        'api_token': 'API Token',
+        'system': 'System Service',
+    }
+    return labels.get(
+        normalized,
+        normalized.replace('_', ' ').title(),
+    )
+
+
+def _event_context(
+    event_type: str,
+    metadata: dict[str, Any],
+    title: str,
+) -> dict[str, Any]:
+    cluster_name = _string_metadata(metadata, 'cluster_name', 'submitted_name')
+    environment = _string_metadata(metadata, 'environment', 'submitted_environment')
+    endpoint = _string_metadata(metadata, 'endpoint', 'server')
+    task_id = _string_metadata(metadata, 'task_id')
+
+    context: dict[str, Any] = {
+        'module_label': 'Operations',
+        'target_type': 'Activity',
+        'target_name': title,
+        'event_icon': 'history',
+        'event_tone': 'slate',
+        'source_label': 'Administrative action',
+        'source_detail': 'KAORI web application',
+    }
+
+    if event_type.startswith('cluster_'):
+        context.update(
+            module_label='Kubernetes Cluster',
+            target_type='Cluster',
+            target_name=cluster_name or 'Cluster registration',
+            event_icon='server',
+            event_tone='blue',
+        )
+    elif event_type.startswith('prometheus_'):
+        context.update(
+            module_label='Prometheus',
+            target_type='Prometheus',
+            target_name=cluster_name or endpoint or 'Prometheus integration',
+            event_icon='activity',
+            event_tone='cyan',
+        )
+    elif event_type.startswith('alertmanager_'):
+        context.update(
+            module_label='Alertmanager',
+            target_type='Alertmanager',
+            target_name=cluster_name or endpoint or 'Alertmanager integration',
+            event_icon='siren',
+            event_tone='rose',
+        )
+    elif event_type == 'kubernetes_inventory_sync':
+        context.update(
+            module_label='Kubernetes Inventory',
+            target_type='Inventory',
+            target_name=cluster_name or 'All connected clusters',
+            event_icon='database',
+            event_tone='indigo',
+        )
+
+    if task_id:
+        context['source_label'] = 'Background task'
+        context['source_detail'] = f'Task {task_id}'
+    elif event_type.endswith('_connection_test'):
+        context['source_label'] = 'Interactive test'
+        context['source_detail'] = 'KAORI web action'
+    elif event_type == 'kubernetes_inventory_sync':
+        context['source_label'] = 'Inventory worker'
+        context['source_detail'] = 'Synchronous inventory action'
+
+    context_items = [
+        {
+            'label': 'Module',
+            'value': context['module_label'],
+            'tone': 'blue',
+        }
+    ]
+
+    if environment:
+        context_items.append(
+            {
+                'label': 'Environment',
+                'value': environment,
+                'tone': 'emerald' if environment.lower() == 'production' else 'amber',
+            }
+        )
+
+    if cluster_name and context['target_type'] != 'Cluster':
+        context_items.append(
+            {
+                'label': 'Cluster',
+                'value': cluster_name,
+                'tone': 'indigo',
+            }
+        )
+
+    context['context_items'] = context_items
+    return context
+
+
+def _changed_fields(metadata: dict[str, Any]) -> list[dict[str, str]]:
+    changed_items: list[dict[str, str]] = []
+    label_overrides = {
+        'name': 'Name',
+        'environment': 'Environment',
+        'verify_ssl': 'TLS verification',
+        'allow_weak_tls': 'Allow weak TLS',
+    }
+
+    for key, previous_value in metadata.items():
+        if not key.startswith('previous_'):
+            continue
+
+        base_key = key.removeprefix('previous_')
+        current_candidates = [base_key, f'submitted_{base_key}']
+        if base_key == 'name':
+            current_candidates.insert(0, 'cluster_name')
+
+        current_value = next(
+            (metadata[candidate] for candidate in current_candidates if candidate in metadata),
+            None,
+        )
+
+        if current_value is None or _metadata_value(previous_value) == _metadata_value(current_value):
+            continue
+
+        changed_items.append(
+            {
+                'label': label_overrides.get(
+                    base_key,
+                    base_key.replace('_', ' ').title(),
+                ),
+                'before': _metadata_value(previous_value),
+                'after': _metadata_value(current_value),
+            }
+        )
+
+    return changed_items
+
+
 def _metadata_value(value: Any) -> str:
     if isinstance(value, list):
         return ', '.join(str(item) for item in value) if value else '-'
@@ -259,15 +438,32 @@ def _serialize_notification(
 ) -> dict[str, Any]:
     metadata = notification.metadata_json or {}
     created_at = _normalize_created_at(notification.created_at)
+    user_label = _user_label(user, notification.user_id)
+    event_context = _event_context(
+        notification.event_type,
+        metadata,
+        notification.title,
+    )
+
+    status_labels = {
+        'success': 'Success',
+        'warning': 'Warning',
+        'error': 'Failed',
+        'info': 'Information',
+    }
 
     item: dict[str, Any] = {
         'id': notification.id,
         'user_id': notification.user_id,
-        'user_label': _user_label(user, notification.user_id),
+        'user_label': user_label,
         'user_email': user.email if user is not None else None,
+        'user_initials': _actor_initials(user_label),
+        'user_role': user.role_display_name if user is not None else 'Unknown role',
+        'user_auth_source': _auth_source_label(user.auth_source if user is not None else None),
         'event_type': notification.event_type,
         'event_label': _event_label(notification.event_type),
         'status': notification.status,
+        'status_label': status_labels.get(notification.status, 'Information'),
         'title': notification.title,
         'message': notification.message,
         'detail': notification.detail,
@@ -280,6 +476,8 @@ def _serialize_notification(
         'failed_count': metadata.get('failed_count'),
         'total_count': metadata.get('total_count'),
         'duration_seconds': metadata.get('duration_seconds'),
+        'changed_fields': _changed_fields(metadata),
+        **event_context,
     }
 
     if include_metadata:
