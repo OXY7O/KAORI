@@ -1,4 +1,4 @@
-<div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+<div id="workloads-table-card" class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
     <div class="border-b border-slate-200 px-6 py-5 dark:border-slate-700">
         <div class="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
             <div class="flex items-center gap-3">
@@ -26,15 +26,16 @@
     <div class="border-b border-slate-200 px-6 py-4 dark:border-slate-700">
         <form
             hx-get="{{ url_for('inventory.workloads') }}"
-            hx-target="#workloads-table-content"
-            hx-swap="innerHTML"
+            hx-target="#workloads-table-card"
+            hx-swap="outerHTML"
             hx-trigger="change from:select, keyup changed delay:500ms from:input[name='search']"
             hx-indicator="#workloads-table-loading"
-            class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(14rem,1.4fr)] xl:items-end">
+            class="grid gap-4 xl:grid-cols-12 xl:items-end">
             <input type="hidden" name="page" value="1" />
             <input type="hidden" name="per_page" value="{{ pagination.per_page }}" />
+            <input type="hidden" name="partial_mode" value="table_card" />
 
-            <div>
+            <div class="xl:col-span-2">
                 <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Cluster</label>
                 <select name="cluster_id"
                         class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
@@ -45,7 +46,18 @@
                 </select>
             </div>
 
-            <div>
+            <div class="xl:col-span-2">
+                <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Namespace</label>
+                <select name="namespace"
+                        class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
+                    <option value="" {% if not selected_namespace %}selected{% endif %}>All Namespaces</option>
+                    {% for namespace_name in inventory.namespaces %}
+                        <option value="{{ namespace_name }}" {% if selected_namespace == namespace_name %}selected{% endif %}>{{ namespace_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="xl:col-span-2">
                 <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Type</label>
                 <select name="type"
                         class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
@@ -56,7 +68,7 @@
                 </select>
             </div>
 
-            <div>
+            <div class="xl:col-span-2">
                 <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Status</label>
                 <select name="status"
                         class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
@@ -67,7 +79,7 @@
                 </select>
             </div>
 
-            <div>
+            <div class="xl:col-span-4">
                 <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Search Workload</label>
                 <div class="relative">
                     <i data-lucide="search"

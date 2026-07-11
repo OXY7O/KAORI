@@ -116,6 +116,7 @@
               class="flex items-center gap-2">
             <input type="hidden" name="page" value="1">
             <input type="hidden" name="cluster_id" value="{{ selected_cluster_id }}">
+            <input type="hidden" name="namespace" value="{{ selected_namespace }}">
             <input type="hidden" name="type" value="{{ selected_type }}">
             <input type="hidden" name="status" value="{{ selected_status }}">
             <input type="hidden" name="search" value="{{ search }}">
@@ -132,14 +133,14 @@
 
     <div class="flex flex-wrap items-center gap-2">
         {% if pagination.has_prev %}
-            {% set prev_url = url_for('inventory.workloads', cluster_id=selected_cluster_id, type=selected_type, status=selected_status, search=search, page=pagination.prev_page, per_page=pagination.per_page) %}
+            {% set prev_url = url_for('inventory.workloads', cluster_id=selected_cluster_id, namespace=selected_namespace, type=selected_type, status=selected_status, search=search, page=pagination.prev_page, per_page=pagination.per_page) %}
             <a href="{{ prev_url }}" hx-get="{{ prev_url }}" hx-target="#workloads-table-content" hx-swap="innerHTML" hx-indicator="#workloads-table-loading" class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
         {% else %}
             <span class="inline-flex cursor-not-allowed items-center gap-2 rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-sm font-medium text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-600"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
         {% endif %}
         <span class="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">Page {{ pagination.page }} / {{ pagination.total_pages }}</span>
         {% if pagination.has_next %}
-            {% set next_url = url_for('inventory.workloads', cluster_id=selected_cluster_id, type=selected_type, status=selected_status, search=search, page=pagination.next_page, per_page=pagination.per_page) %}
+            {% set next_url = url_for('inventory.workloads', cluster_id=selected_cluster_id, namespace=selected_namespace, type=selected_type, status=selected_status, search=search, page=pagination.next_page, per_page=pagination.per_page) %}
             <a href="{{ next_url }}" hx-get="{{ next_url }}" hx-target="#workloads-table-content" hx-swap="innerHTML" hx-indicator="#workloads-table-loading" class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
         {% else %}
             <span class="inline-flex cursor-not-allowed items-center gap-2 rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-sm font-medium text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-600">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>

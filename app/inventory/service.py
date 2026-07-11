@@ -2586,8 +2586,32 @@ def format_age(
     return f'{hours}h'
 
 
+def get_workload_filter_namespaces(
+    cluster_id: str | None = None,
+) -> list[str]:
+    query = db.session.query(
+        WorkloadInventory.namespace,
+    )
+
+    if cluster_id:
+        query = query.filter(
+            WorkloadInventory.cluster_id == cluster_id,
+        )
+
+    rows = (
+        query.distinct()
+        .order_by(
+            WorkloadInventory.namespace,
+        )
+        .all()
+    )
+
+    return [row[0] for row in rows if row[0]]
+
+
 def get_workload_filter_types(
     cluster_id: str | None = None,
+    namespace: str | None = None,
 ) -> list[str]:
     query = db.session.query(
         WorkloadInventory.workload_type,
@@ -2596,6 +2620,11 @@ def get_workload_filter_types(
     if cluster_id:
         query = query.filter(
             WorkloadInventory.cluster_id == cluster_id,
+        )
+
+    if namespace:
+        query = query.filter(
+            WorkloadInventory.namespace == namespace,
         )
 
     rows = (
@@ -2611,6 +2640,7 @@ def get_workload_filter_types(
 
 def get_workload_filter_statuses(
     cluster_id: str | None = None,
+    namespace: str | None = None,
 ) -> list[str]:
     query = db.session.query(
         WorkloadInventory.status,
@@ -2619,6 +2649,11 @@ def get_workload_filter_statuses(
     if cluster_id:
         query = query.filter(
             WorkloadInventory.cluster_id == cluster_id,
+        )
+
+    if namespace:
+        query = query.filter(
+            WorkloadInventory.namespace == namespace,
         )
 
     rows = (
@@ -2634,6 +2669,7 @@ def get_workload_filter_statuses(
 
 def get_workload_inventory(
     cluster_id=None,
+    namespace=None,
     workload_type=None,
     status=None,
     search=None,
@@ -2650,6 +2686,9 @@ def get_workload_inventory(
 
     if cluster_id:
         query = query.filter(WorkloadInventory.cluster_id == cluster_id)
+
+    if namespace:
+        query = query.filter(WorkloadInventory.namespace == namespace)
 
     if workload_type:
         query = query.filter(WorkloadInventory.workload_type == workload_type)
@@ -2767,11 +2806,16 @@ def get_workload_inventory(
         'cronjobs': cronjobs,
         'type_counts': type_counts,
         'status_counts': status_counts,
+        'namespaces': get_workload_filter_namespaces(
+            cluster_id=cluster_id,
+        ),
         'workload_types': get_workload_filter_types(
             cluster_id=cluster_id,
+            namespace=namespace,
         ),
         'workload_statuses': get_workload_filter_statuses(
             cluster_id=cluster_id,
+            namespace=namespace,
         ),
         'workloads': workloads_data,
     }

@@ -1,7 +1,4 @@
-import logging
-
-from flask import Blueprint, abort, redirect, render_template, request, url_for
-from flask_login import current_user
+from flask import Blueprint, abort, render_template, request
 
 from app.cluster.onboarding import has_registered_clusters
 from app.cluster.service import build_cluster_context
@@ -32,19 +29,13 @@ from app.inventory.service import (
     get_storage_filter_types,
     get_storage_inventory_view,
     get_workload_detail,
+    get_workload_filter_namespaces,
     get_workload_filter_statuses,
     get_workload_filter_types,
     get_workload_inventory,
     sync_inventory,
 )
-from app.notifications.service import (
-    get_navigation_notification_context,
-    queue_quick_action_feedback,
-    record_operational_activity,
-)
 from app.rbac.decorators import permission_required
-
-logger = logging.getLogger(__name__)
 
 inventory_bp = Blueprint(
     'inventory',
@@ -79,65 +70,24 @@ def sync(cluster_id: str):
 
     try:
         sync_inventory(cluster)
-        feedback = record_operational_activity(
-            user_id=current_user.id,
-            event_type='kubernetes_inventory_sync',
-            status='success',
-            title='Cluster inventory synchronized',
-            message=f'{cluster.name} inventory was refreshed successfully.',
-            detail='Cluster metadata, nodes, namespaces, workloads, pods, services, ingress, and storage snapshots are now up to date.',
-            action_url=url_for('cluster.list_clusters'),
-            action_label='View clusters',
-            action_icon='server',
-            metadata={
-                'cluster_id': cluster.id,
-                'cluster_name': cluster.name,
-                'scope': 'single_cluster',
-            },
-        )
+        feedback = {
+            'message': f'Synchronized {cluster.name} inventory successfully.',
+            'category': 'success',
+        }
     except Exception as exc:
-        logger.exception(
-            'Inventory synchronization failed for cluster %s.',
-            cluster.id,
-        )
-        feedback = record_operational_activity(
-            user_id=current_user.id,
-            event_type='kubernetes_inventory_sync',
-            status='error',
-            title='Cluster inventory sync failed',
-            message=f'{cluster.name} inventory could not be refreshed.',
-            detail=(
-                f'{type(exc).__name__}: review Kubernetes API compatibility, cluster credentials, TLS settings, '
-                'and application logs before retrying.'
+        feedback = {
+            'message': (
+                f'Inventory sync failed for {cluster.name}: {type(exc).__name__}. '
+                'Review Kubernetes API compatibility and cluster access.'
             ),
-            action_url=url_for('cluster.edit_cluster', cluster_id=cluster.id),
-            action_label='Review cluster settings',
-            action_icon='settings-2',
-            metadata={
-                'cluster_id': cluster.id,
-                'cluster_name': cluster.name,
-                'scope': 'single_cluster',
-                'reason': type(exc).__name__,
-            },
-        )
+            'category': 'warning',
+        }
 
-    if request.headers.get('HX-Request') == 'true':
-        table_html = render_template(
-            'cluster/partials/_table.html',
-            **_build_cluster_context_from_request(),
-        )
-        toast_html = render_template(
-            'components/navigation/_quick_sync_result.html',
-            **feedback,
-            toast_oob=True,
-            notification_context=get_navigation_notification_context(
-                user_id=current_user.id,
-            ),
-        )
-        return f'{table_html}{toast_html}'
-
-    queue_quick_action_feedback(feedback)
-    return redirect(request.referrer or url_for('cluster.list_clusters'))
+    return render_template(
+        'cluster/partials/_table.html',
+        cluster_action_feedback=feedback,
+        **_build_cluster_context_from_request(),
+    )
 
 
 def _paginate_resource_clusters(rows, page: int, per_page: int) -> tuple[list[dict], dict]:
@@ -595,6 +545,12 @@ def workloads():
         type=str,
     )
 
+    namespace = request.args.get(
+        'namespace',
+        '',
+        type=str,
+    )
+
     workload_type = request.args.get(
         'type',
         '',
@@ -632,51 +588,39 @@ def workloads():
         50,
     ]
 
+    namespaces = get_workload_filter_namespaces(
+        cluster_id=cluster_id,
+    )
+
+    if namespace and namespace not in namespaces:
+        namespace = ''
+
+    workload_types = get_workload_filter_types(
+        cluster_id=cluster_id,
+        namespace=namespace,
+    )
+
+    if workload_type and workload_type not in workload_types:
+        workload_type = ''
+
+    workload_statuses = get_workload_filter_statuses(
+        cluster_id=cluster_id,
+        namespace=namespace,
+    )
+
+    if status and status not in workload_statuses:
+        status = ''
+
     inventory = get_workload_inventory(
         cluster_id=cluster_id,
+        namespace=namespace,
         workload_type=workload_type,
         status=status,
         search=search,
     )
-
-    inventory['workload_types'] = get_workload_filter_types(
-        cluster_id=cluster_id,
-    )
-
-    inventory['workload_statuses'] = get_workload_filter_statuses(
-        cluster_id=cluster_id,
-    )
-
-    if workload_type and workload_type not in inventory['workload_types']:
-        workload_type = ''
-        inventory = get_workload_inventory(
-            cluster_id=cluster_id,
-            workload_type=workload_type,
-            status=status,
-            search=search,
-        )
-        inventory['workload_types'] = get_workload_filter_types(
-            cluster_id=cluster_id,
-        )
-
-        inventory['workload_statuses'] = get_workload_filter_statuses(
-            cluster_id=cluster_id,
-        )
-
-    if status and status not in inventory['workload_statuses']:
-        status = ''
-        inventory = get_workload_inventory(
-            cluster_id=cluster_id,
-            workload_type=workload_type,
-            status=status,
-            search=search,
-        )
-        inventory['workload_types'] = get_workload_filter_types(
-            cluster_id=cluster_id,
-        )
-        inventory['workload_statuses'] = get_workload_filter_statuses(
-            cluster_id=cluster_id,
-        )
+    inventory['namespaces'] = namespaces
+    inventory['workload_types'] = workload_types
+    inventory['workload_statuses'] = workload_statuses
 
     all_workloads = inventory.get(
         'workloads',
@@ -696,17 +640,26 @@ def workloads():
 
     clusters = get_inventory_clusters()
 
-    template_name = (
-        'inventory/workloads/partials/_table_content.html'
-        if request.headers.get('HX-Request') == 'true'
-        else 'inventory/workloads/index.html'
-    )
+    if request.headers.get('HX-Request') == 'true':
+        partial_mode = request.args.get(
+            'partial_mode',
+            '',
+            type=str,
+        )
+        template_name = (
+            'inventory/workloads/partials/_table_card.html'
+            if partial_mode == 'table_card'
+            else 'inventory/workloads/partials/_table_content.html'
+        )
+    else:
+        template_name = 'inventory/workloads/index.html'
 
     return render_template(
         template_name,
         inventory=inventory,
         clusters=clusters,
         selected_cluster_id=cluster_id,
+        selected_namespace=namespace,
         selected_type=workload_type,
         selected_status=status,
         search=search,

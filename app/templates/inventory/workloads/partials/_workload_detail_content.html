@@ -79,6 +79,9 @@
                     {{ detail_row(row.label, row.value) }}
                 {% endfor %}
                 {{ detail_row('Managed Pods', workload.pod_count) }}
+                <div class="pt-3">
+                    {{ detail_tip("Runtime state compares the controller's desired and observed values from the latest Kubernetes snapshot. Historical availability, anomalies, and performance remain in Analytics.", 'blue', 'info') }}
+                </div>
             {% endcall %}
 
             {% call detail_card(
