@@ -318,6 +318,15 @@ def save_nodes(
             'hostname_address',
         )
 
+        node_spec = node.spec
+        pod_cidrs = list(getattr(node_spec, 'pod_cidrs', None) or []) if node_spec else []
+        pod_cidr = getattr(node_spec, 'pod_cidr', None) if node_spec else None
+
+        if not pod_cidrs and pod_cidr:
+            pod_cidrs = [pod_cidr]
+
+        node_inventory.pod_cidrs = pod_cidrs
+
         node_inventory.os_image = status.node_info.os_image
 
         node_inventory.kernel_version = status.node_info.kernel_version
@@ -1477,6 +1486,49 @@ def get_node_detail(node_id: int) -> dict[str, Any] | None:
     role = node.role or 'Unknown'
     role_key = role.lower()
 
+    pod_scope = (
+        PodInventory.cluster_id == node.cluster_id,
+        PodInventory.node_name == node.node_name,
+    )
+    scheduled_pod_count = db.session.query(func.count(PodInventory.id)).filter(*pod_scope).scalar() or 0
+    observed_pod_ip_count = (
+        db.session.query(func.count(func.distinct(PodInventory.pod_ip)))
+        .filter(
+            *pod_scope,
+            PodInventory.pod_ip.isnot(None),
+        )
+        .scalar()
+        or 0
+    )
+    observed_pod_ips = [
+        pod_ip
+        for (pod_ip,) in (
+            db.session.query(PodInventory.pod_ip)
+            .filter(
+                *pod_scope,
+                PodInventory.pod_ip.isnot(None),
+            )
+            .distinct()
+            .order_by(PodInventory.pod_ip)
+            .limit(4)
+            .all()
+        )
+        if pod_ip
+    ]
+    pod_cidrs = node.pod_cidrs or []
+
+    if pod_cidrs:
+        pod_network_tip = (
+            'Kubernetes advertises this node Pod network as '
+            f'{", ".join(pod_cidrs)}. Pod IP allocation and routing are managed '
+            'by the cluster CNI, so the effective path can vary by network plugin.'
+        )
+    else:
+        pod_network_tip = (
+            'Kubernetes did not report a node-specific Pod CIDR. This can occur '
+            'when the CNI uses cluster-wide or external IP address management.'
+        )
+
     return {
         'id': node.id,
         'cluster_name': cluster_name,
@@ -1490,6 +1542,12 @@ def get_node_detail(node_id: int) -> dict[str, Any] | None:
         'internal_ip': node.internal_ip,
         'external_ip': node.external_ip,
         'hostname_address': node.hostname_address,
+        'pod_cidrs': pod_cidrs,
+        'pod_cidrs_display': ', '.join(pod_cidrs) if pod_cidrs else '-',
+        'scheduled_pod_count': scheduled_pod_count,
+        'observed_pod_ip_count': observed_pod_ip_count,
+        'observed_pod_ips': observed_pod_ips[:4],
+        'pod_network_tip': pod_network_tip,
         'cpu': node.cpu,
         'memory_display': format_kubernetes_size(node.memory),
         'ephemeral_storage_display': format_kubernetes_size(node.ephemeral_storage),

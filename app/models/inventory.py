@@ -70,6 +70,12 @@ class NodeInventory(db.Model):
 
     hostname_address: Mapped[str | None] = mapped_column(String(255))
 
+    pod_cidrs: Mapped[list[str]] = mapped_column(
+        JSON,
+        nullable=False,
+        default=list,
+    )
+
     cpu: Mapped[int | None] = mapped_column(Integer)
 
     memory: Mapped[str | None] = mapped_column(String(50))

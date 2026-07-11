@@ -9,18 +9,49 @@
     node.status,
     'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' if node.status == 'Ready' else 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300'
 ) %}
-    {% call detail_card('Node function', 'shield-check', 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-300', node.role, 'bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300', panel_classes='border-indigo-100 bg-gradient-to-br from-indigo-50/90 via-white to-white dark:border-indigo-900/40 dark:from-indigo-950/30 dark:via-slate-950/45 dark:to-slate-950/45') %}
+    {% call detail_card(
+        'Node function',
+        'shield-check',
+        'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-300',
+        node.role,
+        'bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300'
+    ) %}
         {{ detail_row('Role', node.role) }}
         {{ detail_row('Cluster', node.cluster_name) }}
         {{ detail_row('Collected', node.collected_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
-        {{ detail_tip(node.role_description, 'indigo', 'lightbulb') }}
+        <div class="pt-4">
+            {{ detail_tip(node.role_description, 'indigo', 'lightbulb') }}
+        </div>
     {% endcall %}
-    {% call detail_card('Network identity', 'network', 'bg-cyan-50 text-cyan-600 dark:bg-cyan-950/40 dark:text-cyan-300', panel_classes='border-cyan-100 bg-gradient-to-br from-cyan-50/90 via-white to-white dark:border-cyan-900/40 dark:from-cyan-950/30 dark:via-slate-950/45 dark:to-slate-950/45') %}
+
+    {% call detail_card(
+        'Network identity & Pod subnet',
+        'network',
+        'bg-cyan-50 text-cyan-600 dark:bg-cyan-950/40 dark:text-cyan-300',
+        node.scheduled_pod_count ~ ' Pods',
+        'bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300'
+    ) %}
         {{ detail_row('Internal IP', node.internal_ip or '-') }}
         {{ detail_row('External IP', node.external_ip or '-') }}
         {{ detail_row('Hostname', node.hostname_address or '-') }}
+        {{ detail_row('Pod CIDR', node.pod_cidrs_display) }}
+        {{ detail_row('Scheduled Pods', node.scheduled_pod_count) }}
+        {{ detail_row('Observed Pod IPs', node.observed_pod_ip_count) }}
+        {% if node.observed_pod_ips %}
+            {{ detail_row('IP samples', node.observed_pod_ips|join(', ')) }}
+        {% endif %}
+        <div class="pt-4">
+            {{ detail_tip(node.pod_network_tip, 'teal', 'network') }}
+        </div>
     {% endcall %}
-    {% call detail_card('Platform and capacity', 'cpu', 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300', node.memory_display, 'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300', panel_classes='border-violet-100 bg-gradient-to-br from-violet-50/90 via-white to-white dark:border-violet-900/40 dark:from-violet-950/30 dark:via-slate-950/45 dark:to-slate-950/45') %}
+
+    {% call detail_card(
+        'Platform and capacity',
+        'cpu',
+        'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300',
+        node.memory_display,
+        'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300'
+    ) %}
         {{ detail_row('Operating system', node.os_image or '-') }}
         {{ detail_row('Kernel', node.kernel_version or '-') }}
         {{ detail_row('Container runtime', node.runtime_display or '-') }}
