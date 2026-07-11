@@ -2,6 +2,9 @@
 <div class="space-y-6">
     {% include "dashboard/partials/_hero.html" %}
 
+    {% if cluster_onboarding.is_blocked %}
+        {% include "components/cluster/_onboarding_banner.html" %}
+    {% else %}
     <div id="dashboard-kpi-cards"
          hx-get="{{ url_for('dashboard.section', section='kpi_cards') }}?{{ dashboard_cluster_query }}"
          hx-trigger="load"
@@ -104,4 +107,5 @@
             {% include "dashboard/partials/_section_loading.html" %}
         {% endwith %}
     </div>
+    {% endif %}
 </div>

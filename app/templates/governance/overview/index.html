@@ -51,13 +51,18 @@
                             </div>
                         </div>
                     </div>
-                    <a href="{{ url_for('governance.tls_certificates') }}"
-                       class="inline-flex min-h-[3.25rem] items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-blue-700 shadow-sm transition hover:bg-blue-50">
-                        Open TLS Certificates
-                        <i data-lucide="arrow-right" class="h-4 w-4"></i>
-                    </a>
+                    {% if not cluster_onboarding.is_blocked %}
+                        <a href="{{ url_for('governance.tls_certificates') }}"
+                           class="inline-flex min-h-[3.25rem] items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-blue-700 shadow-sm transition hover:bg-blue-50">
+                            Open TLS Certificates
+                            <i data-lucide="arrow-right" class="h-4 w-4"></i>
+                        </a>
+                    {% endif %}
                 </div>
             </div>
         </div>
+        {% if cluster_onboarding.is_blocked %}
+            {% include "components/cluster/_onboarding_banner.html" %}
+        {% endif %}
     </div>
 {% endblock dashboard_content %}

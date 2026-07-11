@@ -3,6 +3,7 @@ from __future__ import annotations
 from flask import Blueprint, abort, render_template, request
 from flask_login import login_required
 
+from app.cluster.onboarding import has_registered_clusters
 from app.dashboard.service import get_dashboard_overview
 from app.rbac.decorators import permission_required
 
@@ -29,6 +30,18 @@ _DASHBOARD_SECTION_LIVE_MAP = {
     'data_freshness': {'data_freshness'},
     'recommended_actions': {'recommended_actions'},
 }
+
+
+@dashboard_bp.before_request
+def block_clusterless_dashboard_sections():
+    """Keep lazy dashboard sections aligned with the full-page cluster blocker."""
+    if request.endpoint != 'dashboard.section':
+        return None
+
+    if has_registered_clusters() is False:
+        return render_template('components/cluster/_onboarding_banner.html')
+
+    return None
 
 
 @dashboard_bp.route('/welcome')

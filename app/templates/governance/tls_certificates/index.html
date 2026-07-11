@@ -12,7 +12,11 @@
             {% endif %}
         {% endwith %}
         {% include "governance/tls_certificates/partials/_hero.html" %}
-        {% include "governance/tls_certificates/partials/_summary_cards.html" %}
-        {% include "governance/tls_certificates/partials/_content.html" %}
+        {% if cluster_onboarding.is_blocked %}
+            {% include "components/cluster/_onboarding_banner.html" %}
+        {% else %}
+            {% include "governance/tls_certificates/partials/_summary_cards.html" %}
+            {% include "governance/tls_certificates/partials/_content.html" %}
+        {% endif %}
     </div>
 {% endblock dashboard_content %}

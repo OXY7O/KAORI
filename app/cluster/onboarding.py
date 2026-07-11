@@ -13,11 +13,14 @@ from app.models.cluster import Cluster
 _KUBERNETES_SCOPE_BLUEPRINTS = {
     'analytics',
     'cluster',
+    'dashboard',
+    'governance',
     'inventory',
 }
 
 _BANNER_EXCLUDED_ENDPOINTS = {
     'cluster.add_cluster',
+    'dashboard.welcome',
 }
 
 

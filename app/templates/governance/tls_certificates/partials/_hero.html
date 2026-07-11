@@ -25,49 +25,73 @@
             </div>
 
             <div class="flex min-h-10 flex-wrap items-center gap-3 sm:ml-[4.5rem] xl:max-w-4xl">
-                <div class="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-medium">
-                    <i data-lucide="lock-keyhole" class="h-4 w-4"></i>
-                    {{ total_secrets }} TLS Secrets tracked
-                </div>
-                <div class="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-medium">
-                    <i data-lucide="timer" class="h-4 w-4"></i>
-                    {{ payload.summary.warning }} expiring soon
-                </div>
-                <div class="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-medium">
-                    <i data-lucide="siren" class="h-4 w-4"></i>
-                    {{ payload.summary.critical + payload.summary.expired }} critical or expired
-                </div>
+                {% if cluster_onboarding.is_blocked %}
+                    <div class="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-medium">
+                        <i data-lucide="server-cog" class="h-4 w-4"></i>
+                        0 clusters connected
+                    </div>
+                    <div class="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-amber-200/30 bg-amber-300/20 px-4 py-2 text-sm font-semibold text-amber-50">
+                        <i data-lucide="lock-keyhole" class="h-4 w-4"></i>
+                        Setup required
+                    </div>
+                {% else %}
+                    <div class="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-medium">
+                        <i data-lucide="lock-keyhole" class="h-4 w-4"></i>
+                        {{ total_secrets }} TLS Secrets tracked
+                    </div>
+                    <div class="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-medium">
+                        <i data-lucide="timer" class="h-4 w-4"></i>
+                        {{ payload.summary.warning }} expiring soon
+                    </div>
+                    <div class="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-medium">
+                        <i data-lucide="siren" class="h-4 w-4"></i>
+                        {{ payload.summary.critical + payload.summary.expired }} critical or expired
+                    </div>
+                {% endif %}
             </div>
         </div>
 
         <div class="flex w-full flex-col gap-3 sm:max-w-[360px] xl:w-[360px] xl:flex-shrink-0">
-            <div class="flex min-h-[7rem] flex-col justify-center rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
-                <p class="text-xs font-medium uppercase tracking-[0.2em] text-blue-50/80">Secret posture</p>
-                <div class="mt-3 flex min-h-[4.5rem] items-end justify-between gap-4">
-                    <div class="min-w-0">
-                        <div class="text-3xl font-bold leading-none">{{ healthy_total }}</div>
-                        <p class="mt-2 whitespace-nowrap text-sm text-blue-50/80">Healthy TLS Secrets</p>
-                    </div>
-                    <div class="w-[7.5rem] flex-shrink-0 rounded-xl bg-white/10 px-2.5 py-2 text-left">
-                        <div class="whitespace-nowrap text-[9px] font-medium uppercase tracking-[0.05em] text-blue-50/75">Risk items</div>
-                        <div class="text-lg font-semibold leading-6">{{ risk_total }}</div>
+            {% if cluster_onboarding.is_blocked %}
+                <div class="flex min-h-[10rem] flex-col justify-center rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur">
+                    <p class="text-xs font-medium uppercase tracking-[0.2em] text-blue-50/80">TLS governance readiness</p>
+                    <div class="mt-3 flex items-start justify-between gap-4">
+                        <div>
+                            <div class="text-3xl font-bold leading-none">Blocked</div>
+                            <p class="mt-2 text-sm leading-6 text-blue-50/85">Add a Kubernetes cluster before collecting or updating TLS Secrets.</p>
+                        </div>
+                        <i data-lucide="lock-keyhole" class="h-7 w-7 shrink-0 text-amber-200"></i>
                     </div>
                 </div>
-            </div>
-            <div class="grid grid-cols-2 gap-2">
-                <form method="post" action="{{ url_for('governance.tls_certificates_sync') }}">
-                    <input type="hidden" name="cluster_id" value="{{ payload.filters.cluster_id }}">
-                    <button type="submit" class="inline-flex min-h-[3.25rem] w-full items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/15">
-                        <i data-lucide="refresh-cw" class="h-4 w-4"></i>
-                        Sync TLS
-                    </button>
-                </form>
-                <a href="{{ url_for('governance.tls_certificates_bulk_update') }}"
-                   class="inline-flex min-h-[3.25rem] items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-blue-700 shadow-sm transition hover:bg-blue-50">
-                    <i data-lucide="upload-cloud" class="h-4 w-4"></i>
-                    Bulk Update
-                </a>
-            </div>
+            {% else %}
+                <div class="flex min-h-[7rem] flex-col justify-center rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
+                    <p class="text-xs font-medium uppercase tracking-[0.2em] text-blue-50/80">Secret posture</p>
+                    <div class="mt-3 flex min-h-[4.5rem] items-end justify-between gap-4">
+                        <div class="min-w-0">
+                            <div class="text-3xl font-bold leading-none">{{ healthy_total }}</div>
+                            <p class="mt-2 whitespace-nowrap text-sm text-blue-50/80">Healthy TLS Secrets</p>
+                        </div>
+                        <div class="w-[7.5rem] flex-shrink-0 rounded-xl bg-white/10 px-2.5 py-2 text-left">
+                            <div class="whitespace-nowrap text-[9px] font-medium uppercase tracking-[0.05em] text-blue-50/75">Risk items</div>
+                            <div class="text-lg font-semibold leading-6">{{ risk_total }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <form method="post" action="{{ url_for('governance.tls_certificates_sync') }}">
+                        <input type="hidden" name="cluster_id" value="{{ payload.filters.cluster_id }}">
+                        <button type="submit" class="inline-flex min-h-[3.25rem] w-full items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/15">
+                            <i data-lucide="refresh-cw" class="h-4 w-4"></i>
+                            Sync TLS
+                        </button>
+                    </form>
+                    <a href="{{ url_for('governance.tls_certificates_bulk_update') }}"
+                       class="inline-flex min-h-[3.25rem] items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-blue-700 shadow-sm transition hover:bg-blue-50">
+                        <i data-lucide="upload-cloud" class="h-4 w-4"></i>
+                        Bulk Update
+                    </a>
+                </div>
+            {% endif %}
         </div>
     </div>
 </div>

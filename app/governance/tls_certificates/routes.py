@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from flask import flash, redirect, render_template, request, url_for
 
+from app.cluster.onboarding import has_registered_clusters
 from app.governance.tls_certificates.service import (
     apply_bulk_update,
     apply_certificate_update,
@@ -43,6 +44,9 @@ def tls_certificates_index():
 
 @permission_required('tls_certificates.view')
 def tls_certificates_detail(certificate_id: int):
+    if has_registered_clusters() is False:
+        return redirect(url_for('governance.tls_certificates'))
+
     record = get_tls_certificate_detail(certificate_id)
     if record is None:
         flash('TLS certificate record was not found.', 'warning')
@@ -90,6 +94,9 @@ def tls_certificates_update_apply(certificate_id: int):
 
 @permission_required('tls_certificates.bulk_update')
 def tls_certificates_bulk_page():
+    if has_registered_clusters() is False:
+        return redirect(url_for('governance.tls_certificates'))
+
     payload = get_tls_certificate_page(request.args)
     partial_mode = request.args.get('partial_mode')
 
