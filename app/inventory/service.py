@@ -3,6 +3,7 @@ from decimal import Decimal, InvalidOperation
 from typing import Any, cast
 
 from kubernetes.client import AppsV1Api, BatchV1Api, CoreV1Api, NetworkingV1Api, StorageV1Api, V1NamespaceList, V1Node
+from kubernetes.client.exceptions import ApiException
 from sqlalchemy import func, select
 
 from app.extensions import db
@@ -232,6 +233,47 @@ def get_node_ready_status(
 
     return 'Unknown'
 
+def _extract_node_taints(
+    node: V1Node,
+) -> list[str]:
+    spec = node.spec
+    taints = spec.taints if spec and spec.taints else []
+    result: list[str] = []
+
+    for taint in taints:
+        key = getattr(taint, 'key', None)
+        if not key:
+            continue
+
+        value = getattr(taint, 'value', None)
+        effect = getattr(taint, 'effect', None)
+        label = key
+
+        if value:
+            label = f'{label}={value}'
+
+        if effect:
+            label = f'{label}:{effect}'
+
+        result.append(label)
+
+    return result
+
+def _get_node_condition_status(
+    node: V1Node,
+    condition_type: str,
+) -> str | None:
+    status = node.status
+
+    if status is None:
+        return None
+
+    for condition in status.conditions or []:
+        if condition.type == condition_type:
+            return condition.status or 'Unknown'
+
+    return None
+
 
 def save_cluster_info(
     cluster: Cluster,
@@ -303,7 +345,37 @@ def save_nodes(
         node_inventory.cluster_id = cluster.id
         node_inventory.node_name = metadata.name
         node_inventory.role = get_node_role(node)
+        node_inventory.created_at = metadata.creation_timestamp
         node_inventory.status = ready_status
+        node_inventory.labels = dict(
+            sorted(
+                (metadata.labels or {}).items(),
+            )
+        )
+        node_inventory.unschedulable = bool(
+            node.spec.unschedulable
+            if node.spec and node.spec.unschedulable is not None
+            else False
+        )
+        node_inventory.memory_pressure = _get_node_condition_status(
+            node,
+            'MemoryPressure',
+        )
+        node_inventory.disk_pressure = _get_node_condition_status(
+            node,
+            'DiskPressure',
+        )
+        node_inventory.pid_pressure = _get_node_condition_status(
+            node,
+            'PIDPressure',
+        )
+        node_inventory.network_unavailable = _get_node_condition_status(
+            node,
+            'NetworkUnavailable',
+        )
+        node_inventory.taints = _extract_node_taints(
+            node,
+        )
 
         node_addresses = _extract_node_addresses(
             node,
@@ -335,10 +407,61 @@ def save_nodes(
 
         db.session.add(node_inventory)
 
+def _namespace_count_snapshot(
+    fetcher,
+) -> dict[str, int] | None:
+    try:
+        result = fetcher()
+    except ApiException as exc:
+        if getattr(exc, 'status', None) in {403, 404}:
+            return None
+        raise
+
+    counts: dict[str, int] = {}
+
+    for item in getattr(result, 'items', None) or []:
+        metadata = getattr(item, 'metadata', None)
+        namespace_name = getattr(metadata, 'namespace', None)
+
+        if not namespace_name:
+            continue
+
+        counts[namespace_name] = counts.get(namespace_name, 0) + 1
+
+    return counts
+
+def _namespace_service_account_snapshot(
+    api: CoreV1Api,
+) -> tuple[dict[str, int] | None, set[str] | None]:
+    try:
+        result = api.list_service_account_for_all_namespaces()
+    except ApiException as exc:
+        if getattr(exc, 'status', None) in {403, 404}:
+            return None, None
+        raise
+
+    counts: dict[str, int] = {}
+    default_namespaces: set[str] = set()
+
+    for item in getattr(result, 'items', None) or []:
+        metadata = getattr(item, 'metadata', None)
+        namespace_name = getattr(metadata, 'namespace', None)
+        service_account_name = getattr(metadata, 'name', None)
+
+        if not namespace_name:
+            continue
+
+        counts[namespace_name] = counts.get(namespace_name, 0) + 1
+
+        if service_account_name == 'default':
+            default_namespaces.add(namespace_name)
+
+    return counts, default_namespaces
 
 def save_namespaces(
     cluster: Cluster,
     api: CoreV1Api,
+    networking_api: NetworkingV1Api,
 ) -> None:
     NamespaceInventory.query.filter_by(
         cluster_id=cluster.id,
@@ -353,21 +476,62 @@ def save_namespaces(
 
     namespaces = namespace_list.items or []
 
+    limit_range_counts = _namespace_count_snapshot(
+        api.list_limit_range_for_all_namespaces,
+    )
+    network_policy_counts = _namespace_count_snapshot(
+        networking_api.list_network_policy_for_all_namespaces,
+    )
+    service_account_counts, default_service_account_namespaces = (
+        _namespace_service_account_snapshot(api)
+    )
+
     for namespace in namespaces:
         metadata = namespace.metadata
 
-        if metadata is None:
+        if metadata is None or not metadata.name:
             continue
 
+        namespace_name = metadata.name
         namespace_inventory = NamespaceInventory()
 
         namespace_inventory.cluster_id = cluster.id
-        namespace_inventory.namespace = metadata.name
-
+        namespace_inventory.namespace = namespace_name
         namespace_inventory.status = namespace.status.phase if namespace.status else None
+        namespace_inventory.uid = str(metadata.uid) if metadata.uid else None
+        namespace_inventory.created_at = metadata.creation_timestamp
+        namespace_inventory.labels = dict(
+            sorted(
+                (metadata.labels or {}).items(),
+            )
+        )
+        namespace_inventory.annotations = dict(
+            sorted(
+                (metadata.annotations or {}).items(),
+            )
+        )
+        namespace_inventory.limit_range_count = (
+            None
+            if limit_range_counts is None
+            else limit_range_counts.get(namespace_name, 0)
+        )
+        namespace_inventory.network_policy_count = (
+            None
+            if network_policy_counts is None
+            else network_policy_counts.get(namespace_name, 0)
+        )
+        namespace_inventory.service_account_count = (
+            None
+            if service_account_counts is None
+            else service_account_counts.get(namespace_name, 0)
+        )
+        namespace_inventory.default_service_account_present = (
+            None
+            if default_service_account_namespaces is None
+            else namespace_name in default_service_account_namespaces
+        )
 
         db.session.add(namespace_inventory)
-
 
 def save_workloads(
     cluster: Cluster,
@@ -734,6 +898,7 @@ def sync_inventory(
             save_namespaces(
                 cluster,
                 core_api,
+                networking_api,
             )
             db.session.flush()
 
@@ -1408,6 +1573,7 @@ def get_node_inventory(
                 ),
                 'os_image': node.os_image,
                 'runtime_display': runtime_display,
+                'collected_at': node.collected_at,
             }
         )
 
@@ -1447,7 +1613,6 @@ def get_node_inventory(
         ),
         'nodes': nodes_data,
     }
-
 
 def _pod_summary(
     pod: PodInventory,
@@ -1666,17 +1831,30 @@ def get_node_detail(node_id: int) -> dict[str, Any] | None:
     )
     scheduled_pod_count = db.session.query(func.count(PodInventory.id)).filter(*pod_scope).scalar() or 0
 
-    network_context_tip = (
-        'Internal IP identifies the node inside the cluster network, while the '
-        'hostname is the Kubernetes node identity used for scheduling and operations. '
-        f'This inventory snapshot currently maps {scheduled_pod_count} Pod(s) to this node.'
-    )
+    if node.unschedulable is True:
+        scheduling_display = 'Cordoned'
+    elif node.unschedulable is False:
+        scheduling_display = 'Schedulable'
+    else:
+        scheduling_display = 'Not reported'
+
+    network_availability = 'Not reported'
+    if node.network_unavailable == 'True':
+        network_availability = 'Unavailable'
+    elif node.network_unavailable == 'False':
+        network_availability = 'Available'
+
+    ready_condition = {
+        'Ready': 'True',
+        'NotReady': 'False',
+    }.get(node.status or '', 'Unknown')
 
     return {
         'id': node.id,
         'cluster_name': cluster_name,
         'node_name': node.node_name,
         'role': role,
+        'age': format_age(node.created_at),
         'role_description': NODE_ROLE_DESCRIPTIONS.get(
             role_key,
             'Provides Kubernetes node capacity. Its exact function depends on the labels and workloads assigned to it.',
@@ -1686,7 +1864,18 @@ def get_node_detail(node_id: int) -> dict[str, Any] | None:
         'external_ip': node.external_ip,
         'hostname_address': node.hostname_address,
         'scheduled_pod_count': scheduled_pod_count,
-        'network_context_tip': network_context_tip,
+        'network_availability': network_availability,
+        'scheduling_display': scheduling_display,
+        'ready_condition': ready_condition,
+        'memory_pressure': node.memory_pressure or 'Not reported',
+        'disk_pressure': node.disk_pressure or 'Not reported',
+        'pid_pressure': node.pid_pressure or 'Not reported',
+        'taints': node.taints or [],
+        'labels': dict(
+            sorted(
+                (node.labels or {}).items(),
+            )
+        ),
         'cpu': node.cpu,
         'memory_display': format_kubernetes_size(node.memory),
         'ephemeral_storage_display': format_kubernetes_size(node.ephemeral_storage),
@@ -1696,7 +1885,6 @@ def get_node_detail(node_id: int) -> dict[str, Any] | None:
         'runtime_display': runtime.split('://')[0] if '://' in runtime else runtime,
         'collected_at': node.collected_at,
     }
-
 
 def get_workload_detail(workload_id: int) -> dict[str, Any] | None:
     result = (
@@ -1979,10 +2167,10 @@ def get_namespace_filter_statuses(
 
 
 def get_namespace_inventory(
-    cluster_id=None,
-    status=None,
-    search=None,
-):
+    cluster_id: str | None = None,
+    status: str | None = None,
+    search: str | None = None,
+) -> dict[str, Any]:
     query = db.session.query(
         NamespaceInventory,
         Cluster.name.label(
@@ -2002,44 +2190,88 @@ def get_namespace_inventory(
     if search:
         query = query.filter(NamespaceInventory.namespace.ilike(f'%{search}%'))
 
-    namespaces = query.order_by(
+    namespace_records = query.order_by(
         Cluster.name,
         NamespaceInventory.namespace,
     ).all()
 
-    cluster_count = len({cluster_name for _, cluster_name in namespaces})
-
-    status_counts = {}
-
-    for namespace, _ in namespaces:
-        status = namespace.status or 'Unknown'
-
-        status_counts[status] = (
-            status_counts.get(
-                status,
-                0,
-            )
-            + 1
+    def _namespace_count_map(model) -> dict[tuple[str, str], int]:
+        count_query = db.session.query(
+            model.cluster_id,
+            model.namespace,
+            func.count(model.id),
         )
 
-    return {
-        'total_namespaces': len(
-            namespaces,
-        ),
-        'total_clusters': cluster_count,
-        'active_namespaces': (
-            status_counts.get(
-                'Active',
-                0,
+        if cluster_id:
+            count_query = count_query.filter(model.cluster_id == cluster_id)
+
+        return {
+            (row_cluster_id, row_namespace): count
+            for row_cluster_id, row_namespace, count in (
+                count_query.group_by(
+                    model.cluster_id,
+                    model.namespace,
+                ).all()
             )
-        ),
+        }
+
+    workload_counts = _namespace_count_map(WorkloadInventory)
+    pod_counts = _namespace_count_map(PodInventory)
+    service_counts = _namespace_count_map(ServiceInventory)
+    quota_counts = _namespace_count_map(ResourceQuotaInventory)
+
+    status_counts: dict[str, int] = {}
+    inventory_rows: list[dict[str, Any]] = []
+
+    for namespace, cluster_name in namespace_records:
+        namespace_status = namespace.status or 'Unknown'
+        status_counts[namespace_status] = status_counts.get(namespace_status, 0) + 1
+
+        key = (
+            namespace.cluster_id,
+            namespace.namespace,
+        )
+        quota_count = quota_counts.get(key, 0)
+        limit_range_count = namespace.limit_range_count
+        network_policy_count = namespace.network_policy_count
+
+        inventory_rows.append(
+            {
+                'id': namespace.id,
+                'cluster_name': cluster_name,
+                'namespace': namespace.namespace,
+                'status': namespace_status,
+                'age': format_age(namespace.created_at),
+                'workload_count': workload_counts.get(key, 0),
+                'pod_count': pod_counts.get(key, 0),
+                'service_count': service_counts.get(key, 0),
+                'quota_count': quota_count,
+                'limit_range_count': limit_range_count,
+                'network_policy_count': network_policy_count,
+                'controls_reported': (
+                    limit_range_count is not None
+                    and network_policy_count is not None
+                ),
+            }
+        )
+
+    cluster_count = len(
+        {
+            cluster_name
+            for _, cluster_name in namespace_records
+        }
+    )
+
+    return {
+        'total_namespaces': len(namespace_records),
+        'total_clusters': cluster_count,
+        'active_namespaces': status_counts.get('Active', 0),
         'status_counts': status_counts,
         'namespace_statuses': get_namespace_filter_statuses(
             cluster_id=cluster_id,
         ),
-        'namespaces': namespaces,
+        'namespaces': inventory_rows,
     }
-
 
 def get_namespace_detail(
     namespace_id: int,
@@ -2113,7 +2345,18 @@ def get_namespace_detail(
         ).count(),
     }
 
-    object_counts['tracked_total'] = sum(object_counts.values())
+    object_counts['tracked_total'] = sum(
+        object_counts[key]
+        for key in (
+            'workloads',
+            'pods',
+            'services',
+            'ingresses',
+            'persistent_volume_claims',
+            'config_maps',
+            'secrets',
+        )
+    )
 
     quota_rows = (
         ResourceQuotaInventory.query.filter_by(
@@ -2124,18 +2367,19 @@ def get_namespace_detail(
         .all()
     )
 
-    quotas = []
+    quotas: list[dict[str, Any]] = []
+
     for quota in quota_rows:
         resources = []
-        resource_names = sorted(set((quota.hard or {}).keys()) | set((quota.used or {}).keys()))
-        for resource_name in resource_names:
-            hard_value = (quota.hard or {}).get(resource_name)
-            used_value = (quota.used or {}).get(resource_name)
+
+        for resource_name in sorted((quota.hard or {}).keys()):
             resources.append(
                 {
                     'name': resource_name,
-                    'hard': format_quota_value(resource_name, hard_value),
-                    'used': format_quota_value(resource_name, used_value),
+                    'hard': format_quota_value(
+                        resource_name,
+                        (quota.hard or {}).get(resource_name),
+                    ),
                 }
             )
 
@@ -2148,12 +2392,27 @@ def get_namespace_detail(
             }
         )
 
+    labels = dict(sorted((namespace.labels or {}).items()))
+    annotations = dict(sorted((namespace.annotations or {}).items()))
+
+    if namespace.default_service_account_present is True:
+        default_service_account = 'Present'
+    elif namespace.default_service_account_present is False:
+        default_service_account = 'Missing'
+    else:
+        default_service_account = 'Not reported'
+
     return {
         'id': namespace.id,
         'cluster_name': cluster_name,
         'namespace': namespace.namespace,
         'status': namespace.status or 'Unknown',
+        'uid': namespace.uid or '-',
+        'age': format_age(namespace.created_at),
+        'created_at': namespace.created_at,
         'collected_at': namespace.collected_at,
+        'labels': labels,
+        'annotations': annotations,
         'object_counts': object_counts,
         'workload_breakdown': {
             'deployments': workload_counts.get('Deployment', 0),
@@ -2164,8 +2423,23 @@ def get_namespace_detail(
         },
         'quotas': quotas,
         'quota_count': len(quotas),
+        'limit_range_count': namespace.limit_range_count,
+        'network_policy_count': namespace.network_policy_count,
+        'service_account_count': namespace.service_account_count,
+        'default_service_account': default_service_account,
+        'pod_security_enforce': labels.get(
+            'pod-security.kubernetes.io/enforce',
+            'Not configured',
+        ),
+        'pod_security_audit': labels.get(
+            'pod-security.kubernetes.io/audit',
+            'Not configured',
+        ),
+        'pod_security_warn': labels.get(
+            'pod-security.kubernetes.io/warn',
+            'Not configured',
+        ),
     }
-
 
 def get_configuration_filter_namespaces(
     cluster_id: str | None = None,
