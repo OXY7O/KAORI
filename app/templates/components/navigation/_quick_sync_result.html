@@ -1,11 +1,14 @@
 {% set is_success = status == 'success' %}
 {% set is_warning = status == 'warning' %}
 {% set is_error = status == 'error' %}
+{% if toast_oob|default(false) %}
+    <div id="operational-action-feedback"
+         hx-swap-oob="innerHTML:#operational-action-feedback">
+{% endif %}
 <div data-quick-action-toast
-     {% if toast_oob|default(false) %}hx-swap-oob="beforeend:#quick-action-feedback"{% endif %}
      role="status"
      aria-live="polite"
-     class="quick-action-toast pointer-events-auto overflow-hidden rounded-2xl border bg-white shadow-2xl shadow-slate-900/15 dark:bg-slate-900 dark:shadow-slate-950/50 {% if is_success %}border-emerald-200 dark:border-emerald-500/30{% elif is_warning %}border-amber-200 dark:border-amber-500/30{% elif is_error %}border-red-200 dark:border-red-500/30{% else %}border-blue-200 dark:border-blue-500/30{% endif %}">
+     class="quick-action-toast pointer-events-auto relative isolate w-full overflow-hidden rounded-2xl border bg-white shadow-2xl shadow-slate-900/15 dark:bg-slate-900 dark:shadow-slate-950/50 {% if is_success %}border-emerald-200 dark:border-emerald-500/30{% elif is_warning %}border-amber-200 dark:border-amber-500/30{% elif is_error %}border-red-200 dark:border-red-500/30{% else %}border-blue-200 dark:border-blue-500/30{% endif %}">
     <div class="h-1 {% if is_success %}bg-emerald-500{% elif is_warning %}bg-amber-500{% elif is_error %}bg-red-500{% else %}bg-blue-500{% endif %}"></div>
 
     <div class="p-4">
@@ -52,7 +55,8 @@
                     {% else %}
                         <button type="button"
                                 data-quick-action-toast-close
-                                class="relative z-10 pointer-events-auto rounded-xl p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                                onclick="window.dismissQuickActionToast && window.dismissQuickActionToast(this)"
+                                class="relative z-20 pointer-events-auto rounded-xl p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
                                 aria-label="Close operational result">
                             <i data-lucide="x" class="h-4 w-4"></i>
                         </button>
@@ -114,6 +118,9 @@
         </div>
     </div>
 </div>
+{% if toast_oob|default(false) %}
+    </div>
+{% endif %}
 
 {% if notification_context is defined %}
     {% with navigation_notifications=notification_context['items'], navigation_unread_count=notification_context['unread_count'], navigation_total_count=notification_context['total_count'], navigation_display_limit=notification_context['display_limit'], notification_oob=true %}

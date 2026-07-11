@@ -138,6 +138,11 @@
                 visibility: visible;
             }
 
+            #operational-action-feedback:empty,
+            #quick-sync-feedback:empty {
+                display: none;
+            }
+
 
         </style>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -287,24 +292,27 @@
         {% set queued_quick_action_feedback = load_quick_action_feedback() %}
         <div id="quick-action-feedback"
              style="width:min(28rem, calc(100vw - 2rem));"
-             class="pointer-events-none fixed right-4 top-20 z-50 space-y-3 sm:right-6 lg:right-8">
-            {% if queued_quick_action_feedback %}
-                {% with
-                    status=queued_quick_action_feedback.status,
-                    title=queued_quick_action_feedback.title,
-                    message=queued_quick_action_feedback.message,
-                    detail=queued_quick_action_feedback.detail,
-                    view_url=queued_quick_action_feedback.view_url,
-                    action_label=queued_quick_action_feedback.action_label,
-                    action_icon=queued_quick_action_feedback.action_icon,
-                    completed_label=queued_quick_action_feedback.completed_label,
-                    notification_saved=queued_quick_action_feedback.notification_saved
-                %}
-                    {% include "components/navigation/_quick_sync_result.html" %}
-                {% endwith %}
-            {% endif %}
+             class="pointer-events-none fixed right-4 top-20 z-50 flex flex-col gap-3 sm:right-6 lg:right-8">
+            <div id="operational-action-feedback" class="w-full">
+                {% if queued_quick_action_feedback %}
+                    {% with
+                        status=queued_quick_action_feedback.status,
+                        title=queued_quick_action_feedback.title,
+                        message=queued_quick_action_feedback.message,
+                        detail=queued_quick_action_feedback.detail,
+                        view_url=queued_quick_action_feedback.view_url,
+                        action_label=queued_quick_action_feedback.action_label,
+                        action_icon=queued_quick_action_feedback.action_icon,
+                        completed_label=queued_quick_action_feedback.completed_label,
+                        notification_saved=queued_quick_action_feedback.notification_saved
+                    %}
+                        {% include "components/navigation/_quick_sync_result.html" %}
+                    {% endwith %}
+                {% endif %}
+            </div>
 
             <div id="quick-sync-feedback"
+                 class="w-full"
                  {% if current_user.is_authenticated and current_user.has_permission('clusters.sync') and cluster_onboarding.has_clusters %}
                      hx-get="{{ url_for('cluster.active_sync_all_status') }}"
                      hx-trigger="load"
@@ -384,8 +392,21 @@
                 return true
             }
 
+            window.dismissQuickActionToast = (button) => {
+                if (!button) {
+                    return
+                }
+
+                const toast = button.closest('[data-quick-action-toast]')
+
+                if (toast) {
+                    toast.remove()
+                }
+            }
+
             document.addEventListener('click', (event) => {
-                const closeButton = event.target.closest('[data-quick-action-toast-close]')
+                const eventTarget = event.target instanceof Element ? event.target : null
+                const closeButton = eventTarget?.closest('[data-quick-action-toast-close]')
 
                 if (!closeButton) {
                     return
@@ -393,12 +414,7 @@
 
                 event.preventDefault()
                 event.stopPropagation()
-
-                const toast = closeButton.closest('[data-quick-action-toast]')
-
-                if (toast) {
-                    toast.remove()
-                }
+                window.dismissQuickActionToast(closeButton)
             }, true)
 
             document.addEventListener('submit', (event) => {

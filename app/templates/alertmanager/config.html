@@ -167,8 +167,8 @@
                     <div class="flex justify-end gap-3">
                         <button type="button"
                                 hx-post="{{ url_for('alertmanager.test_cluster_alertmanager', cluster_id=cluster.id) }}"
-                                hx-target="#quick-action-feedback"
-                                hx-swap="beforeend"
+                                hx-target="#operational-action-feedback"
+                                hx-swap="innerHTML"
                                 hx-disabled-elt="this"
                                 class="group inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-wait disabled:opacity-70 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
                             <i data-lucide="plug-zap" class="h-4 w-4 group-[.htmx-request]:animate-spin"></i>
