@@ -1,21 +1,65 @@
-{% set cards = [
-    {'label': 'Total Objects', 'value': inventory.total_items, 'icon': 'files', 'icon_class': 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300'},
-    {'label': 'ConfigMaps', 'value': inventory.config_maps, 'icon': 'file-json-2', 'icon_class': 'bg-cyan-50 text-cyan-600 dark:bg-cyan-500/10 dark:text-cyan-300'},
-    {'label': 'Secrets', 'value': inventory.secrets, 'icon': 'key-round', 'icon_class': 'bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-300'},
-    {'label': 'Immutable', 'value': inventory.immutable_items, 'icon': 'lock-keyhole', 'icon_class': 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300'}
-] %}
-<div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-    {% for card in cards %}
+<div class="space-y-4">
+    <div class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+            <h2 class="text-lg font-semibold text-slate-950 dark:text-white">Configuration coverage snapshot</h2>
+            <p class="text-sm text-slate-500 dark:text-slate-400">ConfigMap and Secret metadata based on the current filter.</p>
+        </div>
+        <div class="text-sm font-medium text-slate-500 dark:text-slate-400">
+            Metadata only
+        </div>
+    </div>
+
+    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
             <div class="flex items-start justify-between gap-3">
                 <div>
-                    <p class="text-sm font-medium text-slate-500 dark:text-slate-400">{{ card.label }}</p>
-                    <div class="mt-4 text-4xl font-bold tracking-tight text-blue-600 dark:text-blue-400">{{ card.value }}</div>
+                    <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Total Objects</p>
+                    <div class="mt-4 text-4xl font-bold tracking-tight text-blue-600 dark:text-blue-400">{{ inventory.total_items }}</div>
                 </div>
-                <div class="flex h-10 w-10 items-center justify-center rounded-xl {{ card.icon_class }}">
-                    <i data-lucide="{{ card.icon }}" class="h-5 w-5"></i>
+                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+                    <i data-lucide="files" class="h-5 w-5"></i>
                 </div>
             </div>
+            <p class="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">Configuration objects collected from connected clusters.</p>
         </div>
-    {% endfor %}
+
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <p class="text-sm font-medium text-slate-500 dark:text-slate-400">ConfigMaps</p>
+                    <div class="mt-4 text-4xl font-bold tracking-tight text-blue-600 dark:text-blue-400">{{ inventory.config_maps }}</div>
+                </div>
+                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-50 text-cyan-600 dark:bg-cyan-500/10 dark:text-cyan-300">
+                    <i data-lucide="file-json-2" class="h-5 w-5"></i>
+                </div>
+            </div>
+            <p class="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">Non-sensitive configuration metadata in the current result.</p>
+        </div>
+
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Secrets</p>
+                    <div class="mt-4 text-4xl font-bold tracking-tight text-blue-600 dark:text-blue-400">{{ inventory.secrets }}</div>
+                </div>
+                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-300">
+                    <i data-lucide="key-round" class="h-5 w-5"></i>
+                </div>
+            </div>
+            <p class="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">Secret metadata only; stored values are never displayed.</p>
+        </div>
+
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Immutable</p>
+                    <div class="mt-4 text-4xl font-bold tracking-tight text-blue-600 dark:text-blue-400">{{ inventory.immutable_items }}</div>
+                </div>
+                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300">
+                    <i data-lucide="lock-keyhole" class="h-5 w-5"></i>
+                </div>
+            </div>
+            <p class="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">Objects configured as immutable in Kubernetes.</p>
+        </div>
+    </div>
 </div>

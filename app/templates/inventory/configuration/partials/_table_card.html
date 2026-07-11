@@ -1,13 +1,20 @@
 <div id="configuration-inventory-card" class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
     <div class="border-b border-slate-200 px-6 py-5 dark:border-slate-700">
-        <div class="flex items-center gap-3">
-            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
-                <i data-lucide="file-key-2" class="h-5 w-5"></i>
+        <div class="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+            <div class="flex items-center gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+                    <i data-lucide="file-key-2" class="h-5 w-5"></i>
+                </div>
+                <div>
+                    <h2 class="text-lg font-semibold text-slate-950 dark:text-white">Configuration Inventory</h2>
+                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">ConfigMap and Secret metadata collected from connected clusters.</p>
+                </div>
             </div>
-            <div>
-                <h2 class="text-lg font-semibold text-slate-950 dark:text-white">Configuration Inventory</h2>
-                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Secret values are never stored; only safe metadata and usage references are collected.</p>
-            </div>
+            <a href="{{ url_for('cluster.list_clusters') }}"
+               class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
+                <i data-lucide="external-link" class="h-4 w-4"></i>
+                Open Cluster List
+            </a>
         </div>
 
         <div id="configuration-table-loading" class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-blue-100 dark:bg-blue-950/60">
