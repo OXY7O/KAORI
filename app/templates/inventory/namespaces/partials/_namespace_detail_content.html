@@ -1,53 +1,198 @@
-{% from 'inventory/components/_detail_macros.html' import detail_shell, detail_card, detail_row, detail_tip %}
-{% call detail_shell(
-    namespace.namespace,
-    'General object coverage, controller mix, and resource governance for this namespace.',
-    'folder-tree',
-    'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-300',
-    namespace.cluster_name,
-    'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
-    namespace.status,
-    'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' if namespace.status == 'Active' else 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'
-) %}
-    {% call detail_card('Object coverage', 'boxes', 'bg-sky-50 text-sky-600 dark:bg-sky-950/40 dark:text-sky-300', namespace.object_counts.tracked_total ~ ' tracked', 'bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300', panel_classes='border-sky-100 bg-gradient-to-br from-sky-50/90 via-white to-white dark:border-sky-900/40 dark:from-sky-950/30 dark:via-slate-950/45 dark:to-slate-950/45') %}
-        {{ detail_row('Workloads', namespace.object_counts.workloads) }}
-        {{ detail_row('Pods', namespace.object_counts.pods) }}
-        {{ detail_row('Services', namespace.object_counts.services) }}
-        {{ detail_row('Ingresses', namespace.object_counts.ingresses) }}
-        {{ detail_row('PVCs', namespace.object_counts.persistent_volume_claims) }}
-        {{ detail_row('ConfigMaps', namespace.object_counts.config_maps) }}
-        {{ detail_row('Secrets', namespace.object_counts.secrets) }}
-    {% endcall %}
-    {% call detail_card('Workload composition', 'layers-3', 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300', panel_classes='border-violet-100 bg-gradient-to-br from-violet-50/90 via-white to-white dark:border-violet-900/40 dark:from-violet-950/30 dark:via-slate-950/45 dark:to-slate-950/45') %}
-        {{ detail_row('Deployments', namespace.workload_breakdown.deployments) }}
-        {{ detail_row('StatefulSets', namespace.workload_breakdown.statefulsets) }}
-        {{ detail_row('DaemonSets', namespace.workload_breakdown.daemonsets) }}
-        {{ detail_row('Jobs', namespace.workload_breakdown.jobs) }}
-        {{ detail_row('CronJobs', namespace.workload_breakdown.cronjobs) }}
-        {{ detail_row('Collected', namespace.collected_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
-    {% endcall %}
-    {% call detail_card('Resource governance', 'gauge', 'bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-300', namespace.quota_count ~ ' quota(s)', 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300', panel_classes='border-amber-100 bg-gradient-to-br from-amber-50/90 via-white to-white dark:border-amber-900/40 dark:from-amber-950/30 dark:via-slate-950/45 dark:to-slate-950/45') %}
-        {% if namespace.quotas %}
-            <div class="max-h-64 space-y-3 overflow-y-auto pr-1">
-                {% for quota in namespace.quotas %}
-                    <div class="rounded-xl bg-slate-50 px-3 py-3 dark:bg-slate-900/70">
-                        <div class="flex items-center justify-between gap-3">
-                            <span class="truncate text-xs font-semibold text-slate-800 dark:text-slate-100" title="{{ quota.name }}">{{ quota.name }}</span>
-                            <span class="text-[10px] font-medium text-slate-400">{{ quota.resource_count }} limits</span>
-                        </div>
-                        <div class="mt-2 space-y-1.5">
-                            {% for resource in quota.resources %}
-                                <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-3 text-[11px]">
-                                    <span class="truncate text-slate-500 dark:text-slate-400" title="{{ resource.name }}">{{ resource.name }}</span>
-                                    <span class="whitespace-nowrap font-semibold text-slate-700 dark:text-slate-200">{{ resource.used }} / {{ resource.hard }}</span>
+{% from 'inventory/components/_detail_macros.html' import detail_card, detail_row, detail_tip %}
+{% set status_classes = 'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/25' if namespace.status == 'Active' else ('bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/25' if namespace.status == 'Terminating' else 'bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700') %}
+
+<div class="bg-slate-50/80 px-4 py-4 dark:bg-slate-950/40">
+    <div class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+        <div class="flex flex-col gap-3 border-b border-slate-200 bg-gradient-to-r from-slate-50 via-white to-indigo-50/60 px-5 py-4 dark:border-slate-700 dark:from-slate-900 dark:via-slate-900 dark:to-indigo-950/20 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-300">
+                    <i data-lucide="folder-tree" class="h-5 w-5"></i>
+                </span>
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h3 class="truncate text-sm font-semibold text-slate-900 dark:text-white">{{ namespace.namespace }}</h3>
+                        <span class="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/25">{{ namespace.cluster_name }}</span>
+                    </div>
+                    <p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">Namespace identity, object coverage, configured controls, and security metadata from the latest inventory snapshot.</p>
+                </div>
+            </div>
+            <span class="inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset {{ status_classes }}">
+                <span class="h-1.5 w-1.5 rounded-full {{ 'bg-emerald-500' if namespace.status == 'Active' else ('bg-amber-500' if namespace.status == 'Terminating' else 'bg-slate-500') }}"></span>
+                {{ namespace.status }}
+            </span>
+        </div>
+
+        <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
+            {% call detail_card(
+                'Namespace identity',
+                'badge-info',
+                'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300',
+                namespace.age,
+                'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300'
+            ) %}
+                {{ detail_row('Status', namespace.status) }}
+                {{ detail_row('Age', namespace.age) }}
+                <div class="flex items-start justify-between gap-3">
+                    <span class="shrink-0 text-slate-500 dark:text-slate-400">UID</span>
+                    <span class="max-w-[68%] truncate text-right text-[10px] font-semibold text-slate-900 dark:text-white" title="{{ namespace.uid }}">{{ namespace.uid }}</span>
+                </div>
+                {{ detail_row('Created', namespace.created_at|user_datetime('%Y-%m-%d %H:%M %Z') if namespace.created_at else '-') }}
+                {{ detail_row('Collected', namespace.collected_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
+                <div class="pt-2">
+                    {{ detail_tip('Age is based on the Kubernetes creation timestamp. Collected shows when this snapshot was last refreshed.', 'blue', 'clock-3') }}
+                </div>
+            {% endcall %}
+
+            {% call detail_card(
+                'Resource inventory',
+                'boxes',
+                'bg-sky-50 text-sky-600 dark:bg-sky-950/40 dark:text-sky-300',
+                namespace.object_counts.tracked_total ~ ' tracked',
+                'bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300'
+            ) %}
+                {{ detail_row('Workloads', namespace.object_counts.workloads) }}
+                {{ detail_row('Pods', namespace.object_counts.pods) }}
+                {{ detail_row('Services', namespace.object_counts.services) }}
+                {{ detail_row('Ingresses', namespace.object_counts.ingresses) }}
+                {{ detail_row('PVCs', namespace.object_counts.persistent_volume_claims) }}
+                <div class="mt-3 rounded-xl bg-slate-50 px-3 py-2.5 dark:bg-slate-900/70">
+                    <div class="mb-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">Workload composition</div>
+                    <div class="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11px]">
+                        <span class="text-slate-500 dark:text-slate-400">Deployments</span><span class="text-right font-semibold text-slate-800 dark:text-slate-100">{{ namespace.workload_breakdown.deployments }}</span>
+                        <span class="text-slate-500 dark:text-slate-400">StatefulSets</span><span class="text-right font-semibold text-slate-800 dark:text-slate-100">{{ namespace.workload_breakdown.statefulsets }}</span>
+                        <span class="text-slate-500 dark:text-slate-400">DaemonSets</span><span class="text-right font-semibold text-slate-800 dark:text-slate-100">{{ namespace.workload_breakdown.daemonsets }}</span>
+                        <span class="text-slate-500 dark:text-slate-400">Jobs</span><span class="text-right font-semibold text-slate-800 dark:text-slate-100">{{ namespace.workload_breakdown.jobs }}</span>
+                        <span class="text-slate-500 dark:text-slate-400">CronJobs</span><span class="text-right font-semibold text-slate-800 dark:text-slate-100">{{ namespace.workload_breakdown.cronjobs }}</span>
+                    </div>
+                </div>
+            {% endcall %}
+
+            {% call detail_card(
+                'Resource controls',
+                'gauge',
+                'bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-300',
+                namespace.quota_count ~ (' quota' if namespace.quota_count == 1 else ' quotas'),
+                'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'
+            ) %}
+                {{ detail_row('ResourceQuotas', namespace.quota_count) }}
+                {{ detail_row('LimitRanges', namespace.limit_range_count if namespace.limit_range_count is not none else 'Not reported') }}
+                {% if namespace.quotas %}
+                    <div class="max-h-56 space-y-2 overflow-y-auto pt-1 pr-1">
+                        {% for quota in namespace.quotas %}
+                            <div class="rounded-xl bg-slate-50 px-3 py-2.5 dark:bg-slate-900/70">
+                                <div class="flex items-center justify-between gap-3">
+                                    <span class="truncate text-[11px] font-semibold text-slate-800 dark:text-slate-100" title="{{ quota.name }}">{{ quota.name }}</span>
+                                    <span class="text-[9px] font-medium text-slate-400">{{ quota.resource_count }} limits</span>
                                 </div>
+                                <div class="mt-2 space-y-1.5">
+                                    {% for resource in quota.resources %}
+                                        <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-2 text-[10px]">
+                                            <span class="truncate text-slate-500 dark:text-slate-400" title="{{ resource.name }}">{{ resource.name }}</span>
+                                            <span class="whitespace-nowrap font-semibold text-slate-700 dark:text-slate-200">{{ resource.hard }}</span>
+                                        </div>
+                                    {% endfor %}
+                                    {% if quota.truncated %}
+                                        <div class="text-[9px] text-slate-400">Additional configured limits are not shown.</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="pt-2">
+                        {{ detail_tip('No ResourceQuota object is recorded. This describes configured namespace controls, not current resource utilization.', 'amber', 'info') }}
+                    </div>
+                {% endif %}
+            {% endcall %}
+
+            {% call detail_card(
+                'Security & access',
+                'shield-check',
+                'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300',
+                namespace.pod_security_enforce,
+                'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300'
+            ) %}
+                {{ detail_row('NetworkPolicies', namespace.network_policy_count if namespace.network_policy_count is not none else 'Not reported') }}
+                {{ detail_row('ServiceAccounts', namespace.service_account_count if namespace.service_account_count is not none else 'Not reported') }}
+                {{ detail_row('Default ServiceAccount', namespace.default_service_account) }}
+                {{ detail_row('Secrets', namespace.object_counts.secrets) }}
+                {{ detail_row('ConfigMaps', namespace.object_counts.config_maps) }}
+                {{ detail_row('PSA Enforce', namespace.pod_security_enforce) }}
+                {{ detail_row('PSA Audit', namespace.pod_security_audit) }}
+                {{ detail_row('PSA Warn', namespace.pod_security_warn) }}
+                <div class="pt-2">
+                    {{ detail_tip('Pod Security values come from namespace admission labels. NetworkPolicy count indicates configured objects, not effective traffic coverage.', 'violet', 'shield') }}
+                </div>
+            {% endcall %}
+
+            <section class="rounded-2xl border border-slate-200 bg-white p-4 md:col-span-2 xl:col-span-4 dark:border-slate-700 dark:bg-slate-950/40">
+                <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white">
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-600 dark:bg-teal-950/40 dark:text-teal-300">
+                            <i data-lucide="tags" class="h-4 w-4"></i>
+                        </span>
+                        Namespace labels
+                    </div>
+                    <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">{{ namespace.labels|length }} {{ 'label' if namespace.labels|length == 1 else 'labels' }}</span>
+                </div>
+                {% if namespace.labels %}
+                    <div class="max-h-40 overflow-y-auto pr-1">
+                        <div class="flex flex-wrap gap-1.5">
+                            {% for key, value in namespace.labels.items() %}
+                                {% if key.startswith('pod-security.kubernetes.io/') %}
+                                    {% set namespace_label_classes = 'bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/25' %}
+                                {% elif key in ['environment', 'env'] or key.endswith('/environment') %}
+                                    {% set namespace_label_classes = 'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/25' %}
+                                {% elif key in ['team', 'owner'] or key.endswith('/team') or key.endswith('/owner') %}
+                                    {% set namespace_label_classes = 'bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/25' %}
+                                {% elif key.startswith('kubernetes.io/') %}
+                                    {% set namespace_label_classes = 'bg-cyan-50 text-cyan-700 ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-500/25' %}
+                                {% else %}
+                                    {% set namespace_label_classes = 'bg-violet-50 text-violet-700 ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-500/25' %}
+                                {% endif %}
+                                <span class="inline-flex max-w-full items-center rounded-full px-2.5 py-1 text-[11px] font-medium leading-4 ring-1 ring-inset {{ namespace_label_classes }}" title="{{ key }}{% if value %}={{ value }}{% endif %}">
+                                    <span class="break-all">{{ key }}{% if value %}=<span class="font-semibold">{{ value }}</span>{% endif %}</span>
+                                </span>
                             {% endfor %}
                         </div>
                     </div>
-                {% endfor %}
+                {% else %}
+                    <p class="text-xs text-slate-500 dark:text-slate-400">No namespace labels were collected in the latest inventory snapshot.</p>
+                {% endif %}
+            </section>
+
+            <section class="rounded-2xl border border-slate-200 bg-white p-4 md:col-span-2 xl:col-span-4 dark:border-slate-700 dark:bg-slate-950/40">
+                <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white">
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                            <i data-lucide="notebook-text" class="h-4 w-4"></i>
+                        </span>
+                        Namespace annotations
+                    </div>
+                    <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">{{ namespace.annotations|length }} {{ 'annotation' if namespace.annotations|length == 1 else 'annotations' }}</span>
+                </div>
+                {% if namespace.annotations %}
+                    <div class="max-h-56 overflow-y-auto rounded-xl bg-slate-50 dark:bg-slate-900/70">
+                        {% for key, value in namespace.annotations.items() %}
+                            <div class="grid gap-1 border-b border-slate-200 px-3 py-2.5 text-[11px] last:border-b-0 md:grid-cols-[minmax(180px,0.35fr)_minmax(0,1fr)] md:gap-4 dark:border-slate-700">
+                                <span class="break-all font-semibold text-slate-700 dark:text-slate-200">{{ key }}</span>
+                                <span class="break-all text-slate-500 dark:text-slate-400">{{ value }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-xs text-slate-500 dark:text-slate-400">No namespace annotations were collected in the latest inventory snapshot.</p>
+                {% endif %}
+            </section>
+        </div>
+
+        <div class="px-5 pb-5">
+            <div class="flex items-start gap-2.5 rounded-xl bg-blue-50 px-3 py-2.5 text-xs leading-5 text-blue-800 ring-1 ring-inset ring-blue-100 dark:bg-blue-500/10 dark:text-blue-200 dark:ring-blue-500/20">
+                <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+                    <i data-lucide="info" class="h-3.5 w-3.5"></i>
+                </span>
+                <p>This section contains point-in-time namespace inventory. Resource utilization, quota consumption trends, risk scoring, forecasts, and recommendations remain in Analytics and Intelligence.</p>
             </div>
-        {% else %}
-            {{ detail_tip('No ResourceQuota object is recorded for this namespace. Kubernetes will use cluster-level capacity without namespace quota limits.', 'amber', 'info') }}
-        {% endif %}
-    {% endcall %}
-{% endcall %}
+        </div>
+    </div>
+</div>

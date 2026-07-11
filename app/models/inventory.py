@@ -166,6 +166,48 @@ class NamespaceInventory(db.Model):
 
     status: Mapped[str | None] = mapped_column(String(50))
 
+    uid: Mapped[str | None] = mapped_column(
+        String(128),
+        nullable=True,
+    )
+
+    created_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    labels: Mapped[dict[str, str]] = mapped_column(
+        JSON,
+        nullable=False,
+        default=dict,
+    )
+
+    annotations: Mapped[dict[str, str]] = mapped_column(
+        JSON,
+        nullable=False,
+        default=dict,
+    )
+
+    limit_range_count: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+    )
+
+    network_policy_count: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+    )
+
+    service_account_count: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+    )
+
+    default_service_account_present: Mapped[bool | None] = mapped_column(
+        Boolean,
+        nullable=True,
+    )
+
     collected_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
