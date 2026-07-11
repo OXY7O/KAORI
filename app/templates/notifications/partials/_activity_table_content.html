@@ -11,13 +11,12 @@
 
 {% if items %}
     <div class="overflow-x-auto">
-        <div style="min-width: 1160px;">
-            <div style="grid-template-columns: 8.75rem 12rem minmax(20rem, 1.6fr) 11rem 15rem 7.5rem 5.75rem;" class="grid items-center gap-4 border-b border-slate-200 bg-slate-50 px-5 py-3 text-left text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-400">
+        <div style="min-width: 1020px;">
+            <div style="grid-template-columns: 8.75rem 12.5rem minmax(24rem, 1.75fr) 12rem 8rem 7rem;" class="grid items-center gap-5 border-b border-slate-200 bg-slate-50 px-6 py-3 text-left text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-400">
                 <div>Time</div>
                 <div>Actor</div>
                 <div>Activity</div>
                 <div>Target</div>
-                <div>Context</div>
                 <div>Result</div>
                 <div>Details</div>
             </div>
@@ -28,7 +27,7 @@
                     {% set is_warning = item.status == 'warning' %}
                     {% set is_error = item.status == 'error' %}
                     <details class="group relative bg-white dark:bg-slate-800">
-                        <summary style="grid-template-columns: 8.75rem 12rem minmax(20rem, 1.6fr) 11rem 15rem 7.5rem 5.75rem;" class="grid cursor-pointer list-none items-start gap-4 px-5 py-4 text-left transition hover:bg-slate-50/80 focus:outline-none group-open:bg-blue-50/70 dark:hover:bg-slate-900 dark:group-open:bg-blue-950/30">
+                        <summary style="grid-template-columns: 8.75rem 12.5rem minmax(24rem, 1.75fr) 12rem 8rem 7rem;" class="grid cursor-pointer list-none items-start gap-5 px-6 py-4 text-left transition hover:bg-slate-50/80 focus:outline-none group-open:bg-blue-50/70 dark:hover:bg-slate-900 dark:group-open:bg-blue-950/30">
                             <div class="relative min-w-0 pl-4">
                                 <span class="absolute left-0 top-2 h-2 w-2 rounded-full {% if item.is_read %}bg-slate-300 dark:bg-slate-600{% else %}bg-blue-500 ring-2 ring-blue-100 dark:ring-blue-900/60{% endif %}"></span>
                                 <p class="whitespace-nowrap text-[11px] font-bold text-slate-800 dark:text-slate-100">
@@ -90,16 +89,7 @@
                                     {% else %}bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:ring-slate-700{% endif %}">
                                     {{ item.target_type }}
                                 </span>
-                                <p class="mt-2 truncate text-[10px] font-semibold text-slate-700 dark:text-slate-200" title="{{ item.target_name }}">{{ item.target_name }}</p>
-                            </div>
-
-                            <div class="flex min-w-0 flex-col items-start gap-1.5">
-                                {% for context_item in item.context_items %}
-                                    {{ context_label(context_item) }}
-                                {% endfor %}
-                                <span class="inline-flex max-w-full items-center rounded-full bg-slate-50 px-2 py-1 text-[9px] font-semibold text-slate-600 ring-1 ring-inset ring-slate-200 dark:bg-slate-700/70 dark:text-slate-300 dark:ring-slate-700">
-                                    <span class="truncate">{{ item.event_label }}</span>
-                                </span>
+                                <p class="mt-2 break-words text-[10px] font-semibold leading-4 text-slate-700 dark:text-slate-200" title="{{ item.target_name }}">{{ item.target_name }}</p>
                             </div>
 
                             <div>
@@ -113,7 +103,7 @@
                                 </span>
                             </div>
 
-                            <div class="flex justify-start">
+                            <div class="flex justify-start pr-2">
                                 <span class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[10px] font-bold text-slate-600 shadow-sm transition group-open:border-blue-200 group-open:bg-blue-50 group-open:text-blue-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:group-open:border-blue-900/60 dark:group-open:bg-blue-950/40 dark:group-open:text-blue-300">
                                     <i data-lucide="eye" class="h-3.5 w-3.5"></i>
                                     <span>Details</span>
