@@ -9,14 +9,14 @@
     item.status,
     'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' if item.status in ['Bound', 'Available', 'Active'] else 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'
 ) %}
-    {% call detail_card('Storage identity', 'badge-info', 'bg-lime-50 text-lime-600 dark:bg-lime-950/40 dark:text-lime-300') %}
+    {% call detail_card('Storage identity', 'badge-info', 'bg-lime-50 text-lime-600 dark:bg-lime-950/40 dark:text-lime-300', panel_classes='border-lime-100 bg-gradient-to-br from-lime-50/90 via-white to-white dark:border-lime-900/40 dark:from-lime-950/30 dark:via-slate-950/45 dark:to-slate-950/45') %}
         {{ detail_row('Cluster', item.cluster_name) }}
         {{ detail_row('Namespace scope', item.namespace) }}
         {{ detail_row('Type', item.type) }}
         {{ detail_row('Storage class', item.storage_class) }}
         {{ detail_row('Status', item.status) }}
     {% endcall %}
-    {% call detail_card('Capacity and binding', 'hard-drive', 'bg-sky-50 text-sky-600 dark:bg-sky-950/40 dark:text-sky-300', item.capacity, 'bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300') %}
+    {% call detail_card('Capacity and binding', 'hard-drive', 'bg-sky-50 text-sky-600 dark:bg-sky-950/40 dark:text-sky-300', item.capacity, 'bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300', panel_classes='border-sky-100 bg-gradient-to-br from-sky-50/90 via-white to-white dark:border-sky-900/40 dark:from-sky-950/30 dark:via-slate-950/45 dark:to-slate-950/45') %}
         {{ detail_row('Capacity', item.capacity) }}
         {% if item.type == 'PersistentVolume' %}
             {{ detail_row('Bound claim', (item.details.claim_namespace ~ '/' ~ item.details.claim_name) if item.details.claim_name else '-') }}
@@ -34,7 +34,7 @@
         {{ detail_row('Age', item.age) }}
         {{ detail_row('Collected', item.collected_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
     {% endcall %}
-    {% call detail_card('Bound Pods', 'package-check', 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300', item.pod_count, 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300') %}
+    {% call detail_card('Bound Pods', 'package-check', 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300', item.pod_count, 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300', panel_classes='border-emerald-100 bg-gradient-to-br from-emerald-50/90 via-white to-white dark:border-emerald-900/40 dark:from-emerald-950/30 dark:via-slate-950/45 dark:to-slate-950/45') %}
         {% if item.claims %}
             <div class="flex flex-wrap gap-1.5">
                 {% for claim in item.claims %}

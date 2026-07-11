@@ -9,21 +9,21 @@
     service.type,
     'bg-teal-50 text-teal-700 dark:bg-teal-500/10 dark:text-teal-300'
 ) %}
-    {% call detail_card('Service behavior', 'route', 'bg-teal-50 text-teal-600 dark:bg-teal-950/40 dark:text-teal-300', service.type, 'bg-teal-50 text-teal-700 dark:bg-teal-500/10 dark:text-teal-300') %}
+    {% call detail_card('Service behavior', 'route', 'bg-teal-50 text-teal-600 dark:bg-teal-950/40 dark:text-teal-300', service.type, 'bg-teal-50 text-teal-700 dark:bg-teal-500/10 dark:text-teal-300', panel_classes='border-teal-100 bg-gradient-to-br from-teal-50/90 via-white to-white dark:border-teal-900/40 dark:from-teal-950/30 dark:via-slate-950/45 dark:to-slate-950/45') %}
         {{ detail_row('Cluster', service.cluster_name) }}
         {{ detail_row('Namespace', service.namespace) }}
         {{ detail_row('Type', service.type) }}
         {{ detail_row('Age', service.age) }}
         <p class="rounded-xl bg-teal-50/70 px-3 py-2.5 text-xs leading-5 text-teal-800 dark:bg-teal-500/10 dark:text-teal-200">{{ service.type_description }}</p>
     {% endcall %}
-    {% call detail_card('Network endpoints', 'globe', 'bg-cyan-50 text-cyan-600 dark:bg-cyan-950/40 dark:text-cyan-300', service.pod_count ~ ' Pods', 'bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300') %}
+    {% call detail_card('Network endpoints', 'globe', 'bg-cyan-50 text-cyan-600 dark:bg-cyan-950/40 dark:text-cyan-300', service.pod_count ~ ' Pods', 'bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300', panel_classes='border-cyan-100 bg-gradient-to-br from-cyan-50/90 via-white to-white dark:border-cyan-900/40 dark:from-cyan-950/30 dark:via-slate-950/45 dark:to-slate-950/45') %}
         {{ detail_row('Cluster IP', service.cluster_ip) }}
         {{ detail_row('External IP', service.external_ips|join(', ') if service.external_ips else '-') }}
         {{ detail_row('Ports', service.ports|join(', ') if service.ports else '-') }}
         {{ detail_row('Selector', service.selector|tojson if service.selector else 'No selector') }}
         {{ detail_row('Collected', service.collected_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
     {% endcall %}
-    {% call detail_card('Selected Pods and containers', 'package-check', 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300', service.pod_count, 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300') %}
+    {% call detail_card('Selected Pods and containers', 'package-check', 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300', service.pod_count, 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300', panel_classes='border-emerald-100 bg-gradient-to-br from-emerald-50/90 via-white to-white dark:border-emerald-900/40 dark:from-emerald-950/30 dark:via-slate-950/45 dark:to-slate-950/45') %}
         <p class="rounded-xl bg-emerald-50/70 px-3 py-2.5 text-xs leading-5 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-200">Kubernetes Services select Pods, not containers directly. Container names are shown only as runtime context.</p>
         {% if service.pods %}
             <div class="max-h-64 space-y-2 overflow-y-auto pr-1">

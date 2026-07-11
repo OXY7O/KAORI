@@ -9,7 +9,7 @@
     workload.status,
     'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' if workload.status == 'Running' else 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'
 ) %}
-    {% call detail_card('Workload identity', 'badge-info', 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300', workload.type, 'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300') %}
+    {% call detail_card('Workload identity', 'badge-info', 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300', workload.type, 'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300', panel_classes='border-violet-100 bg-gradient-to-br from-violet-50/90 via-white to-white dark:border-violet-900/40 dark:from-violet-950/30 dark:via-slate-950/45 dark:to-slate-950/45') %}
         {{ detail_row('Cluster', workload.cluster_name) }}
         {{ detail_row('Namespace', workload.namespace) }}
         {{ detail_row('Type', workload.type) }}
@@ -17,13 +17,13 @@
         {{ detail_row('Created', workload.created_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
         <p class="rounded-xl bg-violet-50/70 px-3 py-2.5 text-xs leading-5 text-violet-800 dark:bg-violet-500/10 dark:text-violet-200">{{ workload.type_description }}</p>
     {% endcall %}
-    {% call detail_card('Runtime posture', 'activity', 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300', workload.ready, 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300') %}
+    {% call detail_card('Runtime posture', 'activity', 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300', workload.ready, 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300', panel_classes='border-blue-100 bg-gradient-to-br from-blue-50/90 via-white to-white dark:border-blue-900/40 dark:from-blue-950/30 dark:via-slate-950/45 dark:to-slate-950/45') %}
         {{ detail_row('Ready', workload.ready) }}
         {{ detail_row('Status', workload.status) }}
         {{ detail_row('Managed Pods', workload.pod_count) }}
         {{ detail_row('Collected', workload.collected_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
     {% endcall %}
-    {% call detail_card('Managed Pods', 'package', 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300', workload.pod_count, 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300') %}
+    {% call detail_card('Managed Pods', 'package', 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300', workload.pod_count, 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300', panel_classes='border-emerald-100 bg-gradient-to-br from-emerald-50/90 via-white to-white dark:border-emerald-900/40 dark:from-emerald-950/30 dark:via-slate-950/45 dark:to-slate-950/45') %}
         {% if workload.pods %}
             <div class="max-h-64 space-y-2 overflow-y-auto pr-1">
                 {% for pod in workload.pods %}

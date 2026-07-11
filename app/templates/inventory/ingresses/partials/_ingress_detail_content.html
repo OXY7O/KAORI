@@ -9,7 +9,7 @@
     'TLS enabled' if ingress.tls else 'No TLS',
     'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' if ingress.tls else 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
 ) %}
-    {% call detail_card('Exposure', 'globe', 'bg-teal-50 text-teal-600 dark:bg-teal-950/40 dark:text-teal-300', ingress.host_count ~ ' host(s)', 'bg-teal-50 text-teal-700 dark:bg-teal-500/10 dark:text-teal-300') %}
+    {% call detail_card('Exposure', 'globe', 'bg-teal-50 text-teal-600 dark:bg-teal-950/40 dark:text-teal-300', ingress.host_count ~ ' host(s)', 'bg-teal-50 text-teal-700 dark:bg-teal-500/10 dark:text-teal-300', panel_classes='border-teal-100 bg-gradient-to-br from-teal-50/90 via-white to-white dark:border-teal-900/40 dark:from-teal-950/30 dark:via-slate-950/45 dark:to-slate-950/45') %}
         {{ detail_row('Cluster', ingress.cluster_name) }}
         {{ detail_row('Namespace', ingress.namespace) }}
         {{ detail_row('Ingress class', ingress.class) }}
@@ -29,7 +29,7 @@
             {% endif %}
         </div>
     {% endcall %}
-    {% call detail_card('Backend routes', 'git-branch', 'bg-sky-50 text-sky-600 dark:bg-sky-950/40 dark:text-sky-300', ingress.backend_count ~ ' path(s)', 'bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300') %}
+    {% call detail_card('Backend routes', 'git-branch', 'bg-sky-50 text-sky-600 dark:bg-sky-950/40 dark:text-sky-300', ingress.backend_count ~ ' path(s)', 'bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300', panel_classes='border-sky-100 bg-gradient-to-br from-sky-50/90 via-white to-white dark:border-sky-900/40 dark:from-sky-950/30 dark:via-slate-950/45 dark:to-slate-950/45') %}
         {% if ingress.backend_paths %}
             <div class="max-h-64 space-y-2 overflow-y-auto pr-1">
                 {% for backend in ingress.backend_paths %}
@@ -46,7 +46,7 @@
             <p class="rounded-xl bg-slate-50 px-3 py-3 text-xs leading-5 text-slate-500 dark:bg-slate-900/70 dark:text-slate-400">No backend route is recorded for this Ingress.</p>
         {% endif %}
     {% endcall %}
-    {% call detail_card('Lifecycle', 'clock-3', 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300', ingress.age, 'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300') %}
+    {% call detail_card('Lifecycle', 'clock-3', 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300', ingress.age, 'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300', panel_classes='border-violet-100 bg-gradient-to-br from-violet-50/90 via-white to-white dark:border-violet-900/40 dark:from-violet-950/30 dark:via-slate-950/45 dark:to-slate-950/45') %}
         {{ detail_row('TLS', 'Enabled' if ingress.tls else 'Not configured') }}
         {{ detail_row('Backend services', ingress.service_count) }}
         {{ detail_row('Age', ingress.age) }}

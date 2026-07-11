@@ -9,7 +9,7 @@
     namespace.status,
     'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' if namespace.status == 'Active' else 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'
 ) %}
-    {% call detail_card('Object coverage', 'boxes', 'bg-sky-50 text-sky-600 dark:bg-sky-950/40 dark:text-sky-300', namespace.object_counts.tracked_total ~ ' tracked', 'bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300') %}
+    {% call detail_card('Object coverage', 'boxes', 'bg-sky-50 text-sky-600 dark:bg-sky-950/40 dark:text-sky-300', namespace.object_counts.tracked_total ~ ' tracked', 'bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300', panel_classes='border-sky-100 bg-gradient-to-br from-sky-50/90 via-white to-white dark:border-sky-900/40 dark:from-sky-950/30 dark:via-slate-950/45 dark:to-slate-950/45') %}
         {{ detail_row('Workloads', namespace.object_counts.workloads) }}
         {{ detail_row('Pods', namespace.object_counts.pods) }}
         {{ detail_row('Services', namespace.object_counts.services) }}
@@ -18,7 +18,7 @@
         {{ detail_row('ConfigMaps', namespace.object_counts.config_maps) }}
         {{ detail_row('Secrets', namespace.object_counts.secrets) }}
     {% endcall %}
-    {% call detail_card('Workload composition', 'layers-3', 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300') %}
+    {% call detail_card('Workload composition', 'layers-3', 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300', panel_classes='border-violet-100 bg-gradient-to-br from-violet-50/90 via-white to-white dark:border-violet-900/40 dark:from-violet-950/30 dark:via-slate-950/45 dark:to-slate-950/45') %}
         {{ detail_row('Deployments', namespace.workload_breakdown.deployments) }}
         {{ detail_row('StatefulSets', namespace.workload_breakdown.statefulsets) }}
         {{ detail_row('DaemonSets', namespace.workload_breakdown.daemonsets) }}
@@ -26,7 +26,7 @@
         {{ detail_row('CronJobs', namespace.workload_breakdown.cronjobs) }}
         {{ detail_row('Collected', namespace.collected_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
     {% endcall %}
-    {% call detail_card('Resource governance', 'gauge', 'bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-300', namespace.quota_count ~ ' quota(s)', 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300') %}
+    {% call detail_card('Resource governance', 'gauge', 'bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-300', namespace.quota_count ~ ' quota(s)', 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300', panel_classes='border-amber-100 bg-gradient-to-br from-amber-50/90 via-white to-white dark:border-amber-900/40 dark:from-amber-950/30 dark:via-slate-950/45 dark:to-slate-950/45') %}
         {% if namespace.quotas %}
             <div class="max-h-64 space-y-3 overflow-y-auto pr-1">
                 {% for quota in namespace.quotas %}

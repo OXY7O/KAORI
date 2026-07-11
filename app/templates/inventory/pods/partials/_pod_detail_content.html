@@ -9,13 +9,13 @@
     pod.status,
     'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' if pod.status == 'Running' else 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'
 ) %}
-    {% call detail_card('Runtime placement', 'activity', 'bg-cyan-50 text-cyan-600 dark:bg-cyan-950/40 dark:text-cyan-300', pod.ready, 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300') %}
+    {% call detail_card('Runtime placement', 'activity', 'bg-cyan-50 text-cyan-600 dark:bg-cyan-950/40 dark:text-cyan-300', pod.ready, 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300', panel_classes='border-cyan-100 bg-gradient-to-br from-cyan-50/90 via-white to-white dark:border-cyan-900/40 dark:from-cyan-950/30 dark:via-slate-950/45 dark:to-slate-950/45') %}
         {{ detail_row('Cluster', pod.cluster_name) }}
         {{ detail_row('Node', pod.node or '-') }}
         {{ detail_row('Pod IP', pod.ip or '-') }}
         {{ detail_row('Restarts', pod.restarts) }}
     {% endcall %}
-    {% call detail_card('Image references', 'image', 'bg-fuchsia-50 text-fuchsia-600 dark:bg-fuchsia-950/40 dark:text-fuchsia-300', pod.image_count ~ ' image(s)', 'bg-fuchsia-50 text-fuchsia-700 dark:bg-fuchsia-500/10 dark:text-fuchsia-300') %}
+    {% call detail_card('Image references', 'image', 'bg-fuchsia-50 text-fuchsia-600 dark:bg-fuchsia-950/40 dark:text-fuchsia-300', pod.image_count ~ ' image(s)', 'bg-fuchsia-50 text-fuchsia-700 dark:bg-fuchsia-500/10 dark:text-fuchsia-300', panel_classes='border-fuchsia-100 bg-gradient-to-br from-fuchsia-50/90 via-white to-white dark:border-fuchsia-900/40 dark:from-fuchsia-950/30 dark:via-slate-950/45 dark:to-slate-950/45') %}
         {% if pod.all_images %}
             <div class="space-y-2">
                 {% for image in pod.container_images %}
@@ -29,7 +29,7 @@
             <p class="text-xs text-slate-500 dark:text-slate-400">No image references recorded.</p>
         {% endif %}
     {% endcall %}
-    {% call detail_card('Lifecycle', 'clock-3', 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300', pod.age, 'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300') %}
+    {% call detail_card('Lifecycle', 'clock-3', 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300', pod.age, 'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300', panel_classes='border-violet-100 bg-gradient-to-br from-violet-50/90 via-white to-white dark:border-violet-900/40 dark:from-violet-950/30 dark:via-slate-950/45 dark:to-slate-950/45') %}
         {{ detail_row('Age', pod.age) }}
         {{ detail_row('Created', pod.created_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
         {{ detail_row('Collected', pod.collected_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}

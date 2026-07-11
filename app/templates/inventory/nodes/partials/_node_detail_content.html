@@ -9,18 +9,18 @@
     node.status,
     'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' if node.status == 'Ready' else 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300'
 ) %}
-    {% call detail_card('Node function', 'shield-check', 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-300', node.role, 'bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300') %}
+    {% call detail_card('Node function', 'shield-check', 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-300', node.role, 'bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300', panel_classes='border-indigo-100 bg-gradient-to-br from-indigo-50/90 via-white to-white dark:border-indigo-900/40 dark:from-indigo-950/30 dark:via-slate-950/45 dark:to-slate-950/45') %}
         {{ detail_row('Role', node.role) }}
         {{ detail_row('Cluster', node.cluster_name) }}
         {{ detail_row('Collected', node.collected_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
         <p class="rounded-xl bg-indigo-50/70 px-3 py-2.5 text-xs leading-5 text-indigo-800 dark:bg-indigo-500/10 dark:text-indigo-200">{{ node.role_description }}</p>
     {% endcall %}
-    {% call detail_card('Network identity', 'network', 'bg-cyan-50 text-cyan-600 dark:bg-cyan-950/40 dark:text-cyan-300') %}
+    {% call detail_card('Network identity', 'network', 'bg-cyan-50 text-cyan-600 dark:bg-cyan-950/40 dark:text-cyan-300', panel_classes='border-cyan-100 bg-gradient-to-br from-cyan-50/90 via-white to-white dark:border-cyan-900/40 dark:from-cyan-950/30 dark:via-slate-950/45 dark:to-slate-950/45') %}
         {{ detail_row('Internal IP', node.internal_ip or '-') }}
         {{ detail_row('External IP', node.external_ip or '-') }}
         {{ detail_row('Hostname', node.hostname_address or '-') }}
     {% endcall %}
-    {% call detail_card('Platform and capacity', 'cpu', 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300', node.memory_display, 'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300') %}
+    {% call detail_card('Platform and capacity', 'cpu', 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300', node.memory_display, 'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300', panel_classes='border-violet-100 bg-gradient-to-br from-violet-50/90 via-white to-white dark:border-violet-900/40 dark:from-violet-950/30 dark:via-slate-950/45 dark:to-slate-950/45') %}
         {{ detail_row('Operating system', node.os_image or '-') }}
         {{ detail_row('Kernel', node.kernel_version or '-') }}
         {{ detail_row('Container runtime', node.runtime_display or '-') }}
