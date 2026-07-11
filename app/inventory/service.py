@@ -2410,3 +2410,100 @@ def get_storage_inventory_view(
         'storage_types': storage_types,
         'storage_items': data,
     }
+
+
+def get_storage_detail(
+    storage_id: int,
+) -> dict[str, Any] | None:
+    result = (
+        db.session.query(
+            StorageInventory,
+            Cluster.name.label(
+                'cluster_name',
+            ),
+        )
+        .join(
+            Cluster,
+            Cluster.id == StorageInventory.cluster_id,
+        )
+        .filter(
+            StorageInventory.id == storage_id,
+        )
+        .first()
+    )
+
+    if result is None:
+        return None
+
+    item, cluster_name = result
+
+    namespace_display = item.namespace
+
+    if item.storage_type in [
+        'StorageClass',
+        'PersistentVolume',
+    ]:
+        namespace_display = 'Cluster-wide'
+    elif not namespace_display:
+        namespace_display = '-'
+
+    return {
+        'id': item.id,
+        'cluster_name': cluster_name,
+        'namespace': namespace_display,
+        'name': item.name,
+        'type': item.storage_type,
+        'storage_class': item.storage_class or '-',
+        'capacity': item.capacity or '-',
+        'status': item.status or 'Unknown',
+        'age': format_age(
+            item.created_at,
+        ),
+        'created_at': item.created_at,
+        'collected_at': item.collected_at,
+    }
+
+
+def get_node_detail(
+    node_id: int,
+) -> dict[str, Any] | None:
+    result = (
+        db.session.query(
+            NodeInventory,
+            Cluster.name.label(
+                'cluster_name',
+            ),
+        )
+        .join(
+            Cluster,
+            Cluster.id == NodeInventory.cluster_id,
+        )
+        .filter(
+            NodeInventory.id == node_id,
+        )
+        .first()
+    )
+
+    if result is None:
+        return None
+
+    node, cluster_name = result
+
+    return {
+        'id': node.id,
+        'cluster_name': cluster_name,
+        'node_name': node.node_name,
+        'status': node.status or 'Unknown',
+        'role': node.role or 'Unknown',
+        'internal_ip': node.internal_ip or '-',
+        'external_ip': node.external_ip or '-',
+        'hostname_address': node.hostname_address or '-',
+        'os_image': node.os_image or '-',
+        'kernel_version': node.kernel_version or '-',
+        'container_runtime': node.container_runtime or '-',
+        'cpu': node.cpu or '-',
+        'memory_display': node.memory or '-',
+        'ephemeral_storage_display': node.ephemeral_storage or '-',
+        'allocatable_storage_display': node.ephemeral_storage_allocatable or '-',
+        'collected_at': node.collected_at,
+    }

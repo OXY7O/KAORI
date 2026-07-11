@@ -331,6 +331,22 @@ def nodes():
     )
 
 
+@inventory_bp.get('/nodes/<int:node_id>/details')
+@permission_required('inventory.view')
+def node_details(node_id: int):
+    node = get_node_detail(
+        node_id,
+    )
+
+    if node is None:
+        abort(404)
+
+    return render_template(
+        'inventory/nodes/partials/_node_detail_content.html',
+        node=node,
+    )
+
+
 @inventory_bp.route('/namespaces')
 @permission_required('inventory.view')
 def namespaces():
