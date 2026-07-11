@@ -59,6 +59,153 @@ def get_nodes(
     return result.items
 
 
+def _isoformat_datetime(value) -> str | None:
+    if value is None:
+        return None
+
+    isoformat = getattr(value, 'isoformat', None)
+    if callable(isoformat):
+        return isoformat()
+
+    return str(value)
+
+
+def _string_value(value, default: str = '-') -> str:
+    if value is None or value == '':
+        return default
+
+    return str(value)
+
+
+def _metadata_details(metadata) -> dict:
+    labels = dict(sorted((getattr(metadata, 'labels', None) or {}).items()))
+    annotations = dict(sorted((getattr(metadata, 'annotations', None) or {}).items()))
+
+    return {
+        'uid': _string_value(getattr(metadata, 'uid', None)),
+        'labels': labels,
+        'annotations': annotations,
+    }
+
+
+def _toleration_display(toleration) -> str:
+    key = getattr(toleration, 'key', None) or '*'
+    operator = getattr(toleration, 'operator', None) or 'Equal'
+    value = getattr(toleration, 'value', None)
+    effect = getattr(toleration, 'effect', None)
+
+    expression = key
+    if operator == 'Exists':
+        expression = f'{key} exists'
+    elif value not in (None, ''):
+        expression = f'{key}={value}'
+
+    if effect:
+        expression = f'{expression}:{effect}'
+
+    return expression
+
+
+def _pod_template_details(template_spec) -> dict:
+    if template_spec is None:
+        return {
+            'containers': [],
+            'container_count': 0,
+            'init_container_count': 0,
+            'service_account': '-',
+            'restart_policy': '-',
+            'priority_class': '-',
+            'scheduler': '-',
+            'host_network': False,
+            'dns_policy': '-',
+            'volume_count': 0,
+            'node_selector': {},
+            'affinity_configured': False,
+            'tolerations': [],
+            'topology_spread_count': 0,
+            'runtime_class': '-',
+        }
+
+    containers: list[dict[str, str]] = []
+
+    for container in getattr(template_spec, 'containers', None) or []:
+        containers.append(
+            {
+                'name': _string_value(getattr(container, 'name', None)),
+                'image': _string_value(getattr(container, 'image', None)),
+                'pull_policy': _string_value(getattr(container, 'image_pull_policy', None)),
+                'kind': 'Container',
+            }
+        )
+
+    init_containers = getattr(template_spec, 'init_containers', None) or []
+
+    for container in init_containers:
+        containers.append(
+            {
+                'name': _string_value(getattr(container, 'name', None)),
+                'image': _string_value(getattr(container, 'image', None)),
+                'pull_policy': _string_value(getattr(container, 'image_pull_policy', None)),
+                'kind': 'Init container',
+            }
+        )
+
+    tolerations = [
+        _toleration_display(toleration)
+        for toleration in (getattr(template_spec, 'tolerations', None) or [])
+    ]
+
+    return {
+        'containers': containers,
+        'container_count': len(getattr(template_spec, 'containers', None) or []),
+        'init_container_count': len(init_containers),
+        'service_account': _string_value(
+            getattr(template_spec, 'service_account_name', None),
+            'default',
+        ),
+        'restart_policy': _string_value(getattr(template_spec, 'restart_policy', None)),
+        'priority_class': _string_value(getattr(template_spec, 'priority_class_name', None)),
+        'scheduler': _string_value(getattr(template_spec, 'scheduler_name', None), 'default-scheduler'),
+        'host_network': bool(getattr(template_spec, 'host_network', False)),
+        'dns_policy': _string_value(getattr(template_spec, 'dns_policy', None)),
+        'volume_count': len(getattr(template_spec, 'volumes', None) or []),
+        'node_selector': dict(sorted((getattr(template_spec, 'node_selector', None) or {}).items())),
+        'affinity_configured': getattr(template_spec, 'affinity', None) is not None,
+        'tolerations': tolerations,
+        'topology_spread_count': len(
+            getattr(template_spec, 'topology_spread_constraints', None) or []
+        ),
+        'runtime_class': _string_value(getattr(template_spec, 'runtime_class_name', None)),
+    }
+
+
+def _workload_details(
+    metadata,
+    template_spec,
+    *,
+    state_display: str,
+    state_rows: list[dict[str, str]],
+    delivery_rows: list[dict[str, str]],
+) -> dict:
+    details = _metadata_details(metadata)
+    details.update(
+        {
+            'state_display': state_display,
+            'state_rows': state_rows,
+            'delivery_rows': delivery_rows,
+            'pod_template': _pod_template_details(template_spec),
+        }
+    )
+    return details
+
+
+def _detail_row(label: str, value) -> dict[str, str]:
+    return {
+        'label': label,
+        'value': _string_value(value),
+    }
+
+
 def get_workloads(
     api: AppsV1Api,
     batch_api: BatchV1Api | None = None,
@@ -70,26 +217,56 @@ def get_workloads(
         api.list_deployment_for_all_namespaces(),
     )
 
-    deployment_items = deployments.items or []
-
-    deployment_items = deployments.items or []
-
-    for deployment in deployment_items:
+    for deployment in deployments.items or []:
         metadata = deployment.metadata
         spec = deployment.spec
         status = deployment.status
 
+        if metadata is None or spec is None:
+            continue
+
         desired = spec.replicas or 0
-        ready = status.ready_replicas or 0
+        current = getattr(status, 'replicas', 0) or 0
+        updated = getattr(status, 'updated_replicas', 0) or 0
+        ready = getattr(status, 'ready_replicas', 0) or 0
+        available = getattr(status, 'available_replicas', 0) or 0
+        unavailable = getattr(status, 'unavailable_replicas', 0) or max(desired - available, 0)
+        strategy = getattr(spec, 'strategy', None)
+        rolling_update = getattr(strategy, 'rolling_update', None)
+        state_display = f'{available}/{desired} Available'
+
+        details = _workload_details(
+            metadata,
+            getattr(getattr(spec, 'template', None), 'spec', None),
+            state_display=state_display,
+            state_rows=[
+                _detail_row('Desired replicas', desired),
+                _detail_row('Current replicas', current),
+                _detail_row('Updated replicas', updated),
+                _detail_row('Ready replicas', ready),
+                _detail_row('Available replicas', available),
+                _detail_row('Unavailable replicas', unavailable),
+                _detail_row('Observed generation', getattr(status, 'observed_generation', None)),
+            ],
+            delivery_rows=[
+                _detail_row('Strategy', getattr(strategy, 'type', None)),
+                _detail_row('Max surge', getattr(rolling_update, 'max_surge', None)),
+                _detail_row('Max unavailable', getattr(rolling_update, 'max_unavailable', None)),
+                _detail_row('Min ready seconds', getattr(spec, 'min_ready_seconds', None)),
+                _detail_row('Progress deadline', getattr(spec, 'progress_deadline_seconds', None)),
+                _detail_row('Revision history limit', getattr(spec, 'revision_history_limit', None)),
+            ],
+        )
 
         workloads.append(
             {
                 'namespace': metadata.namespace,
                 'name': metadata.name,
                 'workload_type': 'Deployment',
-                'ready': f'{ready}/{desired}',
-                'status': ('Running' if ready == desired else 'Progressing'),
+                'ready': f'{available}/{desired}',
+                'status': ('Running' if available == desired else 'Progressing'),
                 'created_at': metadata.creation_timestamp,
+                'details': details,
             }
         )
 
@@ -98,15 +275,45 @@ def get_workloads(
         api.list_stateful_set_for_all_namespaces(),
     )
 
-    statefulset_items = statefulsets.items or []
-
-    for statefulset in statefulset_items:
+    for statefulset in statefulsets.items or []:
         metadata = statefulset.metadata
         spec = statefulset.spec
         status = statefulset.status
 
+        if metadata is None or spec is None:
+            continue
+
         desired = spec.replicas or 0
-        ready = status.ready_replicas or 0
+        current = getattr(status, 'current_replicas', 0) or 0
+        updated = getattr(status, 'updated_replicas', 0) or 0
+        ready = getattr(status, 'ready_replicas', 0) or 0
+        available = getattr(status, 'available_replicas', 0) or ready
+        update_strategy = getattr(spec, 'update_strategy', None)
+        rolling_update = getattr(update_strategy, 'rolling_update', None)
+        state_display = f'{ready}/{desired} Ready'
+
+        details = _workload_details(
+            metadata,
+            getattr(getattr(spec, 'template', None), 'spec', None),
+            state_display=state_display,
+            state_rows=[
+                _detail_row('Desired replicas', desired),
+                _detail_row('Current replicas', current),
+                _detail_row('Updated replicas', updated),
+                _detail_row('Ready replicas', ready),
+                _detail_row('Available replicas', available),
+                _detail_row('Current revision', getattr(status, 'current_revision', None)),
+                _detail_row('Update revision', getattr(status, 'update_revision', None)),
+            ],
+            delivery_rows=[
+                _detail_row('Update strategy', getattr(update_strategy, 'type', None)),
+                _detail_row('Pod management policy', getattr(spec, 'pod_management_policy', None)),
+                _detail_row('Partition', getattr(rolling_update, 'partition', None)),
+                _detail_row('Min ready seconds', getattr(spec, 'min_ready_seconds', None)),
+                _detail_row('Service name', getattr(spec, 'service_name', None)),
+                _detail_row('Revision history limit', getattr(spec, 'revision_history_limit', None)),
+            ],
+        )
 
         workloads.append(
             {
@@ -116,6 +323,7 @@ def get_workloads(
                 'ready': f'{ready}/{desired}',
                 'status': ('Running' if ready == desired else 'Progressing'),
                 'created_at': metadata.creation_timestamp,
+                'details': details,
             }
         )
 
@@ -124,15 +332,46 @@ def get_workloads(
         api.list_daemon_set_for_all_namespaces(),
     )
 
-    daemonset_items = daemonsets.items or []
-
-    for daemonset in daemonset_items:
+    for daemonset in daemonsets.items or []:
         metadata = daemonset.metadata
+        spec = daemonset.spec
         status = daemonset.status
 
-        desired = status.desired_number_scheduled or 0
+        if metadata is None or spec is None:
+            continue
 
-        ready = status.number_ready or 0
+        desired = getattr(status, 'desired_number_scheduled', 0) or 0
+        current = getattr(status, 'current_number_scheduled', 0) or 0
+        ready = getattr(status, 'number_ready', 0) or 0
+        available = getattr(status, 'number_available', 0) or 0
+        updated = getattr(status, 'updated_number_scheduled', 0) or 0
+        misscheduled = getattr(status, 'number_misscheduled', 0) or 0
+        unavailable = getattr(status, 'number_unavailable', 0) or max(desired - available, 0)
+        update_strategy = getattr(spec, 'update_strategy', None)
+        rolling_update = getattr(update_strategy, 'rolling_update', None)
+        state_display = f'{ready}/{desired} Ready'
+
+        details = _workload_details(
+            metadata,
+            getattr(getattr(spec, 'template', None), 'spec', None),
+            state_display=state_display,
+            state_rows=[
+                _detail_row('Desired scheduled', desired),
+                _detail_row('Current scheduled', current),
+                _detail_row('Ready', ready),
+                _detail_row('Available', available),
+                _detail_row('Updated', updated),
+                _detail_row('Misscheduled', misscheduled),
+                _detail_row('Unavailable', unavailable),
+            ],
+            delivery_rows=[
+                _detail_row('Update strategy', getattr(update_strategy, 'type', None)),
+                _detail_row('Max unavailable', getattr(rolling_update, 'max_unavailable', None)),
+                _detail_row('Max surge', getattr(rolling_update, 'max_surge', None)),
+                _detail_row('Min ready seconds', getattr(spec, 'min_ready_seconds', None)),
+                _detail_row('Revision history limit', getattr(spec, 'revision_history_limit', None)),
+            ],
+        )
 
         workloads.append(
             {
@@ -142,6 +381,7 @@ def get_workloads(
                 'ready': f'{ready}/{desired}',
                 'status': ('Running' if ready == desired else 'Progressing'),
                 'created_at': metadata.creation_timestamp,
+                'details': details,
             }
         )
 
@@ -153,35 +393,53 @@ def get_workloads(
         batch_api.list_job_for_all_namespaces(),
     )
 
-    job_items = jobs.items or []
-
-    for job in job_items:
+    for job in jobs.items or []:
         metadata = job.metadata
         spec = job.spec
         status = job.status
 
-        if metadata is None:
+        if metadata is None or spec is None:
             continue
 
-        completions = spec.completions if spec and spec.completions is not None else 1
-
-        succeeded = status.succeeded if status and status.succeeded is not None else 0
-
-        failed = status.failed if status and status.failed is not None else 0
-
-        active = status.active if status and status.active is not None else 0
+        completions = spec.completions if spec.completions is not None else 1
+        parallelism = spec.parallelism if spec.parallelism is not None else 1
+        succeeded = getattr(status, 'succeeded', 0) or 0
+        failed = getattr(status, 'failed', 0) or 0
+        active = getattr(status, 'active', 0) or 0
 
         if failed > 0:
             job_status = 'Failed'
-
+            state_display = f'{failed} Failed'
         elif succeeded >= completions:
             job_status = 'Running'
-
+            state_display = f'{succeeded}/{completions} Complete'
         elif active > 0:
             job_status = 'Progressing'
-
+            state_display = f'{active} Active'
         else:
             job_status = 'Progressing'
+            state_display = 'Pending'
+
+        details = _workload_details(
+            metadata,
+            getattr(getattr(spec, 'template', None), 'spec', None),
+            state_display=state_display,
+            state_rows=[
+                _detail_row('Completions', completions),
+                _detail_row('Parallelism', parallelism),
+                _detail_row('Active', active),
+                _detail_row('Succeeded', succeeded),
+                _detail_row('Failed', failed),
+                _detail_row('Backoff limit', getattr(spec, 'backoff_limit', None)),
+                _detail_row('Completion mode', getattr(spec, 'completion_mode', None)),
+            ],
+            delivery_rows=[
+                _detail_row('Backoff limit', getattr(spec, 'backoff_limit', None)),
+                _detail_row('Active deadline', getattr(spec, 'active_deadline_seconds', None)),
+                _detail_row('TTL after finished', getattr(spec, 'ttl_seconds_after_finished', None)),
+                _detail_row('Suspend', getattr(spec, 'suspend', None)),
+            ],
+        )
 
         workloads.append(
             {
@@ -191,6 +449,7 @@ def get_workloads(
                 'ready': f'{succeeded}/{completions}',
                 'status': job_status,
                 'created_at': metadata.creation_timestamp,
+                'details': details,
             }
         )
 
@@ -203,14 +462,7 @@ def get_workloads(
     except NotFoundException:
         cronjob_items = []
     except ApiException as exc:
-        if (
-            getattr(
-                exc,
-                'status',
-                None,
-            )
-            == 404
-        ):
+        if getattr(exc, 'status', None) == 404:
             cronjob_items = []
         else:
             raise
@@ -220,17 +472,38 @@ def get_workloads(
         spec = cronjob.spec
         status = cronjob.status
 
-        if metadata is None:
+        if metadata is None or spec is None:
             continue
 
-        active_count = len(status.active or []) if status else 0
+        active_count = len(getattr(status, 'active', None) or [])
+        schedule = spec.schedule or '-'
+        suspended = bool(getattr(spec, 'suspend', False))
+        cronjob_status = 'Suspended' if suspended else 'Running'
+        state_display = 'Suspended' if suspended else (f'{active_count} Active' if active_count else 'Scheduled')
+        job_template_spec = getattr(getattr(spec, 'job_template', None), 'spec', None)
+        pod_template_spec = getattr(getattr(job_template_spec, 'template', None), 'spec', None)
 
-        schedule = spec.schedule if spec and spec.schedule else '-'
-
-        cronjob_status = 'Running'
-
-        if spec and spec.suspend:
-            cronjob_status = 'Suspended'
+        details = _workload_details(
+            metadata,
+            pod_template_spec,
+            state_display=state_display,
+            state_rows=[
+                _detail_row('Schedule', schedule),
+                _detail_row('Time zone', getattr(spec, 'time_zone', None)),
+                _detail_row('Suspended', suspended),
+                _detail_row('Active Jobs', active_count),
+                _detail_row('Last schedule', _isoformat_datetime(getattr(status, 'last_schedule_time', None))),
+                _detail_row('Last successful execution', _isoformat_datetime(getattr(status, 'last_successful_time', None))),
+                _detail_row('Concurrency policy', getattr(spec, 'concurrency_policy', None)),
+            ],
+            delivery_rows=[
+                _detail_row('Concurrency policy', getattr(spec, 'concurrency_policy', None)),
+                _detail_row('Starting deadline', getattr(spec, 'starting_deadline_seconds', None)),
+                _detail_row('Successful history limit', getattr(spec, 'successful_jobs_history_limit', None)),
+                _detail_row('Failed history limit', getattr(spec, 'failed_jobs_history_limit', None)),
+                _detail_row('Suspend', suspended),
+            ],
+        )
 
         workloads.append(
             {
@@ -241,11 +514,11 @@ def get_workloads(
                 'status': cronjob_status,
                 'created_at': metadata.creation_timestamp,
                 'schedule': schedule,
+                'details': details,
             }
         )
 
     return workloads
-
 
 def _controller_reference(metadata) -> tuple[str | None, str | None]:
     references = getattr(metadata, 'owner_references', None) or []
