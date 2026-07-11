@@ -4,6 +4,7 @@ from flask import render_template, request
 from flask.typing import ResponseReturnValue
 
 from app.analytics.alerts.service import get_alerts_context
+from app.common.dependencies import render_dependency_blocker
 from app.rbac.decorators import permission_required
 
 
@@ -58,15 +59,31 @@ def alerts() -> ResponseReturnValue:
 
 @permission_required('analytics.view')
 def alerts_table() -> ResponseReturnValue:
+    context = _context_from_request()
+    dependency_blocker = context.get('dependency_blocker')
+
+    if dependency_blocker:
+        return render_dependency_blocker(
+            dependency_blocker,
+        )
+
     return render_template(
         'analytics/alerts/partials/_alerts_table.html',
-        **_context_from_request(),
+        **context,
     )
 
 
 @permission_required('analytics.view')
 def anomalies_table() -> ResponseReturnValue:
+    context = _context_from_request()
+    dependency_blocker = context.get('dependency_blocker')
+
+    if dependency_blocker:
+        return render_dependency_blocker(
+            dependency_blocker,
+        )
+
     return render_template(
         'analytics/alerts/partials/_anomalies_table.html',
-        **_context_from_request(),
+        **context,
     )

@@ -127,6 +127,14 @@
                 </div>
             </section>
 
+
+        {% if dependency_blocker %}
+            {% if dependency_blocker.kind == 'cluster_required' %}
+                {% include "components/cluster/_onboarding_banner.html" %}
+            {% else %}
+                {% include "components/dependencies/_blocker.html" %}
+            {% endif %}
+        {% endif %}
             {% if not dependency_blocker %}
                 {% include "analytics/alerts/partials/_filters.html" %}
             {% endif %}

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Literal, TypedDict
 
-from flask import url_for
+from flask import render_template, url_for
 
 from app.models.cluster import Cluster
 
@@ -161,3 +161,16 @@ def alert_source_connection_blocker(
         'action_url': url_for(action_endpoint, cluster_id=cluster.id),
         'permission': 'settings.manage_integrations',
     }
+
+
+def render_dependency_blocker(blocker: DependencyBlocker) -> str:
+    """Render the earliest unresolved dependency with the correct visual treatment."""
+    template_name = (
+        'components/cluster/_onboarding_banner.html'
+        if blocker['kind'] == 'cluster_required'
+        else 'components/dependencies/_blocker.html'
+    )
+    return render_template(
+        template_name,
+        dependency_blocker=blocker,
+    )

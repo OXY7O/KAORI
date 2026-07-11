@@ -31,6 +31,14 @@
     <div id="utilization-page" class="space-y-6" data-analytics-page-tracker="utilization-load-tracker" data-analytics-page-request-tracking="false">
         {% include "analytics/utilization/partials/_hero.html" %}
 
+        {% if dependency_blocker %}
+            {% if dependency_blocker.kind == 'cluster_required' %}
+                {% include "components/cluster/_onboarding_banner.html" %}
+            {% else %}
+                {% include "components/dependencies/_blocker.html" %}
+            {% endif %}
+        {% endif %}
+
         {% if not dependency_blocker %}
         {% set analytics_tracker_id = 'utilization-load-tracker' %}
         {% set analytics_page_id = 'utilization-page' %}

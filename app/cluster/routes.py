@@ -20,6 +20,7 @@ from flask_login import current_user
 from redis.exceptions import RedisError
 
 from app.cluster.forms import ClusterCreateForm, ClusterEditForm
+from app.cluster.onboarding import has_registered_clusters
 from app.cluster.service import (
     build_cluster_context,
     create_cluster,
@@ -85,6 +86,11 @@ def list_clusters() -> ResponseReturnValue:
 @cluster_bp.route('/table')
 @permission_required('clusters.view')
 def cluster_table() -> ResponseReturnValue:
+    if has_registered_clusters() is False:
+        return render_template(
+            'components/cluster/_onboarding_banner.html',
+        )
+
     return render_template(
         'cluster/partials/_table.html',
         **_build_cluster_context_from_request(),

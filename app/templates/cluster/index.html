@@ -36,6 +36,9 @@
                 </div>
             </div>
         </div>
+        {% if cluster_onboarding.is_blocked %}
+            {% include "components/cluster/_onboarding_banner.html" %}
+        {% else %}
         <!-- Kubernetes Cluster Inventory Card -->
         <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
             <div class="flex flex-col gap-4 border-b border-slate-200 px-6 py-5 lg:flex-row lg:items-center lg:justify-between dark:border-slate-700">
@@ -61,5 +64,6 @@
             {% include "cluster/partials/_table.html" %}
         </div>
         {% include "cluster/partials/_delete_modal.html" %}
+        {% endif %}
     </div>
 {% endblock dashboard_content %}

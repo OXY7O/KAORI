@@ -1,5 +1,6 @@
 from flask import Blueprint, abort, flash, render_template, request
 
+from app.cluster.onboarding import has_registered_clusters
 from app.cluster.service import build_cluster_context
 from app.inventory.service import (
     get_cluster_by_id,
@@ -33,6 +34,20 @@ inventory_bp = Blueprint(
     __name__,
     url_prefix='/inventory',
 )
+
+
+@inventory_bp.before_request
+def block_clusterless_inventory_partials():
+    """Keep direct HTMX inventory requests aligned with the full-page blocker."""
+    if request.method != 'GET' or request.headers.get('HX-Request') != 'true':
+        return None
+
+    if has_registered_clusters() is False:
+        return render_template(
+            'components/cluster/_onboarding_banner.html',
+        )
+
+    return None
 
 
 @inventory_bp.post('/<string:cluster_id>/sync')

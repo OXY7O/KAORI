@@ -5,6 +5,7 @@ from __future__ import annotations
 from flask import render_template, request
 
 from app.analytics.forecast.service import get_forecast_analysis_context
+from app.common.dependencies import render_dependency_blocker
 from app.rbac.decorators import permission_required
 
 
@@ -26,7 +27,11 @@ def forecast_section() -> str:
         query_args=request.args,
     )
 
-    context['render_dependency_blocker'] = True
+    dependency_blocker = context.get('dependency_blocker')
+    if dependency_blocker:
+        return render_dependency_blocker(
+            dependency_blocker,
+        )
 
     return render_template(
         'analytics/forecast/partials/_forecast_section.html',

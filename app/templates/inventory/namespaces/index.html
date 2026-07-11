@@ -3,7 +3,11 @@
 {% block dashboard_content %}
     <div class="space-y-6">
         {% include "inventory/namespaces/partials/_hero.html" %}
-        {% include "inventory/namespaces/partials/_summary_cards.html" %}
-        {% include "inventory/namespaces/partials/_table_card.html" %}
+        {% if cluster_onboarding.is_blocked %}
+            {% include "components/cluster/_onboarding_banner.html" %}
+        {% else %}
+            {% include "inventory/namespaces/partials/_summary_cards.html" %}
+            {% include "inventory/namespaces/partials/_table_card.html" %}
+        {% endif %}
     </div>
 {% endblock dashboard_content %}

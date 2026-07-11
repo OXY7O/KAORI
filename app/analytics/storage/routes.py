@@ -5,6 +5,7 @@ from __future__ import annotations
 from flask import render_template, request
 
 from app.analytics.storage.service import get_storage_analysis_context
+from app.common.dependencies import render_dependency_blocker
 from app.rbac.decorators import permission_required
 
 
@@ -26,6 +27,12 @@ def storage_filesystem_summary() -> str:
         query_args=request.args,
     )
 
+    dependency_blocker = context.get('dependency_blocker')
+    if dependency_blocker:
+        return render_dependency_blocker(
+            dependency_blocker,
+        )
+
     return render_template(
         'analytics/storage/partials/_filesystem_panel.html',
         **context,
@@ -37,6 +44,12 @@ def storage_persistent_summary() -> str:
     context = get_storage_analysis_context(
         query_args=request.args,
     )
+
+    dependency_blocker = context.get('dependency_blocker')
+    if dependency_blocker:
+        return render_dependency_blocker(
+            dependency_blocker,
+        )
 
     return render_template(
         'analytics/storage/partials/_persistent_storage_panel.html',

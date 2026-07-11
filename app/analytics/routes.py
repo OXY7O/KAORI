@@ -32,6 +32,7 @@ from app.analytics.workload.routes import (
     workload_resource_mapping,
     workload_tenant_quota,
 )
+from app.common.dependencies import render_dependency_blocker
 from app.rbac.decorators import permission_required
 
 analytics_bp = Blueprint(
@@ -123,9 +124,8 @@ def overview_section(section: str):
     dependency_blocker = dependency_context['dependency_blocker']
 
     if dependency_blocker:
-        return render_template(
-            'components/dependencies/_blocker.html',
-            dependency_blocker=dependency_blocker,
+        return render_dependency_blocker(
+            dependency_blocker,
         )
 
     payload = get_analytics_overview_section(

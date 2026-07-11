@@ -5,6 +5,14 @@
     <div id="analytics-overview-page" class="space-y-6">
         {% include "analytics/overview/partials/_hero.html" %}
 
+        {% if dependency_blocker %}
+            {% if dependency_blocker.kind == 'cluster_required' %}
+                {% include "components/cluster/_onboarding_banner.html" %}
+            {% else %}
+                {% include "components/dependencies/_blocker.html" %}
+            {% endif %}
+        {% endif %}
+
         {% if not dependency_blocker %}
         <div id="overview-health-summary"
              hx-target="this"

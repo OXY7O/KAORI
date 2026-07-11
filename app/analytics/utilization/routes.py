@@ -4,6 +4,7 @@ from typing import Any, cast
 
 from flask import current_app, render_template, request
 
+from app.analytics.common.context import build_analysis_utilization_context
 from app.analytics.utilization.service import (
     UtilizationService,
     get_selected_cluster,
@@ -14,6 +15,7 @@ from app.common.dependencies import (
     cluster_required_blocker,
     prometheus_connection_blocker,
     prometheus_setup_blocker,
+    render_dependency_blocker,
 )
 from app.intelligence.recommendation_engine import (
     build_utilization_actionable_recommendations,
@@ -109,17 +111,23 @@ def _get_trend_hours() -> int:
 
 @permission_required('analytics.view')
 def utilization_trend() -> str:
-    cluster_id = request.args.get(
-        'cluster_id',
+    _, cluster, service, dependency_context = build_analysis_utilization_context(
+        request.args,
     )
+    dependency_blocker = dependency_context.get('dependency_blocker')
 
-    cluster = get_selected_cluster(
-        cluster_id,
-    )
+    if dependency_blocker:
+        return render_dependency_blocker(
+            dependency_blocker,
+        )
+
+    if cluster is None or service is None:
+        return render_dependency_blocker(
+            cluster_required_blocker(),
+        )
 
     trend_hours = _get_trend_hours()
     trend_step = TREND_STEP_MAP[trend_hours]
-
     selected_trend_node = request.args.get(
         'trend_node',
         '',
@@ -127,39 +135,14 @@ def utilization_trend() -> str:
     )
 
     summary = _empty_summary()
-
     trends: dict[str, list[dict[str, float]]] = {
         'cpu': [],
         'memory': [],
         'pods': [],
     }
-
     available_worker_nodes: list[str] = []
 
-    error = None
-
-    if not cluster:
-        return render_template(
-            'analytics/utilization/partials/_trend.html',
-            cluster=None,
-            summary=summary,
-            trends=trends,
-            trend_hours=trend_hours,
-            allowed_trend_hours=ALLOWED_TREND_HOURS,
-            available_worker_nodes=[],
-            selected_trend_node='',
-            error='No cluster configured',
-        )
-
     try:
-        prometheus = PrometheusService(
-            cluster,
-        )
-
-        service = UtilizationService(
-            prometheus,
-        )
-
         available_worker_nodes = service.get_worker_node_names()
 
         if selected_trend_node not in available_worker_nodes:
@@ -177,18 +160,23 @@ def utilization_trend() -> str:
             step=trend_step,
             node_name=selected_trend_node or None,
         )
-
     except PrometheusError as exc:
-        error = f'Prometheus is not configured or available for the selected cluster. {exc}'
+        return render_dependency_blocker(
+            prometheus_connection_blocker(
+                cluster,
+                detail=str(exc),
+            )
+        )
     except Exception as exc:
         current_app.logger.exception(
-            exc,
+            'Unable to retrieve utilization trend for cluster %s.',
+            cluster.name,
         )
-
-        error = (
-            'Unable to retrieve utilization trend from Prometheus. '
-            'Please verify endpoint, credentials, SSL configuration, '
-            'and network connectivity.'
+        return render_dependency_blocker(
+            prometheus_connection_blocker(
+                cluster,
+                detail=str(exc),
+            )
         )
 
     return render_template(
@@ -200,7 +188,7 @@ def utilization_trend() -> str:
         allowed_trend_hours=ALLOWED_TREND_HOURS,
         available_worker_nodes=available_worker_nodes,
         selected_trend_node=selected_trend_node,
-        error=error,
+        error=None,
     )
 
 
@@ -538,20 +526,26 @@ def utilization() -> str:
 
 @permission_required('analytics.view')
 def utilization_node_detail() -> str:
-    cluster_id = request.args.get(
-        'cluster_id',
+    _, cluster, service, dependency_context = build_analysis_utilization_context(
+        request.args,
     )
+    dependency_blocker = dependency_context.get('dependency_blocker')
 
-    cluster = get_selected_cluster(
-        cluster_id,
-    )
+    if dependency_blocker:
+        return render_dependency_blocker(
+            dependency_blocker,
+        )
+
+    if cluster is None or service is None:
+        return render_dependency_blocker(
+            cluster_required_blocker(),
+        )
 
     selected_node = request.args.get(
         'node',
         '',
         type=str,
     )
-
     selected_filesystem_instance = request.args.get(
         'filesystem_instance',
         '',
@@ -561,33 +555,7 @@ def utilization_node_detail() -> str:
     detail_summary = _empty_summary()
     detail_risk_assessment = _empty_risk_assessment()
 
-    available_nodes: list[str] = []
-    available_filesystem_instances: list[str] = []
-
-    error = None
-
-    if not cluster:
-        return render_template(
-            'analytics/utilization/partials/_node_detail.html',
-            cluster=None,
-            detail_summary=detail_summary,
-            detail_risk_assessment=detail_risk_assessment,
-            available_nodes=available_nodes,
-            available_filesystem_instances=available_filesystem_instances,
-            selected_node='',
-            selected_filesystem_instance='',
-            error='No cluster configured',
-        )
-
     try:
-        prometheus = PrometheusService(
-            cluster,
-        )
-
-        service = UtilizationService(
-            prometheus,
-        )
-
         available_nodes = service.get_node_names()
         available_filesystem_instances = service.get_filesystem_instances()
 
@@ -609,18 +577,23 @@ def utilization_node_detail() -> str:
             ),
             selected_node or None,
         )
-
     except PrometheusError as exc:
-        error = f'Prometheus is not configured or available for the selected cluster. {exc}'
+        return render_dependency_blocker(
+            prometheus_connection_blocker(
+                cluster,
+                detail=str(exc),
+            )
+        )
     except Exception as exc:
         current_app.logger.exception(
-            exc,
+            'Unable to retrieve utilization node detail for cluster %s.',
+            cluster.name,
         )
-
-        error = (
-            'Unable to retrieve node detail from Prometheus. '
-            'Please verify endpoint, credentials, SSL configuration, '
-            'and network connectivity.'
+        return render_dependency_blocker(
+            prometheus_connection_blocker(
+                cluster,
+                detail=str(exc),
+            )
         )
 
     return render_template(
@@ -632,5 +605,5 @@ def utilization_node_detail() -> str:
         available_filesystem_instances=available_filesystem_instances,
         selected_node=selected_node,
         selected_filesystem_instance=selected_filesystem_instance,
-        error=error,
+        error=None,
     )
