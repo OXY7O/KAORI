@@ -83,7 +83,7 @@
 
             {% call detail_card(
                 'Pod configuration',
-                'package-cog',
+                'settings-2',
                 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300',
                 workload.container_count ~ ' containers',
                 'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/20'
@@ -92,7 +92,13 @@
                     {{ detail_row(row.label, row.value) }}
                 {% endfor %}
                 <div class="pt-3">
-                    {{ detail_tip('Pod configuration comes from the workload template. Runtime utilization and performance remain in Analytics.', 'emerald', 'info') }}
+                    {% if workload.pod_configuration_reported %}
+                        {{ detail_tip('Pod configuration comes from the workload template. Runtime utilization and performance remain in Analytics.', 'emerald', 'info') }}
+                    {% elif workload.pod_configuration_source == 'associated-pod-fallback' %}
+                        {{ detail_tip('The workload template was not stored by the sync process that created this snapshot. Container metadata is temporarily inferred from associated Pods. Restart the inventory worker and sync this cluster again to collect the complete Pod configuration.', 'amber', 'triangle-alert') }}
+                    {% else %}
+                        {{ detail_tip('Pod template metadata was not reported in this snapshot. Restart the inventory worker and sync this cluster again.', 'amber', 'triangle-alert') }}
+                    {% endif %}
                 </div>
             {% endcall %}
 

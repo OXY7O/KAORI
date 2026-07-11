@@ -77,22 +77,39 @@ def _string_value(value, default: str = '-') -> str:
     return str(value)
 
 
+def _model_value(source, *keys: str, default=None):
+    """Read Kubernetes model attributes and raw/dict payloads consistently."""
+    if source is None:
+        return default
+
+    for key in keys:
+        if isinstance(source, dict):
+            if key in source:
+                return source[key]
+        else:
+            value = getattr(source, key, None)
+            if value is not None:
+                return value
+
+    return default
+
+
 def _metadata_details(metadata) -> dict:
-    labels = dict(sorted((getattr(metadata, 'labels', None) or {}).items()))
-    annotations = dict(sorted((getattr(metadata, 'annotations', None) or {}).items()))
+    labels = dict(sorted((_model_value(metadata, 'labels', default={}) or {}).items()))
+    annotations = dict(sorted((_model_value(metadata, 'annotations', default={}) or {}).items()))
 
     return {
-        'uid': _string_value(getattr(metadata, 'uid', None)),
+        'uid': _string_value(_model_value(metadata, 'uid')),
         'labels': labels,
         'annotations': annotations,
     }
 
 
 def _toleration_display(toleration) -> str:
-    key = getattr(toleration, 'key', None) or '*'
-    operator = getattr(toleration, 'operator', None) or 'Equal'
-    value = getattr(toleration, 'value', None)
-    effect = getattr(toleration, 'effect', None)
+    key = _model_value(toleration, 'key') or '*'
+    operator = _model_value(toleration, 'operator') or 'Equal'
+    value = _model_value(toleration, 'value')
+    effect = _model_value(toleration, 'effect')
 
     expression = key
     if operator == 'Exists':
@@ -106,78 +123,132 @@ def _toleration_display(toleration) -> str:
     return expression
 
 
-def _pod_template_details(template_spec) -> dict:
-    if template_spec is None:
-        return {
-            'containers': [],
-            'container_count': 0,
-            'init_container_count': 0,
-            'service_account': '-',
-            'restart_policy': '-',
-            'priority_class': '-',
-            'scheduler': '-',
-            'host_network': False,
-            'dns_policy': '-',
-            'volume_count': 0,
-            'node_selector': {},
-            'affinity_configured': False,
-            'tolerations': [],
-            'topology_spread_count': 0,
-            'runtime_class': '-',
-        }
+def _workload_pod_template_spec(workload_spec):
+    template = _model_value(workload_spec, 'template')
+    return _model_value(template, 'spec')
 
+
+def _cronjob_pod_template_spec(cronjob_spec):
+    job_template = _model_value(cronjob_spec, 'job_template', 'jobTemplate')
+    job_spec = _model_value(job_template, 'spec')
+    return _workload_pod_template_spec(job_spec)
+
+
+def _pod_template_details(template_spec) -> dict:
+    defaults = {
+        'reported': False,
+        'schema_version': 2,
+        'containers': [],
+        'container_count': 0,
+        'init_container_count': 0,
+        'service_account': '-',
+        'restart_policy': '-',
+        'priority_class': '-',
+        'scheduler': '-',
+        'host_network': False,
+        'dns_policy': '-',
+        'volume_count': 0,
+        'node_selector': {},
+        'affinity_configured': False,
+        'tolerations': [],
+        'topology_spread_count': 0,
+        'runtime_class': '-',
+    }
+
+    if template_spec is None:
+        return defaults
+
+    regular_containers = list(_model_value(template_spec, 'containers', default=[]) or [])
+    init_containers = list(
+        _model_value(template_spec, 'init_containers', 'initContainers', default=[]) or []
+    )
     containers: list[dict[str, str]] = []
 
-    for container in getattr(template_spec, 'containers', None) or []:
+    for container in regular_containers:
         containers.append(
             {
-                'name': _string_value(getattr(container, 'name', None)),
-                'image': _string_value(getattr(container, 'image', None)),
-                'pull_policy': _string_value(getattr(container, 'image_pull_policy', None)),
+                'name': _string_value(_model_value(container, 'name')),
+                'image': _string_value(_model_value(container, 'image')),
+                'pull_policy': _string_value(
+                    _model_value(container, 'image_pull_policy', 'imagePullPolicy')
+                ),
                 'kind': 'Container',
             }
         )
 
-    init_containers = getattr(template_spec, 'init_containers', None) or []
-
     for container in init_containers:
         containers.append(
             {
-                'name': _string_value(getattr(container, 'name', None)),
-                'image': _string_value(getattr(container, 'image', None)),
-                'pull_policy': _string_value(getattr(container, 'image_pull_policy', None)),
+                'name': _string_value(_model_value(container, 'name')),
+                'image': _string_value(_model_value(container, 'image')),
+                'pull_policy': _string_value(
+                    _model_value(container, 'image_pull_policy', 'imagePullPolicy')
+                ),
                 'kind': 'Init container',
             }
         )
 
     tolerations = [
         _toleration_display(toleration)
-        for toleration in (getattr(template_spec, 'tolerations', None) or [])
+        for toleration in (
+            _model_value(template_spec, 'tolerations', default=[]) or []
+        )
     ]
+    node_selector = _model_value(
+        template_spec,
+        'node_selector',
+        'nodeSelector',
+        default={},
+    ) or {}
 
     return {
+        'reported': True,
+        'schema_version': 2,
         'containers': containers,
-        'container_count': len(getattr(template_spec, 'containers', None) or []),
+        'container_count': len(regular_containers),
         'init_container_count': len(init_containers),
         'service_account': _string_value(
-            getattr(template_spec, 'service_account_name', None),
+            _model_value(
+                template_spec,
+                'service_account_name',
+                'serviceAccountName',
+                'service_account',
+            ),
             'default',
         ),
-        'restart_policy': _string_value(getattr(template_spec, 'restart_policy', None)),
-        'priority_class': _string_value(getattr(template_spec, 'priority_class_name', None)),
-        'scheduler': _string_value(getattr(template_spec, 'scheduler_name', None), 'default-scheduler'),
-        'host_network': bool(getattr(template_spec, 'host_network', False)),
-        'dns_policy': _string_value(getattr(template_spec, 'dns_policy', None)),
-        'volume_count': len(getattr(template_spec, 'volumes', None) or []),
-        'node_selector': dict(sorted((getattr(template_spec, 'node_selector', None) or {}).items())),
-        'affinity_configured': getattr(template_spec, 'affinity', None) is not None,
+        'restart_policy': _string_value(
+            _model_value(template_spec, 'restart_policy', 'restartPolicy')
+        ),
+        'priority_class': _string_value(
+            _model_value(template_spec, 'priority_class_name', 'priorityClassName')
+        ),
+        'scheduler': _string_value(
+            _model_value(template_spec, 'scheduler_name', 'schedulerName'),
+            'default-scheduler',
+        ),
+        'host_network': bool(
+            _model_value(template_spec, 'host_network', 'hostNetwork', default=False)
+        ),
+        'dns_policy': _string_value(
+            _model_value(template_spec, 'dns_policy', 'dnsPolicy')
+        ),
+        'volume_count': len(_model_value(template_spec, 'volumes', default=[]) or []),
+        'node_selector': dict(sorted(node_selector.items())),
+        'affinity_configured': _model_value(template_spec, 'affinity') is not None,
         'tolerations': tolerations,
         'topology_spread_count': len(
-            getattr(template_spec, 'topology_spread_constraints', None) or []
+            _model_value(
+                template_spec,
+                'topology_spread_constraints',
+                'topologySpreadConstraints',
+                default=[],
+            )
+            or []
         ),
-        'runtime_class': _string_value(getattr(template_spec, 'runtime_class_name', None)),
+        'runtime_class': _string_value(
+            _model_value(template_spec, 'runtime_class_name', 'runtimeClassName')
+        ),
     }
-
 
 def _workload_details(
     metadata,
@@ -190,6 +261,7 @@ def _workload_details(
     details = _metadata_details(metadata)
     details.update(
         {
+            'schema_version': 2,
             'state_display': state_display,
             'state_rows': state_rows,
             'delivery_rows': delivery_rows,
@@ -237,7 +309,7 @@ def get_workloads(
 
         details = _workload_details(
             metadata,
-            getattr(getattr(spec, 'template', None), 'spec', None),
+            _workload_pod_template_spec(spec),
             state_display=state_display,
             state_rows=[
                 _detail_row('Desired replicas', desired),
@@ -294,7 +366,7 @@ def get_workloads(
 
         details = _workload_details(
             metadata,
-            getattr(getattr(spec, 'template', None), 'spec', None),
+            _workload_pod_template_spec(spec),
             state_display=state_display,
             state_rows=[
                 _detail_row('Desired replicas', desired),
@@ -353,7 +425,7 @@ def get_workloads(
 
         details = _workload_details(
             metadata,
-            getattr(getattr(spec, 'template', None), 'spec', None),
+            _workload_pod_template_spec(spec),
             state_display=state_display,
             state_rows=[
                 _detail_row('Desired scheduled', desired),
@@ -422,7 +494,7 @@ def get_workloads(
 
         details = _workload_details(
             metadata,
-            getattr(getattr(spec, 'template', None), 'spec', None),
+            _workload_pod_template_spec(spec),
             state_display=state_display,
             state_rows=[
                 _detail_row('Completions', completions),
@@ -480,8 +552,7 @@ def get_workloads(
         suspended = bool(getattr(spec, 'suspend', False))
         cronjob_status = 'Suspended' if suspended else 'Running'
         state_display = 'Suspended' if suspended else (f'{active_count} Active' if active_count else 'Scheduled')
-        job_template_spec = getattr(getattr(spec, 'job_template', None), 'spec', None)
-        pod_template_spec = getattr(getattr(job_template_spec, 'template', None), 'spec', None)
+        pod_template_spec = _cronjob_pod_template_spec(spec)
 
         details = _workload_details(
             metadata,

@@ -1487,6 +1487,115 @@ def _workload_detail_rows(
     ]
 
 
+def _fallback_pod_template_from_associated_pods(
+    related_pods: list[PodInventory],
+) -> dict[str, Any]:
+    """Provide a safe partial view for snapshots created by an older worker."""
+    if not related_pods:
+        return {}
+
+    reference_pod = max(
+        related_pods,
+        key=lambda pod: len(pod.container_names or []) + len(pod.init_container_images or []),
+    )
+    container_names = list(reference_pod.container_names or [])
+    container_images = list(reference_pod.container_images or [])
+    init_images = list(reference_pod.init_container_images or [])
+    containers: list[dict[str, str]] = []
+
+    regular_count = max(len(container_names), len(container_images))
+    for index in range(regular_count):
+        containers.append(
+            {
+                'name': container_names[index] if index < len(container_names) else f'container-{index + 1}',
+                'image': container_images[index] if index < len(container_images) else '-',
+                'pull_policy': '-',
+                'kind': 'Container',
+            }
+        )
+
+    for index, image in enumerate(init_images):
+        containers.append(
+            {
+                'name': f'init-container-{index + 1}',
+                'image': image,
+                'pull_policy': '-',
+                'kind': 'Init container',
+            }
+        )
+
+    return {
+        'reported': False,
+        'schema_version': 1,
+        'source': 'associated-pod-fallback',
+        'containers': containers,
+        'container_count': regular_count,
+        'init_container_count': len(init_images),
+        'service_account': '-',
+        'restart_policy': '-',
+        'priority_class': '-',
+        'scheduler': '-',
+        'host_network': False,
+        'dns_policy': '-',
+        'volume_count': 0,
+        'node_selector': {},
+        'affinity_configured': False,
+        'tolerations': [],
+        'topology_spread_count': 0,
+        'runtime_class': '-',
+    }
+
+
+def _pod_template_has_inventory_data(
+    pod_template: dict[str, Any],
+) -> bool:
+    if pod_template.get('containers'):
+        return True
+
+    if int(pod_template.get('container_count') or 0) > 0:
+        return True
+
+    if int(pod_template.get('init_container_count') or 0) > 0:
+        return True
+
+    for key in (
+        'service_account',
+        'restart_policy',
+        'priority_class',
+        'scheduler',
+        'dns_policy',
+        'runtime_class',
+    ):
+        if pod_template.get(key) not in (None, '', '-'):
+            return True
+
+    return bool(
+        pod_template.get('volume_count')
+        or pod_template.get('node_selector')
+        or pod_template.get('affinity_configured')
+        or pod_template.get('tolerations')
+        or pod_template.get('topology_spread_count')
+    )
+
+
+def _resolve_workload_pod_template(
+    details: dict[str, Any],
+    related_pods: list[PodInventory],
+) -> tuple[dict[str, Any], str]:
+    pod_template = details.get('pod_template')
+    if isinstance(pod_template, dict) and (
+        pod_template.get('reported') is True
+        or _pod_template_has_inventory_data(pod_template)
+    ):
+        return pod_template, 'workload-template'
+
+    fallback = _fallback_pod_template_from_associated_pods(related_pods)
+    if fallback:
+        return fallback, 'associated-pod-fallback'
+
+    return {}, 'not-reported'
+
+
 def _pod_configuration_rows(
     pod_template: dict[str, Any],
 ) -> list[dict[str, str]]:
@@ -1606,7 +1715,6 @@ def get_workload_detail(workload_id: int) -> dict[str, Any] | None:
     workload, cluster_name = result
     workload_type = workload.workload_type or 'Unknown'
     details = workload.details or {}
-    pod_template = details.get('pod_template') or {}
 
     related_pods = (
         PodInventory.query.filter_by(
@@ -1617,6 +1725,11 @@ def get_workload_detail(workload_id: int) -> dict[str, Any] | None:
         )
         .order_by(PodInventory.pod_name)
         .all()
+    )
+
+    pod_template, pod_configuration_source = _resolve_workload_pod_template(
+        details,
+        related_pods,
     )
 
     labels = details.get('labels') or {}
@@ -1655,6 +1768,8 @@ def get_workload_detail(workload_id: int) -> dict[str, Any] | None:
         'collected_at': workload.collected_at,
         'state_rows': state_rows,
         'pod_configuration_rows': _pod_configuration_rows(pod_template),
+        'pod_configuration_reported': pod_configuration_source == 'workload-template',
+        'pod_configuration_source': pod_configuration_source,
         'delivery_rows': delivery_rows,
         'placement_rows': _placement_rows(pod_template),
         'node_selectors': [f'{key}={value}' for key, value in sorted(node_selector.items())],
