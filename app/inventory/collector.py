@@ -287,7 +287,6 @@ def get_workloads(
 
     deployments = cast(
         V1DeploymentList,
-    V1EndpointsList,
         api.list_deployment_for_all_namespaces(),
     )
 
