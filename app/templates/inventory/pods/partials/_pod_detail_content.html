@@ -12,7 +12,7 @@
     {% call detail_card('Runtime placement', 'activity', 'bg-cyan-50 text-cyan-600 dark:bg-cyan-950/40 dark:text-cyan-300', pod.ready, 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300') %}
         {{ detail_row('Cluster', pod.cluster_name) }}
         {{ detail_row('Node', pod.node or '-') }}
-        {{ detail_row('Pod IP', pod.ip or '-', mono=True) }}
+        {{ detail_row('Pod IP', pod.ip or '-') }}
         {{ detail_row('Restarts', pod.restarts) }}
     {% endcall %}
     {% call detail_card('Image references', 'image', 'bg-fuchsia-50 text-fuchsia-600 dark:bg-fuchsia-950/40 dark:text-fuchsia-300', pod.image_count ~ ' image(s)', 'bg-fuchsia-50 text-fuchsia-700 dark:bg-fuchsia-500/10 dark:text-fuchsia-300') %}
@@ -31,8 +31,8 @@
     {% endcall %}
     {% call detail_card('Lifecycle', 'clock-3', 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300', pod.age, 'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300') %}
         {{ detail_row('Age', pod.age) }}
-        {{ detail_row('Created', pod.created_at.strftime('%Y-%m-%d %H:%M:%S') if pod.created_at else '-') }}
-        {{ detail_row('Collected', pod.collected_at.strftime('%Y-%m-%d %H:%M:%S') if pod.collected_at else '-') }}
+        {{ detail_row('Created', pod.created_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
+        {{ detail_row('Collected', pod.collected_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
         {{ detail_row('Status', pod.status) }}
     {% endcall %}
 {% endcall %}

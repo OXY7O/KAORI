@@ -5,10 +5,12 @@ from app.models.cluster import Cluster, ClusterStatus
 from app.models.governance import TLSCertificateInventory, TLSCertificateUpdateEvent
 from app.models.inventory import (
     ClusterInventory,
+    ConfigurationInventory,
     IngressInventory,
     NamespaceInventory,
     NodeInventory,
     PodInventory,
+    ResourceQuotaInventory,
     ServiceInventory,
     StorageInventory,
     WorkloadInventory,
@@ -34,6 +36,8 @@ __all__ = [
     'IngressInventory',
     'StorageInventory',
     'ClusterInventory',
+    'ConfigurationInventory',
+    'ResourceQuotaInventory',
     'NamespaceInventory',
     'NodeInventory',
     'Notification',

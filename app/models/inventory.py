@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.extensions import db
@@ -181,6 +181,12 @@ class WorkloadInventory(db.Model):
         String(50),
     )
 
+    details: Mapped[dict] = mapped_column(
+        JSON,
+        nullable=False,
+        default=dict,
+    )
+
     created_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
     )
@@ -265,6 +271,34 @@ class PodInventory(db.Model):
         default=0,
     )
 
+    labels: Mapped[dict[str, str]] = mapped_column(
+        JSON,
+        nullable=False,
+        default=dict,
+    )
+
+    container_names: Mapped[list[str]] = mapped_column(
+        JSON,
+        nullable=False,
+        default=list,
+    )
+
+    workload_type: Mapped[str | None] = mapped_column(String(50))
+
+    workload_name: Mapped[str | None] = mapped_column(String(255))
+
+    configuration_references: Mapped[list[dict]] = mapped_column(
+        JSON,
+        nullable=False,
+        default=list,
+    )
+
+    persistent_volume_claims: Mapped[list[str]] = mapped_column(
+        JSON,
+        nullable=False,
+        default=list,
+    )
+
     created_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
     )
@@ -325,6 +359,12 @@ class ServiceInventory(db.Model):
 
     ports: Mapped[str | None] = mapped_column(
         String(255),
+    )
+
+    selector: Mapped[dict[str, str]] = mapped_column(
+        JSON,
+        nullable=False,
+        default=dict,
     )
 
     created_at: Mapped[datetime | None] = mapped_column(
@@ -459,9 +499,98 @@ class StorageInventory(db.Model):
         String(50),
     )
 
+    details: Mapped[dict] = mapped_column(
+        JSON,
+        nullable=False,
+        default=dict,
+    )
+
     created_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
     )
+
+    collected_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+    )
+
+
+class ConfigurationInventory(db.Model):
+    __tablename__ = 'configuration_inventory'
+
+    __table_args__ = (
+        UniqueConstraint(
+            'cluster_id',
+            'namespace',
+            'name',
+            'object_type',
+            name='uq_configuration_inventory_object',
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    cluster_id: Mapped[str] = mapped_column(
+        ForeignKey('clusters.id', ondelete='CASCADE'),
+        nullable=False,
+        index=True,
+    )
+
+    namespace: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+
+    object_type: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+
+    secret_type: Mapped[str | None] = mapped_column(String(255))
+
+    key_names: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+
+    key_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+    immutable: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
+    payload_size_bytes: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+    created_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    collected_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+    )
+
+
+class ResourceQuotaInventory(db.Model):
+    __tablename__ = 'resource_quota_inventory'
+
+    __table_args__ = (
+        UniqueConstraint(
+            'cluster_id',
+            'namespace',
+            'name',
+            name='uq_resource_quota_inventory_object',
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    cluster_id: Mapped[str] = mapped_column(
+        ForeignKey('clusters.id', ondelete='CASCADE'),
+        nullable=False,
+        index=True,
+    )
+
+    namespace: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+
+    hard: Mapped[dict[str, str]] = mapped_column(JSON, nullable=False, default=dict)
+
+    used: Mapped[dict[str, str]] = mapped_column(JSON, nullable=False, default=dict)
+
+    created_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     collected_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

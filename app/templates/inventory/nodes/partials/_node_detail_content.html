@@ -1,28 +1,32 @@
 {% from 'inventory/components/_detail_macros.html' import detail_shell, detail_card, detail_row %}
 {% call detail_shell(
     node.node_name,
-    'Operating system, network identity, and capacity collected from the latest node inventory snapshot.',
+    node.role_description,
     'server-cog',
     'bg-teal-50 text-teal-600 dark:bg-teal-950/40 dark:text-teal-300',
     node.cluster_name,
     'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
     node.status,
-    'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' if node.status == 'Ready' else 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'
+    'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' if node.status == 'Ready' else 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300'
 ) %}
-    {% call detail_card('Network identity', 'network', 'bg-cyan-50 text-cyan-600 dark:bg-cyan-950/40 dark:text-cyan-300', node.role, 'bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300') %}
-        {{ detail_row('Internal IP', node.internal_ip, mono=True) }}
-        {{ detail_row('External IP', node.external_ip, mono=True) }}
-        {{ detail_row('Hostname', node.hostname_address) }}
+    {% call detail_card('Node function', 'shield-check', 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-300', node.role, 'bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300') %}
+        {{ detail_row('Role', node.role) }}
+        {{ detail_row('Cluster', node.cluster_name) }}
+        {{ detail_row('Collected', node.collected_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
+        <p class="rounded-xl bg-indigo-50/70 px-3 py-2.5 text-xs leading-5 text-indigo-800 dark:bg-indigo-500/10 dark:text-indigo-200">{{ node.role_description }}</p>
     {% endcall %}
-    {% call detail_card('Platform profile', 'monitor-cog', 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300') %}
-        {{ detail_row('OS image', node.os_image) }}
-        {{ detail_row('Kernel', node.kernel_version) }}
-        {{ detail_row('Runtime', node.container_runtime) }}
+    {% call detail_card('Network identity', 'network', 'bg-cyan-50 text-cyan-600 dark:bg-cyan-950/40 dark:text-cyan-300') %}
+        {{ detail_row('Internal IP', node.internal_ip or '-') }}
+        {{ detail_row('External IP', node.external_ip or '-') }}
+        {{ detail_row('Hostname', node.hostname_address or '-') }}
     {% endcall %}
-    {% call detail_card('Capacity', 'gauge', 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300', node.cpu ~ ' CPU', 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300') %}
+    {% call detail_card('Platform and capacity', 'cpu', 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300', node.memory_display, 'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300') %}
+        {{ detail_row('Operating system', node.os_image or '-') }}
+        {{ detail_row('Kernel', node.kernel_version or '-') }}
+        {{ detail_row('Container runtime', node.runtime_display or '-') }}
+        {{ detail_row('CPU', node.cpu or '-') }}
         {{ detail_row('Memory', node.memory_display) }}
         {{ detail_row('Ephemeral storage', node.ephemeral_storage_display) }}
-        {{ detail_row('Allocatable storage', node.allocatable_storage_display) }}
-        {{ detail_row('Collected', node.collected_at.strftime('%Y-%m-%d %H:%M:%S') if node.collected_at else '-') }}
+        {{ detail_row('Allocatable storage', node.ephemeral_storage_allocatable_display) }}
     {% endcall %}
 {% endcall %}

@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from decimal import Decimal, InvalidOperation
 from typing import Any, cast
 
 from kubernetes.client import AppsV1Api, BatchV1Api, CoreV1Api, NetworkingV1Api, StorageV1Api, V1NamespaceList, V1Node
@@ -7,9 +8,11 @@ from sqlalchemy import func
 from app.extensions import db
 from app.inventory.collector import (
     get_cluster_version,
+    get_configuration_inventory,
     get_ingresses,
     get_nodes,
     get_pods,
+    get_resource_quotas,
     get_services,
     get_storage_inventory,
     get_workloads,
@@ -19,10 +22,12 @@ from app.kubernetes.tls import legacy_tls_context
 from app.models import (
     Cluster,
     ClusterInventory,
+    ConfigurationInventory,
     IngressInventory,
     NamespaceInventory,
     NodeInventory,
     PodInventory,
+    ResourceQuotaInventory,
     ServiceInventory,
     StorageInventory,
     WorkloadInventory,
@@ -400,6 +405,8 @@ def save_workloads(
 def save_pods(
     cluster: Cluster,
     api: CoreV1Api,
+    apps_api: AppsV1Api | None = None,
+    batch_api: BatchV1Api | None = None,
 ) -> None:
     PodInventory.query.filter_by(
         cluster_id=cluster.id,
@@ -409,6 +416,8 @@ def save_pods(
 
     pods = get_pods(
         api,
+        apps_api,
+        batch_api,
     )
 
     for pod in pods:
@@ -439,6 +448,34 @@ def save_pods(
         pod_inventory.image_count = pod.get(
             'image_count',
             0,
+        )
+
+        pod_inventory.labels = pod.get(
+            'labels',
+            {},
+        )
+
+        pod_inventory.container_names = pod.get(
+            'container_names',
+            [],
+        )
+
+        pod_inventory.workload_type = pod.get(
+            'workload_type',
+        )
+
+        pod_inventory.workload_name = pod.get(
+            'workload_name',
+        )
+
+        pod_inventory.configuration_references = pod.get(
+            'configuration_references',
+            [],
+        )
+
+        pod_inventory.persistent_volume_claims = pod.get(
+            'persistent_volume_claims',
+            [],
         )
 
         pod_inventory.created_at = pod['created_at']
@@ -475,6 +512,11 @@ def save_services(
         service_inventory.external_ip = service['external_ip']
 
         service_inventory.ports = service['ports']
+
+        service_inventory.selector = service.get(
+            'selector',
+            {},
+        )
 
         service_inventory.created_at = service['created_at']
 
@@ -555,9 +597,60 @@ def save_storage_inventory(
 
         storage_inventory.status = item['status']
 
+        storage_inventory.details = item.get(
+            'details',
+            {},
+        )
+
         storage_inventory.created_at = item['created_at']
 
         db.session.add(storage_inventory)
+
+
+def save_configuration_inventory(
+    cluster: Cluster,
+    api: CoreV1Api,
+) -> None:
+    ConfigurationInventory.query.filter_by(
+        cluster_id=cluster.id,
+    ).delete(
+        synchronize_session=False,
+    )
+
+    for item in get_configuration_inventory(api):
+        inventory = ConfigurationInventory()
+        inventory.cluster_id = cluster.id
+        inventory.namespace = item['namespace']
+        inventory.name = item['name']
+        inventory.object_type = item['object_type']
+        inventory.secret_type = item['secret_type']
+        inventory.key_names = item['key_names']
+        inventory.key_count = item['key_count']
+        inventory.immutable = item['immutable']
+        inventory.payload_size_bytes = item['payload_size_bytes']
+        inventory.created_at = item['created_at']
+        db.session.add(inventory)
+
+
+def save_resource_quotas(
+    cluster: Cluster,
+    api: CoreV1Api,
+) -> None:
+    ResourceQuotaInventory.query.filter_by(
+        cluster_id=cluster.id,
+    ).delete(
+        synchronize_session=False,
+    )
+
+    for item in get_resource_quotas(api):
+        inventory = ResourceQuotaInventory()
+        inventory.cluster_id = cluster.id
+        inventory.namespace = item['namespace']
+        inventory.name = item['name']
+        inventory.hard = item['hard']
+        inventory.used = item['used']
+        inventory.created_at = item['created_at']
+        db.session.add(inventory)
 
 
 def sync_inventory(
@@ -624,6 +717,8 @@ def sync_inventory(
             save_pods(
                 cluster,
                 core_api,
+                apps_api,
+                batch_api,
             )
 
             save_services(
@@ -642,6 +737,16 @@ def sync_inventory(
                 storage_api,
             )
 
+            save_configuration_inventory(
+                cluster,
+                core_api,
+            )
+
+            save_resource_quotas(
+                cluster,
+                core_api,
+            )
+
         db.session.commit()
 
     except Exception as exc:
@@ -653,78 +758,91 @@ def sync_inventory(
         raise
 
 
+def _parse_kubernetes_size_bytes(
+    value: str | int | float | None,
+) -> Decimal | None:
+    if value is None:
+        return None
+
+    raw = str(value).strip()
+    if not raw or raw == '-':
+        return None
+
+    units = {
+        'Ki': Decimal(1024),
+        'Mi': Decimal(1024) ** 2,
+        'Gi': Decimal(1024) ** 3,
+        'Ti': Decimal(1024) ** 4,
+        'Pi': Decimal(1024) ** 5,
+        'Ei': Decimal(1024) ** 6,
+        'K': Decimal(1000),
+        'M': Decimal(1000) ** 2,
+        'G': Decimal(1000) ** 3,
+        'T': Decimal(1000) ** 4,
+        'P': Decimal(1000) ** 5,
+        'E': Decimal(1000) ** 6,
+    }
+
+    try:
+        for suffix in sorted(units, key=len, reverse=True):
+            if raw.endswith(suffix):
+                number = Decimal(raw.removesuffix(suffix))
+                return number * units[suffix]
+
+        return Decimal(raw)
+    except (InvalidOperation, ValueError, TypeError):
+        return None
+
+
+def _format_decimal(value: Decimal, decimals: int = 1) -> str:
+    quantized = round(value, decimals)
+    if quantized == quantized.to_integral():
+        return str(int(quantized))
+    return f'{quantized:.{decimals}f}'.rstrip('0').rstrip('.')
+
+
+def format_kubernetes_size(
+    value: str | int | float | None,
+) -> str:
+    size_bytes = _parse_kubernetes_size_bytes(value)
+
+    if size_bytes is None or size_bytes < 0:
+        return '-'
+
+    units = [
+        ('PiB', Decimal(1024) ** 5),
+        ('TiB', Decimal(1024) ** 4),
+        ('GiB', Decimal(1024) ** 3),
+        ('MiB', Decimal(1024) ** 2),
+        ('KiB', Decimal(1024)),
+    ]
+
+    for label, divisor in units:
+        if size_bytes >= divisor:
+            return f'{_format_decimal(size_bytes / divisor)} {label}'
+
+    return f'{int(size_bytes)} B'
+
+
+def format_byte_count(
+    value: int | None,
+) -> str:
+    return format_kubernetes_size(value)
+
+
 def convert_ki_to_gib(
     value: str | None,
 ) -> float:
-    if not value:
+    size_bytes = _parse_kubernetes_size_bytes(value)
+    if size_bytes is None:
         return 0
-
-    if not value.endswith('Ki'):
-        return 0
-
-    try:
-        kib = int(
-            value.replace(
-                'Ki',
-                '',
-            )
-        )
-
-        return round(
-            kib / 1024 / 1024,
-            1,
-        )
-
-    except (
-        ValueError,
-        TypeError,
-    ):
-        return 0
+    return round(float(size_bytes / (Decimal(1024) ** 3)), 1)
 
 
 def convert_storage_to_gib(
     value: str | None,
 ) -> float:
-    if not value:
-        return 0
-
-    units = {
-        'Ki': 1024,
-        'Mi': 1024**2,
-        'Gi': 1024**3,
-        'Ti': 1024**4,
-        'K': 1000,
-        'M': 1000**2,
-        'G': 1000**3,
-        'T': 1000**4,
-    }
-
-    try:
-        for suffix, multiplier in units.items():
-            if value.endswith(
-                suffix,
-            ):
-                number = float(
-                    value.removesuffix(
-                        suffix,
-                    )
-                )
-
-                return round(
-                    number * multiplier / 1024**3,
-                    1,
-                )
-
-        return round(
-            float(value) / 1024**3,
-            1,
-        )
-
-    except (
-        ValueError,
-        TypeError,
-    ):
-        return 0
+    return convert_ki_to_gib(value)
 
 
 def format_gib(
@@ -732,8 +850,62 @@ def format_gib(
 ) -> str:
     if value <= 0:
         return '-'
+    return f'{value:g} GiB'
 
-    return f'{value} GiB'
+
+def format_quota_value(
+    resource_name: str,
+    value: str | None,
+) -> str:
+    if not value:
+        return '-'
+
+    size_markers = (
+        'memory',
+        'storage',
+        'ephemeral-storage',
+    )
+
+    if any(marker in resource_name.lower() for marker in size_markers):
+        return format_kubernetes_size(value)
+
+    return value
+
+
+NODE_ROLE_DESCRIPTIONS = {
+    'control-plane': (
+        'Runs Kubernetes control-plane components that coordinate cluster state, '
+        'scheduling, and API operations. Application workloads are usually kept off this node.'
+    ),
+    'master': (
+        'Runs Kubernetes control-plane components that coordinate cluster state, '
+        'scheduling, and API operations. Application workloads are usually kept off this node.'
+    ),
+    'worker': (
+        'Runs application Pods and provides compute, memory, networking, and storage capacity for Kubernetes workloads.'
+    ),
+    'data-plane': ('Provides runtime capacity for application workloads and data-plane traffic.'),
+}
+
+WORKLOAD_TYPE_DESCRIPTIONS = {
+    'Deployment': ('Maintains a desired number of interchangeable Pods and supports controlled rolling updates.'),
+    'StatefulSet': (
+        'Runs stateful Pods with stable identities, ordered rollout behavior, and persistent storage mappings.'
+    ),
+    'DaemonSet': (
+        'Ensures a Pod runs on every matching node, commonly for agents, networking, logging, or monitoring.'
+    ),
+    'Job': ('Runs one-time or finite work until the required number of Pods completes successfully.'),
+    'CronJob': ('Creates Jobs on a recurring schedule for periodic operational or application tasks.'),
+}
+
+SERVICE_TYPE_DESCRIPTIONS = {
+    'ClusterIP': ('Exposes selected Pods on an internal virtual IP that is reachable only inside the cluster.'),
+    'NodePort': ('Exposes the Service on a fixed port on every node and forwards traffic to selected Pods.'),
+    'LoadBalancer': ('Requests an external load balancer and forwards external traffic to selected Pods.'),
+    'ExternalName': ('Maps the Service DNS name to an external DNS hostname without selecting cluster Pods.'),
+    'Headless': ('Uses no virtual ClusterIP and returns Pod endpoints directly through Kubernetes DNS.'),
+}
 
 
 def get_inventory_cluster_summary() -> tuple[list[Cluster], dict[str, dict[str, Any]]]:
@@ -881,20 +1053,6 @@ def get_inventory_overview() -> dict[str, Any]:
     health = get_inventory_health()
     activities = get_recent_inventory_activity()
 
-    last_sync_human = '-'
-    last_sync = (
-        health.get(
-            'last_sync',
-        )
-        if health
-        else None
-    )
-
-    if last_sync:
-        last_sync_human = last_sync.strftime(
-            '%d %b %Y %H:%M',
-        )
-
     return {
         'total_clusters': (
             db.session.query(
@@ -964,7 +1122,6 @@ def get_inventory_overview() -> dict[str, Any]:
         'inventory_summary': inventory_summary,
         'health': health,
         'activities': activities,
-        'last_sync_human': last_sync_human,
     }
 
 
@@ -1032,11 +1189,6 @@ def get_inventory_health():
         else 0
     )
 
-    last_sync_display = '-'
-
-    if last_sync:
-        last_sync_display = last_sync.strftime('%d %b %Y %H:%M')
-
     return {
         'connected_clusters': connected_clusters,
         'healthy_clusters': healthy_clusters,
@@ -1050,7 +1202,6 @@ def get_inventory_health():
         'freshness_score': freshness_score,
         'freshness_window_hours': INVENTORY_FRESHNESS_HOURS,
         'last_sync': last_sync,
-        'last_sync_display': last_sync_display,
     }
 
 
@@ -1185,14 +1336,6 @@ def get_node_inventory(
 
         runtime_display = runtime.split('://')[0] if '://' in runtime else runtime
 
-        ephemeral_storage_gib = convert_storage_to_gib(
-            node.ephemeral_storage,
-        )
-
-        ephemeral_storage_allocatable_gib = convert_storage_to_gib(
-            node.ephemeral_storage_allocatable,
-        )
-
         node_status = node.status or 'Unknown'
 
         nodes_data.append(
@@ -1209,16 +1352,14 @@ def get_node_inventory(
                     node.external_ip or node.hostname_address,
                 ),
                 'cpu': node.cpu,
-                'memory_display': format_gib(
-                    convert_ki_to_gib(
-                        node.memory,
-                    )
+                'memory_display': format_kubernetes_size(
+                    node.memory,
                 ),
-                'ephemeral_storage_display': format_gib(
-                    ephemeral_storage_gib,
+                'ephemeral_storage_display': format_kubernetes_size(
+                    node.ephemeral_storage,
                 ),
-                'ephemeral_storage_allocatable_display': format_gib(
-                    ephemeral_storage_allocatable_gib,
+                'ephemeral_storage_allocatable_display': format_kubernetes_size(
+                    node.ephemeral_storage_allocatable,
                 ),
                 'os_image': node.os_image,
                 'runtime_display': runtime_display,
@@ -1260,6 +1401,281 @@ def get_node_inventory(
             cluster_id=cluster_id,
         ),
         'nodes': nodes_data,
+    }
+
+
+def _pod_summary(
+    pod: PodInventory,
+) -> dict[str, Any]:
+    return {
+        'id': pod.id,
+        'name': pod.pod_name,
+        'status': pod.phase or 'Unknown',
+        'ready': pod.ready or '-',
+        'node': pod.node_name or '-',
+        'container_names': pod.container_names or [],
+    }
+
+
+def get_node_detail(node_id: int) -> dict[str, Any] | None:
+    result = (
+        db.session.query(
+            NodeInventory,
+            Cluster.name.label('cluster_name'),
+        )
+        .join(Cluster, Cluster.id == NodeInventory.cluster_id)
+        .filter(NodeInventory.id == node_id)
+        .first()
+    )
+
+    if result is None:
+        return None
+
+    node, cluster_name = result
+    runtime = node.container_runtime or ''
+    role = node.role or 'Unknown'
+    role_key = role.lower()
+
+    return {
+        'id': node.id,
+        'cluster_name': cluster_name,
+        'node_name': node.node_name,
+        'role': role,
+        'role_description': NODE_ROLE_DESCRIPTIONS.get(
+            role_key,
+            'Provides Kubernetes node capacity. Its exact function depends on the labels and workloads assigned to it.',
+        ),
+        'status': node.status or 'Unknown',
+        'internal_ip': node.internal_ip,
+        'external_ip': node.external_ip,
+        'hostname_address': node.hostname_address,
+        'cpu': node.cpu,
+        'memory_display': format_kubernetes_size(node.memory),
+        'ephemeral_storage_display': format_kubernetes_size(node.ephemeral_storage),
+        'ephemeral_storage_allocatable_display': format_kubernetes_size(node.ephemeral_storage_allocatable),
+        'os_image': node.os_image,
+        'kernel_version': node.kernel_version,
+        'runtime_display': runtime.split('://')[0] if '://' in runtime else runtime,
+        'collected_at': node.collected_at,
+    }
+
+
+def get_workload_detail(workload_id: int) -> dict[str, Any] | None:
+    result = (
+        db.session.query(
+            WorkloadInventory,
+            Cluster.name.label('cluster_name'),
+        )
+        .join(Cluster, Cluster.id == WorkloadInventory.cluster_id)
+        .filter(WorkloadInventory.id == workload_id)
+        .first()
+    )
+
+    if result is None:
+        return None
+
+    workload, cluster_name = result
+    workload_type = workload.workload_type or 'Unknown'
+
+    related_pods = (
+        PodInventory.query.filter_by(
+            cluster_id=workload.cluster_id,
+            namespace=workload.namespace,
+            workload_type=workload_type,
+            workload_name=workload.name,
+        )
+        .order_by(PodInventory.pod_name)
+        .all()
+    )
+
+    return {
+        'id': workload.id,
+        'cluster_name': cluster_name,
+        'namespace': workload.namespace,
+        'name': workload.name,
+        'type': workload_type,
+        'type_description': WORKLOAD_TYPE_DESCRIPTIONS.get(
+            workload_type,
+            'Represents a Kubernetes workload controller or batch resource that manages Pods.',
+        ),
+        'ready': workload.ready or '-',
+        'status': workload.status or 'Unknown',
+        'age': format_age(workload.created_at),
+        'created_at': workload.created_at,
+        'collected_at': workload.collected_at,
+        'pod_count': len(related_pods),
+        'pods': [_pod_summary(pod) for pod in related_pods[:8]],
+        'pods_truncated': len(related_pods) > 8,
+    }
+
+
+def _split_inventory_values(value: str | None) -> list[str]:
+    return [item.strip() for item in (value or '').split(',') if item.strip() and item.strip() != '-']
+
+
+def _selector_matches(
+    selector: dict[str, str],
+    labels: dict[str, str],
+) -> bool:
+    return bool(selector) and all(labels.get(key) == value for key, value in selector.items())
+
+
+def get_service_detail(service_id: int) -> dict[str, Any] | None:
+    result = (
+        db.session.query(
+            ServiceInventory,
+            Cluster.name.label('cluster_name'),
+        )
+        .join(Cluster, Cluster.id == ServiceInventory.cluster_id)
+        .filter(ServiceInventory.id == service_id)
+        .first()
+    )
+
+    if result is None:
+        return None
+
+    service, cluster_name = result
+    service_type = service.service_type or 'Unknown'
+    selector = service.selector or {}
+
+    candidate_pods = (
+        PodInventory.query.filter_by(
+            cluster_id=service.cluster_id,
+            namespace=service.namespace,
+        )
+        .order_by(PodInventory.pod_name)
+        .all()
+    )
+
+    matched_pods = [pod for pod in candidate_pods if _selector_matches(selector, pod.labels or {})]
+
+    effective_type = 'Headless' if service_type == 'ClusterIP' and service.cluster_ip == 'None' else service_type
+
+    return {
+        'id': service.id,
+        'cluster_name': cluster_name,
+        'namespace': service.namespace,
+        'name': service.service_name,
+        'type': effective_type,
+        'type_description': SERVICE_TYPE_DESCRIPTIONS.get(
+            effective_type,
+            'Exposes a stable network endpoint for an application or external destination.',
+        ),
+        'cluster_ip': service.cluster_ip or '-',
+        'external_ips': _split_inventory_values(service.external_ip),
+        'ports': _split_inventory_values(service.ports),
+        'selector': selector,
+        'age': format_age(service.created_at),
+        'created_at': service.created_at,
+        'collected_at': service.collected_at,
+        'pod_count': len(matched_pods),
+        'pods': [_pod_summary(pod) for pod in matched_pods[:8]],
+        'pods_truncated': len(matched_pods) > 8,
+        'has_selector': bool(selector),
+    }
+
+
+def _storage_bound_pods(
+    item: StorageInventory,
+) -> tuple[list[PodInventory], list[dict[str, str]]]:
+    details = item.details or {}
+    claims: list[dict[str, str]] = []
+
+    if item.storage_type == 'PersistentVolumeClaim' and item.namespace:
+        claims.append({'namespace': item.namespace, 'name': item.name})
+
+    elif item.storage_type == 'PersistentVolume':
+        claim_namespace = details.get('claim_namespace')
+        claim_name = details.get('claim_name')
+        if claim_namespace and claim_name:
+            claims.append({'namespace': claim_namespace, 'name': claim_name})
+
+    elif item.storage_type == 'StorageClass':
+        pvc_rows = (
+            StorageInventory.query.filter_by(
+                cluster_id=item.cluster_id,
+                storage_type='PersistentVolumeClaim',
+                storage_class=item.name,
+            )
+            .order_by(StorageInventory.namespace, StorageInventory.name)
+            .all()
+        )
+        claims.extend(
+            {
+                'namespace': pvc.namespace or '-',
+                'name': pvc.name,
+            }
+            for pvc in pvc_rows
+            if pvc.namespace
+        )
+
+    if not claims:
+        return [], []
+
+    claim_lookup = {(claim['namespace'], claim['name']) for claim in claims}
+    pods = (
+        PodInventory.query.filter_by(cluster_id=item.cluster_id)
+        .order_by(
+            PodInventory.namespace,
+            PodInventory.pod_name,
+        )
+        .all()
+    )
+
+    matched = [
+        pod
+        for pod in pods
+        if any((pod.namespace, claim_name) in claim_lookup for claim_name in (pod.persistent_volume_claims or []))
+    ]
+
+    return matched, claims
+
+
+def get_storage_detail(storage_id: int) -> dict[str, Any] | None:
+    result = (
+        db.session.query(
+            StorageInventory,
+            Cluster.name.label('cluster_name'),
+        )
+        .join(Cluster, Cluster.id == StorageInventory.cluster_id)
+        .filter(StorageInventory.id == storage_id)
+        .first()
+    )
+
+    if result is None:
+        return None
+
+    item, cluster_name = result
+    namespace = item.namespace
+    if item.storage_type in {'StorageClass', 'PersistentVolume'}:
+        namespace = 'Cluster-wide'
+
+    bound_pods, claims = _storage_bound_pods(item)
+    details = dict(item.details or {})
+
+    if details.get('requested_storage'):
+        details['requested_storage'] = format_kubernetes_size(
+            details['requested_storage'],
+        )
+
+    return {
+        'id': item.id,
+        'cluster_name': cluster_name,
+        'namespace': namespace or '-',
+        'name': item.name,
+        'type': item.storage_type,
+        'storage_class': item.storage_class or '-',
+        'capacity': format_kubernetes_size(item.capacity),
+        'status': item.status or 'Unknown',
+        'details': details,
+        'age': format_age(item.created_at),
+        'created_at': item.created_at,
+        'collected_at': item.collected_at,
+        'claim_count': len(claims),
+        'claims': claims[:8],
+        'pod_count': len(bound_pods),
+        'pods': [_pod_summary(pod) for pod in bound_pods[:8]],
+        'pods_truncated': len(bound_pods) > 8,
     }
 
 
@@ -1355,17 +1771,10 @@ def get_namespace_detail(
     result = (
         db.session.query(
             NamespaceInventory,
-            Cluster.name.label(
-                'cluster_name',
-            ),
+            Cluster.name.label('cluster_name'),
         )
-        .join(
-            Cluster,
-            Cluster.id == NamespaceInventory.cluster_id,
-        )
-        .filter(
-            NamespaceInventory.id == namespace_id,
-        )
+        .join(Cluster, Cluster.id == NamespaceInventory.cluster_id)
+        .filter(NamespaceInventory.id == namespace_id)
         .first()
     )
 
@@ -1375,8 +1784,8 @@ def get_namespace_detail(
     namespace, cluster_name = result
 
     workload_counts = {
-        row[0] or 'Unknown': row[1]
-        for row in (
+        workload_type or 'Unknown': count
+        for workload_type, count in (
             db.session.query(
                 WorkloadInventory.workload_type,
                 func.count(WorkloadInventory.id),
@@ -1385,43 +1794,83 @@ def get_namespace_detail(
                 WorkloadInventory.cluster_id == namespace.cluster_id,
                 WorkloadInventory.namespace == namespace.namespace,
             )
-            .group_by(
-                WorkloadInventory.workload_type,
-            )
+            .group_by(WorkloadInventory.workload_type)
             .all()
         )
     }
 
     object_counts = {
-        'workloads': db.session.query(func.count(WorkloadInventory.id)).filter(
-            WorkloadInventory.cluster_id == namespace.cluster_id,
-            WorkloadInventory.namespace == namespace.namespace,
-        ).scalar()
-        or 0,
-        'pods': db.session.query(func.count(PodInventory.id)).filter(
-            PodInventory.cluster_id == namespace.cluster_id,
-            PodInventory.namespace == namespace.namespace,
-        ).scalar()
-        or 0,
-        'services': db.session.query(func.count(ServiceInventory.id)).filter(
-            ServiceInventory.cluster_id == namespace.cluster_id,
-            ServiceInventory.namespace == namespace.namespace,
-        ).scalar()
-        or 0,
-        'ingresses': db.session.query(func.count(IngressInventory.id)).filter(
-            IngressInventory.cluster_id == namespace.cluster_id,
-            IngressInventory.namespace == namespace.namespace,
-        ).scalar()
-        or 0,
-        'persistent_volume_claims': db.session.query(func.count(StorageInventory.id)).filter(
-            StorageInventory.cluster_id == namespace.cluster_id,
-            StorageInventory.namespace == namespace.namespace,
-            StorageInventory.storage_type == 'PersistentVolumeClaim',
-        ).scalar()
-        or 0,
+        'workloads': WorkloadInventory.query.filter_by(
+            cluster_id=namespace.cluster_id,
+            namespace=namespace.namespace,
+        ).count(),
+        'pods': PodInventory.query.filter_by(
+            cluster_id=namespace.cluster_id,
+            namespace=namespace.namespace,
+        ).count(),
+        'services': ServiceInventory.query.filter_by(
+            cluster_id=namespace.cluster_id,
+            namespace=namespace.namespace,
+        ).count(),
+        'ingresses': IngressInventory.query.filter_by(
+            cluster_id=namespace.cluster_id,
+            namespace=namespace.namespace,
+        ).count(),
+        'persistent_volume_claims': StorageInventory.query.filter_by(
+            cluster_id=namespace.cluster_id,
+            namespace=namespace.namespace,
+            storage_type='PersistentVolumeClaim',
+        ).count(),
+        'config_maps': ConfigurationInventory.query.filter_by(
+            cluster_id=namespace.cluster_id,
+            namespace=namespace.namespace,
+            object_type='ConfigMap',
+        ).count(),
+        'secrets': ConfigurationInventory.query.filter_by(
+            cluster_id=namespace.cluster_id,
+            namespace=namespace.namespace,
+            object_type='Secret',
+        ).count(),
+        'resource_quotas': ResourceQuotaInventory.query.filter_by(
+            cluster_id=namespace.cluster_id,
+            namespace=namespace.namespace,
+        ).count(),
     }
 
     object_counts['tracked_total'] = sum(object_counts.values())
+
+    quota_rows = (
+        ResourceQuotaInventory.query.filter_by(
+            cluster_id=namespace.cluster_id,
+            namespace=namespace.namespace,
+        )
+        .order_by(ResourceQuotaInventory.name)
+        .all()
+    )
+
+    quotas = []
+    for quota in quota_rows:
+        resources = []
+        resource_names = sorted(set((quota.hard or {}).keys()) | set((quota.used or {}).keys()))
+        for resource_name in resource_names:
+            hard_value = (quota.hard or {}).get(resource_name)
+            used_value = (quota.used or {}).get(resource_name)
+            resources.append(
+                {
+                    'name': resource_name,
+                    'hard': format_quota_value(resource_name, hard_value),
+                    'used': format_quota_value(resource_name, used_value),
+                }
+            )
+
+        quotas.append(
+            {
+                'name': quota.name,
+                'resources': resources[:10],
+                'resource_count': len(resources),
+                'truncated': len(resources) > 10,
+            }
+        )
 
     return {
         'id': namespace.id,
@@ -1437,6 +1886,134 @@ def get_namespace_detail(
             'jobs': workload_counts.get('Job', 0),
             'cronjobs': workload_counts.get('CronJob', 0),
         },
+        'quotas': quotas,
+        'quota_count': len(quotas),
+    }
+
+
+def get_configuration_filter_namespaces(
+    cluster_id: str | None = None,
+) -> list[str]:
+    query = db.session.query(ConfigurationInventory.namespace)
+    if cluster_id:
+        query = query.filter(ConfigurationInventory.cluster_id == cluster_id)
+
+    return [
+        namespace for (namespace,) in query.distinct().order_by(ConfigurationInventory.namespace).all() if namespace
+    ]
+
+
+def get_configuration_inventory_view(
+    cluster_id: str | None = None,
+    namespace: str | None = None,
+    object_type: str | None = None,
+    search: str | None = None,
+) -> dict[str, Any]:
+    query = db.session.query(
+        ConfigurationInventory,
+        Cluster.name.label('cluster_name'),
+    ).join(Cluster, Cluster.id == ConfigurationInventory.cluster_id)
+
+    if cluster_id:
+        query = query.filter(ConfigurationInventory.cluster_id == cluster_id)
+    if namespace:
+        query = query.filter(ConfigurationInventory.namespace == namespace)
+    if object_type:
+        query = query.filter(ConfigurationInventory.object_type == object_type)
+    if search:
+        query = query.filter(ConfigurationInventory.name.ilike(f'%{search}%'))
+
+    rows = query.order_by(
+        Cluster.name,
+        ConfigurationInventory.namespace,
+        ConfigurationInventory.object_type,
+        ConfigurationInventory.name,
+    ).all()
+
+    items = [
+        {
+            'id': item.id,
+            'cluster_name': cluster_name,
+            'namespace': item.namespace,
+            'name': item.name,
+            'type': item.object_type,
+            'secret_type': item.secret_type,
+            'key_count': item.key_count,
+            'immutable': item.immutable,
+            'payload_size': format_byte_count(item.payload_size_bytes),
+            'age': format_age(item.created_at),
+        }
+        for item, cluster_name in rows
+    ]
+
+    return {
+        'items': items,
+        'total_items': len(items),
+        'config_maps': sum(1 for item in items if item['type'] == 'ConfigMap'),
+        'secrets': sum(1 for item in items if item['type'] == 'Secret'),
+        'immutable_items': sum(1 for item in items if item['immutable']),
+        'namespaces': get_configuration_filter_namespaces(cluster_id),
+        'types': ['ConfigMap', 'Secret'],
+    }
+
+
+def get_configuration_detail(
+    configuration_id: int,
+) -> dict[str, Any] | None:
+    result = (
+        db.session.query(
+            ConfigurationInventory,
+            Cluster.name.label('cluster_name'),
+        )
+        .join(Cluster, Cluster.id == ConfigurationInventory.cluster_id)
+        .filter(ConfigurationInventory.id == configuration_id)
+        .first()
+    )
+
+    if result is None:
+        return None
+
+    item, cluster_name = result
+    candidate_pods = (
+        PodInventory.query.filter_by(
+            cluster_id=item.cluster_id,
+            namespace=item.namespace,
+        )
+        .order_by(PodInventory.pod_name)
+        .all()
+    )
+
+    used_by = []
+    for pod in candidate_pods:
+        references = pod.configuration_references or []
+        if any(
+            reference.get('type') == item.object_type and reference.get('name') == item.name for reference in references
+        ):
+            used_by.append(
+                {
+                    **_pod_summary(pod),
+                    'workload_type': pod.workload_type or '-',
+                    'workload_name': pod.workload_name or '-',
+                }
+            )
+
+    return {
+        'id': item.id,
+        'cluster_name': cluster_name,
+        'namespace': item.namespace,
+        'name': item.name,
+        'type': item.object_type,
+        'secret_type': item.secret_type or '-',
+        'key_names': item.key_names or [],
+        'key_count': item.key_count,
+        'immutable': item.immutable,
+        'payload_size': format_byte_count(item.payload_size_bytes),
+        'age': format_age(item.created_at),
+        'created_at': item.created_at,
+        'collected_at': item.collected_at,
+        'used_by_count': len(used_by),
+        'used_by': used_by[:8],
+        'used_by_truncated': len(used_by) > 8,
     }
 
 
@@ -1446,7 +2023,8 @@ def format_age(
     if not created_at:
         return '-'
 
-    delta = datetime.now(UTC) - created_at
+    normalized_created_at = created_at if created_at.tzinfo is not None else created_at.replace(tzinfo=UTC)
+    delta = datetime.now(UTC) - normalized_created_at
 
     days = delta.days
 
@@ -1618,45 +2196,6 @@ def get_workload_inventory(
             cluster_id=cluster_id,
         ),
         'workloads': workloads_data,
-    }
-
-
-def get_workload_detail(
-    workload_id: int,
-) -> dict[str, Any] | None:
-    result = (
-        db.session.query(
-            WorkloadInventory,
-            Cluster.name.label(
-                'cluster_name',
-            ),
-        )
-        .join(
-            Cluster,
-            Cluster.id == WorkloadInventory.cluster_id,
-        )
-        .filter(
-            WorkloadInventory.id == workload_id,
-        )
-        .first()
-    )
-
-    if result is None:
-        return None
-
-    workload, cluster_name = result
-
-    return {
-        'id': workload.id,
-        'cluster_name': cluster_name,
-        'namespace': workload.namespace,
-        'name': workload.name,
-        'type': workload.workload_type or 'Unknown',
-        'ready': workload.ready or '-',
-        'status': workload.status or 'Unknown',
-        'age': format_age(workload.created_at),
-        'created_at': workload.created_at,
-        'collected_at': workload.collected_at,
     }
 
 
@@ -2024,46 +2563,6 @@ def get_service_inventory(
     }
 
 
-def get_service_detail(
-    service_id: int,
-) -> dict[str, Any] | None:
-    result = (
-        db.session.query(
-            ServiceInventory,
-            Cluster.name.label(
-                'cluster_name',
-            ),
-        )
-        .join(
-            Cluster,
-            Cluster.id == ServiceInventory.cluster_id,
-        )
-        .filter(
-            ServiceInventory.id == service_id,
-        )
-        .first()
-    )
-
-    if result is None:
-        return None
-
-    service, cluster_name = result
-
-    return {
-        'id': service.id,
-        'cluster_name': cluster_name,
-        'namespace': service.namespace,
-        'service_name': service.service_name,
-        'service_type': service.service_type or 'Unknown',
-        'cluster_ip': service.cluster_ip or '-',
-        'external_ip': service.external_ip or '-',
-        'ports': service.ports or '-',
-        'age': format_age(service.created_at),
-        'created_at': service.created_at,
-        'collected_at': service.collected_at,
-    }
-
-
 def get_ingress_filter_classes(
     cluster_id: str | None = None,
 ) -> list[str]:
@@ -2159,6 +2658,11 @@ def get_ingress_inventory(
                 'class': ingress.ingress_class or '-',
                 'ingress_class': ingress.ingress_class or '-',
                 'host': ingress.host or '-',
+                'host_url': (
+                    f'{"https" if ingress.tls_enabled else "http"}://{ingress.host}'
+                    if ingress.host and ingress.host != '-'
+                    else None
+                ),
                 'address': ingress.address or '-',
                 'tls': ingress.tls_enabled,
                 'backend_count': len(
@@ -2256,6 +2760,13 @@ def get_ingress_detail(
         'name': ingress.ingress_name,
         'class': ingress.ingress_class or '-',
         'host': ingress.host or '-',
+        'hosts': [
+            {
+                'value': host,
+                'url': f'{"https" if ingress.tls_enabled else "http"}://{host}',
+            }
+            for host in hosts
+        ],
         'address': ingress.address or '-',
         'tls': ingress.tls_enabled,
         'backend_paths': backend_paths,
@@ -2388,7 +2899,7 @@ def get_storage_inventory_view(
                 'name': item.name,
                 'type': item.storage_type,
                 'storage_class': (item.storage_class or '-'),
-                'capacity': (item.capacity or '-'),
+                'capacity': format_kubernetes_size(item.capacity),
                 'status': (item.status or '-'),
                 'age': format_age(
                     item.created_at,
@@ -2409,101 +2920,4 @@ def get_storage_inventory_view(
         ),
         'storage_types': storage_types,
         'storage_items': data,
-    }
-
-
-def get_storage_detail(
-    storage_id: int,
-) -> dict[str, Any] | None:
-    result = (
-        db.session.query(
-            StorageInventory,
-            Cluster.name.label(
-                'cluster_name',
-            ),
-        )
-        .join(
-            Cluster,
-            Cluster.id == StorageInventory.cluster_id,
-        )
-        .filter(
-            StorageInventory.id == storage_id,
-        )
-        .first()
-    )
-
-    if result is None:
-        return None
-
-    item, cluster_name = result
-
-    namespace_display = item.namespace
-
-    if item.storage_type in [
-        'StorageClass',
-        'PersistentVolume',
-    ]:
-        namespace_display = 'Cluster-wide'
-    elif not namespace_display:
-        namespace_display = '-'
-
-    return {
-        'id': item.id,
-        'cluster_name': cluster_name,
-        'namespace': namespace_display,
-        'name': item.name,
-        'type': item.storage_type,
-        'storage_class': item.storage_class or '-',
-        'capacity': item.capacity or '-',
-        'status': item.status or 'Unknown',
-        'age': format_age(
-            item.created_at,
-        ),
-        'created_at': item.created_at,
-        'collected_at': item.collected_at,
-    }
-
-
-def get_node_detail(
-    node_id: int,
-) -> dict[str, Any] | None:
-    result = (
-        db.session.query(
-            NodeInventory,
-            Cluster.name.label(
-                'cluster_name',
-            ),
-        )
-        .join(
-            Cluster,
-            Cluster.id == NodeInventory.cluster_id,
-        )
-        .filter(
-            NodeInventory.id == node_id,
-        )
-        .first()
-    )
-
-    if result is None:
-        return None
-
-    node, cluster_name = result
-
-    return {
-        'id': node.id,
-        'cluster_name': cluster_name,
-        'node_name': node.node_name,
-        'status': node.status or 'Unknown',
-        'role': node.role or 'Unknown',
-        'internal_ip': node.internal_ip or '-',
-        'external_ip': node.external_ip or '-',
-        'hostname_address': node.hostname_address or '-',
-        'os_image': node.os_image or '-',
-        'kernel_version': node.kernel_version or '-',
-        'container_runtime': node.container_runtime or '-',
-        'cpu': node.cpu or '-',
-        'memory_display': node.memory or '-',
-        'ephemeral_storage_display': node.ephemeral_storage or '-',
-        'allocatable_storage_display': node.ephemeral_storage_allocatable or '-',
-        'collected_at': node.collected_at,
     }

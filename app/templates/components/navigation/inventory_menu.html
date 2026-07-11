@@ -32,6 +32,12 @@
             <i data-lucide="folders" class="h-3.5 w-3.5"></i>
             <span class="truncate whitespace-nowrap">Namespaces</span>
         </a>
+        <a href="{{ url_for('inventory.configuration') }}"
+           class="{{ 'bg-slate-900 text-blue-300' if request.endpoint in ['inventory.configuration', 'inventory.configuration_details'] else 'text-slate-400 hover:bg-slate-900 hover:text-white' }} group flex items-center gap-2 rounded-xl px-3 py-2 text-[12px] leading-4 transition">
+            <span class="h-1.5 w-1.5 rounded-full {{ 'bg-blue-400' if request.endpoint in ['inventory.configuration', 'inventory.configuration_details'] else 'bg-slate-700 group-hover:bg-slate-500' }}"></span>
+            <i data-lucide="file-key-2" class="h-3.5 w-3.5"></i>
+            <span class="truncate whitespace-nowrap">Configuration</span>
+        </a>
         <a href="{{ url_for('inventory.workloads') }}"
            class="{{ 'bg-slate-900 text-blue-300' if request.endpoint == 'inventory.workloads' else 'text-slate-400 hover:bg-slate-900 hover:text-white' }} group flex items-center gap-2 rounded-xl px-3 py-2 text-[12px] leading-4 transition">
             <span class="h-1.5 w-1.5 rounded-full {{ 'bg-blue-400' if request.endpoint == 'inventory.workloads' else 'bg-slate-700 group-hover:bg-slate-500' }}"></span>
