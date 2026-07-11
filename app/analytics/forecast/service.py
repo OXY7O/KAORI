@@ -526,13 +526,6 @@ def get_forecast_analysis_context(
             'resource_options': RESOURCE_OPTIONS,
             'forecast_method_options': FORECAST_METHOD_OPTIONS,
             'namespace_options': [],
-            'prometheus_status': {
-                'connected': False,
-                'label': 'No Cluster',
-                'response_time_ms': None,
-                'error': None,
-            },
-            'prometheus_connected': False,
             'forecast_payload': _empty_payload(
                 message='No cluster available. Add a Kubernetes cluster first.',
             ),

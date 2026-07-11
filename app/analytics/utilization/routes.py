@@ -11,6 +11,7 @@ from app.analytics.utilization.service import (
 )
 from app.common.dependencies import (
     DependencyBlocker,
+    cluster_required_blocker,
     prometheus_connection_blocker,
     prometheus_setup_blocker,
 )
@@ -342,7 +343,7 @@ def utilization() -> str:
             detail_summary=detail_summary,
             trends=trends,
             error=None,
-            dependency_blocker=None,
+            dependency_blocker=cluster_required_blocker(),
             prometheus_status={
                 'connected': False,
                 'response_time_ms': None,
@@ -413,6 +414,15 @@ def utilization() -> str:
 
         prometheus_status = service.get_prometheus_status()
 
+        if not prometheus_status.get('connected', False):
+            raise PrometheusError(
+                str(
+                    prometheus_status.get('error')
+                    or prometheus_status.get('description')
+                    or 'Prometheus did not report a healthy connection.'
+                )
+            )
+
         available_nodes = service.get_node_names()
         available_worker_nodes = service.get_worker_node_names()
         available_filesystem_instances = service.get_filesystem_instances()
@@ -476,7 +486,7 @@ def utilization() -> str:
         prometheus_status = {
             'connected': False,
             'response_time_ms': None,
-            'label': 'Prometheus Not Configured',
+            'label': 'Prometheus Unavailable',
             'description': message,
         }
         dependency_blocker = prometheus_connection_blocker(

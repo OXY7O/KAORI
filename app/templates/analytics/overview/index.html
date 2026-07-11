@@ -5,7 +5,7 @@
     <div id="analytics-overview-page" class="space-y-6">
         {% include "analytics/overview/partials/_hero.html" %}
 
-
+        {% if not dependency_blocker %}
         <div id="overview-health-summary"
              hx-target="this"
              hx-get="{{ url_for('analytics.overview_section', section='health-summary') }}?{{ overview_query }}"
@@ -91,5 +91,6 @@
              hx-swap="innerHTML">
             {% include "analytics/overview/partials/_section_loading.html" %}
         </div>
+        {% endif %}
     </div>
 {% endblock dashboard_content %}

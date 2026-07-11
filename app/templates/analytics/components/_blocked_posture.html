@@ -1,0 +1,26 @@
+<div class="rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur xl:min-h-[176px]">
+    <div class="flex h-full flex-col justify-start gap-3">
+        <div class="flex items-start justify-between gap-4">
+            <div class="min-w-0">
+                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-50/80">
+                    {{ analytics_posture_label|default('Analytics posture') }}
+                </p>
+                <div class="mt-2 text-4xl font-bold leading-none">Blocked</div>
+                <p class="mt-1 text-sm leading-5 text-blue-50/85">{{ dependency_blocker.title }}</p>
+            </div>
+            <span class="inline-flex shrink-0 rounded-full bg-slate-600 px-3 py-1.5 text-xs font-bold text-white ring-1 ring-inset ring-white/20">
+                Blocked
+            </span>
+        </div>
+        <div class="mt-2 grid grid-cols-2 gap-3">
+            <div class="rounded-xl bg-white/10 px-4 py-3">
+                <p class="text-xs text-blue-50/75">Dependency Step</p>
+                <p class="mt-1 text-2xl font-semibold">{{ dependency_blocker.stage }}</p>
+            </div>
+            <div class="rounded-xl bg-white/10 px-4 py-3">
+                <p class="text-xs text-blue-50/75">Required Action</p>
+                <p class="mt-1 truncate text-sm font-semibold">{{ dependency_blocker.badge }}</p>
+            </div>
+        </div>
+    </div>
+</div>

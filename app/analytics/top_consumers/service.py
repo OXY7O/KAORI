@@ -1214,13 +1214,6 @@ def get_top_consumers_context(
             'allowed_time_ranges': TOP_CONSUMERS_TIME_RANGE_OPTIONS,
             'allowed_per_page_values': ALLOWED_PER_PAGE_VALUES,
             'namespace_options': [],
-            'prometheus_status': {
-                'connected': False,
-                'label': 'No Cluster',
-                'response_time_ms': None,
-                'error': None,
-            },
-            'prometheus_connected': False,
             'consumer_payload': get_empty_top_consumers_payload(
                 message='No cluster available. Add a Kubernetes cluster first.',
                 page=page,

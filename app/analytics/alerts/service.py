@@ -20,6 +20,7 @@ from app.analytics.alerts.queries import (
 from app.common.dependencies import (
     alert_source_connection_blocker,
     alert_source_setup_blocker,
+    cluster_required_blocker,
 )
 from app.extensions import db
 from app.intelligence.recommendation_engine import (
@@ -4161,7 +4162,7 @@ def get_alerts_context(
         source_status=source_status,
     )
 
-    dependency_blocker = None
+    dependency_blocker = cluster_required_blocker() if selected_cluster is None else None
 
     if selected_cluster is not None and not source_status.get('connected', False):
         if source_status.get('configured', False):

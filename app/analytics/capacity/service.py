@@ -24,6 +24,7 @@ from app.analytics.common.params import (
 from app.analytics.common.payloads import get_empty_capacity_payload
 from app.analytics.utilization.service import UtilizationService
 from app.common.dependencies import (
+    cluster_required_blocker,
     prometheus_connection_blocker,
     prometheus_setup_blocker,
 )
@@ -101,7 +102,7 @@ def get_capacity_page_context(
                 'label': 'Waiting for Cluster',
                 'description': 'Prometheus checks start after a Kubernetes cluster is added.',
             },
-            'dependency_blocker': None,
+            'dependency_blocker': cluster_required_blocker(),
             **empty_capacity_payload,
         }
 
@@ -143,10 +144,6 @@ def get_capacity_page_context(
 
         prometheus_status = capacity_service.get_prometheus_status()
 
-        capacity_payload = capacity_service.get_capacity_analysis(
-            time_range=selected_time_range,
-        )
-
         prometheus_connected = bool(
             prometheus_status.get(
                 'connected',
@@ -154,12 +151,26 @@ def get_capacity_page_context(
             )
         )
 
+        if not prometheus_connected:
+            dependency_blocker = prometheus_connection_blocker(
+                cluster,
+                detail=str(
+                    prometheus_status.get('error')
+                    or prometheus_status.get('description')
+                    or 'Prometheus did not report a healthy connection.'
+                ),
+            )
+        else:
+            capacity_payload = capacity_service.get_capacity_analysis(
+                time_range=selected_time_range,
+            )
+
     except PrometheusError as exc:
         message = str(exc) or 'Prometheus is not configured for the selected cluster.'
         prometheus_status = {
             'connected': False,
             'response_time_ms': None,
-            'label': 'Prometheus Not Configured',
+            'label': 'Prometheus Unavailable',
             'description': message,
             'error': message,
         }

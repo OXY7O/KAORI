@@ -4,6 +4,7 @@
     <div id="storage-page" class="space-y-6" data-analytics-page-tracker="storage-load-tracker" data-analytics-page-request-tracking="false">
         {% include "analytics/storage/partials/_hero.html" %}
 
+        {% if not dependency_blocker %}
         {% set analytics_tracker_id = 'storage-load-tracker' %}
         {% set analytics_page_id = 'storage-page' %}
         {% set analytics_load_title = 'Loading storage analysis' %}
@@ -11,6 +12,7 @@
         {% set analytics_load_complete_title = 'Storage analysis fully loaded' %}
         {% set analytics_load_complete_description = 'All storage analysis sections have finished loading.' %}
         {% include "analytics/partials/_load_tracker.html" %}
+        {% endif %}
 
         {% if error and not dependency_blocker %}
             <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">

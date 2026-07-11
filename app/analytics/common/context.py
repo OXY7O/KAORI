@@ -14,6 +14,7 @@ from app.analytics.common.params import (
 )
 from app.analytics.utilization.service import UtilizationService
 from app.common.dependencies import (
+    cluster_required_blocker,
     prometheus_connection_blocker,
     prometheus_setup_blocker,
 )
@@ -75,7 +76,7 @@ def build_analysis_utilization_context(
             'description': 'Prometheus checks start after a Kubernetes cluster is added.',
             'error': None,
         }
-        base_context['dependency_blocker'] = None
+        base_context['dependency_blocker'] = cluster_required_blocker()
         return clusters, None, None, base_context
 
     prometheus_config = cluster.prometheus_config
@@ -131,5 +132,55 @@ def build_analysis_utilization_context(
     utilization_service = UtilizationService(
         prometheus,
     )
+
+    try:
+        prometheus_status = utilization_service.get_prometheus_status()
+    except PrometheusError as exc:
+        message = str(exc) or 'Prometheus health check failed for the selected cluster.'
+        base_context['dependency_blocker'] = prometheus_connection_blocker(
+            cluster,
+            detail=message,
+        )
+        base_context['prometheus_status'] = {
+            'connected': False,
+            'response_time_ms': None,
+            'label': 'Prometheus Unavailable',
+            'description': message,
+            'error': message,
+        }
+        return clusters, cluster, None, base_context
+    except Exception as exc:
+        current_app.logger.exception(
+            'Prometheus health check failed for cluster %s.',
+            cluster.name,
+        )
+        message = str(exc) or 'Prometheus health check failed.'
+        base_context['dependency_blocker'] = prometheus_connection_blocker(
+            cluster,
+            detail=message,
+        )
+        base_context['prometheus_status'] = {
+            'connected': False,
+            'response_time_ms': None,
+            'label': 'Prometheus Unavailable',
+            'description': message,
+            'error': message,
+        }
+        return clusters, cluster, None, base_context
+
+    base_context['prometheus_status'] = prometheus_status
+    base_context['prometheus_connected'] = bool(prometheus_status.get('connected', False))
+
+    if not base_context['prometheus_connected']:
+        message = str(
+            prometheus_status.get('error')
+            or prometheus_status.get('description')
+            or 'Prometheus did not report a healthy connection.'
+        )
+        base_context['dependency_blocker'] = prometheus_connection_blocker(
+            cluster,
+            detail=message,
+        )
+        return clusters, cluster, None, base_context
 
     return clusters, cluster, utilization_service, base_context

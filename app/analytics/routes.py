@@ -6,6 +6,7 @@ from app.analytics.alerts.routes import (
     anomalies_table,
 )
 from app.analytics.capacity.routes import capacity
+from app.analytics.common.context import build_analysis_utilization_context
 from app.analytics.forecast.routes import (
     forecast,
     forecast_section,
@@ -73,10 +74,12 @@ def overview():
         time_range=selected_time_range,
         hydrate_live_sections=False,
     )
+    _, _, _, dependency_context = build_analysis_utilization_context(request.args)
 
     return render_template(
         'analytics/overview/index.html',
         payload=payload,
+        dependency_blocker=dependency_context['dependency_blocker'],
     )
 
 
@@ -115,6 +118,15 @@ def overview_section(section: str):
 
     if selected_time_range not in VALID_ANALYTICS_TIME_RANGES:
         selected_time_range = '24h'
+
+    _, _, _, dependency_context = build_analysis_utilization_context(request.args)
+    dependency_blocker = dependency_context['dependency_blocker']
+
+    if dependency_blocker:
+        return render_template(
+            'components/dependencies/_blocker.html',
+            dependency_blocker=dependency_blocker,
+        )
 
     payload = get_analytics_overview_section(
         section=section,

@@ -31,6 +31,7 @@
     <div id="utilization-page" class="space-y-6" data-analytics-page-tracker="utilization-load-tracker" data-analytics-page-request-tracking="false">
         {% include "analytics/utilization/partials/_hero.html" %}
 
+        {% if not dependency_blocker %}
         {% set analytics_tracker_id = 'utilization-load-tracker' %}
         {% set analytics_page_id = 'utilization-page' %}
         {% set analytics_load_title = 'Loading resource utilization' %}
@@ -38,6 +39,7 @@
         {% set analytics_load_complete_title = 'Resource utilization fully loaded' %}
         {% set analytics_load_complete_description = 'All utilization sections have finished loading.' %}
         {% include "analytics/partials/_load_tracker.html" %}
+        {% endif %}
 
         {% if not dependency_blocker %}
         {% if error %}

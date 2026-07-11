@@ -43,30 +43,43 @@
                                 <i data-lucide="server" class="h-4 w-4"></i>
                                 {{ selected_cluster_name }}
                             </span>
-                            <span class="inline-flex items-center gap-2 rounded-full border border-white/15 {% if active_alerts|int > 0 %}bg-amber-400/20 text-amber-50{% else %}bg-white/10 text-blue-50{% endif %} px-3.5 py-2 text-sm font-semibold whitespace-nowrap">
-                                <i data-lucide="bell" class="h-4 w-4"></i>
-                                {{ active_alerts }} active alerts
-                            </span>
-                            <span class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-2 text-sm font-semibold text-blue-50 whitespace-nowrap">
-                                <i data-lucide="list-checks" class="h-4 w-4"></i>
-                                {{ actionable.total_count|default(0) }} actionable
-                            </span>
+                            {% if dependency_blocker %}
+                                <span class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-2 text-sm font-semibold text-blue-50 whitespace-nowrap">
+                                    <i data-lucide="lock-keyhole" class="h-4 w-4"></i>
+                                    Step {{ dependency_blocker.stage }} · {{ dependency_blocker.badge }}
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center gap-2 rounded-full border border-white/15 {% if active_alerts|int > 0 %}bg-amber-400/20 text-amber-50{% else %}bg-white/10 text-blue-50{% endif %} px-3.5 py-2 text-sm font-semibold whitespace-nowrap">
+                                    <i data-lucide="bell" class="h-4 w-4"></i>
+                                    {{ active_alerts }} active alerts
+                                </span>
+                                <span class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-2 text-sm font-semibold text-blue-50 whitespace-nowrap">
+                                    <i data-lucide="list-checks" class="h-4 w-4"></i>
+                                    {{ actionable.total_count|default(0) }} actionable
+                                </span>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div id="overview-hero-posture"
-                 hx-target="this"
-                 hx-disinherit="hx-target hx-select hx-push-url hx-indicator"
-                 hx-get="{{ url_for('analytics.overview_section', section='hero-posture') }}?{{ overview_query }}"
-                 hx-trigger="load delay:650ms"
-                 hx-swap="innerHTML">
-                {% include "analytics/overview/partials/_hero_posture_loading.html" %}
-            </div>
+            {% if dependency_blocker %}
+                {% set analytics_posture_label = 'Analytics posture' %}
+                {% include "analytics/components/_blocked_posture.html" %}
+            {% else %}
+                <div id="overview-hero-posture"
+                     hx-target="this"
+                     hx-disinherit="hx-target hx-select hx-push-url hx-indicator"
+                     hx-get="{{ url_for('analytics.overview_section', section='hero-posture') }}?{{ overview_query }}"
+                     hx-trigger="load delay:650ms"
+                     hx-swap="innerHTML">
+                    {% include "analytics/overview/partials/_hero_posture_loading.html" %}
+                </div>
+            {% endif %}
         </div>
     </section>
 
+    {% if not dependency_blocker %}
     <form id="analytics-overview-filter"
           method="get"
           hx-get="{{ url_for('analytics.overview') }}"
@@ -120,4 +133,5 @@
             </div>
         </div>
     </form>
+    {% endif %}
 </div>
