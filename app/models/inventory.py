@@ -58,6 +58,17 @@ class NodeInventory(db.Model):
 
     role: Mapped[str | None] = mapped_column(String(50))
 
+    created_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    labels: Mapped[dict[str, str]] = mapped_column(
+        JSON,
+        nullable=False,
+        default=dict,
+    )
+
     os_image: Mapped[str | None] = mapped_column(String(255))
 
     kernel_version: Mapped[str | None] = mapped_column(String(255))

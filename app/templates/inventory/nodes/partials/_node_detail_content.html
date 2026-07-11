@@ -1,4 +1,4 @@
-{% from 'inventory/components/_detail_macros.html' import detail_card, detail_row %}
+{% from 'inventory/components/_detail_macros.html' import detail_card, detail_row, detail_tip %}
 {% set status_classes = 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' if node.status == 'Ready' else ('bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300' if node.status == 'NotReady' else 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300') %}
 
 <div class="bg-slate-50/80 px-4 py-4 dark:bg-slate-950/40">
@@ -32,11 +32,11 @@
             ) %}
                 {{ detail_row('Role', node.role) }}
                 {{ detail_row('Cluster', node.cluster_name) }}
-                <div class="flex items-start justify-between gap-3">
-                    <span class="shrink-0 text-slate-500 dark:text-slate-400">Hostname</span>
-                    <span class="max-w-[68%] break-all text-right text-[11px] font-semibold leading-4 text-slate-900 dark:text-white" title="{{ node.hostname_address or node.node_name }}">{{ node.hostname_address or node.node_name }}</span>
-                </div>
+                {{ detail_row('Age', node.age) }}
                 {{ detail_row('Collected', node.collected_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
+                <div class="pt-2">
+                    {{ detail_tip('Age is calculated from the Kubernetes node creation timestamp and helps distinguish newly joined nodes from long-lived nodes.', 'blue', 'clock-3') }}
+                </div>
             {% endcall %}
 
             {% call detail_card(
@@ -52,6 +52,9 @@
                 <div class="flex items-start justify-between gap-3">
                     <span class="shrink-0 text-slate-500 dark:text-slate-400">Network availability</span>
                     <span class="rounded-full px-2 py-0.5 text-xs font-semibold {{ 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' if node.network_availability == 'Available' else ('bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300' if node.network_availability == 'Unavailable' else 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300') }}">{{ node.network_availability }}</span>
+                </div>
+                <div class="pt-2">
+                    {{ detail_tip('Internal IP is used for node communication inside the cluster. External IP can be empty for private or on-premises nodes.', 'teal', 'network') }}
                 </div>
             {% endcall %}
 
@@ -103,7 +106,7 @@
                     {% if node.taints %}
                         <div class="flex flex-wrap gap-1.5">
                             {% for taint in node.taints %}
-                                <span class="max-w-full break-all rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">{{ taint }}</span>
+                                <span class="max-w-full break-all rounded-lg bg-rose-50 px-2 py-1 text-[11px] font-semibold text-rose-700 ring-1 ring-inset ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/25">{{ taint }}</span>
                             {% endfor %}
                         </div>
                     {% else %}
@@ -126,8 +129,21 @@
                     <div class="max-h-36 overflow-y-auto pr-1">
                         <div class="flex flex-wrap gap-1.5">
                             {% for key, value in node.labels.items() %}
-                                <span class="inline-flex max-w-full rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-medium leading-4 text-slate-700 dark:bg-slate-800 dark:text-slate-300" title="{{ key }}{% if value %}={{ value }}{% endif %}">
-                                    <span class="break-all">{{ key }}{% if value %}=<span class="font-semibold text-slate-900 dark:text-white">{{ value }}</span>{% endif %}</span>
+                                {% if key.startswith('node-role.kubernetes.io/') %}
+                                    {% set node_label_classes = 'bg-violet-50 text-violet-700 ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-500/25' %}
+                                {% elif key.startswith('topology.kubernetes.io/') or key.startswith('failure-domain.beta.kubernetes.io/') %}
+                                    {% set node_label_classes = 'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/25' %}
+                                {% elif key.startswith('node.kubernetes.io/') %}
+                                    {% set node_label_classes = 'bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/25' %}
+                                {% elif key == 'kubernetes.io/hostname' %}
+                                    {% set node_label_classes = 'bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/25' %}
+                                {% elif key.startswith('kubernetes.io/') or key.startswith('beta.kubernetes.io/') %}
+                                    {% set node_label_classes = 'bg-cyan-50 text-cyan-700 ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-500/25' %}
+                                {% else %}
+                                    {% set node_label_classes = 'bg-teal-50 text-teal-700 ring-teal-200 dark:bg-teal-500/10 dark:text-teal-300 dark:ring-teal-500/25' %}
+                                {% endif %}
+                                <span class="inline-flex max-w-full rounded-lg px-2 py-1 text-[11px] font-medium leading-4 ring-1 ring-inset {{ node_label_classes }}" title="{{ key }}{% if value %}={{ value }}{% endif %}">
+                                    <span class="break-all">{{ key }}{% if value %}=<span class="font-semibold">{{ value }}</span>{% endif %}</span>
                                 </span>
                             {% endfor %}
                         </div>

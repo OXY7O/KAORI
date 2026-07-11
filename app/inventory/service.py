@@ -346,7 +346,13 @@ def save_nodes(
         node_inventory.cluster_id = cluster.id
         node_inventory.node_name = metadata.name
         node_inventory.role = get_node_role(node)
+        node_inventory.created_at = metadata.creation_timestamp
         node_inventory.status = ready_status
+        node_inventory.labels = dict(
+            sorted(
+                (metadata.labels or {}).items(),
+            )
+        )
         node_inventory.unschedulable = bool(
             node.spec.unschedulable
             if node.spec and node.spec.unschedulable is not None
@@ -1574,6 +1580,7 @@ def get_node_detail(node_id: int) -> dict[str, Any] | None:
         'cluster_name': cluster_name,
         'node_name': node.node_name,
         'role': role,
+        'age': format_age(node.created_at),
         'role_description': NODE_ROLE_DESCRIPTIONS.get(
             role_key,
             'Provides Kubernetes node capacity. Its exact function depends on the labels and workloads assigned to it.',
@@ -1590,6 +1597,11 @@ def get_node_detail(node_id: int) -> dict[str, Any] | None:
         'disk_pressure': node.disk_pressure or 'Not reported',
         'pid_pressure': node.pid_pressure or 'Not reported',
         'taints': node.taints or [],
+        'labels': dict(
+            sorted(
+                (node.labels or {}).items(),
+            )
+        ),
         'cpu': node.cpu,
         'memory_display': format_kubernetes_size(node.memory),
         'ephemeral_storage_display': format_kubernetes_size(node.ephemeral_storage),
