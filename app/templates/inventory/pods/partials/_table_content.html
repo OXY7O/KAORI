@@ -1,14 +1,17 @@
 <div class="overflow-x-auto">
     <table class="min-w-full text-slate-900 dark:text-slate-100">
         <thead>
-            <tr class="border-b border-slate-200 bg-slate-50 text-center text-xs tracking-wide text-slate-600 uppercase dark:border-slate-700 dark:bg-slate-700/40 dark:text-slate-300">
-                <th class="px-4 py-1.5 text-left">Cluster</th>
-                <th class="px-4 py-1.5 text-left">Namespace</th>
-                <th class="px-4 py-1.5 text-left">Pod</th>
-                <th class="px-4 py-1.5 text-center">Ready</th>
-                <th class="px-4 py-1.5 text-center">Restarts</th>
-                <th class="px-4 py-1.5 text-center">Status</th>
-                <th class="px-4 py-1.5 text-center">Details</th>
+            <tr class="border-b border-slate-200 bg-slate-50 text-left text-xs tracking-wide text-slate-600 uppercase dark:border-slate-700 dark:bg-slate-700/40 dark:text-slate-300">
+                <th class="px-4 py-1.5">Cluster</th>
+                <th class="px-4 py-1.5">Namespace</th>
+                <th class="px-4 py-1.5">Pod</th>
+                <th class="px-4 py-1.5">Phase</th>
+                <th class="px-4 py-1.5">Ready</th>
+                <th class="px-4 py-1.5">Owner</th>
+                <th class="px-4 py-1.5">Node</th>
+                <th class="px-4 py-1.5">Restarts</th>
+                <th class="px-4 py-1.5">Containers</th>
+                <th class="px-4 py-1.5">Details</th>
             </tr>
         </thead>
         <tbody>
@@ -16,67 +19,70 @@
                 <tr id="pod-row-{{ pod.id }}"
                     class="border-t border-slate-200 text-sm transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-700/30">
                     <td class="px-4 py-1.5">
-                        <div class="flex max-w-[220px] items-center gap-2">
-                            <span class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
-                                <i data-lucide="server" class="h-2.5 w-2.5"></i>
+                        <span class="inline-flex max-w-[220px] items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-400/25"
+                              title="{{ pod.cluster_name }}">
+                            <i data-lucide="building-2" class="h-3 w-3 shrink-0"></i>
+                            <span class="truncate">{{ pod.cluster_name }}</span>
+                        </span>
+                    </td>
+                    <td class="px-4 py-1.5">
+                        <span class="inline-flex max-w-[210px] items-center gap-1.5 rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 ring-1 ring-inset ring-indigo-200 dark:bg-indigo-500/10 dark:text-indigo-300 dark:ring-indigo-400/25"
+                              title="{{ pod.namespace }}">
+                            <i data-lucide="folder-tree" class="h-3 w-3 shrink-0"></i>
+                            <span class="truncate">{{ pod.namespace }}</span>
+                        </span>
+                    </td>
+                    <td class="max-w-[310px] px-4 py-1.5">
+                        <div class="flex min-w-0 items-center gap-2">
+                            <span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-cyan-50 text-cyan-600 dark:bg-cyan-500/10 dark:text-cyan-300">
+                                <i data-lucide="package" class="h-3.5 w-3.5"></i>
                             </span>
-                            <span class="truncate font-medium text-slate-900 dark:text-white"
-                                  title="{{ pod.cluster_name }}">{{ pod.cluster_name }}</span>
+                            <span class="truncate font-semibold text-slate-800 dark:text-slate-100"
+                                  title="{{ pod.name }}">{{ pod.name }}</span>
                         </div>
                     </td>
                     <td class="px-4 py-1.5">
-                        <div class="flex max-w-[220px] items-center gap-2">
-                            <span class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300">
-                                <i data-lucide="folder-tree" class="h-2.5 w-2.5"></i>
-                            </span>
-                            <span class="truncate font-medium text-slate-700 dark:text-slate-300"
-                                  title="{{ pod.namespace }}">{{ pod.namespace }}</span>
-                        </div>
-                    </td>
-                    <td class="max-w-[360px] px-4 py-1.5">
-                        <div class="truncate font-semibold text-slate-800 dark:text-slate-100"
-                             title="{{ pod.name }}">{{ pod.name }}</div>
-                        <div class="mt-0.5 flex flex-wrap gap-1">
-                            {% if pod.image_count and pod.image_count > 0 %}
-                                <span class="inline-flex items-center gap-1 rounded-full bg-fuchsia-100 px-1.5 py-0.5 text-[11px] font-medium text-fuchsia-700 dark:bg-fuchsia-500/10 dark:text-fuchsia-300">
-                                    <i data-lucide="image" class="h-2.5 w-2.5"></i>
-                                    {{ pod.image_count }} image{{ 's' if pod.image_count != 1 else '' }}
-                                </span>
-                            {% else %}
-                                <span class="inline-flex items-center rounded-full bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium text-slate-500 dark:bg-slate-700 dark:text-slate-300">No image</span>
-                            {% endif %}
-                            {% if pod.ip %}
-                                <span class="inline-flex items-center gap-1 rounded-full bg-cyan-100 px-1.5 py-0.5 text-[11px] font-medium text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300">
-                                    <i data-lucide="network" class="h-2.5 w-2.5"></i>
-                                    IP
-                                </span>
-                            {% else %}
-                                <span class="inline-flex items-center rounded-full bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium text-slate-500 dark:bg-slate-700 dark:text-slate-300">No IP</span>
-                            {% endif %}
-                        </div>
-                    </td>
-                    <td class="px-4 py-1.5 text-center text-slate-600 dark:text-slate-300">{{ pod.ready }}</td>
-                    <td class="px-4 py-1.5 text-center">
-                        {% if pod.restarts and pod.restarts > 0 %}
-                            <span class="inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">{{ pod.restarts }}</span>
+                        {% if pod.status == 'Running' %}
+                            <span class="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/25">Running</span>
+                        {% elif pod.status == 'Pending' %}
+                            <span class="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/25">Pending</span>
+                        {% elif pod.status == 'Succeeded' %}
+                            <span class="inline-flex rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-400/25">Succeeded</span>
+                        {% elif pod.status == 'Failed' %}
+                            <span class="inline-flex rounded-full bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700 ring-1 ring-inset ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-400/25">Failed</span>
                         {% else %}
-                            <span class="text-slate-500 dark:text-slate-400">{{ pod.restarts }}</span>
+                            <span class="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 ring-1 ring-inset ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-600">{{ pod.status or 'Unknown' }}</span>
                         {% endif %}
                     </td>
-                    <td class="px-4 py-1.5 text-center">
-                        {% if pod.status == "Running" %}
-                            <span class="inline-flex rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-500/10 dark:text-green-300">Running</span>
-                        {% elif pod.status == "Pending" %}
-                            <span class="inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">Pending</span>
-                        {% elif pod.status == "Succeeded" %}
-                            <span class="inline-flex rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-500/10 dark:text-blue-300">Succeeded</span>
-                        {% elif pod.status == "Failed" %}
-                            <span class="inline-flex rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700 dark:bg-red-500/10 dark:text-red-300">Failed</span>
+                    <td class="px-4 py-1.5">
+                        {% if pod.ready_total > 0 and pod.ready_count == pod.ready_total %}
+                            <span class="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/25">{{ pod.ready }}</span>
+                        {% elif pod.ready_count > 0 %}
+                            <span class="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/25">{{ pod.ready }}</span>
                         {% else %}
-                            <span class="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700 dark:bg-slate-700 dark:text-slate-300">{{ pod.status or 'Unknown' }}</span>
+                            <span class="inline-flex rounded-full bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700 ring-1 ring-inset ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-400/25">{{ pod.ready }}</span>
                         {% endif %}
                     </td>
-                    <td class="px-4 py-1.5 text-center">
+                    <td class="max-w-[240px] px-4 py-1.5">
+                        {% if pod.owner_type == 'Standalone' %}
+                            <span class="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 ring-1 ring-inset ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-600">Standalone</span>
+                        {% else %}
+                            <div class="min-w-0">
+                                <span class="inline-flex rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-semibold text-violet-700 ring-1 ring-inset ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-400/25">{{ pod.owner_type }}</span>
+                                <div class="mt-1 truncate text-xs font-medium text-slate-700 dark:text-slate-300"
+                                     title="{{ pod.owner_name }}">{{ pod.owner_name }}</div>
+                            </div>
+                        {% endif %}
+                    </td>
+                    <td class="max-w-[230px] px-4 py-1.5">
+                        <span class="block truncate text-xs font-medium text-slate-700 dark:text-slate-300"
+                              title="{{ pod.node or 'Not scheduled' }}">{{ pod.node or 'Not scheduled' }}</span>
+                    </td>
+                    <td class="px-4 py-1.5">
+                        <span class="font-semibold {{ 'text-amber-700 dark:text-amber-300' if pod.restarts > 0 else 'text-slate-700 dark:text-slate-300' }}">{{ pod.restarts }}</span>
+                    </td>
+                    <td class="px-4 py-1.5 font-semibold text-slate-700 dark:text-slate-300">{{ pod.container_count }}</td>
+                    <td class="px-4 py-1.5">
                         <button type="button"
                                 data-inventory-detail-kind="pod"
                                 class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-blue-500/50 dark:hover:bg-blue-500/10 dark:hover:text-blue-300"
@@ -91,16 +97,16 @@
                     </td>
                 </tr>
                 <tr id="pod-detail-row-{{ pod.id }}" class="hidden border-0">
-                    <td colspan="7" class="p-0 leading-none align-top">
+                    <td colspan="10" class="p-0 leading-none align-top">
                         <div id="pod-detail-content-{{ pod.id }}" data-open="false"></div>
                     </td>
                 </tr>
             {% else %}
                 <tr>
-                    <td colspan="7" class="p-0">
+                    <td colspan="10" class="p-0">
                         {% set empty_state_icon = 'package-x' %}
                         {% set empty_state_title = 'No pod inventory found' %}
-                        {% set empty_state_description = 'Adjust the active filters or sync cluster inventory to collect Kubernetes pod data.' %}
+                        {% set empty_state_description = 'Adjust the active filters or sync cluster inventory to collect Kubernetes Pod data.' %}
                         {% set empty_state_min_height = 'min-h-[190px]' %}
                         {% include "components/states/_empty_state.html" %}
                     </td>
@@ -129,9 +135,12 @@
             <input type="hidden" name="cluster_id" value="{{ selected_cluster_id }}">
             <input type="hidden" name="namespace" value="{{ selected_namespace }}">
             <input type="hidden" name="status" value="{{ selected_status }}">
+            <input type="hidden" name="owner_type" value="{{ selected_owner_type }}">
+            <input type="hidden" name="node" value="{{ selected_node }}">
             <input type="hidden" name="search" value="{{ search }}">
             <select id="pods-per-page"
                     name="per_page"
+                    aria-label="Rows per page"
                     hx-get="{{ url_for('inventory.pods') }}"
                     hx-target="#pods-inventory-card"
                     hx-swap="outerHTML"
@@ -140,8 +149,7 @@
                     hx-indicator="#pods-table-loading"
                     class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-slate-100">
                 {% for size in pagination.allowed_per_page %}
-                    <option value="{{ size }}"
-                            {% if pagination.per_page == size %}selected{% endif %}>{{ size }}</option>
+                    <option value="{{ size }}" {% if pagination.per_page == size %}selected{% endif %}>{{ size }}</option>
                 {% endfor %}
             </select>
         </form>
@@ -153,7 +161,7 @@
                 hx-get="{{ url_for('inventory.pods') }}"
                 hx-target="#pods-table-content"
                 hx-swap="innerHTML"
-                hx-vals='{"page": "{{ pagination.prev_page }}", "per_page": "{{ pagination.per_page }}", "cluster_id": "{{ selected_cluster_id }}", "namespace": "{{ selected_namespace }}", "status": "{{ selected_status }}", "search": "{{ search }}", "partial_mode": "table_content"}'>
+                hx-vals='{"page": "{{ pagination.prev_page }}", "per_page": "{{ pagination.per_page }}", "cluster_id": "{{ selected_cluster_id }}", "namespace": "{{ selected_namespace }}", "status": "{{ selected_status }}", "owner_type": "{{ selected_owner_type }}", "node": "{{ selected_node }}", "search": "{{ search }}", "partial_mode": "table_content"}'>
             <i data-lucide="chevron-left" class="h-4 w-4"></i>
             Previous
         </button>
@@ -166,7 +174,7 @@
                 hx-get="{{ url_for('inventory.pods') }}"
                 hx-target="#pods-table-content"
                 hx-swap="innerHTML"
-                hx-vals='{"page": "{{ pagination.next_page }}", "per_page": "{{ pagination.per_page }}", "cluster_id": "{{ selected_cluster_id }}", "namespace": "{{ selected_namespace }}", "status": "{{ selected_status }}", "search": "{{ search }}", "partial_mode": "table_content"}'>
+                hx-vals='{"page": "{{ pagination.next_page }}", "per_page": "{{ pagination.per_page }}", "cluster_id": "{{ selected_cluster_id }}", "namespace": "{{ selected_namespace }}", "status": "{{ selected_status }}", "owner_type": "{{ selected_owner_type }}", "node": "{{ selected_node }}", "search": "{{ search }}", "partial_mode": "table_content"}'>
             Next
             <i data-lucide="chevron-right" class="h-4 w-4"></i>
         </button>

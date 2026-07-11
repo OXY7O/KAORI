@@ -360,6 +360,12 @@ class PodInventory(db.Model):
         default=dict,
     )
 
+    details: Mapped[dict] = mapped_column(
+        JSON,
+        nullable=False,
+        default=dict,
+    )
+
     container_names: Mapped[list[str]] = mapped_column(
         JSON,
         nullable=False,
