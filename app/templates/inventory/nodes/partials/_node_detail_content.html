@@ -101,16 +101,18 @@
                         <span class="rounded-full px-2 py-0.5 text-xs font-semibold {{ 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300' if value == 'True' else ('bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' if value == 'False' else 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300') }}">{{ value }}</span>
                     </div>
                 {% endfor %}
-                <div class="pt-1">
-                    <div class="mb-2 text-slate-500 dark:text-slate-400">Taints</div>
+                <div class="flex items-center justify-between gap-2 pt-1">
+                    <span class="shrink-0 text-slate-500 dark:text-slate-400">Taints</span>
                     {% if node.taints %}
-                        <div class="flex flex-wrap gap-1.5">
+                        <div class="flex min-w-0 max-w-[68%] flex-col items-end gap-1">
                             {% for taint in node.taints %}
-                                <span class="inline-flex max-w-full items-center rounded-full bg-rose-50 px-2.5 py-1 text-[11px] font-semibold leading-4 text-rose-700 ring-1 ring-inset ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/25">{{ taint }}</span>
+                                <span class="inline-flex max-w-full items-center rounded-full bg-rose-50 px-1.5 py-0.5 text-[9px] font-medium leading-3 tracking-tight text-rose-700 ring-1 ring-inset ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/25" title="{{ taint }}">
+                                    <span class="block max-w-full truncate whitespace-nowrap">{{ taint }}</span>
+                                </span>
                             {% endfor %}
                         </div>
                     {% else %}
-                        <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-500 ring-1 ring-inset ring-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:ring-slate-700">No taints</span>
+                        <span class="inline-flex items-center rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-medium leading-3 text-slate-500 ring-1 ring-inset ring-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:ring-slate-700">No taints</span>
                     {% endif %}
                 </div>
             {% endcall %}
