@@ -1,4 +1,7 @@
 {% from 'inventory/components/_detail_macros.html' import detail_shell, detail_card, detail_row, detail_tip %}
+{% set indigo_label = 'rounded-lg bg-indigo-100 px-2 py-1 text-[11px] font-semibold text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-200' %}
+{% set cyan_label = 'rounded-lg bg-cyan-100 px-2 py-1 text-[11px] font-semibold text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-200' %}
+{% set violet_label = 'rounded-lg bg-violet-100 px-2 py-1 text-[11px] font-semibold text-violet-700 dark:bg-violet-500/15 dark:text-violet-200' %}
 {% call detail_shell(
     node.node_name,
     node.role_description,
@@ -16,32 +19,27 @@
         node.role,
         'bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300'
     ) %}
-        {{ detail_row('Role', node.role) }}
-        {{ detail_row('Cluster', node.cluster_name) }}
-        {{ detail_row('Collected', node.collected_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
-        <div class="pt-4">
-            {{ detail_tip(node.role_description, 'indigo', 'lightbulb') }}
+        {{ detail_row('Role', node.role, label_classes=indigo_label) }}
+        {{ detail_row('Cluster', node.cluster_name, label_classes=indigo_label) }}
+        {{ detail_row('Collected', node.collected_at|user_datetime('%Y-%m-%d %H:%M %Z'), label_classes=indigo_label) }}
+        <div class="pt-5">
+            {{ detail_tip(node.role_description, 'indigo', 'lightbulb', vivid=True) }}
         </div>
     {% endcall %}
 
     {% call detail_card(
-        'Network identity & Pod subnet',
+        'Network and workload placement',
         'network',
         'bg-cyan-50 text-cyan-600 dark:bg-cyan-950/40 dark:text-cyan-300',
         node.scheduled_pod_count ~ ' Pods',
         'bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300'
     ) %}
-        {{ detail_row('Internal IP', node.internal_ip or '-') }}
-        {{ detail_row('External IP', node.external_ip or '-') }}
-        {{ detail_row('Hostname', node.hostname_address or '-') }}
-        {{ detail_row('Pod CIDR', node.pod_cidrs_display) }}
-        {{ detail_row('Scheduled Pods', node.scheduled_pod_count) }}
-        {{ detail_row('Observed Pod IPs', node.observed_pod_ip_count) }}
-        {% if node.observed_pod_ips %}
-            {{ detail_row('IP samples', node.observed_pod_ips|join(', ')) }}
-        {% endif %}
-        <div class="pt-4">
-            {{ detail_tip(node.pod_network_tip, 'teal', 'network') }}
+        {{ detail_row('Internal IP', node.internal_ip or '-', label_classes=cyan_label) }}
+        {{ detail_row('External IP', node.external_ip or '-', label_classes=cyan_label) }}
+        {{ detail_row('Hostname', node.hostname_address or '-', label_classes=cyan_label) }}
+        {{ detail_row('Scheduled Pods', node.scheduled_pod_count, label_classes=cyan_label) }}
+        <div class="pt-5">
+            {{ detail_tip(node.network_context_tip, 'teal', 'network', vivid=True) }}
         </div>
     {% endcall %}
 
@@ -52,12 +50,12 @@
         node.memory_display,
         'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300'
     ) %}
-        {{ detail_row('Operating system', node.os_image or '-') }}
-        {{ detail_row('Kernel', node.kernel_version or '-') }}
-        {{ detail_row('Container runtime', node.runtime_display or '-') }}
-        {{ detail_row('CPU', node.cpu or '-') }}
-        {{ detail_row('Memory', node.memory_display) }}
-        {{ detail_row('Ephemeral storage', node.ephemeral_storage_display) }}
-        {{ detail_row('Allocatable storage', node.ephemeral_storage_allocatable_display) }}
+        {{ detail_row('Operating system', node.os_image or '-', label_classes=violet_label) }}
+        {{ detail_row('Kernel', node.kernel_version or '-', label_classes=violet_label) }}
+        {{ detail_row('Container runtime', node.runtime_display or '-', label_classes=violet_label) }}
+        {{ detail_row('CPU', node.cpu or '-', label_classes=violet_label) }}
+        {{ detail_row('Memory', node.memory_display, label_classes=violet_label) }}
+        {{ detail_row('Ephemeral storage', node.ephemeral_storage_display, label_classes=violet_label) }}
+        {{ detail_row('Allocatable storage', node.ephemeral_storage_allocatable_display, label_classes=violet_label) }}
     {% endcall %}
 {% endcall %}

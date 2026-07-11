@@ -58,9 +58,14 @@
     </section>
 {%- endmacro %}
 
-{% macro detail_row(label, value='-', mono=False) -%}
+{% macro detail_row(
+    label,
+    value='-',
+    mono=False,
+    label_classes='text-slate-500 dark:text-slate-400'
+) -%}
     <div class="flex items-start justify-between gap-3">
-        <span class="text-slate-500 dark:text-slate-400">{{ label }}</span>
+        <span class="shrink-0 {{ label_classes }}">{{ label }}</span>
         <span class="max-w-[68%] break-words text-right font-semibold {{ 'text-xs' if mono else '' }} text-slate-900 dark:text-white">{{ value if value not in [None, ''] else '-' }}</span>
     </div>
 {%- endmacro %}
@@ -72,7 +77,7 @@
     </div>
 {%- endmacro %}
 
-{% macro detail_tip(message, tone='blue', icon='lightbulb') -%}
+{% macro detail_tip(message, tone='blue', icon='lightbulb', vivid=False) -%}
     {%- set tones = {
         'blue': {
             'panel': 'bg-blue-50 text-blue-800 dark:bg-blue-500/10 dark:text-blue-200',
@@ -103,7 +108,38 @@
             'icon': 'bg-white text-slate-500 dark:bg-slate-700 dark:text-slate-300'
         }
     } -%}
-    {%- set selected = tones.get(tone, tones['blue']) -%}
+    {%- set vivid_tones = {
+        'blue': {
+            'panel': 'bg-blue-100/90 text-blue-900 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/20 dark:text-blue-100 dark:ring-blue-400/20',
+            'icon': 'bg-blue-600 text-white shadow-sm dark:bg-blue-400 dark:text-blue-950'
+        },
+        'indigo': {
+            'panel': 'bg-indigo-100/90 text-indigo-900 ring-1 ring-inset ring-indigo-200 dark:bg-indigo-500/20 dark:text-indigo-100 dark:ring-indigo-400/20',
+            'icon': 'bg-indigo-600 text-white shadow-sm dark:bg-indigo-400 dark:text-indigo-950'
+        },
+        'violet': {
+            'panel': 'bg-violet-100/90 text-violet-900 ring-1 ring-inset ring-violet-200 dark:bg-violet-500/20 dark:text-violet-100 dark:ring-violet-400/20',
+            'icon': 'bg-violet-600 text-white shadow-sm dark:bg-violet-400 dark:text-violet-950'
+        },
+        'teal': {
+            'panel': 'bg-teal-100/90 text-teal-900 ring-1 ring-inset ring-teal-200 dark:bg-teal-500/20 dark:text-teal-100 dark:ring-teal-400/20',
+            'icon': 'bg-teal-600 text-white shadow-sm dark:bg-teal-400 dark:text-teal-950'
+        },
+        'emerald': {
+            'panel': 'bg-emerald-100/90 text-emerald-900 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-100 dark:ring-emerald-400/20',
+            'icon': 'bg-emerald-600 text-white shadow-sm dark:bg-emerald-400 dark:text-emerald-950'
+        },
+        'amber': {
+            'panel': 'bg-amber-100/90 text-amber-900 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/20 dark:text-amber-100 dark:ring-amber-400/20',
+            'icon': 'bg-amber-500 text-white shadow-sm dark:bg-amber-300 dark:text-amber-950'
+        },
+        'slate': {
+            'panel': 'bg-slate-200/80 text-slate-900 ring-1 ring-inset ring-slate-300 dark:bg-slate-700/70 dark:text-slate-100 dark:ring-slate-500/30',
+            'icon': 'bg-slate-600 text-white shadow-sm dark:bg-slate-300 dark:text-slate-950'
+        }
+    } -%}
+    {%- set palette = vivid_tones if vivid else tones -%}
+    {%- set selected = palette.get(tone, palette['blue']) -%}
     <div class="flex items-start gap-2.5 rounded-xl px-3 py-2.5 text-xs leading-5 {{ selected.panel }}">
         <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg {{ selected.icon }}">
             <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
