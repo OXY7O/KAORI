@@ -1,4 +1,4 @@
-{% from 'inventory/components/_detail_macros.html' import detail_shell, detail_card, detail_row %}
+{% from 'inventory/components/_detail_macros.html' import detail_shell, detail_card, detail_row, detail_tip %}
 {% call detail_shell(
     namespace.namespace,
     'General object coverage, controller mix, and resource governance for this namespace.',
@@ -47,7 +47,7 @@
                 {% endfor %}
             </div>
         {% else %}
-            <p class="rounded-xl bg-slate-50 px-3 py-3 text-xs leading-5 text-slate-500 dark:bg-slate-900/70 dark:text-slate-400">No ResourceQuota object is recorded for this namespace. Kubernetes will use cluster-level capacity without namespace quota limits.</p>
+            {{ detail_tip('No ResourceQuota object is recorded for this namespace. Kubernetes will use cluster-level capacity without namespace quota limits.', 'amber', 'info') }}
         {% endif %}
     {% endcall %}
 {% endcall %}

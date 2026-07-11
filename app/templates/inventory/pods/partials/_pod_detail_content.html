@@ -1,4 +1,4 @@
-{% from 'inventory/components/_detail_macros.html' import detail_shell, detail_card, detail_row, detail_badge, detail_list_item %}
+{% from 'inventory/components/_detail_macros.html' import detail_shell, detail_card, detail_row, detail_list_item, detail_tip %}
 {% call detail_shell(
     pod.name,
     'Runtime placement, image references, restart posture, and lifecycle information.',
@@ -26,7 +26,7 @@
                 {% endfor %}
             </div>
         {% else %}
-            <p class="text-xs text-slate-500 dark:text-slate-400">No image references recorded.</p>
+            {{ detail_tip('No image references are recorded for this Pod.', 'slate', 'info') }}
         {% endif %}
     {% endcall %}
     {% call detail_card('Lifecycle', 'clock-3', 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300', pod.age, 'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300', panel_classes='border-violet-100 bg-gradient-to-br from-violet-50/90 via-white to-white dark:border-violet-900/40 dark:from-violet-950/30 dark:via-slate-950/45 dark:to-slate-950/45') %}

@@ -1,4 +1,4 @@
-{% from 'inventory/components/_detail_macros.html' import detail_shell, detail_card, detail_row %}
+{% from 'inventory/components/_detail_macros.html' import detail_shell, detail_card, detail_row, detail_tip %}
 {% call detail_shell(
     node.node_name,
     node.role_description,
@@ -13,7 +13,7 @@
         {{ detail_row('Role', node.role) }}
         {{ detail_row('Cluster', node.cluster_name) }}
         {{ detail_row('Collected', node.collected_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
-        <p class="rounded-xl bg-indigo-50/70 px-3 py-2.5 text-xs leading-5 text-indigo-800 dark:bg-indigo-500/10 dark:text-indigo-200">{{ node.role_description }}</p>
+        {{ detail_tip(node.role_description, 'indigo', 'lightbulb') }}
     {% endcall %}
     {% call detail_card('Network identity', 'network', 'bg-cyan-50 text-cyan-600 dark:bg-cyan-950/40 dark:text-cyan-300', panel_classes='border-cyan-100 bg-gradient-to-br from-cyan-50/90 via-white to-white dark:border-cyan-900/40 dark:from-cyan-950/30 dark:via-slate-950/45 dark:to-slate-950/45') %}
         {{ detail_row('Internal IP', node.internal_ip or '-') }}

@@ -1,4 +1,4 @@
-{% from 'inventory/components/_detail_macros.html' import detail_shell, detail_card, detail_row %}
+{% from 'inventory/components/_detail_macros.html' import detail_shell, detail_card, detail_row, detail_tip %}
 {% call detail_shell(
     ingress.name,
     'Ingress exposure, clickable hosts, backend routes, and lifecycle context.',
@@ -43,7 +43,7 @@
                 {% endfor %}
             </div>
         {% else %}
-            <p class="rounded-xl bg-slate-50 px-3 py-3 text-xs leading-5 text-slate-500 dark:bg-slate-900/70 dark:text-slate-400">No backend route is recorded for this Ingress.</p>
+            {{ detail_tip('No backend route is recorded for this Ingress.', 'slate', 'info') }}
         {% endif %}
     {% endcall %}
     {% call detail_card('Lifecycle', 'clock-3', 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300', ingress.age, 'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300', panel_classes='border-violet-100 bg-gradient-to-br from-violet-50/90 via-white to-white dark:border-violet-900/40 dark:from-violet-950/30 dark:via-slate-950/45 dark:to-slate-950/45') %}

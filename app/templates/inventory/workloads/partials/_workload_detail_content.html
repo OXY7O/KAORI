@@ -1,4 +1,4 @@
-{% from 'inventory/components/_detail_macros.html' import detail_shell, detail_card, detail_row %}
+{% from 'inventory/components/_detail_macros.html' import detail_shell, detail_card, detail_row, detail_tip %}
 {% call detail_shell(
     workload.name,
     workload.type_description,
@@ -15,7 +15,7 @@
         {{ detail_row('Type', workload.type) }}
         {{ detail_row('Age', workload.age) }}
         {{ detail_row('Created', workload.created_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
-        <p class="rounded-xl bg-violet-50/70 px-3 py-2.5 text-xs leading-5 text-violet-800 dark:bg-violet-500/10 dark:text-violet-200">{{ workload.type_description }}</p>
+        {{ detail_tip(workload.type_description, 'violet', 'lightbulb') }}
     {% endcall %}
     {% call detail_card('Runtime posture', 'activity', 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300', workload.ready, 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300', panel_classes='border-blue-100 bg-gradient-to-br from-blue-50/90 via-white to-white dark:border-blue-900/40 dark:from-blue-950/30 dark:via-slate-950/45 dark:to-slate-950/45') %}
         {{ detail_row('Ready', workload.ready) }}
@@ -41,7 +41,7 @@
             </div>
             {% if workload.pods_truncated %}<p class="text-[11px] text-slate-400">Showing the first 8 Pods.</p>{% endif %}
         {% else %}
-            <p class="rounded-xl bg-slate-50 px-3 py-3 text-xs leading-5 text-slate-500 dark:bg-slate-900/70 dark:text-slate-400">No Pods are currently resolved to this workload. Re-sync inventory after rollout changes.</p>
+            {{ detail_tip('No Pods are currently resolved to this workload. Re-sync inventory after rollout changes.', 'slate', 'info') }}
         {% endif %}
     {% endcall %}
 {% endcall %}

@@ -1,4 +1,4 @@
-{% from 'inventory/components/_detail_macros.html' import detail_shell, detail_card, detail_row %}
+{% from 'inventory/components/_detail_macros.html' import detail_shell, detail_card, detail_row, detail_tip %}
 {% call detail_shell(
     service.name,
     service.type_description,
@@ -14,7 +14,7 @@
         {{ detail_row('Namespace', service.namespace) }}
         {{ detail_row('Type', service.type) }}
         {{ detail_row('Age', service.age) }}
-        <p class="rounded-xl bg-teal-50/70 px-3 py-2.5 text-xs leading-5 text-teal-800 dark:bg-teal-500/10 dark:text-teal-200">{{ service.type_description }}</p>
+        {{ detail_tip(service.type_description, 'teal', 'lightbulb') }}
     {% endcall %}
     {% call detail_card('Network endpoints', 'globe', 'bg-cyan-50 text-cyan-600 dark:bg-cyan-950/40 dark:text-cyan-300', service.pod_count ~ ' Pods', 'bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300', panel_classes='border-cyan-100 bg-gradient-to-br from-cyan-50/90 via-white to-white dark:border-cyan-900/40 dark:from-cyan-950/30 dark:via-slate-950/45 dark:to-slate-950/45') %}
         {{ detail_row('Cluster IP', service.cluster_ip) }}
@@ -24,7 +24,7 @@
         {{ detail_row('Collected', service.collected_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
     {% endcall %}
     {% call detail_card('Selected Pods and containers', 'package-check', 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300', service.pod_count, 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300', panel_classes='border-emerald-100 bg-gradient-to-br from-emerald-50/90 via-white to-white dark:border-emerald-900/40 dark:from-emerald-950/30 dark:via-slate-950/45 dark:to-slate-950/45') %}
-        <p class="rounded-xl bg-emerald-50/70 px-3 py-2.5 text-xs leading-5 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-200">Kubernetes Services select Pods, not containers directly. Container names are shown only as runtime context.</p>
+        {{ detail_tip('Kubernetes Services select Pods, not containers directly. Container names are shown only as runtime context.', 'emerald', 'info') }}
         {% if service.pods %}
             <div class="max-h-64 space-y-2 overflow-y-auto pr-1">
                 {% for pod in service.pods %}
@@ -41,9 +41,9 @@
             </div>
             {% if service.pods_truncated %}<p class="text-[11px] text-slate-400">Showing the first 8 selected Pods.</p>{% endif %}
         {% elif service.has_selector %}
-            <p class="rounded-xl bg-amber-50 px-3 py-3 text-xs leading-5 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">The Service has a selector, but no matching Pod is present in the latest inventory snapshot.</p>
+            {{ detail_tip('The Service has a selector, but no matching Pod is present in the latest inventory snapshot.', 'amber', 'triangle-alert') }}
         {% else %}
-            <p class="rounded-xl bg-slate-50 px-3 py-3 text-xs leading-5 text-slate-500 dark:bg-slate-900/70 dark:text-slate-400">This Service does not select Pods directly. This is expected for ExternalName and some manually managed endpoint patterns.</p>
+            {{ detail_tip('This Service does not select Pods directly. This is expected for ExternalName and some manually managed endpoint patterns.', 'slate', 'info') }}
         {% endif %}
     {% endcall %}
 {% endcall %}

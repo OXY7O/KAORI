@@ -1,4 +1,4 @@
-{% from 'inventory/components/_detail_macros.html' import detail_shell, detail_card, detail_row %}
+{% from 'inventory/components/_detail_macros.html' import detail_shell, detail_card, detail_row, detail_tip %}
 {% call detail_shell(
     item.name,
     'Storage scope, capacity, binding metadata, and workloads using the related claim.',
@@ -56,7 +56,7 @@
             </div>
             {% if item.pods_truncated %}<p class="text-[11px] text-slate-400">Showing the first 8 bound Pods.</p>{% endif %}
         {% else %}
-            <p class="rounded-xl bg-slate-50 px-3 py-3 text-xs leading-5 text-slate-500 dark:bg-slate-900/70 dark:text-slate-400">No Pod is currently resolved to this storage object in the latest inventory snapshot.</p>
+            {{ detail_tip('No Pod is currently resolved to this storage object in the latest inventory snapshot.', 'slate', 'info') }}
         {% endif %}
     {% endcall %}
 {% endcall %}
