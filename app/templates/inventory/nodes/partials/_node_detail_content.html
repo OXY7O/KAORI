@@ -32,7 +32,10 @@
             ) %}
                 {{ detail_row('Role', node.role) }}
                 {{ detail_row('Cluster', node.cluster_name) }}
-                {{ detail_row('Hostname', node.hostname_address or node.node_name) }}
+                <div class="flex items-start justify-between gap-3">
+                    <span class="shrink-0 text-slate-500 dark:text-slate-400">Hostname</span>
+                    <span class="max-w-[68%] break-all rounded-lg bg-slate-100 px-2 py-1 text-right text-[11px] font-medium leading-4 text-slate-700 dark:bg-slate-800 dark:text-slate-300" title="{{ node.hostname_address or node.node_name }}">{{ node.hostname_address or node.node_name }}</span>
+                </div>
                 {{ detail_row('Collected', node.collected_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
             {% endcall %}
 
@@ -59,8 +62,14 @@
                 node.memory_display,
                 'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300'
             ) %}
-                {{ detail_row('Operating system', node.os_image or '-') }}
-                {{ detail_row('Kernel', node.kernel_version or '-') }}
+                <div class="flex items-start justify-between gap-3">
+                    <span class="shrink-0 text-slate-500 dark:text-slate-400">Operating system</span>
+                    <span class="max-w-[68%] break-words rounded-lg bg-slate-100 px-2 py-1 text-right text-[11px] font-medium leading-4 text-slate-700 dark:bg-slate-800 dark:text-slate-300" title="{{ node.os_image or '-' }}">{{ node.os_image or '-' }}</span>
+                </div>
+                <div class="flex items-start justify-between gap-3">
+                    <span class="shrink-0 text-slate-500 dark:text-slate-400">Kernel</span>
+                    <span class="max-w-[68%] break-all rounded-lg bg-slate-100 px-2 py-1 text-right text-[11px] font-medium leading-4 text-slate-700 dark:bg-slate-800 dark:text-slate-300" title="{{ node.kernel_version or '-' }}">{{ node.kernel_version or '-' }}</span>
+                </div>
                 {{ detail_row('Container runtime', node.runtime_display or '-') }}
                 {{ detail_row('CPU', node.cpu or '-') }}
                 {{ detail_row('Memory', node.memory_display) }}
