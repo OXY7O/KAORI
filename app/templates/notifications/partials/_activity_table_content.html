@@ -11,8 +11,8 @@
 
 {% if items %}
     <div class="overflow-x-auto">
-        <div style="min-width: 1180px;">
-            <div style="grid-template-columns: 8.5rem 12.25rem minmax(22rem,1.8fr) 11rem 13rem 7.5rem 6rem;" class="grid items-center gap-5 border-b border-slate-200 bg-slate-50 px-6 py-3 text-left text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-400">
+        <div style="min-width: 1200px;">
+            <div style="grid-template-columns: 8rem 13rem minmax(23rem,1.8fr) 10rem 14rem 7rem 6rem;" class="grid items-center gap-6 border-b border-slate-200 bg-slate-50 px-6 py-3 text-left text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-400">
                 <div>Time</div>
                 <div>Actor</div>
                 <div>Activity</div>
@@ -28,7 +28,7 @@
                     {% set is_warning = item.status == 'warning' %}
                     {% set is_error = item.status == 'error' %}
                     <details class="group relative bg-white dark:bg-slate-800">
-                        <summary style="grid-template-columns: 8.5rem 12.25rem minmax(22rem,1.8fr) 11rem 13rem 7.5rem 6rem;" class="grid cursor-pointer list-none items-start gap-5 px-6 py-4 text-left transition hover:bg-slate-50/80 focus:outline-none group-open:bg-blue-50 dark:hover:bg-slate-900 dark:group-open:bg-blue-950/30">
+                        <summary style="grid-template-columns: 8rem 13rem minmax(23rem,1.8fr) 10rem 14rem 7rem 6rem;" class="grid cursor-pointer list-none items-start gap-6 px-6 py-4 text-left transition hover:bg-slate-50/80 focus:outline-none group-open:bg-blue-50 dark:hover:bg-slate-900 dark:group-open:bg-blue-950/30">
                             <div class="relative min-w-0 pl-4">
                                 <span class="absolute left-0 top-2 h-2 w-2 rounded-full {% if item.is_read %}bg-slate-300 dark:bg-slate-600{% else %}bg-blue-500 ring-2 ring-blue-100 dark:ring-blue-900/60{% endif %}"></span>
                                 <p class="whitespace-nowrap text-[11px] font-bold text-slate-800 dark:text-slate-100">{{ item.created_at|user_datetime('%d %b %Y') }}</p>
@@ -45,17 +45,17 @@
                                     {% else %}bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200{% endif %}">
                                     {{ item.user_initials }}
                                 </span>
-                                <div class="min-w-0 space-y-1">
+                                <div class="min-w-0">
                                     <div class="flex min-w-0 flex-wrap items-center gap-1.5">
                                         <p class="truncate text-[11px] font-bold text-slate-900 dark:text-white" title="{{ item.user_label }}">{{ item.user_label }}</p>
                                         <span class="flex-shrink-0 rounded-full bg-blue-50 px-1.5 py-0.5 text-[9px] font-bold text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20">{{ item.user_role }}</span>
                                     </div>
-                                    <p class="flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400">
+                                    <p class="mt-1 flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400">
                                         <i data-lucide="key-round" class="h-3 w-3"></i>
                                         <span class="truncate">{{ item.user_auth_source }}</span>
                                     </p>
                                     {% if item.user_email %}
-                                        <p class="truncate text-[9px] text-slate-400" title="{{ item.user_email }}">{{ item.user_email }}</p>
+                                        <p class="mt-1 truncate text-[9px] text-slate-400" title="{{ item.user_email }}">{{ item.user_email }}</p>
                                     {% endif %}
                                 </div>
                             </div>
@@ -98,7 +98,7 @@
                                 </span>
                             </div>
 
-                            <div class="pt-0.5">
+                            <div>
                                 <span class="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[9px] font-bold ring-1 ring-inset
                                     {% if is_success %}bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-900/40
                                     {% elif is_warning %}bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-900/40
@@ -109,7 +109,7 @@
                                 </span>
                             </div>
 
-                            <div class="flex justify-start pt-0.5">
+                            <div class="flex justify-start">
                                 <span class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[10px] font-bold text-slate-600 shadow-sm transition group-open:bg-blue-50 group-open:text-blue-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:group-open:bg-blue-950/40 dark:group-open:text-blue-300">
                                     <i data-lucide="eye" class="h-3.5 w-3.5"></i>
                                     <span>Details</span>
@@ -118,177 +118,120 @@
                             </div>
                         </summary>
 
-                        <div class="border-t border-blue-100 bg-blue-50/70 px-6 py-5 dark:border-blue-900/40 dark:bg-blue-950/20">
-                            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900/50">
-                                <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                                    <div class="min-w-0 flex-1">
-                                        <div class="flex items-start gap-3">
-                                            <span class="mt-0.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl
-                                                {% if item.event_tone == 'rose' %}bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-300
-                                                {% elif item.event_tone == 'cyan' %}bg-cyan-50 text-cyan-600 dark:bg-cyan-500/10 dark:text-cyan-300
-                                                {% elif item.event_tone == 'indigo' %}bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-300
-                                                {% elif item.event_tone == 'blue' %}bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300
-                                                {% else %}bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300{% endif %}">
-                                                <i data-lucide="{{ item.event_icon }}" class="h-5 w-5"></i>
-                                            </span>
-                                            <div class="min-w-0">
-                                                <div class="flex flex-wrap items-center gap-2">
-                                                    <h4 class="text-base font-semibold text-slate-950 dark:text-white">{{ item.title }}</h4>
-                                                    <span class="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-bold ring-1 ring-inset
-                                                        {% if is_success %}bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-900/40
-                                                        {% elif is_warning %}bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-900/40
-                                                        {% elif is_error %}bg-red-50 text-red-700 ring-red-200 dark:bg-red-500/10 dark:text-red-300 dark:ring-red-500/20
-                                                        {% else %}bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20{% endif %}">
-                                                        <i data-lucide="{% if is_success %}check-circle-2{% elif is_warning %}alert-triangle{% elif is_error %}x-circle{% else %}info{% endif %}" class="h-3.5 w-3.5"></i>
-                                                        {{ item.status_label }}
-                                                    </span>
-                                                </div>
-                                                <p class="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">{{ item.message }}</p>
-                                                <div class="mt-3 flex flex-wrap gap-2">
-                                                    <span class="inline-flex items-center rounded-full bg-slate-50 px-2.5 py-1 text-[10px] font-semibold text-slate-700 ring-1 ring-inset ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700">{{ item.target_type }} · {{ item.target_name }}</span>
-                                                    <span class="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-semibold text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20">{{ item.module_label }}</span>
-                                                    <span class="inline-flex items-center rounded-full bg-slate-50 px-2.5 py-1 text-[10px] font-semibold text-slate-600 ring-1 ring-inset ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700">{{ item.created_at|user_datetime('%d %b %Y %H:%M:%S %Z') }}</span>
-                                                </div>
-                                            </div>
+                        <div class="border-t border-blue-100 bg-blue-50 px-6 py-5 dark:border-blue-900/40 dark:bg-blue-950/20">
+                            <div class="grid gap-4 xl:grid-cols-4">
+                                <section class="flex min-h-[12rem] flex-col rounded-xl border border-blue-100 bg-white p-4 shadow-sm dark:border-blue-900/40 dark:bg-slate-900/40">
+                                    <div class="flex items-center gap-2">
+                                        <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+                                            <i data-lucide="list-tree" class="h-3.5 w-3.5"></i>
+                                        </span>
+                                        <h4 class="text-xs font-extrabold text-slate-900 dark:text-white">Summary</h4>
+                                    </div>
+                                    <div class="mt-3 rounded-xl border px-3 py-3
+                                        {% if is_success %}border-emerald-200 bg-emerald-50 dark:border-emerald-500/20 dark:bg-emerald-500/10
+                                        {% elif is_warning %}border-amber-200 bg-amber-50 dark:border-amber-500/20 dark:bg-amber-500/10
+                                        {% elif is_error %}border-red-200 bg-red-50 dark:border-red-500/20 dark:bg-red-500/10
+                                        {% else %}border-blue-200 bg-blue-50 dark:border-blue-500/20 dark:bg-blue-500/10{% endif %}">
+                                        <div class="flex items-center gap-2 text-[10px] font-bold
+                                            {% if is_success %}text-emerald-700 dark:text-emerald-300
+                                            {% elif is_warning %}text-amber-700 dark:text-amber-300
+                                            {% elif is_error %}text-red-700 dark:text-red-300
+                                            {% else %}text-blue-700 dark:text-blue-300{% endif %}">
+                                            <i data-lucide="{% if is_success %}check-circle-2{% elif is_warning %}alert-triangle{% elif is_error %}badge-alert{% else %}info{% endif %}" class="h-3.5 w-3.5"></i>
+                                            Activity detail
                                         </div>
+                                        <div class="mt-2 max-h-40 overflow-y-auto whitespace-pre-line break-words pr-1 text-[11px] leading-5 text-slate-700 dark:text-slate-200">{{ item.detail or item.message }}</div>
                                     </div>
-                                    <div class="text-sm text-slate-500 dark:text-slate-400 lg:text-right">
-                                        <p class="font-semibold text-slate-700 dark:text-slate-200">{{ item.created_label }}</p>
-                                        <p class="mt-1">{{ item.event_label }}</p>
+                                    <div class="mt-auto rounded-lg bg-slate-50 px-3 py-2.5 text-[10px] leading-4 text-slate-600 dark:bg-slate-800/80 dark:text-slate-300">
+                                        <span class="inline-flex items-start gap-1.5">
+                                            <i data-lucide="clock-3" class="mt-0.5 h-3.5 w-3.5 flex-shrink-0"></i>
+                                            <span>{{ item.status_label }} operational result recorded {{ item.created_label|lower }}.</span>
+                                        </span>
                                     </div>
-                                </div>
+                                </section>
 
-                                <div class="mt-4 rounded-xl border px-4 py-3
-                                    {% if is_success %}border-emerald-200 bg-emerald-50 dark:border-emerald-500/20 dark:bg-emerald-500/10
-                                    {% elif is_warning %}border-amber-200 bg-amber-50 dark:border-amber-500/20 dark:bg-amber-500/10
-                                    {% elif is_error %}border-red-200 bg-red-50 dark:border-red-500/20 dark:bg-red-500/10
-                                    {% else %}border-blue-200 bg-blue-50 dark:border-blue-500/20 dark:bg-blue-500/10{% endif %}">
-                                    <div class="flex items-center gap-2 text-[11px] font-bold
-                                        {% if is_success %}text-emerald-700 dark:text-emerald-300
-                                        {% elif is_warning %}text-amber-700 dark:text-amber-300
-                                        {% elif is_error %}text-red-700 dark:text-red-300
-                                        {% else %}text-blue-700 dark:text-blue-300{% endif %}">
-                                        <i data-lucide="{% if is_success %}check-circle-2{% elif is_warning %}alert-triangle{% elif is_error %}badge-alert{% else %}info{% endif %}" class="h-4 w-4"></i>
-                                        Activity detail
+                                <section class="flex min-h-[12rem] flex-col rounded-xl border border-violet-100 bg-white p-4 shadow-sm dark:border-violet-900/50 dark:bg-slate-900/40">
+                                    <div class="flex items-center gap-2">
+                                        <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-300">
+                                            <i data-lucide="{% if item.changed_fields %}refresh-cw{% else %}user-round{% endif %}" class="h-3.5 w-3.5"></i>
+                                        </span>
+                                        <h4 class="text-xs font-extrabold text-slate-900 dark:text-white">{% if item.changed_fields %}Changed fields{% else %}Actor & access{% endif %}</h4>
                                     </div>
-                                    <div class="mt-2 max-h-40 overflow-y-auto whitespace-pre-line break-words pr-1 text-[12px] leading-6 text-slate-700 dark:text-slate-200">{{ item.detail or item.message }}</div>
-                                </div>
-
-                                <div class="mt-4 grid gap-4 xl:grid-cols-3">
-                                    <section class="flex min-h-[12rem] flex-col rounded-xl border border-violet-100 bg-white p-4 shadow-sm dark:border-violet-900/50 dark:bg-slate-900/40">
-                                        <div class="flex items-center gap-2">
-                                            <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-300">
-                                                <i data-lucide="user-round" class="h-3.5 w-3.5"></i>
-                                            </span>
-                                            <h5 class="text-xs font-extrabold text-slate-900 dark:text-white">Actor & access</h5>
-                                        </div>
-                                        <div class="mt-3 flex items-center gap-3 rounded-xl bg-slate-50 px-3 py-3 dark:bg-slate-800/70">
-                                            <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-white text-[11px] font-extrabold text-slate-700 shadow-sm ring-1 ring-slate-200 dark:bg-slate-700 dark:text-slate-100 dark:ring-slate-600">{{ item.user_initials }}</span>
-                                            <div class="min-w-0">
-                                                <p class="truncate text-sm font-semibold text-slate-900 dark:text-white">{{ item.user_label }}</p>
-                                                {% if item.user_email %}<p class="truncate text-[11px] text-slate-500 dark:text-slate-400">{{ item.user_email }}</p>{% endif %}
-                                            </div>
-                                        </div>
+                                    {% if item.changed_fields %}
+                                        <dl class="mt-3 space-y-2.5">
+                                            {% for field in item.changed_fields %}
+                                                <div style="grid-template-columns: 5.25rem minmax(0, 1fr);" class="grid gap-2 text-[10px]">
+                                                    <dt class="font-semibold text-slate-500 dark:text-slate-400">{{ field.label }}</dt>
+                                                    <dd class="min-w-0 font-semibold text-slate-700 dark:text-slate-200">
+                                                        <span style="text-decoration: line-through;" class="break-words text-slate-400">{{ field.before }}</span>
+                                                        <i data-lucide="arrow-right" style="margin-inline: 0.25rem;" class="inline h-3 w-3 text-violet-500"></i>
+                                                        <span class="break-words">{{ field.after }}</span>
+                                                    </dd>
+                                                </div>
+                                            {% endfor %}
+                                        </dl>
+                                    {% else %}
                                         <dl class="mt-3 space-y-2.5 text-[10px]">
+                                            <div class="flex items-start justify-between gap-3"><dt class="text-slate-500 dark:text-slate-400">Actor</dt><dd class="text-right font-semibold text-slate-700 dark:text-slate-200">{{ item.user_label }}</dd></div>
                                             <div class="flex items-start justify-between gap-3"><dt class="text-slate-500 dark:text-slate-400">Role</dt><dd class="text-right font-semibold text-slate-700 dark:text-slate-200">{{ item.user_role }}</dd></div>
                                             <div class="flex items-start justify-between gap-3"><dt class="text-slate-500 dark:text-slate-400">Authentication</dt><dd class="text-right font-semibold text-slate-700 dark:text-slate-200">{{ item.user_auth_source }}</dd></div>
                                             <div class="flex items-start justify-between gap-3"><dt class="text-slate-500 dark:text-slate-400">Notification</dt><dd class="text-right font-semibold text-slate-700 dark:text-slate-200">{{ item.read_label }}</dd></div>
                                         </dl>
-                                    </section>
+                                    {% endif %}
+                                </section>
 
-                                    <section class="flex min-h-[12rem] flex-col rounded-xl border border-cyan-100 bg-white p-4 shadow-sm dark:border-cyan-900/60 dark:bg-slate-900/40">
+                                <section class="flex min-h-[12rem] flex-col rounded-xl border border-cyan-100 bg-white p-4 shadow-sm dark:border-cyan-900/60 dark:bg-slate-900/40">
+                                    <div class="flex items-center justify-between gap-2">
                                         <div class="flex items-center gap-2">
                                             <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-cyan-50 text-cyan-600 dark:bg-cyan-500/10 dark:text-cyan-300">
                                                 <i data-lucide="monitor" class="h-3.5 w-3.5"></i>
                                             </span>
-                                            <h5 class="text-xs font-extrabold text-slate-900 dark:text-white">Execution & trace</h5>
+                                            <h4 class="text-xs font-extrabold text-slate-900 dark:text-white">Execution & metadata</h4>
                                         </div>
-                                        <div class="mt-3 rounded-xl bg-cyan-50 px-3 py-3 dark:bg-cyan-500/10">
-                                            <p class="text-[11px] font-bold text-cyan-800 dark:text-cyan-200">{{ item.source_label }}</p>
-                                            <p class="mt-1 text-[10px] leading-5 text-cyan-700/90 dark:text-cyan-300">{{ item.source_detail }}</p>
-                                        </div>
-                                        <dl class="mt-3 space-y-2.5 text-[10px]">
-                                            <div class="flex items-start justify-between gap-3"><dt class="text-slate-500 dark:text-slate-400">Event type</dt><dd class="text-right font-semibold text-slate-700 dark:text-slate-200">{{ item.event_label }}</dd></div>
-                                            <div class="flex items-start justify-between gap-3"><dt class="text-slate-500 dark:text-slate-400">Recorded</dt><dd class="text-right font-semibold text-slate-700 dark:text-slate-200">{{ item.created_at|user_datetime('%d %b %Y %H:%M:%S %Z') }}</dd></div>
-                                            <div class="flex items-start justify-between gap-3"><dt class="text-slate-500 dark:text-slate-400">Relative time</dt><dd class="text-right font-semibold text-slate-700 dark:text-slate-200">{{ item.created_label }}</dd></div>
-                                        </dl>
-                                    </section>
-
-                                    <section class="flex min-h-[12rem] flex-col rounded-xl border border-amber-100 bg-white p-4 shadow-sm dark:border-amber-900/40 dark:bg-slate-900/40">
-                                        <div class="flex items-center gap-2">
-                                            <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-300">
-                                                <i data-lucide="route" class="h-3.5 w-3.5"></i>
-                                            </span>
-                                            <h5 class="text-xs font-extrabold text-slate-900 dark:text-white">Context & target</h5>
-                                        </div>
-                                        <dl class="mt-3 space-y-2.5 text-[10px]">
-                                            <div class="flex items-start justify-between gap-3"><dt class="text-slate-500 dark:text-slate-400">Module</dt><dd class="text-right font-semibold text-slate-700 dark:text-slate-200">{{ item.module_label }}</dd></div>
-                                            <div class="flex items-start justify-between gap-3"><dt class="text-slate-500 dark:text-slate-400">Target</dt><dd class="max-w-[11rem] break-words text-right font-semibold text-slate-700 dark:text-slate-200">{{ item.target_type }} · {{ item.target_name }}</dd></div>
-                                            <div class="flex items-start justify-between gap-3"><dt class="text-slate-500 dark:text-slate-400">Execution</dt><dd class="max-w-[11rem] break-words text-right font-semibold text-slate-700 dark:text-slate-200">{{ item.source_label }}</dd></div>
-                                        </dl>
-                                        {% if item.action_url %}
-                                            <a href="{{ item.action_url }}" class="mt-auto inline-flex items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-[10px] font-bold text-white shadow-sm transition hover:bg-blue-700">
-                                                Open related workspace
-                                                <i data-lucide="arrow-up-right" class="h-3.5 w-3.5"></i>
-                                            </a>
-                                        {% else %}
-                                            <div class="mt-auto rounded-lg bg-amber-50 px-3 py-2.5 text-[10px] leading-4 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
-                                                No related workspace link was recorded for this activity.
-                                            </div>
-                                        {% endif %}
-                                    </section>
-                                </div>
-
-                                {% if item.changed_fields %}
-                                    <section class="mt-4 rounded-2xl border border-violet-100 bg-white p-4 shadow-sm dark:border-violet-900/40 dark:bg-slate-900/40">
-                                        <div class="flex items-center gap-2">
-                                            <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-300">
-                                                <i data-lucide="refresh-cw" class="h-3.5 w-3.5"></i>
-                                            </span>
-                                            <h5 class="text-xs font-extrabold text-slate-900 dark:text-white">Recorded changes</h5>
-                                        </div>
-                                        <div class="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                                            {% for field in item.changed_fields %}
-                                                <div class="rounded-xl border border-violet-100 bg-violet-50/70 px-3 py-3 dark:border-violet-900/40 dark:bg-violet-500/10">
-                                                    <p class="text-[10px] font-bold uppercase tracking-wide text-violet-700 dark:text-violet-300">{{ field.label }}</p>
-                                                    <div class="mt-2 space-y-1 text-[11px] leading-5">
-                                                        <p class="break-words text-slate-400 line-through dark:text-slate-500">{{ field.before }}</p>
-                                                        <div class="flex items-center gap-2 text-violet-600 dark:text-violet-300"><i data-lucide="arrow-down" class="h-3.5 w-3.5"></i><span class="text-[10px] font-bold uppercase tracking-wide">Updated</span></div>
-                                                        <p class="break-words font-semibold text-slate-800 dark:text-slate-100">{{ field.after }}</p>
-                                                    </div>
-                                                </div>
-                                            {% endfor %}
-                                        </div>
-                                    </section>
-                                {% endif %}
-
-                                <section class="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/40">
-                                    <div class="flex items-center justify-between gap-3">
-                                        <div class="flex items-center gap-2">
-                                            <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">
-                                                <i data-lucide="table-properties" class="h-3.5 w-3.5"></i>
-                                            </span>
-                                            <h5 class="text-xs font-extrabold text-slate-900 dark:text-white">Operational metadata</h5>
-                                        </div>
-                                        <span class="rounded-full bg-slate-100 px-2 py-1 text-[9px] font-bold text-slate-700 ring-1 ring-inset ring-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:ring-slate-600">{{ item.metadata_items|length }}</span>
+                                        <span class="rounded-full bg-cyan-50 px-2 py-1 text-[9px] font-bold text-cyan-700 ring-1 ring-inset ring-cyan-100 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-900/60">{{ item.metadata_items|length }}</span>
+                                    </div>
+                                    <div class="mt-3 rounded-lg bg-cyan-50 px-3 py-2.5 text-[10px] leading-5 text-cyan-800 dark:bg-cyan-500/10 dark:text-cyan-200">
+                                        <div class="font-bold">{{ item.source_label }}</div>
+                                        <div class="mt-1 break-words">{{ item.source_detail }}</div>
                                     </div>
                                     {% if item.metadata_items %}
-                                        <div class="mt-3 grid max-h-56 gap-3 overflow-y-auto pr-1 md:grid-cols-2 xl:grid-cols-3">
+                                        <dl class="mt-3 max-h-36 space-y-2 overflow-y-auto pr-1 text-[10px]">
                                             {% for metadata in item.metadata_items %}
-                                                <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 dark:border-slate-700 dark:bg-slate-800/80">
-                                                    <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ metadata.label }}</p>
-                                                    <p class="mt-1 break-words text-[11px] font-semibold leading-5 text-slate-800 dark:text-slate-100">{{ metadata.value }}</p>
+                                                <div style="grid-template-columns: 6rem minmax(0, 1fr);" class="grid gap-2 border-b border-slate-100 py-2 dark:border-slate-700/70">
+                                                    <dt class="font-semibold text-slate-500 dark:text-slate-400">{{ metadata.label }}</dt>
+                                                    <dd class="break-words font-semibold text-slate-700 dark:text-slate-200">{{ metadata.value }}</dd>
                                                 </div>
                                             {% endfor %}
-                                        </div>
+                                        </dl>
                                     {% else %}
                                         <p class="mt-3 text-[10px] leading-5 text-slate-500 dark:text-slate-400">No additional execution metadata was recorded for this activity.</p>
                                     {% endif %}
                                 </section>
 
-                                <div class="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-[10px] leading-5 text-slate-500 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-400">
-                                    This detail shows only the operational context captured when the activity was recorded. Values that were not stored are not reconstructed.
-                                </div>
+                                <section class="flex min-h-[12rem] flex-col rounded-xl border border-amber-100 bg-white p-4 shadow-sm dark:border-amber-900/40 dark:bg-slate-900/40">
+                                    <div class="flex items-center gap-2">
+                                        <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-300">
+                                            <i data-lucide="route" class="h-3.5 w-3.5"></i>
+                                        </span>
+                                        <h4 class="text-xs font-extrabold text-slate-900 dark:text-white">Activity context</h4>
+                                    </div>
+                                    <dl class="mt-3 space-y-2.5 text-[10px]">
+                                        <div class="flex items-start justify-between gap-3"><dt class="text-slate-500 dark:text-slate-400">Type</dt><dd class="text-right font-semibold text-slate-700 dark:text-slate-200">{{ item.event_label }}</dd></div>
+                                        <div class="flex items-start justify-between gap-3"><dt class="text-slate-500 dark:text-slate-400">Target</dt><dd class="max-w-[10rem] break-words text-right font-semibold text-slate-700 dark:text-slate-200">{{ item.target_type }} · {{ item.target_name }}</dd></div>
+                                        <div class="flex items-start justify-between gap-3"><dt class="text-slate-500 dark:text-slate-400">Execution</dt><dd class="max-w-[10rem] break-words text-right font-semibold text-slate-700 dark:text-slate-200">{{ item.source_label }}</dd></div>
+                                        <div class="flex items-start justify-between gap-3"><dt class="text-slate-500 dark:text-slate-400">Recorded</dt><dd class="text-right font-semibold text-slate-700 dark:text-slate-200">{{ item.created_at|user_datetime('%d %b %Y %H:%M:%S %Z') }}</dd></div>
+                                    </dl>
+                                    {% if item.action_url %}
+                                        <a href="{{ item.action_url }}" class="mt-auto inline-flex items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-[10px] font-bold text-white shadow-sm transition hover:bg-blue-700">
+                                            Open related workspace
+                                            <i data-lucide="arrow-up-right" class="h-3.5 w-3.5"></i>
+                                        </a>
+                                    {% else %}
+                                        <div class="mt-auto rounded-lg bg-amber-50 px-3 py-2.5 text-[10px] leading-4 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
+                                            No related workspace link was recorded for this activity.
+                                        </div>
+                                    {% endif %}
+                                </section>
                             </div>
                         </div>
                     </details>
