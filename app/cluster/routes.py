@@ -668,9 +668,14 @@ def test_cluster(cluster_id: str) -> ResponseReturnValue:
         result = {
             'success': False,
             'error': (
-                f'{type(exc).__name__}: the Kubernetes connection test could not complete. '
-                'Review cluster credentials, TLS settings, and application logs.'
+                'KAORI could not complete the Kubernetes API connection test. '
+                'Review the cluster endpoint, kubeconfig credentials, TLS settings, and application logs.'
             ),
+            'reason': 'Connection test could not complete',
+            'failure_code': 'unexpected_error',
+            'endpoint_host': None,
+            'endpoint_port': None,
+            'request_path': '/api/v1/nodes',
         }
 
     if result['success']:
@@ -706,6 +711,11 @@ def test_cluster(cluster_id: str) -> ResponseReturnValue:
                 'cluster_id': cluster.id,
                 'cluster_name': cluster.name,
                 'server': cluster.server,
+                'reason': result.get('reason') or 'Connection failed',
+                'failure_code': result.get('failure_code') or 'connection_failed',
+                'endpoint_host': result.get('endpoint_host'),
+                'endpoint_port': result.get('endpoint_port'),
+                'request_path': result.get('request_path') or '/api/v1/nodes',
             },
         )
 

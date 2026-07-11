@@ -455,6 +455,7 @@ def run_test_cluster(cluster: Cluster) -> dict[str, Any]:
 
     result = test_cluster_connection(
         kubeconfig_content=cluster.kubeconfig,
+        endpoint=cluster.server,
         verify_ssl=verify_ssl,
         allow_weak_tls=allow_weak_tls,
     )
