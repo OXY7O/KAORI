@@ -10,15 +10,16 @@ from statistics import mean
 from typing import Any
 
 from app.analytics.common.base_service import AnalyticsBaseService
+from app.analytics.common.context import build_analysis_utilization_context
+from app.analytics.common.params import get_query_value
+from app.analytics.forecast import queries
+from app.analytics.utilization.service import UtilizationService
+from app.common.dependencies import prometheus_connection_blocker
 from app.intelligence.recommendation_engine import (
     build_forecast_actionable_recommendations,
     count_actionable_recommendations,
     format_recommendation_cards,
 )
-from app.analytics.common.context import build_analysis_utilization_context
-from app.analytics.common.params import get_query_value
-from app.analytics.forecast import queries
-from app.analytics.utilization.service import UtilizationService
 from app.models import Cluster
 from app.prometheus.exceptions import PrometheusError
 from app.prometheus.service import PrometheusService
@@ -570,6 +571,13 @@ def get_forecast_analysis_context(
         'connected',
         False,
     ):
+        context['dependency_blocker'] = prometheus_connection_blocker(
+            cluster,
+            detail=_safe_message(
+                value=prometheus_status.get('error'),
+                default='Prometheus health check did not complete successfully.',
+            ),
+        )
         context['forecast_payload'] = _empty_payload(
             message=_safe_message(
                 value=prometheus_status.get(
@@ -827,19 +835,13 @@ def _calculate_moving_average_forecast(
     horizon_days: int,
 ) -> dict[str, Any]:
     start = values[0].timestamp
-    x_values = [
-        max((point.timestamp - start).total_seconds() / 86400, 0.0)
-        for point in values
-    ]
+    x_values = [max((point.timestamp - start).total_seconds() / 86400, 0.0) for point in values]
     raw_values = [point.value for point in values]
     window = min(
         7,
         len(raw_values),
     )
-    smoothed_values = [
-        mean(raw_values[max(index - window + 1, 0): index + 1])
-        for index in range(len(raw_values))
-    ]
+    smoothed_values = [mean(raw_values[max(index - window + 1, 0) : index + 1]) for index in range(len(raw_values))]
 
     current_value = max(
         smoothed_values[-1],
@@ -902,7 +904,7 @@ def _calculate_conservative_forecast(
     result['forecast_points'] = forecast_points
     result['projected_value'] = forecast_points[-1].value if forecast_points else current_value
     result['confidence_reason'] = (
-        f"{result['confidence_reason']} Conservative projection applies a 15% growth buffer when usage is trending upward."
+        f'{result["confidence_reason"]} Conservative projection applies a 15% growth buffer when usage is trending upward.'
     )
 
     return result
@@ -1117,32 +1119,18 @@ def _build_no_forecast_data_message(
     items: list[dict[str, Any]],
 ) -> str:
     if not items:
-        return (
-            'No forecast resource was selected. Choose a resource scope and verify that Prometheus metrics are available.'
-        )
+        return 'No forecast resource was selected. Choose a resource scope and verify that Prometheus metrics are available.'
 
-    missing_history = [
-        item['label']
-        for item in items
-        if item.get('history_points_count', 0) < 2
-    ]
-    missing_capacity = [
-        item['label']
-        for item in items
-        if item.get('capacity_missing', False)
-    ]
+    missing_history = [item['label'] for item in items if item.get('history_points_count', 0) < 2]
+    missing_capacity = [item['label'] for item in items if item.get('capacity_missing', False)]
 
     notes: list[str] = []
 
     if missing_history:
-        notes.append(
-            f"not enough historical daily points for {', '.join(missing_history)}"
-        )
+        notes.append(f'not enough historical daily points for {", ".join(missing_history)}')
 
     if missing_capacity:
-        notes.append(
-            f"missing capacity baseline for {', '.join(missing_capacity)}"
-        )
+        notes.append(f'missing capacity baseline for {", ".join(missing_capacity)}')
 
     if notes:
         return (
@@ -1204,8 +1192,6 @@ def _build_chart_payload(
         'warning_threshold': WARNING_THRESHOLD,
         'critical_threshold': CRITICAL_THRESHOLD,
     }
-
-
 
 
 def _extract_range_points(

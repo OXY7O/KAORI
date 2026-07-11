@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from flask import render_template, request
-from app.rbac.decorators import permission_required
 
 from app.analytics.top_consumers.service import get_top_consumers_context
+from app.rbac.decorators import permission_required
 
 
 @permission_required('analytics.view')

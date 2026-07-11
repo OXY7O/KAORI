@@ -342,7 +342,7 @@ INTELLIGENCE_CATALOG: list[dict[str, object]] = [
         'prometheus_relationship': 'Prometheus may expose storage health metrics; KAORI maps Kubernetes storage state to action.',
         'supported_sources': ['Kubernetes API', 'Storage Inventory'],
         'visible_in': ['Recommendations', 'Storage Analysis', 'Reports'],
-    }
+    },
 ]
 
 # Backward-compatible alias for any old import path introduced in the first catalog patch.

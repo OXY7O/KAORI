@@ -7,17 +7,17 @@ from typing import Any, SupportsFloat, SupportsIndex
 from sqlalchemy import select
 
 from app.analytics.common.cache import get_or_set_cache
-from app.intelligence.recommendation_engine import (
-    build_operational_recommendations,
-    build_utilization_actionable_recommendations,
-    count_actionable_recommendations,
-)
 from app.analytics.overview.schema import (
     build_empty_overview_payload,
     classify_count_risk,
     classify_percent,
 )
 from app.extensions import db
+from app.intelligence.recommendation_engine import (
+    build_operational_recommendations,
+    build_utilization_actionable_recommendations,
+    count_actionable_recommendations,
+)
 from app.models.cluster import Cluster
 
 FloatLike = str | bytes | SupportsFloat | SupportsIndex

@@ -28,7 +28,6 @@ from app.models import (
     WorkloadInventory,
 )
 
-
 INVENTORY_FRESHNESS_HOURS = 24
 
 
@@ -58,9 +57,12 @@ def _is_stale_inventory(
     if collected_at is None:
         return False
 
-    age = datetime.now(
-        UTC,
-    ) - collected_at
+    age = (
+        datetime.now(
+            UTC,
+        )
+        - collected_at
+    )
 
     return age.total_seconds() > INVENTORY_FRESHNESS_HOURS * 3600
 
@@ -131,8 +133,6 @@ def _build_inventory_risk_hints(
         )
 
     return hints[:3]
-
-
 
 
 def get_cluster_by_id(
@@ -1010,15 +1010,27 @@ def get_inventory_health():
 
     synced_clusters = total_clusters - never_synced
     disconnected_clusters = total_clusters - connected_clusters
-    coverage_score = round(
-        (synced_clusters / total_clusters) * 100,
-    ) if total_clusters else 0
-    connection_score = round(
-        (connected_clusters / total_clusters) * 100,
-    ) if total_clusters else 0
-    freshness_score = round(
-        (fresh_synced / total_clusters) * 100,
-    ) if total_clusters else 0
+    coverage_score = (
+        round(
+            (synced_clusters / total_clusters) * 100,
+        )
+        if total_clusters
+        else 0
+    )
+    connection_score = (
+        round(
+            (connected_clusters / total_clusters) * 100,
+        )
+        if total_clusters
+        else 0
+    )
+    freshness_score = (
+        round(
+            (fresh_synced / total_clusters) * 100,
+        )
+        if total_clusters
+        else 0
+    )
 
     last_sync_display = '-'
 
@@ -1594,15 +1606,6 @@ def get_pod_inventory(
         PodInventory.namespace,
         PodInventory.pod_name,
     ).all()
-
-    namespace_query = db.session.query(
-        PodInventory.namespace,
-    ).distinct()
-
-    if cluster_id:
-        namespace_query = namespace_query.filter(PodInventory.cluster_id == cluster_id)
-
-    namespaces = sorted([ns for (ns,) in namespace_query.all() if ns])
 
     status_counts = {}
 

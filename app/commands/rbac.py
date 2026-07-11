@@ -16,4 +16,4 @@ from app.rbac.service import seed_default_rbac
 @with_appcontext
 def seed_rbac():
     result = seed_default_rbac()
-    click.echo(f"RBAC seeded: {result['roles']} roles, {result['permissions']} permissions")
+    click.echo(f'RBAC seeded: {result["roles"]} roles, {result["permissions"]} permissions')

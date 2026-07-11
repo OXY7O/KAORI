@@ -27,7 +27,6 @@ sum by (instance) (
 """
 
 
-
 NODE_ROOT_FILESYSTEM_SIZE_QUERY = """
 sum by (instance) (
   node_filesystem_size_bytes{

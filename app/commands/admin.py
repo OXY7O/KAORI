@@ -127,7 +127,7 @@ def bootstrap_admin() -> None:
     short_help='Reset a local database admin password explicitly.',
     help=(
         'Reset the password for an existing local database-managed admin or super administrator. '
-        'This command does not create users, does not work for LDAP/SSO users, and is intended for controlled recovery only. '
+        'This command does not create users, does not work for LDAP/SSO users, and is intended for controlled recovery only. '  # noqa: E501
         'The new password can come from --password, ADMIN_PASSWORD, or an interactive hidden prompt.'
     ),
 )

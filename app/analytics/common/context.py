@@ -13,6 +13,10 @@ from app.analytics.common.params import (
     get_selected_time_range,
 )
 from app.analytics.utilization.service import UtilizationService
+from app.common.dependencies import (
+    prometheus_connection_blocker,
+    prometheus_setup_blocker,
+)
 from app.models import Cluster
 from app.prometheus.exceptions import PrometheusError
 from app.prometheus.service import PrometheusService
@@ -52,6 +56,7 @@ def build_analysis_utilization_context(
         'error': None,
         'prometheus_connected': False,
         'prometheus_status': get_default_prometheus_status(),
+        'dependency_blocker': None,
         'selected_namespace': get_query_value(
             query_args=query_args,
             name='namespace',
@@ -66,11 +71,25 @@ def build_analysis_utilization_context(
         base_context['prometheus_status'] = {
             'connected': False,
             'response_time_ms': None,
-            'label': 'No Cluster',
-            'description': 'Add at least one Kubernetes cluster to load Prometheus-backed analytics.',
+            'label': 'Waiting for Cluster',
+            'description': 'Prometheus checks start after a Kubernetes cluster is added.',
             'error': None,
         }
+        base_context['dependency_blocker'] = None
         return clusters, None, None, base_context
+
+    prometheus_config = cluster.prometheus_config
+
+    if prometheus_config is None or not prometheus_config.endpoint.strip():
+        base_context['prometheus_status'] = {
+            'connected': False,
+            'response_time_ms': None,
+            'label': 'Prometheus Not Configured',
+            'description': 'Configure Prometheus after the cluster is available.',
+            'error': None,
+        }
+        base_context['dependency_blocker'] = prometheus_setup_blocker(cluster)
+        return clusters, cluster, None, base_context
 
     try:
         prometheus = PrometheusService(
@@ -78,9 +97,9 @@ def build_analysis_utilization_context(
         )
     except PrometheusError as exc:
         message = str(exc) or 'Prometheus is not configured for the selected cluster.'
-        base_context['error'] = (
-            'Prometheus is not configured or available for the selected cluster. '
-            'Configure the integration to load live analytics data.'
+        base_context['dependency_blocker'] = prometheus_connection_blocker(
+            cluster,
+            detail=message,
         )
         base_context['prometheus_status'] = {
             'connected': False,
@@ -96,9 +115,9 @@ def build_analysis_utilization_context(
             cluster.name,
         )
         message = str(exc) or 'Prometheus service initialization failed.'
-        base_context['error'] = (
-            'KAORI could not initialize Prometheus for the selected cluster. '
-            'Review the endpoint, credentials, TLS settings, and network connectivity.'
+        base_context['dependency_blocker'] = prometheus_connection_blocker(
+            cluster,
+            detail=message,
         )
         base_context['prometheus_status'] = {
             'connected': False,

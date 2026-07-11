@@ -1,6 +1,6 @@
-from app.models.auth import AuthLoginEvent
 from app.models.alertmanager import AlertmanagerConfig
 from app.models.audit import AuditEvent
+from app.models.auth import AuthLoginEvent
 from app.models.cluster import Cluster, ClusterStatus
 from app.models.governance import TLSCertificateInventory, TLSCertificateUpdateEvent
 from app.models.inventory import (

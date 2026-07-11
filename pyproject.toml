@@ -13,6 +13,9 @@ select = [
     "I",
     "UP",
 ]
+ignore = [
+    "E501",
+]
 
 [tool.djlint]
 profile = "jinja"

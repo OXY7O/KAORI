@@ -17,6 +17,10 @@ from app.analytics.alerts.queries import (
     POD_RESTART_ANOMALY_QUERY,
     PROMETHEUS_ALERTS_QUERY,
 )
+from app.common.dependencies import (
+    alert_source_connection_blocker,
+    alert_source_setup_blocker,
+)
 from app.extensions import db
 from app.intelligence.recommendation_engine import (
     build_alerts_actionable_recommendations,
@@ -4157,6 +4161,21 @@ def get_alerts_context(
         source_status=source_status,
     )
 
+    dependency_blocker = None
+
+    if selected_cluster is not None and not source_status.get('connected', False):
+        if source_status.get('configured', False):
+            dependency_blocker = alert_source_connection_blocker(
+                selected_cluster,
+                source=selected_source,
+                detail=str(source_status.get('error') or ''),
+            )
+        else:
+            dependency_blocker = alert_source_setup_blocker(
+                selected_cluster,
+                source=selected_source,
+            )
+
     source_health = build_source_health(
         cluster=selected_cluster,
         source_status=source_status,
@@ -4219,6 +4238,7 @@ def get_alerts_context(
         'summary': summary,
         'source_status': source_status,
         'integration_status': integration_status,
+        'dependency_blocker': dependency_blocker,
         'source_health': source_health,
         'routing_summary': routing_summary,
         'silence_summary': silence_summary,

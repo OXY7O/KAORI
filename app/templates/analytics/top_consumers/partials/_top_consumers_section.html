@@ -3,7 +3,7 @@
 {% set overview = payload.overview %}
 {% set pagination = payload.pagination %}
 <div class="space-y-6">
-    {% if not prometheus_status.connected %}
+    {% if not dependency_blocker and not prometheus_status.connected %}
         <div class="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800 shadow-sm dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
             <div class="flex items-start gap-3">
                 <i data-lucide="triangle-alert" class="mt-0.5 h-5 w-5 shrink-0"></i>

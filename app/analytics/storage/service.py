@@ -20,14 +20,16 @@ from app.analytics.common.params import (
     get_selected_time_range,
 )
 from app.analytics.common.payloads import get_empty_storage_payload
+from app.analytics.storage import queries
+from app.analytics.utilization.service import UtilizationService
+from app.common.dependencies import prometheus_connection_blocker
 from app.intelligence.recommendation_engine import (
     build_storage_actionable_recommendations,
     count_actionable_recommendations,
     format_recommendation_cards,
 )
-from app.analytics.storage import queries
-from app.analytics.utilization.service import UtilizationService
 from app.models import Cluster
+from app.prometheus.exceptions import PrometheusError
 from app.prometheus.service import PrometheusService
 
 
@@ -1043,7 +1045,7 @@ class StorageAnalysisService(AnalyticsBaseService):
 def get_storage_analysis_context(
     query_args: Mapping[str, Any],
 ) -> dict[str, Any]:
-    _, _, utilization_service, context = build_analysis_utilization_context(
+    _, cluster, utilization_service, context = build_analysis_utilization_context(
         query_args=query_args,
     )
 
@@ -1052,51 +1054,42 @@ def get_storage_analysis_context(
         name='namespace',
         default='',
     )
-
     selected_time_range = get_selected_time_range(
         query_args=query_args,
     )
-
     selected_storage_node = get_query_value(
         query_args=query_args,
         name='storage_node',
         default='',
     )
-
     selected_storage_tab = get_selected_storage_tab(
         query_args=query_args,
     )
-
     selected_pvc_search = get_query_value(
         query_args=query_args,
         name='pvc_search',
         default='',
     )
-
     selected_pvc_status = get_query_value(
         query_args=query_args,
         name='pvc_status',
         default='',
     )
-
     selected_pvc_storage_class = get_query_value(
         query_args=query_args,
         name='pvc_storage_class',
         default='',
     )
-
     selected_pv_search = get_query_value(
         query_args=query_args,
         name='pv_search',
         default='',
     )
-
     selected_pv_status = get_query_value(
         query_args=query_args,
         name='pv_status',
         default='',
     )
-
     selected_pv_storage_class = get_query_value(
         query_args=query_args,
         name='pv_storage_class',
@@ -1120,7 +1113,7 @@ def get_storage_analysis_context(
         }
     )
 
-    if utilization_service is None:
+    def apply_empty_payload() -> None:
         context.update(
             get_empty_storage_payload(
                 selected_namespace=selected_namespace,
@@ -1131,13 +1124,24 @@ def get_storage_analysis_context(
             get_empty_storage_recommendation_context(),
         )
 
+    if utilization_service is None or cluster is None:
+        apply_empty_payload()
         return context
 
     storage_service = StorageAnalysisService(
         utilization_service,
     )
 
-    prometheus_status = storage_service.get_prometheus_status()
+    try:
+        prometheus_status = storage_service.get_prometheus_status()
+    except (PrometheusError, Exception) as exc:
+        prometheus_status = {
+            'connected': False,
+            'label': 'Prometheus Unavailable',
+            'response_time_ms': None,
+            'description': str(exc),
+            'error': str(exc),
+        }
 
     context['prometheus_status'] = prometheus_status
     context['prometheus_connected'] = bool(
@@ -1147,38 +1151,53 @@ def get_storage_analysis_context(
         )
     )
 
-    storage_summary = storage_service.get_storage_capacity_summary(
-        selected_namespace=selected_namespace,
-        selected_node=selected_storage_node,
-        selected_pvc_search=selected_pvc_search,
-        selected_pvc_status=selected_pvc_status,
-        selected_pvc_storage_class=selected_pvc_storage_class,
-        pvc_page=get_positive_int_arg(
-            query_args=query_args,
-            name='pvc_page',
-            default=1,
-        ),
-        pvc_per_page=get_per_page_arg(
-            query_args=query_args,
-            name='pvc_per_page',
-            default=10,
-        ),
-        selected_pv_search=selected_pv_search,
-        selected_pv_status=selected_pv_status,
-        selected_pv_storage_class=selected_pv_storage_class,
-        pv_page=get_positive_int_arg(
-            query_args=query_args,
-            name='pv_page',
-            default=1,
-        ),
-        pv_per_page=get_per_page_arg(
-            query_args=query_args,
-            name='pv_per_page',
-            default=10,
-        ),
-    )
+    if not context['prometheus_connected']:
+        context['dependency_blocker'] = prometheus_connection_blocker(
+            cluster,
+            detail=str(prometheus_status.get('error') or prometheus_status.get('description') or ''),
+        )
+        apply_empty_payload()
+        return context
 
-    namespace_options = storage_service.get_storage_namespace_options()
+    try:
+        storage_summary = storage_service.get_storage_capacity_summary(
+            selected_namespace=selected_namespace,
+            selected_node=selected_storage_node,
+            selected_pvc_search=selected_pvc_search,
+            selected_pvc_status=selected_pvc_status,
+            selected_pvc_storage_class=selected_pvc_storage_class,
+            pvc_page=get_positive_int_arg(
+                query_args=query_args,
+                name='pvc_page',
+                default=1,
+            ),
+            pvc_per_page=get_per_page_arg(
+                query_args=query_args,
+                name='pvc_per_page',
+                default=10,
+            ),
+            selected_pv_search=selected_pv_search,
+            selected_pv_status=selected_pv_status,
+            selected_pv_storage_class=selected_pv_storage_class,
+            pv_page=get_positive_int_arg(
+                query_args=query_args,
+                name='pv_page',
+                default=1,
+            ),
+            pv_per_page=get_per_page_arg(
+                query_args=query_args,
+                name='pv_per_page',
+                default=10,
+            ),
+        )
+        namespace_options = storage_service.get_storage_namespace_options()
+    except (PrometheusError, Exception) as exc:
+        context['dependency_blocker'] = prometheus_connection_blocker(
+            cluster,
+            detail=str(exc),
+        )
+        apply_empty_payload()
+        return context
 
     context.update(
         {

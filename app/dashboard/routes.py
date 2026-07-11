@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from flask import Blueprint, abort, render_template, request
-
 from flask_login import login_required
 
 from app.dashboard.service import get_dashboard_overview

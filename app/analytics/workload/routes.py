@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from flask import render_template, request
-from app.rbac.decorators import permission_required
 
 from app.analytics.workload.service import get_workload_analysis_context
+from app.rbac.decorators import permission_required
 
 
 @permission_required('analytics.view')

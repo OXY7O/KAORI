@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-
 NAMESPACE_ACTIVE_QUERY = (
     'kube_namespace_status_phase{phase="Active"} == 1'
 )

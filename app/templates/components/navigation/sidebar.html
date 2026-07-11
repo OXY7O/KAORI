@@ -18,7 +18,6 @@
     or current_user.has_permission('reports.manage_storage')
 ) %}
 <aside class="kubereport-sidebar flex min-h-0 flex-col border-r border-slate-800/80 bg-slate-950 text-white shadow-xl shadow-slate-950/20">
-    <!-- Brand -->
     <div class="border-b border-slate-800/80 px-2 py-4">
         <div class="sidebar-brand-card flex items-center justify-start gap-3 rounded-2xl border border-slate-800/80 bg-slate-900/80 p-3 shadow-sm">
             <div class="sidebar-brand-icon flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/25">
@@ -31,10 +30,8 @@
         </div>
     </div>
 
-    <!-- Navigation -->
     <nav class="flex-1 space-y-5 overflow-y-auto overscroll-contain px-3 py-4 [scrollbar-gutter:stable]">
         {% if current_user.is_authenticated %}
-            <!-- MAIN -->
             <div class="sidebar-nav-section">
                 <div class="sidebar-expanded-only mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
                     Main
@@ -60,11 +57,10 @@
             </div>
         {% endif %}
 
-        {% if can_clusters or can_inventory %}
-            <!-- OPERATIONS -->
+        {% if can_clusters or can_inventory or can_governance %}
             <div class="sidebar-nav-section">
                 <div class="sidebar-expanded-only mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
-                    Operations
+                    Kubernetes
                 </div>
                 <div class="space-y-1">
                     {% if can_clusters %}
@@ -79,28 +75,17 @@
                     {% if can_inventory %}
                         {% include "components/navigation/inventory_menu.html" %}
                     {% endif %}
+                    {% if can_governance %}
+                        {% include "components/navigation/governance_menu.html" %}
+                    {% endif %}
                 </div>
             </div>
         {% endif %}
 
-
-        {% if can_governance %}
-            <!-- GOVERNANCE -->
+        {% if can_analytics or can_intelligence or can_reports %}
             <div class="sidebar-nav-section">
                 <div class="sidebar-expanded-only mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
-                    Governance
-                </div>
-                <div class="space-y-1">
-                    {% include "components/navigation/governance_menu.html" %}
-                </div>
-            </div>
-        {% endif %}
-
-        {% if can_analytics or can_intelligence %}
-            <!-- INSIGHTS -->
-            <div class="sidebar-nav-section">
-                <div class="sidebar-expanded-only mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
-                    Insights
+                    Insights &amp; Reporting
                 </div>
                 <div class="space-y-1">
                     {% if can_analytics %}
@@ -109,21 +94,13 @@
                     {% if can_intelligence %}
                         {% include "components/navigation/intelligence_menu.html" %}
                     {% endif %}
+                    {% if can_reports %}
+                        {% include "components/navigation/reports_menu.html" %}
+                    {% endif %}
                 </div>
             </div>
         {% endif %}
 
-        {% if can_reports %}
-            <!-- REPORTING -->
-            <div class="sidebar-nav-section">
-                <div class="sidebar-expanded-only mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
-                    Reporting
-                </div>
-                {% include "components/navigation/reports_menu.html" %}
-            </div>
-        {% endif %}
-
-        <!-- ADMINISTRATION -->
         <div class="sidebar-nav-section">
             <div class="sidebar-expanded-only mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
                 Administration

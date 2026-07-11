@@ -9,6 +9,11 @@ from app.analytics.utilization.service import (
     get_selected_cluster,
     get_utilization_clusters,
 )
+from app.common.dependencies import (
+    DependencyBlocker,
+    prometheus_connection_blocker,
+    prometheus_setup_blocker,
+)
 from app.intelligence.recommendation_engine import (
     build_utilization_actionable_recommendations,
     count_actionable_recommendations,
@@ -37,7 +42,6 @@ TREND_STEP_MAP = {
     720: '12h',
     1440: '1d',
 }
-
 
 
 def _empty_recommendation_context() -> dict[str, Any]:
@@ -174,10 +178,7 @@ def utilization_trend() -> str:
         )
 
     except PrometheusError as exc:
-        error = (
-            'Prometheus is not configured or available for the selected cluster. '
-            f'{exc}'
-        )
+        error = f'Prometheus is not configured or available for the selected cluster. {exc}'
     except Exception as exc:
         current_app.logger.exception(
             exc,
@@ -329,6 +330,7 @@ def utilization() -> str:
     recommendation_context = _empty_recommendation_context()
 
     error = None
+    dependency_blocker: DependencyBlocker | None = None
 
     if not cluster:
         return render_template(
@@ -339,8 +341,51 @@ def utilization() -> str:
             summary_table=summary_table,
             detail_summary=detail_summary,
             trends=trends,
-            error='No cluster configured',
-            prometheus_status=prometheus_status,
+            error=None,
+            dependency_blocker=None,
+            prometheus_status={
+                'connected': False,
+                'response_time_ms': None,
+                'label': 'Waiting for Cluster',
+                'description': 'Prometheus checks start after a Kubernetes cluster is added.',
+            },
+            cluster_info=cluster_info,
+            risk_assessment=risk_assessment,
+            detail_risk_assessment=detail_risk_assessment,
+            trend_hours=trend_hours,
+            allowed_trend_hours=ALLOWED_TREND_HOURS,
+            available_nodes=[],
+            available_worker_nodes=[],
+            available_filesystem_instances=[],
+            selected_node='',
+            selected_filesystem_instance='',
+            selected_trend_node='',
+            cluster_query_endpoint='analytics.utilization',
+            cluster_query_hidden_params={},
+            **_empty_recommendation_context(),
+        )
+
+    prometheus_config = cluster.prometheus_config
+
+    if prometheus_config is None or not prometheus_config.endpoint.strip():
+        dependency_blocker = prometheus_setup_blocker(cluster)
+
+        return render_template(
+            'analytics/utilization/index.html',
+            cluster=cluster,
+            clusters=clusters,
+            summary=summary,
+            summary_table=summary_table,
+            detail_summary=detail_summary,
+            trends=trends,
+            error=None,
+            dependency_blocker=dependency_blocker,
+            prometheus_status={
+                'connected': False,
+                'response_time_ms': None,
+                'label': 'Prometheus Not Configured',
+                'description': 'Configure Prometheus after the cluster is available.',
+            },
             cluster_info=cluster_info,
             risk_assessment=risk_assessment,
             detail_risk_assessment=detail_risk_assessment,
@@ -434,19 +479,18 @@ def utilization() -> str:
             'label': 'Prometheus Not Configured',
             'description': message,
         }
-        error = (
-            'Prometheus is not configured or available for the selected cluster. '
-            'Configure the integration to load live utilization signals.'
+        dependency_blocker = prometheus_connection_blocker(
+            cluster,
+            detail=message,
         )
     except Exception as exc:
         current_app.logger.exception(
             exc,
         )
 
-        error = (
-            'Unable to connect to Prometheus. '
-            'Please verify endpoint, credentials, '
-            'SSL configuration, and network connectivity.'
+        dependency_blocker = prometheus_connection_blocker(
+            cluster,
+            detail=str(exc),
         )
 
     return render_template(
@@ -458,6 +502,7 @@ def utilization() -> str:
         detail_summary=detail_summary,
         trends=trends,
         error=error,
+        dependency_blocker=dependency_blocker,
         prometheus_status=prometheus_status,
         cluster_info=cluster_info,
         risk_assessment=risk_assessment,
@@ -556,10 +601,7 @@ def utilization_node_detail() -> str:
         )
 
     except PrometheusError as exc:
-        error = (
-            'Prometheus is not configured or available for the selected cluster. '
-            f'{exc}'
-        )
+        error = f'Prometheus is not configured or available for the selected cluster. {exc}'
     except Exception as exc:
         current_app.logger.exception(
             exc,

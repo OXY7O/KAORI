@@ -33,9 +33,12 @@ def build_cluster_onboarding_context() -> dict[str, Any]:
         return _hidden_context()
 
     try:
-        cluster_count = db.session.scalar(
-            select(func.count(Cluster.id)),
-        ) or 0
+        cluster_count = (
+            db.session.scalar(
+                select(func.count(Cluster.id)),
+            )
+            or 0
+        )
     except SQLAlchemyError:
         db.session.rollback()
         return _hidden_context(database_ready=False)
@@ -45,9 +48,7 @@ def build_cluster_onboarding_context() -> dict[str, Any]:
 
     return {
         'show_banner': (
-            is_operational_page
-            and not has_clusters
-            and request.endpoint not in _BANNER_EXCLUDED_ENDPOINTS
+            is_operational_page and not has_clusters and request.endpoint not in _BANNER_EXCLUDED_ENDPOINTS
         ),
         'has_clusters': has_clusters,
         'cluster_count': cluster_count,

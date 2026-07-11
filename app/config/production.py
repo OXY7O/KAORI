@@ -31,11 +31,7 @@ def _env_int(name: str, default: int) -> int:
 
 
 def _env_csv(name: str) -> list[str] | None:
-    values = [
-        value.strip()
-        for value in os.getenv(name, '').split(',')
-        if value.strip()
-    ]
+    values = [value.strip() for value in os.getenv(name, '').split(',') if value.strip()]
     return values or None
 
 

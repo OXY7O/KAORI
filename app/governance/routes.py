@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from flask import Blueprint, redirect, render_template, url_for
+from flask import Blueprint, render_template
 
 from app.governance.tls_certificates.routes import (
     tls_certificates_bulk_apply,
@@ -13,7 +13,6 @@ from app.governance.tls_certificates.routes import (
     tls_certificates_update_preview,
 )
 from app.rbac.decorators import permission_required
-
 
 governance_bp = Blueprint(
     'governance',

@@ -23,6 +23,10 @@ from app.analytics.common.params import (
 )
 from app.analytics.common.payloads import get_empty_capacity_payload
 from app.analytics.utilization.service import UtilizationService
+from app.common.dependencies import (
+    prometheus_connection_blocker,
+    prometheus_setup_blocker,
+)
 from app.intelligence.recommendation_engine import (
     build_capacity_actionable_recommendations,
     count_actionable_recommendations,
@@ -50,6 +54,7 @@ def get_capacity_time_step(
         time_range,
         '1h',
     )
+
 
 def get_capacity_page_context(
     query_args: Mapping[str, Any],
@@ -90,13 +95,38 @@ def get_capacity_page_context(
             'cluster': None,
             'error': None,
             'prometheus_connected': False,
-            'prometheus_status': prometheus_status,
+            'prometheus_status': {
+                'connected': False,
+                'response_time_ms': None,
+                'label': 'Waiting for Cluster',
+                'description': 'Prometheus checks start after a Kubernetes cluster is added.',
+            },
+            'dependency_blocker': None,
             **empty_capacity_payload,
         }
 
     error = None
     prometheus_connected = False
+    dependency_blocker = None
     capacity_payload = empty_capacity_payload.copy()
+
+    prometheus_config = cluster.prometheus_config
+
+    if prometheus_config is None or not prometheus_config.endpoint.strip():
+        return {
+            'clusters': clusters,
+            'cluster': cluster,
+            'error': None,
+            'prometheus_connected': False,
+            'prometheus_status': {
+                'connected': False,
+                'response_time_ms': None,
+                'label': 'Prometheus Not Configured',
+                'description': 'Configure Prometheus after the cluster is available.',
+            },
+            'dependency_blocker': prometheus_setup_blocker(cluster),
+            **empty_capacity_payload,
+        }
 
     try:
         prometheus = PrometheusService(
@@ -133,19 +163,18 @@ def get_capacity_page_context(
             'description': message,
             'error': message,
         }
-        error = (
-            'Prometheus is not configured or available for the selected cluster. '
-            'Configure the integration to load live capacity signals.'
+        dependency_blocker = prometheus_connection_blocker(
+            cluster,
+            detail=message,
         )
     except Exception as exc:
         current_app.logger.exception(
             exc,
         )
 
-        error = (
-            'Unable to connect to Prometheus. '
-            'Please verify endpoint, credentials, SSL configuration, '
-            'and network connectivity.'
+        dependency_blocker = prometheus_connection_blocker(
+            cluster,
+            detail=str(exc),
         )
 
     return {
@@ -154,6 +183,7 @@ def get_capacity_page_context(
         'error': error,
         'prometheus_connected': prometheus_connected,
         'prometheus_status': prometheus_status,
+        'dependency_blocker': dependency_blocker,
         **capacity_payload,
     }
 
@@ -250,16 +280,14 @@ class CapacityService(AnalyticsBaseService):
         query_template: str,
         time_range: str,
     ) -> str:
-        return (
-            query_template.replace(
-                '__TIME_RANGE__',
+        return query_template.replace(
+            '__TIME_RANGE__',
+            time_range,
+        ).replace(
+            '__TIME_STEP__',
+            get_capacity_time_step(
                 time_range,
-            ).replace(
-                '__TIME_STEP__',
-                get_capacity_time_step(
-                    time_range,
-                ),
-            )
+            ),
         )
 
     def get_capacity_summary_from_summary(
@@ -404,9 +432,7 @@ class CapacityService(AnalyticsBaseService):
 
             findings.append(
                 {
-                    'label': (
-                        f'{resource_labels.get(resource, resource.title())} ' f'allocation status: {status_label}'
-                    ),
+                    'label': (f'{resource_labels.get(resource, resource.title())} allocation status: {status_label}'),
                     'severity': self.get_allocation_finding_severity(
                         status_label,
                     ),
@@ -450,19 +476,18 @@ class CapacityService(AnalyticsBaseService):
                     0,
                 ),
                 'caption': (
-                    f"{cluster_info.get('ready_nodes', 0)} Ready, "
-                    f"{cluster_info.get('not_ready_nodes', 0)} Not Ready"
+                    f'{cluster_info.get("ready_nodes", 0)} Ready, {cluster_info.get("not_ready_nodes", 0)} Not Ready'
                 ),
                 'footer': (
-                    f"Total nodes {cluster_info.get('total_nodes', 0)} · "
-                    f"Control-plane {cluster_info.get('master_nodes', 0)}"
+                    f'Total nodes {cluster_info.get("total_nodes", 0)} · '
+                    f'Control-plane {cluster_info.get("master_nodes", 0)}'
                 ),
                 'icon': 'users',
                 'icon_class': 'bg-blue-100 text-blue-600',
             },
             {
                 'label': 'Allocatable CPU',
-                'value': f"{capacity_summary['cpu']['capacity']} cores",
+                'value': f'{capacity_summary["cpu"]["capacity"]} cores',
                 'caption': 'Ready worker nodes only',
                 'footer': '',
                 'icon': 'cpu',
@@ -470,7 +495,7 @@ class CapacityService(AnalyticsBaseService):
             },
             {
                 'label': 'Allocatable Memory',
-                'value': f"{capacity_summary['memory']['capacity']} GiB",
+                'value': f'{capacity_summary["memory"]["capacity"]} GiB',
                 'caption': 'Ready worker nodes only',
                 'footer': '',
                 'icon': 'memory-stick',
@@ -478,7 +503,7 @@ class CapacityService(AnalyticsBaseService):
             },
             {
                 'label': 'Pod Capacity',
-                'value': f"{int(capacity_summary['pods']['capacity'])} pods",
+                'value': f'{int(capacity_summary["pods"]["capacity"])} pods',
                 'caption': 'Ready worker nodes only',
                 'footer': '',
                 'icon': 'box',
@@ -628,7 +653,7 @@ class CapacityService(AnalyticsBaseService):
             },
             {
                 'label': 'Configured Requests',
-                'display': (f'{safe_round(requests)} cores ' f'({safe_round(raw_percent(requests, allocatable), 1)}%)'),
+                'display': (f'{safe_round(requests)} cores ({safe_round(raw_percent(requests, allocatable), 1)}%)'),
                 'percent': safe_percent(
                     requests,
                     allocatable,
@@ -637,7 +662,7 @@ class CapacityService(AnalyticsBaseService):
             },
             {
                 'label': 'Configured Limits',
-                'display': (f'{safe_round(limits)} cores ' f'({safe_round(raw_percent(limits, allocatable), 1)}%)'),
+                'display': (f'{safe_round(limits)} cores ({safe_round(raw_percent(limits, allocatable), 1)}%)'),
                 'percent': safe_percent(
                     limits,
                     allocatable,
@@ -646,7 +671,7 @@ class CapacityService(AnalyticsBaseService):
             },
             {
                 'label': 'Actual Avg Usage',
-                'display': (f'{safe_round(actual)} cores ' f'({safe_round(raw_percent(actual, allocatable), 1)}%)'),
+                'display': (f'{safe_round(actual)} cores ({safe_round(raw_percent(actual, allocatable), 1)}%)'),
                 'percent': safe_percent(
                     actual,
                     allocatable,
@@ -655,7 +680,7 @@ class CapacityService(AnalyticsBaseService):
             },
             {
                 'label': 'Peak Usage',
-                'display': (f'{safe_round(peak)} cores ' f'({safe_round(raw_percent(peak, allocatable), 1)}%)'),
+                'display': (f'{safe_round(peak)} cores ({safe_round(raw_percent(peak, allocatable), 1)}%)'),
                 'percent': safe_percent(
                     peak,
                     allocatable,
@@ -694,8 +719,7 @@ class CapacityService(AnalyticsBaseService):
             {
                 'label': 'Configured Limits',
                 'display': (
-                    f'{bytes_to_gib(limits_bytes)} GiB '
-                    f'({safe_round(raw_percent(limits_bytes, allocatable_bytes), 1)}%)'
+                    f'{bytes_to_gib(limits_bytes)} GiB ({safe_round(raw_percent(limits_bytes, allocatable_bytes), 1)}%)'
                 ),
                 'percent': safe_percent(
                     limits_bytes,
@@ -706,8 +730,7 @@ class CapacityService(AnalyticsBaseService):
             {
                 'label': 'Actual Avg Usage',
                 'display': (
-                    f'{bytes_to_gib(actual_bytes)} GiB '
-                    f'({safe_round(raw_percent(actual_bytes, allocatable_bytes), 1)}%)'
+                    f'{bytes_to_gib(actual_bytes)} GiB ({safe_round(raw_percent(actual_bytes, allocatable_bytes), 1)}%)'
                 ),
                 'percent': safe_percent(
                     actual_bytes,
@@ -718,7 +741,7 @@ class CapacityService(AnalyticsBaseService):
             {
                 'label': 'Peak Usage',
                 'display': (
-                    f'{bytes_to_gib(peak_bytes)} GiB ' f'({safe_round(raw_percent(peak_bytes, allocatable_bytes), 1)}%)'
+                    f'{bytes_to_gib(peak_bytes)} GiB ({safe_round(raw_percent(peak_bytes, allocatable_bytes), 1)}%)'
                 ),
                 'percent': safe_percent(
                     peak_bytes,
@@ -743,9 +766,7 @@ class CapacityService(AnalyticsBaseService):
             },
             {
                 'label': 'Current Pods',
-                'display': (
-                    f'{safe_round(current, 0):.0f} pods ' f'({safe_round(raw_percent(current, capacity), 1)}%)'
-                ),
+                'display': (f'{safe_round(current, 0):.0f} pods ({safe_round(raw_percent(current, capacity), 1)}%)'),
                 'percent': safe_percent(
                     current,
                     capacity,
@@ -755,7 +776,7 @@ class CapacityService(AnalyticsBaseService):
             {
                 'label': 'Remaining Pod Slots',
                 'display': (
-                    f'{safe_round(remaining, 0):.0f} pods ' f'({safe_round(raw_percent(remaining, capacity), 1)}%)'
+                    f'{safe_round(remaining, 0):.0f} pods ({safe_round(raw_percent(remaining, capacity), 1)}%)'
                 ),
                 'percent': safe_percent(
                     remaining,
@@ -846,11 +867,7 @@ class CapacityService(AnalyticsBaseService):
         ):
             return 'critical'
 
-        if (
-            'near capacity' in normalized_label
-            or 'high usage' in normalized_label
-            or 'watch' in normalized_label
-        ):
+        if 'near capacity' in normalized_label or 'high usage' in normalized_label or 'watch' in normalized_label:
             return 'warning'
 
         if 'healthy' in normalized_label:
@@ -892,7 +909,7 @@ class CapacityService(AnalyticsBaseService):
         if low_headroom:
             findings.append(
                 {
-                    'label': ('Low capacity headroom detected on ' f"{', '.join(low_headroom)}"),
+                    'label': (f'Low capacity headroom detected on {", ".join(low_headroom)}'),
                     'severity': 'critical',
                     'icon': 'circle-alert',
                     'filter': 'capacity-headroom',

@@ -6,9 +6,9 @@ from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import cm
 from reportlab.platypus import Paragraph, Spacer
 
-from app.intelligence.recommendation_engine import build_utilization_actionable_recommendations
 from app.analytics.utilization.service import UtilizationService
 from app.analytics.utilization.service import get_selected_cluster as get_utilization_selected_cluster
+from app.intelligence.recommendation_engine import build_utilization_actionable_recommendations
 from app.models.report import Report
 from app.prometheus.service import PrometheusService
 from app.reports.export.helpers import (

@@ -21,8 +21,8 @@ from kubernetes.client import (
     V1StorageClassList,
     VersionApi,
 )
-from kubernetes.client.models.version_info import VersionInfo
 from kubernetes.client.exceptions import ApiException, NotFoundException
+from kubernetes.client.models.version_info import VersionInfo
 
 
 def get_cluster_version(

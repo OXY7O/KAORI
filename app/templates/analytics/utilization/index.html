@@ -39,7 +39,7 @@
         {% set analytics_load_complete_description = 'All utilization sections have finished loading.' %}
         {% include "analytics/partials/_load_tracker.html" %}
 
-        {% if error %}
+        {% if error and not dependency_blocker %}
             <div class="rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm dark:border-amber-500/20 dark:bg-amber-500/10">
                 <div class="flex items-start gap-3">
                     <i data-lucide="triangle-alert" class="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-300"></i>

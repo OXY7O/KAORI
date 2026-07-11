@@ -279,6 +279,10 @@
                     <div class="app-content-shell">
                         {% if cluster_onboarding.show_banner %}
                             {% include "components/cluster/_onboarding_banner.html" %}
+                        {% elif dependency_blocker is defined and dependency_blocker %}
+                            <div class="mb-6">
+                                {% include "components/dependencies/_blocker.html" %}
+                            </div>
                         {% endif %}
                         {% block dashboard_content %}
                         {% endblock dashboard_content %}

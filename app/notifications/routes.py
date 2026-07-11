@@ -10,7 +10,6 @@ from app.notifications.service import (
     mark_notification_read,
 )
 
-
 notifications_bp = Blueprint(
     'notifications',
     __name__,

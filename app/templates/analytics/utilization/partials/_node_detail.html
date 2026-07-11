@@ -33,7 +33,7 @@
     </div>
 {% endmacro %}
 
-{% if error %}
+{% if cluster_onboarding.has_clusters and error %}
     <div class="m-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300">
         {{ error }}
     </div>

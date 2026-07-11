@@ -15,6 +15,7 @@ from app.analytics.common.params import (
 )
 from app.analytics.top_consumers import queries
 from app.analytics.utilization.service import UtilizationService
+from app.common.dependencies import prometheus_connection_blocker
 from app.intelligence.recommendation_engine import (
     build_top_consumers_actionable_recommendations,
     count_actionable_recommendations,
@@ -1160,11 +1161,10 @@ class TopConsumersService(AnalyticsBaseService):
         )
 
 
-
 def get_top_consumers_context(
     query_args: Mapping[str, Any],
 ) -> dict[str, Any]:
-    _, _, utilization_service, context = build_analysis_utilization_context(
+    _, cluster, utilization_service, context = build_analysis_utilization_context(
         query_args=query_args,
     )
 
@@ -1229,7 +1229,7 @@ def get_top_consumers_context(
         }
     )
 
-    if utilization_service is None:
+    if utilization_service is None or cluster is None:
         return context
 
     top_consumers_service = TopConsumersService(
@@ -1265,6 +1265,13 @@ def get_top_consumers_context(
         'connected',
         False,
     ):
+        context['dependency_blocker'] = prometheus_connection_blocker(
+            cluster,
+            detail=safe_message(
+                value=prometheus_status.get('error'),
+                default='Prometheus health check did not complete successfully.',
+            ),
+        )
         context['consumer_payload'] = get_empty_top_consumers_payload(
             message=safe_message(
                 value=prometheus_status.get(

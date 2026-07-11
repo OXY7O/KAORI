@@ -6,7 +6,6 @@ from importlib import import_module
 from typing import Any
 from urllib.parse import quote
 
-from app.intelligence.recommendation_engine import build_dashboard_recommendations
 from app.dashboard.schema import (
     AlertItem,
     AlertsSnapshot,
@@ -27,6 +26,7 @@ from app.dashboard.schema import (
     ReportItem,
     TopConsumersSnapshot,
 )
+from app.intelligence.recommendation_engine import build_dashboard_recommendations
 
 try:
     from app.extensions import db

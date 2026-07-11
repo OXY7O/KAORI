@@ -30,14 +30,14 @@
     'reports.run_schedule',
 ] %}
 {% set storage_active = endpoint in ['reports.storage', 'reports.storage_alias'] %}
-<details class="sidebar-menu space-y-1" open>
+<details class="sidebar-menu space-y-1" {% if reports_active %}open{% endif %}>
     <summary class="{{ 'bg-blue-600/15 text-blue-300 ring-1 ring-blue-500/20' if reports_active else 'text-slate-300 hover:bg-slate-900 hover:text-white' }} sidebar-parent-link group flex cursor-pointer select-none items-center justify-between rounded-2xl px-3 py-3 text-[13px] font-semibold leading-5">
-        <span class="flex min-w-0 items-center gap-3">
+        <div class="flex min-w-0 items-center gap-3">
             <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl {{ 'bg-blue-600 text-white shadow-lg shadow-blue-600/25' if reports_active else 'bg-slate-900 text-slate-400 group-hover:bg-slate-800 group-hover:text-white' }} transition">
                 <i data-lucide="file-bar-chart" class="h-4 w-4"></i>
             </span>
             <span class="sidebar-expanded-only truncate whitespace-nowrap text-[13px] leading-5">Reports</span>
-        </span>
+        </div>
         <i data-lucide="chevron-right"
            class="sidebar-expanded-only sidebar-menu-chevron h-4 w-4 {{ 'text-blue-300' if reports_active else 'text-slate-500' }}"></i>
     </summary>

@@ -1,5 +1,4 @@
 from flask import Blueprint, redirect, render_template, request, url_for
-from app.rbac.decorators import permission_required
 
 from app.analytics.alerts.routes import (
     alerts,
@@ -32,6 +31,7 @@ from app.analytics.workload.routes import (
     workload_resource_mapping,
     workload_tenant_quota,
 )
+from app.rbac.decorators import permission_required
 
 analytics_bp = Blueprint(
     'analytics',
