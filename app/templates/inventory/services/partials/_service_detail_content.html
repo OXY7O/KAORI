@@ -1,25 +1,19 @@
-{% from 'inventory/components/_detail_macros.html' import detail_shell, detail_card, detail_row, metric_tile %}
-{% call detail_shell('Service networking and exposure detail', 'Scope, service type, network endpoints, and lifecycle timestamps for the selected Kubernetes Service.', 'network', 'bg-teal-100 text-teal-700 dark:bg-teal-500/10 dark:text-teal-300') %}
-    {% call detail_card('Service identity', 'network', 'bg-teal-100 text-teal-700 dark:bg-teal-500/10 dark:text-teal-300') %}
-        <dl class="space-y-3">
-            {{ detail_row('Cluster', service.cluster_name) }}
-            {{ detail_row('Namespace', service.namespace) }}
-            {{ detail_row('Service', service.service_name) }}
-            {{ detail_row('Type', service.service_type) }}
-        </dl>
+{% from 'inventory/components/_detail_macros.html' import detail_shell, detail_card, detail_row %}
+{% call detail_shell('Service detail overview', 'Simple summary of service scope, exposure type, and network endpoints.', 'network', 'bg-teal-50 text-teal-700 dark:bg-teal-500/10 dark:text-teal-300') %}
+    {% call detail_card('Overview', 'network', 'bg-teal-50 text-teal-700 dark:bg-teal-500/10 dark:text-teal-300') %}
+        {{ detail_row('Cluster', service.cluster_name) }}
+        {{ detail_row('Namespace', service.namespace) }}
+        {{ detail_row('Service', service.service_name) }}
+        {{ detail_row('Type', service.service_type) }}
     {% endcall %}
-    {% call detail_card('Network endpoints', 'globe', 'bg-cyan-100 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300') %}
-        <dl class="space-y-3">
-            {{ detail_row('Cluster IP', service.cluster_ip, mono=True) }}
-            {{ detail_row('External IP', service.external_ip, mono=True) }}
-            {{ detail_row('Ports', service.ports) }}
-        </dl>
+    {% call detail_card('Endpoints', 'globe', 'bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300') %}
+        {{ detail_row('Cluster IP', service.cluster_ip, mono=True) }}
+        {{ detail_row('External IP', service.external_ip, mono=True) }}
+        {{ detail_row('Ports', service.ports) }}
     {% endcall %}
-    {% call detail_card('Lifecycle context', 'clock-3', 'bg-violet-100 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300') %}
-        <dl class="space-y-3">
-            {{ detail_row('Age', service.age) }}
-            {{ detail_row('Created at', service.created_at.strftime('%Y-%m-%d %H:%M:%S') if service.created_at else '-') }}
-            {{ detail_row('Collected at', service.collected_at.strftime('%Y-%m-%d %H:%M:%S') if service.collected_at else '-') }}
-        </dl>
+    {% call detail_card('Lifecycle', 'clock-3', 'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300') %}
+        {{ detail_row('Age', service.age) }}
+        {{ detail_row('Created at', service.created_at.strftime('%Y-%m-%d %H:%M:%S') if service.created_at else '-') }}
+        {{ detail_row('Collected at', service.collected_at.strftime('%Y-%m-%d %H:%M:%S') if service.collected_at else '-') }}
     {% endcall %}
 {% endcall %}

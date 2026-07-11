@@ -1,24 +1,20 @@
 {% from 'inventory/components/_detail_macros.html' import detail_shell, detail_card, detail_row, metric_tile %}
-{% call detail_shell('Workload identity and lifecycle detail', 'Additional information about the selected workload including scope, readiness posture, and lifecycle timestamps.', 'box', 'bg-orange-100 text-orange-700 dark:bg-orange-500/10 dark:text-orange-300') %}
-    {% call detail_card('Workload identity', 'badge-info', 'bg-orange-100 text-orange-700 dark:bg-orange-500/10 dark:text-orange-300') %}
-        <dl class="space-y-3">
-            {{ detail_row('Cluster', workload.cluster_name) }}
-            {{ detail_row('Namespace', workload.namespace) }}
-            {{ detail_row('Workload', workload.name) }}
-            {{ detail_row('Type', workload.type) }}
-        </dl>
+{% call detail_shell('Workload detail overview', 'Summary of workload scope, replica readiness, and lifecycle information.', 'boxes', 'bg-orange-50 text-orange-700 dark:bg-orange-500/10 dark:text-orange-300') %}
+    {% call detail_card('Overview', 'badge-info', 'bg-orange-50 text-orange-700 dark:bg-orange-500/10 dark:text-orange-300') %}
+        {{ detail_row('Cluster', workload.cluster_name) }}
+        {{ detail_row('Namespace', workload.namespace) }}
+        {{ detail_row('Workload', workload.name) }}
+        {{ detail_row('Type', workload.type) }}
     {% endcall %}
-    {% call detail_card('Replica and status posture', 'activity', 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300') %}
+    {% call detail_card('Status', 'activity', 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300') %}
         <div class="grid gap-3 sm:grid-cols-2">
-            {{ metric_tile('Ready', workload.ready, 'check', 'bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300') }}
-            {{ metric_tile('Status', workload.status, 'pulse', 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300') }}
+            {{ metric_tile('Ready', workload.ready, 'check', 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300') }}
+            {{ metric_tile('Status', workload.status, 'pulse', 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300') }}
         </div>
     {% endcall %}
-    {% call detail_card('Lifecycle context', 'clock-3', 'bg-violet-100 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300') %}
-        <dl class="space-y-3">
-            {{ detail_row('Age', workload.age) }}
-            {{ detail_row('Created at', workload.created_at.strftime('%Y-%m-%d %H:%M:%S') if workload.created_at else '-') }}
-            {{ detail_row('Collected at', workload.collected_at.strftime('%Y-%m-%d %H:%M:%S') if workload.collected_at else '-') }}
-        </dl>
+    {% call detail_card('Lifecycle', 'clock-3', 'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300') %}
+        {{ detail_row('Age', workload.age) }}
+        {{ detail_row('Created at', workload.created_at.strftime('%Y-%m-%d %H:%M:%S') if workload.created_at else '-') }}
+        {{ detail_row('Collected at', workload.collected_at.strftime('%Y-%m-%d %H:%M:%S') if workload.collected_at else '-') }}
     {% endcall %}
 {% endcall %}

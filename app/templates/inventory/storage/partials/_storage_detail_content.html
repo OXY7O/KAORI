@@ -1,25 +1,19 @@
-{% from 'inventory/components/_detail_macros.html' import detail_shell, detail_card, detail_row, metric_tile %}
-{% call detail_shell('Storage scope and claim detail', 'Additional storage metadata for the selected StorageClass, PersistentVolume, or PersistentVolumeClaim.', 'database', 'bg-lime-100 text-lime-700 dark:bg-lime-500/10 dark:text-lime-300') %}
-    {% call detail_card('Storage identity', 'database', 'bg-lime-100 text-lime-700 dark:bg-lime-500/10 dark:text-lime-300') %}
-        <dl class="space-y-3">
-            {{ detail_row('Cluster', item.cluster_name) }}
-            {{ detail_row('Namespace scope', item.namespace) }}
-            {{ detail_row('Name', item.name) }}
-            {{ detail_row('Type', item.type) }}
-        </dl>
+{% from 'inventory/components/_detail_macros.html' import detail_shell, detail_card, detail_row %}
+{% call detail_shell('Storage detail overview', 'Simple summary of storage scope, capacity, and lifecycle metadata.', 'database', 'bg-lime-50 text-lime-700 dark:bg-lime-500/10 dark:text-lime-300') %}
+    {% call detail_card('Overview', 'database', 'bg-lime-50 text-lime-700 dark:bg-lime-500/10 dark:text-lime-300') %}
+        {{ detail_row('Cluster', item.cluster_name) }}
+        {{ detail_row('Namespace scope', item.namespace) }}
+        {{ detail_row('Name', item.name) }}
+        {{ detail_row('Type', item.type) }}
     {% endcall %}
-    {% call detail_card('Capacity and binding posture', 'hard-drive', 'bg-sky-100 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300') %}
-        <dl class="space-y-3">
-            {{ detail_row('Storage class', item.storage_class) }}
-            {{ detail_row('Capacity', item.capacity) }}
-            {{ detail_row('Status', item.status) }}
-        </dl>
+    {% call detail_card('Capacity and status', 'hard-drive', 'bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300') %}
+        {{ detail_row('Storage class', item.storage_class) }}
+        {{ detail_row('Capacity', item.capacity) }}
+        {{ detail_row('Status', item.status) }}
     {% endcall %}
-    {% call detail_card('Lifecycle context', 'clock-3', 'bg-violet-100 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300') %}
-        <dl class="space-y-3">
-            {{ detail_row('Age', item.age) }}
-            {{ detail_row('Created at', item.created_at.strftime('%Y-%m-%d %H:%M:%S') if item.created_at else '-') }}
-            {{ detail_row('Collected at', item.collected_at.strftime('%Y-%m-%d %H:%M:%S') if item.collected_at else '-') }}
-        </dl>
+    {% call detail_card('Lifecycle', 'clock-3', 'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300') %}
+        {{ detail_row('Age', item.age) }}
+        {{ detail_row('Created at', item.created_at.strftime('%Y-%m-%d %H:%M:%S') if item.created_at else '-') }}
+        {{ detail_row('Collected at', item.collected_at.strftime('%Y-%m-%d %H:%M:%S') if item.collected_at else '-') }}
     {% endcall %}
 {% endcall %}
