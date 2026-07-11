@@ -10,6 +10,7 @@ from app.notifications.service import (
     mark_all_notifications_read,
     mark_notification_read,
 )
+from app.rbac.decorators import permission_required
 
 notifications_bp = Blueprint(
     'notifications',
@@ -50,10 +51,10 @@ def panel() -> ResponseReturnValue:
 
 
 @notifications_bp.get('/activity')
-@login_required
+@permission_required('settings.view_operational_activity')
 def activity_log() -> ResponseReturnValue:
     context = get_notification_activity_context(
-        user_id=current_user.id,
+        user_id=_request_int('user_id', 0) or None,
         page=_request_int('page', 1),
         per_page=_request_int('per_page', 5),
         status=request.args.get('status', 'all'),

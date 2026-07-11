@@ -1,123 +1,38 @@
-<div class="border-t border-slate-200 bg-slate-50/70 px-4 py-3 dark:border-slate-700 dark:bg-slate-900/30">
-    <div class="grid gap-3 lg:grid-cols-3">
-        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/80">
-            <div class="mb-3 flex items-center gap-2">
-                <span class="inline-flex h-7 w-7 items-center justify-center rounded-xl bg-teal-100 text-teal-700 dark:bg-teal-500/10 dark:text-teal-300">
-                    <i data-lucide="map-pin" class="h-3.5 w-3.5"></i>
-                </span>
-                <h4 class="text-sm font-semibold text-slate-900 dark:text-white">Exposure Detail</h4>
-            </div>
-            <div class="space-y-2 text-sm">
-                <div class="flex items-center justify-between gap-3">
-                    <span class="text-slate-500 dark:text-slate-400">Address</span>
-                    <span class="inline-flex max-w-[70%] items-center gap-1 rounded-full bg-teal-100 px-2.5 py-1 text-[11px] font-medium text-teal-700 dark:bg-teal-500/10 dark:text-teal-300"
-                          title="{{ ingress.address }}">
-                        <i data-lucide="map-pin" class="h-3 w-3 shrink-0"></i>
-                        <span class="break-all text-right">{{ ingress.address }}</span>
-                    </span>
-                </div>
-                <div class="flex items-center justify-between gap-3">
-                    <span class="text-slate-500 dark:text-slate-400">TLS</span>
-                    {% if ingress.tls %}
-                        <span class="inline-flex rounded-full bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700 dark:bg-green-500/10 dark:text-green-300">Enabled</span>
-                    {% else %}
-                        <span class="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-300">Not configured</span>
-                    {% endif %}
-                </div>
-                <div class="flex items-center justify-between gap-3">
-                    <span class="text-slate-500 dark:text-slate-400">Class</span>
-                    <span class="inline-flex rounded-full bg-purple-100 px-2.5 py-1 text-[11px] font-medium text-purple-700 dark:bg-purple-500/10 dark:text-purple-300">{{ ingress.class }}</span>
-                </div>
-                <div class="flex items-start justify-between gap-3">
-                    <span class="pt-1 text-slate-500 dark:text-slate-400">Location</span>
-                    <span class="inline-flex max-w-[75%] items-center gap-1 rounded-full bg-indigo-100 px-2.5 py-1 text-[11px] font-medium text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300"
-                          title="{{ ingress.cluster_name }} / {{ ingress.namespace }}">
-                        <i data-lucide="map" class="h-3 w-3 shrink-0"></i>
-                        <span class="break-all text-right">{{ ingress.cluster_name }} / {{ ingress.namespace }}</span>
-                    </span>
-                </div>
-            </div>
-        </div>
-        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/80">
-            <div class="mb-3 flex items-center gap-2">
-                <span class="inline-flex h-7 w-7 items-center justify-center rounded-xl bg-violet-100 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300">
-                    <i data-lucide="git-branch" class="h-3.5 w-3.5"></i>
-                </span>
-                <h4 class="text-sm font-semibold text-slate-900 dark:text-white">Service Paths</h4>
-            </div>
-            <div class="mb-3 flex flex-wrap gap-1.5">
-                <span class="rounded-full bg-violet-100 px-2.5 py-1 text-[11px] font-medium text-violet-700 dark:bg-violet-500/10 dark:text-violet-300">
-                    {{ ingress.backend_count }} path{{ 's' if ingress.backend_count != 1 else '' }}
-                </span>
-                <span class="rounded-full bg-sky-100 px-2.5 py-1 text-[11px] font-medium text-sky-700 dark:bg-sky-500/10 dark:text-sky-300">
-                    {{ ingress.service_count }} service{{ 's' if ingress.service_count != 1 else '' }}
-                </span>
-            </div>
+{% from "inventory/components/_detail_macros.html" import shell, card, row, badge %}
+{% call shell('Ingress detail', ingress.name, 'route') %}
+    {% call card('Exposure Detail', 'map-pin', 'teal') %}
+        {% call row('Address') %}{{ badge(ingress.address, 'teal', 'map-pin') }}{% endcall %}
+        {% call row('TLS') %}{% if ingress.tls %}{{ badge('Enabled', 'emerald', 'lock-keyhole') }}{% else %}{{ badge('Not configured', 'slate', 'lock-keyhole-open') }}{% endif %}{% endcall %}
+        {% call row('Class') %}{{ badge(ingress.class, 'violet', 'layers') }}{% endcall %}
+        {% call row('Location') %}{{ badge(ingress.cluster_name ~ ' / ' ~ ingress.namespace, 'blue', 'map') }}{% endcall %}
+    {% endcall %}
+
+    {% call card('Service Paths', 'git-branch', 'violet') %}
+        {% call row('Path Count') %}{{ badge(ingress.backend_count, 'violet', 'route') }}{% endcall %}
+        {% call row('Service Count') %}{{ badge(ingress.service_count, 'cyan', 'network') }}{% endcall %}
+        <div class="max-h-44 space-y-2 overflow-y-auto rounded-xl bg-slate-50 p-2.5 dark:bg-slate-800/70">
             {% if ingress.backend_paths %}
-                <div class="max-h-44 space-y-2 overflow-y-auto pr-1">
-                    {% for backend in ingress.backend_paths %}
-                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-2 dark:border-slate-700 dark:bg-slate-800/70">
-                            <div class="mb-1 flex flex-wrap gap-1.5">
-                                <span class="inline-flex max-w-full items-center gap-1 rounded-full bg-cyan-100 px-2 py-0.5 text-[11px] font-medium text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300"
-                                      title="{{ backend.host }}">
-                                    <i data-lucide="globe-2" class="h-3 w-3 shrink-0"></i>
-                                    <span class="break-all">{{ backend.host }}</span>
-                                </span>
-                                <span class="inline-flex max-w-full items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[11px] font-medium text-violet-700 dark:bg-violet-500/10 dark:text-violet-300"
-                                      title="{{ backend.path }}">
-                                    <i data-lucide="route" class="h-3 w-3 shrink-0"></i>
-                                    <span class="break-all">{{ backend.path }}</span>
-                                </span>
-                            </div>
-                            <div class="flex flex-wrap gap-1.5">
-                                <span class="inline-flex max-w-full items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"
-                                      title="{{ backend.service_name }}">
-                                    <i data-lucide="network" class="h-3 w-3 shrink-0"></i>
-                                    <span class="break-all">{{ backend.service_name }}</span>
-                                </span>
-                                <span class="inline-flex rounded-full bg-orange-100 px-2 py-0.5 text-[11px] font-medium text-orange-700 dark:bg-orange-500/10 dark:text-orange-300">
-                                    port {{ backend.service_port }}
-                                </span>
-                                <span class="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-300">
-                                    {{ backend.path_type }}
-                                </span>
-                            </div>
+                {% for backend in ingress.backend_paths %}
+                    <div class="rounded-xl border border-slate-200 bg-white p-2.5 dark:border-slate-700 dark:bg-slate-900/70">
+                        <div class="flex flex-wrap gap-1.5">
+                            {{ badge(backend.host, 'cyan', 'globe-2') }}
+                            {{ badge(backend.path, 'violet', 'route') }}
+                            {{ badge(backend.service_name, 'emerald', 'network') }}
+                            {{ badge('port ' ~ backend.service_port, 'amber', 'plug-zap') }}
+                            {{ badge(backend.path_type, 'slate') }}
                         </div>
-                    {% endfor %}
-                </div>
+                    </div>
+                {% endfor %}
             {% else %}
-                <div class="text-sm text-slate-400 dark:text-slate-500">No backend service paths recorded. Re-sync inventory after applying the collector update.</div>
+                <p class="text-xs leading-5 text-slate-400">No backend service paths recorded. Re-sync inventory after collector updates.</p>
             {% endif %}
         </div>
-        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/80">
-            <div class="mb-3 flex items-center gap-2">
-                <span class="inline-flex h-7 w-7 items-center justify-center rounded-xl bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300">
-                    <i data-lucide="clock-3" class="h-3.5 w-3.5"></i>
-                </span>
-                <h4 class="text-sm font-semibold text-slate-900 dark:text-white">Lifecycle</h4>
-            </div>
-            <div class="space-y-2 text-sm">
-                <div class="flex items-center justify-between gap-3">
-                    <span class="text-slate-500 dark:text-slate-400">Age</span>
-                    <span class="inline-flex rounded-full bg-violet-100 px-2.5 py-1 text-[11px] font-medium text-violet-700 dark:bg-violet-500/10 dark:text-violet-300">{{ ingress.age }}</span>
-                </div>
-                <div class="flex items-center justify-between gap-3">
-                    <span class="text-slate-500 dark:text-slate-400">Created</span>
-                    <span class="text-right text-xs font-semibold text-slate-700 dark:text-slate-200">
-                        {{ ingress.created_at.strftime("%Y-%m-%d %H:%M:%S") if ingress.created_at else '-' }}
-                    </span>
-                </div>
-                <div class="flex items-center justify-between gap-3">
-                    <span class="text-slate-500 dark:text-slate-400">Collected</span>
-                    <span class="text-right text-xs font-semibold text-slate-700 dark:text-slate-200">
-                        {{ ingress.collected_at.strftime("%Y-%m-%d %H:%M:%S") if ingress.collected_at else '-' }}
-                    </span>
-                </div>
-                <div class="flex items-center justify-between gap-3">
-                    <span class="text-slate-500 dark:text-slate-400">Hosts</span>
-                    <span class="font-semibold text-slate-700 dark:text-slate-200">{{ ingress.host_count }}</span>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+    {% endcall %}
+
+    {% call card('Lifecycle', 'clock-3', 'violet') %}
+        {% call row('Age') %}{{ badge(ingress.age, 'violet', 'timer') }}{% endcall %}
+        {% call row('Created') %}<span>{{ ingress.created_at|user_datetime('%d %b %Y %H:%M %Z') }}</span>{% endcall %}
+        {% call row('Collected') %}<span>{{ ingress.collected_at|user_datetime('%d %b %Y %H:%M %Z') }}</span>{% endcall %}
+        {% call row('Hosts') %}{{ badge(ingress.host_count, 'blue', 'globe-2') }}{% endcall %}
+    {% endcall %}
+{% endcall %}

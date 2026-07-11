@@ -55,7 +55,7 @@
                             </div>
                         </div>
                         <p class="mt-3 text-xs leading-5 text-blue-50/75">
-                            {{ record.not_after.strftime('%Y-%m-%d %H:%M UTC') if record.not_after else 'Certificate expiry is unavailable.' }}
+                            {{ record.not_after|user_datetime('%Y-%m-%d %H:%M %Z', 'Certificate expiry is unavailable.') }}
                         </p>
                     </div>
                     <div class="grid grid-cols-2 gap-2">
@@ -89,7 +89,7 @@
                     <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-600 dark:bg-cyan-500/10 dark:text-cyan-300"><i data-lucide="calendar-clock" class="h-5 w-5"></i></div>
                     <div>
                         <p class="text-xs font-bold uppercase tracking-wide text-slate-400">Valid From</p>
-                        <p class="mt-1 text-sm font-bold text-slate-900 dark:text-white">{{ record.not_before.strftime('%Y-%m-%d') if record.not_before else 'N/A' }}</p>
+                        <p class="mt-1 text-sm font-bold text-slate-900 dark:text-white">{{ record.not_before|user_date('%Y-%m-%d', 'N/A') }}</p>
                     </div>
                 </div>
             </div>
@@ -194,8 +194,8 @@
                         </div>
                     </div>
                     <dl class="mt-5 space-y-3">
-                        <div class="flex items-center justify-between gap-4 rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/40"><dt class="text-xs font-bold uppercase tracking-wide text-slate-400">Valid From</dt><dd class="text-right text-sm font-semibold text-slate-800 dark:text-slate-100">{{ record.not_before.strftime('%Y-%m-%d %H:%M UTC') if record.not_before else 'N/A' }}</dd></div>
-                        <div class="flex items-center justify-between gap-4 rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/40"><dt class="text-xs font-bold uppercase tracking-wide text-slate-400">Expires At</dt><dd class="text-right text-sm font-semibold text-slate-800 dark:text-slate-100">{{ record.not_after.strftime('%Y-%m-%d %H:%M UTC') if record.not_after else 'N/A' }}</dd></div>
+                        <div class="flex items-center justify-between gap-4 rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/40"><dt class="text-xs font-bold uppercase tracking-wide text-slate-400">Valid From</dt><dd class="text-right text-sm font-semibold text-slate-800 dark:text-slate-100">{{ record.not_before|user_datetime('%Y-%m-%d %H:%M %Z', 'N/A') }}</dd></div>
+                        <div class="flex items-center justify-between gap-4 rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/40"><dt class="text-xs font-bold uppercase tracking-wide text-slate-400">Expires At</dt><dd class="text-right text-sm font-semibold text-slate-800 dark:text-slate-100">{{ record.not_after|user_datetime('%Y-%m-%d %H:%M %Z', 'N/A') }}</dd></div>
                         <div class="flex items-center justify-between gap-4 rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/40"><dt class="text-xs font-bold uppercase tracking-wide text-slate-400">Remaining</dt><dd class="text-right text-sm font-semibold text-slate-800 dark:text-slate-100">{{ record.days_remaining if record.days_remaining is not none else 'N/A' }} days</dd></div>
                     </dl>
                 </div>

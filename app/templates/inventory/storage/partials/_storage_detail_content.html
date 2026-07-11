@@ -1,0 +1,25 @@
+{% from "inventory/components/_detail_macros.html" import shell, card, row, badge %}
+{% call shell('Storage detail', storage.name, 'database') %}
+    {% call card('Storage Identity', 'database', 'blue') %}
+        {% call row('Name') %}<span class="break-all">{{ storage.name }}</span>{% endcall %}
+        {% call row('Type') %}{{ badge(storage.type, 'blue', 'hard-drive') }}{% endcall %}
+        {% call row('Cluster') %}{{ badge(storage.cluster_name, 'blue', 'server') }}{% endcall %}
+        {% call row('Scope') %}{{ badge(storage.namespace, 'violet', 'folder-tree') }}{% endcall %}
+    {% endcall %}
+
+    {% call card('Capacity & Binding', 'gauge', 'emerald') %}
+        {% call row('Storage Class') %}{{ badge(storage.storage_class, 'cyan', 'layers') }}{% endcall %}
+        {% call row('Capacity') %}{{ badge(storage.capacity, 'emerald', 'database-zap') }}{% endcall %}
+        {% call row('Status') %}
+            {% if storage.status in ['Bound', 'Available', 'Active'] %}{{ badge(storage.status, 'emerald', 'check-circle-2') }}{% elif storage.status in ['Pending', 'Released'] %}{{ badge(storage.status, 'amber', 'clock-3') }}{% else %}{{ badge(storage.status, 'slate', 'circle-help') }}{% endif %}
+        {% endcall %}
+        {% call row('Inventory ID') %}<span>#{{ storage.id }}</span>{% endcall %}
+    {% endcall %}
+
+    {% call card('Lifecycle', 'clock-3', 'violet') %}
+        {% call row('Age') %}{{ badge(storage.age, 'violet', 'timer') }}{% endcall %}
+        {% call row('Created') %}<span>{{ storage.created_at|user_datetime('%d %b %Y %H:%M %Z') }}</span>{% endcall %}
+        {% call row('Collected') %}<span>{{ storage.collected_at|user_datetime('%d %b %Y %H:%M %Z') }}</span>{% endcall %}
+        {% call row('Timezone') %}{{ badge(current_timezone, 'slate', 'globe-2') }}{% endcall %}
+    {% endcall %}
+{% endcall %}

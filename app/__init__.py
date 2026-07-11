@@ -11,6 +11,7 @@ from app.auth.routes import auth_bp
 from app.cluster.onboarding import build_cluster_onboarding_context
 from app.cluster.routes import cluster_bp
 from app.commands import register_commands
+from app.common.timezone import format_date, format_datetime, normalize_timezone_name
 from app.config import CONFIG_MAP
 from app.dashboard.routes import dashboard_bp
 from app.extensions import db, init_celery, limiter, login_manager, migrate, register_rate_limit_handlers
@@ -45,12 +46,29 @@ def create_app(config_name: str | None = None):
                 user_id=current_user.id,
             )
 
+        current_timezone = (
+            normalize_timezone_name(getattr(current_user, 'timezone', 'UTC'))
+            if current_user.is_authenticated
+            else 'UTC'
+        )
+
         return {
             'app_version': app.config['APP_VERSION'],
             'current_year': datetime.now().year,
+            'current_timezone': current_timezone,
             'load_navigation_notification_context': load_navigation_notification_context,
             'cluster_onboarding': build_cluster_onboarding_context(),
         }
+
+    @app.template_filter('user_datetime')
+    def user_datetime_filter(value, pattern='%d %b %Y %H:%M %Z', empty='-'):
+        timezone_name = getattr(current_user, 'timezone', 'UTC') if current_user.is_authenticated else 'UTC'
+        return format_datetime(value, timezone_name, pattern, empty)
+
+    @app.template_filter('user_date')
+    def user_date_filter(value, pattern='%d %b %Y', empty='-'):
+        timezone_name = getattr(current_user, 'timezone', 'UTC') if current_user.is_authenticated else 'UTC'
+        return format_date(value, timezone_name, pattern, empty)
 
     # Load configuration based on APP_ENV environment variable
     env = config_name or os.getenv('APP_ENV', 'development')

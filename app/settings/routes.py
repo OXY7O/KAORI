@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from math import ceil
 from typing import Any, cast
 
@@ -8,6 +9,11 @@ from flask_login import current_user, login_required
 from sqlalchemy.exc import IntegrityError
 
 from app.auth.forms import ChangePasswordForm
+from app.common.timezone import (
+    format_datetime,
+    normalize_timezone_name,
+    timezone_choices,
+)
 from app.extensions import db
 from app.models import AuthLoginEvent, Permission, Role, User
 from app.rbac.decorators import permission_required
@@ -117,6 +123,39 @@ def general():
     return render_template('settings/general/index.html')
 
 
+@bp.route('/time-locale', methods=['GET', 'POST'])
+@login_required
+def time_locale():
+    user = cast(User, current_user)
+    timezone_error = None
+    selected_timezone = normalize_timezone_name(user.timezone)
+
+    if request.method == 'POST':
+        requested_timezone = (request.form.get('timezone') or '').strip()
+        normalized_timezone = normalize_timezone_name(requested_timezone)
+
+        if not requested_timezone or normalized_timezone != requested_timezone:
+            timezone_error = 'Choose a valid IANA timezone from the available list.'
+            selected_timezone = requested_timezone or selected_timezone
+        else:
+            user.timezone = normalized_timezone
+            db.session.commit()
+            flash('Time preference saved.', 'success')
+            return redirect(url_for('settings.time_locale'))
+
+    return render_template(
+        'settings/time_locale/index.html',
+        selected_timezone=selected_timezone,
+        timezone_choices=timezone_choices(),
+        timezone_error=timezone_error,
+        current_time_display=format_datetime(
+            datetime.now(UTC),
+            selected_timezone,
+            '%d %b %Y %H:%M:%S %Z',
+        ),
+    )
+
+
 @bp.route('/account', methods=['GET', 'POST'])
 @login_required
 def account():
@@ -188,7 +227,9 @@ def account():
 def users():
     filters = normalize_user_filters(request.args.to_dict())
     payload = build_users_payload(filters, actor=cast(User, current_user))
-    template_name = 'settings/users/partials/_content.html' if request.headers.get('HX-Request') else 'settings/users/index.html'
+    template_name = (
+        'settings/users/partials/_content.html' if request.headers.get('HX-Request') else 'settings/users/index.html'
+    )
     return render_template(template_name, **payload)
 
 
@@ -320,7 +361,9 @@ def activate_user(user_id: int):
         return _redirect_to_users()
 
     set_user_active(user, True)
-    record_admin_event(actor=cast(User, current_user), action='user.activated', target=user, summary=f'Activated user {user.username}.')
+    record_admin_event(
+        actor=cast(User, current_user), action='user.activated', target=user, summary=f'Activated user {user.username}.'
+    )
     db.session.commit()
     flash('User activated successfully.', 'success')
     return _redirect_to_users()
@@ -340,7 +383,12 @@ def deactivate_user(user_id: int):
         return _redirect_to_users()
 
     set_user_active(user, False)
-    record_admin_event(actor=cast(User, current_user), action='user.deactivated', target=user, summary=f'Deactivated user {user.username}.')
+    record_admin_event(
+        actor=cast(User, current_user),
+        action='user.deactivated',
+        target=user,
+        summary=f'Deactivated user {user.username}.',
+    )
     db.session.commit()
     flash('User deactivated successfully.', 'success')
     return _redirect_to_users()
@@ -362,7 +410,12 @@ def reset_user_password(user_id: int):
     form = ResetPasswordForm()
     if form.validate_on_submit():
         user.set_password(form.password.data or '')
-        record_admin_event(actor=cast(User, current_user), action='user.password_reset', target=user, summary=f'Reset password for user {user.username}.')
+        record_admin_event(
+            actor=cast(User, current_user),
+            action='user.password_reset',
+            target=user,
+            summary=f'Reset password for user {user.username}.',
+        )
         db.session.commit()
         flash('Password reset successfully.', 'success')
         return _redirect_to_users()
@@ -384,7 +437,12 @@ def delete_user(user_id: int):
         return _redirect_to_users()
 
     soft_delete_user(user)
-    record_admin_event(actor=cast(User, current_user), action='user.deleted', target=user, summary=f'Soft deleted user {user.username}.')
+    record_admin_event(
+        actor=cast(User, current_user),
+        action='user.deleted',
+        target=user,
+        summary=f'Soft deleted user {user.username}.',
+    )
     db.session.commit()
     flash('User soft deleted successfully.', 'success')
     return _redirect_to_users()
@@ -418,7 +476,12 @@ def new_role():
         db.session.flush()
         selected_permission_ids = [int(value) for value in request.form.getlist('permission_ids')]
         replace_role_permissions(role, selected_permission_ids)
-        record_admin_event(actor=cast(User, current_user), action='role.created', target=role, summary=f'Created role {role.display_name}.')
+        record_admin_event(
+            actor=cast(User, current_user),
+            action='role.created',
+            target=role,
+            summary=f'Created role {role.display_name}.',
+        )
         db.session.commit()
         flash('Custom role created successfully.', 'success')
         return redirect(url_for('settings.roles'))
@@ -456,7 +519,12 @@ def edit_role(role_id: int):
             role.name = (form.name.data or role.name).strip().lower().replace(' ', '_')
             selected_permission_ids = {int(value) for value in request.form.getlist('permission_ids')}
             replace_role_permissions(role, selected_permission_ids)
-        record_admin_event(actor=cast(User, current_user), action='role.updated', target=role, summary=f'Updated role {role.display_name}.')
+        record_admin_event(
+            actor=cast(User, current_user),
+            action='role.updated',
+            target=role,
+            summary=f'Updated role {role.display_name}.',
+        )
         db.session.commit()
         flash('Role updated successfully.', 'success')
         return redirect(url_for('settings.roles'))
@@ -477,7 +545,9 @@ def permission_catalog():
     seed_default_rbac()
     permissions_by_module = get_permissions_grouped_by_module()
     roles_list = Role.query.order_by(Role.is_system.desc(), Role.display_name.asc()).all()
-    permissions = Permission.query.order_by(Permission.module.asc(), Permission.action.asc(), Permission.key.asc()).all()
+    permissions = Permission.query.order_by(
+        Permission.module.asc(), Permission.action.asc(), Permission.key.asc()
+    ).all()
     assignment_count = sum(len(permission.role_permissions) for permission in permissions)
 
     return render_template(

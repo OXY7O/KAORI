@@ -65,7 +65,7 @@
                 <div class="relative overflow-hidden rounded-xl bg-gradient-to-br from-indigo-700 via-blue-600 to-sky-500 px-4 py-3 text-white shadow-sm shadow-blue-500/20">
                     <div class="absolute -top-6 right-0 h-16 w-16 rounded-full bg-white/20 blur-2xl"></div>
                     <div class="relative text-xs uppercase tracking-wide text-blue-50/80">Latest sync</div>
-                    <div class="relative mt-1 text-lg font-semibold">{{ overview.last_sync_human or '-' }}</div>
+                    <div class="relative mt-1 text-lg font-semibold">{{ overview.health.last_sync|user_datetime('%d %b %Y %H:%M %Z') }}</div>
                     <div class="relative text-xs text-blue-50/80">most recent collection</div>
                 </div>
                 <div class="relative overflow-hidden rounded-xl bg-gradient-to-br from-cyan-600 via-blue-600 to-blue-800 px-4 py-3 text-white shadow-sm shadow-blue-500/20">

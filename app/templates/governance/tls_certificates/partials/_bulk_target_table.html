@@ -65,7 +65,7 @@
                         <td class="px-4 py-2 text-left align-middle">
                             {% if record.not_after %}
                                 <div class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ record.days_remaining }} days</div>
-                                <div class="mt-1 text-left text-xs text-slate-500 dark:text-slate-400">{{ record.not_after.strftime('%Y-%m-%d') }}</div>
+                                <div class="mt-1 text-left text-xs text-slate-500 dark:text-slate-400">{{ record.not_after|user_date('%Y-%m-%d') }}</div>
                             {% else %}
                                 <div class="font-semibold text-rose-600 dark:text-rose-300">Invalid</div>
                                 <div class="mt-1 max-w-[220px] truncate text-left text-xs text-slate-500 dark:text-slate-400" title="{{ record.parse_error or 'Unable to parse certificate' }}">{{ record.parse_error or 'Unable to parse certificate' }}</div>

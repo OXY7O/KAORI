@@ -1,0 +1,87 @@
+{% macro shell(title=None, subtitle=None, icon='panel-top') -%}
+<div class="border-t border-slate-200 bg-gradient-to-b from-slate-50 to-white px-4 py-4 dark:border-slate-700 dark:from-slate-900/60 dark:to-slate-900/20">
+    {% if title %}
+        <div class="mb-3 flex flex-col gap-3 rounded-2xl border border-blue-100 bg-blue-50/70 px-4 py-3 sm:flex-row sm:items-center sm:justify-between dark:border-blue-500/20 dark:bg-blue-500/5">
+            <div class="flex min-w-0 items-center gap-3">
+                <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm shadow-blue-500/20">
+                    <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+                </span>
+                <div class="min-w-0">
+                    <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-300">Inventory detail</p>
+                    <h3 class="truncate text-sm font-bold text-slate-900 dark:text-white">{{ title }}</h3>
+                </div>
+            </div>
+            {% if subtitle %}
+                <span class="inline-flex max-w-full items-center rounded-xl bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm dark:bg-slate-800 dark:text-slate-300">
+                    <span class="truncate" title="{{ subtitle }}">{{ subtitle }}</span>
+                </span>
+            {% endif %}
+        </div>
+    {% endif %}
+    <div class="grid gap-3 lg:grid-cols-3">
+        {{ caller() }}
+    </div>
+</div>
+{%- endmacro %}
+
+{% macro card(title, icon, tone='blue') -%}
+    {% if tone == 'teal' %}
+        {% set icon_class = 'bg-teal-100 text-teal-700 dark:bg-teal-500/10 dark:text-teal-300' %}
+    {% elif tone == 'violet' %}
+        {% set icon_class = 'bg-violet-100 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300' %}
+    {% elif tone == 'amber' %}
+        {% set icon_class = 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300' %}
+    {% elif tone == 'cyan' %}
+        {% set icon_class = 'bg-cyan-100 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300' %}
+    {% elif tone == 'emerald' %}
+        {% set icon_class = 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' %}
+    {% elif tone == 'rose' %}
+        {% set icon_class = 'bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300' %}
+    {% else %}
+        {% set icon_class = 'bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300' %}
+    {% endif %}
+    <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/80">
+        <div class="mb-3 flex items-center gap-2">
+            <span class="inline-flex h-8 w-8 items-center justify-center rounded-xl {{ icon_class }}">
+                <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+            </span>
+            <h4 class="text-sm font-bold text-slate-900 dark:text-white">{{ title }}</h4>
+        </div>
+        <div class="space-y-2.5 text-sm">
+            {{ caller() }}
+        </div>
+    </section>
+{%- endmacro %}
+
+{% macro row(label) -%}
+<div class="flex items-start justify-between gap-3 rounded-xl bg-slate-50 px-3 py-2.5 dark:bg-slate-800/70">
+    <span class="pt-0.5 text-xs font-semibold text-slate-500 dark:text-slate-400">{{ label }}</span>
+    <div class="min-w-0 max-w-[72%] text-right text-xs font-semibold text-slate-800 dark:text-slate-100">
+        {{ caller() }}
+    </div>
+</div>
+{%- endmacro %}
+
+{% macro badge(value, tone='slate', icon=None) -%}
+    {% if tone == 'blue' %}
+        {% set class_name = 'bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300' %}
+    {% elif tone == 'teal' %}
+        {% set class_name = 'bg-teal-100 text-teal-700 dark:bg-teal-500/10 dark:text-teal-300' %}
+    {% elif tone == 'violet' %}
+        {% set class_name = 'bg-violet-100 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300' %}
+    {% elif tone == 'amber' %}
+        {% set class_name = 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300' %}
+    {% elif tone == 'emerald' %}
+        {% set class_name = 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' %}
+    {% elif tone == 'rose' %}
+        {% set class_name = 'bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300' %}
+    {% elif tone == 'cyan' %}
+        {% set class_name = 'bg-cyan-100 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300' %}
+    {% else %}
+        {% set class_name = 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300' %}
+    {% endif %}
+    <span class="inline-flex max-w-full items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold {{ class_name }}" title="{{ value }}">
+        {% if icon %}<i data-lucide="{{ icon }}" class="h-3 w-3 shrink-0"></i>{% endif %}
+        <span class="break-all">{{ value }}</span>
+    </span>
+{%- endmacro %}

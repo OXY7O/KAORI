@@ -7,6 +7,7 @@ from sqlalchemy import or_
 
 from app.extensions import db
 from app.models.notification import Notification
+from app.models.user import User
 
 _ALLOWED_STATUSES = {
     'success',
@@ -109,16 +110,28 @@ def _metadata_items(metadata: dict[str, Any]) -> list[dict[str, str]]:
     ]
 
 
+def _user_label(user: User | None, user_id: int) -> str:
+    if user is None:
+        return f'User #{user_id}'
+
+    suffix = ' · Deleted' if user.deleted_at is not None else ''
+    return f'{user.display_label}{suffix}'
+
+
 def _serialize_notification(
     notification: Notification,
     *,
     include_metadata: bool,
+    user: User | None = None,
 ) -> dict[str, Any]:
     metadata = notification.metadata_json or {}
     created_at = _normalize_created_at(notification.created_at)
 
     item: dict[str, Any] = {
         'id': notification.id,
+        'user_id': notification.user_id,
+        'user_label': _user_label(user, notification.user_id),
+        'user_email': user.email if user is not None else None,
         'event_type': notification.event_type,
         'event_label': _event_label(notification.event_type),
         'status': notification.status,
@@ -126,8 +139,8 @@ def _serialize_notification(
         'message': notification.message,
         'detail': notification.detail,
         'action_url': notification.action_url,
+        'created_at': created_at,
         'created_label': _created_label(created_at),
-        'created_display': created_at.strftime('%d %b %Y %H:%M UTC'),
         'is_read': notification.is_read,
         'read_label': 'Read' if notification.is_read else 'Unread',
         'synced_count': metadata.get('synced_count'),
@@ -179,9 +192,15 @@ def get_navigation_notification_context(
     }
 
 
+def _normalize_user_filter(user_id: int | None) -> int | None:
+    if user_id is None or user_id <= 0:
+        return None
+    return user_id
+
+
 def get_notification_activity_context(
     *,
-    user_id: int,
+    user_id: int | None,
     page: int,
     per_page: int,
     status: str,
@@ -195,11 +214,26 @@ def get_notification_activity_context(
     normalized_event_type = event_type.strip() or 'all'
     normalized_read_state = read_state if read_state in {'all', 'read', 'unread'} else 'all'
     normalized_search = search.strip()
+    normalized_user_id = _normalize_user_filter(user_id)
 
-    base_query = Notification.query.filter(
-        Notification.user_id == user_id,
+    filtered_query = Notification.query.join(
+        User,
+        User.id == Notification.user_id,
     )
-    filtered_query = base_query
+
+    if normalized_user_id is not None:
+        filtered_query = filtered_query.filter(
+            Notification.user_id == normalized_user_id,
+        )
+
+    event_type_query = db.session.query(Notification.event_type).join(
+        User,
+        User.id == Notification.user_id,
+    )
+    if normalized_user_id is not None:
+        event_type_query = event_type_query.filter(
+            Notification.user_id == normalized_user_id,
+        )
 
     if normalized_status != 'all':
         filtered_query = filtered_query.filter(
@@ -228,6 +262,9 @@ def get_notification_activity_context(
                 Notification.message.ilike(pattern),
                 Notification.detail.ilike(pattern),
                 Notification.event_type.ilike(pattern),
+                User.username.ilike(pattern),
+                User.email.ilike(pattern),
+                User.display_name.ilike(pattern),
             )
         )
 
@@ -240,35 +277,37 @@ def get_notification_activity_context(
         error_out=False,
     )
 
-    event_types = [
-        row[0]
-        for row in (
-            db.session.query(Notification.event_type)
-            .filter(Notification.user_id == user_id)
-            .distinct()
-            .order_by(Notification.event_type.asc())
-            .all()
-        )
-    ]
+    page_user_ids = {notification.user_id for notification in pagination.items}
+    page_users = User.query.filter(User.id.in_(page_user_ids)).all() if page_user_ids else []
+    users_by_id = {user.id: user for user in page_users}
 
-    total_count = base_query.count()
-    unread_count = base_query.filter(
+    event_types = [row[0] for row in (event_type_query.distinct().order_by(Notification.event_type.asc()).all())]
+
+    all_notifications_query = Notification.query
+    total_count = all_notifications_query.count()
+    unread_count = all_notifications_query.filter(
         Notification.read_at.is_(None),
     ).count()
-    success_count = base_query.filter(
+    success_count = all_notifications_query.filter(
         Notification.status == 'success',
     ).count()
-    attention_count = base_query.filter(
+    attention_count = all_notifications_query.filter(
         Notification.status.in_(['warning', 'error']),
     ).count()
     pagination_total = int(pagination.total or 0)
     pagination_pages = max(int(pagination.pages or 0), 1)
+
+    user_options = User.query.order_by(
+        User.username.asc(),
+        User.id.asc(),
+    ).all()
 
     return {
         'items': [
             _serialize_notification(
                 notification,
                 include_metadata=True,
+                user=users_by_id.get(notification.user_id),
             )
             for notification in pagination.items
         ],
@@ -279,11 +318,20 @@ def get_notification_activity_context(
             'attention_count': attention_count,
         },
         'filters': {
+            'user_id': normalized_user_id,
             'status': normalized_status,
             'event_type': normalized_event_type,
             'read_state': normalized_read_state,
             'search': normalized_search,
         },
+        'user_options': [
+            {
+                'id': user.id,
+                'label': _user_label(user, user.id),
+                'email': user.email,
+            }
+            for user in user_options
+        ],
         'event_types': [
             {
                 'value': value,

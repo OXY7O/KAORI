@@ -33,7 +33,7 @@
                 </div>
                 <div class="inline-flex whitespace-nowrap items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-medium">
                     <i data-lucide="clock-3" class="h-4 w-4"></i>
-                    Last sync {{ overview.last_sync_human or '-' }}
+                    Last sync {{ overview.health.last_sync|user_datetime('%d %b %Y %H:%M %Z') }}
                 </div>
             </div>
         </div>

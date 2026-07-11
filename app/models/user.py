@@ -41,6 +41,8 @@ class User(UserMixin, db.Model):
 
     display_name: Mapped[str | None] = mapped_column(db.String(150), nullable=True)
 
+    timezone: Mapped[str] = mapped_column(db.String(100), default='UTC', nullable=False)
+
     password_hash: Mapped[str] = mapped_column(db.String(255), nullable=False, default='')
 
     # Backward-compatible role slug. The normalized RBAC model uses role_id,

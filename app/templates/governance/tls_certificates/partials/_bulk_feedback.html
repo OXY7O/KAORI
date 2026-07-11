@@ -11,7 +11,7 @@
         </div>
         {% if preview.validation.is_valid and preview.validation.parsed_certificate %}
             <div class="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200">
-                Certificate pair is valid. New expiry: {{ preview.validation.parsed_certificate.not_after.strftime('%Y-%m-%d %H:%M UTC') }} · {{ preview.validation.parsed_certificate.days_remaining }} days remaining.
+                Certificate pair is valid. New expiry: {{ preview.validation.parsed_certificate.not_after|user_datetime('%Y-%m-%d %H:%M %Z') }} · {{ preview.validation.parsed_certificate.days_remaining }} days remaining.
             </div>
             <div class="mt-4 overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-700">
                 <table class="min-w-full divide-y divide-slate-200 text-left text-sm dark:divide-slate-700">
@@ -30,8 +30,8 @@
                                     <div class="font-semibold text-slate-900 dark:text-white">{{ item.target.secret_name }}</div>
                                     <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ item.target.cluster.name if item.target.cluster else item.target.cluster_id }} / {{ item.target.namespace }}</div>
                                 </td>
-                                <td class="px-4 py-3 text-left text-slate-600 dark:text-slate-300">{{ item.target.not_after.strftime('%Y-%m-%d') if item.target.not_after else 'Invalid' }}</td>
-                                <td class="px-4 py-3 text-left text-slate-600 dark:text-slate-300">{{ item.new_not_after.strftime('%Y-%m-%d') }}</td>
+                                <td class="px-4 py-3 text-left text-slate-600 dark:text-slate-300">{{ item.target.not_after|user_date('%Y-%m-%d', 'Invalid') }}</td>
+                                <td class="px-4 py-3 text-left text-slate-600 dark:text-slate-300">{{ item.new_not_after|user_date('%Y-%m-%d') }}</td>
                                 <td class="px-4 py-3 text-left">
                                     {% if item.uncovered_hosts %}
                                         <span class="font-bold text-amber-600 dark:text-amber-300">Warning: {{ item.uncovered_hosts|join(', ') }}</span>

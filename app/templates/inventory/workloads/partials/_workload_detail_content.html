@@ -1,0 +1,24 @@
+{% from "inventory/components/_detail_macros.html" import shell, card, row, badge %}
+{% call shell('Workload detail', workload.name, 'boxes') %}
+    {% call card('Workload Identity', 'boxes', 'blue') %}
+        {% call row('Name') %}<span class="break-all">{{ workload.name }}</span>{% endcall %}
+        {% call row('Type') %}{{ badge(workload.type, 'blue', 'box') }}{% endcall %}
+        {% call row('Cluster') %}{{ badge(workload.cluster_name, 'blue', 'server') }}{% endcall %}
+        {% call row('Namespace') %}{{ badge(workload.namespace, 'violet', 'folder-tree') }}{% endcall %}
+    {% endcall %}
+
+    {% call card('Runtime Posture', 'activity', 'emerald') %}
+        {% call row('Ready') %}{{ badge(workload.ready, 'teal', 'check-check') }}{% endcall %}
+        {% call row('Status') %}
+            {% if workload.status in ['Running', 'Complete', 'Completed'] %}{{ badge(workload.status, 'emerald', 'check-circle-2') }}{% elif workload.status in ['Failed', 'Error'] %}{{ badge(workload.status, 'rose', 'x-circle') }}{% elif workload.status in ['Progressing', 'Pending'] %}{{ badge(workload.status, 'amber', 'loader-circle') }}{% else %}{{ badge(workload.status, 'slate', 'circle-help') }}{% endif %}
+        {% endcall %}
+        {% call row('Inventory ID') %}<span>#{{ workload.id }}</span>{% endcall %}
+    {% endcall %}
+
+    {% call card('Lifecycle', 'clock-3', 'violet') %}
+        {% call row('Age') %}{{ badge(workload.age, 'violet', 'timer') }}{% endcall %}
+        {% call row('Created') %}<span>{{ workload.created_at|user_datetime('%d %b %Y %H:%M %Z') }}</span>{% endcall %}
+        {% call row('Collected') %}<span>{{ workload.collected_at|user_datetime('%d %b %Y %H:%M %Z') }}</span>{% endcall %}
+        {% call row('Timezone') %}{{ badge(current_timezone, 'slate', 'globe-2') }}{% endcall %}
+    {% endcall %}
+{% endcall %}

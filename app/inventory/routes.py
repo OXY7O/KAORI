@@ -11,6 +11,7 @@ from app.inventory.service import (
     get_inventory_overview,
     get_namespace_filter_statuses,
     get_namespace_inventory,
+    get_node_detail,
     get_node_filter_roles,
     get_node_filter_statuses,
     get_node_inventory,
@@ -18,10 +19,13 @@ from app.inventory.service import (
     get_pod_filter_namespaces,
     get_pod_filter_statuses,
     get_pod_inventory,
+    get_service_detail,
     get_service_filter_types,
     get_service_inventory,
+    get_storage_detail,
     get_storage_filter_types,
     get_storage_inventory_view,
+    get_workload_detail,
     get_workload_filter_statuses,
     get_workload_filter_types,
     get_workload_inventory,
@@ -330,6 +334,15 @@ def nodes():
     )
 
 
+@inventory_bp.get('/nodes/<int:node_id>/details')
+@permission_required('inventory.view')
+def node_details(node_id: int):
+    node = get_node_detail(node_id)
+    if node is None:
+        abort(404)
+    return render_template('inventory/nodes/partials/_node_detail_content.html', node=node)
+
+
 @inventory_bp.route('/namespaces')
 @permission_required('inventory.view')
 def namespaces():
@@ -551,6 +564,18 @@ def workloads():
         selected_status=status,
         search=search,
         pagination=pagination,
+    )
+
+
+@inventory_bp.get('/workloads/<int:workload_id>/details')
+@permission_required('inventory.view')
+def workload_details(workload_id: int):
+    workload = get_workload_detail(workload_id)
+    if workload is None:
+        abort(404)
+    return render_template(
+        'inventory/workloads/partials/_workload_detail_content.html',
+        workload=workload,
     )
 
 
@@ -832,6 +857,18 @@ def services():
     )
 
 
+@inventory_bp.get('/services/<int:service_id>/details')
+@permission_required('inventory.view')
+def service_details(service_id: int):
+    service = get_service_detail(service_id)
+    if service is None:
+        abort(404)
+    return render_template(
+        'inventory/services/partials/_service_detail_content.html',
+        service=service,
+    )
+
+
 @inventory_bp.route('/ingresses')
 @permission_required('inventory.view')
 def ingresses():
@@ -1097,6 +1134,18 @@ def storage():
         selected_type=storage_type,
         search=search,
         pagination=pagination,
+    )
+
+
+@inventory_bp.get('/storage/<int:storage_id>/details')
+@permission_required('inventory.view')
+def storage_details(storage_id: int):
+    storage = get_storage_detail(storage_id)
+    if storage is None:
+        abort(404)
+    return render_template(
+        'inventory/storage/partials/_storage_detail_content.html',
+        storage=storage,
     )
 
 

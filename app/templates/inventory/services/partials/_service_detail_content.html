@@ -1,0 +1,30 @@
+{% from "inventory/components/_detail_macros.html" import shell, card, row, badge %}
+{% call shell('Service detail', service.name, 'network') %}
+    {% call card('Service Identity', 'network', 'blue') %}
+        {% call row('Name') %}<span class="break-all">{{ service.name }}</span>{% endcall %}
+        {% call row('Type') %}{{ badge(service.type, 'blue', 'waypoints') }}{% endcall %}
+        {% call row('Cluster') %}{{ badge(service.cluster_name, 'blue', 'server') }}{% endcall %}
+        {% call row('Namespace') %}{{ badge(service.namespace, 'violet', 'folder-tree') }}{% endcall %}
+    {% endcall %}
+
+    {% call card('Network Exposure', 'route', 'cyan') %}
+        {% call row('Cluster IP') %}{{ badge(service.cluster_ip, 'cyan', 'network') }}{% endcall %}
+        {% call row('External IP') %}
+            {% if service.external_ips %}
+                <div class="flex flex-wrap justify-end gap-1.5">{% for address in service.external_ips %}{{ badge(address, 'teal', 'globe-2') }}{% endfor %}</div>
+            {% else %}<span class="text-slate-400">Not exposed</span>{% endif %}
+        {% endcall %}
+        {% call row('Ports') %}
+            {% if service.ports %}
+                <div class="flex flex-wrap justify-end gap-1.5">{% for port in service.ports %}{{ badge(port, 'amber', 'plug-zap') }}{% endfor %}</div>
+            {% else %}<span class="text-slate-400">No ports recorded</span>{% endif %}
+        {% endcall %}
+    {% endcall %}
+
+    {% call card('Lifecycle', 'clock-3', 'violet') %}
+        {% call row('Age') %}{{ badge(service.age, 'violet', 'timer') }}{% endcall %}
+        {% call row('Created') %}<span>{{ service.created_at|user_datetime('%d %b %Y %H:%M %Z') }}</span>{% endcall %}
+        {% call row('Collected') %}<span>{{ service.collected_at|user_datetime('%d %b %Y %H:%M %Z') }}</span>{% endcall %}
+        {% call row('Timezone') %}{{ badge(current_timezone, 'slate', 'globe-2') }}{% endcall %}
+    {% endcall %}
+{% endcall %}

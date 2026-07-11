@@ -1,0 +1,27 @@
+{% from "inventory/components/_detail_macros.html" import shell, card, row, badge %}
+{% call shell('Node detail', node.node_name, 'hard-drive') %}
+    {% call card('Network & Identity', 'network', 'cyan') %}
+        {% call row('Internal IP') %}{{ badge(node.internal_ip or 'Not assigned', 'cyan', 'network') }}{% endcall %}
+        {% call row('External IP') %}{{ badge(node.external_ip or 'Not assigned', 'blue', 'globe-2') }}{% endcall %}
+        {% call row('Hostname') %}<span class="break-all">{{ node.hostname_address or '-' }}</span>{% endcall %}
+        {% call row('Cluster') %}{{ badge(node.cluster_name, 'blue', 'server') }}{% endcall %}
+    {% endcall %}
+
+    {% call card('Operating System', 'monitor-cog', 'violet') %}
+        {% call row('OS Image') %}<span class="break-words">{{ node.os_image or '-' }}</span>{% endcall %}
+        {% call row('Kernel') %}<span class="break-words">{{ node.kernel_version or '-' }}</span>{% endcall %}
+        {% call row('Runtime') %}{{ badge(node.runtime_display or '-', 'violet', 'container') }}{% endcall %}
+        {% call row('Collected') %}<span>{{ node.collected_at|user_datetime('%d %b %Y %H:%M %Z') }}</span>{% endcall %}
+    {% endcall %}
+
+    {% call card('Capacity & Posture', 'gauge', 'emerald') %}
+        {% call row('Status') %}
+            {% if node.status == 'Ready' %}{{ badge('Ready', 'emerald', 'check-circle-2') }}{% elif node.status == 'NotReady' %}{{ badge('NotReady', 'rose', 'x-circle') }}{% else %}{{ badge(node.status, 'slate', 'circle-help') }}{% endif %}
+        {% endcall %}
+        {% call row('Role') %}{{ badge(node.role, 'violet', 'layers-3') }}{% endcall %}
+        {% call row('CPU') %}{{ badge(node.cpu if node.cpu is not none else '-', 'blue', 'cpu') }}{% endcall %}
+        {% call row('Memory') %}{{ badge(node.memory_display, 'teal', 'memory-stick') }}{% endcall %}
+        {% call row('Ephemeral') %}{{ badge(node.ephemeral_storage_display, 'amber', 'database') }}{% endcall %}
+        {% call row('Allocatable') %}{{ badge(node.ephemeral_storage_allocatable_display, 'emerald', 'database-zap') }}{% endcall %}
+    {% endcall %}
+{% endcall %}

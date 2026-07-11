@@ -17,6 +17,7 @@ Pillow==12.2.0
 psycopg2-binary==2.9.12
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.2
+tzdata>=2026.1,<2027
 PyYAML==6.0.3
 redis==6.4.0
 reportlab==5.0.0
