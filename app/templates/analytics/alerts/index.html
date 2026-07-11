@@ -9,7 +9,11 @@
         {% set critical_alerts = summary.critical_alerts|default(0) %}
         {% set warning_alerts = summary.warning_alerts|default(0) %}
         {% set anomaly_count = summary.detected_anomalies|default(0) %}
-        {% if critical_alerts > 0 %}
+        {% if dependency_blocker %}
+            {% set posture_value = 'Blocked' %}
+            {% set posture_desc = dependency_blocker.title %}
+            {% set posture_badge = 'bg-slate-500 text-white ring-slate-200/40' %}
+        {% elif critical_alerts > 0 %}
             {% set posture_value = 'Critical' %}
             {% set posture_desc = 'Critical alerts need immediate review.' %}
             {% set posture_badge = 'bg-red-500 text-white ring-red-200/50' %}
@@ -105,11 +109,13 @@
                 </div>
             </section>
 
-            {% include "analytics/alerts/partials/_filters.html" %}
+            {% if not dependency_blocker %}
+                {% include "analytics/alerts/partials/_filters.html" %}
+            {% endif %}
 
         </form>
 
-
+        {% if not dependency_blocker %}
         {% include "analytics/alerts/partials/_source_status.html" %}
         {% include "analytics/alerts/partials/_cluster_signal_overview.html" %}
 
@@ -154,6 +160,7 @@
         {% include "analytics/alerts/partials/_incident_readiness.html" %}
 
         {% include "analytics/alerts/partials/_recommendations.html" %}
+        {% endif %}
     </div>
 {% endblock dashboard_content %}
 {% block scripts %}

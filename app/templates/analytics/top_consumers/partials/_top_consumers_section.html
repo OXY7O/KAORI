@@ -2,35 +2,10 @@
 {% set summary = payload.summary %}
 {% set overview = payload.overview %}
 {% set pagination = payload.pagination %}
+{% if render_dependency_blocker|default(false) and dependency_blocker %}
+    {% include "components/dependencies/_blocker.html" %}
+{% elif not dependency_blocker %}
 <div class="space-y-6">
-    {% if not dependency_blocker and not prometheus_status.connected %}
-        <div class="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800 shadow-sm dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
-            <div class="flex items-start gap-3">
-                <i data-lucide="triangle-alert" class="mt-0.5 h-5 w-5 shrink-0"></i>
-                <div>
-                    <div class="font-semibold">Prometheus connection issue</div>
-                    <div class="mt-1">
-                        Unable to connect to Prometheus. Please verify endpoint, credentials, SSL configuration, and network connectivity.
-                    </div>
-                    {% if payload.message %}
-                        <div class="mt-2 rounded-xl bg-white/60 px-3 py-2 text-xs text-amber-700 dark:bg-slate-950/40 dark:text-amber-200">
-                            {{ payload.message }}
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    {% elif payload.message %}
-        <div class="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800 shadow-sm dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
-            <div class="flex items-start gap-3">
-                <i data-lucide="triangle-alert" class="mt-0.5 h-5 w-5 shrink-0"></i>
-                <div>
-                    <div class="font-semibold">Top consumer data unavailable</div>
-                    <div class="mt-1">{{ payload.message }}</div>
-                </div>
-            </div>
-        </div>
-    {% endif %}
     <section class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <div class="border-b border-slate-200 px-6 py-4 dark:border-slate-800">
             <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -226,17 +201,11 @@
                         </div>
                     </div>
                 {% else %}
-                    <div class="flex min-h-[560px] items-center justify-center p-8">
-                        <div class="text-center">
-                            <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300">
-                                <i data-lucide="bar-chart-3" class="h-7 w-7"></i>
-                            </div>
-                            <h3 class="mt-4 text-base font-semibold text-slate-950 dark:text-white">No overview data available</h3>
-                            <p class="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-500 dark:text-slate-400">
-                                Charts will appear after Prometheus returns consumer metrics for the selected filters.
-                            </p>
-                        </div>
-                    </div>
+                    {% set empty_state_icon = 'bar-chart-3' %}
+                    {% set empty_state_title = 'No top consumer data available' %}
+                    {% set empty_state_description = payload.message|default('Top consumer data will appear after Prometheus returns resource metrics for the selected filters.', true) %}
+                    {% set empty_state_min_height = 'min-h-[560px]' %}
+                    {% include "components/states/_empty_state.html" %}
                 {% endif %}
             </div>
             <aside class="min-w-0">
@@ -390,12 +359,15 @@
                             </div>
                         </div>
                     {% else %}
-                        <div class="rounded-2xl border border-slate-200 p-5 text-sm text-slate-500 dark:border-slate-800 dark:text-slate-400">
-                            No consumer recommendations available.
-                        </div>
+                        {% set empty_state_icon = 'list-checks' %}
+                        {% set empty_state_title = 'No consumer recommendations available' %}
+                        {% set empty_state_description = 'Recommendations will appear when consumer metrics cross configured operational thresholds.' %}
+                        {% set empty_state_min_height = 'min-h-[180px]' %}
+                        {% include "components/states/_empty_state.html" %}
                     {% endfor %}
                 </div>
             </div>
         </details>
     </section>
 </div>
+{% endif %}

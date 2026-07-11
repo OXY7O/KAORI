@@ -26,6 +26,8 @@ def forecast_section() -> str:
         query_args=request.args,
     )
 
+    context['render_dependency_blocker'] = True
+
     return render_template(
         'analytics/forecast/partials/_forecast_section.html',
         **context,

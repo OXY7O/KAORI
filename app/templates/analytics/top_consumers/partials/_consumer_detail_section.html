@@ -1,6 +1,11 @@
 {% set payload = consumer_payload %}
 {% set rows = payload.rows %}
 {% set pagination = payload.pagination %}
+{% if render_dependency_blocker|default(false) and dependency_blocker %}
+    <div id="consumer-detail-section">
+        {% include "components/dependencies/_blocker.html" %}
+    </div>
+{% elif not dependency_blocker %}
 <section id="consumer-detail-section"
          x-data="{ expandedRow: null }"
          class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -340,17 +345,14 @@
             </div>
             {% include "analytics/top_consumers/partials/_consumer_detail_pagination.html" %}
         {% else %}
-            <div class="flex min-h-[280px] items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center dark:border-slate-700 dark:bg-slate-950">
-                <div>
-                    <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300">
-                        <i data-lucide="list-filter" class="h-7 w-7"></i>
-                    </div>
-                    <h3 class="mt-4 text-base font-semibold text-slate-950 dark:text-white">No consumer rows available</h3>
-                    <p class="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-500 dark:text-slate-400">
-                        Try changing the namespace, resource filter, time range, search keyword, or verify Prometheus metrics.
-                    </p>
-                </div>
+            <div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-950">
+                {% set empty_state_icon = 'list-filter' %}
+                {% set empty_state_title = 'No consumer rows available' %}
+                {% set empty_state_description = 'Adjust the namespace, resource, time range, or search filters to find matching consumer data.' %}
+                {% set empty_state_min_height = 'min-h-[280px]' %}
+                {% include "components/states/_empty_state.html" %}
             </div>
         {% endif %}
     </div>
 </section>
+{% endif %}

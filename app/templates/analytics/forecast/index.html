@@ -6,7 +6,11 @@
         {% set response_time = prometheus_status.response_time_ms %}
         {% set summary = forecast_payload.summary %}
         {% set recommendation_count = forecast_payload.recommendation_count|default(0) %}
-        {% if summary.critical_count|default(0) > 0 %}
+        {% if dependency_blocker %}
+            {% set posture_value = 'Blocked' %}
+            {% set posture_desc = dependency_blocker.title %}
+            {% set posture_badge = 'bg-slate-500 text-white ring-slate-200/40' %}
+        {% elif summary.critical_count|default(0) > 0 %}
             {% set posture_value = 'Critical' %}
             {% set posture_desc = 'Critical forecast risk.' %}
             {% set posture_badge = 'bg-red-500 text-white ring-red-200/50' %}
@@ -94,6 +98,7 @@
             </div>
         </section>
 
+        {% if not dependency_blocker %}
         <form id="forecast-filter-form"
               method="GET"
               hx-get="{{ url_for('analytics.forecast') }}"
@@ -217,36 +222,8 @@
             </div>
         </form>
 
-        {% if not dependency_blocker and not prometheus_status.connected %}
-            <div class="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800 shadow-sm dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
-                <div class="flex items-start gap-3">
-                    <i data-lucide="triangle-alert" class="mt-0.5 h-5 w-5 shrink-0"></i>
-                    <div>
-                        <div class="font-semibold">Prometheus connection issue</div>
-                        <div class="mt-1">
-                            Unable to connect to Prometheus. Please verify endpoint, credentials, SSL configuration, and network connectivity.
-                        </div>
-                        {% if forecast_payload.message %}
-                            <div class="mt-2 rounded-xl bg-white/60 px-3 py-2 text-xs text-amber-700 dark:bg-slate-950/40 dark:text-amber-200">
-                                {{ forecast_payload.message }}
-                            </div>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-        {% elif forecast_payload.message %}
-            <div class="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800 shadow-sm dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
-                <div class="flex items-start gap-3">
-                    <i data-lucide="triangle-alert" class="mt-0.5 h-5 w-5 shrink-0"></i>
-                    <div>
-                        <div class="font-semibold">Forecast data unavailable</div>
-                        <div class="mt-1">{{ forecast_payload.message }}</div>
-                    </div>
-                </div>
-            </div>
-        {% endif %}
-
         <div id="forecast-section">{% include "analytics/forecast/partials/_forecast_section.html" %}</div>
+        {% endif %}
     </div>
 {% endblock dashboard_content %}
 {% block scripts %}

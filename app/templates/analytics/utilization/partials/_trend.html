@@ -103,15 +103,18 @@
                     Historical view
                 </span>
             </div>
-            <div class="relative h-[320px]">
+            <div id="utilizationTrendChartContainer" class="relative h-[320px]">
                 <canvas id="utilizationTrendChart"
                         class="block h-full w-full"
                         width="1200"
                         height="320"></canvas>
             </div>
-            <div id="trendEmptyState"
-                 class="hidden py-8 text-center text-sm text-slate-500 dark:text-slate-400">
-                No trend data available.
+            <div id="trendEmptyState" class="hidden">
+                {% set empty_state_icon = 'line-chart' %}
+                {% set empty_state_title = 'No trend data available' %}
+                {% set empty_state_description = 'Trend data will appear after Prometheus returns historical CPU, memory, or pod utilization samples for the selected scope.' %}
+                {% set empty_state_min_height = 'min-h-[320px]' %}
+                {% include "components/states/_empty_state.html" %}
             </div>
         </div>
     </div>
@@ -136,12 +139,15 @@
         }
 
         const emptyState = document.getElementById('trendEmptyState');
+        const chartContainer = document.getElementById('utilizationTrendChartContainer');
 
         if (cpuTrend.length === 0 && memoryTrend.length === 0 && podTrend.length === 0) {
+            chartContainer?.classList.add('hidden');
             emptyState?.classList.remove('hidden');
             return;
         }
 
+        chartContainer?.classList.remove('hidden');
         emptyState?.classList.add('hidden');
 
         if (window[chartKey]) {

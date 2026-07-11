@@ -39,19 +39,14 @@
         {% set analytics_load_complete_description = 'All utilization sections have finished loading.' %}
         {% include "analytics/partials/_load_tracker.html" %}
 
-        {% if error and not dependency_blocker %}
+        {% if not dependency_blocker %}
+        {% if error %}
             <div class="rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm dark:border-amber-500/20 dark:bg-amber-500/10">
                 <div class="flex items-start gap-3">
                     <i data-lucide="triangle-alert" class="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-300"></i>
                     <div>
-                        <h3 class="font-semibold text-amber-900 dark:text-amber-200">Prometheus Connection Unavailable</h3>
-                        <p class="mt-1 text-sm text-amber-700 dark:text-amber-300">Unable to retrieve utilization metrics from Prometheus.</p>
-                        <ul class="mt-3 list-disc space-y-1 pl-5 text-sm text-amber-700 dark:text-amber-300">
-                            <li>Verify Prometheus endpoint</li>
-                            <li>Verify authentication</li>
-                            <li>Verify SSL configuration</li>
-                            <li>Verify network connectivity</li>
-                        </ul>
+                        <h3 class="font-semibold text-amber-900 dark:text-amber-200">Utilization data unavailable</h3>
+                        <p class="mt-1 text-sm text-amber-700 dark:text-amber-300">{{ error }}</p>
                     </div>
                 </div>
             </div>
@@ -351,6 +346,7 @@
             </div>
             <div id="node-detail-panel">{% include "analytics/utilization/partials/_node_detail.html" %}</div>
         </div>
+        {% endif %}
     </div>
 
 {% endblock dashboard_content %}

@@ -28,13 +28,13 @@
                 <div class="flex items-start gap-3">
                     <i data-lucide="triangle-alert" class="mt-0.5 h-5 w-5"></i>
                     <div>
-                        <div class="font-semibold">Prometheus connection issue</div>
+                        <div class="font-semibold">Capacity data unavailable</div>
                         <div class="mt-1">{{ error }}</div>
                     </div>
                 </div>
             </div>
         {% endif %}
-        {% if cluster %}
+        {% if cluster and not dependency_blocker %}
             <!-- Worker Capacity Summary -->
             {% set cpu_headroom = capacity_summary.cpu.headroom|default(0) %}
             {% set memory_headroom = capacity_summary.memory.headroom|default(0) %}
@@ -203,9 +203,9 @@
                                             </div>
                                         </div>
 
-                                        <span class="inline-flex w-fit items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 transition group-open:bg-blue-50 group-open:text-blue-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:group-open:bg-blue-950/50 dark:group-open:text-blue-300">
+                                        <span class="inline-flex shrink-0 items-center justify-center text-slate-400 transition group-open:text-blue-600 dark:text-slate-500 dark:group-open:text-blue-300">
                                             <i data-lucide="chevron-down" class="h-4 w-4 transition group-open:rotate-180"></i>
-                                            Details
+                                            <span class="sr-only">Toggle capacity details</span>
                                         </span>
                                     </div>
                                 </summary>
@@ -378,7 +378,7 @@
                             </div>
                             <div class="divide-y divide-slate-200 dark:divide-slate-700">
                                 {% for finding in governance_findings %}
-                                    <div class="flex items-center justify-between gap-3 px-5 py-4 transition hover:bg-blue-50/50 dark:hover:bg-blue-950/20">
+                                    <div class="flex items-center gap-3 px-5 py-4 transition hover:bg-blue-50/50 dark:hover:bg-blue-950/20">
                                         <div class="flex items-center gap-3">
                                             {% if finding['severity'] == 'critical' %}
                                                 <i data-lucide="{{ finding['icon'] }}" class="h-4 w-4 text-red-500"></i>
@@ -391,65 +391,15 @@
                                             {% endif %}
                                             <span class="text-sm text-slate-700 dark:text-slate-200">{{ finding['label'] }}</span>
                                         </div>
-                                        {% if finding['filter'] == 'storage-analysis' %}
-                                            {% set finding_url = url_for(
-                                                                                            'analytics.storage',
-                                                                                            cluster_id=cluster.id if cluster else '',
-                                                                                            time_range=selected_time_range
-                                                                                        ) %}
-                                        {% elif finding['filter'] in [
-                                            'workload-analysis',
-                                            'missing-quota',
-                                            'missing-request',
-                                            'missing-limit',
-                                            'best-effort',
-                                            'over-requested'
-                                            ] %}
-                                            {% set finding_url = url_for(
-                                                                                            'analytics.workload',
-                                                                                            cluster_id=cluster.id if cluster else '',
-                                                                                            time_range=selected_time_range
-                                                                                        ) %}
-                                        {% else %}
-                                            {% set finding_url = url_for(
-                                                                                            'analytics.capacity',
-                                                                                            cluster_id=cluster.id if cluster else '',
-                                                                                            time_range=selected_time_range
-                                                                                        ) %}
-                                        {% endif %}
-                                        <a href="{{ finding_url }}"
-                                           class="inline-flex shrink-0 items-center rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-100 hover:bg-blue-100 dark:bg-blue-950/50 dark:text-blue-300 dark:ring-blue-900 dark:hover:bg-blue-950">
-                                            View details
-                                        </a>
                                     </div>
                                 {% endfor %}
-                            </div>
-                            <div class="border-t border-slate-200 px-4 py-3 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">
-                                View details opens the relevant analysis view.
                             </div>
                         </div>
                     </div>
                 </section>
             </div>
             {% include "analytics/capacity/partials/_recommendations.html" %}
-{% else %}
-            <div class="rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300">
-                    <i data-lucide="database-zap" class="h-7 w-7"></i>
-                </div>
-                <h2 class="mt-4 text-lg font-semibold text-slate-900 dark:text-white">No cluster configured</h2>
-                <p class="mx-auto mt-1 max-w-xl text-sm leading-6 text-slate-500 dark:text-slate-400">
-                    Add at least one Kubernetes cluster to display worker capacity, allocation pressure, scheduling risk, and Prometheus-backed headroom data.
-                </p>
-                {% if current_user.has_permission('clusters.manage') %}
-                    <a href="{{ url_for('cluster.add_cluster') }}"
-                       class="mt-5 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600">
-                        <i data-lucide="plus" class="h-4 w-4"></i>
-                        Add first cluster
-                    </a>
-                {% endif %}
-            </div>
-        {% endif %}
+{% endif %}
     </div>
     {% block scripts %}
         <script>

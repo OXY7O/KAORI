@@ -10,7 +10,11 @@
         {% set recommendation_count = payload.recommendation_count|default(0) %}
         {% set total_rows = payload.total_rows|default(0) %}
         {% set high_usage = namespace_options|length %}
-        {% if payload.recommendation_count|default(0) > 0 %}
+        {% if dependency_blocker %}
+            {% set posture_value = 'Blocked' %}
+            {% set posture_desc = dependency_blocker.title %}
+            {% set posture_badge = 'bg-slate-500 text-white ring-slate-200/40' %}
+        {% elif payload.recommendation_count|default(0) > 0 %}
             {% set posture_value = 'Review' %}
             {% set posture_desc = 'Consumer hotspots need review.' %}
             {% set posture_badge = 'bg-amber-500 text-white ring-amber-200/50' %}
@@ -88,6 +92,7 @@
             </div>
         </section>
 
+        {% if not dependency_blocker %}
         <form id="top-consumers-filter-form"
               method="GET"
               hx-get="{{ url_for('analytics.top_consumers') }}"
@@ -184,6 +189,7 @@
         </form>
 
         <div id="top-consumers-section">{% include "analytics/top_consumers/partials/_top_consumers_section.html" %}</div>
+        {% endif %}
     </div>
 {% endblock dashboard_content %}
 {% block scripts %}

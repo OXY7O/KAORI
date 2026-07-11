@@ -27,6 +27,9 @@
         "description": "Projected running pod growth compared with worker-node pod capacity."
     }
 ] %}
+{% if render_dependency_blocker|default(false) and dependency_blocker %}
+    {% include "components/dependencies/_blocker.html" %}
+{% elif not dependency_blocker %}
 <div class="space-y-6">
     <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -196,37 +199,11 @@
                     <canvas id="forecast-chart"></canvas>
                 </div>
             {% else %}
-                <div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 dark:border-slate-700 dark:bg-slate-950">
-                    <div class="mx-auto max-w-3xl text-center">
-                        <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300">
-                            <i data-lucide="line-chart" class="h-7 w-7"></i>
-                        </div>
-                        <h3 class="mt-4 text-base font-semibold text-slate-950 dark:text-white">No forecast data available</h3>
-                        <p class="mx-auto mt-2 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
-                            {{ forecast_payload.message|default('Forecast chart will appear after Prometheus has at least two daily historical points and a valid capacity baseline for the selected scope.', true) }}
-                        </p>
-                    </div>
-                    <div class="mt-6 grid gap-3 text-left md:grid-cols-3">
-                        <div class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-                            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">History requirement</p>
-                            <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                                Forecast needs at least two daily average points from Prometheus range queries before the trend line can be calculated.
-                            </p>
-                        </div>
-                        <div class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-                            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Capacity baseline</p>
-                            <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                                CPU, memory, and pod forecast require worker allocatable metrics; storage forecast also requires PVC capacity metrics.
-                            </p>
-                        </div>
-                        <div class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-                            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Metric source</p>
-                            <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                                Check kube-state-metrics, kubelet/cAdvisor metrics, Prometheus retention, and the selected namespace/resource filter.
-                            </p>
-                        </div>
-                    </div>
-                </div>
+                {% set empty_state_icon = 'line-chart' %}
+                {% set empty_state_title = 'No forecast data available' %}
+                {% set empty_state_description = forecast_payload.message|default('Forecast data will appear after Prometheus has enough historical samples and a valid capacity baseline for the selected scope.', true) %}
+                {% set empty_state_min_height = 'min-h-[300px]' %}
+                {% include "components/states/_empty_state.html" %}
             {% endif %}
         </div>
     </section>
@@ -460,3 +437,4 @@
         </details>
     </section>
 </div>
+{% endif %}

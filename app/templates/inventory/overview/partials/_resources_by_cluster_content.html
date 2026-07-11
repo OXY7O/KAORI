@@ -106,8 +106,13 @@
                 </tr>
             {% else %}
                 <tr>
-                    <td colspan="12"
-                        class="px-4 py-12 text-center text-slate-500 dark:text-slate-400">No inventory data found.</td>
+                    <td colspan="12" class="p-0">
+                        {% set empty_state_icon = 'database-zap' %}
+                        {% set empty_state_title = 'No inventory data found' %}
+                        {% set empty_state_description = 'Adjust the active filters or sync cluster inventory to collect Kubernetes resource data.' %}
+                        {% set empty_state_min_height = 'min-h-[210px]' %}
+                        {% include "components/states/_empty_state.html" %}
+                    </td>
                 </tr>
             {% endfor %}
         </tbody>

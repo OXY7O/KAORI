@@ -26,6 +26,8 @@ def top_consumers_section() -> str:
         query_args=request.args,
     )
 
+    context['render_dependency_blocker'] = True
+
     return render_template(
         'analytics/top_consumers/partials/_top_consumers_section.html',
         **context,
@@ -37,6 +39,8 @@ def top_consumers_table() -> str:
     context = get_top_consumers_context(
         query_args=request.args,
     )
+
+    context['render_dependency_blocker'] = True
 
     return render_template(
         'analytics/top_consumers/partials/_consumer_detail_section.html',

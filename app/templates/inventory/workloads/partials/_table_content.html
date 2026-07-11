@@ -68,17 +68,12 @@
                 </tr>
             {% else %}
                 <tr>
-                    <td colspan="7"
-                        class="py-16 text-center text-slate-400 dark:text-slate-500">
-                        <div class="flex flex-col items-center gap-3">
-                            <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 dark:bg-slate-700 dark:text-slate-500">
-                                <i data-lucide="boxes" class="h-6 w-6"></i>
-                            </div>
-                            <div>
-                                <div class="font-medium text-slate-700 dark:text-slate-300">No workload inventory found</div>
-                                <div class="text-sm text-slate-500 dark:text-slate-400">Adjust the filter or sync cluster inventory to collect Kubernetes workload data.</div>
-                            </div>
-                        </div>
+                    <td colspan="7" class="p-0">
+                        {% set empty_state_icon = 'boxes' %}
+                        {% set empty_state_title = 'No workload inventory found' %}
+                        {% set empty_state_description = 'Adjust the active filters or sync cluster inventory to collect Kubernetes workload data.' %}
+                        {% set empty_state_min_height = 'min-h-[190px]' %}
+                        {% include "components/states/_empty_state.html" %}
                     </td>
                 </tr>
             {% endfor %}
