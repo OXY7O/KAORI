@@ -106,11 +106,11 @@
                     {% if node.taints %}
                         <div class="flex flex-wrap gap-1.5">
                             {% for taint in node.taints %}
-                                <span class="max-w-full break-all rounded-lg bg-rose-50 px-2 py-1 text-[11px] font-semibold text-rose-700 ring-1 ring-inset ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/25">{{ taint }}</span>
+                                <span class="inline-flex max-w-full items-center rounded-full bg-rose-50 px-2.5 py-1 text-[11px] font-semibold leading-4 text-rose-700 ring-1 ring-inset ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/25">{{ taint }}</span>
                             {% endfor %}
                         </div>
                     {% else %}
-                        <span class="rounded-lg bg-slate-100 px-2 py-1 text-xs font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400">No taints</span>
+                        <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-500 ring-1 ring-inset ring-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:ring-slate-700">No taints</span>
                     {% endif %}
                 </div>
             {% endcall %}
