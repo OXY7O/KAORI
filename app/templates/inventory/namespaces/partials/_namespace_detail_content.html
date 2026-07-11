@@ -55,14 +55,21 @@
                 {{ detail_row('Services', namespace.object_counts.services) }}
                 {{ detail_row('Ingresses', namespace.object_counts.ingresses) }}
                 {{ detail_row('PVCs', namespace.object_counts.persistent_volume_claims) }}
-                <div class="mt-3 rounded-xl bg-slate-50 px-3 py-2.5 dark:bg-slate-900/70">
-                    <div class="mb-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">Workload composition</div>
-                    <div class="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11px]">
-                        <span class="text-slate-500 dark:text-slate-400">Deployments</span><span class="text-right font-semibold text-slate-800 dark:text-slate-100">{{ namespace.workload_breakdown.deployments }}</span>
-                        <span class="text-slate-500 dark:text-slate-400">StatefulSets</span><span class="text-right font-semibold text-slate-800 dark:text-slate-100">{{ namespace.workload_breakdown.statefulsets }}</span>
-                        <span class="text-slate-500 dark:text-slate-400">DaemonSets</span><span class="text-right font-semibold text-slate-800 dark:text-slate-100">{{ namespace.workload_breakdown.daemonsets }}</span>
-                        <span class="text-slate-500 dark:text-slate-400">Jobs</span><span class="text-right font-semibold text-slate-800 dark:text-slate-100">{{ namespace.workload_breakdown.jobs }}</span>
-                        <span class="text-slate-500 dark:text-slate-400">CronJobs</span><span class="text-right font-semibold text-slate-800 dark:text-slate-100">{{ namespace.workload_breakdown.cronjobs }}</span>
+                <div class="mt-3 rounded-xl bg-sky-50 px-3 py-3 text-sky-900 ring-1 ring-inset ring-sky-100 dark:bg-sky-500/10 dark:text-sky-100 dark:ring-sky-500/20">
+                    <div class="flex items-start gap-2.5">
+                        <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-sky-100 text-sky-600 dark:bg-sky-500/15 dark:text-sky-300">
+                            <i data-lucide="layout-grid" class="h-3.5 w-3.5"></i>
+                        </span>
+                        <div class="min-w-0 flex-1">
+                            <div class="text-[10px] font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300">Workload composition</div>
+                            <div class="mt-2 grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11px]">
+                                <span class="text-sky-700/80 dark:text-sky-200/80">Deployments</span><span class="text-right font-semibold text-sky-950 dark:text-sky-100">{{ namespace.workload_breakdown.deployments }}</span>
+                                <span class="text-sky-700/80 dark:text-sky-200/80">StatefulSets</span><span class="text-right font-semibold text-sky-950 dark:text-sky-100">{{ namespace.workload_breakdown.statefulsets }}</span>
+                                <span class="text-sky-700/80 dark:text-sky-200/80">DaemonSets</span><span class="text-right font-semibold text-sky-950 dark:text-sky-100">{{ namespace.workload_breakdown.daemonsets }}</span>
+                                <span class="text-sky-700/80 dark:text-sky-200/80">Jobs</span><span class="text-right font-semibold text-sky-950 dark:text-sky-100">{{ namespace.workload_breakdown.jobs }}</span>
+                                <span class="text-sky-700/80 dark:text-sky-200/80">CronJobs</span><span class="text-right font-semibold text-sky-950 dark:text-sky-100">{{ namespace.workload_breakdown.cronjobs }}</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             {% endcall %}
@@ -79,21 +86,28 @@
                 {% if namespace.quotas %}
                     <div class="max-h-56 space-y-2 overflow-y-auto pt-1 pr-1">
                         {% for quota in namespace.quotas %}
-                            <div class="rounded-xl bg-slate-50 px-3 py-2.5 dark:bg-slate-900/70">
-                                <div class="flex items-center justify-between gap-3">
-                                    <span class="truncate text-[11px] font-semibold text-slate-800 dark:text-slate-100" title="{{ quota.name }}">{{ quota.name }}</span>
-                                    <span class="text-[9px] font-medium text-slate-400">{{ quota.resource_count }} limits</span>
-                                </div>
-                                <div class="mt-2 space-y-1.5">
-                                    {% for resource in quota.resources %}
-                                        <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-2 text-[10px]">
-                                            <span class="truncate text-slate-500 dark:text-slate-400" title="{{ resource.name }}">{{ resource.name }}</span>
-                                            <span class="whitespace-nowrap font-semibold text-slate-700 dark:text-slate-200">{{ resource.hard }}</span>
+                            <div class="rounded-xl bg-amber-50 px-3 py-3 text-amber-900 ring-1 ring-inset ring-amber-100 dark:bg-amber-500/10 dark:text-amber-100 dark:ring-amber-500/20">
+                                <div class="flex items-start gap-2.5">
+                                    <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300">
+                                        <i data-lucide="sliders-horizontal" class="h-3.5 w-3.5"></i>
+                                    </span>
+                                    <div class="min-w-0 flex-1">
+                                        <div class="flex items-center justify-between gap-3">
+                                            <span class="truncate text-[11px] font-semibold text-amber-950 dark:text-amber-100" title="{{ quota.name }}">{{ quota.name }}</span>
+                                            <span class="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-semibold text-amber-700 dark:bg-amber-500/15 dark:text-amber-200">{{ quota.resource_count }} limits</span>
                                         </div>
-                                    {% endfor %}
-                                    {% if quota.truncated %}
-                                        <div class="text-[9px] text-slate-400">Additional configured limits are not shown.</div>
-                                    {% endif %}
+                                        <div class="mt-2 space-y-1.5">
+                                            {% for resource in quota.resources %}
+                                                <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-2 text-[10px]">
+                                                    <span class="truncate text-amber-700/80 dark:text-amber-200/80" title="{{ resource.name }}">{{ resource.name }}</span>
+                                                    <span class="whitespace-nowrap font-semibold text-amber-950 dark:text-amber-100">{{ resource.hard }}</span>
+                                                </div>
+                                            {% endfor %}
+                                            {% if quota.truncated %}
+                                                <div class="text-[9px] text-amber-700/70 dark:text-amber-200/70">Additional configured limits are not shown.</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         {% endfor %}
