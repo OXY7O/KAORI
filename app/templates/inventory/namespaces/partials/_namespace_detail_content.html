@@ -38,7 +38,7 @@
                 </div>
                 {{ detail_row('Created', namespace.created_at|user_datetime('%Y-%m-%d %H:%M %Z') if namespace.created_at else '-') }}
                 {{ detail_row('Collected', namespace.collected_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
-                <div class="pt-2">
+                <div class="mt-auto pt-2">
                     {{ detail_tip('Age is based on the Kubernetes creation timestamp. Collected shows when this snapshot was last refreshed.', 'blue', 'clock-3') }}
                 </div>
             {% endcall %}
@@ -55,7 +55,7 @@
                 {{ detail_row('Services', namespace.object_counts.services) }}
                 {{ detail_row('Ingresses', namespace.object_counts.ingresses) }}
                 {{ detail_row('PVCs', namespace.object_counts.persistent_volume_claims) }}
-                <div class="pt-2">
+                <div class="mt-auto pt-2">
                     <div class="flex items-start gap-2.5 rounded-xl bg-sky-50 px-3 py-2.5 text-xs leading-5 text-sky-800 dark:bg-sky-500/10 dark:text-sky-200">
                         <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-sky-100 text-sky-600 dark:bg-sky-500/15 dark:text-sky-300">
                             <i data-lucide="layout-grid" class="h-3.5 w-3.5"></i>
@@ -83,8 +83,9 @@
             ) %}
                 {{ detail_row('ResourceQuotas', namespace.quota_count) }}
                 {{ detail_row('LimitRanges', namespace.limit_range_count if namespace.limit_range_count is not none else 'Not reported') }}
+                <div class="mt-auto pt-2">
                 {% if namespace.quotas %}
-                    <div class="max-h-56 space-y-2 overflow-y-auto pt-1 pr-1">
+                    <div class="max-h-56 space-y-2 overflow-y-auto pr-1">
                         {% for quota in namespace.quotas %}
                             <div class="rounded-xl bg-amber-50 px-3 py-3 text-amber-900 ring-1 ring-inset ring-amber-100 dark:bg-amber-500/10 dark:text-amber-100 dark:ring-amber-500/20">
                                 <div class="flex items-start gap-2.5">
@@ -113,10 +114,9 @@
                         {% endfor %}
                     </div>
                 {% else %}
-                    <div class="pt-2">
-                        {{ detail_tip('No ResourceQuota object is recorded. This describes configured namespace controls, not current resource utilization.', 'amber', 'info') }}
-                    </div>
+                    {{ detail_tip('No ResourceQuota object is recorded. This describes configured namespace controls, not current resource utilization.', 'amber', 'info') }}
                 {% endif %}
+                </div>
             {% endcall %}
 
             {% call detail_card(
@@ -134,7 +134,7 @@
                 {{ detail_row('PSA Enforce', namespace.pod_security_enforce) }}
                 {{ detail_row('PSA Audit', namespace.pod_security_audit) }}
                 {{ detail_row('PSA Warn', namespace.pod_security_warn) }}
-                <div class="pt-2">
+                <div class="mt-auto pt-2">
                     {{ detail_tip('Pod Security values come from namespace admission labels. NetworkPolicy count indicates configured objects, not effective traffic coverage.', 'violet', 'shield') }}
                 </div>
             {% endcall %}

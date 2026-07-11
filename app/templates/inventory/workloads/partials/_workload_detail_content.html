@@ -63,7 +63,7 @@
                 {{ detail_row('Kubernetes UID', workload.uid, True) }}
                 {{ detail_row('Created', workload.created_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
                 {{ detail_row('Collected', workload.collected_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
-                <div class="pt-3">
+                <div class="mt-auto pt-3">
                     {{ detail_tip(workload.type_description, 'violet', 'lightbulb') }}
                 </div>
             {% endcall %}
@@ -79,7 +79,7 @@
                     {{ detail_row(row.label, row.value) }}
                 {% endfor %}
                 {{ detail_row('Managed Pods', workload.pod_count) }}
-                <div class="pt-3">
+                <div class="mt-auto pt-3">
                     {{ detail_tip("Runtime state compares the controller's desired and observed values from the latest Kubernetes snapshot. Historical availability, anomalies, and performance remain in Analytics.", 'blue', 'info') }}
                 </div>
             {% endcall %}
@@ -94,7 +94,7 @@
                 {% for row in workload.pod_configuration_rows %}
                     {{ detail_row(row.label, row.value) }}
                 {% endfor %}
-                <div class="pt-3">
+                <div class="mt-auto pt-3">
                     {% if workload.pod_configuration_reported %}
                         {{ detail_tip('Pod configuration comes from the workload template. Runtime utilization and performance remain in Analytics.', 'emerald', 'info') }}
                     {% elif workload.pod_configuration_source == 'associated-pod-fallback' %}

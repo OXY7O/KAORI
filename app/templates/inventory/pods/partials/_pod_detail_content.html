@@ -52,7 +52,7 @@
                     </div>
                 </div>
 
-                {{ detail_tip('Pod age uses the Kubernetes creation timestamp. Collected shows when KAORI last refreshed this snapshot.', 'blue', 'clock-3') }}
+                {{ detail_tip('Pod age uses the Kubernetes creation timestamp. Collected shows when KAORI last refreshed this snapshot.', 'blue', 'clock-3', false, true) }}
             {% endcall %}
 
             {% call detail_card(
@@ -96,7 +96,7 @@
                     </div>
                 {% endif %}
 
-                {{ detail_tip('Runtime state is a point-in-time Kubernetes snapshot. Historical failures and restart anomalies remain in Analytics and Intelligence.', 'emerald', 'info') }}
+                {{ detail_tip('Runtime state is a point-in-time Kubernetes snapshot. Historical failures and restart anomalies remain in Analytics and Intelligence.', 'emerald', 'info', false, true) }}
             {% endcall %}
 
             {% call detail_card(
@@ -127,7 +127,7 @@
                     </div>
                 {% endif %}
 
-                {{ detail_tip('Pod IP identifies this Pod instance and may change when Kubernetes recreates it.', 'teal', 'network') }}
+                {{ detail_tip('Pod IP identifies this Pod instance and may change when Kubernetes recreates it.', 'teal', 'network', false, true) }}
             {% endcall %}
 
             {% call detail_card(
@@ -148,7 +148,7 @@
                 {{ detail_row('Init containers', pod.configuration.init_container_count) }}
                 {{ detail_row('Ephemeral containers', pod.configuration.ephemeral_container_count) }}
 
-                {{ detail_tip('Configuration is collected from the Pod specification. Secret values and mounted file content are never displayed.', 'violet', 'shield-check') }}
+                {{ detail_tip('Configuration is collected from the Pod specification. Secret values and mounted file content are never displayed.', 'violet', 'shield-check', false, true) }}
             {% endcall %}
         </div>
 

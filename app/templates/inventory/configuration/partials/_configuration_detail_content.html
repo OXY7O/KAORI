@@ -20,9 +20,9 @@
         {{ detail_row('Age', item.age) }}
 
         {% if item.type == 'Secret' %}
-            {{ detail_tip('This Secret contains sensitive configuration references. KAORI records metadata and key names only; secret values are never collected or displayed.', 'violet', 'shield-check') }}
+            {{ detail_tip('This Secret contains sensitive configuration references. KAORI records metadata and key names only; secret values are never collected or displayed.', 'violet', 'shield-check', false, true) }}
         {% else %}
-            {{ detail_tip('This ConfigMap provides non-sensitive application configuration through environment variables or mounted files. KAORI inventories metadata and key names, not their content.', 'blue', 'file-json-2') }}
+            {{ detail_tip('This ConfigMap provides non-sensitive application configuration through environment variables or mounted files. KAORI inventories metadata and key names, not their content.', 'blue', 'file-json-2', false, true) }}
         {% endif %}
     {% endcall %}
 
@@ -42,7 +42,7 @@
             {% endfor %}
         </div>
 
-        {{ detail_tip('Only key names and aggregate payload size are stored. Values are intentionally excluded.', 'amber', 'shield-check') }}
+        {{ detail_tip('Only key names and aggregate payload size are stored. Values are intentionally excluded.', 'amber', 'shield-check', false, true) }}
     {% endcall %}
 
     {% call detail_card('Used by Pods', 'package-check', 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300', item.used_by_count, 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300', panel_classes='border-emerald-100 bg-gradient-to-br from-emerald-50/90 via-white to-white dark:border-emerald-900/40 dark:from-emerald-950/30 dark:via-slate-950/45 dark:to-slate-950/45') %}
@@ -76,7 +76,7 @@
                 <p class="text-[11px] text-slate-400">Showing the first 8 Pods.</p>
             {% endif %}
         {% else %}
-            {{ detail_tip('No Pod reference is recorded in the latest inventory snapshot.', 'slate', 'info') }}
+            {{ detail_tip('No Pod reference is recorded in the latest inventory snapshot.', 'slate', 'info', false, true) }}
         {% endif %}
     {% endcall %}
 {% endcall %}

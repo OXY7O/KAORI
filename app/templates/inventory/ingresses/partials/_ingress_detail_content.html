@@ -21,7 +21,7 @@
                 {{ detail_row('Kubernetes UID', ingress.uid, true) }}
                 {{ detail_row('Created', ingress.created_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
                 {{ detail_row('Collected', ingress.collected_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
-                {{ detail_tip('Ingress routes HTTP and HTTPS traffic to Services according to host and path rules.', 'blue', 'lightbulb') }}
+                {{ detail_tip('Ingress routes HTTP and HTTPS traffic to Services according to host and path rules.', 'blue', 'lightbulb', false, true) }}
             {% endcall %}
 
             {% call detail_card('Exposure', 'globe-2', 'bg-teal-50 text-teal-600 dark:bg-teal-950/40 dark:text-teal-300', ingress.host_count ~ ' host(s)', 'bg-teal-50 text-teal-700 ring-1 ring-inset ring-teal-200 dark:bg-teal-500/10 dark:text-teal-300 dark:ring-teal-400/25') %}
@@ -38,7 +38,7 @@
                         {% endfor %}
                     </div>
                 {% endif %}
-                {{ detail_tip('Addresses come from Ingress status and may remain empty until the controller publishes a load balancer endpoint.', 'teal', 'network') }}
+                {{ detail_tip('Addresses come from Ingress status and may remain empty until the controller publishes a load balancer endpoint.', 'teal', 'network', false, true) }}
             {% endcall %}
 
             {% call detail_card('TLS configuration', 'shield-check', 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300', 'Enabled' if ingress.tls else 'Not configured', 'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/25' if ingress.tls else 'bg-slate-100 text-slate-700 ring-1 ring-inset ring-slate-200') %}
@@ -55,7 +55,7 @@
                         {% endfor %}
                     </div>
                 {% endif %}
-                {{ detail_tip('TLS entries show Secret references only. Certificate validity and expiry remain in Kubernetes TLS Secret Governance.', 'emerald', 'lock-keyhole') }}
+                {{ detail_tip('TLS entries show Secret references only. Certificate validity and expiry remain in Kubernetes TLS Secret Governance.', 'emerald', 'lock-keyhole', false, true) }}
             {% endcall %}
 
             {% call detail_card('Routing summary', 'git-branch', 'bg-sky-50 text-sky-600 dark:bg-sky-950/40 dark:text-sky-300', ingress.backend_count ~ ' path(s)', 'bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200 dark:bg-sky-500/10 dark:text-sky-300 dark:ring-sky-400/25') %}
@@ -69,7 +69,7 @@
                         {% for finalizer in ingress.finalizers %}<span class="inline-flex max-w-full rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-semibold text-sky-700 ring-1 ring-inset ring-sky-200 dark:bg-sky-500/10 dark:text-sky-300 dark:ring-sky-400/25" title="{{ finalizer }}"><span class="truncate">{{ finalizer }}</span></span>{% endfor %}
                     </div>
                 {% endif %}
-                {{ detail_tip('Routing metadata shows configured host and path mappings, not request volume or backend latency.', 'blue', 'route') }}
+                {{ detail_tip('Routing metadata shows configured host and path mappings, not request volume or backend latency.', 'blue', 'route', false, true) }}
             {% endcall %}
         </div>
 
