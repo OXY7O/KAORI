@@ -881,6 +881,20 @@ def get_inventory_overview() -> dict[str, Any]:
     health = get_inventory_health()
     activities = get_recent_inventory_activity()
 
+    last_sync_human = '-'
+    last_sync = (
+        health.get(
+            'last_sync',
+        )
+        if health
+        else None
+    )
+
+    if last_sync:
+        last_sync_human = last_sync.strftime(
+            '%d %b %Y %H:%M',
+        )
+
     return {
         'total_clusters': (
             db.session.query(
@@ -950,6 +964,7 @@ def get_inventory_overview() -> dict[str, Any]:
         'inventory_summary': inventory_summary,
         'health': health,
         'activities': activities,
+        'last_sync_human': last_sync_human,
     }
 
 
@@ -1017,6 +1032,11 @@ def get_inventory_health():
         else 0
     )
 
+    last_sync_display = '-'
+
+    if last_sync:
+        last_sync_display = last_sync.strftime('%d %b %Y %H:%M')
+
     return {
         'connected_clusters': connected_clusters,
         'healthy_clusters': healthy_clusters,
@@ -1030,6 +1050,7 @@ def get_inventory_health():
         'freshness_score': freshness_score,
         'freshness_window_hours': INVENTORY_FRESHNESS_HOURS,
         'last_sync': last_sync,
+        'last_sync_display': last_sync_display,
     }
 
 
@@ -1242,142 +1263,6 @@ def get_node_inventory(
     }
 
 
-def get_node_detail(node_id: int) -> dict[str, Any] | None:
-    result = (
-        db.session.query(
-            NodeInventory,
-            Cluster.name.label('cluster_name'),
-        )
-        .join(Cluster, Cluster.id == NodeInventory.cluster_id)
-        .filter(NodeInventory.id == node_id)
-        .first()
-    )
-
-    if result is None:
-        return None
-
-    node, cluster_name = result
-    runtime = node.container_runtime or ''
-
-    return {
-        'id': node.id,
-        'cluster_name': cluster_name,
-        'node_name': node.node_name,
-        'role': node.role or 'Unknown',
-        'status': node.status or 'Unknown',
-        'internal_ip': node.internal_ip,
-        'external_ip': node.external_ip,
-        'hostname_address': node.hostname_address,
-        'cpu': node.cpu,
-        'memory_display': format_gib(convert_ki_to_gib(node.memory)),
-        'ephemeral_storage_display': format_gib(convert_storage_to_gib(node.ephemeral_storage)),
-        'ephemeral_storage_allocatable_display': format_gib(convert_storage_to_gib(node.ephemeral_storage_allocatable)),
-        'os_image': node.os_image,
-        'kernel_version': node.kernel_version,
-        'runtime_display': runtime.split('://')[0] if '://' in runtime else runtime,
-        'collected_at': node.collected_at,
-    }
-
-
-def get_workload_detail(workload_id: int) -> dict[str, Any] | None:
-    result = (
-        db.session.query(
-            WorkloadInventory,
-            Cluster.name.label('cluster_name'),
-        )
-        .join(Cluster, Cluster.id == WorkloadInventory.cluster_id)
-        .filter(WorkloadInventory.id == workload_id)
-        .first()
-    )
-
-    if result is None:
-        return None
-
-    workload, cluster_name = result
-
-    return {
-        'id': workload.id,
-        'cluster_name': cluster_name,
-        'namespace': workload.namespace,
-        'name': workload.name,
-        'type': workload.workload_type or 'Unknown',
-        'ready': workload.ready or '-',
-        'status': workload.status or 'Unknown',
-        'age': format_age(workload.created_at),
-        'created_at': workload.created_at,
-        'collected_at': workload.collected_at,
-    }
-
-
-def _split_inventory_values(value: str | None) -> list[str]:
-    return [item.strip() for item in (value or '').split(',') if item.strip() and item.strip() != '-']
-
-
-def get_service_detail(service_id: int) -> dict[str, Any] | None:
-    result = (
-        db.session.query(
-            ServiceInventory,
-            Cluster.name.label('cluster_name'),
-        )
-        .join(Cluster, Cluster.id == ServiceInventory.cluster_id)
-        .filter(ServiceInventory.id == service_id)
-        .first()
-    )
-
-    if result is None:
-        return None
-
-    service, cluster_name = result
-
-    return {
-        'id': service.id,
-        'cluster_name': cluster_name,
-        'namespace': service.namespace,
-        'name': service.service_name,
-        'type': service.service_type or 'Unknown',
-        'cluster_ip': service.cluster_ip or '-',
-        'external_ips': _split_inventory_values(service.external_ip),
-        'ports': _split_inventory_values(service.ports),
-        'age': format_age(service.created_at),
-        'created_at': service.created_at,
-        'collected_at': service.collected_at,
-    }
-
-
-def get_storage_detail(storage_id: int) -> dict[str, Any] | None:
-    result = (
-        db.session.query(
-            StorageInventory,
-            Cluster.name.label('cluster_name'),
-        )
-        .join(Cluster, Cluster.id == StorageInventory.cluster_id)
-        .filter(StorageInventory.id == storage_id)
-        .first()
-    )
-
-    if result is None:
-        return None
-
-    item, cluster_name = result
-    namespace = item.namespace
-    if item.storage_type in {'StorageClass', 'PersistentVolume'}:
-        namespace = 'Cluster-wide'
-
-    return {
-        'id': item.id,
-        'cluster_name': cluster_name,
-        'namespace': namespace or '-',
-        'name': item.name,
-        'type': item.storage_type,
-        'storage_class': item.storage_class or '-',
-        'capacity': item.capacity or '-',
-        'status': item.status or 'Unknown',
-        'age': format_age(item.created_at),
-        'created_at': item.created_at,
-        'collected_at': item.collected_at,
-    }
-
-
 def get_namespace_filter_statuses(
     cluster_id: str | None = None,
 ) -> list[str]:
@@ -1464,14 +1349,104 @@ def get_namespace_inventory(
     }
 
 
+def get_namespace_detail(
+    namespace_id: int,
+) -> dict[str, Any] | None:
+    result = (
+        db.session.query(
+            NamespaceInventory,
+            Cluster.name.label(
+                'cluster_name',
+            ),
+        )
+        .join(
+            Cluster,
+            Cluster.id == NamespaceInventory.cluster_id,
+        )
+        .filter(
+            NamespaceInventory.id == namespace_id,
+        )
+        .first()
+    )
+
+    if result is None:
+        return None
+
+    namespace, cluster_name = result
+
+    workload_counts = {
+        row[0] or 'Unknown': row[1]
+        for row in (
+            db.session.query(
+                WorkloadInventory.workload_type,
+                func.count(WorkloadInventory.id),
+            )
+            .filter(
+                WorkloadInventory.cluster_id == namespace.cluster_id,
+                WorkloadInventory.namespace == namespace.namespace,
+            )
+            .group_by(
+                WorkloadInventory.workload_type,
+            )
+            .all()
+        )
+    }
+
+    object_counts = {
+        'workloads': db.session.query(func.count(WorkloadInventory.id)).filter(
+            WorkloadInventory.cluster_id == namespace.cluster_id,
+            WorkloadInventory.namespace == namespace.namespace,
+        ).scalar()
+        or 0,
+        'pods': db.session.query(func.count(PodInventory.id)).filter(
+            PodInventory.cluster_id == namespace.cluster_id,
+            PodInventory.namespace == namespace.namespace,
+        ).scalar()
+        or 0,
+        'services': db.session.query(func.count(ServiceInventory.id)).filter(
+            ServiceInventory.cluster_id == namespace.cluster_id,
+            ServiceInventory.namespace == namespace.namespace,
+        ).scalar()
+        or 0,
+        'ingresses': db.session.query(func.count(IngressInventory.id)).filter(
+            IngressInventory.cluster_id == namespace.cluster_id,
+            IngressInventory.namespace == namespace.namespace,
+        ).scalar()
+        or 0,
+        'persistent_volume_claims': db.session.query(func.count(StorageInventory.id)).filter(
+            StorageInventory.cluster_id == namespace.cluster_id,
+            StorageInventory.namespace == namespace.namespace,
+            StorageInventory.storage_type == 'PersistentVolumeClaim',
+        ).scalar()
+        or 0,
+    }
+
+    object_counts['tracked_total'] = sum(object_counts.values())
+
+    return {
+        'id': namespace.id,
+        'cluster_name': cluster_name,
+        'namespace': namespace.namespace,
+        'status': namespace.status or 'Unknown',
+        'collected_at': namespace.collected_at,
+        'object_counts': object_counts,
+        'workload_breakdown': {
+            'deployments': workload_counts.get('Deployment', 0),
+            'statefulsets': workload_counts.get('StatefulSet', 0),
+            'daemonsets': workload_counts.get('DaemonSet', 0),
+            'jobs': workload_counts.get('Job', 0),
+            'cronjobs': workload_counts.get('CronJob', 0),
+        },
+    }
+
+
 def format_age(
     created_at,
 ) -> str:
     if not created_at:
         return '-'
 
-    normalized_created_at = created_at if created_at.tzinfo is not None else created_at.replace(tzinfo=UTC)
-    delta = datetime.now(UTC) - normalized_created_at
+    delta = datetime.now(UTC) - created_at
 
     days = delta.days
 
@@ -1643,6 +1618,45 @@ def get_workload_inventory(
             cluster_id=cluster_id,
         ),
         'workloads': workloads_data,
+    }
+
+
+def get_workload_detail(
+    workload_id: int,
+) -> dict[str, Any] | None:
+    result = (
+        db.session.query(
+            WorkloadInventory,
+            Cluster.name.label(
+                'cluster_name',
+            ),
+        )
+        .join(
+            Cluster,
+            Cluster.id == WorkloadInventory.cluster_id,
+        )
+        .filter(
+            WorkloadInventory.id == workload_id,
+        )
+        .first()
+    )
+
+    if result is None:
+        return None
+
+    workload, cluster_name = result
+
+    return {
+        'id': workload.id,
+        'cluster_name': cluster_name,
+        'namespace': workload.namespace,
+        'name': workload.name,
+        'type': workload.workload_type or 'Unknown',
+        'ready': workload.ready or '-',
+        'status': workload.status or 'Unknown',
+        'age': format_age(workload.created_at),
+        'created_at': workload.created_at,
+        'collected_at': workload.collected_at,
     }
 
 
@@ -2007,6 +2021,46 @@ def get_service_inventory(
         ),
         'service_types': service_types,
         'services': services_data,
+    }
+
+
+def get_service_detail(
+    service_id: int,
+) -> dict[str, Any] | None:
+    result = (
+        db.session.query(
+            ServiceInventory,
+            Cluster.name.label(
+                'cluster_name',
+            ),
+        )
+        .join(
+            Cluster,
+            Cluster.id == ServiceInventory.cluster_id,
+        )
+        .filter(
+            ServiceInventory.id == service_id,
+        )
+        .first()
+    )
+
+    if result is None:
+        return None
+
+    service, cluster_name = result
+
+    return {
+        'id': service.id,
+        'cluster_name': cluster_name,
+        'namespace': service.namespace,
+        'service_name': service.service_name,
+        'service_type': service.service_type or 'Unknown',
+        'cluster_ip': service.cluster_ip or '-',
+        'external_ip': service.external_ip or '-',
+        'ports': service.ports or '-',
+        'age': format_age(service.created_at),
+        'created_at': service.created_at,
+        'collected_at': service.collected_at,
     }
 
 

@@ -1,30 +1,25 @@
-{% from "inventory/components/_detail_macros.html" import shell, card, row, badge %}
-{% call shell('Service detail', service.name, 'network') %}
-    {% call card('Service Identity', 'network', 'blue') %}
-        {% call row('Name') %}<span class="break-all">{{ service.name }}</span>{% endcall %}
-        {% call row('Type') %}{{ badge(service.type, 'blue', 'waypoints') }}{% endcall %}
-        {% call row('Cluster') %}{{ badge(service.cluster_name, 'blue', 'server') }}{% endcall %}
-        {% call row('Namespace') %}{{ badge(service.namespace, 'violet', 'folder-tree') }}{% endcall %}
+{% from 'inventory/components/_detail_macros.html' import detail_shell, detail_card, detail_row, metric_tile %}
+{% call detail_shell('Service networking and exposure detail', 'Scope, service type, network endpoints, and lifecycle timestamps for the selected Kubernetes Service.', 'network', 'bg-teal-100 text-teal-700 dark:bg-teal-500/10 dark:text-teal-300') %}
+    {% call detail_card('Service identity', 'network', 'bg-teal-100 text-teal-700 dark:bg-teal-500/10 dark:text-teal-300') %}
+        <dl class="space-y-3">
+            {{ detail_row('Cluster', service.cluster_name) }}
+            {{ detail_row('Namespace', service.namespace) }}
+            {{ detail_row('Service', service.service_name) }}
+            {{ detail_row('Type', service.service_type) }}
+        </dl>
     {% endcall %}
-
-    {% call card('Network Exposure', 'route', 'cyan') %}
-        {% call row('Cluster IP') %}{{ badge(service.cluster_ip, 'cyan', 'network') }}{% endcall %}
-        {% call row('External IP') %}
-            {% if service.external_ips %}
-                <div class="flex flex-wrap justify-end gap-1.5">{% for address in service.external_ips %}{{ badge(address, 'teal', 'globe-2') }}{% endfor %}</div>
-            {% else %}<span class="text-slate-400">Not exposed</span>{% endif %}
-        {% endcall %}
-        {% call row('Ports') %}
-            {% if service.ports %}
-                <div class="flex flex-wrap justify-end gap-1.5">{% for port in service.ports %}{{ badge(port, 'amber', 'plug-zap') }}{% endfor %}</div>
-            {% else %}<span class="text-slate-400">No ports recorded</span>{% endif %}
-        {% endcall %}
+    {% call detail_card('Network endpoints', 'globe', 'bg-cyan-100 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300') %}
+        <dl class="space-y-3">
+            {{ detail_row('Cluster IP', service.cluster_ip, mono=True) }}
+            {{ detail_row('External IP', service.external_ip, mono=True) }}
+            {{ detail_row('Ports', service.ports) }}
+        </dl>
     {% endcall %}
-
-    {% call card('Lifecycle', 'clock-3', 'violet') %}
-        {% call row('Age') %}{{ badge(service.age, 'violet', 'timer') }}{% endcall %}
-        {% call row('Created') %}<span>{{ service.created_at|user_datetime('%d %b %Y %H:%M %Z') }}</span>{% endcall %}
-        {% call row('Collected') %}<span>{{ service.collected_at|user_datetime('%d %b %Y %H:%M %Z') }}</span>{% endcall %}
-        {% call row('Timezone') %}{{ badge(current_timezone, 'slate', 'globe-2') }}{% endcall %}
+    {% call detail_card('Lifecycle context', 'clock-3', 'bg-violet-100 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300') %}
+        <dl class="space-y-3">
+            {{ detail_row('Age', service.age) }}
+            {{ detail_row('Created at', service.created_at.strftime('%Y-%m-%d %H:%M:%S') if service.created_at else '-') }}
+            {{ detail_row('Collected at', service.collected_at.strftime('%Y-%m-%d %H:%M:%S') if service.collected_at else '-') }}
+        </dl>
     {% endcall %}
 {% endcall %}

@@ -1,38 +1,46 @@
-{% from "inventory/components/_detail_macros.html" import shell, card, row, badge %}
-{% call shell('Ingress detail', ingress.name, 'route') %}
-    {% call card('Exposure Detail', 'map-pin', 'teal') %}
-        {% call row('Address') %}{{ badge(ingress.address, 'teal', 'map-pin') }}{% endcall %}
-        {% call row('TLS') %}{% if ingress.tls %}{{ badge('Enabled', 'emerald', 'lock-keyhole') }}{% else %}{{ badge('Not configured', 'slate', 'lock-keyhole-open') }}{% endif %}{% endcall %}
-        {% call row('Class') %}{{ badge(ingress.class, 'violet', 'layers') }}{% endcall %}
-        {% call row('Location') %}{{ badge(ingress.cluster_name ~ ' / ' ~ ingress.namespace, 'blue', 'map') }}{% endcall %}
+{% from 'inventory/components/_detail_macros.html' import detail_shell, detail_card, detail_row, metric_tile, detail_badge %}
+{% call detail_shell('Ingress exposure and route detail', 'Exposure posture, routing targets, and lifecycle context for the selected Kubernetes Ingress.', 'route', 'bg-violet-100 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300') %}
+    {% call detail_card('Ingress exposure', 'globe', 'bg-teal-100 text-teal-700 dark:bg-teal-500/10 dark:text-teal-300') %}
+        <div class="grid gap-3 sm:grid-cols-2">
+            {{ metric_tile('TLS', 'Enabled' if ingress.tls else 'Not configured', 'shield', 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300') }}
+            {{ metric_tile('Hosts', ingress.host_count, 'globe-2', 'bg-cyan-100 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300') }}
+        </div>
+        <dl class="space-y-3 pt-1">
+            {{ detail_row('Cluster', ingress.cluster_name) }}
+            {{ detail_row('Namespace', ingress.namespace) }}
+            {{ detail_row('Ingress', ingress.name) }}
+            {{ detail_row('Class', ingress.class) }}
+            {{ detail_row('Address', ingress.address) }}
+        </dl>
     {% endcall %}
-
-    {% call card('Service Paths', 'git-branch', 'violet') %}
-        {% call row('Path Count') %}{{ badge(ingress.backend_count, 'violet', 'route') }}{% endcall %}
-        {% call row('Service Count') %}{{ badge(ingress.service_count, 'cyan', 'network') }}{% endcall %}
-        <div class="max-h-44 space-y-2 overflow-y-auto rounded-xl bg-slate-50 p-2.5 dark:bg-slate-800/70">
-            {% if ingress.backend_paths %}
+    {% call detail_card('Backend routes', 'git-branch', 'bg-sky-100 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300') %}
+        <div class="flex flex-wrap gap-2">
+            {{ detail_badge(ingress.backend_count ~ ' path(s)', 'violet') }}
+            {{ detail_badge(ingress.service_count ~ ' service(s)', 'emerald') }}
+        </div>
+        {% if ingress.backend_paths %}
+            <div class="max-h-44 space-y-2 overflow-y-auto pr-1">
                 {% for backend in ingress.backend_paths %}
-                    <div class="rounded-xl border border-slate-200 bg-white p-2.5 dark:border-slate-700 dark:bg-slate-900/70">
-                        <div class="flex flex-wrap gap-1.5">
-                            {{ badge(backend.host, 'cyan', 'globe-2') }}
-                            {{ badge(backend.path, 'violet', 'route') }}
-                            {{ badge(backend.service_name, 'emerald', 'network') }}
-                            {{ badge('port ' ~ backend.service_port, 'amber', 'plug-zap') }}
-                            {{ badge(backend.path_type, 'slate') }}
+                    <div class="rounded-xl border border-slate-200 bg-white px-3 py-3 text-xs dark:border-slate-700 dark:bg-slate-900/70">
+                        <div class="flex flex-wrap gap-2">
+                            {{ detail_badge(backend.host, 'cyan') }}
+                            {{ detail_badge(backend.path, 'violet') }}
+                            {{ detail_badge(backend.service_name ~ ':' ~ backend.service_port, 'emerald') }}
+                            {{ detail_badge(backend.path_type, 'slate') }}
                         </div>
                     </div>
                 {% endfor %}
-            {% else %}
-                <p class="text-xs leading-5 text-slate-400">No backend service paths recorded. Re-sync inventory after collector updates.</p>
-            {% endif %}
-        </div>
+            </div>
+        {% else %}
+            <div class="text-sm text-slate-400 dark:text-slate-500">No backend service paths recorded.</div>
+        {% endif %}
     {% endcall %}
-
-    {% call card('Lifecycle', 'clock-3', 'violet') %}
-        {% call row('Age') %}{{ badge(ingress.age, 'violet', 'timer') }}{% endcall %}
-        {% call row('Created') %}<span>{{ ingress.created_at|user_datetime('%d %b %Y %H:%M %Z') }}</span>{% endcall %}
-        {% call row('Collected') %}<span>{{ ingress.collected_at|user_datetime('%d %b %Y %H:%M %Z') }}</span>{% endcall %}
-        {% call row('Hosts') %}{{ badge(ingress.host_count, 'blue', 'globe-2') }}{% endcall %}
+    {% call detail_card('Lifecycle context', 'clock-3', 'bg-violet-100 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300') %}
+        <dl class="space-y-3">
+            {{ detail_row('Age', ingress.age) }}
+            {{ detail_row('Created at', ingress.created_at.strftime('%Y-%m-%d %H:%M:%S') if ingress.created_at else '-') }}
+            {{ detail_row('Collected at', ingress.collected_at.strftime('%Y-%m-%d %H:%M:%S') if ingress.collected_at else '-') }}
+            {{ detail_row('Host', ingress.host) }}
+        </dl>
     {% endcall %}
 {% endcall %}

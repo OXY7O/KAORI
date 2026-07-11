@@ -1,24 +1,24 @@
-{% from "inventory/components/_detail_macros.html" import shell, card, row, badge %}
-{% call shell('Workload detail', workload.name, 'boxes') %}
-    {% call card('Workload Identity', 'boxes', 'blue') %}
-        {% call row('Name') %}<span class="break-all">{{ workload.name }}</span>{% endcall %}
-        {% call row('Type') %}{{ badge(workload.type, 'blue', 'box') }}{% endcall %}
-        {% call row('Cluster') %}{{ badge(workload.cluster_name, 'blue', 'server') }}{% endcall %}
-        {% call row('Namespace') %}{{ badge(workload.namespace, 'violet', 'folder-tree') }}{% endcall %}
+{% from 'inventory/components/_detail_macros.html' import detail_shell, detail_card, detail_row, metric_tile %}
+{% call detail_shell('Workload identity and lifecycle detail', 'Additional information about the selected workload including scope, readiness posture, and lifecycle timestamps.', 'box', 'bg-orange-100 text-orange-700 dark:bg-orange-500/10 dark:text-orange-300') %}
+    {% call detail_card('Workload identity', 'badge-info', 'bg-orange-100 text-orange-700 dark:bg-orange-500/10 dark:text-orange-300') %}
+        <dl class="space-y-3">
+            {{ detail_row('Cluster', workload.cluster_name) }}
+            {{ detail_row('Namespace', workload.namespace) }}
+            {{ detail_row('Workload', workload.name) }}
+            {{ detail_row('Type', workload.type) }}
+        </dl>
     {% endcall %}
-
-    {% call card('Runtime Posture', 'activity', 'emerald') %}
-        {% call row('Ready') %}{{ badge(workload.ready, 'teal', 'check-check') }}{% endcall %}
-        {% call row('Status') %}
-            {% if workload.status in ['Running', 'Complete', 'Completed'] %}{{ badge(workload.status, 'emerald', 'check-circle-2') }}{% elif workload.status in ['Failed', 'Error'] %}{{ badge(workload.status, 'rose', 'x-circle') }}{% elif workload.status in ['Progressing', 'Pending'] %}{{ badge(workload.status, 'amber', 'loader-circle') }}{% else %}{{ badge(workload.status, 'slate', 'circle-help') }}{% endif %}
-        {% endcall %}
-        {% call row('Inventory ID') %}<span>#{{ workload.id }}</span>{% endcall %}
+    {% call detail_card('Replica and status posture', 'activity', 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300') %}
+        <div class="grid gap-3 sm:grid-cols-2">
+            {{ metric_tile('Ready', workload.ready, 'check', 'bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300') }}
+            {{ metric_tile('Status', workload.status, 'pulse', 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300') }}
+        </div>
     {% endcall %}
-
-    {% call card('Lifecycle', 'clock-3', 'violet') %}
-        {% call row('Age') %}{{ badge(workload.age, 'violet', 'timer') }}{% endcall %}
-        {% call row('Created') %}<span>{{ workload.created_at|user_datetime('%d %b %Y %H:%M %Z') }}</span>{% endcall %}
-        {% call row('Collected') %}<span>{{ workload.collected_at|user_datetime('%d %b %Y %H:%M %Z') }}</span>{% endcall %}
-        {% call row('Timezone') %}{{ badge(current_timezone, 'slate', 'globe-2') }}{% endcall %}
+    {% call detail_card('Lifecycle context', 'clock-3', 'bg-violet-100 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300') %}
+        <dl class="space-y-3">
+            {{ detail_row('Age', workload.age) }}
+            {{ detail_row('Created at', workload.created_at.strftime('%Y-%m-%d %H:%M:%S') if workload.created_at else '-') }}
+            {{ detail_row('Collected at', workload.collected_at.strftime('%Y-%m-%d %H:%M:%S') if workload.collected_at else '-') }}
+        </dl>
     {% endcall %}
 {% endcall %}

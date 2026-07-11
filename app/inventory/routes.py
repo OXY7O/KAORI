@@ -1,4 +1,4 @@
-from flask import Blueprint, abort, render_template, request
+from flask import Blueprint, abort, flash, render_template, request
 
 from app.cluster.onboarding import has_registered_clusters
 from app.cluster.service import build_cluster_context
@@ -9,6 +9,7 @@ from app.inventory.service import (
     get_ingress_inventory,
     get_inventory_clusters,
     get_inventory_overview,
+    get_namespace_detail,
     get_namespace_filter_statuses,
     get_namespace_inventory,
     get_node_detail,
@@ -66,22 +67,18 @@ def sync(cluster_id: str):
 
     try:
         sync_inventory(cluster)
-        feedback = {
-            'message': f'Synchronized {cluster.name} inventory successfully.',
-            'category': 'success',
-        }
+        flash(
+            f'Synchronized {cluster.name} inventory successfully.',
+            'success',
+        )
     except Exception as exc:
-        feedback = {
-            'message': (
-                f'Inventory sync failed for {cluster.name}: {type(exc).__name__}. '
-                'Review Kubernetes API compatibility and cluster access.'
-            ),
-            'category': 'warning',
-        }
+        flash(
+            f'Inventory sync failed for {cluster.name}: {type(exc).__name__}. Review Kubernetes API compatibility and cluster access.',
+            'warning',
+        )
 
     return render_template(
         'cluster/partials/_table.html',
-        cluster_action_feedback=feedback,
         **_build_cluster_context_from_request(),
     )
 
@@ -334,15 +331,6 @@ def nodes():
     )
 
 
-@inventory_bp.get('/nodes/<int:node_id>/details')
-@permission_required('inventory.view')
-def node_details(node_id: int):
-    node = get_node_detail(node_id)
-    if node is None:
-        abort(404)
-    return render_template('inventory/nodes/partials/_node_detail_content.html', node=node)
-
-
 @inventory_bp.route('/namespaces')
 @permission_required('inventory.view')
 def namespaces():
@@ -436,6 +424,22 @@ def namespaces():
         selected_status=status,
         search=search,
         pagination=pagination,
+    )
+
+
+@inventory_bp.get('/namespaces/<int:namespace_id>/details')
+@permission_required('inventory.view')
+def namespace_details(namespace_id: int):
+    namespace = get_namespace_detail(
+        namespace_id,
+    )
+
+    if namespace is None:
+        abort(404)
+
+    return render_template(
+        'inventory/namespaces/partials/_namespace_detail_content.html',
+        namespace=namespace,
     )
 
 
@@ -570,9 +574,13 @@ def workloads():
 @inventory_bp.get('/workloads/<int:workload_id>/details')
 @permission_required('inventory.view')
 def workload_details(workload_id: int):
-    workload = get_workload_detail(workload_id)
+    workload = get_workload_detail(
+        workload_id,
+    )
+
     if workload is None:
         abort(404)
+
     return render_template(
         'inventory/workloads/partials/_workload_detail_content.html',
         workload=workload,
@@ -860,9 +868,13 @@ def services():
 @inventory_bp.get('/services/<int:service_id>/details')
 @permission_required('inventory.view')
 def service_details(service_id: int):
-    service = get_service_detail(service_id)
+    service = get_service_detail(
+        service_id,
+    )
+
     if service is None:
         abort(404)
+
     return render_template(
         'inventory/services/partials/_service_detail_content.html',
         service=service,
@@ -1140,12 +1152,16 @@ def storage():
 @inventory_bp.get('/storage/<int:storage_id>/details')
 @permission_required('inventory.view')
 def storage_details(storage_id: int):
-    storage = get_storage_detail(storage_id)
-    if storage is None:
+    item = get_storage_detail(
+        storage_id,
+    )
+
+    if item is None:
         abort(404)
+
     return render_template(
         'inventory/storage/partials/_storage_detail_content.html',
-        storage=storage,
+        item=item,
     )
 
 
