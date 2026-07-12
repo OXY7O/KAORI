@@ -71,6 +71,14 @@ class NodeInventory(db.Model):
 
     os_image: Mapped[str | None] = mapped_column(String(255))
 
+    operating_system: Mapped[str | None] = mapped_column(String(50))
+
+    architecture: Mapped[str | None] = mapped_column(String(64))
+
+    kubelet_version: Mapped[str | None] = mapped_column(String(64))
+
+    kube_proxy_version: Mapped[str | None] = mapped_column(String(64))
+
     kernel_version: Mapped[str | None] = mapped_column(String(255))
 
     container_runtime: Mapped[str | None] = mapped_column(String(255))

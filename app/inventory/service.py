@@ -391,6 +391,16 @@ def save_nodes(
         )
 
         node_inventory.os_image = status.node_info.os_image
+        node_inventory.operating_system = (
+            status.node_info.operating_system
+            or (metadata.labels or {}).get('kubernetes.io/os')
+        )
+        node_inventory.architecture = (
+            status.node_info.architecture
+            or (metadata.labels or {}).get('kubernetes.io/arch')
+        )
+        node_inventory.kubelet_version = status.node_info.kubelet_version
+        node_inventory.kube_proxy_version = status.node_info.kube_proxy_version
 
         node_inventory.kernel_version = status.node_info.kernel_version
 
@@ -1864,6 +1874,23 @@ def get_node_detail(node_id: int) -> dict[str, Any] | None:
         'NotReady': 'False',
     }.get(node.status or '', 'Unknown')
 
+    node_labels = node.labels or {}
+    operating_system = (
+        node.operating_system
+        or node_labels.get('kubernetes.io/os')
+        or 'Unknown'
+    )
+    operating_system_display = (
+        operating_system.title()
+        if operating_system.lower() in {'linux', 'windows'}
+        else operating_system
+    )
+    architecture = (
+        node.architecture
+        or node_labels.get('kubernetes.io/arch')
+        or 'Not reported'
+    )
+
     return {
         'id': node.id,
         'cluster_name': cluster_name,
@@ -1888,9 +1915,13 @@ def get_node_detail(node_id: int) -> dict[str, Any] | None:
         'taints': node.taints or [],
         'labels': dict(
             sorted(
-                (node.labels or {}).items(),
+                node_labels.items(),
             )
         ),
+        'operating_system_display': operating_system_display,
+        'architecture': architecture,
+        'kubelet_version': node.kubelet_version or 'Not reported',
+        'kube_proxy_version': node.kube_proxy_version or 'Not reported',
         'cpu': node.cpu,
         'memory_display': format_kubernetes_size(node.memory),
         'ephemeral_storage_display': format_kubernetes_size(node.ephemeral_storage),

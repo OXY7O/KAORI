@@ -59,25 +59,16 @@
             {% endcall %}
 
             {% call detail_card(
-                'Platform & capacity',
+                'Platform & runtime',
                 'cpu',
                 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300',
-                node.memory_display,
+                node.operating_system_display,
                 'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300'
             ) %}
-                <div class="flex items-start justify-between gap-3">
-                    <span class="shrink-0 text-slate-500 dark:text-slate-400">Operating system</span>
-                    <span class="max-w-[68%] break-words text-right text-[11px] font-semibold leading-4 text-slate-900 dark:text-white" title="{{ node.os_image or '-' }}">{{ node.os_image or '-' }}</span>
-                </div>
-                <div class="flex items-start justify-between gap-3">
-                    <span class="shrink-0 text-slate-500 dark:text-slate-400">Kernel</span>
-                    <span class="max-w-[68%] break-all text-right text-[11px] font-semibold leading-4 text-slate-900 dark:text-white" title="{{ node.kernel_version or '-' }}">{{ node.kernel_version or '-' }}</span>
-                </div>
-                {{ detail_row('Container runtime', node.runtime_display or '-') }}
-                {{ detail_row('CPU', node.cpu or '-') }}
-                {{ detail_row('Memory', node.memory_display) }}
-                {{ detail_row('Ephemeral storage', node.ephemeral_storage_display) }}
-                {{ detail_row('Allocatable storage', node.ephemeral_storage_allocatable_display) }}
+                {{ detail_row('Operating system', node.operating_system_display) }}
+                {{ detail_row('Kubelet version', node.kubelet_version) }}
+                {{ detail_row('Kube-proxy version', node.kube_proxy_version) }}
+                {{ detail_row('Architecture', node.architecture) }}
             {% endcall %}
 
             {% call detail_card(
