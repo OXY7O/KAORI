@@ -1,5 +1,32 @@
-{% from 'inventory/components/_detail_macros.html' import detail_card, detail_row, detail_tip %}
+{% from 'inventory/components/_detail_macros.html' import detail_card, detail_tip %}
 {% set status_classes = 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' if node.status == 'Ready' else ('bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300' if node.status == 'NotReady' else 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300') %}
+
+{% macro node_detail_row(label, value='-', tone='blue', mono=False) -%}
+    {% set tones = {
+        'blue': {
+            'label': 'bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20',
+            'value': 'text-blue-800 dark:text-blue-200'
+        },
+        'cyan': {
+            'label': 'bg-cyan-50 text-cyan-700 ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-500/20',
+            'value': 'text-cyan-800 dark:text-cyan-200'
+        },
+        'violet': {
+            'label': 'bg-violet-50 text-violet-700 ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-500/20',
+            'value': 'text-violet-800 dark:text-violet-200'
+        },
+        'amber': {
+            'label': 'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20',
+            'value': 'text-amber-800 dark:text-amber-200'
+        }
+    } %}
+    {% set selected = tones.get(tone, tones['blue']) %}
+    {% set display_value = value if value not in [None, ''] else '-' %}
+    <div class="flex items-start justify-between gap-3">
+        <span class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset {{ selected.label }}">{{ label }}</span>
+        <span class="max-w-[68%] break-words text-right font-semibold leading-4 {{ 'font-mono text-[10px]' if mono else 'text-xs' }} {{ selected.value }}" title="{{ display_value }}">{{ display_value }}</span>
+    </div>
+{%- endmacro %}
 
 <div class="bg-slate-50/80 px-4 py-4 dark:bg-slate-950/40">
     <div class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
@@ -27,13 +54,13 @@
                 'Node identity',
                 'badge-info',
                 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300',
-                node.role,
-                'bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300'
+                'UUID',
+                'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300'
             ) %}
-                {{ detail_row('Role', node.role) }}
-                {{ detail_row('Cluster', node.cluster_name) }}
-                {{ detail_row('Age', node.age) }}
-                {{ detail_row('Collected', node.collected_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
+                {{ node_detail_row('UUID', node.uuid, 'blue', True) }}
+                {{ node_detail_row('Cluster', node.cluster_name, 'blue') }}
+                {{ node_detail_row('Age', node.age, 'blue') }}
+                {{ node_detail_row('Collected', node.collected_at|user_datetime('%Y-%m-%d %H:%M %Z'), 'blue') }}
                 <div class="mt-auto pt-2">
                     {{ detail_tip('Age is calculated from the Kubernetes node creation timestamp and helps distinguish newly joined nodes from long-lived nodes.', 'blue', 'clock-3') }}
                 </div>
@@ -46,15 +73,15 @@
                 node.scheduled_pod_count ~ ' Pods',
                 'bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300'
             ) %}
-                {{ detail_row('Internal IP', node.internal_ip or '-') }}
-                {{ detail_row('External IP', node.external_ip or '-') }}
-                {{ detail_row('Scheduled Pods', node.scheduled_pod_count) }}
+                {{ node_detail_row('Internal IP', node.internal_ip or '-', 'cyan') }}
+                {{ node_detail_row('External IP', node.external_ip or '-', 'cyan') }}
+                {{ node_detail_row('Scheduled Pods', node.scheduled_pod_count, 'cyan') }}
                 <div class="flex items-start justify-between gap-3">
-                    <span class="shrink-0 text-slate-500 dark:text-slate-400">Network availability</span>
+                    <span class="shrink-0 rounded-full bg-cyan-50 px-2 py-0.5 text-[10px] font-semibold text-cyan-700 ring-1 ring-inset ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-500/20">Network availability</span>
                     <span class="rounded-full px-2 py-0.5 text-xs font-semibold {{ 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' if node.network_availability == 'Available' else ('bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300' if node.network_availability == 'Unavailable' else 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300') }}">{{ node.network_availability }}</span>
                 </div>
                 <div class="mt-auto pt-2">
-                    {{ detail_tip('Internal IP is used for node communication inside the cluster. External IP can be empty for private or on-premises nodes.', 'blue', 'network') }}
+                    {{ detail_tip('Internal IP is used for node communication inside the cluster. External IP can be empty for private or on-premises nodes.', 'cyan', 'network') }}
                 </div>
             {% endcall %}
 
@@ -65,10 +92,11 @@
                 node.operating_system_display,
                 'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300'
             ) %}
-                {{ detail_row('Operating system', node.os_image or '-') }}
-                {{ detail_row('Kubelet version', node.kubelet_version) }}
-                {{ detail_row('Kube-proxy version', node.kube_proxy_version) }}
-                {{ detail_row('Architecture', node.architecture) }}
+                {{ node_detail_row('Operating system', node.os_image or '-', 'violet') }}
+                {{ node_detail_row('Kubelet version', node.kubelet_version, 'violet') }}
+                {{ node_detail_row('Kube-proxy version', node.kube_proxy_version, 'violet') }}
+                {{ node_detail_row('Architecture', node.architecture, 'violet') }}
+                {{ detail_tip('OS image and component versions are reported by the Kubernetes node status. A missing kube-proxy version means the node did not publish that value.', 'violet', 'cpu', False, True) }}
             {% endcall %}
 
             {% call detail_card(
@@ -79,31 +107,31 @@
                 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' if node.scheduling_display == 'Schedulable' else ('bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300' if node.scheduling_display == 'Cordoned' else 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300')
             ) %}
                 <div class="flex items-start justify-between gap-3">
-                    <span class="shrink-0 text-slate-500 dark:text-slate-400">Scheduling</span>
+                    <span class="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20">Scheduling</span>
                     <span class="rounded-full px-2 py-0.5 text-xs font-semibold {{ 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' if node.scheduling_display == 'Schedulable' else ('bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300' if node.scheduling_display == 'Cordoned' else 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300') }}">{{ node.scheduling_display }}</span>
                 </div>
                 <div class="flex items-start justify-between gap-3">
-                    <span class="shrink-0 text-slate-500 dark:text-slate-400">Ready</span>
+                    <span class="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20">Ready</span>
                     <span class="rounded-full px-2 py-0.5 text-xs font-semibold {{ 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' if node.ready_condition == 'True' else ('bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300' if node.ready_condition == 'False' else 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300') }}">{{ node.ready_condition }}</span>
                 </div>
                 {% for label, value in [('MemoryPressure', node.memory_pressure), ('DiskPressure', node.disk_pressure), ('PIDPressure', node.pid_pressure)] %}
                     <div class="flex items-start justify-between gap-3">
-                        <span class="shrink-0 text-slate-500 dark:text-slate-400">{{ label }}</span>
+                        <span class="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20">{{ label }}</span>
                         <span class="rounded-full px-2 py-0.5 text-xs font-semibold {{ 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300' if value == 'True' else ('bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' if value == 'False' else 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300') }}">{{ value }}</span>
                     </div>
                 {% endfor %}
-                <div class="flex items-center justify-between gap-2 pt-1">
-                    <span class="shrink-0 text-slate-500 dark:text-slate-400">Taints</span>
+                <div class="flex flex-col gap-2 pt-1">
+                    <span class="w-fit rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20">Taints</span>
                     {% if node.taints %}
-                        <div class="flex min-w-0 max-w-[68%] flex-col items-end gap-1">
+                        <div class="flex min-w-0 flex-wrap gap-1.5">
                             {% for taint in node.taints %}
-                                <span class="inline-flex max-w-full items-center rounded-full bg-rose-50 px-1.5 py-0.5 text-[9px] font-medium leading-3 tracking-tight text-rose-700 ring-1 ring-inset ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/25" title="{{ taint }}">
-                                    <span class="block max-w-full truncate whitespace-nowrap">{{ taint }}</span>
+                                <span class="inline-flex max-w-full items-center rounded-full bg-rose-50 px-2 py-1 text-[9px] font-medium leading-3 tracking-tight text-rose-700 ring-1 ring-inset ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/25" title="{{ taint }}">
+                                    <span class="break-all">{{ taint }}</span>
                                 </span>
                             {% endfor %}
                         </div>
                     {% else %}
-                        <span class="inline-flex items-center rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-medium leading-3 text-slate-500 ring-1 ring-inset ring-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:ring-slate-700">No taints</span>
+                        <span class="inline-flex w-fit items-center rounded-full bg-slate-100 px-2 py-1 text-[9px] font-medium leading-3 text-slate-500 ring-1 ring-inset ring-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:ring-slate-700">No taints</span>
                     {% endif %}
                 </div>
             {% endcall %}

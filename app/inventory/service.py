@@ -344,6 +344,7 @@ def save_nodes(
 
         node_inventory.cluster_id = cluster.id
         node_inventory.node_name = metadata.name
+        node_inventory.node_uid = str(metadata.uid) if metadata.uid else None
         node_inventory.role = get_node_role(node)
         node_inventory.created_at = metadata.creation_timestamp
         node_inventory.status = ready_status
@@ -1895,6 +1896,7 @@ def get_node_detail(node_id: int) -> dict[str, Any] | None:
         'id': node.id,
         'cluster_name': cluster_name,
         'node_name': node.node_name,
+        'uuid': node.node_uid or 'Not reported',
         'role': role,
         'age': format_age(node.created_at),
         'role_description': NODE_ROLE_DESCRIPTIONS.get(
