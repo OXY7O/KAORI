@@ -28,7 +28,7 @@
                 {{ detail_row('Kubernetes UID', service.uid, true, 'blue') }}
                 {{ detail_row('Created', service.created_at|user_datetime('%Y-%m-%d %H:%M %Z'), false, 'blue') }}
                 {{ detail_row('Collected', service.collected_at|user_datetime('%Y-%m-%d %H:%M %Z'), false, 'blue') }}
-                {{ detail_tip(service.type_description, 'blue', 'lightbulb', false, true) }}
+                {{ detail_tip(service.type_description, 'blue', 'lightbulb', false, true, 'min-h-28') }}
             {% endcall %}
 
             {% call detail_card('Network configuration', 'globe-2', 'bg-cyan-50 text-cyan-600 dark:bg-cyan-950/40 dark:text-cyan-300', service.cluster_ip, 'bg-cyan-50 text-cyan-700 ring-1 ring-inset ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-400/25') %}
@@ -41,7 +41,7 @@
                 {{ detail_row('Internal traffic', service.internal_traffic_policy, false, 'cyan') }}
                 {{ detail_row('External traffic', service.external_traffic_policy, false, 'cyan') }}
                 {{ detail_row('Load balancer class', service.load_balancer_class, false, 'cyan') }}
-                {{ detail_tip('Cluster IP and external addresses are current Service endpoints. Exposure behavior depends on the selected Service type.', 'teal', 'network', false, true) }}
+                {{ detail_tip('Cluster IP and external addresses are current Service endpoints. Exposure behavior depends on the selected Service type.', 'teal', 'network', false, true, 'min-h-28') }}
             {% endcall %}
 
             {% call detail_card('Port mapping', 'plug-zap', 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300', service.port_count ~ ' port(s)', 'bg-violet-50 text-violet-700 ring-1 ring-inset ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-400/25') %}
@@ -64,7 +64,7 @@
                 {% else %}
                     {{ detail_tip('No Service port is recorded in this snapshot.', 'slate', 'info') }}
                 {% endif %}
-                {{ detail_tip('Port mappings describe Service-to-target forwarding only. Traffic utilization remains in Analytics.', 'violet', 'route', false, true) }}
+                {{ detail_tip('Port mappings describe Service-to-target forwarding only. Traffic utilization remains in Analytics.', 'violet', 'route', false, true, 'min-h-28') }}
             {% endcall %}
 
             {% call detail_card('Selection & endpoints', 'scan-search', 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300', service.ready_endpoint_count ~ ' ready', 'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/25') %}
@@ -82,7 +82,7 @@
                         {% endfor %}
                     </div>
                 {% endif %}
-                {{ detail_tip('Selectors resolve matching Pods, while endpoint readiness reflects the latest Kubernetes Endpoints snapshot.', 'emerald', 'info', false, true) }}
+                {{ detail_tip('Selectors resolve matching Pods, while endpoint readiness reflects the latest Kubernetes Endpoints snapshot.', 'emerald', 'info', false, true, 'min-h-28') }}
             {% endcall %}
         </div>
 
