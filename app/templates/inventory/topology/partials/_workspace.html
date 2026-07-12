@@ -135,9 +135,9 @@
                         <option value="hierarchy">Hierarchy view</option>
                         <option value="dependency">Dependency view</option>
                     </select>
-                    <ul class="mt-2 space-y-1 text-[10px] leading-4">
-                        <li class="flex items-start gap-2 text-indigo-700 dark:text-indigo-300"><span class="mt-1 h-1.5 w-1.5 rounded-full bg-indigo-500"></span><span><strong class="font-medium">Hierarchy</strong> focuses on ownership flow.</span></li>
-                        <li class="flex items-start gap-2 text-teal-700 dark:text-teal-300"><span class="mt-1 h-1.5 w-1.5 rounded-full bg-teal-500"></span><span><strong class="font-medium">Dependency</strong> spreads connected resources for relationship review.</span></li>
+                    <ul class="mt-2 list-disc space-y-1 pl-4 text-[10px] leading-4 marker:text-blue-500">
+                        <li class="text-indigo-700 dark:text-indigo-300"><span class="font-medium">Hierarchy</span> focuses on ownership flow.</li>
+                        <li class="text-teal-700 dark:text-teal-300"><span class="font-medium">Dependency</span> spreads connected resources for relationship review.</li>
                     </ul>
                 </div>
             </div>
@@ -219,15 +219,15 @@
             </div>
 
             <div class="mt-6 rounded-xl border border-blue-200 bg-blue-50 px-3 py-3 dark:border-blue-500/20 dark:bg-blue-500/10">
-                <ul class="space-y-1.5 text-[10px] leading-4 text-blue-700 dark:text-blue-300">
-                    <li class="flex items-start gap-2"><span class="mt-1 h-1.5 w-1.5 rounded-full bg-blue-500"></span><span>Uses the latest inventory snapshot.</span></li>
-                    <li class="flex items-start gap-2"><span class="mt-1 h-1.5 w-1.5 rounded-full bg-blue-500"></span><span>Boundaries group related cluster and namespace resources.</span></li>
-                    <li class="flex items-start gap-2"><span class="mt-1 h-1.5 w-1.5 rounded-full bg-blue-500"></span><span>Lines show ownership and dependency relationships.</span></li>
+                <ul class="list-disc space-y-1.5 pl-4 text-[10px] leading-4 text-blue-700 marker:text-blue-500 dark:text-blue-300">
+                    <li>Uses the latest inventory snapshot.</li>
+                    <li>Groups related cluster and namespace resources.</li>
+                    <li>Shows ownership and dependency relationships.</li>
                 </ul>
             </div>
         </aside>
 
-        <div class="relative min-h-[780px] bg-white xl:col-span-8 dark:bg-slate-900/20">
+        <div class="relative min-h-[780px] min-w-0 bg-white xl:col-span-7 dark:bg-slate-900/20">
             <div id="topology-canvas" role="application" aria-label="Interactive Kubernetes topology graph" class="absolute inset-0"></div>
             <div id="topology-empty-state" class="pointer-events-none absolute inset-0 hidden items-center justify-center p-8">
                 <div class="max-w-md rounded-2xl border border-slate-200 bg-white px-6 py-8 text-center shadow-sm dark:border-slate-700 dark:bg-slate-800">
@@ -240,7 +240,7 @@
             </div>
         </div>
 
-        <aside class="border-t border-slate-200 bg-white p-5 xl:col-span-2 xl:border-l xl:border-t-0 dark:border-slate-700 dark:bg-slate-800">
+        <aside class="min-w-0 border-t border-slate-200 bg-white p-5 xl:col-span-3 xl:border-l xl:border-t-0 dark:border-slate-700 dark:bg-slate-800">
             <div class="flex items-center gap-3">
                 <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
                     <i data-lucide="panel-right" class="h-4 w-4"></i>
