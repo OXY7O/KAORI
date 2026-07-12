@@ -63,6 +63,9 @@
                 {{ detail_row('Kubernetes UID', workload.uid, True, 'violet') }}
                 {{ detail_row('Created', workload.created_at|user_datetime('%Y-%m-%d %H:%M %Z'), false, 'violet') }}
                 {{ detail_row('Collected', workload.collected_at|user_datetime('%Y-%m-%d %H:%M %Z'), false, 'violet') }}
+                <div class="mt-auto pt-3">
+                    {{ detail_tip('Identifies the workload object and the latest inventory snapshot collected by KAORI.', 'violet', 'lightbulb', panel_classes='min-h-28') }}
+                </div>
             {% endcall %}
 
             {% call detail_card(
@@ -76,6 +79,9 @@
                     {{ detail_row(row.label, row.value, false, 'blue') }}
                 {% endfor %}
                 {{ detail_row('Managed Pods', workload.pod_count, false, 'blue') }}
+                <div class="mt-auto pt-3">
+                    {{ detail_tip('Compares desired and observed controller values at collection time. Historical behavior remains in Analytics.', 'blue', 'info', panel_classes='min-h-28') }}
+                </div>
             {% endcall %}
 
             {% call detail_card(
@@ -88,6 +94,15 @@
                 {% for row in workload.pod_configuration_rows %}
                     {{ detail_row(row.label, row.value, false, 'emerald') }}
                 {% endfor %}
+                <div class="mt-auto pt-3">
+                    {% if workload.pod_configuration_reported %}
+                        {{ detail_tip('Pod configuration comes from the workload template. Runtime utilization remains in Analytics.', 'emerald', 'info', panel_classes='min-h-28') }}
+                    {% elif workload.pod_configuration_source == 'associated-pod-fallback' %}
+                        {{ detail_tip('Configuration is inferred from associated Pods. Restart the worker and sync again to collect the workload template.', 'amber', 'triangle-alert', panel_classes='min-h-28') }}
+                    {% else %}
+                        {{ detail_tip('Pod template metadata is unavailable. Restart the worker and sync this cluster again.', 'amber', 'triangle-alert', panel_classes='min-h-28') }}
+                    {% endif %}
+                </div>
             {% endcall %}
 
             {% call detail_card(
@@ -123,33 +138,33 @@
                     </div>
                 </div>
 
-                <div class="flex items-start justify-between gap-3 pt-1">
-                    <span class="shrink-0 text-xs font-normal leading-5 text-slate-500 dark:text-slate-400">Node selector</span>
+                <div class="space-y-2 pt-1">
+                    <span class="block text-xs font-normal leading-5 text-slate-500 dark:text-slate-400">Node selector</span>
                     {% if workload.node_selectors %}
-                        <div class="flex min-w-0 max-w-[68%] flex-col items-end gap-1">
+                        <div class="flex flex-wrap gap-1.5">
                             {% for selector in workload.node_selectors %}
-                                <span class="inline-flex max-w-full items-center rounded-full bg-amber-50 px-1.5 py-0.5 text-[9px] font-normal leading-3 tracking-tight text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/25" title="{{ selector }}">
-                                    <span class="block max-w-full truncate whitespace-nowrap">{{ selector }}</span>
+                                <span class="inline-flex max-w-full items-center rounded-full bg-amber-50 px-2 py-0.5 text-[9px] font-normal leading-3 tracking-tight text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/25" title="{{ selector }}">
+                                    <span class="block max-w-full break-all">{{ selector }}</span>
                                 </span>
                             {% endfor %}
                         </div>
                     {% else %}
-                        <span class="inline-flex items-center rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-normal leading-3 text-slate-500 ring-1 ring-inset ring-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:ring-slate-700">Not configured</span>
+                        <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-normal leading-3 text-slate-500 ring-1 ring-inset ring-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:ring-slate-700">Not configured</span>
                     {% endif %}
                 </div>
 
-                <div class="flex items-start justify-between gap-3 pt-1">
-                    <span class="shrink-0 text-xs font-normal leading-5 text-slate-500 dark:text-slate-400">Tolerations</span>
+                <div class="space-y-2 pt-1">
+                    <span class="block text-xs font-normal leading-5 text-slate-500 dark:text-slate-400">Tolerations</span>
                     {% if workload.tolerations %}
-                        <div class="flex min-w-0 max-w-[68%] flex-col items-end gap-1">
+                        <div class="flex flex-wrap gap-1.5">
                             {% for toleration in workload.tolerations %}
-                                <span class="inline-flex max-w-full items-center rounded-full bg-amber-50 px-1.5 py-0.5 text-[9px] font-normal leading-3 tracking-tight text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/25" title="{{ toleration }}">
-                                    <span class="block max-w-full truncate whitespace-nowrap">{{ toleration }}</span>
+                                <span class="inline-flex max-w-full items-center rounded-full bg-amber-50 px-2 py-0.5 text-[9px] font-normal leading-3 tracking-tight text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/25" title="{{ toleration }}">
+                                    <span class="block max-w-full break-all">{{ toleration }}</span>
                                 </span>
                             {% endfor %}
                         </div>
                     {% else %}
-                        <span class="inline-flex items-center rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-normal leading-3 text-slate-500 ring-1 ring-inset ring-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:ring-slate-700">Not configured</span>
+                        <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-normal leading-3 text-slate-500 ring-1 ring-inset ring-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:ring-slate-700">Not configured</span>
                     {% endif %}
                 </div>
 
