@@ -1,23 +1,23 @@
 <div class="overflow-x-auto overscroll-x-contain">
-    <table class="w-full min-w-[1080px] table-fixed text-slate-900 dark:text-slate-100">
+    <table style="width: 100%; min-width: 1080px; table-layout: fixed;" class="text-slate-900 dark:text-slate-100">
         <colgroup>
-            <col class="w-[16%]">
-            <col class="w-[25%]">
-            <col class="w-[9%]">
-            <col class="w-[7%]">
-            <col class="w-[5%]">
-            <col class="w-[6%]">
-            <col class="w-[22%]">
-            <col class="w-[10%]">
+            <col style="width: 15%;">
+            <col style="width: 27%;">
+            <col style="width: 8%;">
+            <col style="width: 6%;">
+            <col style="width: 4%;">
+            <col style="width: 5%;">
+            <col style="width: 25%;">
+            <col style="width: 10%;">
         </colgroup>
         <thead>
             <tr class="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-600 dark:border-slate-700 dark:bg-slate-700/40 dark:text-slate-300">
                 <th class="px-4 py-4 text-left">Cluster</th>
                 <th class="px-4 py-4 text-left">Namespace</th>
                 <th class="px-3 py-4 text-left">Status</th>
-                <th class="px-2 py-4 text-left">Workloads</th>
-                <th class="px-2 py-4 text-left">Pods</th>
-                <th class="px-2 py-4 text-left">Services</th>
+                <th class="px-1.5 py-4 text-left">Workloads</th>
+                <th class="px-1.5 py-4 text-left">Pods</th>
+                <th class="px-1.5 py-4 text-left">Services</th>
                 <th class="px-3 py-4 text-left">Controls</th>
                 <th class="px-3 py-4 text-left">Details</th>
             </tr>
@@ -48,9 +48,9 @@
                             <span class="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 ring-1 ring-inset ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-600">{{ namespace.status }}</span>
                         {% endif %}
                     </td>
-                    <td class="px-2 py-4 align-middle font-semibold tabular-nums text-slate-700 dark:text-slate-200">{{ namespace.workload_count }}</td>
-                    <td class="px-2 py-4 align-middle font-semibold tabular-nums text-slate-700 dark:text-slate-200">{{ namespace.pod_count }}</td>
-                    <td class="px-2 py-4 align-middle font-semibold tabular-nums text-slate-700 dark:text-slate-200">{{ namespace.service_count }}</td>
+                    <td class="px-1.5 py-4 align-middle font-normal tabular-nums text-slate-700 dark:text-slate-200">{{ namespace.workload_count }}</td>
+                    <td class="px-1.5 py-4 align-middle font-normal tabular-nums text-slate-700 dark:text-slate-200">{{ namespace.pod_count }}</td>
+                    <td class="px-1.5 py-4 align-middle font-normal tabular-nums text-slate-700 dark:text-slate-200">{{ namespace.service_count }}</td>
                     <td class="px-3 py-4 align-middle">
                         <div class="flex max-w-full flex-wrap gap-1.5">
                             {% if namespace.quota_count > 0 %}

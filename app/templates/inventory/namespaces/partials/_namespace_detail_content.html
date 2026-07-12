@@ -58,13 +58,13 @@
                 {{ detail_row('Services', namespace.object_counts.services, false, 'sky') }}
                 {{ detail_row('Ingresses', namespace.object_counts.ingresses, false, 'sky') }}
                 {{ detail_row('PVCs', namespace.object_counts.persistent_volume_claims, false, 'sky') }}
-                <div class="mt-auto pt-2">
+                <div class="pt-2">
                     <div class="flex items-start gap-2.5 rounded-xl bg-sky-50 px-3 py-2.5 text-xs leading-5 text-sky-800 dark:bg-sky-500/10 dark:text-sky-200">
                         <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-sky-100 text-sky-600 dark:bg-sky-500/15 dark:text-sky-300">
                             <i data-lucide="layout-grid" class="h-3.5 w-3.5"></i>
                         </span>
                         <div class="min-w-0">
-                            <p class="font-semibold">Workload composition</p>
+                            <p class="font-normal">Workload composition</p>
                             <p class="mt-0.5">
                                 {{ namespace.workload_breakdown.deployments }} Deployments ·
                                 {{ namespace.workload_breakdown.statefulsets }} StatefulSets ·
@@ -74,6 +74,9 @@
                             </p>
                         </div>
                     </div>
+                </div>
+                <div class="mt-auto pt-2">
+                    {{ detail_tip('Workload composition summarizes controllers recorded in this namespace. Pod totals are shown separately because one workload can manage multiple pods.', 'sky', 'info') }}
                 </div>
             {% endcall %}
 
@@ -86,39 +89,44 @@
             ) %}
                 {{ detail_row('ResourceQuotas', namespace.quota_count, false, 'amber') }}
                 {{ detail_row('LimitRanges', namespace.limit_range_count if namespace.limit_range_count is not none else 'Not reported', false, 'amber') }}
-                <div class="mt-auto pt-2">
-                {% if namespace.quotas %}
-                    <div class="max-h-56 space-y-2 overflow-y-auto pr-1">
-                        {% for quota in namespace.quotas %}
-                            <div class="rounded-xl bg-amber-50 px-3 py-3 text-amber-900 ring-1 ring-inset ring-amber-100 dark:bg-amber-500/10 dark:text-amber-100 dark:ring-amber-500/20">
-                                <div class="flex items-start gap-2.5">
-                                    <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300">
-                                        <i data-lucide="sliders-horizontal" class="h-3.5 w-3.5"></i>
-                                    </span>
-                                    <div class="min-w-0 flex-1">
-                                        <div class="flex items-center justify-between gap-3">
-                                            <span class="truncate text-[11px] font-semibold text-amber-950 dark:text-amber-100" title="{{ quota.name }}">{{ quota.name }}</span>
-                                            <span class="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-normal text-amber-700 dark:bg-amber-500/15 dark:text-amber-200">{{ quota.resource_count }} limits</span>
-                                        </div>
-                                        <div class="mt-2 space-y-1.5">
-                                            {% for resource in quota.resources %}
-                                                <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-2 text-[10px]">
-                                                    <span class="truncate text-amber-700/80 dark:text-amber-200/80" title="{{ resource.name }}">{{ resource.name }}</span>
-                                                    <span class="whitespace-nowrap font-semibold text-amber-950 dark:text-amber-100">{{ resource.hard }}</span>
-                                                </div>
-                                            {% endfor %}
-                                            {% if quota.truncated %}
-                                                <div class="text-[9px] text-amber-700/70 dark:text-amber-200/70">Additional configured limits are not shown.</div>
-                                            {% endif %}
+                <div class="pt-2">
+                    {% if namespace.quotas %}
+                        <div class="max-h-56 space-y-2 overflow-y-auto pr-1">
+                            {% for quota in namespace.quotas %}
+                                <div class="rounded-xl bg-amber-50 px-3 py-3 text-amber-900 ring-1 ring-inset ring-amber-100 dark:bg-amber-500/10 dark:text-amber-100 dark:ring-amber-500/20">
+                                    <div class="flex items-start gap-2.5">
+                                        <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300">
+                                            <i data-lucide="sliders-horizontal" class="h-3.5 w-3.5"></i>
+                                        </span>
+                                        <div class="min-w-0 flex-1">
+                                            <div class="flex items-center justify-between gap-3">
+                                                <span class="truncate text-[11px] font-normal text-amber-950 dark:text-amber-100" title="{{ quota.name }}">{{ quota.name }}</span>
+                                                <span class="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-normal text-amber-700 dark:bg-amber-500/15 dark:text-amber-200">{{ quota.resource_count }} limits</span>
+                                            </div>
+                                            <div class="mt-2 space-y-1.5">
+                                                {% for resource in quota.resources %}
+                                                    <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-2 text-[10px]">
+                                                        <span class="truncate text-amber-700/80 dark:text-amber-200/80" title="{{ resource.name }}">{{ resource.name }}</span>
+                                                        <span class="whitespace-nowrap font-normal text-amber-950 dark:text-amber-100">{{ resource.hard }}</span>
+                                                    </div>
+                                                {% endfor %}
+                                                {% if quota.truncated %}
+                                                    <div class="text-[9px] text-amber-700/70 dark:text-amber-200/70">Additional configured limits are not shown.</div>
+                                                {% endif %}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    {{ detail_tip('No ResourceQuota object is recorded. This describes configured namespace controls, not current resource utilization.', 'amber', 'info') }}
-                {% endif %}
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="rounded-xl bg-amber-50 px-3 py-2.5 text-xs leading-5 text-amber-800 dark:bg-amber-500/10 dark:text-amber-200">
+                            No ResourceQuota object is recorded for this namespace.
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="mt-auto pt-2">
+                    {{ detail_tip('ResourceQuota and LimitRange show configured namespace controls. They do not represent current usage, remaining quota, or utilization trends.', 'amber', 'info') }}
                 </div>
             {% endcall %}
 
