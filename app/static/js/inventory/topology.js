@@ -50,6 +50,7 @@
         uses: '#0ea5e9',
         mounts: '#f97316',
         binds: '#65a30d',
+        contains: '#94a3b8',
     }
 
     const statusClasses = {
@@ -131,9 +132,8 @@
                 'text-halign': 'center',
                 'text-margin-y': 8,
                 'text-max-width': 118,
-                'text-overflow-wrap': 'ellipsis',
                 'text-valign': 'bottom',
-                'text-wrap': 'wrap',
+                'text-wrap': 'ellipsis',
                 'width': 44,
             },
         },
@@ -276,25 +276,104 @@
         ]
     }
 
-    const layoutOptions = () => {
-        const depth = depthSelect?.value || config.filters?.depth || '1'
-        const fullGraph = depth === 'full'
+    const layoutOptions = () => ({
+        name: 'breadthfirst',
+        animate: false,
+        circle: false,
+        directed: true,
+        fit: true,
+        grid: true,
+        maximal: false,
+        nodeDimensionsIncludeLabels: true,
+        padding: 48,
+        spacingFactor: 1.25,
+    })
 
-        return {
-            name: 'cose',
-            animate: false,
-            componentSpacing: fullGraph ? 72 : 90,
-            fit: true,
-            gravity: 0.25,
-            idealEdgeLength: fullGraph ? 82 : 100,
-            nestingFactor: 1.3,
-            nodeDimensionsIncludeLabels: true,
-            nodeOverlap: 24,
-            nodeRepulsion: fullGraph ? 5200 : 7000,
-            numIter: fullGraph ? 500 : 360,
-            padding: 42,
-            randomize: true,
+    const prepareElements = (payload) => {
+        const rawNodes = Array.isArray(payload.nodes) ? payload.nodes : []
+        const rawEdges = Array.isArray(payload.edges) ? payload.edges : []
+        const nodeIds = new Set(rawNodes.map((node) => node?.data?.id).filter(Boolean))
+        const containmentEdges = []
+
+        const nodes = rawNodes.map((node) => {
+            const data = { ...(node.data || {}) }
+            const parent = data.parent
+            delete data.parent
+
+            if (parent && nodeIds.has(parent) && data.id) {
+                containmentEdges.push({
+                    data: {
+                        id: `contains:${parent}:${data.id}`,
+                        source: parent,
+                        target: data.id,
+                        relationship: 'contains',
+                        label: 'contains',
+                        source_label: parent,
+                        target_label: data.label || data.id,
+                        description: 'The parent inventory scope contains this Kubernetes resource.',
+                    },
+                })
+            }
+
+            return { ...node, data }
+        })
+
+        const existingEdgeIds = new Set(rawEdges.map((edge) => edge?.data?.id).filter(Boolean))
+        const edges = [
+            ...rawEdges,
+            ...containmentEdges.filter((edge) => !existingEdgeIds.has(edge.data.id)),
+        ]
+
+        return { nodes, edges, elements: [...nodes, ...edges] }
+    }
+
+    const ensureCanvasDimensions = () => {
+        const parent = canvas?.parentElement
+        if (!canvas || !parent) {
+            return { width: 0, height: 0 }
         }
+
+        const parentRect = parent.getBoundingClientRect()
+        if (parentRect.height < 320) {
+            parent.style.minHeight = '720px'
+        }
+
+        const canvasRect = canvas.getBoundingClientRect()
+        if (canvasRect.height < 320) {
+            canvas.style.minHeight = '720px'
+        }
+
+        return canvas.getBoundingClientRect()
+    }
+
+    const hasRenderableGeometry = () => {
+        if (!cy || cy.nodes().length === 0) {
+            return false
+        }
+
+        const positionsAreFinite = cy.nodes().every((node) => {
+            const position = node.position()
+            return Number.isFinite(position.x) && Number.isFinite(position.y)
+        })
+        const bounds = cy.elements().boundingBox()
+        return positionsAreFinite && Number.isFinite(bounds.w) && Number.isFinite(bounds.h)
+    }
+
+    const applyFallbackLayout = () => {
+        if (!cy) {
+            return
+        }
+
+        cy.layout({
+            name: 'grid',
+            animate: false,
+            avoidOverlap: true,
+            condense: false,
+            fit: true,
+            nodeDimensionsIncludeLabels: true,
+            padding: 48,
+            spacingFactor: 1.2,
+        }).run()
     }
 
     const updateNamespaceOptions = (selectedValue = '') => {
@@ -542,9 +621,8 @@
             cy.destroy()
         }
 
-        const nodes = payload.nodes || []
-        const edges = payload.edges || []
-        const elements = [...nodes, ...edges]
+        const prepared = prepareElements(payload)
+        const { nodes, edges, elements } = prepared
         const hasNodes = nodes.length > 0
         emptyState.classList.toggle('hidden', hasNodes)
         emptyState.classList.toggle('flex', !hasNodes)
@@ -556,7 +634,12 @@
             return
         }
 
+        const canvasRect = ensureCanvasDimensions()
         setRuntimeStatus(`Rendering ${nodes.length} resources and ${edges.length} relationships...`)
+
+        if (canvasRect.width < 100 || canvasRect.height < 100) {
+            showError(`Topology canvas is not visible yet (${Math.round(canvasRect.width)} × ${Math.round(canvasRect.height)} px). Resize the browser window or reload the page.`)
+        }
 
         try {
             cy = window.cytoscape({
@@ -568,19 +651,39 @@
                 pixelRatio: 'auto',
                 selectionType: 'single',
                 style: graphStyle(),
-                wheelSensitivity: 0.18,
             })
 
             attachGraphEvents()
             applySearch()
 
-            cy.ready(() => {
+            const finalizeRender = () => {
                 window.requestAnimationFrame(() => {
+                    ensureCanvasDimensions()
                     cy.resize()
-                    cy.fit(undefined, 38)
-                    setRuntimeStatus()
+
+                    if (!hasRenderableGeometry()) {
+                        applyFallbackLayout()
+                    }
+
+                    window.setTimeout(() => {
+                        if (!cy) {
+                            return
+                        }
+                        cy.resize()
+                        cy.fit(undefined, 42)
+                        setRuntimeStatus()
+                        showError()
+                        console.info('KAORI topology rendered.', {
+                            resources: cy.nodes().length,
+                            relationships: cy.edges().length,
+                            canvas: canvas.getBoundingClientRect(),
+                        })
+                    }, 80)
                 })
-            })
+            }
+
+            cy.one('layoutstop', finalizeRender)
+            window.setTimeout(finalizeRender, 250)
         } catch (error) {
             console.error('KAORI could not render topology.', error)
             cy = null
@@ -694,6 +797,17 @@
         setRuntimeStatus()
         showError('The local Cytoscape.js renderer could not be loaded. Restart the web service and confirm the static vendor file is present.')
         return
+    }
+
+
+    if (window.ResizeObserver && canvas.parentElement) {
+        const topologyResizeObserver = new ResizeObserver(() => {
+            if (!cy) {
+                return
+            }
+            cy.resize()
+        })
+        topologyResizeObserver.observe(canvas.parentElement)
     }
 
     updateNamespaceOptions(config.filters?.namespace || '')
