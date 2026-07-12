@@ -1,5 +1,5 @@
 <div class="overflow-x-auto">
-    <table class="min-w-[1180px] w-full text-slate-900 dark:text-slate-100">
+    <table class="min-w-[1040px] w-full text-slate-900 dark:text-slate-100">
         <thead>
             <tr class="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-600 dark:border-slate-700 dark:bg-slate-700/40 dark:text-slate-300">
                 <th class="px-5 py-4 text-left">Cluster</th>
@@ -7,7 +7,6 @@
                 <th class="px-5 py-4 text-left">Object</th>
                 <th class="px-5 py-4 text-left">Type</th>
                 <th class="px-5 py-4 text-left">Keys</th>
-                <th class="px-5 py-4 text-left">Payload</th>
                 <th class="px-5 py-4 text-left">Details</th>
             </tr>
         </thead>
@@ -35,17 +34,13 @@
                             </span>
                             <div class="min-w-0">
                                 <div class="truncate font-semibold text-slate-800 dark:text-slate-100" title="{{ item.name }}">{{ item.name }}</div>
-                                {% if item.secret_type and item.type == 'Secret' %}
-                                    <div class="truncate text-[11px] text-slate-400" title="{{ item.secret_type }}">{{ item.secret_type }}</div>
-                                {% endif %}
                             </div>
                         </div>
                     </td>
                     <td class="px-5 py-4 align-middle">
-                        <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset {{ 'bg-violet-50 text-violet-700 ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-500/25' if item.type == 'Secret' else 'bg-cyan-50 text-cyan-700 ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-500/25' }}">{{ item.type }}</span>
+                        <span class="inline-flex rounded-full px-3 py-1 text-xs font-medium ring-1 ring-inset {{ 'bg-violet-50 text-violet-700 ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-500/25' if item.type == 'Secret' else 'bg-cyan-50 text-cyan-700 ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-500/25' }}">{{ item.type }}</span>
                     </td>
                     <td class="px-5 py-4 align-middle font-semibold text-slate-700 dark:text-slate-200">{{ item.key_count }}</td>
-                    <td class="whitespace-nowrap px-5 py-4 align-middle font-medium text-slate-600 dark:text-slate-300">{{ item.payload_size }}</td>
                     <td class="px-5 py-4 align-middle">
                         <button type="button"
                                 data-configuration-toggle="true"
@@ -62,13 +57,13 @@
                     </td>
                 </tr>
                 <tr id="configuration-detail-row-{{ item.id }}" class="hidden border-0">
-                    <td colspan="7" class="p-0 leading-none align-top">
+                    <td colspan="6" class="p-0 leading-none align-top">
                         <div id="configuration-detail-content-{{ item.id }}" data-open="false"></div>
                     </td>
                 </tr>
             {% else %}
                 <tr>
-                    <td colspan="7" class="p-0">
+                    <td colspan="6" class="p-0">
                         {% set empty_state_icon = 'file-key-2' %}
                         {% set empty_state_title = 'No configuration objects found' %}
                         {% set empty_state_description = 'Adjust filters or sync inventory to collect ConfigMap and Secret metadata.' %}

@@ -9,7 +9,13 @@
     item.type,
     'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300' if item.type == 'Secret' else 'bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300'
 ) %}
-    {% call detail_card('Object identity', 'badge-info', 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300', panel_classes='border-blue-100 bg-gradient-to-br from-blue-50/90 via-white to-white dark:border-blue-900/40 dark:from-blue-950/30 dark:via-slate-950/45 dark:to-slate-950/45') %}
+    {% call detail_card(
+        'Object identity',
+        'badge-info',
+        'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300',
+        item.type,
+        'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300'
+    ) %}
         {{ detail_row('Cluster', item.cluster_name, false, 'blue') }}
         {{ detail_row('Namespace', item.namespace, false, 'blue') }}
         {{ detail_row('Type', item.type, false, 'blue') }}
@@ -19,35 +25,63 @@
         {{ detail_status_row('Immutable', 'Yes' if item.immutable else 'No', 'info' if item.immutable else 'neutral') }}
         {{ detail_row('Age', item.age, false, 'blue') }}
 
-        {% if item.type == 'Secret' %}
-            {{ detail_tip('This Secret contains sensitive configuration references. KAORI records metadata and key names only; secret values are never collected or displayed.', 'violet', 'shield-check', false, true) }}
-        {% else %}
-            {{ detail_tip('This ConfigMap provides non-sensitive application configuration through environment variables or mounted files. KAORI inventories metadata and key names, not their content.', 'blue', 'file-json-2', false, true) }}
-        {% endif %}
+        <div class="mt-auto pt-2">
+            {% if item.type == 'Secret' %}
+                {{ detail_tip(
+                    'KAORI records Secret metadata and key names only. Sensitive values are never collected, stored, or displayed.',
+                    'blue',
+                    'shield-check',
+                    panel_classes='min-h-28'
+                ) }}
+            {% else %}
+                {{ detail_tip(
+                    'ConfigMaps provide non-sensitive application configuration. KAORI inventories object metadata and key names without collecting their content.',
+                    'blue',
+                    'file-json-2',
+                    panel_classes='min-h-28'
+                ) }}
+            {% endif %}
+        </div>
     {% endcall %}
 
-    {% call detail_card('Key metadata', 'list-key', 'bg-cyan-50 text-cyan-600 dark:bg-cyan-950/40 dark:text-cyan-300', item.key_count ~ ' keys', 'bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300', panel_classes='border-cyan-100 bg-gradient-to-br from-cyan-50/90 via-white to-white dark:border-cyan-900/40 dark:from-cyan-950/30 dark:via-slate-950/45 dark:to-slate-950/45') %}
-        <div class="flex items-center justify-between gap-3">
-            <span class="text-slate-500 dark:text-slate-400">Payload size</span>
-            <span class="inline-flex rounded-full bg-cyan-50 px-2.5 py-1 text-[10px] font-normal text-cyan-700 ring-1 ring-inset ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-500/25">{{ item.payload_size }}</span>
-        </div>
+    {% call detail_card(
+        'Key metadata',
+        'key-round',
+        'bg-cyan-50 text-cyan-600 dark:bg-cyan-950/40 dark:text-cyan-300',
+        item.key_count ~ ' keys',
+        'bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300'
+    ) %}
+        {{ detail_row('Payload size', item.payload_size, false, 'cyan') }}
 
         <div class="flex max-h-52 flex-wrap gap-1.5 overflow-y-auto pr-1">
             {% for key_name in item.key_names %}
-                <span class="inline-flex max-w-full rounded-full px-2.5 py-1 text-[10px] font-normal ring-1 ring-inset {{ 'bg-violet-50 text-violet-700 ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-500/25' if item.type == 'Secret' else 'bg-cyan-50 text-cyan-700 ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-500/25' }}" title="{{ key_name }}">
+                <span class="inline-flex max-w-full rounded-full bg-cyan-50 px-2 py-0.5 text-[10px] font-normal leading-4 text-cyan-700 ring-1 ring-inset ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-500/25" title="{{ key_name }}">
                     <span class="break-all">{{ key_name }}</span>
                 </span>
             {% else %}
-                <span class="text-xs text-slate-400">No keys recorded</span>
+                <span class="text-xs font-normal text-cyan-600 dark:text-cyan-300">No keys recorded</span>
             {% endfor %}
         </div>
 
-        {{ detail_tip('Only key names and aggregate payload size are stored. Values are intentionally excluded.', 'amber', 'shield-check', false, true) }}
+        <div class="mt-auto pt-2">
+            {{ detail_tip(
+                'Key metadata shows key names and aggregate payload size only. Configuration and Secret values are intentionally excluded.',
+                'cyan',
+                'key-round',
+                panel_classes='min-h-28'
+            ) }}
+        </div>
     {% endcall %}
 
-    {% call detail_card('Used by Pods', 'package-check', 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300', item.used_by_count, 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300', panel_classes='border-emerald-100 bg-gradient-to-br from-emerald-50/90 via-white to-white dark:border-emerald-900/40 dark:from-emerald-950/30 dark:via-slate-950/45 dark:to-slate-950/45') %}
+    {% call detail_card(
+        'Used by Pods',
+        'package-check',
+        'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300',
+        item.used_by_count,
+        'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300'
+    ) %}
         {% if item.used_by %}
-            <div class="max-h-64 overflow-y-auto pr-1">
+            <div class="max-h-52 overflow-y-auto pr-1">
                 {% for pod in item.used_by %}
                     <div class="relative flex gap-3 pb-4 last:pb-0">
                         {% if not loop.last %}
@@ -55,8 +89,8 @@
                         {% endif %}
                         <span class="relative z-10 mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-500 ring-4 ring-emerald-50 dark:bg-emerald-400 dark:ring-emerald-950/60"></span>
                         <div class="min-w-0 flex-1">
-                            <div class="truncate text-xs font-semibold text-slate-800 dark:text-slate-100" title="{{ pod.name }}">{{ pod.name }}</div>
-                            <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-500 dark:text-slate-400">
+                            <div class="truncate text-xs font-normal text-emerald-800 dark:text-emerald-200" title="{{ pod.name }}">{{ pod.name }}</div>
+                            <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-normal text-emerald-600 dark:text-emerald-300">
                                 <span class="min-w-0 truncate" title="{{ pod.workload_type }} {{ pod.workload_name }}">{{ pod.workload_type }} {{ pod.workload_name }}</span>
                                 {% if pod.status in ['Running', 'Succeeded'] %}
                                     <span class="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-normal text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/25">{{ pod.status }}</span>
@@ -73,10 +107,26 @@
                 {% endfor %}
             </div>
             {% if item.used_by_truncated %}
-                <p class="text-[11px] text-slate-400">Showing the first 8 Pods.</p>
+                <p class="text-[11px] font-normal text-emerald-600 dark:text-emerald-300">Showing the first 8 Pods.</p>
             {% endif %}
-        {% else %}
-            {{ detail_tip('No Pod reference is recorded in the latest inventory snapshot.', 'slate', 'info', false, true) }}
         {% endif %}
+
+        <div class="mt-auto pt-2">
+            {% if item.used_by %}
+                {{ detail_tip(
+                    'Pod references show workloads that consume this object through environment variables or mounted configuration. References reflect the latest inventory snapshot.',
+                    'emerald',
+                    'package-check',
+                    panel_classes='min-h-28'
+                ) }}
+            {% else %}
+                {{ detail_tip(
+                    'No Pod reference is recorded for this object in the latest inventory snapshot.',
+                    'emerald',
+                    'info',
+                    panel_classes='min-h-28'
+                ) }}
+            {% endif %}
+        </div>
     {% endcall %}
 {% endcall %}
