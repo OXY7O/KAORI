@@ -57,70 +57,18 @@
     }
 
 
-    const svgDataUri = (svg) => `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`
-
-    const iconSvg = (color, body) => svgDataUri(`
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" fill="none" stroke="${color}" stroke-width="2.05" stroke-linecap="round" stroke-linejoin="round">
-            ${body}
-        </svg>
-    `)
-
     const typeVisuals = {
-        cluster: {
-            fill: '#dbeafe',
-            border: '#60a5fa',
-            icon: iconSvg('#1d4ed8', '<rect x="3.5" y="4.5" width="17" height="5" rx="1.75"/><rect x="3.5" y="14.5" width="17" height="5" rx="1.75"/><path d="M7 9.5v5"/><path d="M12 9.5v5"/><path d="M17 9.5v5"/>'),
-        },
-        namespace: {
-            fill: '#e0e7ff',
-            border: '#818cf8',
-            icon: iconSvg('#4f46e5', '<path d="M12 3 4 7l8 4 8-4-8-4Z"/><path d="M4 12l8 4 8-4"/><path d="M4 17l8 4 8-4"/>'),
-        },
-        node: {
-            fill: '#e2e8f0',
-            border: '#94a3b8',
-            icon: iconSvg('#475569', '<rect x="4" y="4" width="16" height="6" rx="1.5"/><rect x="4" y="14" width="16" height="6" rx="1.5"/><path d="M8 7h.01"/><path d="M8 17h.01"/><path d="M12 7h4"/><path d="M12 17h4"/>'),
-        },
-        workload: {
-            fill: '#ede9fe',
-            border: '#a78bfa',
-            icon: iconSvg('#7c3aed', '<rect x="3.5" y="4.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="4.5" width="7" height="7" rx="1.5"/><rect x="8.5" y="12.5" width="7" height="7" rx="1.5"/>'),
-        },
-        pod: {
-            fill: '#cffafe',
-            border: '#67e8f9',
-            icon: iconSvg('#0891b2', '<circle cx="12" cy="12" r="5.5"/><path d="M12 9v3l2 2"/>'),
-        },
-        service: {
-            fill: '#d1fae5',
-            border: '#6ee7b7',
-            icon: iconSvg('#059669', '<circle cx="6.5" cy="12" r="2.5"/><circle cx="17.5" cy="7" r="2.5"/><circle cx="17.5" cy="17" r="2.5"/><path d="M8.7 10.8 15.3 8.2"/><path d="M8.7 13.2l6.6 2.6"/>'),
-        },
-        ingress: {
-            fill: '#ccfbf1',
-            border: '#5eead4',
-            icon: iconSvg('#0f766e', '<path d="M4 7h10"/><path d="M10 17h10"/><path d="m10 7 6 0"/><path d="M10 7v10"/><path d="m10 17 4-4"/><path d="m10 17 4 4"/>'),
-        },
-        configmap: {
-            fill: '#e0f2fe',
-            border: '#7dd3fc',
-            icon: iconSvg('#0284c7', '<path d="M14 3.5H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8.5Z"/><path d="M14 3.5v5h5"/><path d="M8 13h8"/><path d="M8 16h6"/>'),
-        },
-        secret: {
-            fill: '#fef3c7',
-            border: '#fcd34d',
-            icon: iconSvg('#d97706', '<circle cx="8" cy="12" r="3"/><path d="M11 12h7"/><path d="M15 12v2"/><path d="M18 12v1.5"/>'),
-        },
-        pvc: {
-            fill: '#ffedd5',
-            border: '#fdba74',
-            icon: iconSvg('#ea580c', '<ellipse cx="12" cy="6" rx="6.5" ry="2.5"/><path d="M5.5 6v8c0 1.4 2.9 2.5 6.5 2.5s6.5-1.1 6.5-2.5V6"/><path d="M5.5 10.5c0 1.4 2.9 2.5 6.5 2.5s6.5-1.1 6.5-2.5"/>'),
-        },
-        pv: {
-            fill: '#ecfccb',
-            border: '#a3e635',
-            icon: iconSvg('#65a30d', '<rect x="4" y="6" width="16" height="12" rx="2"/><path d="M8 10h8"/><path d="M8 14h5"/>'),
-        },
+        cluster: { fill: '#2563eb', border: '#1d4ed8' },
+        namespace: { fill: '#6366f1', border: '#4f46e5' },
+        node: { fill: '#64748b', border: '#475569' },
+        workload: { fill: '#8b5cf6', border: '#7c3aed' },
+        pod: { fill: '#06b6d4', border: '#0891b2' },
+        service: { fill: '#10b981', border: '#059669' },
+        ingress: { fill: '#14b8a6', border: '#0f766e' },
+        configmap: { fill: '#0ea5e9', border: '#0284c7' },
+        secret: { fill: '#f59e0b', border: '#d97706' },
+        pvc: { fill: '#f97316', border: '#ea580c' },
+        pv: { fill: '#65a30d', border: '#4d7c0f' },
     }
 
     const typeLegendIcons = {
@@ -257,33 +205,10 @@
 
     const formatNodeLabel = (value) => {
         const label = String(value || '').trim()
-        const maxLineLength = 20
-        const maxSecondLineLength = 19
-
-        if (label.length <= maxLineLength) {
-            return label
-        }
-
-        const findBreakPoint = (input, limit) => {
-            const candidate = input.slice(0, limit + 1)
-            const breakAt = Math.max(candidate.lastIndexOf(' '), candidate.lastIndexOf('-'), candidate.lastIndexOf('_'))
-            return breakAt >= Math.round(limit * 0.55) ? breakAt + 1 : limit
-        }
-
-        const firstBreak = findBreakPoint(label, maxLineLength)
-        const firstLine = label.slice(0, firstBreak).replace(/[\s_-]+$/, '')
-        const remaining = label.slice(firstBreak).replace(/^[\s_-]+/, '')
-
-        if (!remaining) {
-            return firstLine
-        }
-
-        const secondLine = remaining.length > maxSecondLineLength
-            ? `${remaining.slice(0, maxSecondLineLength - 1).replace(/[\s_-]+$/, '')}…`
-            : remaining
-
-        return `${firstLine}
-${secondLine}`
+        const maxLength = 28
+        return label.length > maxLength
+            ? `${label.slice(0, maxLength - 1).trimEnd()}…`
+            : label
     }
 
     const formatDateTime = (value) => {
@@ -317,23 +242,15 @@ ${secondLine}`
             style: {
                 'background-color': (node) => getTypeVisual(node.data('type')).fill,
                 'border-color': (node) => getTypeVisual(node.data('type')).border,
-                'border-width': 1.8,
+                'border-width': 2,
                 'color': labelColor,
                 'font-family': 'Inter, sans-serif',
                 'font-size': 10,
                 'font-weight': 600,
-                'height': 54,
+                'height': 50,
                 'label': nodeLabelToggle && nodeLabelToggle.checked ? 'data(display_label)' : '',
                 'min-zoomed-font-size': 8,
                 'overlay-opacity': 0,
-                'background-image': (node) => getTypeVisual(node.data('type')).icon,
-                'background-fit': 'none',
-                'background-clip': 'node',
-                'background-image-containment': 'inside',
-                'background-width': '70%',
-                'background-height': '70%',
-                'background-position-x': '50%',
-                'background-position-y': '50%',
                 'shape': 'round-rectangle',
                 'shadow-blur': 8,
                 'shadow-color': darkMode ? '#020617' : '#94a3b8',
@@ -344,68 +261,98 @@ ${secondLine}`
                 'text-background-opacity': 0.92,
                 'text-background-padding': 3,
                 'text-halign': 'center',
-                'text-margin-y': 14,
-                'text-max-width': 132,
+                'text-margin-y': 12,
+                'text-max-width': 190,
                 'text-valign': 'bottom',
-                'text-wrap': 'wrap',
-                'width': 58,
+                'text-wrap': 'none',
+                'width': 54,
+            },
+        },
+        {
+            selector: 'node[type = "cluster"]',
+            style: {
+                'shape': 'round-rectangle',
+                'height': 52,
+                'width': 62,
+            },
+        },
+        {
+            selector: 'node[type = "namespace"]',
+            style: {
+                'shape': 'round-rectangle',
+                'height': 50,
+                'width': 56,
+            },
+        },
+        {
+            selector: 'node[type = "node"]',
+            style: {
+                'shape': 'rectangle',
+                'height': 48,
+                'width': 56,
+            },
+        },
+        {
+            selector: 'node[type = "workload"]',
+            style: {
+                'shape': 'hexagon',
+                'height': 52,
+                'width': 56,
             },
         },
         {
             selector: 'node[type = "pod"]',
             style: {
                 'shape': 'ellipse',
-                'height': 48,
-                'width': 48,
-                'background-width': '72%',
-                'background-height': '72%',
+                'height': 46,
+                'width': 46,
             },
         },
         {
             selector: 'node[type = "service"]',
             style: {
-                'shape': 'round-rectangle',
-                'height': 54,
-                'width': 58,
-                'background-width': '70%',
-                'background-height': '70%',
+                'shape': 'diamond',
+                'height': 50,
+                'width': 50,
             },
         },
         {
             selector: 'node[type = "ingress"]',
             style: {
                 'shape': 'hexagon',
-                'height': 54,
-                'width': 58,
-                'background-width': '68%',
-                'background-height': '68%',
+                'height': 50,
+                'width': 56,
             },
         },
         {
-            selector: 'node[type = "configmap"], node[type = "secret"]',
+            selector: 'node[type = "configmap"]',
             style: {
-                'shape': 'round-rectangle',
-                'height': 54,
-                'width': 58,
-                'background-width': '70%',
-                'background-height': '70%',
+                'shape': 'round-tag',
+                'height': 48,
+                'width': 54,
+            },
+        },
+        {
+            selector: 'node[type = "secret"]',
+            style: {
+                'shape': 'octagon',
+                'height': 48,
+                'width': 48,
             },
         },
         {
             selector: 'node[type = "pvc"], node[type = "pv"]',
             style: {
                 'shape': 'barrel',
-                'height': 54,
-                'width': 54,
-                'background-width': '70%',
-                'background-height': '70%',
+                'height': 50,
+                'width': 50,
             },
         },
         {
             selector: 'node:parent',
             style: {
                 'background-color': (node) => getTypeVisual(node.data('type')).fill,
-                'background-opacity': 0.06,
+                'background-opacity': 0.10,
                 'border-color': (node) => typeColors[node.data('type')] || '#64748b',
                 'border-opacity': 0.5,
                 'border-style': 'solid',
@@ -415,14 +362,6 @@ ${secondLine}`
                 'font-weight': 700,
                 'label': nodeLabelToggle && nodeLabelToggle.checked ? 'data(display_label)' : '',
                 'padding': 26,
-                'background-image': (node) => getTypeVisual(node.data('type')).icon,
-                'background-fit': 'none',
-                'background-clip': 'node',
-                'background-image-containment': 'inside',
-                'background-width': '72%',
-                'background-height': '72%',
-                'background-position-x': '50%',
-                'background-position-y': '50%',
                 'shape': 'round-rectangle',
                 'text-background-opacity': 0,
                 'text-halign': 'center',
