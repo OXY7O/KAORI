@@ -1,4 +1,4 @@
-{% from 'inventory/components/_detail_macros.html' import detail_card, detail_row, detail_tip %}
+{% from 'inventory/components/_detail_macros.html' import detail_card, detail_row, detail_status_row, detail_tip %}
 {% set status_classes = 'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/25' if namespace.status == 'Active' else ('bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/25' if namespace.status == 'Terminating' else 'bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700') %}
 
 <div class="bg-slate-50/80 px-4 py-4 dark:bg-slate-950/40">
@@ -30,14 +30,14 @@
                 namespace.age,
                 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300'
             ) %}
-                {{ detail_row('Status', namespace.status) }}
-                {{ detail_row('Age', namespace.age) }}
+                {{ detail_status_row('Status', namespace.status, 'success' if namespace.status == 'Active' else ('warning' if namespace.status == 'Terminating' else 'neutral')) }}
+                {{ detail_row('Age', namespace.age, false, 'blue') }}
                 <div class="flex items-start justify-between gap-3">
-                    <span class="shrink-0 text-slate-500 dark:text-slate-400">UID</span>
-                    <span class="max-w-[68%] truncate text-right text-[10px] font-semibold text-slate-900 dark:text-white" title="{{ namespace.uid }}">{{ namespace.uid }}</span>
+                    <span class="shrink-0 text-xs font-normal leading-5 text-slate-500 dark:text-slate-400">UID</span>
+                    <span class="max-w-[68%] break-all text-right text-xs font-normal leading-5 text-blue-700 dark:text-blue-300" title="{{ namespace.uid }}">{{ namespace.uid }}</span>
                 </div>
-                {{ detail_row('Created', namespace.created_at|user_datetime('%Y-%m-%d %H:%M %Z') if namespace.created_at else '-') }}
-                {{ detail_row('Collected', namespace.collected_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
+                {{ detail_row('Created', namespace.created_at|user_datetime('%Y-%m-%d %H:%M %Z') if namespace.created_at else '-', false, 'blue') }}
+                {{ detail_row('Collected', namespace.collected_at|user_datetime('%Y-%m-%d %H:%M %Z'), false, 'blue') }}
                 <div class="mt-auto pt-2">
                     {{ detail_tip('Age is based on the Kubernetes creation timestamp. Collected shows when this snapshot was last refreshed.', 'blue', 'clock-3') }}
                 </div>
@@ -50,11 +50,11 @@
                 namespace.object_counts.tracked_total ~ ' tracked',
                 'bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300'
             ) %}
-                {{ detail_row('Workloads', namespace.object_counts.workloads) }}
-                {{ detail_row('Pods', namespace.object_counts.pods) }}
-                {{ detail_row('Services', namespace.object_counts.services) }}
-                {{ detail_row('Ingresses', namespace.object_counts.ingresses) }}
-                {{ detail_row('PVCs', namespace.object_counts.persistent_volume_claims) }}
+                {{ detail_row('Workloads', namespace.object_counts.workloads, false, 'sky') }}
+                {{ detail_row('Pods', namespace.object_counts.pods, false, 'sky') }}
+                {{ detail_row('Services', namespace.object_counts.services, false, 'sky') }}
+                {{ detail_row('Ingresses', namespace.object_counts.ingresses, false, 'sky') }}
+                {{ detail_row('PVCs', namespace.object_counts.persistent_volume_claims, false, 'sky') }}
                 <div class="mt-auto pt-2">
                     <div class="flex items-start gap-2.5 rounded-xl bg-sky-50 px-3 py-2.5 text-xs leading-5 text-sky-800 dark:bg-sky-500/10 dark:text-sky-200">
                         <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-sky-100 text-sky-600 dark:bg-sky-500/15 dark:text-sky-300">
@@ -81,8 +81,8 @@
                 namespace.quota_count ~ (' quota' if namespace.quota_count == 1 else ' quotas'),
                 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'
             ) %}
-                {{ detail_row('ResourceQuotas', namespace.quota_count) }}
-                {{ detail_row('LimitRanges', namespace.limit_range_count if namespace.limit_range_count is not none else 'Not reported') }}
+                {{ detail_row('ResourceQuotas', namespace.quota_count, false, 'amber') }}
+                {{ detail_row('LimitRanges', namespace.limit_range_count if namespace.limit_range_count is not none else 'Not reported', false, 'amber') }}
                 <div class="mt-auto pt-2">
                 {% if namespace.quotas %}
                     <div class="max-h-56 space-y-2 overflow-y-auto pr-1">
@@ -95,7 +95,7 @@
                                     <div class="min-w-0 flex-1">
                                         <div class="flex items-center justify-between gap-3">
                                             <span class="truncate text-[11px] font-semibold text-amber-950 dark:text-amber-100" title="{{ quota.name }}">{{ quota.name }}</span>
-                                            <span class="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-semibold text-amber-700 dark:bg-amber-500/15 dark:text-amber-200">{{ quota.resource_count }} limits</span>
+                                            <span class="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-normal text-amber-700 dark:bg-amber-500/15 dark:text-amber-200">{{ quota.resource_count }} limits</span>
                                         </div>
                                         <div class="mt-2 space-y-1.5">
                                             {% for resource in quota.resources %}
@@ -126,14 +126,14 @@
                 namespace.pod_security_enforce,
                 'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300'
             ) %}
-                {{ detail_row('NetworkPolicies', namespace.network_policy_count if namespace.network_policy_count is not none else 'Not reported') }}
-                {{ detail_row('ServiceAccounts', namespace.service_account_count if namespace.service_account_count is not none else 'Not reported') }}
-                {{ detail_row('Default ServiceAccount', namespace.default_service_account) }}
-                {{ detail_row('Secrets', namespace.object_counts.secrets) }}
-                {{ detail_row('ConfigMaps', namespace.object_counts.config_maps) }}
-                {{ detail_row('PSA Enforce', namespace.pod_security_enforce) }}
-                {{ detail_row('PSA Audit', namespace.pod_security_audit) }}
-                {{ detail_row('PSA Warn', namespace.pod_security_warn) }}
+                {{ detail_row('NetworkPolicies', namespace.network_policy_count if namespace.network_policy_count is not none else 'Not reported', false, 'violet') }}
+                {{ detail_row('ServiceAccounts', namespace.service_account_count if namespace.service_account_count is not none else 'Not reported', false, 'violet') }}
+                {{ detail_row('Default ServiceAccount', namespace.default_service_account, false, 'violet') }}
+                {{ detail_row('Secrets', namespace.object_counts.secrets, false, 'violet') }}
+                {{ detail_row('ConfigMaps', namespace.object_counts.config_maps, false, 'violet') }}
+                {{ detail_row('PSA Enforce', namespace.pod_security_enforce, false, 'violet') }}
+                {{ detail_row('PSA Audit', namespace.pod_security_audit, false, 'violet') }}
+                {{ detail_row('PSA Warn', namespace.pod_security_warn, false, 'violet') }}
                 <div class="mt-auto pt-2">
                     {{ detail_tip('Pod Security values come from namespace admission labels. NetworkPolicy count indicates configured objects, not effective traffic coverage.', 'violet', 'shield') }}
                 </div>
@@ -189,7 +189,7 @@
                     <div class="max-h-56 overflow-y-auto rounded-xl bg-slate-50 dark:bg-slate-900/70">
                         {% for key, value in namespace.annotations.items() %}
                             <div class="grid gap-1 border-b border-slate-200 px-3 py-2.5 text-[11px] last:border-b-0 md:grid-cols-[minmax(180px,0.35fr)_minmax(0,1fr)] md:gap-4 dark:border-slate-700">
-                                <span class="break-all font-semibold text-slate-700 dark:text-slate-200">{{ key }}</span>
+                                <span class="break-all font-normal text-slate-700 dark:text-slate-200">{{ key }}</span>
                                 <span class="break-all text-slate-500 dark:text-slate-400">{{ value }}</span>
                             </div>
                         {% endfor %}

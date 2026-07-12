@@ -1,4 +1,4 @@
-{% from 'inventory/components/_detail_macros.html' import detail_shell, detail_card, detail_row, detail_tip %}
+{% from 'inventory/components/_detail_macros.html' import detail_shell, detail_card, detail_row, detail_status_row, detail_tip %}
 
 {% set phase_classes = {
     'Running': 'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/25',
@@ -26,13 +26,13 @@
                 pod.owner_type,
                 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-400/25'
             ) %}
-                {{ detail_row('Cluster', pod.cluster_name) }}
-                {{ detail_row('Namespace', pod.namespace) }}
-                {{ detail_row('Owner', (pod.owner_type ~ ' · ' ~ pod.owner_name) if pod.owner_type != 'Standalone' else 'Standalone') }}
-                {{ detail_row('Age', pod.age) }}
-                {{ detail_row('Kubernetes UID', pod.uid, true) }}
-                {{ detail_row('Created', pod.created_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
-                {{ detail_row('Collected', pod.collected_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
+                {{ detail_row('Cluster', pod.cluster_name, false, 'blue') }}
+                {{ detail_row('Namespace', pod.namespace, false, 'blue') }}
+                {{ detail_row('Owner', (pod.owner_type ~ ' · ' ~ pod.owner_name) if pod.owner_type != 'Standalone' else 'Standalone', false, 'blue') }}
+                {{ detail_row('Age', pod.age, false, 'blue') }}
+                {{ detail_row('Kubernetes UID', pod.uid, true, 'blue') }}
+                {{ detail_row('Created', pod.created_at|user_datetime('%Y-%m-%d %H:%M %Z'), false, 'blue') }}
+                {{ detail_row('Collected', pod.collected_at|user_datetime('%Y-%m-%d %H:%M %Z'), false, 'blue') }}
 
                 <div class="pt-1">
                     <div class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">Ownership chain</div>
@@ -44,7 +44,7 @@
                                 {% endif %}
                                 <span class="relative mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-blue-500 ring-4 ring-blue-50 dark:ring-blue-500/10"></span>
                                 <div class="min-w-0">
-                                    <div class="text-[10px] font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-300">{{ owner.kind }}</div>
+                                    <div class="text-[10px] font-normal uppercase tracking-wide text-blue-600 dark:text-blue-300">{{ owner.kind }}</div>
                                     <div class="truncate text-xs font-medium text-slate-700 dark:text-slate-200" title="{{ owner.name }}">{{ owner.name }}</div>
                                 </div>
                             </div>
@@ -62,13 +62,13 @@
                 pod.ready,
                 'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/25'
             ) %}
-                {{ detail_row('Phase', pod.status) }}
-                {{ detail_row('Ready containers', pod.ready) }}
-                {{ detail_row('Regular containers', pod.configuration.container_count) }}
-                {{ detail_row('Init containers', pod.configuration.init_container_count) }}
-                {{ detail_row('Restarts', pod.restarts) }}
-                {{ detail_row('QoS class', pod.qos_class) }}
-                {{ detail_row('Reason', pod.reason or '-') }}
+                {{ detail_status_row('Phase', pod.status, 'success' if pod.status in ['Running', 'Succeeded'] else ('warning' if pod.status == 'Pending' else ('danger' if pod.status == 'Failed' else 'neutral'))) }}
+                {{ detail_row('Ready containers', pod.ready, false, 'emerald') }}
+                {{ detail_row('Regular containers', pod.configuration.container_count, false, 'emerald') }}
+                {{ detail_row('Init containers', pod.configuration.init_container_count, false, 'emerald') }}
+                {{ detail_row('Restarts', pod.restarts, false, 'emerald') }}
+                {{ detail_row('QoS class', pod.qos_class, false, 'emerald') }}
+                {{ detail_row('Reason', pod.reason or '-', false, 'emerald') }}
 
                 {% if pod.conditions %}
                     <div class="pt-1">
@@ -78,11 +78,11 @@
                                 <div class="flex items-center justify-between gap-2 rounded-lg bg-emerald-50/80 px-2.5 py-2 text-xs dark:bg-emerald-500/10">
                                     <span class="min-w-0 truncate font-medium text-slate-700 dark:text-slate-200" title="{{ condition.type }}">{{ condition.type }}</span>
                                     {% if condition.status == 'True' %}
-                                        <span class="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:ring-emerald-400/25">True</span>
+                                        <span class="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-normal text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:ring-emerald-400/25">True</span>
                                     {% elif condition.status == 'False' %}
-                                        <span class="shrink-0 rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-semibold text-rose-700 ring-1 ring-inset ring-rose-200 dark:bg-rose-500/15 dark:text-rose-300 dark:ring-rose-400/25">False</span>
+                                        <span class="shrink-0 rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-normal text-rose-700 ring-1 ring-inset ring-rose-200 dark:bg-rose-500/15 dark:text-rose-300 dark:ring-rose-400/25">False</span>
                                     {% else %}
-                                        <span class="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600 ring-1 ring-inset ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-600">{{ condition.status }}</span>
+                                        <span class="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-normal text-slate-600 ring-1 ring-inset ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-600">{{ condition.status }}</span>
                                     {% endif %}
                                 </div>
                             {% endfor %}
@@ -106,21 +106,21 @@
                 pod.node or 'Not scheduled',
                 'bg-cyan-50 text-cyan-700 ring-1 ring-inset ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-400/25'
             ) %}
-                {{ detail_row('Node', pod.node or 'Not scheduled') }}
-                {{ detail_row('Pod IP', pod.ip or '-') }}
-                {{ detail_row('Host IP', pod.host_ip or '-') }}
-                {{ detail_row('Scheduler', pod.placement.scheduler) }}
-                {{ detail_row('Priority class', pod.placement.priority_class) }}
-                {{ detail_row('Node selectors', pod.placement.node_selector|length) }}
-                {{ detail_row('Tolerations', pod.placement.tolerations|length) }}
-                {{ detail_row('Affinity', 'Configured' if pod.placement.affinity_configured else 'Not configured') }}
-                {{ detail_row('Topology spread', pod.placement.topology_spread_count) }}
-                {{ detail_row('Host network', 'True' if pod.placement.host_network else 'False') }}
+                {{ detail_row('Node', pod.node or 'Not scheduled', false, 'cyan') }}
+                {{ detail_row('Pod IP', pod.ip or '-', false, 'cyan') }}
+                {{ detail_row('Host IP', pod.host_ip or '-', false, 'cyan') }}
+                {{ detail_row('Scheduler', pod.placement.scheduler, false, 'cyan') }}
+                {{ detail_row('Priority class', pod.placement.priority_class, false, 'cyan') }}
+                {{ detail_row('Node selectors', pod.placement.node_selector|length, false, 'cyan') }}
+                {{ detail_row('Tolerations', pod.placement.tolerations|length, false, 'cyan') }}
+                {{ detail_status_row('Affinity', 'Configured' if pod.placement.affinity_configured else 'Not configured', 'info' if pod.placement.affinity_configured else 'neutral') }}
+                {{ detail_row('Topology spread', pod.placement.topology_spread_count, false, 'cyan') }}
+                {{ detail_status_row('Host network', 'True' if pod.placement.host_network else 'False', 'warning' if pod.placement.host_network else 'neutral') }}
 
                 {% if pod.placement.node_selector %}
                     <div class="flex flex-wrap gap-1.5 pt-1">
                         {% for key, value in pod.placement.node_selector.items() %}
-                            <span class="inline-flex max-w-full rounded-full bg-cyan-50 px-2 py-0.5 text-[10px] font-semibold text-cyan-700 ring-1 ring-inset ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-400/25" title="{{ key }}={{ value }}">
+                            <span class="inline-flex max-w-full rounded-full bg-cyan-50 px-2 py-0.5 text-[10px] font-normal text-cyan-700 ring-1 ring-inset ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-400/25" title="{{ key }}={{ value }}">
                                 <span class="truncate">{{ key }}={{ value }}</span>
                             </span>
                         {% endfor %}
@@ -137,16 +137,16 @@
                 pod.configuration.container_count ~ ' container(s)',
                 'bg-violet-50 text-violet-700 ring-1 ring-inset ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-400/25'
             ) %}
-                {{ detail_row('Service account', pod.configuration.service_account) }}
-                {{ detail_row('Restart policy', pod.configuration.restart_policy) }}
-                {{ detail_row('DNS policy', pod.configuration.dns_policy) }}
-                {{ detail_row('Runtime class', pod.configuration.runtime_class) }}
-                {{ detail_row('Security context', 'Configured' if pod.configuration.security_context_configured else 'Not configured') }}
-                {{ detail_row('Image pull secrets', pod.configuration.image_pull_secret_count) }}
-                {{ detail_row('Volumes', pod.configuration.volume_count) }}
-                {{ detail_row('Regular containers', pod.configuration.container_count) }}
-                {{ detail_row('Init containers', pod.configuration.init_container_count) }}
-                {{ detail_row('Ephemeral containers', pod.configuration.ephemeral_container_count) }}
+                {{ detail_row('Service account', pod.configuration.service_account, false, 'violet') }}
+                {{ detail_row('Restart policy', pod.configuration.restart_policy, false, 'violet') }}
+                {{ detail_row('DNS policy', pod.configuration.dns_policy, false, 'violet') }}
+                {{ detail_row('Runtime class', pod.configuration.runtime_class, false, 'violet') }}
+                {{ detail_status_row('Security context', 'Configured' if pod.configuration.security_context_configured else 'Not configured', 'info' if pod.configuration.security_context_configured else 'neutral') }}
+                {{ detail_row('Image pull secrets', pod.configuration.image_pull_secret_count, false, 'violet') }}
+                {{ detail_row('Volumes', pod.configuration.volume_count, false, 'violet') }}
+                {{ detail_row('Regular containers', pod.configuration.container_count, false, 'violet') }}
+                {{ detail_row('Init containers', pod.configuration.init_container_count, false, 'violet') }}
+                {{ detail_row('Ephemeral containers', pod.configuration.ephemeral_container_count, false, 'violet') }}
 
                 {{ detail_tip('Configuration is collected from the Pod specification. Secret values and mounted file content are never displayed.', 'violet', 'shield-check', false, true) }}
             {% endcall %}
@@ -186,11 +186,11 @@
                                     <td class="px-4 py-3 font-semibold text-slate-800 dark:text-slate-100">{{ container.name }}</td>
                                     <td class="px-4 py-3">
                                         {% if container.kind == 'Regular' %}
-                                            <span class="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-400/25">Regular</span>
+                                            <span class="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-normal text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-400/25">Regular</span>
                                         {% elif container.kind == 'Init' %}
-                                            <span class="rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-semibold text-violet-700 ring-1 ring-inset ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-400/25">Init</span>
+                                            <span class="rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-normal text-violet-700 ring-1 ring-inset ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-400/25">Init</span>
                                         {% else %}
-                                            <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600 ring-1 ring-inset ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-600">{{ container.kind }}</span>
+                                            <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-normal text-slate-600 ring-1 ring-inset ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-600">{{ container.kind }}</span>
                                         {% endif %}
                                     </td>
                                     <td class="max-w-[360px] px-4 py-3">
@@ -199,20 +199,20 @@
                                     </td>
                                     <td class="px-4 py-3">
                                         {% if container.ready %}
-                                            <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/25">True</span>
+                                            <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-normal text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/25">True</span>
                                         {% else %}
-                                            <span class="rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-semibold text-rose-700 ring-1 ring-inset ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-400/25">False</span>
+                                            <span class="rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-normal text-rose-700 ring-1 ring-inset ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-400/25">False</span>
                                         {% endif %}
                                     </td>
                                     <td class="px-4 py-3">
                                         {% if container.state == 'Running' %}
-                                            <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/25">Running</span>
+                                            <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-normal text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/25">Running</span>
                                         {% elif container.state == 'Waiting' %}
-                                            <span class="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/25">Waiting</span>
+                                            <span class="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-normal text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/25">Waiting</span>
                                         {% elif container.state == 'Terminated' %}
-                                            <span class="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-400/25">Terminated</span>
+                                            <span class="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-normal text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-400/25">Terminated</span>
                                         {% else %}
-                                            <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600 ring-1 ring-inset ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-600">{{ container.state }}</span>
+                                            <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-normal text-slate-600 ring-1 ring-inset ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-600">{{ container.state }}</span>
                                         {% endif %}
                                         {% if container.reason %}
                                             <div class="mt-1 max-w-[180px] break-words text-[10px] font-medium text-slate-500 dark:text-slate-400">{{ container.reason }}</div>
@@ -271,14 +271,14 @@
                                 <tr>
                                     <td class="px-4 py-3 font-semibold text-slate-800 dark:text-slate-100">{{ volume.name }}</td>
                                     <td class="px-4 py-3">
-                                        <span class="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/25">{{ volume.type }}</span>
+                                        <span class="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-normal text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/25">{{ volume.type }}</span>
                                     </td>
                                     <td class="max-w-[360px] break-all px-4 py-3 font-medium text-slate-700 dark:text-slate-200">{{ volume.source }}</td>
                                     <td class="px-4 py-3">
                                         {% if volume.mounted_by %}
                                             <div class="flex flex-wrap gap-1.5">
                                                 {% for container_name in volume.mounted_by %}
-                                                    <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600 ring-1 ring-inset ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-600">{{ container_name }}</span>
+                                                    <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-normal text-slate-600 ring-1 ring-inset ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-600">{{ container_name }}</span>
                                                 {% endfor %}
                                             </div>
                                         {% else %}
@@ -323,7 +323,7 @@
                         {% else %}
                             {% set label_classes = 'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/25' %}
                         {% endif %}
-                        <span class="inline-flex max-w-full rounded-full px-2.5 py-1 text-[10px] font-semibold ring-1 ring-inset {{ label_classes }}" title="{{ key }}={{ value }}">
+                        <span class="inline-flex max-w-full rounded-full px-2.5 py-1 text-[10px] font-normal ring-1 ring-inset {{ label_classes }}" title="{{ key }}={{ value }}">
                             <span class="break-all">{{ key }}{% if value not in [None, ''] %}={{ value }}{% endif %}</span>
                         </span>
                     {% endfor %}

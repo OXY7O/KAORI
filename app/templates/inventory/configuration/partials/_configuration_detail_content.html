@@ -1,4 +1,4 @@
-{% from 'inventory/components/_detail_macros.html' import detail_shell, detail_card, detail_row, detail_tip %}
+{% from 'inventory/components/_detail_macros.html' import detail_shell, detail_card, detail_row, detail_status_row, detail_tip %}
 {% call detail_shell(
     item.name,
     'Safe metadata only. Secret values are never collected, stored, or rendered by KAORI.',
@@ -10,14 +10,14 @@
     'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300' if item.type == 'Secret' else 'bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300'
 ) %}
     {% call detail_card('Object identity', 'badge-info', 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300', panel_classes='border-blue-100 bg-gradient-to-br from-blue-50/90 via-white to-white dark:border-blue-900/40 dark:from-blue-950/30 dark:via-slate-950/45 dark:to-slate-950/45') %}
-        {{ detail_row('Cluster', item.cluster_name) }}
-        {{ detail_row('Namespace', item.namespace) }}
-        {{ detail_row('Type', item.type) }}
+        {{ detail_row('Cluster', item.cluster_name, false, 'blue') }}
+        {{ detail_row('Namespace', item.namespace, false, 'blue') }}
+        {{ detail_row('Type', item.type, false, 'blue') }}
         {% if item.type == 'Secret' %}
-            {{ detail_row('Secret type', item.secret_type) }}
+            {{ detail_row('Secret type', item.secret_type, false, 'blue') }}
         {% endif %}
-        {{ detail_row('Immutable', 'Yes' if item.immutable else 'No') }}
-        {{ detail_row('Age', item.age) }}
+        {{ detail_status_row('Immutable', 'Yes' if item.immutable else 'No', 'info' if item.immutable else 'neutral') }}
+        {{ detail_row('Age', item.age, false, 'blue') }}
 
         {% if item.type == 'Secret' %}
             {{ detail_tip('This Secret contains sensitive configuration references. KAORI records metadata and key names only; secret values are never collected or displayed.', 'violet', 'shield-check', false, true) }}
@@ -29,12 +29,12 @@
     {% call detail_card('Key metadata', 'list-key', 'bg-cyan-50 text-cyan-600 dark:bg-cyan-950/40 dark:text-cyan-300', item.key_count ~ ' keys', 'bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300', panel_classes='border-cyan-100 bg-gradient-to-br from-cyan-50/90 via-white to-white dark:border-cyan-900/40 dark:from-cyan-950/30 dark:via-slate-950/45 dark:to-slate-950/45') %}
         <div class="flex items-center justify-between gap-3">
             <span class="text-slate-500 dark:text-slate-400">Payload size</span>
-            <span class="inline-flex rounded-full bg-cyan-50 px-2.5 py-1 text-[10px] font-semibold text-cyan-700 ring-1 ring-inset ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-500/25">{{ item.payload_size }}</span>
+            <span class="inline-flex rounded-full bg-cyan-50 px-2.5 py-1 text-[10px] font-normal text-cyan-700 ring-1 ring-inset ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-500/25">{{ item.payload_size }}</span>
         </div>
 
         <div class="flex max-h-52 flex-wrap gap-1.5 overflow-y-auto pr-1">
             {% for key_name in item.key_names %}
-                <span class="inline-flex max-w-full rounded-full px-2.5 py-1 text-[10px] font-semibold ring-1 ring-inset {{ 'bg-violet-50 text-violet-700 ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-500/25' if item.type == 'Secret' else 'bg-cyan-50 text-cyan-700 ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-500/25' }}" title="{{ key_name }}">
+                <span class="inline-flex max-w-full rounded-full px-2.5 py-1 text-[10px] font-normal ring-1 ring-inset {{ 'bg-violet-50 text-violet-700 ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-500/25' if item.type == 'Secret' else 'bg-cyan-50 text-cyan-700 ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-500/25' }}" title="{{ key_name }}">
                     <span class="break-all">{{ key_name }}</span>
                 </span>
             {% else %}
@@ -59,13 +59,13 @@
                             <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-500 dark:text-slate-400">
                                 <span class="min-w-0 truncate" title="{{ pod.workload_type }} {{ pod.workload_name }}">{{ pod.workload_type }} {{ pod.workload_name }}</span>
                                 {% if pod.status in ['Running', 'Succeeded'] %}
-                                    <span class="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/25">{{ pod.status }}</span>
+                                    <span class="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-normal text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/25">{{ pod.status }}</span>
                                 {% elif pod.status == 'Pending' %}
-                                    <span class="inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/25">{{ pod.status }}</span>
+                                    <span class="inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-normal text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/25">{{ pod.status }}</span>
                                 {% elif pod.status == 'Failed' %}
-                                    <span class="inline-flex rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-semibold text-rose-700 ring-1 ring-inset ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/25">{{ pod.status }}</span>
+                                    <span class="inline-flex rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-normal text-rose-700 ring-1 ring-inset ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/25">{{ pod.status }}</span>
                                 {% else %}
-                                    <span class="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600 ring-1 ring-inset ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700">{{ pod.status }}</span>
+                                    <span class="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-normal text-slate-600 ring-1 ring-inset ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700">{{ pod.status }}</span>
                                 {% endif %}
                             </div>
                         </div>
