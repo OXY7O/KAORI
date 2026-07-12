@@ -58,6 +58,8 @@ class NodeInventory(db.Model):
 
     node_uid: Mapped[str | None] = mapped_column(String(64))
 
+    system_uuid: Mapped[str | None] = mapped_column(String(64))
+
     role: Mapped[str | None] = mapped_column(String(50))
 
     created_at: Mapped[datetime | None] = mapped_column(
