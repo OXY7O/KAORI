@@ -1,5 +1,8 @@
 {% from 'inventory/components/_detail_macros.html' import detail_card, detail_row, detail_status_row, detail_tip %}
 {% set status_classes = 'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/25' if namespace.status == 'Active' else ('bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/25' if namespace.status == 'Terminating' else 'bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700') %}
+{% set psa_enforce_display = 'No namespace policy' if namespace.pod_security_enforce in [None, '', 'Not configured'] else namespace.pod_security_enforce %}
+{% set psa_audit_display = 'No namespace policy' if namespace.pod_security_audit in [None, '', 'Not configured'] else namespace.pod_security_audit %}
+{% set psa_warn_display = 'No namespace policy' if namespace.pod_security_warn in [None, '', 'Not configured'] else namespace.pod_security_warn %}
 
 <div class="bg-slate-50/80 px-4 py-4 dark:bg-slate-950/40">
     <div class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
@@ -123,7 +126,7 @@
                 'Security & access',
                 'shield-check',
                 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300',
-                namespace.pod_security_enforce,
+                psa_enforce_display,
                 'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300'
             ) %}
                 {{ detail_row('NetworkPolicies', namespace.network_policy_count if namespace.network_policy_count is not none else 'Not reported', false, 'violet') }}
@@ -131,11 +134,11 @@
                 {{ detail_row('Default ServiceAccount', namespace.default_service_account, false, 'violet') }}
                 {{ detail_row('Secrets', namespace.object_counts.secrets, false, 'violet') }}
                 {{ detail_row('ConfigMaps', namespace.object_counts.config_maps, false, 'violet') }}
-                {{ detail_row('PSA Enforce', namespace.pod_security_enforce, false, 'violet') }}
-                {{ detail_row('PSA Audit', namespace.pod_security_audit, false, 'violet') }}
-                {{ detail_row('PSA Warn', namespace.pod_security_warn, false, 'violet') }}
+                {{ detail_row('PSA Enforce', psa_enforce_display, false, 'violet') }}
+                {{ detail_row('PSA Audit', psa_audit_display, false, 'violet') }}
+                {{ detail_row('PSA Warn', psa_warn_display, false, 'violet') }}
                 <div class="mt-auto pt-2">
-                    {{ detail_tip('Pod Security values come from namespace admission labels. NetworkPolicy count indicates configured objects, not effective traffic coverage.', 'violet', 'shield') }}
+                    {{ detail_tip('Pod Security Admission policies are controlled through namespace labels. No namespace policy means KAORI did not find an explicit PSA label on this namespace. NetworkPolicy count indicates configured objects, not effective traffic coverage.', 'violet', 'shield') }}
                 </div>
             {% endcall %}
 
