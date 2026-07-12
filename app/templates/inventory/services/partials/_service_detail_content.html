@@ -85,57 +85,42 @@
             {% endcall %}
 
             {% call detail_card('Network configuration', 'globe-2', 'bg-cyan-50 text-cyan-600 dark:bg-cyan-950/40 dark:text-cyan-300', service.cluster_ip, 'bg-cyan-50 text-cyan-700 ring-1 ring-inset ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-400/25') %}
-                {% call service_object_card('Address & traffic policy', service.type, 'network', 'cyan') %}
-                    {{ service_object_row('Cluster IP', service.cluster_ip, 'cyan') }}
-                    {{ service_object_row('External address', service.external_ips|join(', ') if service.external_ips else '-', 'cyan') }}
-                    {{ service_object_row('External name', service.external_name, 'cyan') }}
-                    {{ service_object_row('IP families', service.ip_families|join(', ') if service.ip_families else '-', 'cyan') }}
-                    {{ service_object_row('IP family policy', service.ip_family_policy, 'cyan') }}
-                    {{ service_object_row('Session affinity', service.session_affinity, 'cyan') }}
-                    {{ service_object_row('Internal traffic', service.internal_traffic_policy, 'cyan') }}
-                    {{ service_object_row('External traffic', service.external_traffic_policy, 'cyan') }}
-                    {{ service_object_row('Load balancer class', service.load_balancer_class, 'cyan') }}
-                {% endcall %}
+                {{ detail_row('Cluster IP', service.cluster_ip, false, 'cyan') }}
+                {{ detail_row('External address', service.external_ips|join(', ') if service.external_ips else '-', false, 'cyan') }}
+                {{ detail_row('External name', service.external_name, false, 'cyan') }}
+                {{ detail_row('IP families', service.ip_families|join(', ') if service.ip_families else '-', false, 'cyan') }}
+                {{ detail_row('IP family policy', service.ip_family_policy, false, 'cyan') }}
+                {{ detail_row('Session affinity', service.session_affinity, false, 'cyan') }}
+                {{ detail_row('Internal traffic', service.internal_traffic_policy, false, 'cyan') }}
+                {{ detail_row('External traffic', service.external_traffic_policy, false, 'cyan') }}
+                {{ detail_row('Load balancer class', service.load_balancer_class, false, 'cyan') }}
                 {{ detail_tip('Cluster IP and external addresses are current Service endpoints. Exposure behavior depends on the selected Service type.', 'cyan', 'network', false, true, 'min-h-28') }}
             {% endcall %}
 
             {% call detail_card('Port mapping', 'plug-zap', 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300', service.port_count ~ ' port(s)', 'bg-violet-50 text-violet-700 ring-1 ring-inset ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-400/25') %}
                 {% if service.ports %}
-                    <div class="space-y-2">
-                        {% for port in service.ports %}
-                            {% call service_object_card(port.name if port.name != '-' else 'Unnamed port', port.protocol, 'plug-zap', 'violet') %}
-                                {{ service_object_row('Port', port.port or '-', 'violet') }}
-                                {{ service_object_row('Target', port.target_port, 'violet') }}
-                                {{ service_object_row('NodePort', port.node_port or '-', 'violet') }}
-                            {% endcall %}
-                        {% endfor %}
-                    </div>
+                    {% for port in service.ports %}
+                        {{ detail_row('Port name' if loop.first else 'Port name ' ~ loop.index, port.name if port.name != '-' else 'Unnamed port', false, 'violet') }}
+                        {{ detail_row('Protocol', port.protocol, false, 'violet') }}
+                        {{ detail_row('Port', port.port or '-', false, 'violet') }}
+                        {{ detail_row('Target', port.target_port, false, 'violet') }}
+                        {{ detail_row('NodePort', port.node_port or '-', false, 'violet') }}
+                    {% endfor %}
                 {% else %}
-                    {{ detail_tip('No Service port is recorded in this snapshot.', 'slate', 'info') }}
+                    {{ detail_row('Port mapping', 'Not configured', false, 'violet') }}
                 {% endif %}
                 {{ detail_tip('Port mappings describe Service-to-target forwarding only. Traffic utilization remains in Analytics.', 'violet', 'route', false, true, 'min-h-28') }}
             {% endcall %}
 
             {% call detail_card('Selection & endpoints', 'scan-search', 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300', service.ready_endpoint_count ~ ' ready', 'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/25') %}
-                {% call service_object_card('Service resolution', (service.ready_endpoint_count + service.not_ready_endpoint_count) ~ ' endpoints', 'scan-search', 'emerald') %}
-                    {{ service_object_row('Selector labels', service.selectors|length, 'emerald') }}
-                    {{ service_object_row('Selected Pods', service.pod_count, 'emerald') }}
-                    {{ service_object_row('Ready endpoints', service.ready_endpoint_count, 'emerald') }}
-                    {{ service_object_row('Not-ready endpoints', service.not_ready_endpoint_count, 'emerald') }}
-                    {{ service_object_row('Endpoint metadata', 'Reported' if service.endpoints_reported else 'Not reported', 'emerald') }}
-                    {{ service_object_row('Publish not-ready', 'Enabled' if service.publish_not_ready_addresses else 'Disabled', 'emerald') }}
-                    {{ service_object_row('Health check NodePort', service.health_check_node_port or '-', 'emerald') }}
-                {% endcall %}
-                {% if service.selectors %}
-                    <div>
-                        <div class="mb-1.5 text-xs font-normal text-slate-500 dark:text-slate-400">Selectors</div>
-                        <div class="flex flex-wrap gap-1.5">
-                            {% for selector in service.selectors %}
-                                <span class="inline-flex max-w-full rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-normal text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/25" title="{{ selector }}"><span class="break-all">{{ selector }}</span></span>
-                            {% endfor %}
-                        </div>
-                    </div>
-                {% endif %}
+                {{ detail_row('Selector labels', service.selectors|length, false, 'emerald') }}
+                {{ detail_row('Selectors', service.selectors|join(', ') if service.selectors else '-', true, 'emerald') }}
+                {{ detail_row('Selected Pods', service.pod_count, false, 'emerald') }}
+                {{ detail_row('Ready endpoints', service.ready_endpoint_count, false, 'emerald') }}
+                {{ detail_row('Not-ready endpoints', service.not_ready_endpoint_count, false, 'emerald') }}
+                {{ detail_row('Endpoint metadata', 'Reported' if service.endpoints_reported else 'Not reported', false, 'emerald') }}
+                {{ detail_row('Publish not-ready', 'Enabled' if service.publish_not_ready_addresses else 'Disabled', false, 'emerald') }}
+                {{ detail_row('Health check NodePort', service.health_check_node_port or '-', false, 'emerald') }}
                 {{ detail_tip('Selectors resolve matching Pods, while endpoint readiness reflects the latest Kubernetes Endpoints snapshot.', 'emerald', 'info', false, true, 'min-h-28') }}
             {% endcall %}
         </div>
