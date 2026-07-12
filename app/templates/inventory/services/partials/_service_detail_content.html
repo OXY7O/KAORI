@@ -28,7 +28,7 @@
                         {% elif tone == 'amber' %}bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-200
                         {% else %}bg-cyan-100 text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-200{% endif %}">{{ badge }}</span>
                 </div>
-                <div class="mt-2 space-y-1.5">
+                <div class="mt-1.5 space-y-1">
                     {{ caller() }}
                 </div>
             </div>
@@ -37,19 +37,20 @@
 {%- endmacro %}
 
 {% macro service_object_row(label, value, tone='cyan', mono=false) -%}
-    <div class="grid grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] gap-3 text-xs font-normal leading-5">
-        <span class="truncate
+    {% set display_value = value if value not in [None, ''] else '-' %}
+    <div class="flex items-start justify-between gap-3 text-xs font-normal leading-5">
+        <span class="shrink-0
             {% if tone == 'violet' %}text-violet-600 dark:text-violet-300
             {% elif tone == 'emerald' %}text-emerald-600 dark:text-emerald-300
             {% elif tone == 'amber' %}text-amber-700/80 dark:text-amber-200/80
             {% else %}text-cyan-600 dark:text-cyan-300{% endif %}"
               title="{{ label }}">{{ label }}</span>
-        <span class="{{ 'break-all' if mono else 'break-words' }} text-right font-normal
+        <span class="max-w-[68%] {{ 'break-all' if mono else 'break-words' }} text-right font-normal
             {% if tone == 'violet' %}text-violet-800 dark:text-violet-100
             {% elif tone == 'emerald' %}text-emerald-800 dark:text-emerald-100
             {% elif tone == 'amber' %}text-amber-950 dark:text-amber-100
             {% else %}text-cyan-800 dark:text-cyan-100{% endif %}"
-              title="{{ value if value not in [None, ''] else '-' }}">{{ value if value not in [None, ''] else '-' }}</span>
+              title="{{ display_value }}">{{ display_value }}</span>
     </div>
 {%- endmacro %}
 
@@ -135,7 +136,8 @@
             </div>
             <div class="p-4">
                 {% if service.endpoints or service.not_ready_endpoints %}
-                    <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    {% set endpoint_total = (service.endpoints|length) + (service.not_ready_endpoints|length) %}
+                    <div class="grid gap-3 md:grid-cols-2 {% if endpoint_total > 2 %}xl:grid-cols-3{% else %}xl:grid-cols-2{% endif %}">
                         {% for endpoint in service.endpoints %}
                             {% call service_object_card(endpoint.ip, 'Ready', 'circle-check', 'emerald') %}
                                 {{ service_object_row('Target kind', endpoint.target_kind, 'emerald') }}
@@ -168,7 +170,7 @@
             </div>
             <div class="p-4">
                 {% if service.pods %}
-                    <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    <div class="grid gap-3 md:grid-cols-2 {% if service.pods|length > 2 %}xl:grid-cols-3{% else %}xl:grid-cols-2{% endif %}">
                         {% for pod in service.pods %}
                             {% call service_object_card(pod.name, pod.status, 'package-check', 'emerald') %}
                                 {{ service_object_row('Ready', pod.ready, 'emerald') }}
