@@ -294,8 +294,8 @@
 
     const ensureCanvasDimensions = () => {
         if (!canvas || !canvasShell) return { width: 0, height: 0 }
-        canvasShell.style.height = '780px'
-        canvasShell.style.minHeight = '780px'
+        canvasShell.style.height = '840px'
+        canvasShell.style.minHeight = '840px'
         canvas.style.position = 'absolute'
         canvas.style.inset = '0'
         canvas.style.width = '100%'
