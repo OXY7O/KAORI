@@ -271,7 +271,7 @@ def topology():
         cluster_id=request.args.get('cluster_id', '', type=str),
         namespace=request.args.get('namespace', '', type=str),
         scope=request.args.get('scope', 'all', type=str),
-        depth=request.args.get('depth', '2', type=str),
+        depth=request.args.get('depth', '1', type=str),
     )
 
     return render_template(
@@ -287,7 +287,7 @@ def topology_data():
         cluster_id=request.args.get('cluster_id', '', type=str),
         namespace=request.args.get('namespace', '', type=str),
         scope=request.args.get('scope', 'all', type=str),
-        depth=request.args.get('depth', '2', type=str),
+        depth=request.args.get('depth', '1', type=str),
     )
 
     return jsonify(graph)

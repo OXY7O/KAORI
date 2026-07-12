@@ -275,7 +275,7 @@ def normalize_topology_filters(
     normalized_cluster_id = cluster_id.strip()
     normalized_namespace = namespace.strip()
     normalized_scope = scope if scope in _TOPOLOGY_SCOPES else 'all'
-    normalized_depth = depth if depth in _TOPOLOGY_DEPTHS else '2'
+    normalized_depth = depth if depth in _TOPOLOGY_DEPTHS else '1'
 
     if normalized_cluster_id:
         cluster_exists = Cluster.query.filter(Cluster.id == normalized_cluster_id).first() is not None

@@ -13,6 +13,7 @@
     const searchInput = document.getElementById('topology-search')
     const loading = document.getElementById('topology-loading')
     const errorPanel = document.getElementById('topology-error')
+    const runtimeStatus = document.getElementById('topology-runtime-status')
     const emptyState = document.getElementById('topology-empty-state')
     const limitWarning = document.getElementById('topology-limit-warning')
     const limitMessage = document.getElementById('topology-limit-message')
@@ -275,21 +276,26 @@
         ]
     }
 
-    const layoutOptions = () => ({
-        name: 'cose',
-        animate: false,
-        componentSpacing: 90,
-        fit: true,
-        gravity: 0.25,
-        idealEdgeLength: 100,
-        nestingFactor: 1.3,
-        nodeDimensionsIncludeLabels: true,
-        nodeOverlap: 26,
-        nodeRepulsion: 7000,
-        numIter: 900,
-        padding: 42,
-        randomize: true,
-    })
+    const layoutOptions = () => {
+        const depth = depthSelect?.value || config.filters?.depth || '1'
+        const fullGraph = depth === 'full'
+
+        return {
+            name: 'cose',
+            animate: false,
+            componentSpacing: fullGraph ? 72 : 90,
+            fit: true,
+            gravity: 0.25,
+            idealEdgeLength: fullGraph ? 82 : 100,
+            nestingFactor: 1.3,
+            nodeDimensionsIncludeLabels: true,
+            nodeOverlap: 24,
+            nodeRepulsion: fullGraph ? 5200 : 7000,
+            numIter: fullGraph ? 500 : 360,
+            padding: 42,
+            randomize: true,
+        }
+    }
 
     const updateNamespaceOptions = (selectedValue = '') => {
         const clusterId = clusterSelect.value
@@ -325,7 +331,7 @@
         }
 
         Object.entries(values).forEach(([key, value]) => {
-            if (value && !(key === 'scope' && value === 'all') && !(key === 'depth' && value === '2')) {
+            if (value && !(key === 'scope' && value === 'all') && !(key === 'depth' && value === '1')) {
                 url.searchParams.set(key, value)
             } else {
                 url.searchParams.delete(key)
@@ -344,7 +350,7 @@
         document.getElementById('topology-hero-collected').textContent = summary.last_collected_at
             ? formatDateTime(summary.last_collected_at)
             : 'No snapshot'
-        filterSummary.textContent = `${summary.scope_label || 'All Resources'} · ${summary.depth_label || '2 Levels'}`
+        filterSummary.textContent = `${summary.scope_label || 'All Resources'} · ${summary.depth_label || '1 Level'}`
 
         document.querySelectorAll('[data-topology-count-type]').forEach((element) => {
             const resourceType = element.dataset.topologyCountType
@@ -514,6 +520,21 @@
         })
     }
 
+    const setRuntimeStatus = (message = '') => {
+        if (!runtimeStatus) {
+            return
+        }
+
+        if (!message) {
+            runtimeStatus.classList.add('hidden')
+            runtimeStatus.innerHTML = ''
+            return
+        }
+
+        runtimeStatus.classList.remove('hidden')
+        runtimeStatus.innerHTML = `<span class="inline-flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-blue-500"></span>${escapeHtml(message)}</span>`
+    }
+
     const createGraph = (payload) => {
         currentPayload = payload
 
@@ -521,26 +542,51 @@
             cy.destroy()
         }
 
-        const elements = [...(payload.nodes || []), ...(payload.edges || [])]
-        const hasNodes = (payload.nodes || []).length > 0
+        const nodes = payload.nodes || []
+        const edges = payload.edges || []
+        const elements = [...nodes, ...edges]
+        const hasNodes = nodes.length > 0
         emptyState.classList.toggle('hidden', hasNodes)
         emptyState.classList.toggle('flex', !hasNodes)
-
-        cy = window.cytoscape({
-            container: canvas,
-            elements,
-            layout: layoutOptions(),
-            maxZoom: 2.4,
-            minZoom: 0.16,
-            pixelRatio: 'auto',
-            selectionType: 'single',
-            style: graphStyle(),
-            wheelSensitivity: 0.18,
-        })
-
-        attachGraphEvents()
         updateSummary(payload)
-        applySearch()
+
+        if (!hasNodes) {
+            cy = null
+            setRuntimeStatus()
+            return
+        }
+
+        setRuntimeStatus(`Rendering ${nodes.length} resources and ${edges.length} relationships...`)
+
+        try {
+            cy = window.cytoscape({
+                container: canvas,
+                elements,
+                layout: layoutOptions(),
+                maxZoom: 2.4,
+                minZoom: 0.16,
+                pixelRatio: 'auto',
+                selectionType: 'single',
+                style: graphStyle(),
+                wheelSensitivity: 0.18,
+            })
+
+            attachGraphEvents()
+            applySearch()
+
+            cy.ready(() => {
+                window.requestAnimationFrame(() => {
+                    cy.resize()
+                    cy.fit(undefined, 38)
+                    setRuntimeStatus()
+                })
+            })
+        } catch (error) {
+            console.error('KAORI could not render topology.', error)
+            cy = null
+            setRuntimeStatus()
+            showError(`Topology renderer failed: ${error.message || 'unknown error'}`)
+        }
     }
 
     const setLoading = (state) => {
@@ -645,7 +691,8 @@
     }
 
     if (!window.cytoscape) {
-        showError('Cytoscape.js could not be loaded. Check browser access to the configured CDN or vendor the library locally.')
+        setRuntimeStatus()
+        showError('The local Cytoscape.js renderer could not be loaded. Restart the web service and confirm the static vendor file is present.')
         return
     }
 

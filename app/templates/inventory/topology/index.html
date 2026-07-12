@@ -13,7 +13,6 @@
 
 {% block scripts %}
     {% if not cluster_onboarding.is_blocked %}
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.33.2/cytoscape.min.js"></script>
         <script>
             window.KAORI_TOPOLOGY = {{ {
                 'data_url': url_for('inventory.topology_data'),
@@ -22,6 +21,25 @@
                 'filters': filters
             } | tojson }};
         </script>
-        <script src="{{ url_for('static', filename='js/inventory/topology.js') }}"></script>
+        <script type="module">
+            const statusPanel = document.getElementById('topology-runtime-status');
+            const errorPanel = document.getElementById('topology-error');
+
+            try {
+                const cytoscapeModule = await import("{{ url_for('static', filename='vendor/cytoscape/cytoscape.esm.min.js') }}");
+                window.cytoscape = cytoscapeModule.c;
+                window.KAORI_TOPOLOGY_LIBRARY_VERSION = window.cytoscape?.version || 'unknown';
+                await import("{{ url_for('static', filename='js/inventory/topology.js') }}");
+            } catch (error) {
+                console.error('KAORI topology startup failed.', error);
+                if (statusPanel) {
+                    statusPanel.classList.add('hidden');
+                }
+                if (errorPanel) {
+                    errorPanel.textContent = `Topology could not start: ${error?.message || 'unknown JavaScript error'}`;
+                    errorPanel.classList.remove('hidden');
+                }
+            }
+        </script>
     {% endif %}
 {% endblock scripts %}
