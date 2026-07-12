@@ -1,4 +1,42 @@
 {% from 'inventory/components/_detail_macros.html' import detail_card, detail_row, detail_status_row, detail_tip %}
+{% macro namespace_object_card(title, badge, icon, tone='sky') -%}
+    <div class="rounded-xl px-3 py-3 ring-1 ring-inset
+        {% if tone == 'amber' %}bg-amber-50 text-amber-900 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-100 dark:ring-amber-500/20
+        {% else %}bg-sky-50 text-sky-900 ring-sky-100 dark:bg-sky-500/10 dark:text-sky-100 dark:ring-sky-500/20{% endif %}">
+        <div class="flex items-start gap-2.5">
+            <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg
+                {% if tone == 'amber' %}bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300
+                {% else %}bg-sky-100 text-sky-600 dark:bg-sky-500/15 dark:text-sky-300{% endif %}">
+                <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
+            </span>
+            <div class="min-w-0 flex-1">
+                <div class="flex items-center justify-between gap-3">
+                    <span class="truncate text-xs font-normal
+                        {% if tone == 'amber' %}text-amber-950 dark:text-amber-100
+                        {% else %}text-sky-950 dark:text-sky-100{% endif %}" title="{{ title }}">{{ title }}</span>
+                    <span class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-normal
+                        {% if tone == 'amber' %}bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-200
+                        {% else %}bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-200{% endif %}">{{ badge }}</span>
+                </div>
+                <div class="mt-2 space-y-1.5">
+                    {{ caller() }}
+                </div>
+            </div>
+        </div>
+    </div>
+{%- endmacro %}
+
+{% macro namespace_object_row(label, value, tone='sky') -%}
+    <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-2 text-[10px] font-normal">
+        <span class="truncate
+            {% if tone == 'amber' %}text-amber-700/80 dark:text-amber-200/80
+            {% else %}text-sky-700/80 dark:text-sky-200/80{% endif %}" title="{{ label }}">{{ label }}</span>
+        <span class="whitespace-nowrap font-normal
+            {% if tone == 'amber' %}text-amber-950 dark:text-amber-100
+            {% else %}text-sky-950 dark:text-sky-100{% endif %}">{{ value }}</span>
+    </div>
+{%- endmacro %}
+
 {% set status_classes = 'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/25' if namespace.status == 'Active' else ('bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/25' if namespace.status == 'Terminating' else 'bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700') %}
 {% set psa_enforce_display = 'No namespace policy' if namespace.pod_security_enforce in [None, '', 'Not configured'] else namespace.pod_security_enforce %}
 {% set psa_audit_display = 'No namespace policy' if namespace.pod_security_audit in [None, '', 'Not configured'] else namespace.pod_security_audit %}
@@ -59,41 +97,18 @@
                 {{ detail_row('Ingresses', namespace.object_counts.ingresses, false, 'sky') }}
                 {{ detail_row('PVCs', namespace.object_counts.persistent_volume_claims, false, 'sky') }}
                 <div class="pt-2">
-                    <div class="rounded-xl bg-sky-50 px-3 py-3 text-sky-900 ring-1 ring-inset ring-sky-100 dark:bg-sky-500/10 dark:text-sky-100 dark:ring-sky-500/20">
-                        <div class="flex items-start gap-2.5">
-                            <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-sky-100 text-sky-600 dark:bg-sky-500/15 dark:text-sky-300">
-                                <i data-lucide="layout-grid" class="h-3.5 w-3.5"></i>
-                            </span>
-                            <div class="min-w-0 flex-1">
-                                <div class="flex items-center justify-between gap-3">
-                                    <span class="text-[11px] font-normal text-sky-950 dark:text-sky-100">Workload composition</span>
-                                    <span class="shrink-0 rounded-full bg-sky-100 px-2 py-0.5 text-[9px] font-normal text-sky-700 dark:bg-sky-500/15 dark:text-sky-200">{{ namespace.object_counts.workloads }} workloads</span>
-                                </div>
-                                <div class="mt-2 space-y-1.5">
-                                    <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-2 text-[10px]">
-                                        <span class="text-sky-700/80 dark:text-sky-200/80">Deployments</span>
-                                        <span class="font-normal text-sky-950 dark:text-sky-100">{{ namespace.workload_breakdown.deployments }}</span>
-                                    </div>
-                                    <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-2 text-[10px]">
-                                        <span class="text-sky-700/80 dark:text-sky-200/80">StatefulSets</span>
-                                        <span class="font-normal text-sky-950 dark:text-sky-100">{{ namespace.workload_breakdown.statefulsets }}</span>
-                                    </div>
-                                    <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-2 text-[10px]">
-                                        <span class="text-sky-700/80 dark:text-sky-200/80">DaemonSets</span>
-                                        <span class="font-normal text-sky-950 dark:text-sky-100">{{ namespace.workload_breakdown.daemonsets }}</span>
-                                    </div>
-                                    <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-2 text-[10px]">
-                                        <span class="text-sky-700/80 dark:text-sky-200/80">Jobs</span>
-                                        <span class="font-normal text-sky-950 dark:text-sky-100">{{ namespace.workload_breakdown.jobs }}</span>
-                                    </div>
-                                    <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-2 text-[10px]">
-                                        <span class="text-sky-700/80 dark:text-sky-200/80">CronJobs</span>
-                                        <span class="font-normal text-sky-950 dark:text-sky-100">{{ namespace.workload_breakdown.cronjobs }}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    {% call namespace_object_card(
+                        'Workload composition',
+                        namespace.object_counts.workloads ~ ' workloads',
+                        'layout-grid',
+                        'sky'
+                    ) %}
+                        {{ namespace_object_row('Deployments', namespace.workload_breakdown.deployments, 'sky') }}
+                        {{ namespace_object_row('StatefulSets', namespace.workload_breakdown.statefulsets, 'sky') }}
+                        {{ namespace_object_row('DaemonSets', namespace.workload_breakdown.daemonsets, 'sky') }}
+                        {{ namespace_object_row('Jobs', namespace.workload_breakdown.jobs, 'sky') }}
+                        {{ namespace_object_row('CronJobs', namespace.workload_breakdown.cronjobs, 'sky') }}
+                    {% endcall %}
                 </div>
                 <div class="mt-auto pt-2">
                     {{ detail_tip('Workload composition summarizes controllers recorded in this namespace. Pod totals are shown separately because one workload can manage multiple pods.', 'sky', 'info') }}
@@ -113,30 +128,19 @@
                     {% if namespace.quotas %}
                         <div class="max-h-56 space-y-2 overflow-y-auto pr-1">
                             {% for quota in namespace.quotas %}
-                                <div class="rounded-xl bg-amber-50 px-3 py-3 text-amber-900 ring-1 ring-inset ring-amber-100 dark:bg-amber-500/10 dark:text-amber-100 dark:ring-amber-500/20">
-                                    <div class="flex items-start gap-2.5">
-                                        <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300">
-                                            <i data-lucide="sliders-horizontal" class="h-3.5 w-3.5"></i>
-                                        </span>
-                                        <div class="min-w-0 flex-1">
-                                            <div class="flex items-center justify-between gap-3">
-                                                <span class="truncate text-[11px] font-normal text-amber-950 dark:text-amber-100" title="{{ quota.name }}">{{ quota.name }}</span>
-                                                <span class="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-normal text-amber-700 dark:bg-amber-500/15 dark:text-amber-200">{{ quota.resource_count }} limits</span>
-                                            </div>
-                                            <div class="mt-2 space-y-1.5">
-                                                {% for resource in quota.resources %}
-                                                    <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-2 text-[10px]">
-                                                        <span class="truncate text-amber-700/80 dark:text-amber-200/80" title="{{ resource.name }}">{{ resource.name }}</span>
-                                                        <span class="whitespace-nowrap font-normal text-amber-950 dark:text-amber-100">{{ resource.hard }}</span>
-                                                    </div>
-                                                {% endfor %}
-                                                {% if quota.truncated %}
-                                                    <div class="text-[9px] text-amber-700/70 dark:text-amber-200/70">Additional configured limits are not shown.</div>
-                                                {% endif %}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                {% call namespace_object_card(
+                                    quota.name,
+                                    quota.resource_count ~ ' limits',
+                                    'sliders-horizontal',
+                                    'amber'
+                                ) %}
+                                    {% for resource in quota.resources %}
+                                        {{ namespace_object_row(resource.name, resource.hard, 'amber') }}
+                                    {% endfor %}
+                                    {% if quota.truncated %}
+                                        <div class="text-[9px] font-normal text-amber-700/70 dark:text-amber-200/70">Additional configured limits are not shown.</div>
+                                    {% endif %}
+                                {% endcall %}
                             {% endfor %}
                         </div>
                     {% else %}
