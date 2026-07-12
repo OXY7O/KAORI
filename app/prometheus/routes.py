@@ -7,6 +7,7 @@ from flask.typing import ResponseReturnValue
 from flask_login import current_user
 
 from app.cluster.service import get_cluster_by_id
+from app.common.integration_errors import describe_integration_failure
 from app.models import Cluster
 from app.prometheus.exceptions import PrometheusError
 from app.prometheus.forms import PrometheusConfigForm
@@ -224,20 +225,42 @@ def test_connection(
         return jsonify(result)
 
     except PrometheusError as exc:
+        config = cluster.prometheus_config
+        failure = describe_integration_failure(
+            exc,
+            service_name='Prometheus',
+            endpoint=config.endpoint if config is not None else None,
+            request_path='/api/v1/query',
+            timeout_seconds=(
+                min(max(int(config.timeout or 5), 1), 5)
+                if config is not None
+                else None
+            ),
+        )
+        logger.warning(
+            'Prometheus connection test failed for cluster %s: %s',
+            cluster.id,
+            exc,
+            exc_info=True,
+        )
         feedback = record_operational_activity(
             user_id=current_user.id,
             event_type='prometheus_connection_test',
             status='error',
             title='Prometheus connection failed',
             message=f'KAORI could not connect to Prometheus for {cluster.name}.',
-            detail=str(exc),
+            detail=failure['detail'],
             action_url=url_for('prometheus.configuration', cluster_id=cluster.id),
             action_label='Review Prometheus settings',
             action_icon='activity',
             metadata={
                 'cluster_id': cluster.id,
                 'cluster_name': cluster.name,
-                'reason': type(exc).__name__,
+                'reason': failure['reason'],
+                'failure_code': failure['code'],
+                'endpoint_host': failure['endpoint_host'],
+                'endpoint_port': failure['endpoint_port'],
+                'request_path': failure['request_path'],
             },
         )
 
@@ -253,7 +276,9 @@ def test_connection(
         return jsonify(
             {
                 'success': False,
-                'error': str(exc),
+                'error': failure['detail'],
+                'reason': failure['reason'],
+                'failure_code': failure['code'],
             }
         ), 400
     except Exception as exc:

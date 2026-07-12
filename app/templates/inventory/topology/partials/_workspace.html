@@ -1,0 +1,214 @@
+<section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+    <div class="border-b border-slate-200 px-6 py-5 dark:border-slate-700">
+        <div class="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+            <div class="flex items-center gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+                    <i data-lucide="git-fork" class="h-5 w-5"></i>
+                </div>
+                <div>
+                    <h2 class="text-lg font-semibold text-slate-950 dark:text-white">Inventory relationship map</h2>
+                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Explore object relationships without querying the Kubernetes API on each interaction.</p>
+                </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                <button type="button"
+                        id="topology-fit-button"
+                        class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
+                    <i data-lucide="maximize-2" class="h-4 w-4"></i>
+                    Fit Graph
+                </button>
+                <button type="button"
+                        id="topology-reset-button"
+                        class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
+                    <i data-lucide="rotate-ccw" class="h-4 w-4"></i>
+                    Reset View
+                </button>
+                <button type="button"
+                        id="topology-refresh-button"
+                        title="Reload topology from the latest stored inventory snapshot. This does not run inventory sync."
+                        class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">
+                    <i data-lucide="refresh-cw" class="h-4 w-4"></i>
+                    Reload Snapshot
+                </button>
+            </div>
+        </div>
+        <div id="topology-loading" class="mt-4 hidden h-1 overflow-hidden rounded-full bg-blue-100 dark:bg-blue-950/60">
+            <div class="h-full w-1/3 animate-pulse rounded-full bg-blue-600 dark:bg-blue-400"></div>
+        </div>
+    </div>
+
+    <div class="border-b border-slate-200 px-6 py-4 dark:border-slate-700">
+        <form id="topology-filter-form"
+              class="grid gap-4 xl:grid-cols-12 xl:items-end">
+            <div class="xl:col-span-2">
+                <label for="topology-cluster" class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Cluster</label>
+                <select id="topology-cluster" name="cluster_id"
+                        class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
+                    <option value="">All Clusters</option>
+                    {% for cluster in clusters %}
+                        <option value="{{ cluster.id }}" {% if filters.cluster_id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="xl:col-span-2">
+                <label for="topology-namespace" class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Namespace</label>
+                <select id="topology-namespace" name="namespace"
+                        {% if not filters.cluster_id %}disabled{% endif %}
+                        class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-slate-100 dark:disabled:bg-slate-800 dark:disabled:text-slate-600 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
+                    <option value="">All Namespaces</option>
+                    {% if filters.cluster_id %}
+                        {% for item in namespace_map.get(filters.cluster_id, []) %}
+                            <option value="{{ item }}" {% if filters.namespace == item %}selected{% endif %}>{{ item }}</option>
+                        {% endfor %}
+                    {% endif %}
+                </select>
+            </div>
+
+            <div class="xl:col-span-2">
+                <label for="topology-scope" class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Resource Scope</label>
+                <select id="topology-scope" name="scope"
+                        class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
+                    {% for value, label in scope_options.items() %}
+                        <option value="{{ value }}" {% if filters.scope == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="xl:col-span-2">
+                <label for="topology-depth" class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Depth</label>
+                <select id="topology-depth" name="depth"
+                        class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
+                    {% for value, label in depth_options.items() %}
+                        <option value="{{ value }}" {% if filters.depth == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="xl:col-span-4">
+                <label for="topology-search" class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Search Resource</label>
+                <div class="relative">
+                    <i data-lucide="search" class="absolute left-3 top-3 h-4 w-4 text-slate-400 dark:text-slate-500"></i>
+                    <input id="topology-search"
+                           type="search"
+                           placeholder="Search node, workload, pod, service..."
+                           class="w-full rounded-xl border border-slate-300 bg-white py-2 pl-10 pr-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
+                </div>
+            </div>
+        </form>
+        <div class="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
+            <span id="topology-filter-summary">{{ graph.summary.scope_label }} · {{ graph.summary.depth_label }}</span>
+            <span id="topology-search-summary">Search highlights resources already loaded in the graph.</span>
+        </div>
+    </div>
+
+    <div id="topology-limit-warning"
+         class="{% if not graph.summary.truncated %}hidden {% endif %}border-b border-amber-200 bg-amber-50 px-6 py-3 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-500/10 dark:text-amber-300">
+        <span class="inline-flex items-start gap-2">
+            <i data-lucide="triangle-alert" class="mt-0.5 h-4 w-4 flex-shrink-0"></i>
+            <span id="topology-limit-message">The graph was limited for readability. Narrow the cluster or namespace scope to display more resources.</span>
+        </span>
+    </div>
+
+    <div id="topology-error"
+         class="hidden border-b border-red-200 bg-red-50 px-6 py-3 text-xs text-red-700 dark:border-red-900/50 dark:bg-red-500/10 dark:text-red-300"></div>
+
+    <div class="grid min-h-[720px] xl:grid-cols-12">
+        <aside class="border-b border-slate-200 bg-slate-50/70 p-5 xl:col-span-2 xl:border-b-0 xl:border-r dark:border-slate-700 dark:bg-slate-900/30">
+            <div>
+                <h3 class="text-sm font-semibold text-slate-950 dark:text-white">Display</h3>
+                <p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">Control labels without reloading topology data.</p>
+            </div>
+            <div class="mt-4 space-y-3">
+                <label class="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                    <span>Resource labels</span>
+                    <input id="topology-node-label-toggle" type="checkbox" checked class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                </label>
+                <label class="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                    <span>Relationship labels</span>
+                    <input id="topology-edge-label-toggle" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                </label>
+            </div>
+
+            <div class="mt-6">
+                <h3 class="text-sm font-semibold text-slate-950 dark:text-white">Resource legend</h3>
+                <div class="mt-3 grid gap-2 text-xs text-slate-600 dark:text-slate-300">
+                    {% for label, tone in [
+                        ('Cluster', 'bg-blue-600'),
+                        ('Namespace', 'bg-indigo-500'),
+                        ('Node', 'bg-slate-500'),
+                        ('Workload', 'bg-violet-500'),
+                        ('Pod', 'bg-cyan-500'),
+                        ('Service', 'bg-emerald-500'),
+                        ('Ingress', 'bg-teal-500'),
+                        ('ConfigMap', 'bg-sky-500'),
+                        ('Secret', 'bg-amber-500'),
+                        ('PVC', 'bg-orange-500'),
+                        ('PV', 'bg-lime-600')
+                    ] %}
+                        <div class="flex items-center justify-between gap-3 rounded-lg px-2 py-1.5 hover:bg-white dark:hover:bg-slate-800">
+                            <span class="inline-flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-full {{ tone }}"></span>{{ label }}</span>
+                            <span data-topology-count-type="{{ label|lower }}" class="text-[10px] text-slate-400">0</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="mt-6">
+                <h3 class="text-sm font-semibold text-slate-950 dark:text-white">Relationship legend</h3>
+                <div class="mt-3 grid gap-2 text-[10px] text-slate-600 dark:text-slate-300">
+                    {% for label, tone in [
+                        ('Owns', 'bg-violet-500'),
+                        ('Scheduled on', 'bg-slate-500'),
+                        ('Selects', 'bg-emerald-500'),
+                        ('Routes to', 'bg-teal-500'),
+                        ('Uses configuration', 'bg-sky-500'),
+                        ('Mounts claim', 'bg-orange-500'),
+                        ('Binds volume', 'bg-lime-600')
+                    ] %}
+                        <div class="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-white dark:hover:bg-slate-800">
+                            <span class="h-0.5 w-5 rounded-full {{ tone }}"></span>
+                            <span>{{ label }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="mt-6 rounded-xl border border-blue-100 bg-blue-50 px-3 py-3 text-[10px] leading-5 text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
+                Cluster and namespace boundaries are rendered as grouped containers. Lines represent ownership, routing, selection, placement, configuration, or storage relationships.
+            </div>
+        </aside>
+
+        <div class="relative min-h-[720px] bg-white xl:col-span-7 dark:bg-slate-900/20">
+            <div id="topology-canvas" role="application" aria-label="Interactive Kubernetes topology graph" class="absolute inset-0"></div>
+            <div id="topology-empty-state" class="pointer-events-none absolute inset-0 hidden items-center justify-center p-8">
+                <div class="max-w-md rounded-2xl border border-slate-200 bg-white px-6 py-8 text-center shadow-sm dark:border-slate-700 dark:bg-slate-800">
+                    <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+                        <i data-lucide="waypoints" class="h-6 w-6"></i>
+                    </span>
+                    <h3 class="mt-4 text-base font-semibold text-slate-950 dark:text-white">No topology resources found</h3>
+                    <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">Adjust the cluster, namespace, scope, or depth. Run inventory sync if this cluster has not been collected yet.</p>
+                </div>
+            </div>
+        </div>
+
+        <aside class="border-t border-slate-200 bg-white p-5 xl:col-span-3 xl:border-l xl:border-t-0 dark:border-slate-700 dark:bg-slate-800">
+            <div class="flex items-center gap-3">
+                <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+                    <i data-lucide="panel-right" class="h-4 w-4"></i>
+                </span>
+                <div>
+                    <h3 class="text-sm font-semibold text-slate-950 dark:text-white">Topology details</h3>
+                    <p class="mt-0.5 text-[10px] text-slate-500 dark:text-slate-400">Select a resource or relationship.</p>
+                </div>
+            </div>
+            <div id="topology-detail-content" class="mt-5">
+                <div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center dark:border-slate-600 dark:bg-slate-900/40">
+                    <i data-lucide="mouse-pointer-click" class="mx-auto h-7 w-7 text-slate-400"></i>
+                    <p class="mt-3 text-sm font-medium text-slate-700 dark:text-slate-200">Nothing selected</p>
+                    <p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">Click a graph node to inspect identity, status, inventory fields, and related workspace links.</p>
+                </div>
+            </div>
+        </aside>
+    </div>
+</section>

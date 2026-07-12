@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from datetime import UTC, datetime
 from typing import Any
 
@@ -9,9 +10,12 @@ from app.alertmanager.client import AlertmanagerClient
 from app.alertmanager.exceptions import AlertmanagerError
 from app.alertmanager.forms import AlertmanagerConfigForm
 from app.alertmanager.metrics import normalize_alertmanager_alerts
+from app.common.integration_errors import describe_integration_failure
 from app.extensions import db
 from app.models.alertmanager import AlertmanagerConfig
 from app.models.cluster import Cluster
+
+logger = logging.getLogger(__name__)
 
 
 def get_cluster_by_id(
@@ -114,8 +118,12 @@ def test_alertmanager_connection(
             'label': 'Alertmanager Not Configured',
             'response_time_ms': None,
             'version': None,
-            'error': 'Alertmanager endpoint is not configured.',
-            'reason': 'AlertmanagerNotConfigured',
+            'error': (
+                'Alertmanager is not configured for this cluster. Save a valid endpoint and authentication '
+                'configuration before running the connection test.'
+            ),
+            'reason': 'Integration is not configured',
+            'failure_code': 'not_configured',
         }
 
     client = build_alertmanager_client(
@@ -125,12 +133,23 @@ def test_alertmanager_connection(
     try:
         result = client.test_connection()
     except AlertmanagerError as exc:
+        failure = describe_integration_failure(
+            exc,
+            service_name='Alertmanager',
+            endpoint=config.endpoint,
+            request_path='/api/v2/status',
+            timeout_seconds=min(max(int(config.timeout or 5), 1), 5),
+        )
+        logger.warning(
+            'Alertmanager connection test failed for cluster %s: %s',
+            cluster_id,
+            exc,
+            exc_info=True,
+        )
         mark_alertmanager_status(
             config=config,
             status='disconnected',
-            error=str(
-                exc,
-            ),
+            error=failure['detail'],
             response_time_ms=None,
         )
 
@@ -139,18 +158,29 @@ def test_alertmanager_connection(
             'label': 'Alertmanager Disconnected',
             'response_time_ms': None,
             'version': None,
-            'error': str(
-                exc,
-            ),
-            'reason': type(exc).__name__,
+            'error': failure['detail'],
+            'reason': failure['reason'],
+            'failure_code': failure['code'],
+            'endpoint_host': failure['endpoint_host'],
+            'endpoint_port': failure['endpoint_port'],
+            'request_path': failure['request_path'],
         }
     except Exception as exc:
+        failure = describe_integration_failure(
+            exc,
+            service_name='Alertmanager',
+            endpoint=config.endpoint,
+            request_path='/api/v2/status',
+            timeout_seconds=min(max(int(config.timeout or 5), 1), 5),
+        )
+        logger.exception(
+            'Unexpected Alertmanager connection test failure for cluster %s.',
+            cluster_id,
+        )
         mark_alertmanager_status(
             config=config,
             status='error',
-            error=str(
-                exc,
-            ),
+            error=failure['detail'],
             response_time_ms=None,
         )
 
@@ -159,10 +189,12 @@ def test_alertmanager_connection(
             'label': 'Alertmanager Error',
             'response_time_ms': None,
             'version': None,
-            'error': str(
-                exc,
-            ),
-            'reason': type(exc).__name__,
+            'error': failure['detail'],
+            'reason': failure['reason'],
+            'failure_code': failure['code'],
+            'endpoint_host': failure['endpoint_host'],
+            'endpoint_port': failure['endpoint_port'],
+            'request_path': failure['request_path'],
         }
 
     mark_alertmanager_status(
@@ -189,6 +221,7 @@ def test_alertmanager_connection(
         ),
         'error': None,
         'reason': None,
+        'failure_code': None,
     }
 
 

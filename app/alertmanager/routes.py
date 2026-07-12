@@ -160,6 +160,11 @@ def cluster_alertmanager_config(
                                 'timeout_seconds': saved_config.timeout,
                                 'verify_ssl': saved_config.verify_ssl,
                                 'test_connected': False,
+                                'reason': result.get('reason') or 'Connection failed',
+                                'failure_code': result.get('failure_code') or 'connection_failed',
+                                'endpoint_host': result.get('endpoint_host'),
+                                'endpoint_port': result.get('endpoint_port'),
+                                'request_path': result.get('request_path'),
                             },
                             queue_feedback=True,
                         )
@@ -257,7 +262,11 @@ def test_cluster_alertmanager(
             metadata={
                 'cluster_id': cluster.id,
                 'cluster_name': cluster.name,
-                'reason': result.get('reason') or 'AlertmanagerConnectionFailed',
+                'reason': result.get('reason') or 'Connection failed',
+                'failure_code': result.get('failure_code') or 'connection_failed',
+                'endpoint_host': result.get('endpoint_host'),
+                'endpoint_port': result.get('endpoint_port'),
+                'request_path': result.get('request_path'),
             },
         )
 
@@ -286,6 +295,12 @@ def test_cluster_alertmanager(
             ),
             'error': result.get(
                 'error',
+            ),
+            'reason': result.get(
+                'reason',
+            ),
+            'failure_code': result.get(
+                'failure_code',
             ),
         }
     )

@@ -1,10 +1,11 @@
 import logging
 
-from flask import Blueprint, abort, redirect, render_template, request, url_for
+from flask import Blueprint, abort, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user
 
 from app.cluster.onboarding import has_registered_clusters
 from app.cluster.service import build_cluster_context
+from app.inventory.topology import build_topology_graph, build_topology_page_context
 from app.inventory.service import (
     get_cluster_by_id,
     get_configuration_detail,
@@ -261,6 +262,35 @@ def overview():
         'inventory/overview/index.html',
         overview=overview,
     )
+
+
+@inventory_bp.get('/topology')
+@permission_required('inventory.view')
+def topology():
+    context = build_topology_page_context(
+        cluster_id=request.args.get('cluster_id', '', type=str),
+        namespace=request.args.get('namespace', '', type=str),
+        scope=request.args.get('scope', 'all', type=str),
+        depth=request.args.get('depth', '2', type=str),
+    )
+
+    return render_template(
+        'inventory/topology/index.html',
+        **context,
+    )
+
+
+@inventory_bp.get('/topology/data')
+@permission_required('inventory.view')
+def topology_data():
+    graph = build_topology_graph(
+        cluster_id=request.args.get('cluster_id', '', type=str),
+        namespace=request.args.get('namespace', '', type=str),
+        scope=request.args.get('scope', 'all', type=str),
+        depth=request.args.get('depth', '2', type=str),
+    )
+
+    return jsonify(graph)
 
 
 @inventory_bp.route('/nodes')
