@@ -59,19 +59,39 @@
                 {{ detail_row('Ingresses', namespace.object_counts.ingresses, false, 'sky') }}
                 {{ detail_row('PVCs', namespace.object_counts.persistent_volume_claims, false, 'sky') }}
                 <div class="pt-2">
-                    <div class="flex items-start gap-2.5 rounded-xl bg-sky-50 px-3 py-2.5 text-xs leading-5 text-sky-800 dark:bg-sky-500/10 dark:text-sky-200">
-                        <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-sky-100 text-sky-600 dark:bg-sky-500/15 dark:text-sky-300">
-                            <i data-lucide="layout-grid" class="h-3.5 w-3.5"></i>
-                        </span>
-                        <div class="min-w-0">
-                            <p class="font-normal">Workload composition</p>
-                            <p class="mt-0.5">
-                                {{ namespace.workload_breakdown.deployments }} Deployments ·
-                                {{ namespace.workload_breakdown.statefulsets }} StatefulSets ·
-                                {{ namespace.workload_breakdown.daemonsets }} DaemonSets ·
-                                {{ namespace.workload_breakdown.jobs }} Jobs ·
-                                {{ namespace.workload_breakdown.cronjobs }} CronJobs
-                            </p>
+                    <div class="rounded-xl bg-sky-50 px-3 py-3 text-sky-900 ring-1 ring-inset ring-sky-100 dark:bg-sky-500/10 dark:text-sky-100 dark:ring-sky-500/20">
+                        <div class="flex items-start gap-2.5">
+                            <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-sky-100 text-sky-600 dark:bg-sky-500/15 dark:text-sky-300">
+                                <i data-lucide="layout-grid" class="h-3.5 w-3.5"></i>
+                            </span>
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center justify-between gap-3">
+                                    <span class="text-[11px] font-normal text-sky-950 dark:text-sky-100">Workload composition</span>
+                                    <span class="shrink-0 rounded-full bg-sky-100 px-2 py-0.5 text-[9px] font-normal text-sky-700 dark:bg-sky-500/15 dark:text-sky-200">{{ namespace.object_counts.workloads }} workloads</span>
+                                </div>
+                                <div class="mt-2 space-y-1.5">
+                                    <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-2 text-[10px]">
+                                        <span class="text-sky-700/80 dark:text-sky-200/80">Deployments</span>
+                                        <span class="font-normal text-sky-950 dark:text-sky-100">{{ namespace.workload_breakdown.deployments }}</span>
+                                    </div>
+                                    <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-2 text-[10px]">
+                                        <span class="text-sky-700/80 dark:text-sky-200/80">StatefulSets</span>
+                                        <span class="font-normal text-sky-950 dark:text-sky-100">{{ namespace.workload_breakdown.statefulsets }}</span>
+                                    </div>
+                                    <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-2 text-[10px]">
+                                        <span class="text-sky-700/80 dark:text-sky-200/80">DaemonSets</span>
+                                        <span class="font-normal text-sky-950 dark:text-sky-100">{{ namespace.workload_breakdown.daemonsets }}</span>
+                                    </div>
+                                    <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-2 text-[10px]">
+                                        <span class="text-sky-700/80 dark:text-sky-200/80">Jobs</span>
+                                        <span class="font-normal text-sky-950 dark:text-sky-100">{{ namespace.workload_breakdown.jobs }}</span>
+                                    </div>
+                                    <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-2 text-[10px]">
+                                        <span class="text-sky-700/80 dark:text-sky-200/80">CronJobs</span>
+                                        <span class="font-normal text-sky-950 dark:text-sky-100">{{ namespace.workload_breakdown.cronjobs }}</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
