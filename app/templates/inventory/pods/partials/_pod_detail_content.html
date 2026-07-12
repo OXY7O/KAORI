@@ -35,7 +35,7 @@
                 {{ detail_row('Collected', pod.collected_at|user_datetime('%Y-%m-%d %H:%M %Z'), false, 'blue') }}
 
                 <div class="pt-1">
-                    <div class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">Ownership chain</div>
+                    <div class="mb-2 text-[11px] font-normal text-blue-700 dark:text-blue-300">Ownership chain</div>
                     <div class="space-y-0">
                         {% for owner in pod.owner_chain %}
                             <div class="relative flex min-w-0 items-start gap-2 pb-3 last:pb-0">
@@ -44,7 +44,7 @@
                                 {% endif %}
                                 <span class="relative mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-blue-500 ring-4 ring-blue-50 dark:ring-blue-500/10"></span>
                                 <div class="min-w-0">
-                                    <div class="text-[10px] font-normal uppercase tracking-wide text-blue-600 dark:text-blue-300">{{ owner.kind }}</div>
+                                    <div class="text-[10px] font-normal text-blue-600 dark:text-blue-300">{{ owner.kind }}</div>
                                     <div class="truncate text-xs font-medium text-slate-700 dark:text-slate-200" title="{{ owner.name }}">{{ owner.name }}</div>
                                 </div>
                             </div>
@@ -71,21 +71,31 @@
                 {{ detail_row('Reason', pod.reason or '-', false, 'emerald') }}
 
                 {% if pod.conditions %}
-                    <div class="pt-1">
-                        <div class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Pod conditions</div>
-                        <div class="space-y-1.5">
-                            {% for condition in pod.conditions %}
-                                <div class="flex items-center justify-between gap-2 rounded-lg bg-emerald-50/80 px-2.5 py-2 text-xs dark:bg-emerald-500/10">
-                                    <span class="min-w-0 truncate font-medium text-slate-700 dark:text-slate-200" title="{{ condition.type }}">{{ condition.type }}</span>
-                                    {% if condition.status == 'True' %}
-                                        <span class="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-normal text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:ring-emerald-400/25">True</span>
-                                    {% elif condition.status == 'False' %}
-                                        <span class="shrink-0 rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-normal text-rose-700 ring-1 ring-inset ring-rose-200 dark:bg-rose-500/15 dark:text-rose-300 dark:ring-rose-400/25">False</span>
-                                    {% else %}
-                                        <span class="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-normal text-slate-600 ring-1 ring-inset ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-600">{{ condition.status }}</span>
-                                    {% endif %}
+                    <div class="rounded-xl bg-emerald-50 px-3 py-3 text-emerald-900 ring-1 ring-inset ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-100 dark:ring-emerald-500/20">
+                        <div class="flex items-start gap-2.5">
+                            <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300">
+                                <i data-lucide="list-checks" class="h-3.5 w-3.5"></i>
+                            </span>
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center justify-between gap-3">
+                                    <span class="truncate text-xs font-normal text-emerald-950 dark:text-emerald-100">Pod conditions</span>
+                                    <span class="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-normal text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-200">{{ pod.conditions|length }} conditions</span>
                                 </div>
-                            {% endfor %}
+                                <div class="mt-2 space-y-1.5">
+                                    {% for condition in pod.conditions %}
+                                        <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-3 text-xs font-normal leading-5">
+                                            <span class="truncate text-emerald-700/80 dark:text-emerald-200/80" title="{{ condition.type }}">{{ condition.type }}</span>
+                                            {% if condition.status == 'True' %}
+                                                <span class="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-normal text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:ring-emerald-400/25">True</span>
+                                            {% elif condition.status == 'False' %}
+                                                <span class="shrink-0 rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-normal text-rose-700 ring-1 ring-inset ring-rose-200 dark:bg-rose-500/15 dark:text-rose-300 dark:ring-rose-400/25">False</span>
+                                            {% else %}
+                                                <span class="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-normal text-slate-600 ring-1 ring-inset ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-600">{{ condition.status }}</span>
+                                            {% endif %}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 {% endif %}

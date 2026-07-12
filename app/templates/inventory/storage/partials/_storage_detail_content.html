@@ -23,7 +23,7 @@
                 {{ detail_row('Kubernetes UID', item.uid, true, 'lime') }}
                 {{ detail_row('Created', item.created_at|user_datetime('%Y-%m-%d %H:%M %Z'), false, 'lime') }}
                 {{ detail_row('Collected', item.collected_at|user_datetime('%Y-%m-%d %H:%M %Z'), false, 'lime') }}
-                {{ detail_tip(item.type_description, 'blue', 'lightbulb', false, true) }}
+                {{ detail_tip(item.type_description, 'blue', 'lightbulb', false, true, 'min-h-28') }}
             {% endcall %}
 
             {% call detail_card('Capacity & mode', 'hard-drive', 'bg-sky-50 text-sky-600 dark:bg-sky-950/40 dark:text-sky-300', item.capacity, 'bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200 dark:bg-sky-500/10 dark:text-sky-300 dark:ring-sky-400/25') %}
@@ -36,7 +36,7 @@
                 {% if item.mount_options %}
                     <div class="flex flex-wrap gap-1.5 pt-1">{% for option in item.mount_options %}<span class="rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-normal text-sky-700 ring-1 ring-inset ring-sky-200 dark:bg-sky-500/10 dark:text-sky-300 dark:ring-sky-400/25">{{ option }}</span>{% endfor %}</div>
                 {% endif %}
-                {{ detail_tip('Capacity values are declared Kubernetes storage metadata, not filesystem utilization.', 'blue', 'database', false, true) }}
+                {{ detail_tip('Capacity values are declared Kubernetes storage metadata, not filesystem utilization.', 'blue', 'database', false, true, 'min-h-28') }}
             {% endcall %}
 
             {% call detail_card('Binding & lifecycle', 'link-2', 'bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-300', item.binding_reference, 'bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/25') %}
@@ -50,7 +50,7 @@
                 {% if item.conditions %}
                     <div class="space-y-1.5 pt-1">{% for condition in item.conditions %}<div class="flex items-center justify-between gap-2 rounded-lg bg-amber-50/70 px-2.5 py-2 text-xs dark:bg-amber-500/10"><span class="truncate font-medium text-slate-700 dark:text-slate-200">{{ condition.type }}</span><span class="rounded-full bg-white px-2 py-0.5 text-[10px] font-normal text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-slate-900/60 dark:text-amber-300 dark:ring-amber-400/25">{{ condition.status }}</span></div>{% endfor %}</div>
                 {% endif %}
-                {{ detail_tip('Binding metadata shows object relationships and lifecycle controls. Capacity pressure remains in Storage Analysis.', 'amber', 'info', false, true) }}
+                {{ detail_tip('Binding metadata shows object relationships and lifecycle controls. Capacity pressure remains in Storage Analysis.', 'amber', 'info', false, true, 'min-h-28') }}
             {% endcall %}
 
             {% call detail_card('Provisioning details', 'settings-2', 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300', item.provisioner if item.type == 'StorageClass' else item.source.type if item.source else '-', 'bg-violet-50 text-violet-700 ring-1 ring-inset ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-400/25') %}
@@ -73,7 +73,7 @@
                     {{ detail_row('Data source name', item.data_source.name if item.data_source else '-', false, 'violet') }}
                     {% if item.selector %}<div class="flex flex-wrap gap-1.5 pt-1">{% for key, value in item.selector %}<span class="rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-normal text-violet-700 ring-1 ring-inset ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-400/25">{{ key }}={{ value }}</span>{% endfor %}</div>{% endif %}
                 {% endif %}
-                {{ detail_tip('Provisioning fields reflect the configured StorageClass or volume source. Credentials and Secret content are never displayed.', 'violet', 'shield-check', false, true) }}
+                {{ detail_tip('Provisioning fields reflect the configured StorageClass or volume source. Credentials and Secret content are never displayed.', 'violet', 'shield-check', false, true, 'min-h-28') }}
             {% endcall %}
         </div>
 

@@ -21,7 +21,7 @@
                 {{ detail_row('Kubernetes UID', ingress.uid, true, 'blue') }}
                 {{ detail_row('Created', ingress.created_at|user_datetime('%Y-%m-%d %H:%M %Z'), false, 'blue') }}
                 {{ detail_row('Collected', ingress.collected_at|user_datetime('%Y-%m-%d %H:%M %Z'), false, 'blue') }}
-                {{ detail_tip('Ingress routes HTTP and HTTPS traffic to Services according to host and path rules.', 'blue', 'lightbulb', false, true) }}
+                {{ detail_tip('Ingress routes HTTP and HTTPS traffic to Services according to host and path rules.', 'blue', 'lightbulb', false, true, 'min-h-28') }}
             {% endcall %}
 
             {% call detail_card('Exposure', 'globe-2', 'bg-teal-50 text-teal-600 dark:bg-teal-950/40 dark:text-teal-300', ingress.host_count ~ ' host(s)', 'bg-teal-50 text-teal-700 ring-1 ring-inset ring-teal-200 dark:bg-teal-500/10 dark:text-teal-300 dark:ring-teal-400/25') %}
@@ -38,24 +38,39 @@
                         {% endfor %}
                     </div>
                 {% endif %}
-                {{ detail_tip('Addresses come from Ingress status and may remain empty until the controller publishes a load balancer endpoint.', 'teal', 'network', false, true) }}
+                {{ detail_tip('Addresses come from Ingress status and may remain empty until the controller publishes a load balancer endpoint.', 'teal', 'network', false, true, 'min-h-28') }}
             {% endcall %}
 
             {% call detail_card('TLS configuration', 'shield-check', 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300', 'Enabled' if ingress.tls else 'Not configured', 'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/25' if ingress.tls else 'bg-slate-100 text-slate-700 ring-1 ring-inset ring-slate-200') %}
                 {{ detail_status_row('TLS enabled', 'Yes' if ingress.tls else 'No', 'success' if ingress.tls else 'neutral') }}
                 {{ detail_row('TLS entries', ingress.tls_entries|length, false, 'emerald') }}
                 {{ detail_row('Secret references', ingress.tls_secrets|length, false, 'emerald') }}
-                {% if ingress.tls_entries %}
-                    <div class="space-y-2 pt-1">
-                        {% for tls in ingress.tls_entries %}
-                            <div class="rounded-xl bg-emerald-50/70 px-3 py-2.5 text-xs ring-1 ring-inset ring-emerald-100 dark:bg-emerald-500/10 dark:ring-emerald-400/15">
-                                <div class="font-semibold text-emerald-800 dark:text-emerald-200">{{ tls.secret_name }}</div>
-                                <div class="mt-1 break-all text-[10px] text-slate-500 dark:text-slate-400">{{ tls.hosts|join(', ') if tls.hosts else 'No host list' }}</div>
+                <div class="rounded-xl bg-emerald-50 px-3 py-3 text-emerald-900 ring-1 ring-inset ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-100 dark:ring-emerald-500/20">
+                    <div class="flex items-start gap-2.5">
+                        <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300">
+                            <i data-lucide="key-round" class="h-3.5 w-3.5"></i>
+                        </span>
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="truncate text-xs font-normal text-emerald-950 dark:text-emerald-100">TLS Secret references</span>
+                                <span class="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-normal text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-200">{{ ingress.tls_entries|length }} entries</span>
                             </div>
-                        {% endfor %}
+                            {% if ingress.tls_entries %}
+                                <div class="mt-2 space-y-2">
+                                    {% for tls in ingress.tls_entries %}
+                                        <div class="grid gap-1 text-xs font-normal leading-5 sm:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] sm:gap-3">
+                                            <span class="break-all text-emerald-700/80 dark:text-emerald-200/80">{{ tls.secret_name }}</span>
+                                            <span class="break-all sm:text-right text-emerald-950 dark:text-emerald-100">{{ tls.hosts|join(', ') if tls.hosts else 'No host list' }}</span>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <span class="mt-2 inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-normal leading-3 text-slate-500 ring-1 ring-inset ring-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:ring-slate-700">Not configured</span>
+                            {% endif %}
+                        </div>
                     </div>
-                {% endif %}
-                {{ detail_tip('TLS entries show Secret references only. Certificate validity and expiry remain in Kubernetes TLS Secret Governance.', 'emerald', 'lock-keyhole', false, true) }}
+                </div>
+                {{ detail_tip('TLS entries show Secret references only. Certificate validity and expiry remain in Kubernetes TLS Secret Governance.', 'emerald', 'lock-keyhole', false, true, 'min-h-28') }}
             {% endcall %}
 
             {% call detail_card('Routing summary', 'git-branch', 'bg-sky-50 text-sky-600 dark:bg-sky-950/40 dark:text-sky-300', ingress.backend_count ~ ' path(s)', 'bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200 dark:bg-sky-500/10 dark:text-sky-300 dark:ring-sky-400/25') %}
@@ -69,7 +84,7 @@
                         {% for finalizer in ingress.finalizers %}<span class="inline-flex max-w-full rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-normal text-sky-700 ring-1 ring-inset ring-sky-200 dark:bg-sky-500/10 dark:text-sky-300 dark:ring-sky-400/25" title="{{ finalizer }}"><span class="truncate">{{ finalizer }}</span></span>{% endfor %}
                     </div>
                 {% endif %}
-                {{ detail_tip('Routing metadata shows configured host and path mappings, not request volume or backend latency.', 'blue', 'route', false, true) }}
+                {{ detail_tip('Routing metadata shows configured host and path mappings, not request volume or backend latency.', 'blue', 'route', false, true, 'min-h-28') }}
             {% endcall %}
         </div>
 
