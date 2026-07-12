@@ -2,10 +2,12 @@
 {% macro namespace_object_card(title, badge, icon, tone='sky') -%}
     <div class="rounded-xl px-3 py-3 ring-1 ring-inset
         {% if tone == 'amber' %}bg-amber-50 text-amber-900 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-100 dark:ring-amber-500/20
+        {% elif tone == 'violet' %}bg-violet-50 text-violet-900 ring-violet-100 dark:bg-violet-500/10 dark:text-violet-100 dark:ring-violet-500/20
         {% else %}bg-sky-50 text-sky-900 ring-sky-100 dark:bg-sky-500/10 dark:text-sky-100 dark:ring-sky-500/20{% endif %}">
         <div class="flex items-start gap-2.5">
             <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg
                 {% if tone == 'amber' %}bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300
+                {% elif tone == 'violet' %}bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300
                 {% else %}bg-sky-100 text-sky-600 dark:bg-sky-500/15 dark:text-sky-300{% endif %}">
                 <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
             </span>
@@ -13,9 +15,11 @@
                 <div class="flex items-center justify-between gap-3">
                     <span class="truncate text-xs font-normal
                         {% if tone == 'amber' %}text-amber-950 dark:text-amber-100
+                        {% elif tone == 'violet' %}text-violet-800 dark:text-violet-100
                         {% else %}text-sky-800 dark:text-sky-100{% endif %}" title="{{ title }}">{{ title }}</span>
                     <span class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-normal
                         {% if tone == 'amber' %}bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-200
+                        {% elif tone == 'violet' %}bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-200
                         {% else %}bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-200{% endif %}">{{ badge }}</span>
                 </div>
                 <div class="mt-2 space-y-1.5">
@@ -30,9 +34,11 @@
     <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-3 text-xs font-normal leading-5">
         <span class="truncate
             {% if tone == 'amber' %}text-amber-700/80 dark:text-amber-200/80
+            {% elif tone == 'violet' %}text-violet-600 dark:text-violet-300
             {% else %}text-sky-600 dark:text-sky-300{% endif %}" title="{{ label }}">{{ label }}</span>
         <span class="whitespace-nowrap font-normal
             {% if tone == 'amber' %}text-amber-950 dark:text-amber-100
+            {% elif tone == 'violet' %}text-violet-800 dark:text-violet-100
             {% else %}text-sky-800 dark:text-sky-100{% endif %}">{{ value }}</span>
     </div>
 {%- endmacro %}
@@ -41,6 +47,11 @@
 {% set psa_enforce_display = 'No namespace policy' if namespace.pod_security_enforce in [None, '', 'Not configured'] else namespace.pod_security_enforce %}
 {% set psa_audit_display = 'No namespace policy' if namespace.pod_security_audit in [None, '', 'Not configured'] else namespace.pod_security_audit %}
 {% set psa_warn_display = 'No namespace policy' if namespace.pod_security_warn in [None, '', 'Not configured'] else namespace.pod_security_warn %}
+{% set psa_configured_count =
+    (1 if psa_enforce_display != 'No namespace policy' else 0)
+    + (1 if psa_audit_display != 'No namespace policy' else 0)
+    + (1 if psa_warn_display != 'No namespace policy' else 0)
+%}
 
 <div class="bg-slate-50/80 px-4 py-4 dark:bg-slate-950/40">
     <div class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
@@ -166,9 +177,18 @@
                 {{ detail_row('Default ServiceAccount', namespace.default_service_account, false, 'violet') }}
                 {{ detail_row('Secrets', namespace.object_counts.secrets, false, 'violet') }}
                 {{ detail_row('ConfigMaps', namespace.object_counts.config_maps, false, 'violet') }}
-                {{ detail_row('PSA Enforce', psa_enforce_display, false, 'violet') }}
-                {{ detail_row('PSA Audit', psa_audit_display, false, 'violet') }}
-                {{ detail_row('PSA Warn', psa_warn_display, false, 'violet') }}
+                <div class="pt-2">
+                    {% call namespace_object_card(
+                        'Pod Security Admission',
+                        psa_configured_count ~ '/3 configured',
+                        'shield-check',
+                        'violet'
+                    ) %}
+                        {{ namespace_object_row('Enforce', psa_enforce_display, 'violet') }}
+                        {{ namespace_object_row('Audit', psa_audit_display, 'violet') }}
+                        {{ namespace_object_row('Warn', psa_warn_display, 'violet') }}
+                    {% endcall %}
+                </div>
                 <div class="mt-auto pt-2">
                     {{ detail_tip('Pod Security Admission policies are controlled through namespace labels. No namespace policy means KAORI did not find an explicit PSA label on this namespace. NetworkPolicy count indicates configured objects, not effective traffic coverage.', 'violet', 'shield') }}
                 </div>
