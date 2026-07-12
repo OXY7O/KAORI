@@ -1,5 +1,58 @@
 {% from 'inventory/components/_detail_macros.html' import detail_shell, detail_card, detail_row, detail_status_row, detail_tip %}
 
+{% macro service_object_card(title, badge, icon, tone='cyan') -%}
+    <div class="rounded-xl px-3 py-3 ring-1 ring-inset
+        {% if tone == 'violet' %}bg-violet-50 text-violet-900 ring-violet-100 dark:bg-violet-500/10 dark:text-violet-100 dark:ring-violet-500/20
+        {% elif tone == 'emerald' %}bg-emerald-50 text-emerald-900 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-100 dark:ring-emerald-500/20
+        {% elif tone == 'amber' %}bg-amber-50 text-amber-900 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-100 dark:ring-amber-500/20
+        {% else %}bg-cyan-50 text-cyan-900 ring-cyan-100 dark:bg-cyan-500/10 dark:text-cyan-100 dark:ring-cyan-500/20{% endif %}">
+        <div class="flex items-start gap-2.5">
+            <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg
+                {% if tone == 'violet' %}bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300
+                {% elif tone == 'emerald' %}bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300
+                {% elif tone == 'amber' %}bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300
+                {% else %}bg-cyan-100 text-cyan-600 dark:bg-cyan-500/15 dark:text-cyan-300{% endif %}">
+                <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
+            </span>
+            <div class="min-w-0 flex-1">
+                <div class="flex items-center justify-between gap-3">
+                    <span class="truncate text-xs font-normal
+                        {% if tone == 'violet' %}text-violet-800 dark:text-violet-100
+                        {% elif tone == 'emerald' %}text-emerald-800 dark:text-emerald-100
+                        {% elif tone == 'amber' %}text-amber-950 dark:text-amber-100
+                        {% else %}text-cyan-800 dark:text-cyan-100{% endif %}"
+                          title="{{ title }}">{{ title }}</span>
+                    <span class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-normal
+                        {% if tone == 'violet' %}bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-200
+                        {% elif tone == 'emerald' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-200
+                        {% elif tone == 'amber' %}bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-200
+                        {% else %}bg-cyan-100 text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-200{% endif %}">{{ badge }}</span>
+                </div>
+                <div class="mt-2 space-y-1.5">
+                    {{ caller() }}
+                </div>
+            </div>
+        </div>
+    </div>
+{%- endmacro %}
+
+{% macro service_object_row(label, value, tone='cyan', mono=false) -%}
+    <div class="grid grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] gap-3 text-xs font-normal leading-5">
+        <span class="truncate
+            {% if tone == 'violet' %}text-violet-600 dark:text-violet-300
+            {% elif tone == 'emerald' %}text-emerald-600 dark:text-emerald-300
+            {% elif tone == 'amber' %}text-amber-700/80 dark:text-amber-200/80
+            {% else %}text-cyan-600 dark:text-cyan-300{% endif %}"
+              title="{{ label }}">{{ label }}</span>
+        <span class="{{ 'break-all' if mono else 'break-words' }} text-right font-normal
+            {% if tone == 'violet' %}text-violet-800 dark:text-violet-100
+            {% elif tone == 'emerald' %}text-emerald-800 dark:text-emerald-100
+            {% elif tone == 'amber' %}text-amber-950 dark:text-amber-100
+            {% else %}text-cyan-800 dark:text-cyan-100{% endif %}"
+              title="{{ value if value not in [None, ''] else '-' }}">{{ value if value not in [None, ''] else '-' }}</span>
+    </div>
+{%- endmacro %}
+
 {% set type_classes = {
     'ClusterIP': 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-400/25',
     'Headless': 'bg-cyan-50 text-cyan-700 ring-1 ring-inset ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-400/25',
@@ -32,33 +85,29 @@
             {% endcall %}
 
             {% call detail_card('Network configuration', 'globe-2', 'bg-cyan-50 text-cyan-600 dark:bg-cyan-950/40 dark:text-cyan-300', service.cluster_ip, 'bg-cyan-50 text-cyan-700 ring-1 ring-inset ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-400/25') %}
-                {{ detail_row('Cluster IP', service.cluster_ip, false, 'cyan') }}
-                {{ detail_row('External address', service.external_ips|join(', ') if service.external_ips else '-', false, 'cyan') }}
-                {{ detail_row('External name', service.external_name, false, 'cyan') }}
-                {{ detail_row('IP families', service.ip_families|join(', ') if service.ip_families else '-', false, 'cyan') }}
-                {{ detail_row('IP family policy', service.ip_family_policy, false, 'cyan') }}
-                {{ detail_row('Session affinity', service.session_affinity, false, 'cyan') }}
-                {{ detail_row('Internal traffic', service.internal_traffic_policy, false, 'cyan') }}
-                {{ detail_row('External traffic', service.external_traffic_policy, false, 'cyan') }}
-                {{ detail_row('Load balancer class', service.load_balancer_class, false, 'cyan') }}
-                {{ detail_tip('Cluster IP and external addresses are current Service endpoints. Exposure behavior depends on the selected Service type.', 'teal', 'network', false, true, 'min-h-28') }}
+                {% call service_object_card('Address & traffic policy', service.type, 'network', 'cyan') %}
+                    {{ service_object_row('Cluster IP', service.cluster_ip, 'cyan') }}
+                    {{ service_object_row('External address', service.external_ips|join(', ') if service.external_ips else '-', 'cyan') }}
+                    {{ service_object_row('External name', service.external_name, 'cyan') }}
+                    {{ service_object_row('IP families', service.ip_families|join(', ') if service.ip_families else '-', 'cyan') }}
+                    {{ service_object_row('IP family policy', service.ip_family_policy, 'cyan') }}
+                    {{ service_object_row('Session affinity', service.session_affinity, 'cyan') }}
+                    {{ service_object_row('Internal traffic', service.internal_traffic_policy, 'cyan') }}
+                    {{ service_object_row('External traffic', service.external_traffic_policy, 'cyan') }}
+                    {{ service_object_row('Load balancer class', service.load_balancer_class, 'cyan') }}
+                {% endcall %}
+                {{ detail_tip('Cluster IP and external addresses are current Service endpoints. Exposure behavior depends on the selected Service type.', 'cyan', 'network', false, true, 'min-h-28') }}
             {% endcall %}
 
             {% call detail_card('Port mapping', 'plug-zap', 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300', service.port_count ~ ' port(s)', 'bg-violet-50 text-violet-700 ring-1 ring-inset ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-400/25') %}
                 {% if service.ports %}
                     <div class="space-y-2">
                         {% for port in service.ports %}
-                            <div class="rounded-xl bg-violet-50/80 px-3 py-2.5 text-xs ring-1 ring-inset ring-violet-100 dark:bg-violet-500/10 dark:ring-violet-400/15">
-                                <div class="flex items-center justify-between gap-2">
-                                    <span class="font-semibold text-violet-800 dark:text-violet-200">{{ port.name if port.name != '-' else 'Unnamed port' }}</span>
-                                    <span class="rounded-full bg-white px-2 py-0.5 text-[10px] font-normal text-violet-700 ring-1 ring-inset ring-violet-200 dark:bg-slate-900/60 dark:text-violet-300 dark:ring-violet-400/25">{{ port.protocol }}</span>
-                                </div>
-                                <div class="mt-2 grid grid-cols-3 gap-2 text-[10px] text-slate-500 dark:text-slate-400">
-                                    <div><span class="block uppercase tracking-wide">Port</span><span class="mt-0.5 block font-semibold text-slate-800 dark:text-slate-100">{{ port.port or '-' }}</span></div>
-                                    <div><span class="block uppercase tracking-wide">Target</span><span class="mt-0.5 block font-semibold text-slate-800 dark:text-slate-100">{{ port.target_port }}</span></div>
-                                    <div><span class="block uppercase tracking-wide">NodePort</span><span class="mt-0.5 block font-semibold text-slate-800 dark:text-slate-100">{{ port.node_port or '-' }}</span></div>
-                                </div>
-                            </div>
+                            {% call service_object_card(port.name if port.name != '-' else 'Unnamed port', port.protocol, 'plug-zap', 'violet') %}
+                                {{ service_object_row('Port', port.port or '-', 'violet') }}
+                                {{ service_object_row('Target', port.target_port, 'violet') }}
+                                {{ service_object_row('NodePort', port.node_port or '-', 'violet') }}
+                            {% endcall %}
                         {% endfor %}
                     </div>
                 {% else %}
@@ -68,18 +117,23 @@
             {% endcall %}
 
             {% call detail_card('Selection & endpoints', 'scan-search', 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300', service.ready_endpoint_count ~ ' ready', 'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/25') %}
-                {{ detail_row('Selector labels', service.selectors|length, false, 'emerald') }}
-                {{ detail_row('Selected Pods', service.pod_count, false, 'emerald') }}
-                {{ detail_row('Ready endpoints', service.ready_endpoint_count, false, 'emerald') }}
-                {{ detail_row('Not-ready endpoints', service.not_ready_endpoint_count, false, 'emerald') }}
-                {{ detail_status_row('Endpoint metadata', 'Reported' if service.endpoints_reported else 'Not reported', 'success' if service.endpoints_reported else 'neutral') }}
-                {{ detail_status_row('Publish not-ready', 'Enabled' if service.publish_not_ready_addresses else 'Disabled', 'warning' if service.publish_not_ready_addresses else 'neutral') }}
-                {{ detail_row('Health check NodePort', service.health_check_node_port or '-', false, 'emerald') }}
+                {% call service_object_card('Service resolution', (service.ready_endpoint_count + service.not_ready_endpoint_count) ~ ' endpoints', 'scan-search', 'emerald') %}
+                    {{ service_object_row('Selector labels', service.selectors|length, 'emerald') }}
+                    {{ service_object_row('Selected Pods', service.pod_count, 'emerald') }}
+                    {{ service_object_row('Ready endpoints', service.ready_endpoint_count, 'emerald') }}
+                    {{ service_object_row('Not-ready endpoints', service.not_ready_endpoint_count, 'emerald') }}
+                    {{ service_object_row('Endpoint metadata', 'Reported' if service.endpoints_reported else 'Not reported', 'emerald') }}
+                    {{ service_object_row('Publish not-ready', 'Enabled' if service.publish_not_ready_addresses else 'Disabled', 'emerald') }}
+                    {{ service_object_row('Health check NodePort', service.health_check_node_port or '-', 'emerald') }}
+                {% endcall %}
                 {% if service.selectors %}
-                    <div class="flex flex-wrap gap-1.5 pt-1">
-                        {% for selector in service.selectors %}
-                            <span class="inline-flex max-w-full rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-normal text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/25" title="{{ selector }}"><span class="truncate">{{ selector }}</span></span>
-                        {% endfor %}
+                    <div>
+                        <div class="mb-1.5 text-xs font-normal text-slate-500 dark:text-slate-400">Selectors</div>
+                        <div class="flex flex-wrap gap-1.5">
+                            {% for selector in service.selectors %}
+                                <span class="inline-flex max-w-full rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-normal text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/25" title="{{ selector }}"><span class="break-all">{{ selector }}</span></span>
+                            {% endfor %}
+                        </div>
                     </div>
                 {% endif %}
                 {{ detail_tip('Selectors resolve matching Pods, while endpoint readiness reflects the latest Kubernetes Endpoints snapshot.', 'emerald', 'info', false, true, 'min-h-28') }}
@@ -88,17 +142,26 @@
 
         <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-950/40">
             <div class="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-4 dark:border-slate-700">
-                <div class="flex items-center gap-3"><span class="flex h-8 w-8 items-center justify-center rounded-xl bg-cyan-50 text-cyan-600 dark:bg-cyan-950/40 dark:text-cyan-300"><i data-lucide="waypoints" class="h-4 w-4"></i></span><div><h4 class="text-sm font-semibold text-slate-900 dark:text-white">Endpoint addresses</h4><p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Ready and not-ready backend addresses registered for this Service.</p></div></div>
+                <div class="flex items-center gap-3">
+                    <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-cyan-50 text-cyan-600 dark:bg-cyan-950/40 dark:text-cyan-300"><i data-lucide="waypoints" class="h-4 w-4"></i></span>
+                    <div><h4 class="text-sm font-semibold text-slate-900 dark:text-white">Endpoint addresses</h4><p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Ready and not-ready backend addresses registered for this Service.</p></div>
+                </div>
                 <span class="rounded-full bg-cyan-50 px-2.5 py-1 text-xs font-semibold text-cyan-700 ring-1 ring-inset ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-400/25">{{ service.ready_endpoint_count + service.not_ready_endpoint_count }}</span>
             </div>
             <div class="p-4">
                 {% if service.endpoints or service.not_ready_endpoints %}
                     <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                         {% for endpoint in service.endpoints %}
-                            <div class="rounded-xl bg-emerald-50/70 px-3 py-2.5 ring-1 ring-inset ring-emerald-100 dark:bg-emerald-500/10 dark:ring-emerald-400/15"><div class="flex items-center justify-between gap-2"><span class="truncate text-xs font-semibold text-slate-800 dark:text-slate-100" title="{{ endpoint.ip }}">{{ endpoint.ip }}</span><span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-normal text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">Ready</span></div><div class="mt-1 truncate text-[10px] text-slate-500 dark:text-slate-400" title="{{ endpoint.target_name }}">{{ endpoint.target_kind }} {{ endpoint.target_name }}</div></div>
+                            {% call service_object_card(endpoint.ip, 'Ready', 'circle-check', 'emerald') %}
+                                {{ service_object_row('Target kind', endpoint.target_kind, 'emerald') }}
+                                {{ service_object_row('Target name', endpoint.target_name, 'emerald', true) }}
+                            {% endcall %}
                         {% endfor %}
                         {% for endpoint in service.not_ready_endpoints %}
-                            <div class="rounded-xl bg-amber-50/70 px-3 py-2.5 ring-1 ring-inset ring-amber-100 dark:bg-amber-500/10 dark:ring-amber-400/15"><div class="flex items-center justify-between gap-2"><span class="truncate text-xs font-semibold text-slate-800 dark:text-slate-100" title="{{ endpoint.ip }}">{{ endpoint.ip }}</span><span class="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-normal text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">Not ready</span></div><div class="mt-1 truncate text-[10px] text-slate-500 dark:text-slate-400" title="{{ endpoint.target_name }}">{{ endpoint.target_kind }} {{ endpoint.target_name }}</div></div>
+                            {% call service_object_card(endpoint.ip, 'Not ready', 'triangle-alert', 'amber') %}
+                                {{ service_object_row('Target kind', endpoint.target_kind, 'amber') }}
+                                {{ service_object_row('Target name', endpoint.target_name, 'amber', true) }}
+                            {% endcall %}
                         {% endfor %}
                     </div>
                     {% if service.endpoints_truncated %}<p class="mt-3 text-[11px] text-slate-400">Showing the first 12 addresses from each endpoint state.</p>{% endif %}
@@ -111,12 +174,22 @@
         </section>
 
         <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-950/40">
-            <div class="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-4 dark:border-slate-700"><div class="flex items-center gap-3"><span class="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300"><i data-lucide="package-check" class="h-4 w-4"></i></span><div><h4 class="text-sm font-semibold text-slate-900 dark:text-white">Selected Pods</h4><p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Pods matching the Service selector in the current inventory snapshot.</p></div></div><span class="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/25">{{ service.pod_count }}</span></div>
+            <div class="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-4 dark:border-slate-700">
+                <div class="flex items-center gap-3">
+                    <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300"><i data-lucide="package-check" class="h-4 w-4"></i></span>
+                    <div><h4 class="text-sm font-semibold text-slate-900 dark:text-white">Selected Pods</h4><p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Pods matching the Service selector in the current inventory snapshot.</p></div>
+                </div>
+                <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/25">{{ service.pod_count }}</span>
+            </div>
             <div class="p-4">
                 {% if service.pods %}
-                    <div class="space-y-0">
+                    <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                         {% for pod in service.pods %}
-                            <div class="relative flex min-w-0 items-start gap-3 pb-4 last:pb-0">{% if not loop.last %}<span class="absolute top-3 left-[5px] h-full w-px bg-emerald-200 dark:bg-emerald-500/30"></span>{% endif %}<span class="relative mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-500 ring-4 ring-emerald-50 dark:ring-emerald-500/10"></span><div class="min-w-0 flex-1"><div class="flex flex-wrap items-center justify-between gap-2"><span class="truncate text-xs font-semibold text-slate-800 dark:text-slate-100" title="{{ pod.name }}">{{ pod.name }}</span><span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-normal text-slate-600 ring-1 ring-inset ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-600">{{ pod.status }}</span></div><div class="mt-1 text-[11px] text-slate-500 dark:text-slate-400">{{ pod.ready }} ready · Node {{ pod.node }} · {{ pod.container_count }} container(s)</div></div></div>
+                            {% call service_object_card(pod.name, pod.status, 'package-check', 'emerald') %}
+                                {{ service_object_row('Ready', pod.ready, 'emerald') }}
+                                {{ service_object_row('Node', pod.node, 'emerald', true) }}
+                                {{ service_object_row('Containers', pod.container_count, 'emerald') }}
+                            {% endcall %}
                         {% endfor %}
                     </div>
                     {% if service.pods_truncated %}<p class="mt-3 text-[11px] text-slate-400">Showing the first 8 selected Pods.</p>{% endif %}
@@ -129,12 +202,18 @@
         </section>
 
         <section class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-950/40">
-            <div class="mb-3 flex items-center justify-between gap-3"><div class="flex items-center gap-3"><span class="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300"><i data-lucide="tags" class="h-4 w-4"></i></span><div><h4 class="text-sm font-semibold text-slate-900 dark:text-white">Service labels</h4><p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Metadata labels attached to this Service object.</p></div></div><span class="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-400/25">{{ service.labels|length }}</span></div>
+            <div class="mb-3 flex items-center justify-between gap-3">
+                <div class="flex items-center gap-3"><span class="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300"><i data-lucide="tags" class="h-4 w-4"></i></span><div><h4 class="text-sm font-semibold text-slate-900 dark:text-white">Service labels</h4><p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Metadata labels attached to this Service object.</p></div></div>
+                <span class="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-400/25">{{ service.labels|length }}</span>
+            </div>
             {% if service.labels %}<div class="flex max-h-44 flex-wrap gap-2 overflow-y-auto pr-1">{% for key, value in service.labels %}<span class="inline-flex max-w-full rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-normal text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-400/25" title="{{ key }}={{ value }}"><span class="break-all">{{ key }}{% if value %}={{ value }}{% endif %}</span></span>{% endfor %}</div>{% else %}{{ detail_tip('No label is recorded for this Service.', 'slate', 'info') }}{% endif %}
         </section>
 
         <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-950/40">
-            <div class="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-4 dark:border-slate-700"><div class="flex items-center gap-3"><span class="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-300"><i data-lucide="notebook-tabs" class="h-4 w-4"></i></span><div><h4 class="text-sm font-semibold text-slate-900 dark:text-white">Service annotations</h4><p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Annotation keys and values attached to this Service.</p></div></div><span class="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/25">{{ service.annotations|length }}</span></div>
+            <div class="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-4 dark:border-slate-700">
+                <div class="flex items-center gap-3"><span class="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-300"><i data-lucide="notebook-tabs" class="h-4 w-4"></i></span><div><h4 class="text-sm font-semibold text-slate-900 dark:text-white">Service annotations</h4><p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Annotation keys and values attached to this Service.</p></div></div>
+                <span class="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/25">{{ service.annotations|length }}</span>
+            </div>
             {% if service.annotations %}<div class="max-h-64 overflow-y-auto"><div class="divide-y divide-slate-200 dark:divide-slate-700">{% for key, value in service.annotations %}<div class="grid gap-1 px-4 py-3 text-xs md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] md:gap-4"><div class="break-all font-normal text-slate-700 dark:text-slate-200">{{ key }}</div><div class="break-all text-slate-500 dark:text-slate-400">{{ value or '-' }}</div></div>{% endfor %}</div></div>{% else %}<div class="p-4">{{ detail_tip('No annotation is recorded for this Service.', 'slate', 'info') }}</div>{% endif %}
         </section>
 

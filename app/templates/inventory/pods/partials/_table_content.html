@@ -9,7 +9,6 @@
                 <th class="px-4 py-1.5">Ready</th>
                 <th class="px-4 py-1.5">Owner</th>
                 <th class="px-4 py-1.5">Restarts</th>
-                <th class="px-4 py-1.5">Containers</th>
                 <th class="px-4 py-1.5">Details</th>
             </tr>
         </thead>
@@ -72,7 +71,6 @@
                     <td class="px-4 py-1.5">
                         <span class="font-semibold {{ 'text-amber-700 dark:text-amber-300' if pod.restarts > 0 else 'text-slate-700 dark:text-slate-300' }}">{{ pod.restarts }}</span>
                     </td>
-                    <td class="px-4 py-1.5 font-semibold text-slate-700 dark:text-slate-300">{{ pod.container_count }}</td>
                     <td class="px-4 py-1.5">
                         <button type="button"
                                 data-inventory-detail-kind="pod"
@@ -88,13 +86,13 @@
                     </td>
                 </tr>
                 <tr id="pod-detail-row-{{ pod.id }}" class="hidden border-0">
-                    <td colspan="9" class="p-0 leading-none align-top">
+                    <td colspan="8" class="p-0 leading-none align-top">
                         <div id="pod-detail-content-{{ pod.id }}" data-open="false"></div>
                     </td>
                 </tr>
             {% else %}
                 <tr>
-                    <td colspan="9" class="p-0">
+                    <td colspan="8" class="p-0">
                         {% set empty_state_icon = 'package-x' %}
                         {% set empty_state_title = 'No pod inventory found' %}
                         {% set empty_state_description = 'Adjust the active filters or sync cluster inventory to collect Kubernetes Pod data.' %}

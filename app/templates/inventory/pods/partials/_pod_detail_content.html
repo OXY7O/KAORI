@@ -113,7 +113,7 @@
                 'Placement & network',
                 'map-pin',
                 'bg-cyan-50 text-cyan-600 dark:bg-cyan-950/40 dark:text-cyan-300',
-                pod.node or 'Not scheduled',
+                pod.host_ip or 'Not reported',
                 'bg-cyan-50 text-cyan-700 ring-1 ring-inset ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-400/25'
             ) %}
                 {{ detail_row('Node', pod.node or 'Not scheduled', false, 'cyan') }}
@@ -137,7 +137,7 @@
                     </div>
                 {% endif %}
 
-                {{ detail_tip('Pod IP identifies this Pod instance and may change when Kubernetes recreates it.', 'teal', 'network', false, true, 'min-h-28') }}
+                {{ detail_tip('Host IP identifies the node network address currently hosting this Pod. Pod IP remains the address assigned to the Pod instance.', 'teal', 'network', false, true, 'min-h-28') }}
             {% endcall %}
 
             {% call detail_card(

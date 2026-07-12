@@ -23,7 +23,7 @@
                 {{ detail_row('Kubernetes UID', item.uid, true, 'lime') }}
                 {{ detail_row('Created', item.created_at|user_datetime('%Y-%m-%d %H:%M %Z'), false, 'lime') }}
                 {{ detail_row('Collected', item.collected_at|user_datetime('%Y-%m-%d %H:%M %Z'), false, 'lime') }}
-                {{ detail_tip(item.type_description, 'blue', 'lightbulb', false, true, 'min-h-28') }}
+                {{ detail_tip(item.type_description, 'lime', 'lightbulb', false, true, 'min-h-28') }}
             {% endcall %}
 
             {% call detail_card('Capacity & mode', 'hard-drive', 'bg-sky-50 text-sky-600 dark:bg-sky-950/40 dark:text-sky-300', item.capacity, 'bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200 dark:bg-sky-500/10 dark:text-sky-300 dark:ring-sky-400/25') %}
@@ -36,7 +36,7 @@
                 {% if item.mount_options %}
                     <div class="flex flex-wrap gap-1.5 pt-1">{% for option in item.mount_options %}<span class="rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-normal text-sky-700 ring-1 ring-inset ring-sky-200 dark:bg-sky-500/10 dark:text-sky-300 dark:ring-sky-400/25">{{ option }}</span>{% endfor %}</div>
                 {% endif %}
-                {{ detail_tip('Capacity values are declared Kubernetes storage metadata, not filesystem utilization.', 'blue', 'database', false, true, 'min-h-28') }}
+                {{ detail_tip('Capacity values are declared Kubernetes storage metadata, not filesystem utilization.', 'sky', 'database', false, true, 'min-h-28') }}
             {% endcall %}
 
             {% call detail_card('Binding & lifecycle', 'link-2', 'bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-300', item.binding_reference, 'bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/25') %}
