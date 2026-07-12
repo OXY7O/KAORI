@@ -994,7 +994,10 @@
         visibleElements.layout(layoutOptions()).run()
         requestAnimationFrame(() => {
             cy.resize()
-            cy.fit(visibleElements, 56)
+            cy.fit(visibleElements, 28)
+            const boostedZoom = Math.min(cy.maxZoom(), cy.zoom() * 1.08)
+            cy.zoom(boostedZoom)
+            cy.center(visibleElements)
         })
     }
 
@@ -1055,7 +1058,10 @@
                             return
                         }
                         cy.resize()
-                        cy.fit(undefined, 42)
+                        const visibleElements = cy.elements(':visible')
+                        cy.fit(visibleElements, 24)
+                        cy.zoom(Math.min(cy.maxZoom(), cy.zoom() * 1.1))
+                        cy.center(visibleElements)
                         setRuntimeStatus()
                         showError()
                         console.info('KAORI topology rendered.', {
@@ -1219,7 +1225,9 @@
 
     document.getElementById('topology-fit-button').addEventListener('click', () => {
         if (cy) {
-            cy.fit(cy.elements(':visible'), 38)
+            cy.fit(cy.elements(':visible'), 20)
+            cy.zoom(Math.min(cy.maxZoom(), cy.zoom() * 1.08))
+            cy.center(cy.elements(':visible'))
         }
     })
 
