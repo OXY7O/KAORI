@@ -163,8 +163,8 @@
                                 {% else %}
                                     {% set node_label_classes = 'bg-teal-50 text-teal-700 ring-teal-200 dark:bg-teal-500/10 dark:text-teal-300 dark:ring-teal-500/25' %}
                                 {% endif %}
-                                <span class="inline-flex max-w-full items-center rounded-full px-2.5 py-1 text-[11px] font-medium leading-4 ring-1 ring-inset {{ node_label_classes }}" title="{{ key }}{% if value %}={{ value }}{% endif %}">
-                                    <span class="break-all">{{ key }}{% if value %}=<span class="font-semibold">{{ value }}</span>{% endif %}</span>
+                                <span class="inline-flex max-w-full items-center rounded-full px-2 py-0.5 text-[10px] font-normal leading-4 ring-1 ring-inset {{ node_label_classes }}" title="{{ key }}{% if value %}={{ value }}{% endif %}">
+                                    <span class="break-all">{{ key }}{% if value %}=<span class="font-normal">{{ value }}</span>{% endif %}</span>
                                 </span>
                             {% endfor %}
                         </div>
