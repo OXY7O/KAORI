@@ -53,6 +53,89 @@
         contains: '#94a3b8',
     }
 
+
+    const svgDataUri = (svg) => `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`
+
+    const iconSvg = (color, body) => svgDataUri(`
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            ${body}
+        </svg>
+    `)
+
+    const typeVisuals = {
+        cluster: {
+            fill: '#dbeafe',
+            border: '#60a5fa',
+            icon: iconSvg('#1d4ed8', '<rect x="3.5" y="4.5" width="17" height="5" rx="1.75"/><rect x="3.5" y="14.5" width="17" height="5" rx="1.75"/><path d="M7 9.5v5"/><path d="M12 9.5v5"/><path d="M17 9.5v5"/>'),
+        },
+        namespace: {
+            fill: '#e0e7ff',
+            border: '#818cf8',
+            icon: iconSvg('#4f46e5', '<path d="M12 3 4 7l8 4 8-4-8-4Z"/><path d="M4 12l8 4 8-4"/><path d="M4 17l8 4 8-4"/>'),
+        },
+        node: {
+            fill: '#e2e8f0',
+            border: '#94a3b8',
+            icon: iconSvg('#475569', '<rect x="4" y="4" width="16" height="6" rx="1.5"/><rect x="4" y="14" width="16" height="6" rx="1.5"/><path d="M8 7h.01"/><path d="M8 17h.01"/><path d="M12 7h4"/><path d="M12 17h4"/>'),
+        },
+        workload: {
+            fill: '#ede9fe',
+            border: '#a78bfa',
+            icon: iconSvg('#7c3aed', '<rect x="3.5" y="4.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="4.5" width="7" height="7" rx="1.5"/><rect x="8.5" y="12.5" width="7" height="7" rx="1.5"/>'),
+        },
+        pod: {
+            fill: '#cffafe',
+            border: '#67e8f9',
+            icon: iconSvg('#0891b2', '<circle cx="12" cy="12" r="5.5"/><path d="M12 9v3l2 2"/>'),
+        },
+        service: {
+            fill: '#d1fae5',
+            border: '#6ee7b7',
+            icon: iconSvg('#059669', '<circle cx="6.5" cy="12" r="2.5"/><circle cx="17.5" cy="7" r="2.5"/><circle cx="17.5" cy="17" r="2.5"/><path d="M8.7 10.8 15.3 8.2"/><path d="M8.7 13.2l6.6 2.6"/>'),
+        },
+        ingress: {
+            fill: '#ccfbf1',
+            border: '#5eead4',
+            icon: iconSvg('#0f766e', '<path d="M4 7h10"/><path d="M10 17h10"/><path d="m10 7 6 0"/><path d="M10 7v10"/><path d="m10 17 4-4"/><path d="m10 17 4 4"/>'),
+        },
+        configmap: {
+            fill: '#e0f2fe',
+            border: '#7dd3fc',
+            icon: iconSvg('#0284c7', '<path d="M14 3.5H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8.5Z"/><path d="M14 3.5v5h5"/><path d="M8 13h8"/><path d="M8 16h6"/>'),
+        },
+        secret: {
+            fill: '#fef3c7',
+            border: '#fcd34d',
+            icon: iconSvg('#d97706', '<circle cx="8" cy="12" r="3"/><path d="M11 12h7"/><path d="M15 12v2"/><path d="M18 12v1.5"/>'),
+        },
+        pvc: {
+            fill: '#ffedd5',
+            border: '#fdba74',
+            icon: iconSvg('#ea580c', '<ellipse cx="12" cy="6" rx="6.5" ry="2.5"/><path d="M5.5 6v8c0 1.4 2.9 2.5 6.5 2.5s6.5-1.1 6.5-2.5V6"/><path d="M5.5 10.5c0 1.4 2.9 2.5 6.5 2.5s6.5-1.1 6.5-2.5"/>'),
+        },
+        pv: {
+            fill: '#ecfccb',
+            border: '#a3e635',
+            icon: iconSvg('#65a30d', '<rect x="4" y="6" width="16" height="12" rx="2"/><path d="M8 10h8"/><path d="M8 14h5"/>'),
+        },
+    }
+
+    const typeLegendIcons = {
+        cluster: 'server-cog',
+        namespace: 'layers-3',
+        node: 'server',
+        workload: 'boxes',
+        pod: 'circle-dot',
+        service: 'network',
+        ingress: 'route',
+        configmap: 'file-cog',
+        secret: 'key-round',
+        pvc: 'database',
+        pv: 'hard-drive',
+    }
+
+    const getTypeVisual = (type) => typeVisuals[type] || typeVisuals.node
+
     const statusClasses = {
         healthy: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300',
         warning: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300',
@@ -114,43 +197,51 @@
         {
             selector: 'node',
             style: {
-                'background-color': (node) => typeColors[node.data('type')] || '#64748b',
-                'border-color': '#ffffff',
-                'border-width': 2,
+                'background-color': (node) => getTypeVisual(node.data('type')).fill,
+                'border-color': (node) => getTypeVisual(node.data('type')).border,
+                'border-width': 1.8,
                 'color': labelColor,
                 'font-family': 'Inter, sans-serif',
                 'font-size': 10,
                 'font-weight': 600,
-                'height': 38,
+                'height': 52,
                 'label': nodeLabelToggle && nodeLabelToggle.checked ? 'data(label)' : '',
                 'min-zoomed-font-size': 8,
                 'overlay-opacity': 0,
+                'background-image': (node) => getTypeVisual(node.data('type')).icon,
+                'background-fit': 'contain',
+                'background-clip': 'none',
+                'background-image-containment': 'inside',
+                'background-width': '50%',
+                'background-height': '50%',
                 'shape': 'round-rectangle',
                 'text-background-color': labelBackground,
-                'text-background-opacity': 0.88,
+                'text-background-opacity': 0.92,
                 'text-background-padding': 3,
                 'text-halign': 'center',
-                'text-margin-y': 8,
-                'text-max-width': 118,
+                'text-margin-y': 12,
+                'text-max-width': 124,
                 'text-valign': 'bottom',
                 'text-wrap': 'ellipsis',
-                'width': 44,
+                'width': 52,
             },
         },
         {
             selector: 'node[type = "pod"]',
             style: {
                 'shape': 'ellipse',
-                'height': 34,
-                'width': 34,
+                'height': 46,
+                'width': 46,
+                'background-width': '56%',
+                'background-height': '56%',
             },
         },
         {
             selector: 'node[type = "service"]',
             style: {
-                'shape': 'diamond',
-                'height': 42,
-                'width': 42,
+                'shape': 'round-rectangle',
+                'height': 54,
+                'width': 54,
             },
         },
         {
@@ -158,14 +249,14 @@
             style: {
                 'shape': 'hexagon',
                 'height': 44,
-                'width': 44,
+                'width': 52,
             },
         },
         {
             selector: 'node[type = "configmap"], node[type = "secret"]',
             style: {
                 'shape': 'round-tag',
-                'height': 38,
+                'height': 52,
                 'width': 46,
             },
         },
@@ -173,14 +264,16 @@
             selector: 'node[type = "pvc"], node[type = "pv"]',
             style: {
                 'shape': 'barrel',
-                'height': 42,
-                'width': 42,
+                'height': 54,
+                'width': 54,
+                'background-width': '46%',
+                'background-height': '46%',
             },
         },
         {
             selector: 'node:parent',
             style: {
-                'background-color': (node) => typeColors[node.data('type')] || '#64748b',
+                'background-color': (node) => getTypeVisual(node.data('type')).fill,
                 'background-opacity': 0.06,
                 'border-color': (node) => typeColors[node.data('type')] || '#64748b',
                 'border-opacity': 0.5,
@@ -191,6 +284,12 @@
                 'font-weight': 700,
                 'label': nodeLabelToggle && nodeLabelToggle.checked ? 'data(label)' : '',
                 'padding': 26,
+                'background-image': (node) => getTypeVisual(node.data('type')).icon,
+                'background-fit': 'contain',
+                'background-clip': 'none',
+                'background-image-containment': 'inside',
+                'background-width': '50%',
+                'background-height': '50%',
                 'shape': 'round-rectangle',
                 'text-background-opacity': 0,
                 'text-halign': 'center',
@@ -236,7 +335,7 @@
                 'text-background-opacity': 0.9,
                 'text-background-padding': 2,
                 'text-rotation': 'autorotate',
-                'width': 1.6,
+                'width': 1.9,
             },
         },
         {
@@ -258,7 +357,7 @@
             selector: '.search-match',
             style: {
                 'border-color': '#eab308',
-                'border-width': 5,
+                'border-width': 4.5,
                 'opacity': 1,
                 'z-index': 1000,
             },
@@ -267,7 +366,7 @@
             selector: ':selected',
             style: {
                 'border-color': '#1d4ed8',
-                'border-width': 5,
+                'border-width': 4.5,
                 'line-color': '#1d4ed8',
                 'target-arrow-color': '#1d4ed8',
                 'z-index': 1200,
