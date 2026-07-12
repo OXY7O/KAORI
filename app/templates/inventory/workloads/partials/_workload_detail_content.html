@@ -231,7 +231,7 @@
                 </div>
 
                 {% if workload.pods %}
-                    <div class="max-h-80 overflow-y-auto pr-1">
+                    <div>
                         {% for pod in workload.pods %}
                             <div class="relative flex gap-3 pb-5 last:pb-0">
                                 {% if not loop.last %}<span class="absolute left-[5px] top-3 h-full w-px bg-slate-200 dark:bg-slate-700"></span>{% endif %}
