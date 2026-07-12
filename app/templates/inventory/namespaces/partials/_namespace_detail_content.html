@@ -189,7 +189,7 @@
                     {% endcall %}
                 </div>
                 <div class="mt-auto pt-2">
-                    {{ detail_tip('Pod Security Admission policies are controlled through namespace labels. No namespace policy means KAORI did not find an explicit PSA label on this namespace. NetworkPolicy count indicates configured objects, not effective traffic coverage.', 'violet', 'shield') }}
+                    {{ detail_tip('Pod Security Admission (PSA) is the built-in Kubernetes security policy framework for pods. Enforce blocks policy violations, Audit records them, and Warn notifies users without blocking the workload.', 'violet', 'shield') }}
                 </div>
             {% endcall %}
 
