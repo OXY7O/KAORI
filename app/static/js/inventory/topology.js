@@ -21,6 +21,7 @@
     const nodeLabelToggle = document.getElementById('topology-node-label-toggle')
     const edgeLabelToggle = document.getElementById('topology-edge-label-toggle')
     const layoutModeSelect = document.getElementById('topology-layout-mode')
+    const relationshipToggles = Array.from(document.querySelectorAll('[data-topology-relationship-toggle]'))
     const searchSummary = document.getElementById('topology-search-summary')
     const filterSummary = document.getElementById('topology-filter-summary')
 
@@ -28,6 +29,7 @@
     let currentPayload = config.initial_graph || { nodes: [], edges: [], summary: {}, type_counts: {} }
     let fetchController = null
     let searchTimer = null
+    let selectedNodeId = null
 
     const typeColors = {
         cluster: '#2563eb',
@@ -289,38 +291,43 @@
                 'font-family': 'Inter, sans-serif',
                 'font-size': 10,
                 'font-weight': 600,
-                'height': 52,
+                'height': 54,
                 'label': nodeLabelToggle && nodeLabelToggle.checked ? 'data(label)' : '',
                 'min-zoomed-font-size': 8,
                 'overlay-opacity': 0,
                 'background-image': (node) => getTypeVisual(node.data('type')).icon,
-                'background-fit': 'contain',
-                'background-clip': 'none',
+                'background-fit': 'none',
+                'background-clip': 'node',
                 'background-image-containment': 'inside',
-                'background-width': '50%',
-                'background-height': '50%',
+                'background-width': '44%',
+                'background-height': '44%',
                 'background-position-x': '50%',
                 'background-position-y': '50%',
                 'shape': 'round-rectangle',
+                'shadow-blur': 8,
+                'shadow-color': darkMode ? '#020617' : '#94a3b8',
+                'shadow-opacity': darkMode ? 0.22 : 0.2,
+                'shadow-offset-x': 0,
+                'shadow-offset-y': 2,
                 'text-background-color': labelBackground,
                 'text-background-opacity': 0.92,
                 'text-background-padding': 3,
                 'text-halign': 'center',
-                'text-margin-y': 12,
+                'text-margin-y': 14,
                 'text-max-width': 124,
                 'text-valign': 'bottom',
                 'text-wrap': 'ellipsis',
-                'width': 52,
+                'width': 58,
             },
         },
         {
             selector: 'node[type = "pod"]',
             style: {
                 'shape': 'ellipse',
-                'height': 46,
-                'width': 46,
-                'background-width': '56%',
-                'background-height': '56%',
+                'height': 48,
+                'width': 48,
+                'background-width': '46%',
+                'background-height': '46%',
             },
         },
         {
@@ -328,23 +335,29 @@
             style: {
                 'shape': 'round-rectangle',
                 'height': 54,
-                'width': 54,
+                'width': 58,
+                'background-width': '42%',
+                'background-height': '42%',
             },
         },
         {
             selector: 'node[type = "ingress"]',
             style: {
                 'shape': 'hexagon',
-                'height': 44,
-                'width': 52,
+                'height': 54,
+                'width': 58,
+                'background-width': '38%',
+                'background-height': '38%',
             },
         },
         {
             selector: 'node[type = "configmap"], node[type = "secret"]',
             style: {
-                'shape': 'round-tag',
-                'height': 52,
-                'width': 46,
+                'shape': 'round-rectangle',
+                'height': 54,
+                'width': 58,
+                'background-width': '42%',
+                'background-height': '42%',
             },
         },
         {
@@ -372,11 +385,11 @@
                 'label': nodeLabelToggle && nodeLabelToggle.checked ? 'data(label)' : '',
                 'padding': 26,
                 'background-image': (node) => getTypeVisual(node.data('type')).icon,
-                'background-fit': 'contain',
-                'background-clip': 'none',
+                'background-fit': 'none',
+                'background-clip': 'node',
                 'background-image-containment': 'inside',
-                'background-width': '50%',
-                'background-height': '50%',
+                'background-width': '44%',
+                'background-height': '44%',
                 'background-position-x': '50%',
                 'background-position-y': '50%',
                 'shape': 'round-rectangle',
@@ -695,12 +708,97 @@
         </div>
     `
 
-    const renderNodeDetails = (node) => {
+    const renderRelationshipRows = (node) => {
+        const visibleEdges = node.connectedEdges().filter((edge) => edge.visible())
+        if (visibleEdges.length === 0) {
+            return `
+                <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center dark:border-slate-600 dark:bg-slate-900/40">
+                    <i data-lucide="unlink" class="mx-auto h-5 w-5 text-slate-400"></i>
+                    <p class="mt-2 text-xs font-medium text-slate-700 dark:text-slate-200">No visible relationships</p>
+                    <p class="mt-1 text-[10px] leading-4 text-slate-500 dark:text-slate-400">Enable relationship types from the left panel to include them here.</p>
+                </div>
+            `
+        }
+
+        return visibleEdges.map((edge) => {
+            const edgeData = edge.data()
+            const sourceIsSelected = edge.source().id() === node.id()
+            const peer = sourceIsSelected ? edge.target() : edge.source()
+            const peerData = peer.data()
+            const relUi = getRelationshipUi(edgeData.relationship)
+            const color = edgeColors[edgeData.relationship] || '#64748b'
+            const direction = sourceIsSelected ? 'Outbound' : 'Inbound'
+
+            return `
+                <button type="button"
+                        data-topology-related-node="${escapeHtml(peer.id())}"
+                        class="flex w-full items-start gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 text-left transition hover:border-blue-200 hover:bg-blue-50/50 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-blue-500/30 dark:hover:bg-blue-500/10">
+                    <span class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl border ${relUi.badgeClasses}">
+                        <i data-lucide="${escapeHtml(relUi.icon)}" class="h-4 w-4"></i>
+                    </span>
+                    <span class="min-w-0 flex-1">
+                        <span class="flex flex-wrap items-center gap-2">
+                            <span class="text-[10px] font-medium uppercase tracking-wide text-slate-400">${escapeHtml(direction)}</span>
+                            <span class="inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[9px] font-medium ${relUi.badgeClasses}">
+                                <span class="h-1.5 w-1.5 rounded-full" style="background:${color}"></span>
+                                ${escapeHtml(edgeData.label || edgeData.relationship)}
+                            </span>
+                        </span>
+                        <span class="mt-1 block break-words text-xs font-medium text-slate-900 dark:text-white">${escapeHtml(peerData.label || peer.id())}</span>
+                        <span class="mt-1 block text-[10px] text-slate-500 dark:text-slate-400">${escapeHtml(humanizeType(peerData.type))}</span>
+                    </span>
+                    <i data-lucide="chevron-right" class="mt-2 h-3.5 w-3.5 flex-shrink-0 text-slate-400"></i>
+                </button>
+            `
+        }).join('')
+    }
+
+    const renderNodeDetails = (node, initialTab = 'details') => {
         const data = node.data()
-        const connectedEdges = node.connectedEdges().length
+        const connectedEdges = node.connectedEdges().filter((edge) => edge.visible()).length
         const fields = Array.isArray(data.fields) ? data.fields : []
         const ui = getTypeUi(data.type)
         const fieldRows = renderValueRows(fields, data.type)
+        selectedNodeId = node.id()
+
+        const detailsHtml = `
+            <div class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
+                <div class="flex items-center justify-between gap-3">
+                    <h5 class="text-xs font-semibold text-slate-900 dark:text-white">Resource context</h5>
+                    <span class="rounded-full border px-2.5 py-1 text-[10px] font-medium ${ui.softBadgeClasses}">${connectedEdges} relationships</span>
+                </div>
+                <dl class="mt-3">
+                    <div class="flex items-start justify-between gap-3 border-b border-slate-100 py-2.5 dark:border-slate-700/70">
+                        <dt class="text-xs font-normal text-slate-500 dark:text-slate-400">Cluster</dt>
+                        <dd class="max-w-[12rem] break-words text-right text-xs font-normal ${ui.valueClasses}">${escapeHtml(data.cluster_name || 'Not reported')}</dd>
+                    </div>
+                    ${data.namespace ? `
+                        <div class="flex items-start justify-between gap-3 border-b border-slate-100 py-2.5 dark:border-slate-700/70">
+                            <dt class="text-xs font-normal text-slate-500 dark:text-slate-400">Namespace</dt>
+                            <dd class="max-w-[12rem] break-words text-right text-xs font-normal ${ui.valueClasses}">${escapeHtml(data.namespace)}</dd>
+                        </div>
+                    ` : ''}
+                    ${fieldRows}
+                    <div class="flex items-start justify-between gap-3 py-2.5">
+                        <dt class="text-xs font-normal text-slate-500 dark:text-slate-400">Collected</dt>
+                        <dd class="max-w-[12rem] break-words text-right text-xs font-normal ${ui.valueClasses}">${escapeHtml(formatDateTime(data.collected_at))}</dd>
+                    </div>
+                </dl>
+            </div>
+
+            ${data.action_url ? `
+                <a href="${escapeHtml(data.action_url)}" class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">
+                    Open ${escapeHtml(humanizeType(data.type))} Inventory
+                    <i data-lucide="arrow-up-right" class="h-4 w-4"></i>
+                </a>
+            ` : ''}
+        `
+
+        const relationshipsHtml = `
+            <div class="space-y-2">
+                ${renderRelationshipRows(node)}
+            </div>
+        `
 
         detailContent.innerHTML = `
             <div class="space-y-4">
@@ -718,42 +816,47 @@
                     ${data.description ? `<p class="mt-3 text-xs leading-5 text-slate-600 dark:text-slate-300">${escapeHtml(data.description)}</p>` : ''}
                 </div>
 
-                <div class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
-                    <div class="flex items-center justify-between gap-3">
-                        <h5 class="text-xs font-semibold text-slate-900 dark:text-white">Resource context</h5>
-                        <span class="rounded-full border px-2.5 py-1 text-[10px] font-medium ${ui.softBadgeClasses}">${connectedEdges} relationships</span>
-                    </div>
-                    <dl class="mt-3">
-                        <div class="flex items-start justify-between gap-3 border-b border-slate-100 py-2.5 dark:border-slate-700/70">
-                            <dt class="text-xs font-normal text-slate-500 dark:text-slate-400">Cluster</dt>
-                            <dd class="max-w-[12rem] break-words text-right text-xs font-normal ${ui.valueClasses}">${escapeHtml(data.cluster_name || 'Not reported')}</dd>
-                        </div>
-                        ${data.namespace ? `
-                            <div class="flex items-start justify-between gap-3 border-b border-slate-100 py-2.5 dark:border-slate-700/70">
-                                <dt class="text-xs font-normal text-slate-500 dark:text-slate-400">Namespace</dt>
-                                <dd class="max-w-[12rem] break-words text-right text-xs font-normal ${ui.valueClasses}">${escapeHtml(data.namespace)}</dd>
-                            </div>
-                        ` : ''}
-                        ${fieldRows}
-                        <div class="flex items-start justify-between gap-3 py-2.5">
-                            <dt class="text-xs font-normal text-slate-500 dark:text-slate-400">Collected</dt>
-                            <dd class="max-w-[12rem] break-words text-right text-xs font-normal ${ui.valueClasses}">${escapeHtml(formatDateTime(data.collected_at))}</dd>
-                        </div>
-                    </dl>
+                <div class="grid grid-cols-2 rounded-xl border border-slate-200 bg-slate-100 p-1 dark:border-slate-700 dark:bg-slate-900/60">
+                    <button type="button" data-topology-node-tab="details" class="rounded-lg px-3 py-2 text-xs font-medium transition">Details</button>
+                    <button type="button" data-topology-node-tab="relationships" class="rounded-lg px-3 py-2 text-xs font-medium transition">Relationships <span class="ml-1 text-[10px] opacity-70">${connectedEdges}</span></button>
                 </div>
 
-                ${data.action_url ? `
-                    <a href="${escapeHtml(data.action_url)}" class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">
-                        Open ${escapeHtml(humanizeType(data.type))} Inventory
-                        <i data-lucide="arrow-up-right" class="h-4 w-4"></i>
-                    </a>
-                ` : ''}
+                <div id="topology-node-tab-panel"></div>
             </div>
         `
 
-        if (window.lucide) {
-            window.lucide.createIcons()
+        const panel = detailContent.querySelector('#topology-node-tab-panel')
+        const buttons = Array.from(detailContent.querySelectorAll('[data-topology-node-tab]'))
+        const activateTab = (tabName) => {
+            const selectedTab = tabName === 'relationships' ? 'relationships' : 'details'
+            panel.innerHTML = selectedTab === 'relationships' ? relationshipsHtml : detailsHtml
+            buttons.forEach((button) => {
+                const active = button.dataset.topologyNodeTab === selectedTab
+                button.className = active
+                    ? 'rounded-lg bg-white px-3 py-2 text-xs font-semibold text-blue-700 shadow-sm dark:bg-slate-800 dark:text-blue-300'
+                    : 'rounded-lg px-3 py-2 text-xs font-medium text-slate-500 transition hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+            })
+
+            panel.querySelectorAll('[data-topology-related-node]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    const relatedNode = cy?.getElementById(button.dataset.topologyRelatedNode)
+                    if (relatedNode && relatedNode.length) {
+                        focusNeighborhood(relatedNode)
+                        renderNodeDetails(relatedNode, 'relationships')
+                        cy.animate({ center: { eles: relatedNode }, zoom: Math.max(cy.zoom(), 1.1) }, { duration: 220 })
+                    }
+                })
+            })
+
+            if (window.lucide) {
+                window.lucide.createIcons()
+            }
         }
+
+        buttons.forEach((button) => {
+            button.addEventListener('click', () => activateTab(button.dataset.topologyNodeTab))
+        })
+        activateTab(initialTab)
     }
 
     const renderEdgeDetails = (edge) => {
@@ -816,11 +919,13 @@
     const attachGraphEvents = () => {
         cy.on('tap', 'node', (event) => {
             const node = event.target
+            selectedNodeId = node.id()
             focusNeighborhood(node)
             renderNodeDetails(node)
         })
 
         cy.on('tap', 'edge', (event) => {
+            selectedNodeId = null
             clearFocus()
             const edge = event.target
             edge.select()
@@ -832,6 +937,7 @@
             if (event.target !== cy) {
                 return
             }
+            selectedNodeId = null
             clearFocus()
             detailContent.innerHTML = emptyDetailHtml()
             if (window.lucide) {
@@ -855,12 +961,40 @@
         runtimeStatus.innerHTML = `<span class="inline-flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-blue-500"></span>${escapeHtml(message)}</span>`
     }
 
+    const enabledRelationshipTypes = () => new Set(
+        relationshipToggles
+            .filter((toggle) => toggle.checked)
+            .map((toggle) => toggle.dataset.topologyRelationshipToggle)
+    )
+
+    const applyRelationshipVisibility = ({ relayout = false } = {}) => {
+        if (!cy) return
+
+        const enabled = enabledRelationshipTypes()
+        cy.edges().forEach((edge) => {
+            const visible = enabled.has(edge.data('relationship'))
+            edge.style('display', visible ? 'element' : 'none')
+        })
+
+        if (selectedNodeId) {
+            const selectedNode = cy.getElementById(selectedNodeId)
+            if (selectedNode && selectedNode.length) {
+                renderNodeDetails(selectedNode, 'relationships')
+            }
+        }
+
+        if (relayout) {
+            applyCurrentLayout()
+        }
+    }
+
     const applyCurrentLayout = () => {
         if (!cy) return
-        applyCurrentLayout()
+        const visibleElements = cy.elements(':visible')
+        visibleElements.layout(layoutOptions()).run()
         requestAnimationFrame(() => {
             cy.resize()
-            cy.fit(undefined, 56)
+            cy.fit(visibleElements, 56)
         })
     }
 
@@ -904,6 +1038,7 @@
             })
 
             attachGraphEvents()
+            applyRelationshipVisibility()
             applySearch()
 
             const finalizeRender = () => {
@@ -1084,7 +1219,7 @@
 
     document.getElementById('topology-fit-button').addEventListener('click', () => {
         if (cy) {
-            cy.fit(undefined, 38)
+            cy.fit(cy.elements(':visible'), 38)
         }
     })
 
@@ -1093,11 +1228,12 @@
             return
         }
         searchInput.value = ''
+        selectedNodeId = null
         clearFocus()
         cy.nodes().removeClass('search-match')
         detailContent.innerHTML = emptyDetailHtml()
         searchSummary.textContent = 'Search highlights resources already loaded in the graph.'
-        cy.layout(layoutOptions()).run()
+        applyCurrentLayout()
         if (window.lucide) {
             window.lucide.createIcons()
         }
@@ -1116,6 +1252,12 @@
         if (cy) {
             cy.style().selector('edge').style('label', edgeLabelToggle.checked ? 'data(label)' : '').update()
         }
+    })
+
+    relationshipToggles.forEach((toggle) => {
+        toggle.addEventListener('change', () => {
+            applyRelationshipVisibility({ relayout: getLayoutMode() === 'dependency' })
+        })
     })
 
     const themeToggle = document.getElementById('theme-toggle')

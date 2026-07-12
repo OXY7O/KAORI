@@ -170,19 +170,46 @@
             </div>
 
             <div class="mt-6">
-                <h3 class="text-sm font-semibold text-slate-950 dark:text-white">Relationship legend</h3>
+                <div class="flex items-center justify-between gap-3">
+                    <h3 class="text-sm font-semibold text-slate-950 dark:text-white">Relationships</h3>
+                    <span class="text-[10px] text-slate-400">Show / hide</span>
+                </div>
+                <div class="mt-3 grid gap-2 text-[10px] text-slate-600 dark:text-slate-300">
+                    {% for value, label, tone in [
+                        ('contains', 'Contains', 'bg-indigo-400'),
+                        ('owns', 'Owns', 'bg-violet-500'),
+                        ('scheduled_on', 'Scheduled on', 'bg-slate-500'),
+                        ('selects', 'Selects', 'bg-emerald-500'),
+                        ('routes_to', 'Routes to', 'bg-teal-500'),
+                        ('uses', 'Uses configuration', 'bg-sky-500'),
+                        ('mounts', 'Mounts claim', 'bg-orange-500'),
+                        ('binds', 'Binds volume', 'bg-lime-600')
+                    ] %}
+                        <label class="flex cursor-pointer items-center justify-between gap-3 rounded-lg px-2 py-1.5 transition hover:bg-white dark:hover:bg-slate-800">
+                            <span class="inline-flex min-w-0 items-center gap-2">
+                                <span class="h-0.5 w-5 flex-shrink-0 rounded-full {{ tone }}"></span>
+                                <span class="truncate">{{ label }}</span>
+                            </span>
+                            <input type="checkbox"
+                                   checked
+                                   data-topology-relationship-toggle="{{ value }}"
+                                   class="h-3.5 w-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                        </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="mt-6">
+                <h3 class="text-sm font-semibold text-slate-950 dark:text-white">Status legend</h3>
                 <div class="mt-3 grid gap-2 text-[10px] text-slate-600 dark:text-slate-300">
                     {% for label, tone in [
-                        ('Owns', 'bg-violet-500'),
-                        ('Scheduled on', 'bg-slate-500'),
-                        ('Selects', 'bg-emerald-500'),
-                        ('Routes to', 'bg-teal-500'),
-                        ('Uses configuration', 'bg-sky-500'),
-                        ('Mounts claim', 'bg-orange-500'),
-                        ('Binds volume', 'bg-lime-600')
+                        ('Healthy', 'bg-emerald-500'),
+                        ('Warning', 'bg-amber-500'),
+                        ('Critical', 'bg-red-500'),
+                        ('Unknown / informational', 'bg-slate-400')
                     ] %}
-                        <div class="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-white dark:hover:bg-slate-800">
-                            <span class="h-0.5 w-5 rounded-full {{ tone }}"></span>
+                        <div class="flex items-center gap-2 rounded-lg px-2 py-1.5">
+                            <span class="h-2.5 w-2.5 rounded-full {{ tone }}"></span>
                             <span>{{ label }}</span>
                         </div>
                     {% endfor %}
