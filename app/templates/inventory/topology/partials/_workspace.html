@@ -24,6 +24,20 @@
                     Reset View
                 </button>
                 <button type="button"
+                        id="topology-export-png-button"
+                        title="Export the visible topology as PNG."
+                        class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
+                    <i data-lucide="image-down" class="h-4 w-4"></i>
+                    PNG
+                </button>
+                <button type="button"
+                        id="topology-export-json-button"
+                        title="Export the visible topology data as JSON."
+                        class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
+                    <i data-lucide="braces" class="h-4 w-4"></i>
+                    JSON
+                </button>
+                <button type="button"
                         id="topology-refresh-button"
                         title="Reload topology from the latest stored inventory snapshot. This does not run inventory sync."
                         class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">
@@ -91,14 +105,16 @@
                     <i data-lucide="search" class="absolute left-3 top-3 h-4 w-4 text-slate-400 dark:text-slate-500"></i>
                     <input id="topology-search"
                            type="search"
+                           autocomplete="off"
                            placeholder="Search node, workload, pod, service..."
                            class="w-full rounded-xl border border-slate-300 bg-white py-2 pl-10 pr-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
+                    <div id="topology-search-results" class="absolute left-0 right-0 top-full z-50 mt-2 hidden max-h-80 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-800"></div>
                 </div>
             </div>
         </form>
         <div class="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
             <span id="topology-filter-summary">{{ graph.summary.scope_label }} · {{ graph.summary.depth_label }}</span>
-            <span id="topology-search-summary">Search highlights resources already loaded in the graph.</span>
+            <span id="topology-search-summary">Search and open a resource directly in the graph.</span>
         </div>
     </div>
 
@@ -112,6 +128,14 @@
 
     <div id="topology-error"
          class="hidden border-b border-red-200 bg-red-50 px-6 py-3 text-xs text-red-700 dark:border-red-900/50 dark:bg-red-500/10 dark:text-red-300"></div>
+
+    <div id="topology-runtime-status"
+         class="border-b border-blue-200 bg-blue-50 px-6 py-3 text-xs text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
+        <span class="inline-flex items-center gap-2">
+            <i data-lucide="loader-circle" class="h-4 w-4 animate-spin"></i>
+            Preparing the topology renderer and inventory snapshot...
+        </span>
+    </div>
 
     <div class="grid min-h-[720px] xl:grid-cols-12">
         <aside class="border-b border-slate-200 bg-slate-50/70 p-5 xl:col-span-2 xl:border-b-0 xl:border-r dark:border-slate-700 dark:bg-slate-900/30">
@@ -128,6 +152,14 @@
                     <span>Relationship labels</span>
                     <input id="topology-edge-label-toggle" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
                 </label>
+                <label class="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                    <span>Group by namespace</span>
+                    <input id="topology-group-namespace-toggle" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                </label>
+                <label class="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                    <span>Mini-map</span>
+                    <input id="topology-minimap-toggle" type="checkbox" checked class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                </label>
                 <div class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 dark:border-slate-700 dark:bg-slate-800">
                     <label for="topology-layout-mode" class="block text-[11px] font-medium text-slate-700 dark:text-slate-200">Layout mode</label>
                     <select id="topology-layout-mode"
@@ -142,40 +174,38 @@
                 </div>
             </div>
 
-            <div class="mt-6">
-                <h3 class="text-sm font-semibold text-slate-950 dark:text-white">Resource legend</h3>
+            <details open class="mt-6 rounded-xl border border-slate-200 bg-white/70 p-3 dark:border-slate-700 dark:bg-slate-800/60">
+                <summary class="cursor-pointer text-sm font-semibold text-slate-950 dark:text-white">Resource visibility</summary>
                 <div class="mt-3 grid gap-2 text-xs text-slate-600 dark:text-slate-300">
-                    {% for label, icon, icon_classes in [
-                        ('Cluster', 'server-cog', 'bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300'),
-                        ('Namespace', 'layers-3', 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300'),
-                        ('Node', 'server', 'bg-slate-100 text-slate-700 dark:bg-slate-700/60 dark:text-slate-300'),
-                        ('Workload', 'boxes', 'bg-violet-100 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300'),
-                        ('Pod', 'circle-dot', 'bg-cyan-100 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300'),
-                        ('Service', 'network', 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300'),
-                        ('Ingress', 'route', 'bg-teal-100 text-teal-700 dark:bg-teal-500/10 dark:text-teal-300'),
-                        ('ConfigMap', 'file-cog', 'bg-sky-100 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300'),
-                        ('Secret', 'key-round', 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'),
-                        ('PVC', 'database', 'bg-orange-100 text-orange-700 dark:bg-orange-500/10 dark:text-orange-300'),
-                        ('PV', 'hard-drive', 'bg-lime-100 text-lime-700 dark:bg-lime-500/10 dark:text-lime-300')
+                    {% for value, label, icon, icon_classes in [
+                        ('cluster', 'Cluster', 'server-cog', 'bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300'),
+                        ('namespace', 'Namespace', 'layers-3', 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300'),
+                        ('node', 'Node', 'server', 'bg-slate-100 text-slate-700 dark:bg-slate-700/60 dark:text-slate-300'),
+                        ('workload', 'Workload', 'boxes', 'bg-violet-100 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300'),
+                        ('pod', 'Pod', 'circle-dot', 'bg-cyan-100 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300'),
+                        ('service', 'Service', 'network', 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300'),
+                        ('ingress', 'Ingress', 'route', 'bg-teal-100 text-teal-700 dark:bg-teal-500/10 dark:text-teal-300'),
+                        ('configmap', 'ConfigMap', 'file-cog', 'bg-sky-100 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300'),
+                        ('secret', 'Secret', 'key-round', 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'),
+                        ('pvc', 'PVC', 'database', 'bg-orange-100 text-orange-700 dark:bg-orange-500/10 dark:text-orange-300'),
+                        ('pv', 'PV', 'hard-drive', 'bg-lime-100 text-lime-700 dark:bg-lime-500/10 dark:text-lime-300')
                     ] %}
-                        <div class="flex items-center justify-between gap-3 rounded-lg px-2 py-1.5 hover:bg-white dark:hover:bg-slate-800">
-                            <span class="inline-flex items-center gap-2">
-                                <span class="flex h-6 w-6 items-center justify-center rounded-lg {{ icon_classes }}">
-                                    <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
-                                </span>
-                                <span>{{ label }}</span>
+                        <label class="flex cursor-pointer items-center justify-between gap-3 rounded-lg px-2 py-1.5 transition hover:bg-slate-50 dark:hover:bg-slate-700/60">
+                            <span class="inline-flex min-w-0 items-center gap-2">
+                                <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg {{ icon_classes }}"><i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i></span>
+                                <span class="truncate">{{ label }}</span>
                             </span>
-                            <span data-topology-count-type="{{ label|lower }}" class="text-[10px] text-slate-400">0</span>
-                        </div>
+                            <span class="flex items-center gap-2">
+                                <span data-topology-count-type="{{ value }}" class="text-[10px] text-slate-400">0</span>
+                                <input type="checkbox" checked data-topology-resource-toggle="{{ value }}" class="h-3.5 w-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                            </span>
+                        </label>
                     {% endfor %}
                 </div>
-            </div>
+            </details>
 
-            <div class="mt-6">
-                <div class="flex items-center justify-between gap-3">
-                    <h3 class="text-sm font-semibold text-slate-950 dark:text-white">Relationships</h3>
-                    <span class="text-[10px] text-slate-400">Show / hide</span>
-                </div>
+            <details open class="mt-4 rounded-xl border border-slate-200 bg-white/70 p-3 dark:border-slate-700 dark:bg-slate-800/60">
+                <summary class="cursor-pointer text-sm font-semibold text-slate-950 dark:text-white">Relationship visibility</summary>
                 <div class="mt-3 grid gap-2 text-[10px] text-slate-600 dark:text-slate-300">
                     {% for value, label, tone in [
                         ('contains', 'Contains', 'bg-indigo-400'),
@@ -199,7 +229,7 @@
                         </label>
                     {% endfor %}
                 </div>
-            </div>
+            </details>
 
             <div class="mt-6">
                 <h3 class="text-sm font-semibold text-slate-950 dark:text-white">Status legend</h3>
@@ -227,8 +257,13 @@
             </div>
         </aside>
 
-        <div class="relative min-h-[780px] min-w-0 bg-white xl:col-span-7 dark:bg-slate-900/20">
-            <div id="topology-canvas" role="application" aria-label="Interactive Kubernetes topology graph" class="absolute inset-0"></div>
+        <div id="topology-canvas-shell" class="relative min-h-[780px] min-w-0 overflow-hidden bg-white xl:col-span-7 dark:bg-slate-900/20">
+            <div id="topology-namespace-boundaries" class="pointer-events-none absolute inset-0 z-0"></div>
+            <div id="topology-canvas" role="application" aria-label="Interactive Kubernetes topology graph" class="absolute inset-0 z-10"></div>
+            <div id="topology-minimap-panel" class="absolute bottom-4 right-4 z-30 overflow-hidden rounded-xl border border-slate-200 bg-white/95 p-2 shadow-lg backdrop-blur dark:border-slate-700 dark:bg-slate-900/90">
+                <div class="mb-1 flex items-center justify-between gap-3"><span class="text-[9px] font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Overview</span><span class="text-[9px] text-slate-400">Click to center</span></div>
+                <canvas id="topology-minimap-canvas" class="block h-[100px] w-[160px] cursor-crosshair rounded-lg bg-slate-50 dark:bg-slate-950/60"></canvas>
+            </div>
             <div id="topology-empty-state" class="pointer-events-none absolute inset-0 hidden items-center justify-center p-8">
                 <div class="max-w-md rounded-2xl border border-slate-200 bg-white px-6 py-8 text-center shadow-sm dark:border-slate-700 dark:bg-slate-800">
                     <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
