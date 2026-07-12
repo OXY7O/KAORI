@@ -23,9 +23,6 @@
     const edgeLabelToggle = $('topology-edge-label-toggle')
     const layoutModeSelect = $('topology-layout-mode')
     const groupNamespaceToggle = $('topology-group-namespace-toggle')
-    const minimapToggle = $('topology-minimap-toggle')
-    const minimapPanel = $('topology-minimap-panel')
-    const minimapCanvas = $('topology-minimap-canvas')
     const relationshipToggles = Array.from(document.querySelectorAll('[data-topology-relationship-toggle]'))
     const resourceToggles = Array.from(document.querySelectorAll('[data-topology-resource-toggle]'))
     const searchSummary = $('topology-search-summary')
@@ -33,7 +30,7 @@
 
     if (!canvas || !clusterSelect || !namespaceSelect || !scopeSelect || !depthSelect) return
 
-    const STATE_KEY = 'kaori.topology.workspace.v3'
+    const STATE_KEY = 'kaori.topology.workspace.v4'
     const resourceTypes = ['cluster', 'namespace', 'node', 'workload', 'pod', 'service', 'ingress', 'configmap', 'secret', 'pvc', 'pv']
     const relationshipTypes = ['contains', 'owns', 'scheduled_on', 'selects', 'routes_to', 'uses', 'mounts', 'binds']
 
@@ -45,7 +42,6 @@
     let activeDrawerTab = 'details'
     let pathHighlightActive = false
     let boundaryFrame = null
-    let minimapFrame = null
     let collapsedNodeIds = new Set()
     let collapsedHiddenIds = new Set()
     let childrenByNode = new Map()
@@ -141,7 +137,6 @@
         nodeLabels: true,
         edgeLabels: false,
         groupByNamespace: false,
-        minimap: true,
         resources: Object.fromEntries(resourceTypes.map((type) => [type, true])),
         relationships: Object.fromEntries(relationshipTypes.map((type) => [type, true])),
     })
@@ -298,21 +293,33 @@
 
     const ensureCanvasDimensions = () => {
         if (!canvas || !canvasShell) return { width: 0, height: 0 }
-        const shellRect = canvasShell.getBoundingClientRect()
-        if (shellRect.height < 360) canvasShell.style.minHeight = '780px'
+        canvasShell.style.height = '780px'
+        canvasShell.style.minHeight = '780px'
+        canvas.style.position = 'absolute'
+        canvas.style.inset = '0'
+        canvas.style.width = '100%'
+        canvas.style.height = '100%'
         return canvas.getBoundingClientRect()
+    }
+
+    const visibleGraphElements = () => {
+        if (!cy) return null
+        const visibleNodes = cy.nodes().filter((node) => node.style('display') !== 'none')
+        const visibleEdges = cy.edges().filter((edge) => edge.style('display') !== 'none')
+        return visibleNodes.union(visibleEdges)
     }
 
     const fitGraphToCanvas = () => {
         if (!cy) return
-        const visible = cy.elements(':visible')
-        if (!visible.length) return
+        const visible = visibleGraphElements()
+        if (!visible || !visible.nodes().length) return
         ensureCanvasDimensions()
         cy.resize()
         const rect = canvas.getBoundingClientRect()
         const shortest = Math.min(rect.width || 0, rect.height || 0)
-        const padding = Math.max(58, Math.min(104, Math.round(shortest * 0.10)))
+        const padding = Math.max(48, Math.min(88, Math.round(shortest * 0.08)))
         cy.fit(visible, padding)
+        cy.center(visible)
     }
 
     const setRuntimeStatus = (message = '') => {
@@ -379,10 +386,8 @@
         if (nodeLabelToggle) nodeLabelToggle.checked = workspaceState.nodeLabels
         if (edgeLabelToggle) edgeLabelToggle.checked = workspaceState.edgeLabels
         if (groupNamespaceToggle) groupNamespaceToggle.checked = workspaceState.groupByNamespace
-        if (minimapToggle) minimapToggle.checked = workspaceState.minimap
         resourceToggles.forEach((toggle) => { toggle.checked = workspaceState.resources[toggle.dataset.topologyResourceToggle] !== false })
         relationshipToggles.forEach((toggle) => { toggle.checked = workspaceState.relationships[toggle.dataset.topologyRelationshipToggle] !== false })
-        if (minimapPanel) minimapPanel.classList.toggle('hidden', !workspaceState.minimap)
     }
 
     const updateSummary = (payload) => {
@@ -467,16 +472,31 @@
             node.style('display', visible ? 'element' : 'none')
         })
         cy.edges().forEach((edge) => {
-            const endpointsVisible = edge.source().visible() && edge.target().visible()
+            const endpointsVisible = edge.source().style('display') !== 'none' && edge.target().style('display') !== 'none'
             const visible = relationships.has(edge.data('relationship')) && endpointsVisible
             edge.style('display', visible ? 'element' : 'none')
         })
+
+        let visibleNodes = cy.nodes().filter((node) => node.style('display') !== 'none')
+        if (!visibleNodes.length && cy.nodes().length) {
+            resourceToggles.forEach((toggle) => {
+                toggle.checked = true
+                workspaceState.resources[toggle.dataset.topologyResourceToggle] = true
+            })
+            saveWorkspaceState()
+            cy.nodes().style('display', 'element')
+            cy.edges().forEach((edge) => {
+                const enabled = relationships.has(edge.data('relationship'))
+                edge.style('display', enabled ? 'element' : 'none')
+            })
+            visibleNodes = cy.nodes()
+        }
+
         updateEdgeLabelClasses()
         scheduleBoundaryUpdate()
-        scheduleMinimapUpdate()
         if (selectedNodeId) {
             const selected = cy.getElementById(selectedNodeId)
-            if (selected?.length && selected.visible()) renderNodeDetails(selected, activeDrawerTab)
+            if (selected?.length && selected.style('display') !== 'none') renderNodeDetails(selected, activeDrawerTab)
             else clearSelection()
         }
         if (relayout) applyCurrentLayout()
@@ -719,28 +739,28 @@
         cy.on('mouseout', 'node', () => updateEdgeLabelClasses())
         cy.on('pan zoom resize render position', () => {
             scheduleBoundaryUpdate()
-            scheduleMinimapUpdate()
-        })
+            })
     }
 
     const applyCurrentLayout = () => {
         if (!cy) return
-        const visible = cy.elements(':visible')
-        if (!visible.length) return
+        const visible = visibleGraphElements()
+        if (!visible || !visible.nodes().length) return
         let stopped = false
         const finalize = () => {
             if (stopped) return
             stopped = true
-            requestAnimationFrame(() => {
+            window.requestAnimationFrame(() => {
+                ensureCanvasDimensions()
+                cy.resize()
                 fitGraphToCanvas()
                 scheduleBoundaryUpdate()
-                scheduleMinimapUpdate()
-                window.setTimeout(fitGraphToCanvas, 180)
+                window.setTimeout(fitGraphToCanvas, 140)
             })
         }
         cy.one('layoutstop', finalize)
         visible.layout(layoutOptions()).run()
-        window.setTimeout(finalize, 500)
+        window.setTimeout(finalize, 700)
     }
 
     const renderSearchResults = (term) => {
@@ -813,58 +833,6 @@
         })
     }
 
-    const scheduleMinimapUpdate = () => {
-        if (minimapFrame) cancelAnimationFrame(minimapFrame)
-        minimapFrame = requestAnimationFrame(updateMinimap)
-    }
-
-    const updateMinimap = () => {
-        minimapFrame = null
-        if (!cy || !minimapCanvas || !workspaceState.minimap) return
-        const nodes = cy.nodes(':visible')
-        if (!nodes.length) return
-        const rect = minimapCanvas.getBoundingClientRect()
-        const dpr = window.devicePixelRatio || 1
-        minimapCanvas.width = Math.max(1, Math.round(rect.width * dpr))
-        minimapCanvas.height = Math.max(1, Math.round(rect.height * dpr))
-        const ctx = minimapCanvas.getContext('2d')
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-        ctx.clearRect(0, 0, rect.width, rect.height)
-        const bounds = nodes.boundingBox({ includeLabels: false, includeOverlays: false })
-        const pad = 8
-        const scale = Math.min((rect.width - pad * 2) / Math.max(bounds.w, 1), (rect.height - pad * 2) / Math.max(bounds.h, 1))
-        const mapX = (x) => pad + (x - bounds.x1) * scale
-        const mapY = (y) => pad + (y - bounds.y1) * scale
-        ctx.lineWidth = 0.7
-        ctx.strokeStyle = '#cbd5e1'
-        cy.edges(':visible').forEach((edge) => {
-            const source = edge.source().position()
-            const target = edge.target().position()
-            ctx.beginPath(); ctx.moveTo(mapX(source.x), mapY(source.y)); ctx.lineTo(mapX(target.x), mapY(target.y)); ctx.stroke()
-        })
-        nodes.forEach((node) => {
-            const position = node.position()
-            ctx.fillStyle = getTypeVisual(node.data('type')).fill
-            ctx.beginPath(); ctx.arc(mapX(position.x), mapY(position.y), node.selected() ? 3.2 : 2.2, 0, Math.PI * 2); ctx.fill()
-        })
-        const extent = cy.extent()
-        ctx.strokeStyle = '#2563eb'
-        ctx.lineWidth = 1.2
-        ctx.strokeRect(mapX(extent.x1), mapY(extent.y1), Math.max(4, (extent.x2 - extent.x1) * scale), Math.max(4, (extent.y2 - extent.y1) * scale))
-        minimapCanvas.dataset.bounds = JSON.stringify(bounds)
-    }
-
-    const minimapRecenter = (event) => {
-        if (!cy || !minimapCanvas?.dataset.bounds) return
-        const bounds = JSON.parse(minimapCanvas.dataset.bounds)
-        const rect = minimapCanvas.getBoundingClientRect()
-        const pad = 8
-        const scale = Math.min((rect.width - pad * 2) / Math.max(bounds.w, 1), (rect.height - pad * 2) / Math.max(bounds.h, 1))
-        const x = bounds.x1 + (event.clientX - rect.left - pad) / scale
-        const y = bounds.y1 + (event.clientY - rect.top - pad) / scale
-        const zoom = cy.zoom()
-        cy.animate({ pan: { x: canvas.clientWidth / 2 - x * zoom, y: canvas.clientHeight / 2 - y * zoom } }, { duration: 180 })
-    }
 
     const downloadBlob = (blob, filename) => {
         const url = URL.createObjectURL(blob)
@@ -939,7 +907,7 @@
             cy = window.cytoscape({
                 container: canvas,
                 elements: prepared.elements,
-                layout: layoutOptions(),
+                layout: { name: 'preset' },
                 maxZoom: 2.6,
                 minZoom: 0.12,
                 pixelRatio: 'auto',
@@ -949,23 +917,32 @@
             buildHierarchyIndex()
             attachGraphEvents()
             applyVisibility()
+
             let finalized = false
             const finalize = () => {
                 if (finalized) return
                 finalized = true
-                requestAnimationFrame(() => {
+                window.requestAnimationFrame(() => {
+                    ensureCanvasDimensions()
                     cy.resize()
                     fitGraphToCanvas()
-                    window.setTimeout(fitGraphToCanvas, 180)
-                    window.setTimeout(fitGraphToCanvas, 420)
+                    window.setTimeout(fitGraphToCanvas, 120)
+                    window.setTimeout(fitGraphToCanvas, 320)
                     scheduleBoundaryUpdate()
-                    scheduleMinimapUpdate()
                     setRuntimeStatus()
                     showError()
                 })
             }
-            cy.one('layoutstop', finalize)
-            window.setTimeout(finalize, 500)
+
+            const visible = visibleGraphElements()
+            const layout = visible && visible.nodes().length ? visible.layout(layoutOptions()) : null
+            if (layout) {
+                cy.one('layoutstop', finalize)
+                layout.run()
+                window.setTimeout(finalize, 700)
+            } else {
+                finalize()
+            }
         } catch (error) {
             console.error('KAORI could not render topology.', error)
             cy = null
@@ -1020,7 +997,7 @@
         workspaceState.nodeLabels = nodeLabelToggle.checked
         saveWorkspaceState()
         if (cy) cy.style().selector('node').style('label', workspaceState.nodeLabels ? 'data(display_label)' : '').update()
-        scheduleBoundaryUpdate(); scheduleMinimapUpdate()
+        scheduleBoundaryUpdate()
     })
 
     edgeLabelToggle?.addEventListener('change', () => {
@@ -1033,12 +1010,6 @@
         saveWorkspaceState(); scheduleBoundaryUpdate()
     })
 
-    minimapToggle?.addEventListener('change', () => {
-        workspaceState.minimap = minimapToggle.checked
-        saveWorkspaceState()
-        minimapPanel?.classList.toggle('hidden', !workspaceState.minimap)
-        scheduleMinimapUpdate()
-    })
 
     resourceToggles.forEach((toggle) => toggle.addEventListener('change', () => {
         workspaceState.resources[toggle.dataset.topologyResourceToggle] = toggle.checked
@@ -1071,12 +1042,11 @@
     $('topology-refresh-button')?.addEventListener('click', fetchGraph)
     $('topology-export-png-button')?.addEventListener('click', exportPng)
     $('topology-export-json-button')?.addEventListener('click', exportJson)
-    minimapCanvas?.addEventListener('click', minimapRecenter)
 
     if (window.ResizeObserver && canvasShell) {
         const observer = new ResizeObserver(() => {
             if (!cy) return
-            cy.resize(); scheduleBoundaryUpdate(); scheduleMinimapUpdate()
+            cy.resize(); scheduleBoundaryUpdate()
         })
         observer.observe(canvasShell)
     }
@@ -1084,6 +1054,6 @@
     $('theme-toggle')?.addEventListener('click', () => window.setTimeout(() => {
         if (!cy) return
         cy.style(graphStyle())
-        scheduleBoundaryUpdate(); scheduleMinimapUpdate()
+        scheduleBoundaryUpdate()
     }, 0))
 })()
