@@ -57,7 +57,7 @@
                 node.role,
                 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300'
             ) %}
-                {{ node_detail_row('System UUID', node.system_uuid, 'blue', True) }}
+                {{ node_detail_row('System UUID', node.system_uuid, 'blue') }}
                 {{ node_detail_row('Cluster', node.cluster_name, 'blue') }}
                 {{ node_detail_row('Age', node.age, 'blue') }}
                 {{ node_detail_row('Collected', node.collected_at|user_datetime('%Y-%m-%d %H:%M %Z'), 'blue') }}
