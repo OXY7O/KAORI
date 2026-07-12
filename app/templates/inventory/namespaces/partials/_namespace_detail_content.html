@@ -13,7 +13,7 @@
                 <div class="flex items-center justify-between gap-3">
                     <span class="truncate text-xs font-normal
                         {% if tone == 'amber' %}text-amber-950 dark:text-amber-100
-                        {% else %}text-sky-950 dark:text-sky-100{% endif %}" title="{{ title }}">{{ title }}</span>
+                        {% else %}text-sky-700 dark:text-sky-200{% endif %}" title="{{ title }}">{{ title }}</span>
                     <span class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-normal
                         {% if tone == 'amber' %}bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-200
                         {% else %}bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-200{% endif %}">{{ badge }}</span>
@@ -30,10 +30,10 @@
     <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-3 text-xs font-normal leading-5">
         <span class="truncate
             {% if tone == 'amber' %}text-amber-700/80 dark:text-amber-200/80
-            {% else %}text-sky-700/80 dark:text-sky-200/80{% endif %}" title="{{ label }}">{{ label }}</span>
+            {% else %}text-sky-600 dark:text-sky-300{% endif %}" title="{{ label }}">{{ label }}</span>
         <span class="whitespace-nowrap font-normal
             {% if tone == 'amber' %}text-amber-950 dark:text-amber-100
-            {% else %}text-sky-950 dark:text-sky-100{% endif %}">{{ value }}</span>
+            {% else %}text-sky-700 dark:text-sky-200{% endif %}">{{ value }}</span>
     </div>
 {%- endmacro %}
 
