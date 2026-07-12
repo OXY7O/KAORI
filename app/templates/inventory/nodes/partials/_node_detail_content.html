@@ -65,7 +65,7 @@
                 node.operating_system_display,
                 'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300'
             ) %}
-                {{ detail_row('Operating system', node.operating_system_display) }}
+                {{ detail_row('Operating system', node.os_image or '-') }}
                 {{ detail_row('Kubelet version', node.kubelet_version) }}
                 {{ detail_row('Kube-proxy version', node.kube_proxy_version) }}
                 {{ detail_row('Architecture', node.architecture) }}
