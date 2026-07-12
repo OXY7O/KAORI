@@ -113,11 +113,21 @@
                         'layout-grid',
                         'sky'
                     ) %}
-                        {{ namespace_object_row('Deployments', namespace.workload_breakdown.deployments, 'sky') }}
-                        {{ namespace_object_row('StatefulSets', namespace.workload_breakdown.statefulsets, 'sky') }}
-                        {{ namespace_object_row('DaemonSets', namespace.workload_breakdown.daemonsets, 'sky') }}
-                        {{ namespace_object_row('Jobs', namespace.workload_breakdown.jobs, 'sky') }}
-                        {{ namespace_object_row('CronJobs', namespace.workload_breakdown.cronjobs, 'sky') }}
+                        {% if namespace.workload_breakdown.deployments %}
+                            {{ namespace_object_row('Deployments', namespace.workload_breakdown.deployments, 'sky') }}
+                        {% endif %}
+                        {% if namespace.workload_breakdown.statefulsets %}
+                            {{ namespace_object_row('StatefulSets', namespace.workload_breakdown.statefulsets, 'sky') }}
+                        {% endif %}
+                        {% if namespace.workload_breakdown.daemonsets %}
+                            {{ namespace_object_row('DaemonSets', namespace.workload_breakdown.daemonsets, 'sky') }}
+                        {% endif %}
+                        {% if namespace.workload_breakdown.jobs %}
+                            {{ namespace_object_row('Jobs', namespace.workload_breakdown.jobs, 'sky') }}
+                        {% endif %}
+                        {% if namespace.workload_breakdown.cronjobs %}
+                            {{ namespace_object_row('CronJobs', namespace.workload_breakdown.cronjobs, 'sky') }}
+                        {% endif %}
                     {% endcall %}
                 </div>
                 <div class="mt-auto pt-2">
