@@ -60,8 +60,8 @@
     const svgDataUri = (svg) => `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`
 
     const iconSvg = (color, body) => svgDataUri(`
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" fill="none" stroke="${color}" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round">
-            <g transform="translate(12 12) scale(1.08) translate(-12 -12)">${body}</g>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" fill="none" stroke="${color}" stroke-width="2.05" stroke-linecap="round" stroke-linejoin="round">
+            ${body}
         </svg>
     `)
 
@@ -255,6 +255,37 @@
         return labels[value] || value
     }
 
+    const formatNodeLabel = (value) => {
+        const label = String(value || '').trim()
+        const maxLineLength = 20
+        const maxSecondLineLength = 19
+
+        if (label.length <= maxLineLength) {
+            return label
+        }
+
+        const findBreakPoint = (input, limit) => {
+            const candidate = input.slice(0, limit + 1)
+            const breakAt = Math.max(candidate.lastIndexOf(' '), candidate.lastIndexOf('-'), candidate.lastIndexOf('_'))
+            return breakAt >= Math.round(limit * 0.55) ? breakAt + 1 : limit
+        }
+
+        const firstBreak = findBreakPoint(label, maxLineLength)
+        const firstLine = label.slice(0, firstBreak).replace(/[\s_-]+$/, '')
+        const remaining = label.slice(firstBreak).replace(/^[\s_-]+/, '')
+
+        if (!remaining) {
+            return firstLine
+        }
+
+        const secondLine = remaining.length > maxSecondLineLength
+            ? `${remaining.slice(0, maxSecondLineLength - 1).replace(/[\s_-]+$/, '')}…`
+            : remaining
+
+        return `${firstLine}
+${secondLine}`
+    }
+
     const formatDateTime = (value) => {
         if (!value) {
             return 'Not reported'
@@ -292,17 +323,17 @@
                 'font-size': 10,
                 'font-weight': 600,
                 'height': 54,
-                'label': nodeLabelToggle && nodeLabelToggle.checked ? 'data(label)' : '',
+                'label': nodeLabelToggle && nodeLabelToggle.checked ? 'data(display_label)' : '',
                 'min-zoomed-font-size': 8,
                 'overlay-opacity': 0,
                 'background-image': (node) => getTypeVisual(node.data('type')).icon,
                 'background-fit': 'none',
                 'background-clip': 'node',
                 'background-image-containment': 'inside',
-                'background-width': '72%',
-                'background-height': '72%',
+                'background-width': '70%',
+                'background-height': '70%',
                 'background-position-x': '50%',
-                'background-position-y': '52%',
+                'background-position-y': '50%',
                 'shape': 'round-rectangle',
                 'shadow-blur': 8,
                 'shadow-color': darkMode ? '#020617' : '#94a3b8',
@@ -314,9 +345,9 @@
                 'text-background-padding': 3,
                 'text-halign': 'center',
                 'text-margin-y': 14,
-                'text-max-width': 124,
+                'text-max-width': 132,
                 'text-valign': 'bottom',
-                'text-wrap': 'ellipsis',
+                'text-wrap': 'wrap',
                 'width': 58,
             },
         },
@@ -326,8 +357,8 @@
                 'shape': 'ellipse',
                 'height': 48,
                 'width': 48,
-                'background-width': '76%',
-                'background-height': '76%',
+                'background-width': '72%',
+                'background-height': '72%',
             },
         },
         {
@@ -366,8 +397,8 @@
                 'shape': 'barrel',
                 'height': 54,
                 'width': 54,
-                'background-width': '74%',
-                'background-height': '74%',
+                'background-width': '70%',
+                'background-height': '70%',
             },
         },
         {
@@ -382,7 +413,7 @@
                 'color': darkMode ? '#e2e8f0' : '#334155',
                 'font-size': 11,
                 'font-weight': 700,
-                'label': nodeLabelToggle && nodeLabelToggle.checked ? 'data(label)' : '',
+                'label': nodeLabelToggle && nodeLabelToggle.checked ? 'data(display_label)' : '',
                 'padding': 26,
                 'background-image': (node) => getTypeVisual(node.data('type')).icon,
                 'background-fit': 'none',
@@ -391,7 +422,7 @@
                 'background-width': '72%',
                 'background-height': '72%',
                 'background-position-x': '50%',
-                'background-position-y': '52%',
+                'background-position-y': '50%',
                 'shape': 'round-rectangle',
                 'text-background-opacity': 0,
                 'text-halign': 'center',
@@ -403,21 +434,21 @@
             selector: 'node[status_tone = "healthy"]',
             style: {
                 'border-color': '#10b981',
-                'border-width': 3,
+                'border-width': 2.4,
             },
         },
         {
             selector: 'node[status_tone = "warning"]',
             style: {
                 'border-color': '#f59e0b',
-                'border-width': 3,
+                'border-width': 2.4,
             },
         },
         {
             selector: 'node[status_tone = "critical"]',
             style: {
                 'border-color': '#ef4444',
-                'border-width': 4,
+                'border-width': 3,
             },
         },
         {
@@ -486,12 +517,12 @@
                 fit: true,
                 nodeDimensionsIncludeLabels: true,
                 padding: 56,
-                idealEdgeLength: 120,
+                idealEdgeLength: 145,
                 edgeElasticity: 140,
-                nodeRepulsion: 380000,
+                nodeRepulsion: 440000,
                 gravity: 1,
                 numIter: 900,
-                componentSpacing: 80,
+                componentSpacing: 100,
             }
         }
 
@@ -505,7 +536,7 @@
             maximal: false,
             nodeDimensionsIncludeLabels: true,
             padding: 48,
-            spacingFactor: 1.25,
+            spacingFactor: 1.42,
         }
     }
 
@@ -517,6 +548,7 @@
 
         const nodes = rawNodes.map((node) => {
             const data = { ...(node.data || {}) }
+            data.display_label = formatNodeLabel(data.label || data.id)
             const parent = data.parent
             delete data.parent
 
@@ -999,10 +1031,9 @@
 
         const canvasRect = canvas.getBoundingClientRect()
         const shortestSide = Math.min(canvasRect.width || 0, canvasRect.height || 0)
-        const padding = Math.max(56, Math.min(96, Math.round(shortestSide * 0.08)))
+        const padding = Math.max(82, Math.min(132, Math.round(shortestSide * 0.12)))
 
         cy.fit(visibleElements, padding)
-        cy.center(visibleElements)
     }
 
     const applyCurrentLayout = () => {
@@ -1014,12 +1045,12 @@
         cy.one('layoutstop', () => {
             requestAnimationFrame(() => {
                 fitGraphToCanvas()
-                window.setTimeout(fitGraphToCanvas, 120)
+                window.setTimeout(fitGraphToCanvas, 180)
             })
         })
 
         visibleElements.layout(layoutOptions()).run()
-        window.setTimeout(fitGraphToCanvas, 220)
+        window.setTimeout(fitGraphToCanvas, 360)
     }
 
     const createGraph = (payload) => {
@@ -1083,8 +1114,9 @@
                             return
                         }
                         fitGraphToCanvas()
-                        window.setTimeout(fitGraphToCanvas, 140)
-                        window.setTimeout(fitGraphToCanvas, 320)
+                        window.setTimeout(fitGraphToCanvas, 160)
+                        window.setTimeout(fitGraphToCanvas, 420)
+                        window.setTimeout(fitGraphToCanvas, 820)
                         setRuntimeStatus()
                         showError()
                         console.info('KAORI topology rendered.', {
@@ -1270,8 +1302,8 @@
 
     nodeLabelToggle.addEventListener('change', () => {
         if (cy) {
-            cy.style().selector('node').style('label', nodeLabelToggle.checked ? 'data(label)' : '').update()
-            cy.style().selector('node:parent').style('label', nodeLabelToggle.checked ? 'data(label)' : '').update()
+            cy.style().selector('node').style('label', nodeLabelToggle.checked ? 'data(display_label)' : '').update()
+            cy.style().selector('node:parent').style('label', nodeLabelToggle.checked ? 'data(display_label)' : '').update()
         }
     })
 
