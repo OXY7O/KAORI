@@ -42,6 +42,7 @@
     let activeDrawerTab = 'details'
     let pathHighlightActive = false
     let boundaryFrame = null
+    let drawerMiniMapFrame = null
     let collapsedNodeIds = new Set()
     let collapsedHiddenIds = new Set()
     let childrenByNode = new Map()
@@ -595,6 +596,141 @@
         }).join('')
     }
 
+
+    const drawDrawerMiniMap = () => {
+        drawerMiniMapFrame = null
+        if (!cy || !selectedNodeId) return
+
+        const miniMap = detailContent?.querySelector('#topology-drawer-minimap')
+        const selectedNode = cy.getElementById(selectedNodeId)
+        if (!miniMap || !selectedNode?.length || selectedNode.data('type') !== 'cluster') return
+
+        const clusterId = selectedNode.data('cluster_id')
+        const clusterName = selectedNode.data('cluster_name') || selectedNode.data('label')
+        const clusterNodes = cy.nodes(':visible').filter((item) => (
+            item.id() === selectedNode.id()
+            || (clusterId && item.data('cluster_id') === clusterId)
+            || (!clusterId && item.data('cluster_name') === clusterName)
+        ))
+        if (!clusterNodes.length) return
+
+        const nodeIds = new Set(clusterNodes.map((item) => item.id()))
+        const clusterEdges = cy.edges(':visible').filter((edge) => (
+            nodeIds.has(edge.source().id()) && nodeIds.has(edge.target().id())
+        ))
+
+        const logicalWidth = Math.max(180, miniMap.clientWidth || 220)
+        const logicalHeight = 144
+        const pixelRatio = Math.max(1, window.devicePixelRatio || 1)
+        miniMap.width = Math.round(logicalWidth * pixelRatio)
+        miniMap.height = Math.round(logicalHeight * pixelRatio)
+        miniMap.style.height = `${logicalHeight}px`
+
+        const ctx = miniMap.getContext('2d')
+        if (!ctx) return
+        ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
+        ctx.clearRect(0, 0, logicalWidth, logicalHeight)
+
+        const darkMode = document.documentElement.classList.contains('dark')
+        ctx.fillStyle = darkMode ? '#0f172a' : '#ffffff'
+        ctx.fillRect(0, 0, logicalWidth, logicalHeight)
+
+        const positions = clusterNodes.map((item) => item.position())
+        let minX = Math.min(...positions.map((position) => position.x))
+        let maxX = Math.max(...positions.map((position) => position.x))
+        let minY = Math.min(...positions.map((position) => position.y))
+        let maxY = Math.max(...positions.map((position) => position.y))
+
+        if (maxX - minX < 1) { minX -= 1; maxX += 1 }
+        if (maxY - minY < 1) { minY -= 1; maxY += 1 }
+
+        const padding = 14
+        const scale = Math.min(
+            (logicalWidth - padding * 2) / (maxX - minX),
+            (logicalHeight - padding * 2) / (maxY - minY),
+        )
+        const graphWidth = (maxX - minX) * scale
+        const graphHeight = (maxY - minY) * scale
+        const offsetX = (logicalWidth - graphWidth) / 2
+        const offsetY = (logicalHeight - graphHeight) / 2
+        const mapPoint = (position) => ({
+            x: offsetX + (position.x - minX) * scale,
+            y: offsetY + (position.y - minY) * scale,
+        })
+
+        ctx.lineWidth = 1
+        ctx.strokeStyle = darkMode ? '#475569' : '#cbd5e1'
+        clusterEdges.forEach((edge) => {
+            const source = mapPoint(edge.source().position())
+            const target = mapPoint(edge.target().position())
+            ctx.beginPath()
+            ctx.moveTo(source.x, source.y)
+            ctx.lineTo(target.x, target.y)
+            ctx.stroke()
+        })
+
+        clusterNodes.forEach((item) => {
+            const point = mapPoint(item.position())
+            const visual = getTypeVisual(item.data('type'))
+            const selected = item.id() === selectedNode.id()
+            ctx.beginPath()
+            ctx.arc(point.x, point.y, selected ? 5 : 3.25, 0, Math.PI * 2)
+            ctx.fillStyle = visual.fill
+            ctx.fill()
+            ctx.lineWidth = selected ? 2 : 1
+            ctx.strokeStyle = selected ? '#2563eb' : visual.border
+            ctx.stroke()
+        })
+
+        const extent = cy.extent()
+        const topLeft = mapPoint({ x: extent.x1, y: extent.y1 })
+        const bottomRight = mapPoint({ x: extent.x2, y: extent.y2 })
+        const viewportX = Math.max(1, Math.min(topLeft.x, bottomRight.x))
+        const viewportY = Math.max(1, Math.min(topLeft.y, bottomRight.y))
+        const viewportWidth = Math.min(logicalWidth - viewportX - 1, Math.abs(bottomRight.x - topLeft.x))
+        const viewportHeight = Math.min(logicalHeight - viewportY - 1, Math.abs(bottomRight.y - topLeft.y))
+        ctx.strokeStyle = '#2563eb'
+        ctx.lineWidth = 1.5
+        ctx.setLineDash([4, 3])
+        ctx.strokeRect(viewportX, viewportY, Math.max(4, viewportWidth), Math.max(4, viewportHeight))
+        ctx.setLineDash([])
+
+        miniMap._kaoriMiniMap = {
+            minX, minY, scale, offsetX, offsetY, logicalWidth, logicalHeight, clusterNodes,
+        }
+
+        if (!miniMap.dataset.kaoriBound) {
+            miniMap.dataset.kaoriBound = 'true'
+            miniMap.addEventListener('click', (event) => {
+                const state = miniMap._kaoriMiniMap
+                if (!state || !cy) return
+                const rect = miniMap.getBoundingClientRect()
+                const logicalX = (event.clientX - rect.left) * (state.logicalWidth / rect.width)
+                const logicalY = (event.clientY - rect.top) * (state.logicalHeight / rect.height)
+                const graphX = (logicalX - state.offsetX) / state.scale + state.minX
+                const graphY = (logicalY - state.offsetY) / state.scale + state.minY
+                let nearest = null
+                let nearestDistance = Number.POSITIVE_INFINITY
+                state.clusterNodes.forEach((item) => {
+                    const position = item.position()
+                    const distance = Math.hypot(position.x - graphX, position.y - graphY)
+                    if (distance < nearestDistance) {
+                        nearest = item
+                        nearestDistance = distance
+                    }
+                })
+                if (nearest?.length) {
+                    cy.animate({ center: { eles: nearest } }, { duration: 220 })
+                }
+            })
+        }
+    }
+
+    const scheduleDrawerMiniMapUpdate = () => {
+        if (drawerMiniMapFrame) cancelAnimationFrame(drawerMiniMapFrame)
+        drawerMiniMapFrame = requestAnimationFrame(drawDrawerMiniMap)
+    }
+
     const renderNodeDetails = (node, initialTab = activeDrawerTab) => {
         if (!node?.length) return
         selectedNodeId = node.id()
@@ -617,7 +753,19 @@
                     <div class="flex items-start justify-between gap-3 py-2.5"><dt class="text-xs text-slate-500 dark:text-slate-400">Collected</dt><dd class="max-w-[12rem] break-words text-right text-xs ${ui.value}">${escapeHtml(formatDateTime(data.collected_at))}</dd></div>
                 </dl>
             </div>
-            ${data.action_url ? `<a href="${escapeHtml(data.action_url)}" class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">Open ${escapeHtml(humanizeType(data.type))} Inventory<i data-lucide="arrow-up-right" class="h-4 w-4"></i></a>` : ''}`
+            ${data.action_url ? `<a href="${escapeHtml(data.action_url)}" class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">Open ${escapeHtml(humanizeType(data.type))} Inventory<i data-lucide="arrow-up-right" class="h-4 w-4"></i></a>` : ''}
+            ${data.type === 'cluster' ? `
+                <div class="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-900/40">
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <h6 class="text-xs font-semibold text-slate-900 dark:text-white">Cluster topology overview</h6>
+                            <p class="mt-0.5 text-[10px] text-slate-500 dark:text-slate-400">Click the mini-map to center the graph.</p>
+                        </div>
+                        <span class="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[9px] font-medium text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">Overview</span>
+                    </div>
+                    <canvas id="topology-drawer-minimap" class="mt-3 block h-36 w-full cursor-crosshair rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-950/40" aria-label="Cluster topology mini-map"></canvas>
+                </div>
+            ` : ''}`
 
         detailContent.innerHTML = `
             <div class="space-y-4">
@@ -654,6 +802,7 @@
             })
             panel.querySelectorAll('[data-topology-related-node]').forEach((button) => button.addEventListener('click', () => selectNodeById(button.dataset.topologyRelatedNode, 'relationships')))
             window.lucide?.createIcons()
+            if (activeDrawerTab === 'details') scheduleDrawerMiniMapUpdate()
         }
         tabButtons.forEach((button) => button.addEventListener('click', () => activateTab(button.dataset.topologyNodeTab)))
         detailContent.querySelector('#topology-highlight-path-button')?.addEventListener('click', () => {
@@ -713,6 +862,7 @@
     }
 
     const attachGraphEvents = () => {
+        cy.on('pan zoom position layoutstop', scheduleDrawerMiniMapUpdate)
         cy.on('tap', 'node', (event) => {
             focusNeighborhood(event.target)
             renderNodeDetails(event.target)
@@ -1046,7 +1196,7 @@
     if (window.ResizeObserver && canvasShell) {
         const observer = new ResizeObserver(() => {
             if (!cy) return
-            cy.resize(); scheduleBoundaryUpdate()
+            cy.resize(); scheduleBoundaryUpdate(); scheduleDrawerMiniMapUpdate()
         })
         observer.observe(canvasShell)
     }
@@ -1054,6 +1204,6 @@
     $('theme-toggle')?.addEventListener('click', () => window.setTimeout(() => {
         if (!cy) return
         cy.style(graphStyle())
-        scheduleBoundaryUpdate()
+        scheduleBoundaryUpdate(); scheduleDrawerMiniMapUpdate()
     }, 0))
 })()
