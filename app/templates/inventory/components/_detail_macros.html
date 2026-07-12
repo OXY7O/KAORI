@@ -108,7 +108,7 @@
     </div>
 {%- endmacro %}
 
-{% macro detail_tip(message, tone='blue', icon='lightbulb', vivid=False, pinned=False) -%}
+{% macro detail_tip(message, tone='blue', icon='lightbulb', vivid=False, pinned=False, panel_classes='') -%}
     {%- set tones = {
         'blue': {
             'panel': 'bg-blue-50 text-blue-800 dark:bg-blue-500/10 dark:text-blue-200',
@@ -187,7 +187,7 @@
     } -%}
     {%- set palette = vivid_tones if vivid else tones -%}
     {%- set selected = palette.get(tone, palette['blue']) -%}
-    <div class="flex items-start gap-2.5 rounded-xl px-3 py-2.5 text-xs leading-5 {{ 'mt-auto' if pinned else '' }} {{ selected.panel }}">
+    <div class="flex items-start gap-2.5 rounded-xl px-3 py-2.5 text-xs leading-5 {{ 'mt-auto' if pinned else '' }} {{ selected.panel }} {{ panel_classes }}">
         <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg {{ selected.icon }}">
             <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
         </span>

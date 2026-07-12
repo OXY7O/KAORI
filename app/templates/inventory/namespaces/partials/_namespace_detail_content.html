@@ -91,7 +91,7 @@
                 {{ detail_row('Created', namespace.created_at|user_datetime('%Y-%m-%d %H:%M %Z') if namespace.created_at else '-', false, 'blue') }}
                 {{ detail_row('Collected', namespace.collected_at|user_datetime('%Y-%m-%d %H:%M %Z'), false, 'blue') }}
                 <div class="mt-auto pt-2">
-                    {{ detail_tip('Age is based on the Kubernetes creation timestamp. Collected shows when this snapshot was last refreshed.', 'blue', 'clock-3') }}
+                    {{ detail_tip('Age uses the Kubernetes creation timestamp. Collected shows when KAORI last refreshed this namespace snapshot.', 'blue', 'clock-3', panel_classes='min-h-28') }}
                 </div>
             {% endcall %}
 
@@ -121,7 +121,7 @@
                     {% endcall %}
                 </div>
                 <div class="mt-auto pt-2">
-                    {{ detail_tip('Workload composition summarizes controllers recorded in this namespace. Pod totals are shown separately because one workload can manage multiple pods.', 'sky', 'info') }}
+                    {{ detail_tip('Workload composition summarizes namespace controllers. Pod totals remain separate because one controller can manage multiple pods.', 'sky', 'info', panel_classes='min-h-28') }}
                 </div>
             {% endcall %}
 
@@ -160,7 +160,7 @@
                     {% endif %}
                 </div>
                 <div class="mt-auto pt-2">
-                    {{ detail_tip('ResourceQuota and LimitRange show configured namespace controls. They do not represent current usage, remaining quota, or utilization trends.', 'amber', 'info') }}
+                    {{ detail_tip('ResourceQuota and LimitRange define namespace constraints. Current consumption, remaining quota, and usage trends are analyzed separately.', 'amber', 'info', panel_classes='min-h-28') }}
                 </div>
             {% endcall %}
 
@@ -189,7 +189,7 @@
                     {% endcall %}
                 </div>
                 <div class="mt-auto pt-2">
-                    {{ detail_tip('Pod Security Admission (PSA) is the built-in Kubernetes security policy framework for pods. Enforce blocks policy violations, Audit records them, and Warn notifies users without blocking the workload.', 'violet', 'shield') }}
+                    {{ detail_tip('Pod Security Admission defines pod security behavior. Enforce blocks violations, Audit records them, and Warn notifies users.', 'violet', 'shield', panel_classes='min-h-28') }}
                 </div>
             {% endcall %}
 
