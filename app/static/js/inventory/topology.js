@@ -58,17 +58,17 @@
 
 
     const typeVisuals = {
-        cluster: { fill: '#2563eb', border: '#1d4ed8' },
-        namespace: { fill: '#6366f1', border: '#4f46e5' },
-        node: { fill: '#64748b', border: '#475569' },
-        workload: { fill: '#8b5cf6', border: '#7c3aed' },
-        pod: { fill: '#06b6d4', border: '#0891b2' },
-        service: { fill: '#10b981', border: '#059669' },
-        ingress: { fill: '#14b8a6', border: '#0f766e' },
-        configmap: { fill: '#0ea5e9', border: '#0284c7' },
-        secret: { fill: '#f59e0b', border: '#d97706' },
-        pvc: { fill: '#f97316', border: '#ea580c' },
-        pv: { fill: '#84cc16', border: '#65a30d' },
+        cluster: { fill: '#2563eb', border: '#1d4ed8', text: '#ffffff' },
+        namespace: { fill: '#4f46e5', border: '#4338ca', text: '#ffffff' },
+        node: { fill: '#475569', border: '#334155', text: '#ffffff' },
+        workload: { fill: '#7c3aed', border: '#6d28d9', text: '#ffffff' },
+        pod: { fill: '#cffafe', border: '#06b6d4', text: '#155e75' },
+        service: { fill: '#059669', border: '#047857', text: '#ffffff' },
+        ingress: { fill: '#0f766e', border: '#115e59', text: '#ffffff' },
+        configmap: { fill: '#0284c7', border: '#0369a1', text: '#ffffff' },
+        secret: { fill: '#fef3c7', border: '#f59e0b', text: '#92400e' },
+        pvc: { fill: '#ea580c', border: '#c2410c', text: '#ffffff' },
+        pv: { fill: '#ecfccb', border: '#84cc16', text: '#3f6212' },
     }
 
     const typeLegendIcons = {
@@ -203,13 +203,7 @@
         return labels[value] || value
     }
 
-    const formatNodeLabel = (value) => {
-        const label = String(value || '').trim()
-        const maxLength = 28
-        return label.length > maxLength
-            ? `${label.slice(0, maxLength - 1).trimEnd()}…`
-            : label
-    }
+    const formatNodeLabel = (value) => String(value || '').trim()
 
     const formatDateTime = (value) => {
         if (!value) {
@@ -242,113 +236,86 @@
             style: {
                 'background-color': (node) => getTypeVisual(node.data('type')).fill,
                 'border-color': (node) => getTypeVisual(node.data('type')).border,
-                'border-width': 2,
-                'color': labelColor,
+                'border-width': 1.5,
+                'color': (node) => getTypeVisual(node.data('type')).text,
                 'font-family': 'Inter, sans-serif',
-                'font-size': 10,
+                'font-size': 9,
                 'font-weight': 600,
-                'height': 46,
+                'height': 36,
                 'label': nodeLabelToggle && nodeLabelToggle.checked ? 'data(display_label)' : '',
-                'min-zoomed-font-size': 8,
+                'min-zoomed-font-size': 7,
                 'overlay-opacity': 0,
-                'shape': 'ellipse',
-                'text-background-color': labelBackground,
-                'text-background-opacity': 0.94,
-                'text-background-padding': 3,
+                'padding': 10,
+                'shape': 'round-rectangle',
+                'shadow-blur': 8,
+                'shadow-color': '#0f172a',
+                'shadow-offset-x': 0,
+                'shadow-offset-y': 2,
+                'shadow-opacity': 0.14,
                 'text-halign': 'center',
-                'text-margin-y': 10,
-                'text-max-width': 190,
-                'text-valign': 'bottom',
+                'text-margin-y': 0,
+                'text-max-width': 1000,
+                'text-valign': 'center',
                 'text-wrap': 'none',
-                'width': 46,
+                'width': 'label',
             },
         },
         {
             selector: 'node[type = "cluster"]',
             style: {
-                'shape': 'ellipse',
-                'height': 74,
-                'width': 74,
+                'font-size': 10,
+                'font-weight': 700,
+                'height': 42,
+                'padding': 14,
+                'shape': 'round-rectangle',
             },
         },
         {
             selector: 'node[type = "namespace"]',
             style: {
+                'height': 38,
+                'padding': 12,
                 'shape': 'round-rectangle',
-                'height': 60,
-                'width': 76,
             },
         },
         {
             selector: 'node[type = "node"]',
             style: {
-                'shape': 'diamond',
-                'height': 62,
-                'width': 62,
+                'height': 38,
+                'padding': 12,
+                'shape': 'round-rectangle',
             },
         },
         {
             selector: 'node[type = "workload"]',
             style: {
-                'shape': 'hexagon',
-                'height': 58,
-                'width': 66,
+                'height': 38,
+                'padding': 12,
+                'shape': 'round-rectangle',
             },
         },
         {
             selector: 'node[type = "pod"]',
             style: {
-                'shape': 'ellipse',
-                'height': 42,
-                'width': 42,
+                'height': 34,
+                'padding': 11,
+                'shape': 'round-rectangle',
             },
         },
         {
-            selector: 'node[type = "service"]',
+            selector: 'node[type = "service"], node[type = "ingress"]',
             style: {
-                'shape': 'diamond',
-                'height': 52,
-                'width': 52,
+                'height': 36,
+                'padding': 11,
+                'shape': 'round-rectangle',
             },
         },
         {
-            selector: 'node[type = "ingress"]',
+            selector: 'node[type = "configmap"], node[type = "secret"], node[type = "pvc"], node[type = "pv"]',
             style: {
-                'shape': 'pentagon',
-                'height': 56,
-                'width': 60,
-            },
-        },
-        {
-            selector: 'node[type = "configmap"]',
-            style: {
-                'shape': 'round-tag',
-                'height': 48,
-                'width': 58,
-            },
-        },
-        {
-            selector: 'node[type = "secret"]',
-            style: {
-                'shape': 'octagon',
-                'height': 50,
-                'width': 50,
-            },
-        },
-        {
-            selector: 'node[type = "pvc"]',
-            style: {
-                'shape': 'barrel',
-                'height': 52,
-                'width': 58,
-            },
-        },
-        {
-            selector: 'node[type = "pv"]',
-            style: {
-                'shape': 'barrel',
-                'height': 62,
-                'width': 68,
+                'height': 34,
+                'padding': 10,
+                'shape': 'round-rectangle',
             },
         },
         {
@@ -375,22 +342,25 @@
         {
             selector: 'node[status_tone = "healthy"]',
             style: {
-                'border-color': '#10b981',
-                'border-width': 2.6,
+                'underlay-color': '#10b981',
+                'underlay-opacity': 0.16,
+                'underlay-padding': 4,
             },
         },
         {
             selector: 'node[status_tone = "warning"]',
             style: {
-                'border-color': '#f59e0b',
-                'border-width': 2.6,
+                'underlay-color': '#f59e0b',
+                'underlay-opacity': 0.2,
+                'underlay-padding': 4,
             },
         },
         {
             selector: 'node[status_tone = "critical"]',
             style: {
-                'border-color': '#ef4444',
-                'border-width': 3.2,
+                'underlay-color': '#ef4444',
+                'underlay-opacity': 0.24,
+                'underlay-padding': 5,
             },
         },
         {
@@ -401,17 +371,17 @@
                 'font-size': 8,
                 'label': edgeLabelToggle && edgeLabelToggle.checked ? 'data(label)' : '',
                 'line-color': (edge) => edgeColors[edge.data('relationship')] || '#cbd5e1',
-                'line-opacity': 0.68,
+                'line-opacity': 0.56,
                 'min-zoomed-font-size': 7,
                 'overlay-opacity': 0,
                 'target-arrow-color': (edge) => edgeColors[edge.data('relationship')] || '#cbd5e1',
                 'target-arrow-shape': 'triangle',
-                'arrow-scale': 0.82,
+                'arrow-scale': 0.72,
                 'text-background-color': labelBackground,
                 'text-background-opacity': 0.9,
                 'text-background-padding': 2,
                 'text-rotation': 'autorotate',
-                'width': 1.6,
+                'width': 1.35,
             },
         },
         {
@@ -433,7 +403,7 @@
             selector: '.search-match',
             style: {
                 'border-color': '#eab308',
-                'border-width': 4.5,
+                'border-width': 3,
                 'opacity': 1,
                 'z-index': 1000,
             },
@@ -442,7 +412,7 @@
             selector: ':selected',
             style: {
                 'border-color': '#1d4ed8',
-                'border-width': 4.5,
+                'border-width': 3,
                 'line-color': '#1d4ed8',
                 'target-arrow-color': '#1d4ed8',
                 'z-index': 1200,
@@ -462,12 +432,12 @@
                 fit: true,
                 nodeDimensionsIncludeLabels: true,
                 padding: 72,
-                idealEdgeLength: 128,
+                idealEdgeLength: 190,
                 edgeElasticity: 90,
-                nodeRepulsion: 420000,
+                nodeRepulsion: 720000,
                 gravity: 0.28,
                 numIter: 1800,
-                componentSpacing: 120,
+                componentSpacing: 150,
                 nestingFactor: 0.8,
                 initialTemp: 220,
                 coolingFactor: 0.96,
@@ -486,7 +456,7 @@
             maximal: false,
             nodeDimensionsIncludeLabels: true,
             padding: 48,
-            spacingFactor: 1.42,
+            spacingFactor: 1.7,
         }
     }
 
@@ -981,7 +951,7 @@
 
         const canvasRect = canvas.getBoundingClientRect()
         const shortestSide = Math.min(canvasRect.width || 0, canvasRect.height || 0)
-        const padding = Math.max(82, Math.min(132, Math.round(shortestSide * 0.12)))
+        const padding = Math.max(56, Math.min(96, Math.round(shortestSide * 0.09)))
 
         cy.fit(visibleElements, padding)
     }
