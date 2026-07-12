@@ -16,16 +16,15 @@
 {% endif %}
 
 {% macro node_detail_row(label, value='-', tone='blue', mono=False) -%}
-    {% set value_tones = {
-        'blue': 'text-blue-800 dark:text-blue-200',
-        'cyan': 'text-cyan-800 dark:text-cyan-200',
-        'violet': 'text-violet-800 dark:text-violet-200',
-        'amber': 'text-amber-800 dark:text-amber-200'
-    } %}
     {% set display_value = value if value not in [None, ''] else '-' %}
     <div class="flex items-start justify-between gap-3">
         <span class="shrink-0 text-xs font-normal leading-5 text-slate-500 dark:text-slate-400">{{ label }}</span>
-        <span class="max-w-[68%] break-words text-right text-xs font-normal leading-5 {{ 'font-mono' if mono else '' }} {{ value_tones.get(tone, value_tones['blue']) }}" title="{{ display_value }}">{{ display_value }}</span>
+        <span class="max-w-[68%] break-words text-right text-xs font-normal leading-5 {{ 'font-mono' if mono else '' }}
+            {% if tone == 'cyan' %}text-cyan-700 dark:text-cyan-300
+            {% elif tone == 'violet' %}text-violet-700 dark:text-violet-300
+            {% elif tone == 'amber' %}text-amber-700 dark:text-amber-300
+            {% else %}text-blue-700 dark:text-blue-300{% endif %}"
+              title="{{ display_value }}">{{ display_value }}</span>
     </div>
 {%- endmacro %}
 
