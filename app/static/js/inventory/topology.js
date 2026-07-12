@@ -60,8 +60,8 @@
     const svgDataUri = (svg) => `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`
 
     const iconSvg = (color, body) => svgDataUri(`
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            ${body}
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" fill="none" stroke="${color}" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round">
+            <g transform="translate(12 12) scale(1.08) translate(-12 -12)">${body}</g>
         </svg>
     `)
 
@@ -299,10 +299,10 @@
                 'background-fit': 'none',
                 'background-clip': 'node',
                 'background-image-containment': 'inside',
-                'background-width': '58%',
-                'background-height': '58%',
+                'background-width': '72%',
+                'background-height': '72%',
                 'background-position-x': '50%',
-                'background-position-y': '50%',
+                'background-position-y': '52%',
                 'shape': 'round-rectangle',
                 'shadow-blur': 8,
                 'shadow-color': darkMode ? '#020617' : '#94a3b8',
@@ -326,8 +326,8 @@
                 'shape': 'ellipse',
                 'height': 48,
                 'width': 48,
-                'background-width': '62%',
-                'background-height': '62%',
+                'background-width': '76%',
+                'background-height': '76%',
             },
         },
         {
@@ -336,8 +336,8 @@
                 'shape': 'round-rectangle',
                 'height': 54,
                 'width': 58,
-                'background-width': '56%',
-                'background-height': '56%',
+                'background-width': '70%',
+                'background-height': '70%',
             },
         },
         {
@@ -346,8 +346,8 @@
                 'shape': 'hexagon',
                 'height': 54,
                 'width': 58,
-                'background-width': '52%',
-                'background-height': '52%',
+                'background-width': '68%',
+                'background-height': '68%',
             },
         },
         {
@@ -356,8 +356,8 @@
                 'shape': 'round-rectangle',
                 'height': 54,
                 'width': 58,
-                'background-width': '56%',
-                'background-height': '56%',
+                'background-width': '70%',
+                'background-height': '70%',
             },
         },
         {
@@ -366,8 +366,8 @@
                 'shape': 'barrel',
                 'height': 54,
                 'width': 54,
-                'background-width': '62%',
-                'background-height': '62%',
+                'background-width': '74%',
+                'background-height': '74%',
             },
         },
         {
@@ -388,10 +388,10 @@
                 'background-fit': 'none',
                 'background-clip': 'node',
                 'background-image-containment': 'inside',
-                'background-width': '58%',
-                'background-height': '58%',
+                'background-width': '72%',
+                'background-height': '72%',
                 'background-position-x': '50%',
-                'background-position-y': '50%',
+                'background-position-y': '52%',
                 'shape': 'round-rectangle',
                 'text-background-opacity': 0,
                 'text-halign': 'center',
