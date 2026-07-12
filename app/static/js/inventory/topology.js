@@ -299,8 +299,8 @@
                 'background-fit': 'none',
                 'background-clip': 'node',
                 'background-image-containment': 'inside',
-                'background-width': '44%',
-                'background-height': '44%',
+                'background-width': '58%',
+                'background-height': '58%',
                 'background-position-x': '50%',
                 'background-position-y': '50%',
                 'shape': 'round-rectangle',
@@ -326,8 +326,8 @@
                 'shape': 'ellipse',
                 'height': 48,
                 'width': 48,
-                'background-width': '46%',
-                'background-height': '46%',
+                'background-width': '62%',
+                'background-height': '62%',
             },
         },
         {
@@ -336,8 +336,8 @@
                 'shape': 'round-rectangle',
                 'height': 54,
                 'width': 58,
-                'background-width': '42%',
-                'background-height': '42%',
+                'background-width': '56%',
+                'background-height': '56%',
             },
         },
         {
@@ -346,8 +346,8 @@
                 'shape': 'hexagon',
                 'height': 54,
                 'width': 58,
-                'background-width': '38%',
-                'background-height': '38%',
+                'background-width': '52%',
+                'background-height': '52%',
             },
         },
         {
@@ -356,8 +356,8 @@
                 'shape': 'round-rectangle',
                 'height': 54,
                 'width': 58,
-                'background-width': '42%',
-                'background-height': '42%',
+                'background-width': '56%',
+                'background-height': '56%',
             },
         },
         {
@@ -366,8 +366,8 @@
                 'shape': 'barrel',
                 'height': 54,
                 'width': 54,
-                'background-width': '46%',
-                'background-height': '46%',
+                'background-width': '62%',
+                'background-height': '62%',
             },
         },
         {
@@ -388,8 +388,8 @@
                 'background-fit': 'none',
                 'background-clip': 'node',
                 'background-image-containment': 'inside',
-                'background-width': '44%',
-                'background-height': '44%',
+                'background-width': '58%',
+                'background-height': '58%',
                 'background-position-x': '50%',
                 'background-position-y': '50%',
                 'shape': 'round-rectangle',
@@ -988,17 +988,38 @@
         }
     }
 
+    const fitGraphToCanvas = () => {
+        if (!cy) return
+
+        const visibleElements = cy.elements(':visible')
+        if (!visibleElements.length) return
+
+        ensureCanvasDimensions()
+        cy.resize()
+
+        const canvasRect = canvas.getBoundingClientRect()
+        const shortestSide = Math.min(canvasRect.width || 0, canvasRect.height || 0)
+        const padding = Math.max(56, Math.min(96, Math.round(shortestSide * 0.08)))
+
+        cy.fit(visibleElements, padding)
+        cy.center(visibleElements)
+    }
+
     const applyCurrentLayout = () => {
         if (!cy) return
+
         const visibleElements = cy.elements(':visible')
-        visibleElements.layout(layoutOptions()).run()
-        requestAnimationFrame(() => {
-            cy.resize()
-            cy.fit(visibleElements, 28)
-            const boostedZoom = Math.min(cy.maxZoom(), cy.zoom() * 1.08)
-            cy.zoom(boostedZoom)
-            cy.center(visibleElements)
+        if (!visibleElements.length) return
+
+        cy.one('layoutstop', () => {
+            requestAnimationFrame(() => {
+                fitGraphToCanvas()
+                window.setTimeout(fitGraphToCanvas, 120)
+            })
         })
+
+        visibleElements.layout(layoutOptions()).run()
+        window.setTimeout(fitGraphToCanvas, 220)
     }
 
     const createGraph = (payload) => {
@@ -1044,7 +1065,11 @@
             applyRelationshipVisibility()
             applySearch()
 
+            let renderFinalized = false
             const finalizeRender = () => {
+                if (renderFinalized) return
+                renderFinalized = true
+
                 window.requestAnimationFrame(() => {
                     ensureCanvasDimensions()
                     cy.resize()
@@ -1057,11 +1082,9 @@
                         if (!cy) {
                             return
                         }
-                        cy.resize()
-                        const visibleElements = cy.elements(':visible')
-                        cy.fit(visibleElements, 24)
-                        cy.zoom(Math.min(cy.maxZoom(), cy.zoom() * 1.1))
-                        cy.center(visibleElements)
+                        fitGraphToCanvas()
+                        window.setTimeout(fitGraphToCanvas, 140)
+                        window.setTimeout(fitGraphToCanvas, 320)
                         setRuntimeStatus()
                         showError()
                         console.info('KAORI topology rendered.', {
@@ -1224,11 +1247,7 @@
     })
 
     document.getElementById('topology-fit-button').addEventListener('click', () => {
-        if (cy) {
-            cy.fit(cy.elements(':visible'), 20)
-            cy.zoom(Math.min(cy.maxZoom(), cy.zoom() * 1.08))
-            cy.center(cy.elements(':visible'))
-        }
+        fitGraphToCanvas()
     })
 
     document.getElementById('topology-reset-button').addEventListener('click', () => {
