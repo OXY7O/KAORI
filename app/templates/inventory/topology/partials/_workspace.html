@@ -129,6 +129,15 @@
                     <span>Relationship labels</span>
                     <input id="topology-edge-label-toggle" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
                 </label>
+                <div class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 dark:border-slate-700 dark:bg-slate-800">
+                    <label for="topology-layout-mode" class="block text-[11px] font-medium text-slate-700 dark:text-slate-200">Layout mode</label>
+                    <select id="topology-layout-mode"
+                            class="mt-2 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-xs text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
+                        <option value="hierarchy">Hierarchy view</option>
+                        <option value="dependency">Dependency view</option>
+                    </select>
+                    <p class="mt-2 text-[10px] leading-4 text-slate-500 dark:text-slate-400">Hierarchy emphasizes ownership flow. Dependency spreads connected resources for relationship review.</p>
+                </div>
             </div>
 
             <div class="mt-6">

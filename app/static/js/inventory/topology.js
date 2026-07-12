@@ -20,6 +20,7 @@
     const detailContent = document.getElementById('topology-detail-content')
     const nodeLabelToggle = document.getElementById('topology-node-label-toggle')
     const edgeLabelToggle = document.getElementById('topology-edge-label-toggle')
+    const layoutModeSelect = document.getElementById('topology-layout-mode')
     const searchSummary = document.getElementById('topology-search-summary')
     const filterSummary = document.getElementById('topology-filter-summary')
 
@@ -136,6 +137,90 @@
 
     const getTypeVisual = (type) => typeVisuals[type] || typeVisuals.node
 
+
+    const typeUi = {
+        cluster: {
+            icon: 'server-cog',
+            iconClasses: 'bg-blue-100 text-blue-700 ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20',
+            valueClasses: 'text-blue-700 dark:text-blue-300',
+            softBadgeClasses: 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300',
+        },
+        namespace: {
+            icon: 'layers-3',
+            iconClasses: 'bg-indigo-100 text-indigo-700 ring-indigo-200 dark:bg-indigo-500/10 dark:text-indigo-300 dark:ring-indigo-500/20',
+            valueClasses: 'text-indigo-700 dark:text-indigo-300',
+            softBadgeClasses: 'border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-500/20 dark:bg-indigo-500/10 dark:text-indigo-300',
+        },
+        node: {
+            icon: 'server',
+            iconClasses: 'bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-700/60 dark:text-slate-300 dark:ring-slate-600',
+            valueClasses: 'text-slate-700 dark:text-slate-300',
+            softBadgeClasses: 'border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-600 dark:bg-slate-700/40 dark:text-slate-300',
+        },
+        workload: {
+            icon: 'boxes',
+            iconClasses: 'bg-violet-100 text-violet-700 ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-500/20',
+            valueClasses: 'text-violet-700 dark:text-violet-300',
+            softBadgeClasses: 'border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-300',
+        },
+        pod: {
+            icon: 'circle-dot',
+            iconClasses: 'bg-cyan-100 text-cyan-700 ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-500/20',
+            valueClasses: 'text-cyan-700 dark:text-cyan-300',
+            softBadgeClasses: 'border-cyan-200 bg-cyan-50 text-cyan-700 dark:border-cyan-500/20 dark:bg-cyan-500/10 dark:text-cyan-300',
+        },
+        service: {
+            icon: 'network',
+            iconClasses: 'bg-emerald-100 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20',
+            valueClasses: 'text-emerald-700 dark:text-emerald-300',
+            softBadgeClasses: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300',
+        },
+        ingress: {
+            icon: 'route',
+            iconClasses: 'bg-teal-100 text-teal-700 ring-teal-200 dark:bg-teal-500/10 dark:text-teal-300 dark:ring-teal-500/20',
+            valueClasses: 'text-teal-700 dark:text-teal-300',
+            softBadgeClasses: 'border-teal-200 bg-teal-50 text-teal-700 dark:border-teal-500/20 dark:bg-teal-500/10 dark:text-teal-300',
+        },
+        configmap: {
+            icon: 'file-cog',
+            iconClasses: 'bg-sky-100 text-sky-700 ring-sky-200 dark:bg-sky-500/10 dark:text-sky-300 dark:ring-sky-500/20',
+            valueClasses: 'text-sky-700 dark:text-sky-300',
+            softBadgeClasses: 'border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-300',
+        },
+        secret: {
+            icon: 'key-round',
+            iconClasses: 'bg-amber-100 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20',
+            valueClasses: 'text-amber-700 dark:text-amber-300',
+            softBadgeClasses: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300',
+        },
+        pvc: {
+            icon: 'database',
+            iconClasses: 'bg-orange-100 text-orange-700 ring-orange-200 dark:bg-orange-500/10 dark:text-orange-300 dark:ring-orange-500/20',
+            valueClasses: 'text-orange-700 dark:text-orange-300',
+            softBadgeClasses: 'border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-500/20 dark:bg-orange-500/10 dark:text-orange-300',
+        },
+        pv: {
+            icon: 'hard-drive',
+            iconClasses: 'bg-lime-100 text-lime-700 ring-lime-200 dark:bg-lime-500/10 dark:text-lime-300 dark:ring-lime-500/20',
+            valueClasses: 'text-lime-700 dark:text-lime-300',
+            softBadgeClasses: 'border-lime-200 bg-lime-50 text-lime-700 dark:border-lime-500/20 dark:bg-lime-500/10 dark:text-lime-300',
+        },
+    }
+
+    const relationshipUi = {
+        owns: { icon: 'boxes', badgeClasses: typeUi.workload.softBadgeClasses },
+        scheduled_on: { icon: 'server', badgeClasses: typeUi.node.softBadgeClasses },
+        selects: { icon: 'network', badgeClasses: typeUi.service.softBadgeClasses },
+        routes_to: { icon: 'route', badgeClasses: typeUi.ingress.softBadgeClasses },
+        uses: { icon: 'link-2', badgeClasses: typeUi.configmap.softBadgeClasses },
+        mounts: { icon: 'database', badgeClasses: typeUi.pvc.softBadgeClasses },
+        binds: { icon: 'hard-drive', badgeClasses: typeUi.pv.softBadgeClasses },
+        contains: { icon: 'folder-tree', badgeClasses: typeUi.namespace.softBadgeClasses },
+    }
+
+    const getTypeUi = (type) => typeUi[type] || typeUi.node
+    const getRelationshipUi = (rel) => relationshipUi[rel] || { icon: 'git-commit-horizontal', badgeClasses: typeUi.node.softBadgeClasses }
+
     const statusClasses = {
         healthy: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300',
         warning: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300',
@@ -214,6 +299,8 @@
                 'background-image-containment': 'inside',
                 'background-width': '50%',
                 'background-height': '50%',
+                'background-position-x': '50%',
+                'background-position-y': '50%',
                 'shape': 'round-rectangle',
                 'text-background-color': labelBackground,
                 'text-background-opacity': 0.92,
@@ -290,6 +377,8 @@
                 'background-image-containment': 'inside',
                 'background-width': '50%',
                 'background-height': '50%',
+                'background-position-x': '50%',
+                'background-position-y': '50%',
                 'shape': 'round-rectangle',
                 'text-background-opacity': 0,
                 'text-halign': 'center',
@@ -375,18 +464,37 @@
         ]
     }
 
-    const layoutOptions = () => ({
-        name: 'breadthfirst',
-        animate: false,
-        circle: false,
-        directed: true,
-        fit: true,
-        grid: true,
-        maximal: false,
-        nodeDimensionsIncludeLabels: true,
-        padding: 48,
-        spacingFactor: 1.25,
-    })
+    const layoutOptions = () => {
+        const mode = getLayoutMode()
+        if (mode === 'dependency') {
+            return {
+                name: 'cose',
+                animate: false,
+                fit: true,
+                nodeDimensionsIncludeLabels: true,
+                padding: 56,
+                idealEdgeLength: 120,
+                edgeElasticity: 140,
+                nodeRepulsion: 380000,
+                gravity: 1,
+                numIter: 900,
+                componentSpacing: 80,
+            }
+        }
+
+        return {
+            name: 'breadthfirst',
+            animate: false,
+            circle: false,
+            directed: true,
+            fit: true,
+            grid: true,
+            maximal: false,
+            nodeDimensionsIncludeLabels: true,
+            padding: 48,
+            spacingFactor: 1.25,
+        }
+    }
 
     const prepareElements = (payload) => {
         const rawNodes = Array.isArray(payload.nodes) ? payload.nodes : []
@@ -475,6 +583,19 @@
         }).run()
     }
 
+
+    const getLayoutMode = () => {
+        const value = layoutModeSelect?.value || 'hierarchy'
+        return value === 'dependency' ? 'dependency' : 'hierarchy'
+    }
+
+    const syncLayoutModeFromUrl = () => {
+        if (!layoutModeSelect) return
+        const url = new URL(window.location.href)
+        const value = url.searchParams.get('layout')
+        layoutModeSelect.value = value === 'dependency' ? 'dependency' : 'hierarchy'
+    }
+
     const updateNamespaceOptions = (selectedValue = '') => {
         const clusterId = clusterSelect.value
         const namespaces = config.namespace_map[clusterId] || []
@@ -506,10 +627,11 @@
             namespace: namespaceSelect.disabled ? '' : namespaceSelect.value,
             scope: scopeSelect.value,
             depth: depthSelect.value,
+            layout: getLayoutMode(),
         }
 
         Object.entries(values).forEach(([key, value]) => {
-            if (value && !(key === 'scope' && value === 'all') && !(key === 'depth' && value === '1')) {
+            if (value && !(key === 'scope' && value === 'all') && !(key === 'depth' && value === '1') && !(key === 'layout' && value === 'hierarchy')) {
                 url.searchParams.set(key, value)
             } else {
                 url.searchParams.delete(key)
@@ -543,6 +665,28 @@
         }
     }
 
+
+    const renderValueRows = (fields, type) => {
+        const ui = getTypeUi(type)
+        return fields.map((field) => `
+            <div class="flex items-start justify-between gap-3 border-b border-slate-100 py-2.5 last:border-b-0 dark:border-slate-700/70">
+                <dt class="text-xs font-normal text-slate-500 dark:text-slate-400">${escapeHtml(field.label)}</dt>
+                <dd class="max-w-[12rem] break-words text-right text-xs font-normal ${ui.valueClasses}">${escapeHtml(field.value)}</dd>
+            </div>
+        `).join('')
+    }
+
+    const typeStatusPills = (type, status, tone) => {
+        const ui = getTypeUi(type)
+        const toneClass = statusClasses[tone] || statusClasses.unknown
+        return `
+            <div class="mt-2 flex flex-wrap items-center gap-2">
+                <span class="rounded-full border px-2.5 py-1 text-[10px] font-medium ${ui.softBadgeClasses}">${escapeHtml(humanizeType(type))}</span>
+                <span class="rounded-full border px-2.5 py-1 text-[10px] font-medium ${toneClass}">${escapeHtml(status || 'Unknown')}</span>
+            </div>
+        `
+    }
+
     const emptyDetailHtml = () => `
         <div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center dark:border-slate-600 dark:bg-slate-900/40">
             <i data-lucide="mouse-pointer-click" class="mx-auto h-7 w-7 text-slate-400"></i>
@@ -554,53 +698,46 @@
     const renderNodeDetails = (node) => {
         const data = node.data()
         const connectedEdges = node.connectedEdges().length
-        const toneClass = statusClasses[data.status_tone] || statusClasses.unknown
         const fields = Array.isArray(data.fields) ? data.fields : []
-        const fieldRows = fields.map((field) => `
-            <div class="flex items-start justify-between gap-3 border-b border-slate-100 py-2.5 last:border-b-0 dark:border-slate-700/70">
-                <dt class="text-xs text-slate-500 dark:text-slate-400">${escapeHtml(field.label)}</dt>
-                <dd class="max-w-[12rem] break-words text-right text-xs font-medium text-slate-800 dark:text-slate-100">${escapeHtml(field.value)}</dd>
-            </div>
-        `).join('')
+        const ui = getTypeUi(data.type)
+        const fieldRows = renderValueRows(fields, data.type)
 
         detailContent.innerHTML = `
             <div class="space-y-4">
                 <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/40">
                     <div class="flex items-start gap-3">
-                        <span class="mt-0.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700">
-                            <span class="h-3 w-3 rounded-full" style="background:${typeColors[data.type] || '#64748b'}"></span>
+                        <span class="mt-0.5 flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl ring-1 ${ui.iconClasses}">
+                            <i data-lucide="${escapeHtml(ui.icon)}" class="h-5 w-5"></i>
                         </span>
                         <div class="min-w-0 flex-1">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <h4 class="break-words text-sm font-semibold text-slate-950 dark:text-white">${escapeHtml(data.label)}</h4>
-                                <span class="rounded-full border px-2 py-0.5 text-[10px] font-medium ${toneClass}">${escapeHtml(data.status || 'Unknown')}</span>
-                            </div>
+                            <h4 class="break-words text-sm font-semibold text-slate-950 dark:text-white">${escapeHtml(data.label)}</h4>
                             <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">${escapeHtml(data.kind || humanizeType(data.type))}</p>
+                            ${typeStatusPills(data.type, data.status, data.status_tone)}
                         </div>
                     </div>
-                    <p class="mt-3 text-xs leading-5 text-slate-600 dark:text-slate-300">${escapeHtml(data.description || '')}</p>
+                    ${data.description ? `<p class="mt-3 text-xs leading-5 text-slate-600 dark:text-slate-300">${escapeHtml(data.description)}</p>` : ''}
                 </div>
 
                 <div class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
                     <div class="flex items-center justify-between gap-3">
-                        <h5 class="text-xs font-semibold text-slate-900 dark:text-white">Inventory context</h5>
-                        <span class="rounded-full bg-blue-50 px-2 py-1 text-[10px] font-medium text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20">${connectedEdges} relationships</span>
+                        <h5 class="text-xs font-semibold text-slate-900 dark:text-white">Resource context</h5>
+                        <span class="rounded-full border px-2.5 py-1 text-[10px] font-medium ${ui.softBadgeClasses}">${connectedEdges} relationships</span>
                     </div>
                     <dl class="mt-3">
                         <div class="flex items-start justify-between gap-3 border-b border-slate-100 py-2.5 dark:border-slate-700/70">
-                            <dt class="text-xs text-slate-500 dark:text-slate-400">Cluster</dt>
-                            <dd class="max-w-[12rem] break-words text-right text-xs font-medium text-slate-800 dark:text-slate-100">${escapeHtml(data.cluster_name || 'Not reported')}</dd>
+                            <dt class="text-xs font-normal text-slate-500 dark:text-slate-400">Cluster</dt>
+                            <dd class="max-w-[12rem] break-words text-right text-xs font-normal ${ui.valueClasses}">${escapeHtml(data.cluster_name || 'Not reported')}</dd>
                         </div>
                         ${data.namespace ? `
                             <div class="flex items-start justify-between gap-3 border-b border-slate-100 py-2.5 dark:border-slate-700/70">
-                                <dt class="text-xs text-slate-500 dark:text-slate-400">Namespace</dt>
-                                <dd class="max-w-[12rem] break-words text-right text-xs font-medium text-slate-800 dark:text-slate-100">${escapeHtml(data.namespace)}</dd>
+                                <dt class="text-xs font-normal text-slate-500 dark:text-slate-400">Namespace</dt>
+                                <dd class="max-w-[12rem] break-words text-right text-xs font-normal ${ui.valueClasses}">${escapeHtml(data.namespace)}</dd>
                             </div>
                         ` : ''}
                         ${fieldRows}
                         <div class="flex items-start justify-between gap-3 py-2.5">
-                            <dt class="text-xs text-slate-500 dark:text-slate-400">Collected</dt>
-                            <dd class="max-w-[12rem] break-words text-right text-xs font-medium text-slate-800 dark:text-slate-100">${escapeHtml(formatDateTime(data.collected_at))}</dd>
+                            <dt class="text-xs font-normal text-slate-500 dark:text-slate-400">Collected</dt>
+                            <dd class="max-w-[12rem] break-words text-right text-xs font-normal ${ui.valueClasses}">${escapeHtml(formatDateTime(data.collected_at))}</dd>
                         </div>
                     </dl>
                 </div>
@@ -622,28 +759,33 @@
     const renderEdgeDetails = (edge) => {
         const data = edge.data()
         const color = edgeColors[data.relationship] || '#64748b'
+        const ui = getRelationshipUi(data.relationship)
         detailContent.innerHTML = `
             <div class="space-y-4">
                 <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/40">
-                    <div class="flex items-center gap-3">
-                        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700">
-                            <i data-lucide="git-commit-horizontal" class="h-5 w-5 text-slate-500"></i>
+                    <div class="flex items-start gap-3">
+                        <span class="flex h-11 w-11 items-center justify-center rounded-2xl ring-1 ${ui.badgeClasses}">
+                            <i data-lucide="${escapeHtml(ui.icon)}" class="h-5 w-5"></i>
                         </span>
-                        <div>
-                            <h4 class="text-sm font-semibold text-slate-950 dark:text-white">${escapeHtml(data.label || 'Relationship')}</h4>
+                        <div class="min-w-0 flex-1">
+                            <h4 class="break-words text-sm font-semibold text-slate-950 dark:text-white">${escapeHtml(data.label || 'Relationship')}</h4>
                             <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Topology relationship</p>
+                            <div class="mt-2 inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-[10px] font-medium ${ui.badgeClasses}">
+                                <span class="h-2 w-2 rounded-full" style="background:${color}"></span>
+                                ${escapeHtml(data.relationship || 'relationship')}
+                            </div>
                         </div>
                     </div>
-                    <p class="mt-3 text-xs leading-5 text-slate-600 dark:text-slate-300">${escapeHtml(data.description || '')}</p>
+                    ${data.description ? `<p class="mt-3 text-xs leading-5 text-slate-600 dark:text-slate-300">${escapeHtml(data.description)}</p>` : ''}
                 </div>
 
                 <div class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
                     <div class="flex items-center gap-3 rounded-xl bg-slate-50 px-3 py-3 dark:bg-slate-900/40">
                         <span class="h-3 w-3 rounded-full" style="background:${color}"></span>
-                        <div class="min-w-0 flex-1">
-                            <p class="break-words text-xs font-semibold text-slate-900 dark:text-white">${escapeHtml(data.source_label)}</p>
-                            <p class="mt-1 text-[10px] font-medium uppercase tracking-wide text-slate-400">${escapeHtml(data.label)}</p>
-                            <p class="mt-1 break-words text-xs font-semibold text-slate-900 dark:text-white">${escapeHtml(data.target_label)}</p>
+                        <div class="min-w-0 flex-1 space-y-1">
+                            <p class="break-words text-xs font-medium text-slate-900 dark:text-white">${escapeHtml(data.source_label)}</p>
+                            <p class="text-[10px] font-medium uppercase tracking-wide text-slate-400">${escapeHtml(data.label)}</p>
+                            <p class="break-words text-xs font-medium text-slate-900 dark:text-white">${escapeHtml(data.target_label)}</p>
                         </div>
                     </div>
                 </div>
@@ -711,6 +853,15 @@
 
         runtimeStatus.classList.remove('hidden')
         runtimeStatus.innerHTML = `<span class="inline-flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-blue-500"></span>${escapeHtml(message)}</span>`
+    }
+
+    const applyCurrentLayout = () => {
+        if (!cy) return
+        applyCurrentLayout()
+        requestAnimationFrame(() => {
+            cy.resize()
+            cy.fit(undefined, 56)
+        })
     }
 
     const createGraph = (payload) => {
@@ -819,6 +970,7 @@
             namespace: namespaceSelect.disabled ? '' : namespaceSelect.value,
             scope: scopeSelect.value,
             depth: depthSelect.value,
+            layout: getLayoutMode(),
         })
 
         try {
@@ -909,6 +1061,7 @@
         topologyResizeObserver.observe(canvas.parentElement)
     }
 
+    syncLayoutModeFromUrl()
     updateNamespaceOptions(config.filters?.namespace || '')
     createGraph(currentPayload)
 
@@ -919,6 +1072,10 @@
     namespaceSelect.addEventListener('change', fetchGraph)
     scopeSelect.addEventListener('change', fetchGraph)
     depthSelect.addEventListener('change', fetchGraph)
+    layoutModeSelect?.addEventListener('change', () => {
+        updateUrl()
+        applyCurrentLayout()
+    })
 
     searchInput.addEventListener('input', () => {
         window.clearTimeout(searchTimer)
