@@ -168,16 +168,23 @@
                                                     {% for item in record.used_by[:4] %}
                                                         {% set hosts = item.hosts if item.hosts is defined else item.get('hosts', []) %}
                                                         <div class="border-t border-dashed border-amber-400/80 pt-2 first:border-t-0 first:pt-0 dark:border-amber-500/35">
-                                                            <p class="break-words font-medium">{{ item.name or item.get('name', 'Unknown ingress') }}</p>
-                                                            <p class="text-amber-700/75 dark:text-amber-200/70">{{ item.namespace or item.get('namespace', record.namespace) }}</p>
+                                                            <div class="grid grid-cols-[5rem_minmax(0,1fr)] items-start gap-x-2 gap-y-1">
+                                                                <span class="text-[10px] font-medium text-amber-600 dark:text-amber-300">Ingress</span>
+                                                                <span class="break-words font-medium">{{ item.name or item.get('name', 'Unknown ingress') }}</span>
+                                                                <span class="text-[10px] font-medium text-amber-600 dark:text-amber-300">Namespace</span>
+                                                                <span class="break-words text-amber-700/75 dark:text-amber-200/70">{{ item.namespace or item.get('namespace', record.namespace) }}</span>
+                                                            </div>
                                                             {% if hosts %}
-                                                                <div class="mt-1 flex flex-col gap-0.5">
+                                                                <div class="mt-1.5">
+                                                                    <p class="text-[10px] font-medium text-amber-600 dark:text-amber-300">Mapped hosts</p>
+                                                                    <div class="mt-0.5 flex flex-col gap-0.5">
                                                                     {% for host in hosts %}
                                                                         <a href="https://{{ host }}" target="_blank" rel="noopener noreferrer" class="inline-flex max-w-full items-start gap-1.5 break-all font-normal text-amber-800 transition hover:text-amber-950 dark:text-amber-100 dark:hover:text-white">
                                                                             <span>{{ host }}</span>
                                                                             <i data-lucide="external-link" class="mt-0.5 h-3 w-3 shrink-0"></i>
                                                                         </a>
                                                                     {% endfor %}
+                                                                    </div>
                                                                 </div>
                                                             {% endif %}
                                                         </div>
