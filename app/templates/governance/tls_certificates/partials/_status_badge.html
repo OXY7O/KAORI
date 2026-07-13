@@ -1,14 +1,21 @@
 {% set status = status or 'unknown' %}
 {% if status == 'healthy' %}
-    {% set badge_class = 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' %}
+    {% set badge_class = 'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/25' %}
+    {% set status_label = 'Healthy' %}
 {% elif status == 'warning' %}
-    {% set badge_class = 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300' %}
-{% elif status in ['critical', 'expired', 'invalid'] %}
-    {% set badge_class = 'bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300' %}
+    {% set badge_class = 'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/25' %}
+    {% set status_label = 'Expiring soon' %}
+{% elif status in ['critical', 'expired'] %}
+    {% set badge_class = 'bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/25' %}
+    {% set status_label = 'Expired' %}
+{% elif status == 'invalid' %}
+    {% set badge_class = 'bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/25' %}
+    {% set status_label = 'Invalid' %}
 {% else %}
-    {% set badge_class = 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300' %}
+    {% set badge_class = 'bg-slate-100 text-slate-600 ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700' %}
+    {% set status_label = status.replace('_', ' ')|title %}
 {% endif %}
-<span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide {{ badge_class }}">
+<span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset {{ badge_class }}">
     <span class="h-1.5 w-1.5 rounded-full bg-current"></span>
-    {{ status.replace('_', ' ')|title }}
+    {{ status_label }}
 </span>

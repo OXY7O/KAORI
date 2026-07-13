@@ -21,8 +21,9 @@
         <table class="min-w-full text-slate-900 dark:text-slate-100">
             <thead>
                 <tr class="border-b border-slate-200 bg-slate-50 text-center text-xs tracking-wide text-slate-600 uppercase dark:border-slate-700 dark:bg-slate-700/40 dark:text-slate-300">
+                    <th class="px-4 py-2 text-left">Cluster</th>
+                    <th class="px-4 py-2 text-left">Namespace</th>
                     <th class="px-4 py-2 text-left">Secret</th>
-                    <th class="px-4 py-2 text-left">Domains</th>
                     <th class="px-4 py-2 text-left">Expiry</th>
                     <th class="px-4 py-2 text-left">Status</th>
                     <th class="px-4 py-2 text-center">Details</th>
@@ -32,38 +33,35 @@
                 {% for record in payload.records %}
                     <tr id="tls-secret-row-{{ record.id }}" class="border-t border-slate-200 text-sm transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-700/30">
                         <td class="px-4 py-2 text-left align-middle">
-                            <div class="flex max-w-[300px] items-start gap-2 text-left">
-                                <span class="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+                            <span class="inline-flex max-w-[190px] items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/25" title="{{ record.cluster.name if record.cluster else record.cluster_id }}">
+                                <i data-lucide="building-2" class="h-3.5 w-3.5 shrink-0"></i>
+                                <span class="truncate">{{ record.cluster.name if record.cluster else record.cluster_id }}</span>
+                            </span>
+                        </td>
+                        <td class="px-4 py-2 text-left align-middle">
+                            <span class="inline-flex max-w-[170px] items-center gap-1.5 rounded-full bg-violet-50 px-2.5 py-1 text-xs font-medium text-violet-700 ring-1 ring-inset ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-500/25" title="{{ record.namespace }}">
+                                <i data-lucide="boxes" class="h-3.5 w-3.5 shrink-0"></i>
+                                <span class="truncate">{{ record.namespace }}</span>
+                            </span>
+                        </td>
+                        <td class="w-[32%] px-4 py-2 text-left align-middle">
+                            <div class="flex min-w-0 items-start gap-2">
+                                <span class="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-cyan-50 text-cyan-600 dark:bg-cyan-500/10 dark:text-cyan-300">
                                     <i data-lucide="key-round" class="h-3.5 w-3.5"></i>
                                 </span>
-                                <div class="min-w-0 text-left">
-                                    <div class="truncate font-semibold text-slate-800 dark:text-slate-100" title="{{ record.secret_name }}">{{ record.secret_name }}</div>
-                                    <div class="mt-1 flex flex-wrap justify-start gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-                                        <span class="inline-flex max-w-[190px] items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/25" title="{{ record.cluster.name if record.cluster else record.cluster_id }}"><i data-lucide="building-2" class="h-3.5 w-3.5 shrink-0"></i><span class="truncate">{{ record.cluster.name if record.cluster else record.cluster_id }}</span></span>
-                                        <span class="inline-flex max-w-[170px] items-center gap-1.5 rounded-full bg-violet-50 px-3 py-1 text-xs font-medium text-violet-700 ring-1 ring-inset ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-500/25" title="{{ record.namespace }}"><i data-lucide="boxes" class="h-3.5 w-3.5 shrink-0"></i><span class="truncate">{{ record.namespace }}</span></span>
-                                    </div>
+                                <div class="min-w-0">
+                                    <p class="break-all text-sm font-medium text-slate-800 dark:text-slate-100" title="{{ record.secret_name }}">{{ record.secret_name }}</p>
+                                    <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">kubernetes.io/tls</p>
                                 </div>
-                            </div>
-                        </td>
-                        <td class="w-[38%] px-4 py-2 text-left align-middle">
-                            <div class="flex flex-wrap justify-start gap-1.5 text-left">
-                                {% for domain in (record.dns_names or [])[:3] %}
-                                    <span class="inline-flex max-w-full break-all rounded-full bg-cyan-50 px-3 py-1 text-left text-xs font-medium leading-4 ring-1 ring-inset ring-cyan-200 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-500/25" title="{{ domain }}">{{ domain }}</span>
-                                {% else %}
-                                    <span class="text-xs font-semibold text-slate-400 dark:text-slate-500">No SAN</span>
-                                {% endfor %}
-                                {% if (record.dns_names or [])|length > 3 %}
-                                    <span class="inline-flex rounded-full bg-slate-100 px-3 py-1 text-left text-xs font-medium text-slate-600 ring-1 ring-inset ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700">+{{ (record.dns_names or [])|length - 3 }}</span>
-                                {% endif %}
                             </div>
                         </td>
                         <td class="px-4 py-2 text-left align-middle">
                             {% if record.not_after %}
-                                <div class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ record.days_remaining }} days</div>
-                                <div class="mt-1 text-left text-xs text-slate-500 dark:text-slate-400">{{ record.not_after|user_date('%Y-%m-%d') }}</div>
+                                <div class="text-sm font-medium text-slate-800 dark:text-slate-100">{{ record.days_remaining }} days</div>
+                                <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ record.not_after|user_date('%Y-%m-%d') }}</div>
                             {% else %}
-                                <div class="font-semibold text-rose-600 dark:text-rose-300">Invalid</div>
-                                <div class="mt-1 max-w-[220px] truncate text-left text-xs text-slate-500 dark:text-slate-400" title="{{ record.parse_error or 'Unable to parse certificate' }}">{{ record.parse_error or 'Unable to parse certificate' }}</div>
+                                <div class="font-medium text-rose-600 dark:text-rose-300">Invalid</div>
+                                <div class="mt-1 max-w-[220px] truncate text-xs text-slate-500 dark:text-slate-400" title="{{ record.parse_error or 'Unable to parse certificate' }}">{{ record.parse_error or 'Unable to parse certificate' }}</div>
                             {% endif %}
                         </td>
                         <td class="px-4 py-2 text-left align-middle">
@@ -81,7 +79,7 @@
                         </td>
                     </tr>
                     <tr id="tls-secret-detail-row-{{ record.id }}" class="hidden border-0">
-                        <td colspan="5" class="p-0 leading-none align-top">
+                        <td colspan="6" class="p-0 leading-none align-top">
                             <div id="tls-secret-detail-content-{{ record.id }}" data-open="false"
                                  class="border-t border-slate-200 bg-slate-50/70 px-6 py-5 text-left dark:border-slate-700 dark:bg-slate-900/40">
                                 <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -108,9 +106,15 @@
                                         record.common_name or 'Certificate',
                                         'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300'
                                     ) %}
-                                        {{ detail_row('Issuer', record.issuer or 'Unknown issuer', tone='blue') }}
                                         {{ detail_row('Common Name', record.common_name or '-', tone='blue') }}
                                         {{ detail_row('Serial', record.serial_number or '-', mono=True, tone='blue') }}
+                                        <div class="rounded-xl bg-blue-50 px-3 py-2.5 text-xs leading-5 text-blue-800 dark:bg-blue-500/10 dark:text-blue-200">
+                                            <div class="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-300">
+                                                <i data-lucide="stamp" class="h-3.5 w-3.5"></i>
+                                                Issuer
+                                            </div>
+                                            <p class="mt-1.5 break-words font-normal">{{ record.issuer or 'Unknown issuer' }}</p>
+                                        </div>
                                         <div class="mt-auto pt-2">
                                             {{ detail_tip('Issuer and Common Name identify who signed the certificate and the primary identity represented by it.', 'blue', 'badge-check') }}
                                         </div>
@@ -126,7 +130,13 @@
                                         {{ detail_row('Valid From', record.not_before|user_date('%Y-%m-%d'), tone='emerald') }}
                                         {{ detail_row('Expires At', record.not_after|user_date('%Y-%m-%d'), tone='emerald') }}
                                         {{ detail_row('Remaining', (record.days_remaining ~ ' days') if record.days_remaining is not none else '-', tone='emerald') }}
-                                        {{ detail_row('SHA-256', record.fingerprint_sha256 or '-', mono=True, tone='emerald') }}
+                                        <div class="rounded-xl bg-emerald-50 px-3 py-2.5 text-xs leading-5 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-200">
+                                            <div class="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">
+                                                <i data-lucide="fingerprint" class="h-3.5 w-3.5"></i>
+                                                SHA-256 fingerprint
+                                            </div>
+                                            <p class="mt-1.5 break-all font-mono font-normal">{{ record.fingerprint_sha256 or '-' }}</p>
+                                        </div>
                                         <div class="mt-auto pt-2">
                                             {{ detail_tip('Review certificates approaching expiry before rotating the Kubernetes TLS Secret used by workloads or Ingress resources.', 'emerald', 'calendar-clock') }}
                                         </div>
@@ -139,26 +149,37 @@
                                         ((record.ingress_hosts or [])|length) ~ ' hosts',
                                         'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'
                                     ) %}
-                                        {% if record.used_by %}
-                                            {% for item in record.used_by[:4] %}
-                                                <div class="rounded-xl bg-slate-50 px-3 py-2.5 text-xs dark:bg-slate-900/70">
-                                                    <p class="font-medium text-slate-800 dark:text-slate-100">{{ item.name or item.get('name', 'Unknown ingress') }}</p>
-                                                    <p class="mt-1 text-slate-500 dark:text-slate-400">{{ item.namespace or item.get('namespace', record.namespace) }}</p>
-                                                    {% set hosts = item.hosts if item.hosts is defined else item.get('hosts', []) %}
-                                                    {% if hosts %}
-                                                        <div class="mt-1.5 flex flex-col gap-1">
-                                                            {% for host in hosts %}
-                                                                <a href="https://{{ host }}" target="_blank" rel="noopener noreferrer" class="break-all text-blue-600 underline decoration-blue-300 underline-offset-2 hover:text-blue-700 dark:text-blue-300">{{ host }}</a>
-                                                            {% endfor %}
-                                                        </div>
-                                                    {% endif %}
+                                        <div class="rounded-xl bg-amber-50 px-3 py-2.5 text-xs leading-5 text-amber-800 dark:bg-amber-500/10 dark:text-amber-200">
+                                            <div class="flex items-center justify-between gap-2">
+                                                <div class="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
+                                                    <i data-lucide="route" class="h-3.5 w-3.5"></i>
+                                                    Ingress references
                                                 </div>
-                                            {% endfor %}
-                                        {% else %}
-                                            <div class="rounded-xl bg-slate-50 px-3 py-2.5 text-xs text-slate-500 dark:bg-slate-900/70 dark:text-slate-400">No Ingress mapping found.</div>
-                                        {% endif %}
+                                                <span class="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-500/15 dark:text-amber-200">{{ (record.used_by or [])|length }}</span>
+                                            </div>
+                                            {% if record.used_by %}
+                                                <div class="mt-2 space-y-2">
+                                                    {% for item in record.used_by[:4] %}
+                                                        {% set hosts = item.hosts if item.hosts is defined else item.get('hosts', []) %}
+                                                        <div class="border-t border-amber-200/70 pt-2 first:border-t-0 first:pt-0 dark:border-amber-400/15">
+                                                            <p class="break-words font-medium">{{ item.name or item.get('name', 'Unknown ingress') }}</p>
+                                                            <p class="text-amber-700/75 dark:text-amber-200/70">{{ item.namespace or item.get('namespace', record.namespace) }}</p>
+                                                            {% if hosts %}
+                                                                <div class="mt-1 flex flex-col gap-0.5">
+                                                                    {% for host in hosts %}
+                                                                        <span class="break-all font-normal">{{ host }}</span>
+                                                                    {% endfor %}
+                                                                </div>
+                                                            {% endif %}
+                                                        </div>
+                                                    {% endfor %}
+                                                </div>
+                                            {% else %}
+                                                <p class="mt-1.5 text-amber-700/75 dark:text-amber-200/70">No Ingress mapping found.</p>
+                                            {% endif %}
+                                        </div>
                                         <div class="mt-auto pt-2">
-                                            {{ detail_tip('Mapped hosts show which Ingress routes currently reference this TLS Secret. Select a host to open it in a new tab.', 'amber', 'route') }}
+                                            {{ detail_tip('Ingress usage identifies routes that currently reference this TLS Secret. Host values are inventory context and are not treated as navigation links.', 'amber', 'route') }}
                                         </div>
                                     {% endcall %}
 
@@ -172,14 +193,24 @@
                                         {{ detail_row('Type', record.secret_type or 'kubernetes.io/tls', tone='violet') }}
                                         {{ detail_row('SAN Count', (record.dns_names or [])|length, tone='violet') }}
                                         {{ detail_row('Ingress Hosts', (record.ingress_hosts or [])|length, tone='violet') }}
-                                        {% if record.dns_names %}
-                                            <div class="flex flex-col gap-1.5 rounded-xl bg-slate-50 px-3 py-2.5 text-xs dark:bg-slate-900/70">
-                                                <span class="text-slate-500 dark:text-slate-400">Certificate SANs</span>
-                                                {% for domain in record.dns_names %}
-                                                    <a href="https://{{ domain }}" target="_blank" rel="noopener noreferrer" class="break-all text-blue-600 underline decoration-blue-300 underline-offset-2 hover:text-blue-700 dark:text-blue-300">{{ domain }}</a>
-                                                {% endfor %}
+                                        <div class="rounded-xl bg-violet-50 px-3 py-2.5 text-xs leading-5 text-violet-800 dark:bg-violet-500/10 dark:text-violet-200">
+                                            <div class="flex items-center justify-between gap-2">
+                                                <div class="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wide text-violet-600 dark:text-violet-300">
+                                                    <i data-lucide="globe-2" class="h-3.5 w-3.5"></i>
+                                                    Certificate SANs
+                                                </div>
+                                                <span class="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-medium text-violet-700 dark:bg-violet-500/15 dark:text-violet-200">{{ (record.dns_names or [])|length }}</span>
                                             </div>
-                                        {% endif %}
+                                            {% if record.dns_names %}
+                                                <div class="mt-1.5 flex flex-col gap-0.5">
+                                                    {% for domain in record.dns_names %}
+                                                        <span class="break-all font-normal">{{ domain }}</span>
+                                                    {% endfor %}
+                                                </div>
+                                            {% else %}
+                                                <p class="mt-1.5 text-violet-700/75 dark:text-violet-200/70">No Subject Alternative Name is recorded.</p>
+                                            {% endif %}
+                                        </div>
                                         {% if record.parse_error %}
                                             <div class="rounded-xl bg-rose-50 px-3 py-2.5 text-xs text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">{{ record.parse_error }}</div>
                                         {% endif %}
@@ -193,7 +224,7 @@
                     </tr>
                 {% else %}
                     <tr>
-                        <td colspan="5" class="px-6 py-16 text-center">
+                        <td colspan="6" class="px-6 py-16 text-center">
                             <div class="flex flex-col items-center gap-3 text-slate-500 dark:text-slate-400">
                                 <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-700"><i data-lucide="shield-check" class="h-6 w-6"></i></div>
                                 <div>
