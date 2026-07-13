@@ -1,17 +1,5 @@
 <div id="tls-certificates-page-content" class="space-y-6">
     {% include "governance/tls_certificates/partials/_hero.html" %}
-    {% if sync_feedback %}
-        <div class="rounded-2xl border px-4 py-3 text-sm shadow-sm {{ 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-200' if sync_feedback.status == 'warning' else 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-200' }}">
-            <div class="flex items-start gap-3">
-                <i data-lucide="{{ 'triangle-alert' if sync_feedback.status == 'warning' else 'circle-check' }}" class="mt-0.5 h-4 w-4 shrink-0"></i>
-                <div class="min-w-0">
-                    <p class="font-semibold">{{ sync_feedback.title }}</p>
-                    <p class="mt-1 text-xs leading-5 opacity-90">{{ sync_feedback.message }}</p>
-                    {% if sync_feedback.detail %}<p class="mt-1 text-xs leading-5 opacity-75">{{ sync_feedback.detail }}</p>{% endif %}
-                </div>
-            </div>
-        </div>
-    {% endif %}
     {% if cluster_onboarding.is_blocked %}
         {% include "components/cluster/_onboarding_banner.html" %}
     {% else %}
@@ -19,3 +7,40 @@
         {% include "governance/tls_certificates/partials/_content.html" %}
     {% endif %}
 </div>
+
+{% if sync_feedback %}
+    {% with
+        status=sync_feedback.status,
+        title=sync_feedback.title,
+        message=sync_feedback.message,
+        detail=sync_feedback.detail,
+        view_url=sync_feedback.view_url,
+        action_label=sync_feedback.action_label,
+        action_icon=sync_feedback.action_icon,
+        notification_saved=sync_feedback.notification_saved,
+        notification_context=sync_feedback.notification_context,
+        toast_oob=true
+    %}
+        {% include "components/navigation/_quick_sync_result.html" %}
+    {% endwith %}
+{% endif %}
+
+<script>
+    window.showTlsSecretSyncProgress = function () {
+        const target = document.getElementById('operational-action-feedback');
+        if (!target) return;
+        target.innerHTML = `
+            <div data-quick-action-toast role="status" aria-live="polite" class="quick-action-toast pointer-events-auto relative isolate w-full overflow-hidden rounded-2xl border border-blue-200 bg-white shadow-2xl shadow-slate-900/15 dark:border-blue-500/30 dark:bg-slate-900 dark:shadow-slate-950/50">
+                <div class="h-1 bg-blue-500"></div>
+                <div class="flex items-start gap-3 p-4">
+                    <span class="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+                        <svg class="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="9" stroke="currentColor" stroke-width="3"></circle><path class="opacity-90" fill="currentColor" d="M21 12a9 9 0 0 0-9-9v3a6 6 0 0 1 6 6h3Z"></path></svg>
+                    </span>
+                    <div class="min-w-0 flex-1">
+                        <p class="text-sm font-bold text-slate-950 dark:text-white">TLS Secret sync in progress</p>
+                        <p class="mt-1 text-xs font-semibold leading-5 text-slate-600 dark:text-slate-300">Collecting Kubernetes TLS Secrets and certificate metadata. Keep this page open until the operation completes.</p>
+                    </div>
+                </div>
+            </div>`;
+    };
+</script>

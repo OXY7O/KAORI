@@ -12,7 +12,10 @@ from app.governance.tls_certificates.service import (
     preview_uploaded_pair,
     sync_tls_certificates,
 )
-from app.notifications.service import record_operational_activity
+from app.notifications.service import (
+    get_navigation_notification_context,
+    record_operational_activity,
+)
 from app.rbac.decorators import permission_required
 
 
@@ -77,7 +80,7 @@ def tls_certificates_sync():
 
     selected_cluster_name = result['results'][0]['cluster'] if cluster_id and result['results'] else None
 
-    record_operational_activity(
+    feedback = record_operational_activity(
         user_id=current_user.id,
         event_type='governance_tls_secret_sync',
         status=status,
@@ -98,14 +101,19 @@ def tls_certificates_sync():
 
     if request.headers.get('HX-Request'):
         payload = get_tls_certificate_page({'cluster_id': cluster_id or ''})
+        notification_context = get_navigation_notification_context(
+            user_id=current_user.id,
+        )
         return render_template(
             'governance/tls_certificates/partials/_page_content.html',
             payload=payload,
             sync_feedback={
+                **feedback,
                 'status': status,
                 'title': title,
                 'message': message,
                 'detail': detail,
+                'notification_context': notification_context,
             },
         )
 
