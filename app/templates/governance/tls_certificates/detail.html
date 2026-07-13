@@ -124,9 +124,9 @@
             </div>
         </section>
 
-        <section class="grid gap-6 xl:grid-cols-[1.2fr_0.8fr] xl:items-stretch">
-            <div class="space-y-6 xl:contents">
-                <div class="overflow-hidden rounded-3xl border border-blue-200 bg-white shadow-sm xl:col-start-1 xl:row-start-1 xl:h-full dark:border-blue-900/40 dark:bg-slate-800">
+        <section class="space-y-6">
+            <div class="grid gap-6 xl:grid-cols-[1.2fr_0.8fr] xl:items-stretch">
+                <div class="overflow-hidden rounded-3xl border border-blue-200 bg-white shadow-sm h-full dark:border-blue-900/40 dark:bg-slate-800">
                     <div class="flex flex-col gap-3 border-b border-blue-100 bg-gradient-to-r from-blue-50 via-white to-indigo-50 px-5 py-4 dark:border-blue-900/40 dark:from-blue-950/25 dark:via-slate-800 dark:to-indigo-950/20 sm:flex-row sm:items-center sm:justify-between">
                         <div class="flex items-center gap-3">
                             <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-sm shadow-blue-600/20">
@@ -179,121 +179,7 @@
                         {% endif %}
                     </div>
                 </div>
-
-                <div class="overflow-hidden rounded-3xl border border-violet-200 bg-white shadow-sm xl:col-start-1 xl:row-start-2 xl:self-start dark:border-violet-900/40 dark:bg-slate-800">
-                    <div class="flex flex-col gap-3 border-b border-violet-100 bg-gradient-to-r from-violet-50 via-white to-fuchsia-50 px-5 py-4 dark:border-violet-900/40 dark:from-violet-950/20 dark:via-slate-800 dark:to-fuchsia-950/15 sm:flex-row sm:items-center sm:justify-between">
-                        <div class="flex items-center gap-3">
-                            <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-600 text-white shadow-sm shadow-violet-600/20">
-                                <i data-lucide="globe-2" class="h-5 w-5"></i>
-                            </span>
-                            <div>
-                                <h2 class="text-base font-semibold text-slate-950 dark:text-white">Subject Alternative Names</h2>
-                                <p class="text-sm text-slate-500 dark:text-slate-400">DNS identities covered by this certificate.</p>
-                            </div>
-                        </div>
-                        <span class="inline-flex w-fit items-center rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-700 ring-1 ring-inset ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-400/20">
-                            {{ (record.dns_names or [])|length }} SANs
-                        </span>
-                    </div>
-                    <div class="space-y-4 p-5">
-                        {% if record.dns_names %}
-                            <div class="grid gap-2 sm:grid-cols-2">
-                                {% for domain in record.dns_names %}
-                                    <div class="flex min-w-0 items-center gap-2.5 rounded-2xl border border-violet-100 bg-violet-50/70 px-3.5 py-3 dark:border-violet-900/30 dark:bg-violet-950/15">
-                                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300">
-                                            <i data-lucide="shield-check" class="h-4 w-4"></i>
-                                        </span>
-                                        <span class="min-w-0 break-all text-xs font-medium text-slate-800 dark:text-slate-100">{{ domain }}</span>
-                                    </div>
-                                {% endfor %}
-                            </div>
-                        {% else %}
-                            <div class="flex items-start gap-3 rounded-2xl border border-dashed border-violet-200 bg-violet-50/70 p-4 text-sm text-violet-800 dark:border-violet-900/40 dark:bg-violet-950/15 dark:text-violet-200">
-                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300">
-                                    <i data-lucide="shield-off" class="h-4 w-4"></i>
-                                </span>
-                                <div>
-                                    <p class="font-medium">No SAN DNS names found</p>
-                                    <p class="mt-1 text-xs leading-5 text-violet-700/80 dark:text-violet-300/80">The certificate does not contain a recorded DNS Subject Alternative Name.</p>
-                                </div>
-                            </div>
-                        {% endif %}
-                        <div class="flex items-start gap-2.5 rounded-2xl bg-violet-50 px-4 py-3 text-xs leading-5 text-violet-800 dark:bg-violet-500/10 dark:text-violet-200">
-                            <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300">
-                                <i data-lucide="info" class="h-4 w-4"></i>
-                            </span>
-                            <p>SANs define the DNS names covered by this certificate and should include every hostname served by the mapped Ingress resources.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="overflow-hidden rounded-3xl border border-amber-200 bg-white shadow-sm xl:col-start-1 xl:row-start-3 xl:self-start dark:border-amber-900/40 dark:bg-slate-800">
-                    <div class="flex flex-col gap-3 border-b border-amber-100 bg-gradient-to-r from-amber-50 via-white to-orange-50 px-5 py-4 dark:border-amber-900/40 dark:from-amber-950/20 dark:via-slate-800 dark:to-orange-950/15 sm:flex-row sm:items-center sm:justify-between">
-                        <div class="flex items-center gap-3">
-                            <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-sm shadow-amber-500/20">
-                                <i data-lucide="route" class="h-5 w-5"></i>
-                            </span>
-                            <div>
-                                <h2 class="text-base font-semibold text-slate-950 dark:text-white">Ingress Usage</h2>
-                                <p class="text-sm text-slate-500 dark:text-slate-400">Ingress resources and mapped hosts currently referencing this TLS Secret.</p>
-                            </div>
-                        </div>
-                        <span class="inline-flex w-fit items-center rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/20">
-                            {{ (record.used_by or [])|length }} references
-                        </span>
-                    </div>
-                    <div class="grid gap-3 p-5 lg:grid-cols-2">
-                        {% for consumer in record.used_by or [] %}
-                            <article class="flex h-full flex-col overflow-hidden rounded-2xl border border-amber-100 bg-amber-50/60 dark:border-amber-900/30 dark:bg-amber-950/15">
-                                <div class="border-b border-dashed border-amber-200 px-4 py-3 dark:border-amber-900/40">
-                                    <div class="flex items-center gap-3">
-                                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white text-amber-600 shadow-sm dark:bg-slate-800 dark:text-amber-300">
-                                            <i data-lucide="network" class="h-4 w-4"></i>
-                                        </span>
-                                        <div class="min-w-0 flex-1 space-y-2">
-                                            <div class="grid grid-cols-[5.5rem_minmax(0,1fr)] items-start gap-3">
-                                                <span class="text-xs font-medium text-amber-700 dark:text-amber-300">Ingress</span>
-                                                <span class="min-w-0 break-words text-sm font-semibold text-slate-900 dark:text-white">{{ consumer.name }}</span>
-                                            </div>
-                                            <div class="grid grid-cols-[5.5rem_minmax(0,1fr)] items-start gap-3">
-                                                <span class="text-xs font-medium text-amber-700 dark:text-amber-300">Namespace</span>
-                                                <span class="min-w-0 break-words text-sm font-medium text-slate-700 dark:text-slate-200">{{ consumer.namespace }}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="flex-1 px-4 py-3">
-                                    <p class="text-xs font-medium text-amber-700 dark:text-amber-300">Mapped hosts</p>
-                                    <div class="mt-2 flex flex-wrap gap-2">
-                                        {% for host in consumer.hosts or [] %}
-                                            <a href="https://{{ host }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-200 transition hover:bg-amber-100 dark:bg-slate-800 dark:text-amber-300 dark:ring-amber-900/50 dark:hover:bg-amber-500/10">
-                                                <span>{{ host }}</span>
-                                                <i data-lucide="external-link" class="h-3 w-3"></i>
-                                            </a>
-                                        {% else %}
-                                            <span class="text-xs text-slate-500 dark:text-slate-400">No hosts mapped.</span>
-                                        {% endfor %}
-                                    </div>
-                                </div>
-                            </article>
-                        {% else %}
-                            <div class="flex items-start gap-3 rounded-2xl border border-dashed border-amber-200 bg-amber-50/70 p-4 text-sm text-amber-800 lg:col-span-2 dark:border-amber-900/40 dark:bg-amber-950/15 dark:text-amber-200">
-                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300">
-                                    <i data-lucide="route-off" class="h-4 w-4"></i>
-                                </span>
-                                <div>
-                                    <p class="font-medium">No Ingress mapping found</p>
-                                    <p class="mt-1 text-xs leading-5 text-amber-700/80 dark:text-amber-300/80">This TLS Secret is not currently referenced by an inventoried Ingress resource.</p>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    </div>
-                </div>
-
-            </div>
-
-            <div class="space-y-6 xl:contents">
-                <div class="overflow-hidden rounded-3xl border border-emerald-200 bg-white shadow-sm xl:col-start-2 xl:row-start-1 xl:h-full dark:border-emerald-900/40 dark:bg-slate-800">
+                <div class="overflow-hidden rounded-3xl border border-emerald-200 bg-white shadow-sm h-full dark:border-emerald-900/40 dark:bg-slate-800">
                     <div class="border-b border-emerald-100 bg-gradient-to-r from-emerald-50 via-white to-teal-50 px-5 py-4 dark:border-emerald-900/40 dark:from-emerald-950/20 dark:via-slate-800 dark:to-teal-950/15">
                         <div class="flex items-center gap-3">
                             <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-sm shadow-emerald-600/20">
@@ -340,8 +226,122 @@
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <div id="update-secret" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm xl:col-start-2 xl:row-start-2 xl:self-start dark:border-slate-700 dark:bg-slate-800">
+            <div class="grid gap-6 xl:grid-cols-[1.2fr_0.8fr] xl:items-start">
+                <div class="space-y-6">
+                    <div class="overflow-hidden rounded-3xl border border-violet-200 bg-white shadow-sm dark:border-violet-900/40 dark:bg-slate-800">
+                        <div class="flex flex-col gap-3 border-b border-violet-100 bg-gradient-to-r from-violet-50 via-white to-fuchsia-50 px-5 py-4 dark:border-violet-900/40 dark:from-violet-950/20 dark:via-slate-800 dark:to-fuchsia-950/15 sm:flex-row sm:items-center sm:justify-between">
+                            <div class="flex items-center gap-3">
+                                <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-600 text-white shadow-sm shadow-violet-600/20">
+                                    <i data-lucide="globe-2" class="h-5 w-5"></i>
+                                </span>
+                                <div>
+                                    <h2 class="text-base font-semibold text-slate-950 dark:text-white">Subject Alternative Names</h2>
+                                    <p class="text-sm text-slate-500 dark:text-slate-400">DNS identities covered by this certificate.</p>
+                                </div>
+                            </div>
+                            <span class="inline-flex w-fit items-center rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-700 ring-1 ring-inset ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-400/20">
+                                {{ (record.dns_names or [])|length }} SANs
+                            </span>
+                        </div>
+                        <div class="space-y-4 p-5">
+                            {% if record.dns_names %}
+                                <div class="grid gap-2 sm:grid-cols-2">
+                                    {% for domain in record.dns_names %}
+                                        <div class="flex min-w-0 items-center gap-2.5 rounded-2xl border border-violet-100 bg-violet-50/70 px-3.5 py-3 dark:border-violet-900/30 dark:bg-violet-950/15">
+                                            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300">
+                                                <i data-lucide="shield-check" class="h-4 w-4"></i>
+                                            </span>
+                                            <span class="min-w-0 break-all text-xs font-medium text-slate-800 dark:text-slate-100">{{ domain }}</span>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="flex items-start gap-3 rounded-2xl border border-dashed border-violet-200 bg-violet-50/70 p-4 text-sm text-violet-800 dark:border-violet-900/40 dark:bg-violet-950/15 dark:text-violet-200">
+                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300">
+                                        <i data-lucide="shield-off" class="h-4 w-4"></i>
+                                    </span>
+                                    <div>
+                                        <p class="font-medium">No SAN DNS names found</p>
+                                        <p class="mt-1 text-xs leading-5 text-violet-700/80 dark:text-violet-300/80">The certificate does not contain a recorded DNS Subject Alternative Name.</p>
+                                    </div>
+                                </div>
+                            {% endif %}
+                            <div class="flex items-start gap-2.5 rounded-2xl bg-violet-50 px-4 py-3 text-xs leading-5 text-violet-800 dark:bg-violet-500/10 dark:text-violet-200">
+                                <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300">
+                                    <i data-lucide="info" class="h-4 w-4"></i>
+                                </span>
+                                <p>SANs define the DNS names covered by this certificate and should include every hostname served by the mapped Ingress resources.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="overflow-hidden rounded-3xl border border-amber-200 bg-white shadow-sm dark:border-amber-900/40 dark:bg-slate-800">
+                        <div class="flex flex-col gap-3 border-b border-amber-100 bg-gradient-to-r from-amber-50 via-white to-orange-50 px-5 py-4 dark:border-amber-900/40 dark:from-amber-950/20 dark:via-slate-800 dark:to-orange-950/15 sm:flex-row sm:items-center sm:justify-between">
+                            <div class="flex items-center gap-3">
+                                <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-sm shadow-amber-500/20">
+                                    <i data-lucide="route" class="h-5 w-5"></i>
+                                </span>
+                                <div>
+                                    <h2 class="text-base font-semibold text-slate-950 dark:text-white">Ingress Usage</h2>
+                                    <p class="text-sm text-slate-500 dark:text-slate-400">Ingress resources and mapped hosts currently referencing this TLS Secret.</p>
+                                </div>
+                            </div>
+                            <span class="inline-flex w-fit items-center rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/20">
+                                {{ (record.used_by or [])|length }} references
+                            </span>
+                        </div>
+                        <div class="grid gap-3 p-5 lg:grid-cols-2">
+                            {% for consumer in record.used_by or [] %}
+                                <article class="flex h-full flex-col overflow-hidden rounded-2xl border border-amber-100 bg-amber-50/60 dark:border-amber-900/30 dark:bg-amber-950/15">
+                                    <div class="border-b border-dashed border-amber-200 px-4 py-3 dark:border-amber-900/40">
+                                        <div class="flex items-center gap-3">
+                                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white text-amber-600 shadow-sm dark:bg-slate-800 dark:text-amber-300">
+                                                <i data-lucide="network" class="h-4 w-4"></i>
+                                            </span>
+                                            <div class="min-w-0 flex-1 space-y-2">
+                                                <div class="grid grid-cols-[5.5rem_minmax(0,1fr)] items-start gap-3">
+                                                    <span class="text-xs font-medium text-amber-700 dark:text-amber-300">Ingress</span>
+                                                    <span class="min-w-0 break-words text-sm font-semibold text-slate-900 dark:text-white">{{ consumer.name }}</span>
+                                                </div>
+                                                <div class="grid grid-cols-[5.5rem_minmax(0,1fr)] items-start gap-3">
+                                                    <span class="text-xs font-medium text-amber-700 dark:text-amber-300">Namespace</span>
+                                                    <span class="min-w-0 break-words text-sm font-medium text-slate-700 dark:text-slate-200">{{ consumer.namespace }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="flex-1 px-4 py-3">
+                                        <p class="text-xs font-medium text-amber-700 dark:text-amber-300">Mapped hosts</p>
+                                        <div class="mt-2 flex flex-wrap gap-2">
+                                            {% for host in consumer.hosts or [] %}
+                                                <a href="https://{{ host }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-200 transition hover:bg-amber-100 dark:bg-slate-800 dark:text-amber-300 dark:ring-amber-900/50 dark:hover:bg-amber-500/10">
+                                                    <span>{{ host }}</span>
+                                                    <i data-lucide="external-link" class="h-3 w-3"></i>
+                                                </a>
+                                            {% else %}
+                                                <span class="text-xs text-slate-500 dark:text-slate-400">No hosts mapped.</span>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </article>
+                            {% else %}
+                                <div class="flex items-start gap-3 rounded-2xl border border-dashed border-amber-200 bg-amber-50/70 p-4 text-sm text-amber-800 lg:col-span-2 dark:border-amber-900/40 dark:bg-amber-950/15 dark:text-amber-200">
+                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300">
+                                        <i data-lucide="route-off" class="h-4 w-4"></i>
+                                    </span>
+                                    <div>
+                                        <p class="font-medium">No Ingress mapping found</p>
+                                        <p class="mt-1 text-xs leading-5 text-amber-700/80 dark:text-amber-300/80">This TLS Secret is not currently referenced by an inventoried Ingress resource.</p>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <div id="update-secret" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
                     <div class="flex items-center gap-3">
                         <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300"><i data-lucide="upload-cloud" class="h-5 w-5"></i></div>
                         <div>
