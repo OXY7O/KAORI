@@ -6,13 +6,13 @@
       hx-swap="outerHTML"
       hx-indicator="#tls-certificates-table-loading"
       hx-trigger="change from:select, keyup changed delay:450ms from:input[name='search']"
-      class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.9fr)_minmax(16rem,1.35fr)] lg:items-end">
+      class="grid grid-cols-1 gap-3 md:grid-cols-4 md:items-end">
     <input type="hidden" name="page" value="1">
     <input type="hidden" name="per_page" value="{{ payload.pagination.per_page }}">
     <input type="hidden" name="partial_mode" value="table">
 
     <div>
-        <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Cluster</label>
+        <label class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Cluster</label>
         <select name="cluster_id" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-slate-100">
             <option value="">All Clusters</option>
             {% for cluster in payload.clusters %}
@@ -22,7 +22,7 @@
     </div>
 
     <div>
-        <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Namespace</label>
+        <label class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Namespace</label>
         <select name="namespace" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-slate-100">
             <option value="">All Namespaces</option>
             {% for namespace in payload.namespaces %}
@@ -32,7 +32,7 @@
     </div>
 
     <div>
-        <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Status</label>
+        <label class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Status</label>
         <select name="status" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-slate-100">
             {% for status in payload.status_options %}
                 <option value="{{ status }}" {% if payload.filters.status == status %}selected{% endif %}>{{ status.replace('_', ' ')|title }}</option>
@@ -41,7 +41,7 @@
     </div>
 
     <div>
-        <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Search TLS Secret</label>
+        <label class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Search TLS Secret</label>
         <div class="relative">
             <i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"></i>
             <input type="search" name="search" value="{{ payload.filters.search }}" placeholder="Search secret, namespace, CN, or issuer..." class="w-full rounded-xl border border-slate-300 bg-white py-2 pl-10 pr-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-slate-100 dark:placeholder:text-slate-500">
