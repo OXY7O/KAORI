@@ -1,7 +1,7 @@
 """add reusable archive retention foundation
 
 Revision ID: 20260713_archive_retention
-Revises: 20260711_remove_node_pod_cidrs
+Revises: 20260712_node_system_uuid
 Create Date: 2026-07-13 10:00:00
 
 """
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 revision: str = '20260713_archive_retention'
-down_revision: str | None = '20260711_remove_node_pod_cidrs'
+down_revision: str | None = '20260712_node_system_uuid'
 branch_labels = None
 depends_on = None
 
