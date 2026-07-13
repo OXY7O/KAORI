@@ -180,4 +180,3 @@ class ProductionConfig(Config):
             Config.ARCHIVE_S3_FORCE_PATH_STYLE,
         ),
     )
-

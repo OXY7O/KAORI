@@ -6,9 +6,11 @@ from typing import Any
 
 from app.models.notification import Notification
 from app.models.user import User
+
 from .event_catalog import build_event_context, event_label
 from .metadata import changed_fields, metadata_items
 from .normalization import standardize_activity_text
+
 
 def _normalize_created_at(created_at: datetime) -> datetime:
     if created_at.tzinfo is None:
@@ -35,7 +37,6 @@ def _created_label(created_at: datetime) -> str:
 
     days = age_seconds // 86400
     return f'{days} day ago' if days == 1 else f'{days} days ago'
-
 
 
 def _actor_initials(label: str) -> str:
@@ -65,7 +66,6 @@ def _auth_source_label(value: str | None) -> str:
         normalized,
         normalized.replace('_', ' ').title(),
     )
-
 
 
 def _user_label(user: User | None, user_id: int) -> str:
@@ -114,12 +114,14 @@ def _serialize_notification(
             notification.title,
             event_type=notification.event_type,
             status=notification.status,
-        ) or 'Operational activity',
+        )
+        or 'Operational activity',
         'message': standardize_activity_text(
             notification.message,
             event_type=notification.event_type,
             status=notification.status,
-        ) or 'The operation was recorded by KAORI.',
+        )
+        or 'The operation was recorded by KAORI.',
         'detail': standardize_activity_text(
             notification.detail,
             event_type=notification.event_type,

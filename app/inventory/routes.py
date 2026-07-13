@@ -3,14 +3,8 @@ import logging
 from flask import Blueprint, abort, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user
 
-from app.notifications.service import (
-    record_operational_activity,
-    get_navigation_notification_context,
-    queue_quick_action_feedback,
-)
 from app.cluster.onboarding import has_registered_clusters
 from app.cluster.service import build_cluster_context
-from app.inventory.topology import build_topology_graph, build_topology_page_context
 from app.inventory.service import (
     get_cluster_by_id,
     get_configuration_detail,
@@ -46,6 +40,12 @@ from app.inventory.service import (
     get_workload_filter_types,
     get_workload_inventory,
     sync_inventory,
+)
+from app.inventory.topology import build_topology_graph, build_topology_page_context
+from app.notifications.service import (
+    get_navigation_notification_context,
+    queue_quick_action_feedback,
+    record_operational_activity,
 )
 from app.rbac.decorators import permission_required
 
@@ -1173,6 +1173,7 @@ def storage_details(storage_id: int):
         'inventory/storage/partials/_storage_detail_content.html',
         item=storage_item,
     )
+
 
 def _build_cluster_context_from_request() -> dict:
     return build_cluster_context(

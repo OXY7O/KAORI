@@ -15,16 +15,17 @@ from flask import (
 from flask.typing import ResponseReturnValue
 from flask_login import current_user, login_required
 
-from .service import (
-    record_operational_activity,
-    get_navigation_notification_context,
-    get_notification_activity_context,
-    mark_notification_read,
-    mark_all_notifications_read,
-)
 from app.rbac.decorators import permission_required
 from app.retention.presentation import build_activity_retention_context
 from app.retention.service import get_archive_download_path, verify_archive_artifact
+
+from .service import (
+    get_navigation_notification_context,
+    get_notification_activity_context,
+    mark_all_notifications_read,
+    mark_notification_read,
+    record_operational_activity,
+)
 
 notifications_bp = Blueprint(
     'notifications',

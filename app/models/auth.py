@@ -146,4 +146,3 @@ class AuthLoginEvent(db.Model):
     @property
     def user_agent_device(self) -> str:
         return self.user_agent_info['device']
-

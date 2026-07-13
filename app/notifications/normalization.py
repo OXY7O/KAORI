@@ -21,6 +21,7 @@ RAW_ERROR_PATTERNS = (
     'exception:',
 )
 
+
 def activity_failure_message(event_type: str, text: str) -> str:
     normalized = text.lower()
 
@@ -29,12 +30,25 @@ def activity_failure_message(event_type: str, text: str) -> str:
     if any(token in normalized for token in ('certificate', 'ssl', 'tls', 'x509')):
         return 'The secure connection could not be verified. Review the endpoint certificate and TLS verification settings.'
     if any(token in normalized for token in ('401', 'unauthorized', 'authentication failed', 'invalid credential')):
-        return 'The target service rejected the configured credentials. Review the authentication settings and try again.'
+        return (
+            'The target service rejected the configured credentials. Review the authentication settings and try again.'
+        )
     if any(token in normalized for token in ('403', 'forbidden', 'permission denied')):
         return 'The configured account does not have permission to complete this operation. Review the assigned access and credentials.'
     if any(token in normalized for token in ('404', 'not found', 'notfound')):
-        return 'The requested endpoint or resource was not found. Review the configured address and resource availability.'
-    if any(token in normalized for token in ('connection refused', 'max retries exceeded', 'connectionerror', 'httpconnectionpool', 'httpsconnectionpool')):
+        return (
+            'The requested endpoint or resource was not found. Review the configured address and resource availability.'
+        )
+    if any(
+        token in normalized
+        for token in (
+            'connection refused',
+            'max retries exceeded',
+            'connectionerror',
+            'httpconnectionpool',
+            'httpsconnectionpool',
+        )
+    ):
         return 'KAORI could not reach the configured endpoint. Review the endpoint, network route, service availability, and firewall access.'
     if any(token in normalized for token in ('integrityerror', 'operationalerror', 'sqlalchemy', 'database')):
         return 'KAORI could not complete the database operation. Review database availability and the application logs before retrying.'
@@ -47,7 +61,9 @@ def activity_failure_message(event_type: str, text: str) -> str:
     if event_type.startswith('operational_activity_'):
         return 'The activity retention operation could not be completed safely. Review the retention status and worker logs before retrying.'
 
-    return 'The operation could not be completed. Review the related configuration and application logs, then try again.'
+    return (
+        'The operation could not be completed. Review the related configuration and application logs, then try again.'
+    )
 
 
 def standardize_activity_text(
@@ -75,5 +91,3 @@ def standardize_activity_text(
         return activity_failure_message(event_type, normalized)
 
     return normalized
-
-

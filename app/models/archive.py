@@ -9,7 +9,6 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.extensions import db
 
-
 ARCHIVE_STATUS_PENDING = 'pending'
 ARCHIVE_STATUS_ARCHIVING = 'archiving'
 ARCHIVE_STATUS_VERIFYING = 'verifying'
@@ -115,8 +114,5 @@ class ArchiveArtifact(db.Model):
             ARCHIVE_STATUS_CLEANUP_PARTIAL,
             ARCHIVE_STATUS_FAILED,
         } and bool(
-            self.data_object_key
-            and self.manifest_object_key
-            and self.checksum_sha256
-            and self.manifest_checksum_sha256
+            self.data_object_key and self.manifest_object_key and self.checksum_sha256 and self.manifest_checksum_sha256
         )

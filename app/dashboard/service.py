@@ -170,7 +170,7 @@ def get_dashboard_overview(
         DashboardKpi(
             label='Clusters',
             value=str(len(clusters)),
-            description=f"{_count_cluster_status(clusters_raw, 'healthy')} healthy • {_count_cluster_status(clusters_raw, 'warning')} warning",  # noqa: E501
+            description=f'{_count_cluster_status(clusters_raw, "healthy")} healthy • {_count_cluster_status(clusters_raw, "warning")} warning',  # noqa: E501
             icon='network',
             tone='blue',
         ),
@@ -794,7 +794,9 @@ def _worker_capacity_item(
 def _empty_capacity_snapshot(*, insight: str) -> CapacitySnapshot:
     return CapacitySnapshot(
         items=[
-            CapacityItem(label='CPU', used_percent=None, headroom_percent=None, description='Worker metric unavailable'),
+            CapacityItem(
+                label='CPU', used_percent=None, headroom_percent=None, description='Worker metric unavailable'
+            ),
             CapacityItem(
                 label='Memory', used_percent=None, headroom_percent=None, description='Worker metric unavailable'
             ),
@@ -1057,9 +1059,9 @@ def _build_top_consumers_insight(
 
     insight_items: list[str] = []
     if top_cpu:
-        insight_items.append(f"Highest CPU: {top_cpu.get('workload') or top_cpu.get('pod') or '-'}")
+        insight_items.append(f'Highest CPU: {top_cpu.get("workload") or top_cpu.get("pod") or "-"}')
     if top_memory:
-        insight_items.append(f"Highest Memory: {top_memory.get('workload') or top_memory.get('pod') or '-'}")
+        insight_items.append(f'Highest Memory: {top_memory.get("workload") or top_memory.get("pod") or "-"}')
     if dominant_namespace != '-':
         insight_items.append(f'Dominant namespace: {dominant_namespace}')
     if missing_request_limit:

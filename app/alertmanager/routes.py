@@ -6,10 +6,6 @@ from flask import Blueprint, abort, jsonify, redirect, render_template, request,
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 
-from app.notifications.service import (
-    record_operational_activity,
-    get_navigation_notification_context,
-)
 from app.alertmanager.forms import parse_alertmanager_config_form
 from app.alertmanager.service import (
     build_alertmanager_config_context,
@@ -17,6 +13,10 @@ from app.alertmanager.service import (
     get_cluster_by_id,
     save_alertmanager_config,
     test_alertmanager_connection,
+)
+from app.notifications.service import (
+    get_navigation_notification_context,
+    record_operational_activity,
 )
 from app.rbac.decorators import permission_required
 
@@ -89,7 +89,9 @@ def cluster_alertmanager_config(
                 )
                 record_operational_activity(
                     user_id=current_user.id,
-                    event_type='alertmanager_configuration_update' if was_configured else 'alertmanager_configuration_create',
+                    event_type='alertmanager_configuration_update'
+                    if was_configured
+                    else 'alertmanager_configuration_create',
                     status='error',
                     title='Alertmanager configuration not saved',
                     message=f'KAORI could not save Alertmanager settings for {cluster.name}.',
@@ -121,7 +123,9 @@ def cluster_alertmanager_config(
                     ):
                         record_operational_activity(
                             user_id=current_user.id,
-                            event_type='alertmanager_configuration_update' if was_configured else 'alertmanager_configuration_create',
+                            event_type='alertmanager_configuration_update'
+                            if was_configured
+                            else 'alertmanager_configuration_create',
                             status='success',
                             title='Alertmanager saved and verified',
                             message=f'Alertmanager settings for {cluster.name} were saved and the connection test succeeded.',
@@ -144,11 +148,14 @@ def cluster_alertmanager_config(
                     else:
                         record_operational_activity(
                             user_id=current_user.id,
-                            event_type='alertmanager_configuration_update' if was_configured else 'alertmanager_configuration_create',
+                            event_type='alertmanager_configuration_update'
+                            if was_configured
+                            else 'alertmanager_configuration_create',
                             status='warning',
                             title='Alertmanager saved with warning',
                             message=f'Alertmanager settings for {cluster.name} were saved, but the connection test failed.',
-                            detail=result.get('error') or 'Review endpoint reachability, authentication, and TLS settings.',
+                            detail=result.get('error')
+                            or 'Review endpoint reachability, authentication, and TLS settings.',
                             action_url=url_for('alertmanager.cluster_alertmanager_config', cluster_id=cluster_id),
                             action_label='Review Alertmanager settings',
                             action_icon='siren',
@@ -171,7 +178,9 @@ def cluster_alertmanager_config(
                 else:
                     record_operational_activity(
                         user_id=current_user.id,
-                        event_type='alertmanager_configuration_update' if was_configured else 'alertmanager_configuration_create',
+                        event_type='alertmanager_configuration_update'
+                        if was_configured
+                        else 'alertmanager_configuration_create',
                         status='success',
                         title='Alertmanager configuration updated' if was_configured else 'Alertmanager configured',
                         message=f'Alertmanager settings for {cluster.name} were saved successfully.',

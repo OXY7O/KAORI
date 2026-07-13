@@ -66,4 +66,3 @@ class TestingConfig(Config):
     )
     ACTIVITY_RETENTION_SCHEDULE_ENABLED = False
     CELERY = {**Config.CELERY, 'beat_schedule': {}}
-

@@ -145,7 +145,8 @@ def describe_integration_failure(
         'SSLError' in names
         or 'certificate verify failed' in message
         or 'ssl:' in message
-        or 'tls' in message and 'certificate' in message
+        or 'tls' in message
+        and 'certificate' in message
     ):
         result.update(
             code='tls_verification_failed',
@@ -158,11 +159,7 @@ def describe_integration_failure(
         )
         return result
 
-    if (
-        'ProxyError' in names
-        or 'proxyerror' in message
-        or 'cannot connect to proxy' in message
-    ):
+    if 'ProxyError' in names or 'proxyerror' in message or 'cannot connect to proxy' in message:
         result.update(
             code='proxy_connection_failed',
             reason='Proxy connection failed',
@@ -189,11 +186,7 @@ def describe_integration_failure(
         )
         return result
 
-    if (
-        'connection reset' in message
-        or 'remotedisconnected' in names
-        or 'remote end closed connection' in message
-    ):
+    if 'connection reset' in message or 'remotedisconnected' in names or 'remote end closed connection' in message:
         result.update(
             code='connection_reset',
             reason='Connection was closed unexpectedly',

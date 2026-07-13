@@ -233,6 +233,7 @@ def get_node_ready_status(
 
     return 'Unknown'
 
+
 def _extract_node_taints(
     node: V1Node,
 ) -> list[str]:
@@ -258,6 +259,7 @@ def _extract_node_taints(
         result.append(label)
 
     return result
+
 
 def _get_node_condition_status(
     node: V1Node,
@@ -355,9 +357,7 @@ def save_nodes(
             )
         )
         node_inventory.unschedulable = bool(
-            node.spec.unschedulable
-            if node.spec and node.spec.unschedulable is not None
-            else False
+            node.spec.unschedulable if node.spec and node.spec.unschedulable is not None else False
         )
         node_inventory.memory_pressure = _get_node_condition_status(
             node,
@@ -393,14 +393,10 @@ def save_nodes(
         )
 
         node_inventory.os_image = status.node_info.os_image
-        node_inventory.operating_system = (
-            status.node_info.operating_system
-            or (metadata.labels or {}).get('kubernetes.io/os')
+        node_inventory.operating_system = status.node_info.operating_system or (metadata.labels or {}).get(
+            'kubernetes.io/os'
         )
-        node_inventory.architecture = (
-            status.node_info.architecture
-            or (metadata.labels or {}).get('kubernetes.io/arch')
-        )
+        node_inventory.architecture = status.node_info.architecture or (metadata.labels or {}).get('kubernetes.io/arch')
         node_inventory.kubelet_version = status.node_info.kubelet_version
         node_inventory.kube_proxy_version = status.node_info.kube_proxy_version
 
@@ -418,6 +414,7 @@ def save_nodes(
         )
 
         db.session.add(node_inventory)
+
 
 def _namespace_count_snapshot(
     fetcher,
@@ -441,6 +438,7 @@ def _namespace_count_snapshot(
         counts[namespace_name] = counts.get(namespace_name, 0) + 1
 
     return counts
+
 
 def _namespace_service_account_snapshot(
     api: CoreV1Api,
@@ -470,6 +468,7 @@ def _namespace_service_account_snapshot(
 
     return counts, default_namespaces
 
+
 def save_namespaces(
     cluster: Cluster,
     api: CoreV1Api,
@@ -494,9 +493,7 @@ def save_namespaces(
     network_policy_counts = _namespace_count_snapshot(
         networking_api.list_network_policy_for_all_namespaces,
     )
-    service_account_counts, default_service_account_namespaces = (
-        _namespace_service_account_snapshot(api)
-    )
+    service_account_counts, default_service_account_namespaces = _namespace_service_account_snapshot(api)
 
     for namespace in namespaces:
         metadata = namespace.metadata
@@ -523,27 +520,20 @@ def save_namespaces(
             )
         )
         namespace_inventory.limit_range_count = (
-            None
-            if limit_range_counts is None
-            else limit_range_counts.get(namespace_name, 0)
+            None if limit_range_counts is None else limit_range_counts.get(namespace_name, 0)
         )
         namespace_inventory.network_policy_count = (
-            None
-            if network_policy_counts is None
-            else network_policy_counts.get(namespace_name, 0)
+            None if network_policy_counts is None else network_policy_counts.get(namespace_name, 0)
         )
         namespace_inventory.service_account_count = (
-            None
-            if service_account_counts is None
-            else service_account_counts.get(namespace_name, 0)
+            None if service_account_counts is None else service_account_counts.get(namespace_name, 0)
         )
         namespace_inventory.default_service_account_present = (
-            None
-            if default_service_account_namespaces is None
-            else namespace_name in default_service_account_namespaces
+            None if default_service_account_namespaces is None else namespace_name in default_service_account_namespaces
         )
 
         db.session.add(namespace_inventory)
+
 
 def save_workloads(
     cluster: Cluster,
@@ -1641,6 +1631,7 @@ def get_node_inventory(
         'nodes': nodes_data,
     }
 
+
 def _pod_summary(
     pod: PodInventory,
 ) -> dict[str, Any]:
@@ -1776,8 +1767,7 @@ def _resolve_workload_pod_template(
 ) -> tuple[dict[str, Any], str]:
     pod_template = details.get('pod_template')
     if isinstance(pod_template, dict) and (
-        pod_template.get('reported') is True
-        or _pod_template_has_inventory_data(pod_template)
+        pod_template.get('reported') is True or _pod_template_has_inventory_data(pod_template)
     ):
         return pod_template, 'workload-template'
 
@@ -1833,6 +1823,7 @@ def _placement_rows(
         },
     ]
 
+
 def get_node_detail(node_id: int) -> dict[str, Any] | None:
     result = (
         db.session.query(
@@ -1877,21 +1868,11 @@ def get_node_detail(node_id: int) -> dict[str, Any] | None:
     }.get(node.status or '', 'Unknown')
 
     node_labels = node.labels or {}
-    operating_system = (
-        node.operating_system
-        or node_labels.get('kubernetes.io/os')
-        or 'Unknown'
-    )
+    operating_system = node.operating_system or node_labels.get('kubernetes.io/os') or 'Unknown'
     operating_system_display = (
-        operating_system.title()
-        if operating_system.lower() in {'linux', 'windows'}
-        else operating_system
+        operating_system.title() if operating_system.lower() in {'linux', 'windows'} else operating_system
     )
-    architecture = (
-        node.architecture
-        or node_labels.get('kubernetes.io/arch')
-        or 'Not reported'
-    )
+    architecture = node.architecture or node_labels.get('kubernetes.io/arch') or 'Not reported'
 
     return {
         'id': node.id,
@@ -1934,6 +1915,7 @@ def get_node_detail(node_id: int) -> dict[str, Any] | None:
         'runtime_display': runtime.split('://')[0] if '://' in runtime else runtime,
         'collected_at': node.collected_at,
     }
+
 
 def get_workload_detail(workload_id: int) -> dict[str, Any] | None:
     result = (
@@ -2021,6 +2003,7 @@ def get_workload_detail(workload_id: int) -> dict[str, Any] | None:
         'annotations': sorted(annotations.items()),
         'details_reported': bool(details),
     }
+
 
 def _split_inventory_values(value: str | None) -> list[str]:
     return [item.strip() for item in (value or '').split(',') if item.strip() and item.strip() != '-']
@@ -2252,7 +2235,7 @@ def get_storage_detail(storage_id: int) -> dict[str, Any] | None:
 
     if item.storage_type == 'PersistentVolume':
         binding_reference = (
-            f"{details.get('claim_namespace')}/{details.get('claim_name')}"
+            f'{details.get("claim_namespace")}/{details.get("claim_name")}'
             if details.get('claim_namespace') and details.get('claim_name')
             else 'Unbound'
         )
@@ -2307,6 +2290,7 @@ def get_storage_detail(storage_id: int) -> dict[str, Any] | None:
         'annotations': sorted(annotations.items()),
         'details_reported': bool(details),
     }
+
 
 def get_namespace_filter_statuses(
     cluster_id: str | None = None,
@@ -2413,19 +2397,11 @@ def get_namespace_inventory(
                 'quota_count': quota_count,
                 'limit_range_count': limit_range_count,
                 'network_policy_count': network_policy_count,
-                'controls_reported': (
-                    limit_range_count is not None
-                    and network_policy_count is not None
-                ),
+                'controls_reported': (limit_range_count is not None and network_policy_count is not None),
             }
         )
 
-    cluster_count = len(
-        {
-            cluster_name
-            for _, cluster_name in namespace_records
-        }
-    )
+    cluster_count = len({cluster_name for _, cluster_name in namespace_records})
 
     return {
         'total_namespaces': len(namespace_records),
@@ -2437,6 +2413,7 @@ def get_namespace_inventory(
         ),
         'namespaces': inventory_rows,
     }
+
 
 def get_namespace_detail(
     namespace_id: int,
@@ -2605,6 +2582,7 @@ def get_namespace_detail(
             'Not configured',
         ),
     }
+
 
 def get_configuration_filter_namespaces(
     cluster_id: str | None = None,
@@ -2985,6 +2963,7 @@ def get_workload_inventory(
         'workloads': workloads_data,
     }
 
+
 def get_pod_filter_namespaces(
     cluster_id: str | None = None,
 ) -> list[str]:
@@ -3264,17 +3243,8 @@ def get_pod_inventory(
         'running': running,
         'pending': pending,
         'failed': failed,
-        'total_image_references': sum(
-            pod.get('image_count', 0)
-            for pod in pod_data
-        ),
-        'unique_image_count': len(
-            {
-                image
-                for pod in pod_data
-                for image in pod.get('all_images', [])
-            }
-        ),
+        'total_image_references': sum(pod.get('image_count', 0) for pod in pod_data),
+        'unique_image_count': len({image for pod in pod_data for image in pod.get('all_images', [])}),
         'status_counts': status_counts,
         'pod_statuses': get_pod_filter_statuses(
             cluster_id=cluster_id,
@@ -3434,7 +3404,9 @@ def get_pod_detail(
             'image_pull_secret_count': int(configuration.get('image_pull_secret_count') or 0),
             'volume_count': int(configuration.get('volume_count') or len(volumes)),
             'container_count': int(configuration.get('container_count') or _pod_container_count(pod)),
-            'init_container_count': int(configuration.get('init_container_count') or len(pod.init_container_images or [])),
+            'init_container_count': int(
+                configuration.get('init_container_count') or len(pod.init_container_images or [])
+            ),
             'ephemeral_container_count': int(configuration.get('ephemeral_container_count') or 0),
         },
         'container_statuses': container_statuses,
@@ -3446,6 +3418,7 @@ def get_pod_detail(
         'collected_at': pod.collected_at,
         'details_reported': bool(details),
     }
+
 
 def get_service_filter_types(
     cluster_id: str | None = None,
@@ -3488,13 +3461,10 @@ def get_service_inventory(
     service_type=None,
     search=None,
 ):
-    query = (
-        db.session.query(
-            ServiceInventory,
-            Cluster.name.label('cluster_name'),
-        )
-        .join(Cluster, Cluster.id == ServiceInventory.cluster_id)
-    )
+    query = db.session.query(
+        ServiceInventory,
+        Cluster.name.label('cluster_name'),
+    ).join(Cluster, Cluster.id == ServiceInventory.cluster_id)
 
     if cluster_id:
         query = query.filter(ServiceInventory.cluster_id == cluster_id)
@@ -3567,7 +3537,7 @@ def get_service_inventory(
         port_summary = '-'
         if port_rows:
             first = port_rows[0]
-            port_summary = f"{first['port']}/{first['protocol']}"
+            port_summary = f'{first["port"]}/{first["protocol"]}'
             if len(port_rows) > 1:
                 port_summary = f'{port_summary} +{len(port_rows) - 1}'
 
@@ -3630,13 +3600,10 @@ def get_ingress_inventory(
     tls_status=None,
     search=None,
 ):
-    query = (
-        db.session.query(
-            IngressInventory,
-            Cluster.name.label('cluster_name'),
-        )
-        .join(Cluster, Cluster.id == IngressInventory.cluster_id)
-    )
+    query = db.session.query(
+        IngressInventory,
+        Cluster.name.label('cluster_name'),
+    ).join(Cluster, Cluster.id == IngressInventory.cluster_id)
 
     if cluster_id:
         query = query.filter(IngressInventory.cluster_id == cluster_id)
@@ -3765,11 +3732,7 @@ def get_ingress_detail(
     )
     tls_entries = [item for item in (details.get('tls') or []) if isinstance(item, dict)]
     tls_secrets = sorted(
-        {
-            item.get('secret_name')
-            for item in tls_entries
-            if item.get('secret_name') not in (None, '', '-')
-        }
+        {item.get('secret_name') for item in tls_entries if item.get('secret_name') not in (None, '', '-')}
     )
     labels = details.get('labels') or {}
     annotations = details.get('annotations') or {}
@@ -3846,13 +3809,10 @@ def get_storage_inventory_view(
     status=None,
     search=None,
 ):
-    query = (
-        db.session.query(
-            StorageInventory,
-            Cluster.name.label('cluster_name'),
-        )
-        .join(Cluster, Cluster.id == StorageInventory.cluster_id)
-    )
+    query = db.session.query(
+        StorageInventory,
+        Cluster.name.label('cluster_name'),
+    ).join(Cluster, Cluster.id == StorageInventory.cluster_id)
 
     if cluster_id:
         query = query.filter(StorageInventory.cluster_id == cluster_id)
@@ -3912,7 +3872,7 @@ def get_storage_inventory_view(
         details = item.details or {}
         if item.storage_type == 'PersistentVolume':
             binding = (
-                f"{details.get('claim_namespace')}/{details.get('claim_name')}"
+                f'{details.get("claim_namespace")}/{details.get("claim_name")}'
                 if details.get('claim_namespace') and details.get('claim_name')
                 else 'Unbound'
             )
@@ -3960,4 +3920,3 @@ def get_storage_inventory_view(
         'storage_types': storage_types,
         'storage_items': data,
     }
-

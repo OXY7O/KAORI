@@ -676,8 +676,8 @@ def build_utilization_actionable_recommendations(payload: dict[str, Any]) -> lis
                     title='Review top CPU consumer',
                     description=(
                         'Validate whether the highest CPU consumer is expected. '
-                        f"Namespace: {top_item.get('namespace', '-')}; pod: {top_item.get('pod', '-')}; "
-                        f"value: {top_item.get('value', '-')}."
+                        f'Namespace: {top_item.get("namespace", "-")}; pod: {top_item.get("pod", "-")}; '
+                        f'value: {top_item.get("value", "-")}.'
                     ),
                     priority='Info',
                     source='top_cpu_consumer',
@@ -698,8 +698,8 @@ def build_utilization_actionable_recommendations(payload: dict[str, Any]) -> lis
                     title='Review top memory consumer',
                     description=(
                         'Validate whether the highest memory consumer is expected. '
-                        f"Namespace: {top_item.get('namespace', '-')}; pod: {top_item.get('pod', '-')}; "
-                        f"value: {top_item.get('value', '-')}."
+                        f'Namespace: {top_item.get("namespace", "-")}; pod: {top_item.get("pod", "-")}; '
+                        f'value: {top_item.get("value", "-")}.'
                     ),
                     priority='Info',
                     source='top_memory_consumer',
@@ -1258,7 +1258,7 @@ def build_workload_actionable_recommendations(payload: dict[str, Any]) -> list[d
                 title=str(finding.get('label') or 'Review workload governance finding'),
                 description=(
                     'Review the related namespace, workload, quota, request, or limit policy. '
-                    f"Finding filter/context: {finding.get('filter', '-') or '-'}"
+                    f'Finding filter/context: {finding.get("filter", "-") or "-"}'
                 ),
                 priority=severity,
                 source='workload_governance',
@@ -1443,8 +1443,8 @@ def build_forecast_actionable_recommendations(
             build_recommendation(
                 title='Prioritize nearest critical forecast breach',
                 description=(
-                    f"{nearest_critical.get('resource', 'A resource')} is projected to reach critical threshold in "
-                    f"{nearest_critical.get('label', f'{int(critical_days)} days')}. "
+                    f'{nearest_critical.get("resource", "A resource")} is projected to reach critical threshold in '
+                    f'{nearest_critical.get("label", f"{int(critical_days)} days")}. '
                     'Create a capacity action plan before the projected critical date.'
                 ),
                 priority='Critical',
@@ -1461,8 +1461,8 @@ def build_forecast_actionable_recommendations(
             build_recommendation(
                 title='Review nearest forecast warning breach',
                 description=(
-                    f"{nearest_warning.get('resource', 'A resource')} is projected to reach warning threshold in "
-                    f"{nearest_warning.get('label', f'{int(warning_days)} days')}. "
+                    f'{nearest_warning.get("resource", "A resource")} is projected to reach warning threshold in '
+                    f'{nearest_warning.get("label", f"{int(warning_days)} days")}. '
                     'Review whether this trend is expected and prepare quota, node, or workload adjustments.'
                 ),
                 priority='Warning',
@@ -2190,14 +2190,17 @@ def _build_from_actionable_recommendations(payload: dict[str, Any]) -> list[dict
         icon = str(item.get('icon') or default_icon)
         source_label = str(item.get('source_label') or source)
 
-        priority_rank = _safe_int(
-            _as_float_like(
-                item.get(
-                    'rank',
-                    index,
+        priority_rank = (
+            _safe_int(
+                _as_float_like(
+                    item.get(
+                        'rank',
+                        index,
+                    )
                 )
             )
-        ) or index
+            or index
+        )
 
         recommendations.append(
             _recommendation(

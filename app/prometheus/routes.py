@@ -6,13 +6,13 @@ from flask import Blueprint, abort, jsonify, redirect, render_template, request,
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 
-from app.notifications.service import (
-    record_operational_activity,
-    get_navigation_notification_context,
-)
 from app.cluster.service import get_cluster_by_id
 from app.common.integration_errors import describe_integration_failure
 from app.models import Cluster
+from app.notifications.service import (
+    get_navigation_notification_context,
+    record_operational_activity,
+)
 from app.prometheus.exceptions import PrometheusError
 from app.prometheus.forms import PrometheusConfigForm
 from app.prometheus.service import PrometheusService
@@ -231,11 +231,7 @@ def test_connection(
             service_name='Prometheus',
             endpoint=config.endpoint if config is not None else None,
             request_path='/api/v1/query',
-            timeout_seconds=(
-                min(max(int(config.timeout or 5), 1), 5)
-                if config is not None
-                else None
-            ),
+            timeout_seconds=(min(max(int(config.timeout or 5), 1), 5) if config is not None else None),
         )
         logger.warning(
             'Prometheus connection test failed for cluster %s: %s',

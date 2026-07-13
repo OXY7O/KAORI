@@ -776,12 +776,7 @@ def _get_alerts_snapshot(*, cluster_id: str) -> dict[str, Any]:
         )
     )
     anomaly_count = recent_anomalies
-    recommendation_fallback_count = (
-        critical_alerts
-        + warning_alerts
-        + anomaly_count
-        + (0 if source_connected else 1)
-    )
+    recommendation_fallback_count = critical_alerts + warning_alerts + anomaly_count + (0 if source_connected else 1)
 
     risk_count = firing_alerts + critical_alerts + warning_alerts + pending_alerts
     risk_meta = classify_count_risk(risk_count)
@@ -803,8 +798,6 @@ def _get_alerts_snapshot(*, cluster_id: str) -> dict[str, Any]:
             fallback_count=recommendation_fallback_count,
         ),
     }
-
-
 
 
 def _build_actionable_recommendation_overview(
@@ -1499,6 +1492,7 @@ def _count_recommendations_by_priority(
         ).lower()
         == normalized_priority
     )
+
 
 def _build_health_summary(payload: dict[str, Any]) -> dict[str, Any]:
     default = deepcopy(build_empty_overview_payload()['health_summary'])

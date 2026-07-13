@@ -364,9 +364,15 @@ class Config:
     )
     ARCHIVE_S3_BUCKET = _env_str('ARCHIVE_S3_BUCKET', _env_str('REPORT_S3_BUCKET', ''))
     ARCHIVE_S3_REGION = _env_str('ARCHIVE_S3_REGION', _env_str('REPORT_S3_REGION', 'us-east-1'))
-    ARCHIVE_S3_ACCESS_KEY_ID = _env_optional_str('ARCHIVE_S3_ACCESS_KEY_ID') or _env_optional_str('REPORT_S3_ACCESS_KEY_ID')
-    ARCHIVE_S3_SECRET_ACCESS_KEY = _env_optional_str('ARCHIVE_S3_SECRET_ACCESS_KEY') or _env_optional_str('REPORT_S3_SECRET_ACCESS_KEY')
-    ARCHIVE_S3_ENDPOINT_URL = _env_optional_str('ARCHIVE_S3_ENDPOINT_URL') or _env_optional_str('REPORT_S3_ENDPOINT_URL')
+    ARCHIVE_S3_ACCESS_KEY_ID = _env_optional_str('ARCHIVE_S3_ACCESS_KEY_ID') or _env_optional_str(
+        'REPORT_S3_ACCESS_KEY_ID'
+    )
+    ARCHIVE_S3_SECRET_ACCESS_KEY = _env_optional_str('ARCHIVE_S3_SECRET_ACCESS_KEY') or _env_optional_str(
+        'REPORT_S3_SECRET_ACCESS_KEY'
+    )
+    ARCHIVE_S3_ENDPOINT_URL = _env_optional_str('ARCHIVE_S3_ENDPOINT_URL') or _env_optional_str(
+        'REPORT_S3_ENDPOINT_URL'
+    )
     ARCHIVE_S3_PREFIX = _env_str('ARCHIVE_S3_PREFIX', _env_str('REPORT_S3_PREFIX', '')).strip().strip('/')
     ARCHIVE_S3_FORCE_PATH_STYLE = _env_bool(
         'ARCHIVE_S3_FORCE_PATH_STYLE',

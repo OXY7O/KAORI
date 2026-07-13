@@ -5,6 +5,7 @@ from typing import Any
 
 from .normalization import standardize_activity_text
 
+
 def changed_fields(metadata: dict[str, Any]) -> list[dict[str, str]]:
     changed_items: list[dict[str, str]] = []
     label_overrides = {

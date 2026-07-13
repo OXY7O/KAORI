@@ -20,7 +20,9 @@ def archive_retention() -> None:
 
 
 @archive_retention.command('preview')
-@click.option('--domain', type=click.Choice(sorted(DOMAIN_FACTORIES)), default='operational_activity', show_default=True)
+@click.option(
+    '--domain', type=click.Choice(sorted(DOMAIN_FACTORIES)), default='operational_activity', show_default=True
+)
 @with_appcontext
 def preview_command(domain: str) -> None:
     preview = preview_retention(domain)
@@ -38,7 +40,9 @@ def preview_command(domain: str) -> None:
 
 
 @archive_retention.command('run')
-@click.option('--domain', type=click.Choice(sorted(DOMAIN_FACTORIES)), default='operational_activity', show_default=True)
+@click.option(
+    '--domain', type=click.Choice(sorted(DOMAIN_FACTORIES)), default='operational_activity', show_default=True
+)
 @click.option(
     '--cleanup/--archive-only',
     default=False,
@@ -64,8 +68,12 @@ def verify_command(archive_id: str) -> None:
 
 
 @archive_retention.command('purge-archives')
-@click.option('--domain', type=click.Choice(sorted(DOMAIN_FACTORIES)), default='operational_activity', show_default=True)
-@click.option('--execute', is_flag=True, help='Delete expired archive objects. Without this flag the command is a dry run.')
+@click.option(
+    '--domain', type=click.Choice(sorted(DOMAIN_FACTORIES)), default='operational_activity', show_default=True
+)
+@click.option(
+    '--execute', is_flag=True, help='Delete expired archive objects. Without this flag the command is a dry run.'
+)
 @with_appcontext
 def purge_archives_command(domain: str, execute: bool) -> None:
     policy = get_archive_domain(domain).build_policy()

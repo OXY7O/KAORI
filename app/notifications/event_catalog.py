@@ -2,12 +2,13 @@ from __future__ import annotations
 
 from typing import Any
 
+
 def event_label(event_type: str) -> str:
     """Return a human-readable label while keeping the stored event key unchanged."""
     normalized = event_type.strip()
     prefix = 'operational_activity_'
     if normalized.startswith(prefix):
-        normalized = normalized[len(prefix):]
+        normalized = normalized[len(prefix) :]
     return normalized.replace('_', ' ').strip().title() or 'Activity'
 
 
@@ -126,5 +127,3 @@ def build_event_context(
 
     context['context_items'] = context_items
     return context
-
-

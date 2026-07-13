@@ -164,7 +164,9 @@ def _matches(rule: dict[str, Any], filters: dict[str, str]) -> bool:
     query = _clean(filters.get('q')).lower()
     if query:
         evidence = rule.get('evidence')
-        evidence_text = ' '.join(f'{key} {value}' for key, value in evidence.items()) if isinstance(evidence, dict) else ''
+        evidence_text = (
+            ' '.join(f'{key} {value}' for key, value in evidence.items()) if isinstance(evidence, dict) else ''
+        )
         fix_steps = rule.get('fix_steps')
         fix_steps_text = ' '.join(str(step) for step in fix_steps) if isinstance(fix_steps, list) else ''
 
@@ -302,11 +304,7 @@ def get_active_recommendation_findings(
 
     selected_cluster = _clean(selected_cluster_id)
     if selected_cluster:
-        findings = [
-            finding
-            for finding in findings
-            if _finding_cluster_id(finding) == selected_cluster
-        ]
+        findings = [finding for finding in findings if _finding_cluster_id(finding) == selected_cluster]
 
     if limit is not None:
         findings = findings[: max(int(limit), 0)]
@@ -345,7 +343,6 @@ def _clone_rule_as_finding(
     output.setdefault('affected_items', _build_affected_items(output))
     output.setdefault('fix_steps', _build_fix_steps(output))
     return output
-
 
 
 def _format_affected_summary(item: dict[str, Any]) -> str:
@@ -471,6 +468,7 @@ def _build_fix_steps(item: dict[str, Any]) -> list[str]:
             deduped.append(step)
     return deduped[:4]
 
+
 def _build_latest_image_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
     rule = rules.get('kubernetes.workload.latest_image_tag')
     if not rule:
@@ -490,7 +488,9 @@ def _build_latest_image_findings(rules: dict[str, dict[str, Any]]) -> list[dict[
     affected: dict[tuple[str, str], set[str]] = {}
     examples: dict[tuple[str, str], list[str]] = {}
     for row in rows:
-        images = list(getattr(row, 'container_images', None) or []) + list(getattr(row, 'init_container_images', None) or [])
+        images = list(getattr(row, 'container_images', None) or []) + list(
+            getattr(row, 'init_container_images', None) or []
+        )
         mutable_images = [image for image in images if _is_mutable_image_reference(str(image))]
         if not mutable_images:
             continue
@@ -507,7 +507,7 @@ def _build_latest_image_findings(rules: dict[str, dict[str, Any]]) -> list[dict[
         findings.append(
             _clone_rule_as_finding(
                 rule,
-                finding_key=f"{rule['rule_key']}:{cluster_id}:{namespace}",
+                finding_key=f'{rule["rule_key"]}:{cluster_id}:{namespace}',
                 title=f'{count} pod{"s" if count != 1 else ""} use mutable image references in {namespace}',
                 summary=(
                     f'{count} pod{"s" if count != 1 else ""} in namespace {namespace} use :latest or unpinned image references. '
@@ -772,7 +772,9 @@ def _build_tls_certificate_findings(rules: dict[str, dict[str, Any]]) -> list[di
                     'summary': f'TLS Secret inventory shows {count} {secret_label.lower()} with {status_value} certificate posture in namespace {namespace_label}.',
                     'condition_summary': f'Collected TLS Secret status is {status_value}; minimum remaining lifetime is {min_days_remaining if min_days_remaining is not None else "unknown"} day(s).',
                     'recommended_action': recommended_action,
-                    'impact': str(source_rule.get('impact') or 'Protects HTTPS availability and certificate governance readiness.'),
+                    'impact': str(
+                        source_rule.get('impact') or 'Protects HTTPS availability and certificate governance readiness.'
+                    ),
                     'visible_in': ['Recommendations', 'Kubernetes TLS Secret', 'TLS Secret Update', 'Reports'],
                     'evidence': {
                         'cluster_id': str(cluster_id),
@@ -948,9 +950,25 @@ def get_alert_intelligence_payload() -> dict[str, Any]:
             },
         ],
         'dummy_flow': [
-            {'step': '1', 'title': 'Import signal', 'description': 'Read Kubernetes alerts from Alertmanager, server metrics from Node Exporter, or HCI health from provider APIs.'},
-            {'step': '2', 'title': 'Map asset', 'description': 'Classify the signal under Kubernetes, Server, or HCI and link it to the affected cluster, node, host, datastore, VM, or workload.'},
-            {'step': '3', 'title': 'Enrich context', 'description': 'Attach ownership, inventory state, trend, capacity, related reports, and report-family context.'},
-            {'step': '4', 'title': 'Recommend action', 'description': 'Produce investigation guidance without replacing Prometheus rules or Alertmanager routing policy.'},
+            {
+                'step': '1',
+                'title': 'Import signal',
+                'description': 'Read Kubernetes alerts from Alertmanager, server metrics from Node Exporter, or HCI health from provider APIs.',
+            },
+            {
+                'step': '2',
+                'title': 'Map asset',
+                'description': 'Classify the signal under Kubernetes, Server, or HCI and link it to the affected cluster, node, host, datastore, VM, or workload.',
+            },
+            {
+                'step': '3',
+                'title': 'Enrich context',
+                'description': 'Attach ownership, inventory state, trend, capacity, related reports, and report-family context.',
+            },
+            {
+                'step': '4',
+                'title': 'Recommend action',
+                'description': 'Produce investigation guidance without replacing Prometheus rules or Alertmanager routing policy.',
+            },
         ],
     }

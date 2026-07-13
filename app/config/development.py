@@ -33,4 +33,3 @@ class DevelopmentConfig(Config):
         'DEV_ARCHIVE_LOCAL_STORAGE_DIR',
         os.getenv('DEV_REPORT_LOCAL_STORAGE_DIR', Config.ARCHIVE_LOCAL_STORAGE_DIR),
     )
-

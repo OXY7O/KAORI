@@ -12,7 +12,9 @@ class AuditEvent(db.Model):
     __tablename__ = 'audit_events'
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    actor_user_id: Mapped[int | None] = mapped_column(db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True, index=True)
+    actor_user_id: Mapped[int | None] = mapped_column(
+        db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True, index=True
+    )
     target_type: Mapped[str] = mapped_column(db.String(80), nullable=False, index=True)
     target_id: Mapped[str | None] = mapped_column(db.String(120), nullable=True, index=True)
     action: Mapped[str] = mapped_column(db.String(120), nullable=False, index=True)
@@ -20,4 +22,6 @@ class AuditEvent(db.Model):
     metadata_json: Mapped[dict[str, Any] | None] = mapped_column(db.JSON, nullable=True)
     ip_address: Mapped[str | None] = mapped_column(db.String(100), nullable=True)
     user_agent: Mapped[str | None] = mapped_column(db.String(255), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        db.DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False, index=True
+    )
