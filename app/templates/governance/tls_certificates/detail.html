@@ -180,59 +180,22 @@
                     </div>
                 </div>
                 {% set validity_status = record.status or 'unknown' %}
-                {% if validity_status == 'healthy' %}
-                    {% set validity_border = 'border-emerald-200 dark:border-emerald-900/40' %}
-                    {% set validity_header = 'border-emerald-100 from-emerald-50 via-white to-teal-50 dark:border-emerald-900/40 dark:from-emerald-950/20 dark:via-slate-800 dark:to-teal-950/15' %}
-                    {% set validity_icon = 'bg-emerald-600 shadow-emerald-600/20' %}
-                    {% set validity_summary = 'from-emerald-600 to-teal-500 shadow-emerald-500/20' %}
-                    {% set validity_summary_label = 'text-emerald-50/80' %}
-                    {% set validity_start_card = 'border-emerald-100 bg-emerald-50/70 dark:border-emerald-900/30 dark:bg-emerald-950/15' %}
-                    {% set validity_start_label = 'text-emerald-700 dark:text-emerald-300' %}
-                    {% set validity_end_card = 'border-teal-100 bg-teal-50/70 dark:border-teal-900/30 dark:bg-teal-950/15' %}
-                    {% set validity_end_label = 'text-teal-700 dark:text-teal-300' %}
-                    {% set validity_tip = 'bg-emerald-50 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-200' %}
-                    {% set validity_tip_icon = 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300' %}
-                {% elif validity_status == 'warning' %}
-                    {% set validity_border = 'border-amber-200 dark:border-amber-900/40' %}
-                    {% set validity_header = 'border-amber-100 from-amber-50 via-white to-orange-50 dark:border-amber-900/40 dark:from-amber-950/20 dark:via-slate-800 dark:to-orange-950/15' %}
-                    {% set validity_icon = 'bg-amber-500 shadow-amber-500/20' %}
-                    {% set validity_summary = 'from-amber-500 to-orange-500 shadow-amber-500/20' %}
-                    {% set validity_summary_label = 'text-amber-50/90' %}
-                    {% set validity_start_card = 'border-amber-100 bg-amber-50/70 dark:border-amber-900/30 dark:bg-amber-950/15' %}
-                    {% set validity_start_label = 'text-amber-700 dark:text-amber-300' %}
-                    {% set validity_end_card = 'border-orange-100 bg-orange-50/70 dark:border-orange-900/30 dark:bg-orange-950/15' %}
-                    {% set validity_end_label = 'text-orange-700 dark:text-orange-300' %}
-                    {% set validity_tip = 'bg-amber-50 text-amber-800 dark:bg-amber-500/10 dark:text-amber-200' %}
-                    {% set validity_tip_icon = 'bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300' %}
-                {% elif validity_status in ['critical', 'expired', 'invalid'] %}
-                    {% set validity_border = 'border-rose-200 dark:border-rose-900/40' %}
-                    {% set validity_header = 'border-rose-100 from-rose-50 via-white to-red-50 dark:border-rose-900/40 dark:from-rose-950/20 dark:via-slate-800 dark:to-red-950/15' %}
-                    {% set validity_icon = 'bg-rose-600 shadow-rose-600/20' %}
-                    {% set validity_summary = 'from-rose-600 to-red-500 shadow-rose-500/20' %}
-                    {% set validity_summary_label = 'text-rose-50/90' %}
-                    {% set validity_start_card = 'border-rose-100 bg-rose-50/70 dark:border-rose-900/30 dark:bg-rose-950/15' %}
-                    {% set validity_start_label = 'text-rose-700 dark:text-rose-300' %}
-                    {% set validity_end_card = 'border-red-100 bg-red-50/70 dark:border-red-900/30 dark:bg-red-950/15' %}
-                    {% set validity_end_label = 'text-red-700 dark:text-red-300' %}
-                    {% set validity_tip = 'bg-rose-50 text-rose-800 dark:bg-rose-500/10 dark:text-rose-200' %}
-                    {% set validity_tip_icon = 'bg-rose-100 text-rose-600 dark:bg-rose-500/15 dark:text-rose-300' %}
-                {% else %}
-                    {% set validity_border = 'border-slate-200 dark:border-slate-700' %}
-                    {% set validity_header = 'border-slate-200 from-slate-50 via-white to-slate-100 dark:border-slate-700 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900' %}
-                    {% set validity_icon = 'bg-slate-600 shadow-slate-600/20' %}
-                    {% set validity_summary = 'from-slate-600 to-slate-500 shadow-slate-500/20' %}
-                    {% set validity_summary_label = 'text-slate-100/80' %}
-                    {% set validity_start_card = 'border-slate-200 bg-slate-50/70 dark:border-slate-700 dark:bg-slate-900/30' %}
-                    {% set validity_start_label = 'text-slate-600 dark:text-slate-300' %}
-                    {% set validity_end_card = 'border-slate-200 bg-slate-50/70 dark:border-slate-700 dark:bg-slate-900/30' %}
-                    {% set validity_end_label = 'text-slate-600 dark:text-slate-300' %}
-                    {% set validity_tip = 'bg-slate-50 text-slate-700 dark:bg-slate-900/40 dark:text-slate-300' %}
-                    {% set validity_tip_icon = 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300' %}
-                {% endif %}
-                <div class="h-full overflow-hidden rounded-3xl border bg-white shadow-sm {{ validity_border }} dark:bg-slate-800">
-                    <div class="border-b bg-gradient-to-r px-5 py-4 {{ validity_header }}">
+                <div class="overflow-hidden rounded-3xl border bg-white shadow-sm h-full dark:bg-slate-800
+                            {% if validity_status == 'healthy' %}border-emerald-200 dark:border-emerald-900/40
+                            {% elif validity_status == 'warning' %}border-amber-200 dark:border-amber-900/40
+                            {% elif validity_status in ['critical', 'expired', 'invalid'] %}border-rose-200 dark:border-rose-900/40
+                            {% else %}border-slate-200 dark:border-slate-700{% endif %}">
+                    <div class="border-b bg-gradient-to-r px-5 py-4
+                                {% if validity_status == 'healthy' %}border-emerald-100 from-emerald-50 via-white to-teal-50 dark:border-emerald-900/40 dark:from-emerald-950/20 dark:via-slate-800 dark:to-teal-950/15
+                                {% elif validity_status == 'warning' %}border-amber-100 from-amber-50 via-white to-orange-50 dark:border-amber-900/40 dark:from-amber-950/20 dark:via-slate-800 dark:to-orange-950/15
+                                {% elif validity_status in ['critical', 'expired', 'invalid'] %}border-rose-100 from-rose-50 via-white to-red-50 dark:border-rose-900/40 dark:from-rose-950/20 dark:via-slate-800 dark:to-red-950/15
+                                {% else %}border-slate-200 from-slate-50 via-white to-slate-100 dark:border-slate-700 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900{% endif %}">
                         <div class="flex items-center gap-3">
-                            <span class="flex h-10 w-10 items-center justify-center rounded-2xl text-white shadow-sm {{ validity_icon }}">
+                            <span class="flex h-10 w-10 items-center justify-center rounded-2xl text-white shadow-sm
+                                         {% if validity_status == 'healthy' %}bg-emerald-600 shadow-emerald-600/20
+                                         {% elif validity_status == 'warning' %}bg-amber-500 shadow-amber-500/20
+                                         {% elif validity_status in ['critical', 'expired', 'invalid'] %}bg-rose-600 shadow-rose-600/20
+                                         {% else %}bg-slate-600 shadow-slate-600/20{% endif %}">
                                 <i data-lucide="calendar-clock" class="h-5 w-5"></i>
                             </span>
                             <div>
@@ -242,34 +205,66 @@
                         </div>
                     </div>
                     <div class="space-y-4 p-5">
-                        <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r p-4 text-white shadow-sm {{ validity_summary }}">
+                        <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r p-4 text-white shadow-sm
+                                    {% if validity_status == 'healthy' %}from-emerald-600 to-teal-500 shadow-emerald-500/20
+                                    {% elif validity_status == 'warning' %}from-amber-500 to-orange-500 shadow-amber-500/20
+                                    {% elif validity_status in ['critical', 'expired', 'invalid'] %}from-rose-600 to-red-500 shadow-rose-500/20
+                                    {% else %}from-slate-600 to-slate-500 shadow-slate-500/20{% endif %}">
                             <div class="absolute -right-6 -top-8 h-24 w-24 rounded-full bg-white/15 blur-2xl"></div>
                             <div class="relative flex items-end justify-between gap-4">
                                 <div>
-                                    <p class="text-xs {{ validity_summary_label }}">Remaining validity</p>
+                                    <p class="text-xs
+                                              {% if validity_status == 'healthy' %}text-emerald-50/80
+                                              {% elif validity_status == 'warning' %}text-amber-50/90
+                                              {% elif validity_status in ['critical', 'expired', 'invalid'] %}text-rose-50/90
+                                              {% else %}text-slate-100/80{% endif %}">Remaining validity</p>
                                     <p class="mt-1 text-3xl font-bold">{{ record.days_remaining if record.days_remaining is not none else 'N/A' }}{% if record.days_remaining is not none %}<span class="ml-1 text-base font-medium">days</span>{% endif %}</p>
                                 </div>
                                 {% with status=record.status %}{% include "governance/tls_certificates/partials/_status_badge.html" %}{% endwith %}
                             </div>
                         </div>
                         <div class="grid gap-3 sm:grid-cols-2">
-                            <div class="rounded-2xl border p-4 {{ validity_start_card }}">
-                                <div class="flex items-center gap-2 {{ validity_start_label }}">
+                            <div class="rounded-2xl border p-4
+                                        {% if validity_status == 'healthy' %}border-emerald-100 bg-emerald-50/70 dark:border-emerald-900/30 dark:bg-emerald-950/15
+                                        {% elif validity_status == 'warning' %}border-amber-100 bg-amber-50/70 dark:border-amber-900/30 dark:bg-amber-950/15
+                                        {% elif validity_status in ['critical', 'expired', 'invalid'] %}border-rose-100 bg-rose-50/70 dark:border-rose-900/30 dark:bg-rose-950/15
+                                        {% else %}border-slate-200 bg-slate-50/70 dark:border-slate-700 dark:bg-slate-900/30{% endif %}">
+                                <div class="flex items-center gap-2
+                                            {% if validity_status == 'healthy' %}text-emerald-700 dark:text-emerald-300
+                                            {% elif validity_status == 'warning' %}text-amber-700 dark:text-amber-300
+                                            {% elif validity_status in ['critical', 'expired', 'invalid'] %}text-rose-700 dark:text-rose-300
+                                            {% else %}text-slate-600 dark:text-slate-300{% endif %}">
                                     <i data-lucide="calendar-check" class="h-4 w-4"></i>
                                     <p class="text-xs font-medium">Valid from</p>
                                 </div>
                                 <p class="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{{ record.not_before|user_datetime('%Y-%m-%d %H:%M %Z', 'N/A') }}</p>
                             </div>
-                            <div class="rounded-2xl border p-4 {{ validity_end_card }}">
-                                <div class="flex items-center gap-2 {{ validity_end_label }}">
+                            <div class="rounded-2xl border p-4
+                                        {% if validity_status == 'healthy' %}border-teal-100 bg-teal-50/70 dark:border-teal-900/30 dark:bg-teal-950/15
+                                        {% elif validity_status == 'warning' %}border-orange-100 bg-orange-50/70 dark:border-orange-900/30 dark:bg-orange-950/15
+                                        {% elif validity_status in ['critical', 'expired', 'invalid'] %}border-red-100 bg-red-50/70 dark:border-red-900/30 dark:bg-red-950/15
+                                        {% else %}border-slate-200 bg-slate-50/70 dark:border-slate-700 dark:bg-slate-900/30{% endif %}">
+                                <div class="flex items-center gap-2
+                                            {% if validity_status == 'healthy' %}text-teal-700 dark:text-teal-300
+                                            {% elif validity_status == 'warning' %}text-orange-700 dark:text-orange-300
+                                            {% elif validity_status in ['critical', 'expired', 'invalid'] %}text-red-700 dark:text-red-300
+                                            {% else %}text-slate-600 dark:text-slate-300{% endif %}">
                                     <i data-lucide="calendar-x" class="h-4 w-4"></i>
                                     <p class="text-xs font-medium">Expires at</p>
                                 </div>
                                 <p class="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{{ record.not_after|user_datetime('%Y-%m-%d %H:%M %Z', 'N/A') }}</p>
                             </div>
                         </div>
-                        <div class="flex items-start gap-2.5 rounded-2xl px-4 py-3 text-xs leading-5 {{ validity_tip }}">
-                            <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg {{ validity_tip_icon }}">
+                        <div class="flex items-start gap-2.5 rounded-2xl px-4 py-3 text-xs leading-5
+                                    {% if validity_status == 'healthy' %}bg-emerald-50 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-200
+                                    {% elif validity_status == 'warning' %}bg-amber-50 text-amber-800 dark:bg-amber-500/10 dark:text-amber-200
+                                    {% elif validity_status in ['critical', 'expired', 'invalid'] %}bg-rose-50 text-rose-800 dark:bg-rose-500/10 dark:text-rose-200
+                                    {% else %}bg-slate-50 text-slate-700 dark:bg-slate-900/40 dark:text-slate-300{% endif %}">
+                            <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg
+                                         {% if validity_status == 'healthy' %}bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300
+                                         {% elif validity_status == 'warning' %}bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300
+                                         {% elif validity_status in ['critical', 'expired', 'invalid'] %}bg-rose-100 text-rose-600 dark:bg-rose-500/15 dark:text-rose-300
+                                         {% else %}bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300{% endif %}">
                                 <i data-lucide="lightbulb" class="h-4 w-4"></i>
                             </span>
                             <p>Plan certificate rotation before the expiry date so workloads and Ingress endpoints can be updated without service interruption.</p>
