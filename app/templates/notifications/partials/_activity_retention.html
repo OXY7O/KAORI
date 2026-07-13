@@ -217,29 +217,31 @@
 
             <section class="flex min-h-[13.5rem] flex-col rounded-2xl border border-emerald-100 bg-white p-4 shadow-sm dark:border-emerald-900/40 dark:bg-slate-800">
                 <div class="flex items-start justify-between gap-3">
-                    <div class="flex items-center gap-2.5">
+                    <div class="flex min-w-0 items-center gap-2.5">
                         <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300">
                             <i data-lucide="calendar-clock" class="h-4 w-4"></i>
                         </span>
-                        <div>
-                            <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Scheduled run</h3>
+                        <div class="min-w-0">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Scheduled run</h3>
+                                <span class="rounded-full px-2 py-1 text-[9px] font-semibold ring-1 ring-inset {% if retention.schedule_enabled %}bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-900/40{% else %}bg-slate-100 text-slate-600 ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-700{% endif %}">
+                                    {{ 'Beat configured' if retention.schedule_enabled else 'Schedule off' }}
+                                </span>
+                            </div>
                             <p class="mt-0.5 text-[10px] text-slate-500 dark:text-slate-400">Celery lifecycle execution</p>
                         </div>
                     </div>
+                </div>
+                <div class="mt-5 flex items-end justify-between gap-3">
+                    <p class="text-2xl font-bold text-slate-900 dark:text-white">
+                        {% if retention.schedule_enabled %}{{ '%02d'|format(retention.schedule_hour) }}:{{ '%02d'|format(retention.schedule_minute) }}{% else %}Disabled{% endif %}
+                    </p>
                     <span class="rounded-full px-2 py-1 text-[9px] font-semibold ring-1 ring-inset
                         {% if retention.worker.tone == 'emerald' %}bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-900/40
                         {% elif retention.worker.tone == 'amber' %}bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-900/40
                         {% elif retention.worker.tone == 'rose' %}bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-900/40
                         {% else %}bg-slate-100 text-slate-600 ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-700{% endif %}"
                           title="{{ retention.worker.detail }}">Worker {{ retention.worker.label|lower }}</span>
-                </div>
-                <div class="mt-5 flex items-end justify-between gap-3">
-                    <p class="text-2xl font-bold text-slate-900 dark:text-white">
-                        {% if retention.schedule_enabled %}{{ '%02d'|format(retention.schedule_hour) }}:{{ '%02d'|format(retention.schedule_minute) }}{% else %}Disabled{% endif %}
-                    </p>
-                    <span class="rounded-full px-2 py-1 text-[9px] font-semibold ring-1 ring-inset {% if retention.schedule_enabled %}bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-900/40{% else %}bg-slate-100 text-slate-600 ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-700{% endif %}">
-                        {{ 'Beat configured' if retention.schedule_enabled else 'Schedule off' }}
-                    </span>
                 </div>
                 <p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
                     {% if retention.next_schedule_label %}Next {{ retention.next_schedule_label }}{% else %}Automatic retention is not scheduled.{% endif %}
@@ -276,7 +278,15 @@
                 </div>
                 <p class="mt-5 truncate text-2xl font-bold text-slate-900 dark:text-white" title="{{ retention.storage.provider_label }}">{{ retention.storage.provider_label }}</p>
                 <p class="mt-1 truncate text-xs text-slate-500 dark:text-slate-400" title="{{ retention.storage.location }}">{{ retention.storage.location }}</p>
-                {% if retention.storage.endpoint_label %}<p class="mt-1 truncate text-[10px] text-slate-400 dark:text-slate-500" title="{{ retention.storage.endpoint_label }}">Endpoint: {{ retention.storage.endpoint_label }}</p>{% endif %}
+                {% if retention.storage.endpoint_label %}
+                    <div class="mt-2">
+                        <span class="inline-flex max-w-full items-center gap-1.5 rounded-full bg-cyan-50 px-2.5 py-1 text-[10px] font-semibold text-cyan-700 ring-1 ring-inset ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-900/40"
+                              title="{{ retention.storage.endpoint_label }}">
+                            <i data-lucide="network" class="h-3 w-3 flex-shrink-0"></i>
+                            <span class="truncate">{{ retention.storage.endpoint_label }}</span>
+                        </span>
+                    </div>
+                {% endif %}
                 <div class="mt-auto pt-4">
                     <div class="flex items-start gap-2 rounded-xl bg-cyan-50/80 px-3 py-2.5 text-[10px] leading-4 text-cyan-700 ring-1 ring-inset ring-cyan-100 dark:bg-cyan-950/20 dark:text-cyan-300 dark:ring-cyan-900/40">
                         <i data-lucide="shield-check" class="mt-0.5 h-3.5 w-3.5 flex-shrink-0"></i>
