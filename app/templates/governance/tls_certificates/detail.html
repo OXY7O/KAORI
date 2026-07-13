@@ -115,7 +115,7 @@
 
         <section class="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
             <div class="space-y-6">
-                <div class="overflow-hidden rounded-3xl border border-blue-200 bg-white shadow-sm xl:min-h-[500px] dark:border-blue-900/40 dark:bg-slate-800">
+                <div class="overflow-hidden rounded-3xl border border-blue-200 bg-white shadow-sm xl:min-h-[380px] dark:border-blue-900/40 dark:bg-slate-800">
                     <div class="flex flex-col gap-3 border-b border-blue-100 bg-gradient-to-r from-blue-50 via-white to-indigo-50 px-5 py-4 dark:border-blue-900/40 dark:from-blue-950/25 dark:via-slate-800 dark:to-indigo-950/20 sm:flex-row sm:items-center sm:justify-between">
                         <div class="flex items-center gap-3">
                             <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-sm shadow-blue-600/20">
@@ -233,7 +233,7 @@
                     </div>
                     <div class="space-y-3 p-5">
                         {% for consumer in record.used_by or [] %}
-                            <article class="overflow-hidden rounded-2xl border border-dashed border-amber-200 bg-amber-50/60 dark:border-amber-900/40 dark:bg-amber-950/15">
+                            <article class="overflow-hidden rounded-2xl border border-amber-100 bg-amber-50/60 dark:border-amber-900/30 dark:bg-amber-950/15">
                                 <div class="border-b border-dashed border-amber-200 px-4 py-3 dark:border-amber-900/40">
                                     <div class="flex items-center gap-3">
                                         <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white text-amber-600 shadow-sm dark:bg-slate-800 dark:text-amber-300">
@@ -247,7 +247,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="border-t border-dashed border-amber-200 px-4 py-3 dark:border-amber-900/40">
+                                <div class="px-4 py-3">
                                     <p class="text-xs font-medium text-amber-700 dark:text-amber-300">Mapped hosts</p>
                                     <div class="mt-2 flex flex-wrap gap-2">
                                         {% for host in consumer.hosts or [] %}
@@ -278,7 +278,7 @@
             </div>
 
             <div class="space-y-6">
-                <div class="overflow-hidden rounded-3xl border border-emerald-200 bg-white shadow-sm xl:min-h-[500px] dark:border-emerald-900/40 dark:bg-slate-800">
+                <div class="overflow-hidden rounded-3xl border border-emerald-200 bg-white shadow-sm xl:min-h-[380px] dark:border-emerald-900/40 dark:bg-slate-800">
                     <div class="border-b border-emerald-100 bg-gradient-to-r from-emerald-50 via-white to-teal-50 px-5 py-4 dark:border-emerald-900/40 dark:from-emerald-950/20 dark:via-slate-800 dark:to-teal-950/15">
                         <div class="flex items-center gap-3">
                             <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-sm shadow-emerald-600/20">
