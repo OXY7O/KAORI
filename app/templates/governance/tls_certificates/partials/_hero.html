@@ -80,7 +80,7 @@
                 <div class="grid grid-cols-2 gap-2">
                     <form method="post" action="{{ url_for('governance.tls_certificates_sync') }}" hx-post="{{ url_for('governance.tls_certificates_sync') }}" hx-target="#tls-certificates-page-content" hx-swap="outerHTML" hx-indicator="#tls-certificates-table-loading" hx-on::before-request="window.showTlsSecretSyncProgress && window.showTlsSecretSyncProgress()">
                         <input type="hidden" name="cluster_id" value="{{ payload.filters.cluster_id }}">
-                        <button type="submit" class="inline-flex min-h-[3.25rem] w-full items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/15">
+                        <button type="submit" class="inline-flex min-h-[3.25rem] w-full items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-blue-700 shadow-sm transition hover:bg-blue-50">
                             <i data-lucide="refresh-cw" class="h-4 w-4"></i>
                             Sync TLS
                         </button>
