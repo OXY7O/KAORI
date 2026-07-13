@@ -50,3 +50,20 @@ class TestingConfig(Config):
             BASE_DIR / 'instance' / 'test-report-download-cache',
         ),
     )
+
+    ARCHIVE_STORAGE_BACKEND = 'local'
+    ARCHIVE_LOCAL_STORAGE_DIR = os.getenv(
+        'TEST_ARCHIVE_LOCAL_STORAGE_DIR',
+        str(BASE_DIR / 'instance' / 'test-archives'),
+    )
+    ARCHIVE_DOWNLOAD_CACHE_DIR = os.getenv(
+        'TEST_ARCHIVE_DOWNLOAD_CACHE_DIR',
+        str(BASE_DIR / 'instance' / 'test-archive-download-cache'),
+    )
+    ARCHIVE_STAGING_DIR = os.getenv(
+        'TEST_ARCHIVE_STAGING_DIR',
+        str(BASE_DIR / 'instance' / 'test-archive-staging'),
+    )
+    ACTIVITY_RETENTION_SCHEDULE_ENABLED = False
+    CELERY = {**Config.CELERY, 'beat_schedule': {}}
+

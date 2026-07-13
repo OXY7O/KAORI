@@ -1,4 +1,5 @@
 from app.models.alertmanager import AlertmanagerConfig
+from app.models.archive import ArchiveArtifact
 from app.models.audit import AuditEvent
 from app.models.auth import AuthLoginEvent
 from app.models.cluster import Cluster, ClusterStatus
@@ -22,6 +23,7 @@ from app.models.report import Report, ReportSchedule, ReportScheduleRun, ReportT
 from app.models.user import User
 
 __all__ = [
+    'ArchiveArtifact',
     'AuthLoginEvent',
     'AuditEvent',
     'ClusterStatus',

@@ -115,3 +115,69 @@ class ProductionConfig(Config):
         .strip()
         .strip('/')
     )
+
+    ARCHIVE_STORAGE_BACKEND = (
+        os.getenv(
+            'PROD_ARCHIVE_STORAGE_BACKEND',
+            os.getenv('PROD_REPORT_STORAGE_BACKEND', Config.ARCHIVE_STORAGE_BACKEND),
+        )
+        .strip()
+        .lower()
+    )
+
+    ARCHIVE_LOCAL_STORAGE_DIR = os.getenv(
+        'PROD_ARCHIVE_LOCAL_STORAGE_DIR',
+        os.getenv('PROD_REPORT_LOCAL_STORAGE_DIR', Config.ARCHIVE_LOCAL_STORAGE_DIR),
+    )
+
+    ARCHIVE_S3_BUCKET = os.getenv(
+        'PROD_ARCHIVE_S3_BUCKET',
+        os.getenv('PROD_REPORT_S3_BUCKET', Config.ARCHIVE_S3_BUCKET),
+    )
+
+    ARCHIVE_S3_REGION = os.getenv(
+        'PROD_ARCHIVE_S3_REGION',
+        os.getenv('PROD_REPORT_S3_REGION', Config.ARCHIVE_S3_REGION),
+    )
+
+    ARCHIVE_S3_ACCESS_KEY_ID = (
+        os.getenv(
+            'PROD_ARCHIVE_S3_ACCESS_KEY_ID',
+            os.getenv('PROD_REPORT_S3_ACCESS_KEY_ID', Config.ARCHIVE_S3_ACCESS_KEY_ID or ''),
+        )
+        or None
+    )
+
+    ARCHIVE_S3_SECRET_ACCESS_KEY = (
+        os.getenv(
+            'PROD_ARCHIVE_S3_SECRET_ACCESS_KEY',
+            os.getenv('PROD_REPORT_S3_SECRET_ACCESS_KEY', Config.ARCHIVE_S3_SECRET_ACCESS_KEY or ''),
+        )
+        or None
+    )
+
+    ARCHIVE_S3_ENDPOINT_URL = (
+        os.getenv(
+            'PROD_ARCHIVE_S3_ENDPOINT_URL',
+            os.getenv('PROD_REPORT_S3_ENDPOINT_URL', Config.ARCHIVE_S3_ENDPOINT_URL or ''),
+        )
+        or None
+    )
+
+    ARCHIVE_S3_PREFIX = (
+        os.getenv(
+            'PROD_ARCHIVE_S3_PREFIX',
+            os.getenv('PROD_REPORT_S3_PREFIX', Config.ARCHIVE_S3_PREFIX),
+        )
+        .strip()
+        .strip('/')
+    )
+
+    ARCHIVE_S3_FORCE_PATH_STYLE = _env_bool(
+        'PROD_ARCHIVE_S3_FORCE_PATH_STYLE',
+        _env_bool(
+            'PROD_REPORT_S3_FORCE_PATH_STYLE',
+            Config.ARCHIVE_S3_FORCE_PATH_STYLE,
+        ),
+    )
+

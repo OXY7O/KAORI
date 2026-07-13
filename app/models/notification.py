@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any
 
+from sqlalchemy import Index
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.extensions import db
@@ -10,6 +11,12 @@ from app.extensions import db
 
 class Notification(db.Model):
     __tablename__ = 'notifications'
+    __table_args__ = (
+        Index('ix_notifications_created_id', 'created_at', 'id'),
+        Index('ix_notifications_status_created', 'status', 'created_at'),
+        Index('ix_notifications_user_created', 'user_id', 'created_at'),
+        Index('ix_notifications_event_created', 'event_type', 'created_at'),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
 

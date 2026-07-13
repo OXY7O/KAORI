@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 
+from celery.schedules import crontab
 from dotenv import dotenv_values
 
 BASE_DIR = Path(__file__).resolve().parents[2]
@@ -109,6 +110,37 @@ def _env_bool(
     }
 
 
+def _bounded_env_int(
+    name: str,
+    default: int,
+    minimum: int,
+    maximum: int,
+) -> int:
+    return max(minimum, min(_env_int(name, default), maximum))
+
+
+def _retention_queue_name() -> str:
+    return _env_str('RETENTION_CELERY_QUEUE', 'inventory').strip() or 'inventory'
+
+
+def _build_maintenance_beat_schedule() -> dict[str, dict[str, object]]:
+    if not _env_bool('ACTIVITY_RETENTION_SCHEDULE_ENABLED', True):
+        return {}
+
+    return {
+        'operational-activity-retention': {
+            'task': 'app.retention.tasks.run_scheduled_retention',
+            'schedule': crontab(
+                hour=_bounded_env_int('ACTIVITY_RETENTION_SCHEDULE_HOUR', 2, 0, 23),
+                minute=_bounded_env_int('ACTIVITY_RETENTION_SCHEDULE_MINUTE', 15, 0, 59),
+            ),
+            'options': {
+                'queue': _retention_queue_name(),
+            },
+        }
+    }
+
+
 def _normalize_storage_backend(
     value: str | None,
 ) -> str:
@@ -202,6 +234,13 @@ class Config:
         300,
     )
 
+    CELERY_TIMEZONE = _env_str(
+        'CELERY_TIMEZONE',
+        'UTC',
+    )
+
+    RETENTION_CELERY_QUEUE = _retention_queue_name()
+
     CELERY = {
         'broker_url': CELERY_BROKER_URL,
         'result_backend': CELERY_RESULT_BACKEND,
@@ -212,12 +251,21 @@ class Config:
         'task_serializer': 'json',
         'result_serializer': 'json',
         'accept_content': ['json'],
-        'timezone': 'UTC',
+        'timezone': CELERY_TIMEZONE,
         'enable_utc': True,
-        'imports': ('app.cluster.tasks',),
+        'imports': (
+            'app.cluster.tasks',
+            'app.retention.tasks',
+        ),
         'task_routes': {
             'app.cluster.tasks.sync_all_clusters': {
                 'queue': 'inventory',
+            },
+            'app.retention.tasks.run_domain_retention': {
+                'queue': _retention_queue_name(),
+            },
+            'app.retention.tasks.run_scheduled_retention': {
+                'queue': _retention_queue_name(),
             },
         },
         'visibility_timeout': CELERY_VISIBILITY_TIMEOUT_SECONDS,
@@ -228,6 +276,7 @@ class Config:
             'global_keyprefix': 'kaori:celery:',
             'visibility_timeout': CELERY_VISIBILITY_TIMEOUT_SECONDS,
         },
+        'beat_schedule': _build_maintenance_beat_schedule(),
     }
 
     WTF_CSRF_ENABLED = True
@@ -282,6 +331,58 @@ class Config:
         'APP_VERSION',
         '1.0.0',
     )
+
+    # Reusable archive storage profile. Activity retention uses this profile now;
+    # login activity, reports, and future domains can register adapters without
+    # duplicating Local/S3 lifecycle code.
+    ARCHIVE_STORAGE_BACKEND = _normalize_storage_backend(
+        _env_str(
+            'ARCHIVE_STORAGE_BACKEND',
+            _env_str('REPORT_STORAGE_BACKEND', 'local'),
+        )
+    )
+    ARCHIVE_LOCAL_STORAGE_DIR = _resolve_path(
+        _env_str(
+            'ARCHIVE_LOCAL_STORAGE_DIR',
+            _env_str('REPORT_LOCAL_STORAGE_DIR', 'instance'),
+        ),
+        BASE_DIR / 'instance',
+    )
+    ARCHIVE_DOWNLOAD_CACHE_DIR = _resolve_path(
+        _env_str('ARCHIVE_DOWNLOAD_CACHE_DIR', 'instance/archive-download-cache'),
+        BASE_DIR / 'instance' / 'archive-download-cache',
+    )
+    ARCHIVE_STAGING_DIR = _resolve_path(
+        _env_str('ARCHIVE_STAGING_DIR', 'instance/archive-staging'),
+        BASE_DIR / 'instance' / 'archive-staging',
+    )
+    ARCHIVE_OBJECT_PREFIX = _env_str('ARCHIVE_OBJECT_PREFIX', 'archives').strip().strip('/')
+    ARCHIVE_SCHEDULED_DOMAINS = tuple(
+        item.strip().lower().replace('-', '_')
+        for item in _env_str('ARCHIVE_SCHEDULED_DOMAINS', 'operational_activity').split(',')
+        if item.strip()
+    )
+    ARCHIVE_S3_BUCKET = _env_str('ARCHIVE_S3_BUCKET', _env_str('REPORT_S3_BUCKET', ''))
+    ARCHIVE_S3_REGION = _env_str('ARCHIVE_S3_REGION', _env_str('REPORT_S3_REGION', 'us-east-1'))
+    ARCHIVE_S3_ACCESS_KEY_ID = _env_optional_str('ARCHIVE_S3_ACCESS_KEY_ID') or _env_optional_str('REPORT_S3_ACCESS_KEY_ID')
+    ARCHIVE_S3_SECRET_ACCESS_KEY = _env_optional_str('ARCHIVE_S3_SECRET_ACCESS_KEY') or _env_optional_str('REPORT_S3_SECRET_ACCESS_KEY')
+    ARCHIVE_S3_ENDPOINT_URL = _env_optional_str('ARCHIVE_S3_ENDPOINT_URL') or _env_optional_str('REPORT_S3_ENDPOINT_URL')
+    ARCHIVE_S3_PREFIX = _env_str('ARCHIVE_S3_PREFIX', _env_str('REPORT_S3_PREFIX', '')).strip().strip('/')
+    ARCHIVE_S3_FORCE_PATH_STYLE = _env_bool(
+        'ARCHIVE_S3_FORCE_PATH_STYLE',
+        _env_bool('REPORT_S3_FORCE_PATH_STYLE', False),
+    )
+
+    # Operational Activity archive-first retention policy.
+    ACTIVITY_RETENTION_ENABLED = _env_bool('ACTIVITY_RETENTION_ENABLED', True)
+    ACTIVITY_RETENTION_DAYS = _env_int('ACTIVITY_RETENTION_DAYS', 90)
+    ACTIVITY_ARCHIVE_RETENTION_DAYS = _env_int('ACTIVITY_ARCHIVE_RETENTION_DAYS', 365)
+    ACTIVITY_RETENTION_BATCH_SIZE = _env_int('ACTIVITY_RETENTION_BATCH_SIZE', 5000)
+    ACTIVITY_RETENTION_PROTECT_UNREVIEWED = _env_bool('ACTIVITY_RETENTION_PROTECT_UNREVIEWED', False)
+    ACTIVITY_RETENTION_PROTECTED_MAX_DAYS = _env_int('ACTIVITY_RETENTION_PROTECTED_MAX_DAYS', 180)
+    ACTIVITY_RETENTION_SCHEDULE_ENABLED = _env_bool('ACTIVITY_RETENTION_SCHEDULE_ENABLED', True)
+    ACTIVITY_RETENTION_SCHEDULE_HOUR = _bounded_env_int('ACTIVITY_RETENTION_SCHEDULE_HOUR', 2, 0, 23)
+    ACTIVITY_RETENTION_SCHEDULE_MINUTE = _bounded_env_int('ACTIVITY_RETENTION_SCHEDULE_MINUTE', 15, 0, 59)
 
     # Reports storage.
     # Supported values:
