@@ -13,6 +13,7 @@ from app.kubernetes_operations.secrets.create_service import (
 from app.kubernetes_operations.secrets.service import (
     apply_bulk_update,
     apply_certificate_update,
+    get_secret_management_overview,
     get_tls_certificate_detail,
     get_tls_certificate_page,
     preview_uploaded_pair,
@@ -145,7 +146,10 @@ def _record_validation_activity(
 
 @permission_required('kubernetes_secrets.view')
 def secret_management_index():
-    return render_template('kubernetes_operations/secrets/index.html')
+    return render_template(
+        'kubernetes_operations/secrets/index.html',
+        overview=get_secret_management_overview(),
+    )
 
 
 @permission_required('kubernetes_secrets.create')
