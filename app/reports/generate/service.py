@@ -189,6 +189,7 @@ def report_requires_specific_cluster(
 ) -> bool:
     return report_type in SINGLE_CLUSTER_REQUIRED_REPORT_TYPES
 
+
 SECTION_OPTIONS: list[dict[str, str]] = [
     {
         'value': 'executive_summary',
@@ -631,16 +632,12 @@ def normalize_report_type(
     value: str | None,
 ) -> str:
     allowed_report_types = {item['value'] for item in REPORT_TYPE_OPTIONS}
-    normalized_value = (
-        value
-        or REPORT_TYPE_OPTIONS[0]['value']
-    ).strip()
+    normalized_value = (value or REPORT_TYPE_OPTIONS[0]['value']).strip()
 
     if normalized_value not in allowed_report_types:
         return REPORT_TYPE_OPTIONS[0]['value']
 
     return normalized_value
-
 
 
 def _get_report_type_context(
@@ -767,11 +764,7 @@ def get_form_state_from_form(
         report_type,
     )
 
-    sections = [
-        section
-        for section in sections
-        if section in allowed_sections_for_report
-    ]
+    sections = [section for section in sections if section in allowed_sections_for_report]
 
     if not sections:
         sections = _get_default_sections(
@@ -822,18 +815,24 @@ def validate_form_state(
             'Please select a valid report type.',
         )
 
-    cluster_count = db.session.scalar(
-        select(func.count(Cluster.id)),
-    ) or 0
+    cluster_count = (
+        db.session.scalar(
+            select(func.count(Cluster.id)),
+        )
+        or 0
+    )
 
     if cluster_count == 0:
         errors.append(
             'Add at least one Kubernetes cluster before creating reports or report schedules.',
         )
 
-    if report_requires_specific_cluster(
-        form_state['report_type'],
-    ) and not form_state['cluster_id']:
+    if (
+        report_requires_specific_cluster(
+            form_state['report_type'],
+        )
+        and not form_state['cluster_id']
+    ):
         errors.append(
             'This report type requires a specific cluster. Please select a cluster before generating the report.',
         )
@@ -865,9 +864,7 @@ def validate_form_state(
     )
 
     incompatible_sections = [
-        section
-        for section in form_state['sections']
-        if section not in allowed_sections_for_report
+        section for section in form_state['sections'] if section not in allowed_sections_for_report
     ]
 
     if incompatible_sections:
@@ -1034,7 +1031,6 @@ def _get_data_source_context() -> list[str]:
     ]
 
 
-
 def _get_report_architecture_context() -> dict[str, Any]:
     return {
         'current_domain': DEFAULT_REPORT_DOMAIN,
@@ -1073,6 +1069,7 @@ def _get_report_architecture_context() -> dict[str, Any]:
             for domain, label in REPORT_DOMAIN_LABELS.items()
         ],
     }
+
 
 def _get_report_type_guide_groups() -> list[dict[str, Any]]:
     kubereport_items = [
@@ -1177,10 +1174,7 @@ def _get_report_type_guide_groups() -> list[dict[str, Any]]:
 
 
 def _get_report_output_readiness() -> list[dict[str, Any]]:
-    section_option_values = {
-        item['value']
-        for item in SECTION_OPTIONS
-    }
+    section_option_values = {item['value'] for item in SECTION_OPTIONS}
 
     rows: list[dict[str, Any]] = []
 
@@ -1205,16 +1199,8 @@ def _get_report_output_readiness() -> list[dict[str, Any]]:
             value,
             set(),
         )
-        missing_section_options = [
-            section
-            for section in default_sections
-            if section not in section_option_values
-        ]
-        missing_renderer_contract = [
-            section
-            for section in default_sections
-            if section not in real_sections
-        ]
+        missing_section_options = [section for section in default_sections if section not in section_option_values]
+        missing_renderer_contract = [section for section in default_sections if section not in real_sections]
         is_real_data = value in REAL_DATA_REPORT_TYPES
         is_ready = is_real_data and not missing_section_options and not missing_renderer_contract
 
@@ -1235,15 +1221,9 @@ def _get_report_output_readiness() -> list[dict[str, Any]]:
                 'sections': len(
                     default_sections,
                 ),
-                'renderer': 'Real-data PDF output'
-                if is_real_data
-                else 'Structured PDF output',
-                'status': 'Ready'
-                if is_ready
-                else 'Review',
-                'tone': 'blue'
-                if is_ready
-                else 'amber',
+                'renderer': 'Real-data PDF output' if is_real_data else 'Structured PDF output',
+                'status': 'Ready' if is_ready else 'Review',
+                'tone': 'blue' if is_ready else 'amber',
                 'note': 'Selected default sections are supported by the PDF output renderer.'
                 if is_ready
                 else 'Some sections need output mapping review before this report type is considered fully ready.',
@@ -1253,6 +1233,7 @@ def _get_report_output_readiness() -> list[dict[str, Any]]:
         )
 
     return rows
+
 
 def _get_recommended_actions() -> list[dict[str, str]]:
     return [

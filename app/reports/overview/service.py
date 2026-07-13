@@ -106,7 +106,9 @@ def get_reports_overview_payload() -> dict[str, Any]:
         'pipeline_status': get_pipeline_status(storage_context),
         'reporting_context': get_reporting_context(storage_context),
         'current_status': get_current_status(report_counts, storage_context, report_type_coverage),
-        'reporting_operating_model': get_reporting_operating_model(report_counts, storage_context, report_type_coverage),
+        'reporting_operating_model': get_reporting_operating_model(
+            report_counts, storage_context, report_type_coverage
+        ),
         'data_collection_status': get_data_collection_status(),
         'storage_context': storage_context,
     }
@@ -141,24 +143,14 @@ def count_reports() -> int:
 
 
 def count_reports_by_status(statuses: list[str]) -> int:
-    return int(
-        db.session.scalar(
-            select(func.count(Report.id)).where(Report.status.in_(statuses))
-        )
-        or 0
-    )
+    return int(db.session.scalar(select(func.count(Report.id)).where(Report.status.in_(statuses))) or 0)
 
 
 def count_reports_generated_this_month() -> int:
     now = datetime.now(UTC)
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
-    return int(
-        db.session.scalar(
-            select(func.count(Report.id)).where(Report.created_at >= month_start)
-        )
-        or 0
-    )
+    return int(db.session.scalar(select(func.count(Report.id)).where(Report.created_at >= month_start)) or 0)
 
 
 def count_report_schedules() -> int:
@@ -166,12 +158,7 @@ def count_report_schedules() -> int:
 
 
 def count_active_report_schedules() -> int:
-    return int(
-        db.session.scalar(
-            select(func.count(ReportSchedule.id)).where(ReportSchedule.is_enabled.is_(True))
-        )
-        or 0
-    )
+    return int(db.session.scalar(select(func.count(ReportSchedule.id)).where(ReportSchedule.is_enabled.is_(True))) or 0)
 
 
 def count_custom_report_templates() -> int:
@@ -212,9 +199,7 @@ def get_summary_cards(report_counts: dict[str, int]) -> list[dict[str, str]]:
 
 
 def get_recent_reports(limit: int = 5) -> list[dict[str, Any]]:
-    reports = db.session.scalars(
-        select(Report).order_by(Report.created_at.desc()).limit(limit)
-    ).all()
+    reports = db.session.scalars(select(Report).order_by(Report.created_at.desc()).limit(limit)).all()
 
     return [serialize_recent_report(report) for report in reports]
 
@@ -292,9 +277,7 @@ def get_storage_context() -> dict[str, Any]:
         status = 'selected'
         display_status = 'S3-Compatible Storage'
         tone = 'green'
-        description = (
-            'S3-compatible object storage is selected as the report artifact backend. Detailed bucket, endpoint, credential, and datastore validation is handled on the Storage page.'
-        )
+        description = 'S3-compatible object storage is selected as the report artifact backend. Detailed bucket, endpoint, credential, and datastore validation is handled on the Storage page.'
         active_detail = 'S3-compatible object storage'
     else:
         root_writable = bool(local_health.get('root_writable', False))
@@ -392,7 +375,7 @@ def get_reporting_context(storage_context: dict[str, Any]) -> list[dict[str, Any
         },
         {
             'title': 'Storage and lifecycle',
-            'description': f"Generated artifacts are stored through the active {storage_context['active_detail']} backend with domain-aware object prefixes.",
+            'description': f'Generated artifacts are stored through the active {storage_context["active_detail"]} backend with domain-aware object prefixes.',
             'icon': 'archive',
             'bullets': [
                 'Local and S3-compatible storage use the same artifact naming model.',
@@ -422,13 +405,13 @@ def get_current_status(
         {
             'label': 'Generated Reports',
             'value': str(report_counts['total']),
-            'description': f"{report_counts['ready']} ready, {report_counts['pending']} in progress, {report_counts['archived']} archived.",
+            'description': f'{report_counts["ready"]} ready, {report_counts["pending"]} in progress, {report_counts["archived"]} archived.',
             'tone': 'blue' if report_counts['total'] else 'gray',
             'icon': 'files',
         },
         {
             'label': 'KubeReport Coverage',
-            'value': f"{kubernetes_coverage['available_count']}/{kubernetes_coverage['total_count']}",
+            'value': f'{kubernetes_coverage["available_count"]}/{kubernetes_coverage["total_count"]}',
             'description': 'Available infrastructure report types with implemented PDF contracts.',
             'tone': 'green',
             'icon': 'clipboard-check',
@@ -450,7 +433,7 @@ def get_current_status(
         {
             'label': 'Schedule Automation',
             'value': str(report_counts['active_schedules']),
-            'description': f"{report_counts['schedules']} total schedules, {report_counts['active_schedules']} enabled for recurring generation.",
+            'description': f'{report_counts["schedules"]} total schedules, {report_counts["active_schedules"]} enabled for recurring generation.',
             'tone': 'green' if report_counts['active_schedules'] else 'gray',
             'icon': 'calendar-clock',
         },

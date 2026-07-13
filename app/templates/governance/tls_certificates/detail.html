@@ -239,11 +239,15 @@
                                         <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white text-amber-600 shadow-sm dark:bg-slate-800 dark:text-amber-300">
                                             <i data-lucide="network" class="h-4 w-4"></i>
                                         </span>
-                                        <div class="grid min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-3 gap-y-1">
-                                            <span class="text-xs font-medium text-amber-700 dark:text-amber-300">Ingress</span>
-                                            <span class="min-w-0 break-words text-sm font-semibold text-slate-900 dark:text-white">{{ consumer.name }}</span>
-                                            <span class="text-xs font-medium text-amber-700 dark:text-amber-300">Namespace</span>
-                                            <span class="min-w-0 break-words text-sm font-medium text-slate-700 dark:text-slate-200">{{ consumer.namespace }}</span>
+                                        <div class="min-w-0 flex-1 space-y-2">
+                                            <div class="grid grid-cols-[5.5rem_minmax(0,1fr)] items-start gap-3">
+                                                <span class="text-xs font-medium text-amber-700 dark:text-amber-300">Ingress</span>
+                                                <span class="min-w-0 break-words text-sm font-semibold text-slate-900 dark:text-white">{{ consumer.name }}</span>
+                                            </div>
+                                            <div class="grid grid-cols-[5.5rem_minmax(0,1fr)] items-start gap-3">
+                                                <span class="text-xs font-medium text-amber-700 dark:text-amber-300">Namespace</span>
+                                                <span class="min-w-0 break-words text-sm font-medium text-slate-700 dark:text-slate-200">{{ consumer.namespace }}</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

@@ -84,7 +84,9 @@ def get_generated_reports_payload(
 
     return {
         'page_title': 'Generated Reports',
-        'page_subtitle': ('Browse, filter, generate, download, and review infrastructure report artifacts from the shared reporting pipeline.'),
+        'page_subtitle': (
+            'Browse, filter, generate, download, and review infrastructure report artifacts from the shared reporting pipeline.'
+        ),
         'summary_cards': summary_cards,
         'filter_options': get_filter_options(),
         'selected_filters': selected_filters,
@@ -146,13 +148,14 @@ def get_report_detail_payload(
     }
 
 
-
 def get_hero_posture() -> list[dict[str, str]]:
     backend_name = _get_active_storage_backend_name()
     total_reports = _count_reports()
-    ready_reports = _count_reports_by_status([
-        'ready',
-    ])
+    ready_reports = _count_reports_by_status(
+        [
+            'ready',
+        ]
+    )
     missing_artifacts = _count_missing_artifacts()
 
     storage_label = 'S3-Compatible Storage' if backend_name == 's3' else 'Local Storage'
@@ -182,6 +185,7 @@ def get_hero_posture() -> list[dict[str, str]]:
             'tone': storage_tone,
         },
     ]
+
 
 def get_summary_cards() -> list[dict[str, str]]:
     total_reports = _count_reports()
@@ -691,15 +695,10 @@ def get_recommended_actions() -> list[dict[str, str]]:
     return actions
 
 
-
 def bulk_archive_report_records(
     report_ids: Sequence[int],
 ) -> tuple[bool, str]:
-    normalized_ids = [
-        int(report_id)
-        for report_id in report_ids
-        if str(report_id).isdigit()
-    ]
+    normalized_ids = [int(report_id) for report_id in report_ids if str(report_id).isdigit()]
 
     if not normalized_ids:
         return False, 'Select at least one report to archive.'
@@ -737,6 +736,7 @@ def bulk_archive_report_records(
     db.session.commit()
 
     return True, f'Archived {len(reports)} report(s).'
+
 
 def _apply_filters(
     statement: Select[tuple[Report]],
@@ -2016,7 +2016,6 @@ def _count_reports_by_status(
     )
 
 
-
 def _format_report_domain(
     report_domain: str | None,
 ) -> str:
@@ -2050,11 +2049,14 @@ def _format_source_kind(
 
     return labels.get(
         source_kind or 'kubernetes',
-        (source_kind or 'kubernetes').replace(
+        (source_kind or 'kubernetes')
+        .replace(
             '_',
             ' ',
-        ).title(),
+        )
+        .title(),
     )
+
 
 def _format_period(
     value: str,

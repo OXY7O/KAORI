@@ -498,7 +498,9 @@ def _apply_form_state_to_schedule(schedule: ReportSchedule, form_state: dict[str
     schedule.cadence = form_state['cadence']
     schedule.run_time = form_state['run_time']
     schedule.day_of_week = _parse_optional_int(form_state['day_of_week']) if form_state['cadence'] == 'weekly' else None
-    schedule.day_of_month = _parse_optional_int(form_state['day_of_month']) if form_state['cadence'] == 'monthly' else None
+    schedule.day_of_month = (
+        _parse_optional_int(form_state['day_of_month']) if form_state['cadence'] == 'monthly' else None
+    )
     schedule.timezone = form_state['timezone']
     schedule.is_enabled = form_state['is_enabled'] == '1'
 
@@ -549,7 +551,9 @@ def _get_schedule_rows() -> list[dict[str, Any]]:
 
 def _get_recent_runs(limit: int = 8) -> list[dict[str, Any]]:
     runs = db.session.scalars(
-        select(ReportScheduleRun).order_by(ReportScheduleRun.started_at.desc(), ReportScheduleRun.id.desc()).limit(limit)
+        select(ReportScheduleRun)
+        .order_by(ReportScheduleRun.started_at.desc(), ReportScheduleRun.id.desc())
+        .limit(limit)
     ).all()
     schedule_map = _get_schedule_map([item.schedule_id for item in runs if item.schedule_id])
 
@@ -566,7 +570,9 @@ def _serialize_schedule(schedule: ReportSchedule, cluster_map: dict[str, str]) -
         'report_type_value': schedule.report_type,
         'report_type': REPORT_TYPE_LABELS.get(schedule.report_type, schedule.report_type.replace('_', ' ').title()),
         'cluster_id': schedule.cluster_id or '',
-        'cluster': cluster_map.get(schedule.cluster_id or '', 'All Clusters' if not schedule.cluster_id else 'Unknown Cluster'),
+        'cluster': cluster_map.get(
+            schedule.cluster_id or '', 'All Clusters' if not schedule.cluster_id else 'Unknown Cluster'
+        ),
         'namespace': schedule.namespace or 'All Namespaces',
         'period': schedule.period,
         'output_format': schedule.output_format.upper(),

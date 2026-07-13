@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Mapping, Protocol
+from typing import Protocol
 
 
 @dataclass(frozen=True)

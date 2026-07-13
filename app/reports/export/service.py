@@ -159,7 +159,7 @@ def generate_pdf_for_report(
                 failed_report.file_path = previous_file_path
                 failed_report.file_size_bytes = previous_file_size_bytes
                 failed_report.error_message = (
-                    'Regeneration failed. Existing ready artifact was retained. ' f'Latest error: {exc}'
+                    f'Regeneration failed. Existing ready artifact was retained. Latest error: {exc}'
                 )
             else:
                 failed_report.status = 'failed'
@@ -469,7 +469,6 @@ def build_report_cover(
     ]
 
 
-
 def build_reader_overview(
     report: Report,
     styles: dict[str, ParagraphStyle],
@@ -510,7 +509,7 @@ def build_reader_overview(
         ],
         [
             'Report family',
-            f"{REPORT_DOMAIN_LABELS.get(getattr(report, 'report_domain', ''), 'KubeReport')} / {SOURCE_KIND_LABELS.get(getattr(report, 'source_kind', ''), 'Kubernetes')}",
+            f'{REPORT_DOMAIN_LABELS.get(getattr(report, "report_domain", ""), "KubeReport")} / {SOURCE_KIND_LABELS.get(getattr(report, "source_kind", ""), "Kubernetes")}',
         ],
         [
             'Report scope',

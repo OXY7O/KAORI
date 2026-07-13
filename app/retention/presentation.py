@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import os
 import socket
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from time import monotonic
-from typing import Any, Callable
+from typing import Any
 from urllib.parse import urlparse
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
@@ -164,20 +165,24 @@ def _build_archive_posture(domain_name: str) -> dict[str, Any]:
         ArchiveArtifact.created_at.desc(),
         ArchiveArtifact.id.desc(),
     ).first()
-    last_verified = domain_query.filter(
-        ArchiveArtifact.status.in_([ARCHIVE_STATUS_READY, ARCHIVE_STATUS_CLEANUP_PARTIAL]),
-        ArchiveArtifact.verified_at.is_not(None),
-    ).order_by(
-        ArchiveArtifact.verified_at.desc(),
-        ArchiveArtifact.id.desc(),
-    ).first()
+    last_verified = (
+        domain_query.filter(
+            ArchiveArtifact.status.in_([ARCHIVE_STATUS_READY, ARCHIVE_STATUS_CLEANUP_PARTIAL]),
+            ArchiveArtifact.verified_at.is_not(None),
+        )
+        .order_by(
+            ArchiveArtifact.verified_at.desc(),
+            ArchiveArtifact.id.desc(),
+        )
+        .first()
+    )
     active_count = domain_query.filter(ArchiveArtifact.status.in_(ACTIVE_ARCHIVE_STATUSES)).count()
     failed_count = domain_query.filter(ArchiveArtifact.status == ARCHIVE_STATUS_FAILED).count()
     total_archives = domain_query.count()
     stored_bytes = (
-        domain_query.filter(
-            ArchiveArtifact.status.in_([ARCHIVE_STATUS_READY, ARCHIVE_STATUS_CLEANUP_PARTIAL])
-        ).with_entities(func.coalesce(func.sum(ArchiveArtifact.size_bytes), 0)).scalar()
+        domain_query.filter(ArchiveArtifact.status.in_([ARCHIVE_STATUS_READY, ARCHIVE_STATUS_CLEANUP_PARTIAL]))
+        .with_entities(func.coalesce(func.sum(ArchiveArtifact.size_bytes), 0))
+        .scalar()
         or 0
     )
 
@@ -396,8 +401,7 @@ def _inspect_retention_worker() -> dict[str, Any]:
 
         worker_names = sorted(queue_map.keys())
         queue_ready = any(
-            any(str(queue.get('name') or '') == queue_name for queue in queues or [])
-            for queues in queue_map.values()
+            any(str(queue.get('name') or '') == queue_name for queue in queues or []) for queues in queue_map.values()
         )
         if queue_ready:
             return {

@@ -1253,7 +1253,7 @@ def build_top_consumers_detail_section(
         ):
             continue
 
-        consumer_name = f'{_pdf_value(row.get("namespace", "-"))}/' f'{_pdf_value(row.get("workload", "-"))}'
+        consumer_name = f'{_pdf_value(row.get("namespace", "-"))}/{_pdf_value(row.get("workload", "-"))}'
 
         table_rows.append(
             [

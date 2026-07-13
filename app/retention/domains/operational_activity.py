@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Iterable, Iterator
 from datetime import UTC, datetime, timedelta
-from typing import Any, Iterable, Iterator
+from typing import Any
 
 from flask import current_app
 from sqlalchemy import and_, func, or_
@@ -144,9 +145,7 @@ class OperationalActivityArchiveDomain:
 
     @staticmethod
     def _delete_id_batch(record_ids: list[int]) -> int:
-        deleted = Notification.query.filter(Notification.id.in_(record_ids)).delete(
-            synchronize_session=False
-        )
+        deleted = Notification.query.filter(Notification.id.in_(record_ids)).delete(synchronize_session=False)
         db.session.commit()
         return int(deleted or 0)
 
