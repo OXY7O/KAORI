@@ -170,9 +170,9 @@
                                                         <div class="border-t border-dashed border-amber-400/80 pt-2 first:border-t-0 first:pt-0 dark:border-amber-500/35">
                                                             <div class="grid grid-cols-[5rem_minmax(0,1fr)] items-start gap-x-2 gap-y-1">
                                                                 <span class="text-[10px] font-medium text-amber-600 dark:text-amber-300">Ingress</span>
-                                                                <span class="break-words font-medium">{{ item.name or item.get('name', 'Unknown ingress') }}</span>
+                                                                <span class="min-w-0 break-words text-right font-medium">{{ item.name or item.get('name', 'Unknown ingress') }}</span>
                                                                 <span class="text-[10px] font-medium text-amber-600 dark:text-amber-300">Namespace</span>
-                                                                <span class="break-words text-amber-700/75 dark:text-amber-200/70">{{ item.namespace or item.get('namespace', record.namespace) }}</span>
+                                                                <span class="min-w-0 break-words text-right text-amber-700/75 dark:text-amber-200/70">{{ item.namespace or item.get('namespace', record.namespace) }}</span>
                                                             </div>
                                                             {% if hosts %}
                                                                 <div class="mt-1.5">
