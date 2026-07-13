@@ -84,8 +84,8 @@
                         <td colspan="6" class="p-0 leading-none align-top">
                             <div id="tls-secret-detail-content-{{ record.id }}" data-open="false"
                                  class="border-t border-slate-200 bg-slate-50/70 px-6 py-5 text-left dark:border-slate-700 dark:bg-slate-900/40">
-                                <div class="mb-4 overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-50 via-white to-blue-50/70 shadow-sm dark:border-slate-700 dark:from-slate-900 dark:via-slate-900 dark:to-blue-950/30">
-                                    <div class="flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+                                    <div class="flex flex-col gap-4 border-b border-slate-200 bg-gradient-to-r from-slate-50 via-white to-blue-50/70 px-5 py-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:from-slate-900 dark:via-slate-900 dark:to-blue-950/30">
                                         <div class="flex min-w-0 items-start gap-3 text-left">
                                             <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300">
                                                 <i data-lucide="key-round" class="h-5 w-5"></i>
@@ -110,9 +110,9 @@
                                             </a>
                                         </div>
                                     </div>
-                                </div>
 
-                                <div class="grid gap-4 xl:grid-cols-4">
+                                    <div class="bg-slate-50/70 p-4 dark:bg-slate-900/40">
+                                        <div class="grid gap-4 xl:grid-cols-4">
                                     {% call detail_card(
                                         'Certificate identity',
                                         'badge-check',
@@ -176,15 +176,31 @@
                                                     {% for item in record.used_by[:4] %}
                                                         {% set hosts = item.hosts if item.hosts is defined else item.get('hosts', []) %}
                                                         <div class="border-t border-amber-200/70 pt-2 first:border-t-0 first:pt-0 dark:border-amber-400/15">
-                                                            <p class="break-words font-medium">{{ item.name or item.get('name', 'Unknown ingress') }}</p>
-                                                            <p class="text-amber-700/75 dark:text-amber-200/70">{{ item.namespace or item.get('namespace', record.namespace) }}</p>
-                                                            {% if hosts %}
-                                                                <div class="mt-1 flex flex-col gap-0.5">
-                                                                    {% for host in hosts %}
-                                                                        <a href="https://{{ host }}" target="_blank" rel="noopener noreferrer" class="break-all font-normal text-amber-800 underline decoration-amber-400/60 underline-offset-2 transition hover:text-amber-950 dark:text-amber-100 dark:hover:text-white">{{ host }}</a>
-                                                                    {% endfor %}
+                                                            <div class="grid gap-1.5">
+                                                                <div>
+                                                                    <p class="text-[10px] font-medium text-amber-700/70 dark:text-amber-200/60">Ingress</p>
+                                                                    <p class="break-words font-medium">{{ item.name or item.get('name', 'Unknown ingress') }}</p>
                                                                 </div>
-                                                            {% endif %}
+                                                                <div>
+                                                                    <p class="text-[10px] font-medium text-amber-700/70 dark:text-amber-200/60">Namespace</p>
+                                                                    <p class="break-words text-amber-800 dark:text-amber-100">{{ item.namespace or item.get('namespace', record.namespace) }}</p>
+                                                                </div>
+                                                                <div>
+                                                                    <p class="text-[10px] font-medium text-amber-700/70 dark:text-amber-200/60">Mapped hosts</p>
+                                                                    {% if hosts %}
+                                                                        <div class="mt-0.5 flex flex-col gap-1">
+                                                                            {% for host in hosts %}
+                                                                                <a href="https://{{ host }}" target="_blank" rel="noopener noreferrer" class="inline-flex w-fit max-w-full items-start gap-1.5 break-all font-normal text-amber-800 transition hover:text-amber-950 dark:text-amber-100 dark:hover:text-white">
+                                                                                    <span>{{ host }}</span>
+                                                                                    <i data-lucide="external-link" class="mt-0.5 h-3.5 w-3.5 shrink-0"></i>
+                                                                                </a>
+                                                                            {% endfor %}
+                                                                        </div>
+                                                                    {% else %}
+                                                                        <p class="text-amber-700/75 dark:text-amber-200/70">No mapped host.</p>
+                                                                    {% endif %}
+                                                                </div>
+                                                            </div>
                                                         </div>
                                                     {% endfor %}
                                                 </div>
@@ -232,6 +248,8 @@
                                             {{ detail_tip('SAN values are the hostnames covered by the certificate. They may differ from the Ingress hosts currently mapped to the Secret.', 'violet', 'globe-2') }}
                                         </div>
                                     {% endcall %}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </td>
