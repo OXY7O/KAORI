@@ -3,20 +3,9 @@ from flask_wtf.file import FileField, FileRequired
 from wtforms import BooleanField, SelectField, StringField, TextAreaField
 from wtforms.validators import DataRequired, Length, Optional
 
-ENVIRONMENT_CHOICES = [
-    (
-        'dev',
-        'Development',
-    ),
-    (
-        'stg',
-        'Staging',
-    ),
-    (
-        'prd',
-        'Production',
-    ),
-]
+from app.cluster.constants import ENVIRONMENTS
+
+ENVIRONMENT_CHOICES = ENVIRONMENTS
 
 
 class ClusterCreateForm(FlaskForm):

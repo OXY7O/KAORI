@@ -6,6 +6,7 @@ from typing import Any
 
 from flask import url_for
 
+from app.cluster.constants import get_environment_label
 from app.models import (
     Cluster,
     ClusterInventory,
@@ -258,7 +259,9 @@ def _limit_graph(
 
     kept_ids = {node['data']['id'] for node in kept}
     limited_edges = [
-        edge for edge in edges if edge['data']['source'] in kept_ids and edge['data']['target'] in kept_ids
+        edge
+        for edge in edges
+        if edge['data']['source'] in kept_ids and edge['data']['target'] in kept_ids
     ]
     return kept, limited_edges, len(nodes) - len(kept)
 
@@ -395,19 +398,16 @@ def build_topology_graph(
         NamespaceInventory.namespace.asc(),
     ).all()
 
+
     def namespaced_query(model):
         query = _apply_cluster_filter(model.query, model, cluster_ids)
         return _apply_namespace_filter(query, model, namespace)
 
-    pods = (
-        namespaced_query(PodInventory)
-        .order_by(
-            PodInventory.cluster_id.asc(),
-            PodInventory.namespace.asc(),
-            PodInventory.pod_name.asc(),
-        )
-        .all()
-    )
+    pods = namespaced_query(PodInventory).order_by(
+        PodInventory.cluster_id.asc(),
+        PodInventory.namespace.asc(),
+        PodInventory.pod_name.asc(),
+    ).all()
 
     node_query = _apply_cluster_filter(NodeInventory.query, NodeInventory, cluster_ids)
     if namespace:
@@ -421,50 +421,37 @@ def build_topology_graph(
         NodeInventory.node_name.asc(),
     ).all()
 
-    workloads = (
-        namespaced_query(WorkloadInventory)
-        .order_by(
-            WorkloadInventory.cluster_id.asc(),
-            WorkloadInventory.namespace.asc(),
-            WorkloadInventory.workload_type.asc(),
-            WorkloadInventory.name.asc(),
-        )
-        .all()
-    )
-    services = (
-        namespaced_query(ServiceInventory)
-        .order_by(
-            ServiceInventory.cluster_id.asc(),
-            ServiceInventory.namespace.asc(),
-            ServiceInventory.service_name.asc(),
-        )
-        .all()
-    )
-    ingresses = (
-        namespaced_query(IngressInventory)
-        .order_by(
-            IngressInventory.cluster_id.asc(),
-            IngressInventory.namespace.asc(),
-            IngressInventory.ingress_name.asc(),
-        )
-        .all()
-    )
-    configurations = (
-        namespaced_query(ConfigurationInventory)
-        .order_by(
-            ConfigurationInventory.cluster_id.asc(),
-            ConfigurationInventory.namespace.asc(),
-            ConfigurationInventory.object_type.asc(),
-            ConfigurationInventory.name.asc(),
-        )
-        .all()
-    )
+    workloads = namespaced_query(WorkloadInventory).order_by(
+        WorkloadInventory.cluster_id.asc(),
+        WorkloadInventory.namespace.asc(),
+        WorkloadInventory.workload_type.asc(),
+        WorkloadInventory.name.asc(),
+    ).all()
+    services = namespaced_query(ServiceInventory).order_by(
+        ServiceInventory.cluster_id.asc(),
+        ServiceInventory.namespace.asc(),
+        ServiceInventory.service_name.asc(),
+    ).all()
+    ingresses = namespaced_query(IngressInventory).order_by(
+        IngressInventory.cluster_id.asc(),
+        IngressInventory.namespace.asc(),
+        IngressInventory.ingress_name.asc(),
+    ).all()
+    configurations = namespaced_query(ConfigurationInventory).order_by(
+        ConfigurationInventory.cluster_id.asc(),
+        ConfigurationInventory.namespace.asc(),
+        ConfigurationInventory.object_type.asc(),
+        ConfigurationInventory.name.asc(),
+    ).all()
 
     storage_query = _apply_cluster_filter(StorageInventory.query, StorageInventory, cluster_ids)
     if namespace:
         storage_query = storage_query.filter(
             (StorageInventory.namespace == namespace)
-            | (StorageInventory.namespace.is_(None) & (StorageInventory.storage_type == 'PersistentVolume'))
+            | (
+                StorageInventory.namespace.is_(None)
+                & (StorageInventory.storage_type == 'PersistentVolume')
+            )
         )
     storage_items = storage_query.order_by(
         StorageInventory.cluster_id.asc(),
@@ -477,7 +464,8 @@ def build_topology_graph(
         selected_claims = [
             item
             for item in storage_items
-            if item.storage_type == 'PersistentVolumeClaim' and item.namespace == namespace
+            if item.storage_type == 'PersistentVolumeClaim'
+            and item.namespace == namespace
         ]
         selected_volume_names = {
             str((item.details or {}).get('volume_name') or '').strip()
@@ -487,8 +475,14 @@ def build_topology_graph(
         storage_items = [
             item
             for item in storage_items
-            if (item.storage_type == 'PersistentVolumeClaim' and item.namespace == namespace)
-            or (item.storage_type == 'PersistentVolume' and item.name in selected_volume_names)
+            if (
+                item.storage_type == 'PersistentVolumeClaim'
+                and item.namespace == namespace
+            )
+            or (
+                item.storage_type == 'PersistentVolume'
+                and item.name in selected_volume_names
+            )
         ]
 
     cluster_inventory_rows = (
@@ -543,7 +537,7 @@ def build_topology_graph(
                 namespace=None,
                 parent=None,
                 fields=[
-                    _field('Environment', cluster.environment),
+                    _field('Environment', get_environment_label(cluster.environment)),
                     _field('Status', cluster.status),
                     _field('API server', cluster.server),
                     _field('Kubernetes version', inventory_row.kubernetes_version if inventory_row else None),
@@ -961,8 +955,8 @@ def build_topology_graph(
                         source_label=ingress.ingress_name,
                         target_label=service_name,
                         description=(
-                            f'Ingress path {backend.get("path") or "/"} routes to Service '
-                            f'{service_name}:{backend.get("service_port") or "-"}'
+                            f"Ingress path {backend.get('path') or '/'} routes to Service "
+                            f"{service_name}:{backend.get('service_port') or '-'}"
                         ),
                     )
                 )
@@ -1066,7 +1060,9 @@ def build_topology_graph(
     # indirect configuration and storage edges when the matching scope is not selected.
     if not include_all_relationships and scope == 'all' and depth == '3':
         allowed_relationships = {'owns', 'scheduled_on', 'selects', 'routes_to'}
-        graph_edges = [edge for edge in graph_edges if edge['data']['relationship'] in allowed_relationships]
+        graph_edges = [
+            edge for edge in graph_edges if edge['data']['relationship'] in allowed_relationships
+        ]
 
     graph_nodes, graph_edges, omitted_nodes = _limit_graph(
         graph_nodes,
