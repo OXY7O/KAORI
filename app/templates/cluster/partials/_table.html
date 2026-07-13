@@ -231,7 +231,7 @@
                                           hx-post="{{ url_for('cluster.test_cluster', cluster_id=cluster.id, **table_query) }}"
                                           hx-target="this"
                                           hx-swap="none"
-                                          hx-on::after-request="htmx.ajax('GET', '{{ url_for('cluster.cluster_table', **table_query) }}', {target: '#cluster-table-container', swap: 'outerHTML'})"
+                                          data-operational-refresh-url="{{ url_for('cluster.cluster_table', **table_query) }}"
                                           data-operational-progress-title="Cluster connection test in progress"
                                           data-operational-progress-message="Testing Kubernetes API connectivity for {{ cluster.name|e }}."
                                           class="inline-flex">
@@ -247,7 +247,7 @@
                                           hx-post="{{ url_for('inventory.sync', cluster_id=cluster.id, **table_query) }}"
                                           hx-target="this"
                                           hx-swap="none"
-                                          hx-on::after-request="htmx.ajax('GET', '{{ url_for('cluster.cluster_table', **table_query) }}', {target: '#cluster-table-container', swap: 'outerHTML'})"
+                                          data-operational-refresh-url="{{ url_for('cluster.cluster_table', **table_query) }}"
                                           data-operational-progress-title="Cluster inventory sync in progress"
                                           data-operational-progress-message="Synchronizing Kubernetes inventory for {{ cluster.name|e }}."
                                           class="inline-flex">

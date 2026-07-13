@@ -493,6 +493,65 @@
             }
 
             const operationalProgressToastByRequest = new WeakMap()
+            const operationalRefreshInFlight = new Map()
+
+            window.refreshOperationalTable = async (url) => {
+                if (!url) {
+                    return
+                }
+
+                const targetSelector = '#cluster-table-container'
+                const currentTarget = document.querySelector(targetSelector)
+
+                if (!currentTarget) {
+                    return
+                }
+
+                const previousController = operationalRefreshInFlight.get(targetSelector)
+                if (previousController) {
+                    previousController.abort()
+                }
+
+                const controller = new AbortController()
+                operationalRefreshInFlight.set(targetSelector, controller)
+
+                try {
+                    const response = await fetch(url, {
+                        headers: {
+                            'HX-Request': 'true',
+                            'X-KAORI-Operational-Refresh': 'true',
+                        },
+                        signal: controller.signal,
+                        credentials: 'same-origin',
+                    })
+
+                    if (!response.ok) {
+                        return
+                    }
+
+                    const html = await response.text()
+                    const template = document.createElement('template')
+                    template.innerHTML = html.trim()
+                    const replacement = template.content.querySelector(targetSelector)
+                    const liveTarget = document.querySelector(targetSelector)
+
+                    if (!replacement || !liveTarget) {
+                        return
+                    }
+
+                    liveTarget.replaceWith(replacement)
+                    window.htmx?.process(replacement)
+                    window.lucide?.createIcons()
+                } catch (error) {
+                    if (error?.name !== 'AbortError') {
+                        console.error('Operational table refresh failed.', error)
+                    }
+                } finally {
+                    if (operationalRefreshInFlight.get(targetSelector) === controller) {
+                        operationalRefreshInFlight.delete(targetSelector)
+                    }
+                }
+            }
 
             document.addEventListener('htmx:beforeRequest', (event) => {
                 const requestElement = event.detail?.elt
@@ -515,27 +574,47 @@
 
                 if (toastId) {
                     operationalProgressToastByRequest.set(request, toastId)
+                    request.__kaoriOperationalProgressToastId = toastId
+                    progressOwner.dataset.operationalProgressToastId = toastId
                 }
             })
 
             const finishOperationalProgressRequest = (event) => {
                 const request = event.detail?.xhr
+                const requestElement = event.detail?.elt
+                const progressOwner = requestElement?.closest?.('[data-operational-progress-title]')
+                const toastId = request
+                    ? operationalProgressToastByRequest.get(request) || request.__kaoriOperationalProgressToastId
+                    : progressOwner?.dataset.operationalProgressToastId
 
-                if (!request) {
-                    return
+                if (toastId) {
+                    window.dismissOperationalProgressToast(toastId)
                 }
 
-                const toastId = operationalProgressToastByRequest.get(request)
-
-                if (!toastId) {
-                    return
+                if (request) {
+                    operationalProgressToastByRequest.delete(request)
+                    delete request.__kaoriOperationalProgressToastId
                 }
 
-                window.dismissOperationalProgressToast(toastId)
-                operationalProgressToastByRequest.delete(request)
+                if (progressOwner) {
+                    delete progressOwner.dataset.operationalProgressToastId
+                }
             }
 
-            document.addEventListener('htmx:afterRequest', finishOperationalProgressRequest)
+            document.addEventListener('htmx:beforeOnLoad', finishOperationalProgressRequest)
+            document.addEventListener('htmx:beforeSwap', finishOperationalProgressRequest)
+            document.addEventListener('htmx:afterRequest', (event) => {
+                finishOperationalProgressRequest(event)
+
+                const requestElement = event.detail?.elt
+                const progressOwner = requestElement?.closest?.('[data-operational-refresh-url]')
+                const refreshUrl = progressOwner?.dataset.operationalRefreshUrl
+
+                if (refreshUrl) {
+                    window.refreshOperationalTable(refreshUrl)
+                }
+            })
+            document.addEventListener('htmx:responseError', finishOperationalProgressRequest)
             document.addEventListener('htmx:sendError', finishOperationalProgressRequest)
             document.addEventListener('htmx:timeout', finishOperationalProgressRequest)
             document.addEventListener('htmx:abort', finishOperationalProgressRequest)
