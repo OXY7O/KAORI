@@ -25,13 +25,13 @@
     <div class="overflow-x-auto">
         <table class="min-w-full text-slate-900 dark:text-slate-100">
             <thead>
-                <tr class="border-b border-slate-200 bg-slate-50 text-center text-xs tracking-wide text-slate-600 uppercase dark:border-slate-700 dark:bg-slate-700/40 dark:text-slate-300">
+                <tr class="border-b border-slate-200 bg-slate-50 text-left text-xs tracking-wide text-slate-600 uppercase dark:border-slate-700 dark:bg-slate-700/40 dark:text-slate-300">
                     <th class="px-4 py-2 text-left">Cluster</th>
                     <th class="px-4 py-2 text-left">Namespace</th>
                     <th class="px-4 py-2 text-left">Secret</th>
                     <th class="px-4 py-2 text-left">Expiry</th>
                     <th class="px-4 py-2 text-left">Status</th>
-                    <th class="px-4 py-2 text-center">Details</th>
+                    <th class="px-4 py-2 text-left">Details</th>
                 </tr>
             </thead>
             <tbody>
@@ -70,7 +70,7 @@
                         <td class="px-4 py-2 text-left align-middle">
                             {% with status=record.status %}{% include "governance/tls_certificates/partials/_status_badge.html" %}{% endwith %}
                         </td>
-                        <td class="px-4 py-2 text-center align-middle">
+                        <td class="px-4 py-2 text-left align-middle">
                             <button type="button"
                                     data-tls-toggle="true"
                                     data-tls-id="{{ record.id }}"
