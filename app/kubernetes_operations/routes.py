@@ -4,6 +4,7 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 
 from app.cluster.onboarding import has_registered_clusters
 from app.kubernetes_operations.secrets.routes import (
+    create_secret,
     secret_management_index,
     tls_secret_bulk_rotation_apply,
     tls_secret_bulk_rotation_page,
@@ -42,6 +43,14 @@ kubernetes_operations_bp.add_url_rule(
     endpoint='secret_management',
     view_func=secret_management_index,
     methods=['GET'],
+)
+
+
+kubernetes_operations_bp.add_url_rule(
+    '/secrets/create',
+    endpoint='create_secret',
+    view_func=create_secret,
+    methods=['GET', 'POST'],
 )
 
 kubernetes_operations_bp.add_url_rule(
