@@ -181,7 +181,7 @@
                         </div>
                     </div>
 
-                    <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-[0.9fr_1fr_1.2fr_0.85fr]">
+                    <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                         <div class="border-l-2 border-blue-500 pl-3">
                             <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Hot data</p>
                             <p class="mt-1 text-lg font-bold text-slate-900 dark:text-white">{{ retention.retention_days }} days</p>
@@ -276,8 +276,8 @@
             </div>
 
             <section class="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-                <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 xl:divide-x xl:divide-slate-200 dark:xl:divide-slate-700">
-                    <div class="flex items-center gap-3 xl:pr-4">
+                <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                    <div class="flex items-center gap-3">
                         <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300"><i data-lucide="history" class="h-4 w-4"></i></span>
                         <div class="min-w-0">
                             <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Last run</p>
@@ -286,15 +286,15 @@
                             {% else %}<p class="mt-1 text-sm font-semibold text-slate-700 dark:text-slate-200">Never</p>{% endif %}
                         </div>
                     </div>
-                    <div class="flex items-center gap-3 xl:px-4">
+                    <div class="flex items-center gap-3">
                         <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300"><i data-lucide="archive" class="h-4 w-4"></i></span>
                         <div><p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Archives</p><p class="mt-1 text-lg font-bold text-slate-900 dark:text-white">{{ retention.posture.total_archives }}</p></div>
                     </div>
-                    <div class="flex items-center gap-3 xl:px-4">
+                    <div class="flex items-center gap-3">
                         <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300"><i data-lucide="loader-circle" class="h-4 w-4"></i></span>
                         <div><p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Active jobs</p><p class="mt-1 text-lg font-bold text-slate-900 dark:text-white">{{ retention.posture.active_count }}</p></div>
                     </div>
-                    <div class="flex items-center gap-3 xl:pl-4">
+                    <div class="flex items-center gap-3">
                         <span class="flex h-9 w-9 items-center justify-center rounded-xl {% if retention.posture.failed_count %}bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-300{% else %}bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300{% endif %}"><i data-lucide="circle-alert" class="h-4 w-4"></i></span>
                         <div><p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Failed</p><p class="mt-1 text-lg font-bold {% if retention.posture.failed_count %}text-rose-600 dark:text-rose-300{% else %}text-slate-900 dark:text-white{% endif %}">{{ retention.posture.failed_count }}</p></div>
                     </div>
