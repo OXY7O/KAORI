@@ -1,6 +1,7 @@
 {% set read_count = summary.total_count - summary.unread_count %}
 {% set success_ratio = ((summary.success_count / summary.total_count) * 100) | round(0) if summary.total_count > 0 else 0 %}
-<div class="space-y-4">
+{% set read_ratio = ((read_count / summary.total_count) * 100) | round(0) if summary.total_count > 0 else 0 %}
+<div class="space-y-3">
     <div class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
             <h2 class="text-lg font-semibold text-slate-950 dark:text-white">Activity audit snapshot</h2>
@@ -11,94 +12,96 @@
         </div>
     </div>
 
-    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+    <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
             <div class="flex items-start justify-between gap-3">
                 <div>
                     <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Total Activities</p>
-                    <div class="mt-4 text-4xl font-bold tracking-tight text-blue-600 dark:text-blue-400">{{ summary.total_count }}</div>
+                    <div class="mt-3 text-3xl font-bold tracking-tight text-blue-600 dark:text-blue-400">{{ summary.total_count }}</div>
                 </div>
-                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
-                    <i data-lucide="list-checks" class="h-5 w-5"></i>
+                <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+                    <i data-lucide="list-checks" class="h-4.5 w-4.5"></i>
                 </div>
             </div>
-            <p class="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">Administrative and operational actions captured in the current audit workspace.</p>
+            <p class="mt-3 border-t border-slate-100 pt-2.5 text-[11px] leading-5 text-slate-500 dark:border-slate-700 dark:text-slate-400">Administrative and operational actions captured in the current audit workspace.</p>
         </div>
 
-        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
             <div class="flex items-start justify-between gap-3">
                 <div>
                     <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Successful Actions</p>
-                    <div class="mt-4 text-4xl font-bold tracking-tight text-blue-600 dark:text-blue-400">{{ summary.success_count }}</div>
+                    <div class="mt-3 text-3xl font-bold tracking-tight text-blue-600 dark:text-blue-400">{{ summary.success_count }}</div>
                 </div>
-                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300">
-                    <i data-lucide="check-circle-2" class="h-5 w-5"></i>
+                <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300">
+                    <i data-lucide="check-circle-2" class="h-4.5 w-4.5"></i>
                 </div>
             </div>
-            <p class="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">Completed activities without warning or error status.</p>
+            <p class="mt-3 border-t border-slate-100 pt-2.5 text-[11px] leading-5 text-slate-500 dark:border-slate-700 dark:text-slate-400">Completed activities without warning or error status.</p>
         </div>
 
-        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
             <div class="flex items-start justify-between gap-3">
                 <div>
                     <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Need Attention</p>
-                    <div class="mt-4 text-4xl font-bold tracking-tight text-blue-600 dark:text-blue-400">{{ summary.attention_count }}</div>
+                    <div class="mt-3 text-3xl font-bold tracking-tight text-blue-600 dark:text-blue-400">{{ summary.attention_count }}</div>
                 </div>
-                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-300">
-                    <i data-lucide="triangle-alert" class="h-5 w-5"></i>
+                <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-300">
+                    <i data-lucide="triangle-alert" class="h-4.5 w-4.5"></i>
                 </div>
             </div>
-            <p class="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">Activities with warning, error, or follow-up context that should be reviewed.</p>
+            <p class="mt-3 border-t border-slate-100 pt-2.5 text-[11px] leading-5 text-slate-500 dark:border-slate-700 dark:text-slate-400">Activities with warning, error, or follow-up context that should be reviewed.</p>
         </div>
 
-        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
             <div class="flex items-start justify-between gap-3">
                 <div>
                     <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Unread Activities</p>
-                    <div class="mt-4 text-4xl font-bold tracking-tight text-blue-600 dark:text-blue-400">{{ summary.unread_count }}</div>
+                    <div class="mt-3 text-3xl font-bold tracking-tight text-blue-600 dark:text-blue-400">{{ summary.unread_count }}</div>
                 </div>
-                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-300">
-                    <i data-lucide="mail" class="h-5 w-5"></i>
+                <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-300">
+                    <i data-lucide="mail" class="h-4.5 w-4.5"></i>
                 </div>
             </div>
-            <p class="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">Unread items remain highlighted so the latest operational actions are easy to find.</p>
+            <p class="mt-3 border-t border-slate-100 pt-2.5 text-[11px] leading-5 text-slate-500 dark:border-slate-700 dark:text-slate-400">Unread items remain highlighted so the latest operational actions are easy to find.</p>
         </div>
     </div>
 
-    <div class="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
-        <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-700 via-blue-600 to-cyan-500 p-5 text-white shadow-sm shadow-blue-500/20">
-            <div class="absolute -top-10 right-0 h-28 w-28 rounded-full bg-white/20 blur-3xl"></div>
+    <div class="grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] xl:items-stretch">
+        <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 p-4 text-white shadow-sm shadow-blue-500/20">
+            <div class="absolute -top-8 right-2 h-24 w-24 rounded-full bg-white/20 blur-3xl"></div>
             <div class="relative flex items-center justify-between gap-4">
                 <div>
-                    <p class="text-xs font-medium uppercase tracking-[0.2em] text-blue-50/80">Read coverage</p>
-                    <div class="mt-3 text-4xl font-bold">{{ (((read_count / summary.total_count) * 100) | round(0) if summary.total_count > 0 else 0) | int }}%</div>
-                    <p class="mt-2 text-sm text-blue-50/85">{{ read_count }} read from {{ summary.total_count }} {{ 'activity' if summary.total_count == 1 else 'activities' }}</p>
+                    <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-blue-50/80">Read coverage</p>
+                    <div class="mt-2 text-3xl font-bold">{{ read_ratio | int }}%</div>
+                    <p class="mt-1 text-sm text-blue-50/85">{{ read_count }} read from {{ summary.total_count }} {{ 'activity' if summary.total_count == 1 else 'activities' }}</p>
                 </div>
-                <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15">
-                    <i data-lucide="mail-check" class="h-7 w-7"></i>
+                <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15">
+                    <i data-lucide="mail-check" class="h-6 w-6"></i>
                 </div>
             </div>
-            <div class="relative mt-5 h-2 overflow-hidden rounded-full bg-white/20">
-                <div class="h-full rounded-full bg-white" style="width: {{ (((read_count / summary.total_count) * 100) | round(0) if summary.total_count > 0 else 0) }}%"></div>
+            <div class="relative mt-4 h-2 overflow-hidden rounded-full bg-white/20">
+                <div class="h-full rounded-full bg-white" style="width: {{ read_ratio }}%"></div>
             </div>
         </div>
 
-        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
             <div class="flex items-start gap-3">
-                <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
-                    <i data-lucide="info" class="h-5 w-5"></i>
+                <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+                    <i data-lucide="info" class="h-4.5 w-4.5"></i>
                 </span>
-                <div>
+                <div class="min-w-0">
                     <h3 class="text-base font-semibold text-slate-950 dark:text-white">Audit workspace information</h3>
-                    <p class="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">This section is intentionally separated from the table, following the inventory layout pattern, so summary information is easier to scan before reviewing detailed rows.</p>
+                    <p class="mt-1 text-sm leading-5 text-slate-500 dark:text-slate-400">Summary information is kept outside the table, following the inventory layout pattern.</p>
                 </div>
             </div>
-            <div class="mt-4 space-y-3">
-                <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-300">
-                    <span class="font-semibold text-slate-800 dark:text-slate-100">Scope:</span> cross-user operational actions, execution outcomes, and recorded metadata.
+            <div class="mt-4 grid gap-2 sm:grid-cols-2">
+                <div class="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3 text-[11px] leading-5 text-slate-600 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-300">
+                    <span class="font-semibold text-slate-800 dark:text-slate-100">Scope:</span>
+                    cross-user operational actions, execution outcomes, and recorded metadata.
                 </div>
-                <div class="rounded-xl border border-blue-200 bg-blue-50/80 px-4 py-3 text-xs text-blue-700 dark:border-blue-900/40 dark:bg-blue-950/20 dark:text-blue-300">
-                    <span class="font-semibold">Boundary:</span> personal notifications stay in the topbar and login security events stay in their dedicated audit view.
+                <div class="rounded-xl border border-blue-200 bg-blue-50/80 px-3.5 py-3 text-[11px] leading-5 text-blue-700 dark:border-blue-900/40 dark:bg-blue-950/20 dark:text-blue-300">
+                    <span class="font-semibold">Boundary:</span>
+                    personal notifications stay in the topbar and login security events stay in their dedicated audit view.
                 </div>
             </div>
         </div>
