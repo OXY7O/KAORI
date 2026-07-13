@@ -6,6 +6,10 @@ from flask import Blueprint, abort, jsonify, redirect, render_template, request,
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 
+from app.notifications.service import (
+    record_operational_activity,
+    get_navigation_notification_context,
+)
 from app.alertmanager.forms import parse_alertmanager_config_form
 from app.alertmanager.service import (
     build_alertmanager_config_context,
@@ -14,8 +18,6 @@ from app.alertmanager.service import (
     save_alertmanager_config,
     test_alertmanager_connection,
 )
-from app.notifications.queries import get_navigation_notification_context
-from app.notifications.writer import record_operational_activity
 from app.rbac.decorators import permission_required
 
 logger = logging.getLogger(__name__)

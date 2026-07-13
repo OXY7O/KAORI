@@ -6,7 +6,7 @@ from typing import Any
 
 from app.models.notification import Notification
 from app.models.user import User
-from .event_catalog import build_event_context, event_label
+from .event_catalog import build_event_context, event_code, event_label
 from .metadata import changed_fields, metadata_items
 from .normalization import standardize_activity_text
 
@@ -107,6 +107,7 @@ def _serialize_notification(
         'user_role': user.role_display_name if user is not None else 'Unknown role',
         'user_auth_source': _auth_source_label(user.auth_source if user is not None else None),
         'event_type': notification.event_type,
+        'event_code': event_code(notification.event_type),
         'event_label': event_label(notification.event_type),
         'status': notification.status,
         'status_label': status_labels.get(notification.status, 'Information'),

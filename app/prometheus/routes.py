@@ -6,14 +6,16 @@ from flask import Blueprint, abort, jsonify, redirect, render_template, request,
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 
+from app.notifications.service import (
+    record_operational_activity,
+    get_navigation_notification_context,
+)
 from app.cluster.service import get_cluster_by_id
 from app.common.integration_errors import describe_integration_failure
 from app.models import Cluster
 from app.prometheus.exceptions import PrometheusError
 from app.prometheus.forms import PrometheusConfigForm
 from app.prometheus.service import PrometheusService
-from app.notifications.queries import get_navigation_notification_context
-from app.notifications.writer import record_operational_activity
 from app.rbac.decorators import permission_required
 
 logger = logging.getLogger(__name__)

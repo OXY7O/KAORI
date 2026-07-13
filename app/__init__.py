@@ -5,6 +5,10 @@ from flask import Flask, render_template
 from flask_login import current_user
 from werkzeug.middleware.proxy_fix import ProxyFix
 
+from app.notifications.service import (
+    get_navigation_notification_context,
+    pop_quick_action_feedback,
+)
 from app.alertmanager.routes import alertmanager_bp
 from app.analytics.routes import analytics_bp
 from app.auth.routes import auth_bp
@@ -20,8 +24,6 @@ from app.health import health_bp
 from app.intelligence.routes import intelligence_bp
 from app.inventory.routes import inventory_bp
 from app.notifications.routes import notifications_bp
-from app.notifications.feedback import pop_quick_action_feedback
-from app.notifications.queries import get_navigation_notification_context
 from app.prometheus.routes import prometheus_bp
 from app.reports.routes import reports_bp
 from app.settings import bp as settings_bp

@@ -2,8 +2,17 @@ from __future__ import annotations
 
 from typing import Any
 
+def event_code(event_type: str) -> str:
+    """Return the concise user-facing event code without domain-only prefixes."""
+    normalized = event_type.strip()
+    prefix = 'operational_activity_'
+    if normalized.startswith(prefix):
+        normalized = normalized[len(prefix):]
+    return normalized or 'activity'
+
+
 def event_label(event_type: str) -> str:
-    return event_type.replace('_', ' ').strip().title() or 'Operational Activity'
+    return event_code(event_type).replace('_', ' ').strip().title() or 'Activity'
 
 
 def _string_metadata(

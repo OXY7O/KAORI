@@ -204,7 +204,7 @@
                                                 <dt class="flex-shrink-0 text-slate-500 dark:text-slate-400">Event type</dt>
                                                 <dd class="flex min-w-0 items-center justify-end gap-2 text-right">
                                                     <span class="truncate font-bold text-slate-700 dark:text-slate-200" title="{{ item.event_label }}">{{ item.event_label }}</span>
-                                                    <span class="hidden max-w-[10rem] truncate rounded-md bg-cyan-50 px-2 py-1 font-mono text-[8px] font-semibold text-cyan-700 ring-1 ring-inset ring-cyan-100 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-900/40 sm:inline-flex" title="{{ item.event_type }}">{{ item.event_type }}</span>
+                                                    <span class="hidden max-w-[10rem] truncate rounded-md bg-cyan-50 px-2 py-1 font-mono text-[8px] font-semibold text-cyan-700 ring-1 ring-inset ring-cyan-100 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-900/40 sm:inline-flex" title="{{ item.event_type }}">{{ item.event_code }}</span>
                                                 </dd>
                                             </div>
                                             <div class="flex items-start justify-between gap-3"><dt class="text-slate-500 dark:text-slate-400">Recorded</dt><dd class="text-right font-bold text-slate-700 dark:text-slate-200">{{ item.created_at|user_datetime('%d %b %Y %H:%M:%S %Z') }}</dd></div>

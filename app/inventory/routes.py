@@ -3,6 +3,11 @@ import logging
 from flask import Blueprint, abort, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user
 
+from app.notifications.service import (
+    record_operational_activity,
+    get_navigation_notification_context,
+    queue_quick_action_feedback,
+)
 from app.cluster.onboarding import has_registered_clusters
 from app.cluster.service import build_cluster_context
 from app.inventory.topology import build_topology_graph, build_topology_page_context
@@ -42,9 +47,6 @@ from app.inventory.service import (
     get_workload_inventory,
     sync_inventory,
 )
-from app.notifications.feedback import queue_quick_action_feedback
-from app.notifications.queries import get_navigation_notification_context
-from app.notifications.writer import record_operational_activity
 from app.rbac.decorators import permission_required
 
 logger = logging.getLogger(__name__)

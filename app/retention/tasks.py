@@ -6,8 +6,10 @@ from typing import Any
 from celery import shared_task
 from flask import current_app
 
+from app.notifications.service import (
+    create_notification,
+)
 from app.extensions import db
-from app.notifications.writer import create_notification
 from app.retention.domains import get_archive_domain
 from app.retention.service import purge_expired_archives, run_retention_archive
 

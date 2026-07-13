@@ -1,33 +1,51 @@
 # Notifications domain
 
-The notifications package is KAORI's central operational-notification domain. It supports two related views while keeping their responsibilities separate:
+The notifications package is the central notification and administrative activity
+boundary for KAORI. Feature modules use `app.notifications.service` only; package
+internals remain private implementation details.
 
-- Notification Center: a compact, per-user stream in the top navigation.
-- Activity Audit Log: an administrative, cross-user audit workspace.
+## Structure
 
-## Module boundaries
+- `service.py` — application use cases and the public notification-domain API.
+- `writer.py` — database persistence for already-normalized notification records.
+- `queries.py` — notification-center and activity-audit queries, filtering, and pagination.
+- `normalization.py` — safe, user-friendly message and error normalization.
+- `event_catalog.py` — event labels, concise event codes, module context, target context, and icons.
+- `metadata.py` — metadata visibility, labels, ordering, and value formatting.
+- `presentation.py` — conversion from database models into template-ready objects.
+- `feedback.py` — low-level session feedback storage and payload construction.
+- `routes.py` — HTTP/HTMX request handling only.
+- `constants.py` — shared domain constants.
 
-- `writer.py` — notification persistence and operational-activity recording.
-- `queries.py` — navigation and audit-log queries, filters, pagination, and read state.
-- `presentation.py` — serialization of notification models into template-ready data.
-- `event_catalog.py` — event-family classification, target/module labels, icons, and source context.
-- `metadata.py` — metadata labels, formatting, ordering, change detection, and visibility rules.
-- `normalization.py` — user-friendly text normalization and raw-error suppression.
-- `feedback.py` — quick-action feedback payloads and redirect-session lifecycle.
-- `constants.py` — shared status, pagination, and display limits.
-- `routes.py` — HTTP/HTMX orchestration only; domain logic remains in focused modules.
+## Dependency rule
 
-There is intentionally no `service.py` facade. Feature modules import the focused module they use directly so ownership remains explicit and no wrapper layer obscures the dependency graph.
+Feature modules must import notification use cases from the service:
 
-Inside the `app.notifications` package, use relative imports such as `from .writer import ...`. Feature modules outside the package use direct imports such as `from app.notifications.writer import ...`.
+```python
+from app.notifications.service import record_operational_activity
+```
 
-## Extension rules
+They must not import `writer.py`, `queries.py`, `feedback.py`, or presentation helpers
+directly. Inside this package, use relative imports.
 
-1. Use `writer.py` for `record_operational_activity()` and `create_notification()`.
-2. Use `queries.py` for notification-center and activity-log reads.
-3. Use `feedback.py` for quick-action feedback state.
-4. Add event-family presentation rules to `event_catalog.py`, not route files or templates.
-5. Add metadata labels and formatting rules to `metadata.py`.
-6. Add raw-error mappings to `normalization.py`; do not expose exception strings in user-facing notifications.
-7. Keep route handlers focused on request validation, authorization, orchestration, and response rendering.
-8. Notification persistence failures must not convert a successful primary operation into a failed operation.
+The intended dependency direction is:
+
+```text
+feature / route / task
+        -> service.py
+        -> normalization / queries / feedback
+        -> writer / presentation / event_catalog / metadata
+        -> database model
+```
+
+`service.py` is not a re-export facade. It owns notification normalization,
+persistence retry behavior, audit feedback orchestration, and the public use-case
+boundary. `writer.py` intentionally performs persistence only.
+
+## Adding an event
+
+1. Emit the event through `record_operational_activity()` or `create_notification()`.
+2. Add module and target classification in `event_catalog.py` when a new event family is introduced.
+3. Add metadata labels or formatting in `metadata.py` when new metadata is user-relevant.
+4. Add raw failure matching in `normalization.py`; never expose stack traces or transport exceptions to users.
+5. Keep the stored event type stable. Presentation may remove internal prefixes, such as `operational_activity_`, without changing stored data or filter values.

@@ -19,6 +19,12 @@ from flask.typing import ResponseReturnValue
 from flask_login import current_user
 from redis.exceptions import RedisError
 
+from app.notifications.service import (
+    create_notification,
+    record_operational_activity,
+    get_navigation_notification_context,
+    queue_quick_action_feedback,
+)
 from app.cluster.forms import ClusterCreateForm, ClusterEditForm
 from app.cluster.onboarding import has_registered_clusters
 from app.cluster.service import (
@@ -40,9 +46,6 @@ from app.cluster.sync_state import (
     release_cluster_sync_lock,
 )
 from app.models import Cluster
-from app.notifications.feedback import queue_quick_action_feedback
-from app.notifications.queries import get_navigation_notification_context
-from app.notifications.writer import create_notification, record_operational_activity
 from app.rbac.decorators import permission_required
 
 logger = logging.getLogger(__name__)

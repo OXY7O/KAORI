@@ -7,6 +7,9 @@ from typing import Any
 
 from celery import shared_task
 
+from app.notifications.service import (
+    create_notification,
+)
 from app.cluster.sync_state import (
     claim_cluster_sync_lock,
     mark_cluster_sync_completed,
@@ -15,7 +18,6 @@ from app.cluster.sync_state import (
 from app.extensions import db
 from app.inventory.service import sync_inventory
 from app.models import Cluster
-from app.notifications.writer import create_notification
 
 logger = logging.getLogger(__name__)
 
