@@ -92,12 +92,12 @@ def get_dashboard_overview(
     alerts_snapshot = (
         _build_alerts_snapshot(live_cluster=live_cluster)
         if should_hydrate('alerts', 'alerts_summary', 'kpi_cards', 'data_freshness', 'recommended_actions', 'hero')
-        else AlertsSnapshot(message='Live alert snapshot will load after the dashboard shell is ready.')
+        else _alerts_snapshot_with_message('Live alert snapshot will load after the dashboard shell is ready.')
     )
     top_consumers_snapshot = (
         _build_top_consumers_snapshot(live_cluster=live_cluster)
         if should_hydrate('top_consumers', 'data_freshness')
-        else TopConsumersSnapshot(message='Top consumer snapshot will load after the dashboard shell is ready.')
+        else _top_consumers_snapshot_with_message('Top consumer snapshot will load after the dashboard shell is ready.')
     )
     forecast_snapshot = (
         _build_forecast_snapshot(live_cluster=live_cluster)
@@ -170,7 +170,7 @@ def get_dashboard_overview(
         DashboardKpi(
             label='Clusters',
             value=str(len(clusters)),
-            description=f'{_count_cluster_status(clusters_raw, "healthy")} healthy • {_count_cluster_status(clusters_raw, "warning")} warning',  # noqa: E501
+            description=f"{_count_cluster_status(clusters_raw, 'healthy')} healthy • {_count_cluster_status(clusters_raw, 'warning')} warning",  # noqa: E501
             icon='network',
             tone='blue',
         ),
@@ -794,9 +794,7 @@ def _worker_capacity_item(
 def _empty_capacity_snapshot(*, insight: str) -> CapacitySnapshot:
     return CapacitySnapshot(
         items=[
-            CapacityItem(
-                label='CPU', used_percent=None, headroom_percent=None, description='Worker metric unavailable'
-            ),
+            CapacityItem(label='CPU', used_percent=None, headroom_percent=None, description='Worker metric unavailable'),
             CapacityItem(
                 label='Memory', used_percent=None, headroom_percent=None, description='Worker metric unavailable'
             ),
@@ -846,11 +844,32 @@ def _capacity_risk_guidance(
     )
 
 
+def _alerts_snapshot_with_message(
+    message: str,
+    *,
+    source_status: str = 'Unavailable',
+) -> AlertsSnapshot:
+    snapshot = AlertsSnapshot()
+    snapshot.source_status = source_status
+    snapshot.message = message
+    return snapshot
+
+
+def _top_consumers_snapshot_with_message(
+    message: str,
+    *,
+    source_status: str = 'Unavailable',
+) -> TopConsumersSnapshot:
+    snapshot = TopConsumersSnapshot()
+    snapshot.source_status = source_status
+    snapshot.message = message
+    return snapshot
+
+
 def _build_alerts_snapshot(*, live_cluster: Any | None) -> AlertsSnapshot:
     if live_cluster is None:
-        return AlertsSnapshot(
-            source_status='Unavailable',
-            message='Select a specific cluster to load AlertManager or Prometheus alert snapshots.',
+        return _alerts_snapshot_with_message(
+            'Select a specific cluster to load AlertManager or Prometheus alert snapshots.'
         )
 
     try:
@@ -858,10 +877,7 @@ def _build_alerts_snapshot(*, live_cluster: Any | None) -> AlertsSnapshot:
 
         alerts, source_status = load_alerts_by_source(cluster=live_cluster, source='auto')
     except Exception as exc:
-        return AlertsSnapshot(
-            source_status='Unavailable',
-            message=f'Alert snapshot unavailable: {exc}',
-        )
+        return _alerts_snapshot_with_message(f'Alert snapshot unavailable: {exc}')
 
     active_alerts = [
         item for item in alerts if str(item.get('status', 'active')).lower() in {'active', 'firing', 'pending'}
@@ -888,21 +904,23 @@ def _build_alerts_snapshot(*, live_cluster: Any | None) -> AlertsSnapshot:
     connected = bool(source_status.get('connected'))
     resolved_source = str(source_status.get('resolved_source') or source_status.get('source') or 'alert source')
 
-    return AlertsSnapshot(
-        critical=critical,
-        warning=warning,
-        info=info,
-        items=snapshot_items,
-        source_status='Available' if connected or active_alerts else 'Unavailable',
-        message=f'Loaded from {resolved_source.title()}.'
+    snapshot = AlertsSnapshot()
+    snapshot.critical = critical
+    snapshot.warning = warning
+    snapshot.info = info
+    snapshot.items = snapshot_items
+    snapshot.source_status = 'Available' if connected or active_alerts else 'Unavailable'
+    snapshot.message = (
+        f'Loaded from {resolved_source.title()}.'
         if connected
-        else str(source_status.get('error') or 'Alert source unavailable.'),
+        else str(source_status.get('error') or 'Alert source unavailable.')
     )
+    return snapshot
 
 
 def _build_top_consumers_snapshot(*, live_cluster: Any | None) -> TopConsumersSnapshot:
     if live_cluster is None:
-        return TopConsumersSnapshot(message='Select a specific cluster to load top consumer snapshots.')
+        return _top_consumers_snapshot_with_message('Select a specific cluster to load top consumer snapshots.')
 
     try:
         from app.analytics.top_consumers.service import TopConsumersService
@@ -921,7 +939,7 @@ def _build_top_consumers_snapshot(*, live_cluster: Any | None) -> TopConsumersSn
             per_page=10,
         )
     except Exception as exc:
-        return TopConsumersSnapshot(message=f'Top consumers snapshot unavailable: {exc}')
+        return _top_consumers_snapshot_with_message(f'Top consumers snapshot unavailable: {exc}')
 
     rows = payload.get('all_rows') or payload.get('rows') or []
     if not isinstance(rows, list):
@@ -932,17 +950,21 @@ def _build_top_consumers_snapshot(*, live_cluster: Any | None) -> TopConsumersSn
 
     insight = _build_top_consumers_insight(rows=rows, cpu_rows=cpu_rows, memory_rows=memory_rows)
 
-    return TopConsumersSnapshot(
-        cpu=_consumer_items(cpu_rows[:3]),
-        memory=_consumer_items(memory_rows[:3]),
-        source_status='Available' if rows else 'Unavailable',
-        message='Top consumers loaded from Prometheus.' if rows else 'No top consumer rows returned by Prometheus.',
-        insight_title=insight['title'],
-        insight_description=insight['description'],
-        insight_items=insight['items'],
-        missing_request_limit_count=int(insight['missing_request_limit_count']),
-        high_usage_count=int(insight['high_usage_count']),
+    snapshot = TopConsumersSnapshot()
+    snapshot.cpu = _consumer_items(cpu_rows[:3])
+    snapshot.memory = _consumer_items(memory_rows[:3])
+    snapshot.source_status = 'Available' if rows else 'Unavailable'
+    snapshot.message = (
+        'Top consumers loaded from Prometheus.'
+        if rows
+        else 'No top consumer rows returned by Prometheus.'
     )
+    snapshot.insight_title = str(insight['title'])
+    snapshot.insight_description = str(insight['description'])
+    snapshot.insight_items = list(insight['items'])
+    snapshot.missing_request_limit_count = int(insight['missing_request_limit_count'])
+    snapshot.high_usage_count = int(insight['high_usage_count'])
+    return snapshot
 
 
 def _consumer_items(rows: list[dict[str, Any]]) -> list[ConsumerItem]:
@@ -1059,9 +1081,9 @@ def _build_top_consumers_insight(
 
     insight_items: list[str] = []
     if top_cpu:
-        insight_items.append(f'Highest CPU: {top_cpu.get("workload") or top_cpu.get("pod") or "-"}')
+        insight_items.append(f"Highest CPU: {top_cpu.get('workload') or top_cpu.get('pod') or '-'}")
     if top_memory:
-        insight_items.append(f'Highest Memory: {top_memory.get("workload") or top_memory.get("pod") or "-"}')
+        insight_items.append(f"Highest Memory: {top_memory.get('workload') or top_memory.get('pod') or '-'}")
     if dominant_namespace != '-':
         insight_items.append(f'Dominant namespace: {dominant_namespace}')
     if missing_request_limit:

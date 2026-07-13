@@ -22,16 +22,18 @@ def persist_notification(
     Business rules, normalization, retry handling, and user feedback belong to
     ``service.py``. This module intentionally owns database persistence only.
     """
-    notification = Notification(
-        user_id=user_id,
-        event_type=event_type,
-        status=status,
-        title=title,
-        message=message,
-        detail=detail,
-        action_url=action_url,
-        metadata_json=metadata,
-    )
+    # Assign mapped attributes explicitly. Flask-SQLAlchemy provides a dynamic
+    # keyword constructor at runtime, but static analyzers cannot reliably infer
+    # that constructor signature from the declarative model.
+    notification = Notification()
+    notification.user_id = user_id
+    notification.event_type = event_type
+    notification.status = status
+    notification.title = title
+    notification.message = message
+    notification.detail = detail
+    notification.action_url = action_url
+    notification.metadata_json = metadata
 
     db.session.add(notification)
     db.session.commit()

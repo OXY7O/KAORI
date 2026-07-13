@@ -8,11 +8,9 @@ from sqlalchemy import or_
 from app.extensions import db
 from app.models.notification import Notification
 from app.models.user import User
-
-from .constants import ACTIVITY_PER_PAGE_OPTIONS, ALLOWED_STATUSES, NAVIGATION_NOTIFICATION_LIMIT
-from .event_catalog import event_label
-from .presentation import _serialize_notification, _user_label
-
+from app.notifications.constants import ACTIVITY_PER_PAGE_OPTIONS, ALLOWED_STATUSES, NAVIGATION_NOTIFICATION_LIMIT
+from app.notifications.event_catalog import event_label
+from app.notifications.presentation import _serialize_notification, _user_label
 
 def get_navigation_notification_context(
     *,

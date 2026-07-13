@@ -4,8 +4,7 @@ from typing import Any
 
 from flask import has_request_context, session
 
-from .constants import ALLOWED_STATUSES, QUICK_ACTION_FEEDBACK_SESSION_KEY
-
+from app.notifications.constants import ALLOWED_STATUSES, QUICK_ACTION_FEEDBACK_SESSION_KEY
 
 def build_quick_action_feedback(
     *,
@@ -55,3 +54,5 @@ def pop_quick_action_feedback() -> dict[str, Any] | None:
         session.modified = True
 
     return feedback
+
+
