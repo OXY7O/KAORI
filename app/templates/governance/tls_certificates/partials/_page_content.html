@@ -1,0 +1,21 @@
+<div id="tls-certificates-page-content" class="space-y-6">
+    {% include "governance/tls_certificates/partials/_hero.html" %}
+    {% if sync_feedback %}
+        <div class="rounded-2xl border px-4 py-3 text-sm shadow-sm {{ 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-200' if sync_feedback.status == 'warning' else 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-200' }}">
+            <div class="flex items-start gap-3">
+                <i data-lucide="{{ 'triangle-alert' if sync_feedback.status == 'warning' else 'circle-check' }}" class="mt-0.5 h-4 w-4 shrink-0"></i>
+                <div class="min-w-0">
+                    <p class="font-semibold">{{ sync_feedback.title }}</p>
+                    <p class="mt-1 text-xs leading-5 opacity-90">{{ sync_feedback.message }}</p>
+                    {% if sync_feedback.detail %}<p class="mt-1 text-xs leading-5 opacity-75">{{ sync_feedback.detail }}</p>{% endif %}
+                </div>
+            </div>
+        </div>
+    {% endif %}
+    {% if cluster_onboarding.is_blocked %}
+        {% include "components/cluster/_onboarding_banner.html" %}
+    {% else %}
+        {% include "governance/tls_certificates/partials/_summary_cards.html" %}
+        {% include "governance/tls_certificates/partials/_content.html" %}
+    {% endif %}
+</div>

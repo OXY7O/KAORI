@@ -2,13 +2,12 @@ from __future__ import annotations
 
 from typing import Any
 
-
 def event_label(event_type: str) -> str:
     """Return a human-readable label while keeping the stored event key unchanged."""
     normalized = event_type.strip()
     prefix = 'operational_activity_'
     if normalized.startswith(prefix):
-        normalized = normalized[len(prefix) :]
+        normalized = normalized[len(prefix):]
     return normalized.replace('_', ' ').strip().title() or 'Activity'
 
 
@@ -80,6 +79,14 @@ def build_event_context(
             event_icon='database',
             event_tone='indigo',
         )
+    elif event_type.startswith('governance_tls_secret_'):
+        context.update(
+            module_label='Governance',
+            target_type='TLS Secret',
+            target_name=cluster_name or 'Kubernetes TLS Secret Inventory',
+            event_icon='shield-check',
+            event_tone='cyan',
+        )
     elif event_type.startswith('operational_activity_'):
         context.update(
             module_label='Activity Retention',
@@ -127,3 +134,5 @@ def build_event_context(
 
     context['context_items'] = context_items
     return context
+
+

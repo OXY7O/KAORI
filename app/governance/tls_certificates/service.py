@@ -11,6 +11,7 @@ from flask import current_app
 from flask_login import current_user
 from sqlalchemy import or_
 
+from app.common.integration_errors import describe_integration_failure
 from app.extensions import db
 from app.governance.tls_certificates.collector import build_kubernetes_client, collect_tls_certificates
 from app.governance.tls_certificates.constants import (
@@ -217,7 +218,20 @@ def sync_tls_certificates_for_cluster(cluster: Cluster) -> tuple[int, str | None
         records = collect_tls_certificates(cluster)
     except Exception as exc:
         current_app.logger.exception('TLS certificate sync failed for cluster %s', cluster.name)
-        return 0, str(exc)
+        failure = describe_integration_failure(
+            exc,
+            service_name='Kubernetes API',
+            endpoint=cluster.server,
+            request_path='/api/v1/secrets',
+        )
+        if 'ee key too small' in str(exc).lower():
+            failure['code'] = 'legacy_tls_key_rejected'
+            failure['reason'] = 'Legacy TLS key was rejected'
+            failure['detail'] = (
+                'The Kubernetes API client certificate uses a legacy key that is rejected by the current OpenSSL security policy. '
+                'Enable Allow legacy TLS certificate for this trusted cluster, then retry the TLS Secret sync.'
+            )
+        return 0, failure['detail']
 
     existing = {
         (record.namespace, record.secret_name): record

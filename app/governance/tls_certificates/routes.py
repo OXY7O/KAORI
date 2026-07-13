@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from flask import flash, redirect, render_template, request, url_for
+from flask_login import current_user
 
 from app.cluster.onboarding import has_registered_clusters
 from app.governance.tls_certificates.service import (
@@ -11,6 +12,7 @@ from app.governance.tls_certificates.service import (
     preview_uploaded_pair,
     sync_tls_certificates,
 )
+from app.notifications.service import record_operational_activity
 from app.rbac.decorators import permission_required
 
 
@@ -60,14 +62,55 @@ def tls_certificates_detail(certificate_id: int):
 
 @permission_required('tls_certificates.sync')
 def tls_certificates_sync():
-    result = sync_tls_certificates(request.form.get('cluster_id') or None)
+    cluster_id = request.form.get('cluster_id') or None
+    result = sync_tls_certificates(cluster_id)
+    has_errors = bool(result['errors'])
+    status = 'warning' if has_errors else 'success'
+    title = 'TLS Secret sync completed with warnings' if has_errors else 'TLS Secret sync completed'
+    message = (
+        f'{result["total"]} Kubernetes TLS Secrets were collected. '
+        f'{len(result["errors"])} cluster syncs require review.'
+        if has_errors
+        else f'{result["total"]} Kubernetes TLS Secrets were collected successfully.'
+    )
+    detail = '; '.join(result['errors']) if has_errors else None
 
-    if result['errors']:
-        flash('TLS certificate sync completed with warnings: ' + '; '.join(result['errors']), 'warning')
-    else:
-        flash(f'TLS certificate sync completed. {result["total"]} TLS Secrets collected.', 'success')
+    selected_cluster_name = result['results'][0]['cluster'] if cluster_id and result['results'] else None
 
-    return redirect(url_for('governance.tls_certificates', cluster_id=request.form.get('cluster_id') or ''))
+    record_operational_activity(
+        user_id=current_user.id,
+        event_type='governance_tls_secret_sync',
+        status=status,
+        title=title,
+        message=message,
+        detail=detail,
+        action_url=url_for('governance.tls_certificates', cluster_id=cluster_id or ''),
+        action_label='Open TLS inventory',
+        action_icon='shield-check',
+        metadata={
+            'cluster_id': cluster_id,
+            'cluster_name': selected_cluster_name,
+            'cluster_scope': 'selected_cluster' if cluster_id else 'all_clusters',
+            'collected_count': result['total'],
+            'failed_cluster_count': len(result['errors']),
+        },
+    )
+
+    if request.headers.get('HX-Request'):
+        payload = get_tls_certificate_page({'cluster_id': cluster_id or ''})
+        return render_template(
+            'governance/tls_certificates/partials/_page_content.html',
+            payload=payload,
+            sync_feedback={
+                'status': status,
+                'title': title,
+                'message': message,
+                'detail': detail,
+            },
+        )
+
+    flash(f'{title}. {message}', status)
+    return redirect(url_for('governance.tls_certificates', cluster_id=cluster_id or ''))
 
 
 @permission_required('tls_certificates.update')

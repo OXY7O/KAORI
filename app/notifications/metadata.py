@@ -12,6 +12,9 @@ def changed_fields(metadata: dict[str, Any]) -> list[dict[str, str]]:
         'environment': 'Environment',
         'verify_ssl': 'TLS verification',
         'allow_weak_tls': 'Allow weak TLS',
+        'cluster_scope': 'Cluster scope',
+        'collected_count': 'Collected TLS Secrets',
+        'failed_cluster_count': 'Clusters requiring review',
     }
 
     for key, previous_value in metadata.items():
