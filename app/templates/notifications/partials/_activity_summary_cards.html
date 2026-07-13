@@ -66,38 +66,49 @@
         </div>
     </div>
 
-    <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
-        <div class="grid xl:grid-cols-[18rem_minmax(0,1fr)] xl:items-stretch">
-            <div class="relative overflow-hidden bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 px-4 py-3.5 text-white">
+    <div class="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+        <div class="grid gap-3 md:grid-cols-3">
+            <div class="relative overflow-hidden rounded-xl bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 px-4 py-3 text-white">
                 <div class="absolute -top-8 right-0 h-20 w-20 rounded-full bg-white/20 blur-3xl"></div>
-                <div class="relative flex items-center justify-between gap-4">
+                <div class="relative flex items-center justify-between gap-3">
                     <div>
-                        <p class="text-[10px] font-medium uppercase tracking-[0.2em] text-blue-50/80">Read coverage</p>
+                        <p class="text-[10px] font-medium uppercase tracking-[0.18em] text-blue-50/80">Read coverage</p>
                         <div class="mt-1 flex items-baseline gap-2">
                             <span class="text-2xl font-bold">{{ read_ratio | int }}%</span>
-                            <span class="text-xs text-blue-50/85">{{ read_count }}/{{ summary.total_count }} read</span>
+                            <span class="text-[11px] text-blue-50/85">{{ read_count }}/{{ summary.total_count }} read</span>
                         </div>
                     </div>
-                    <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15">
-                        <i data-lucide="mail-check" class="h-5 w-5"></i>
+                    <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15">
+                        <i data-lucide="mail-check" class="h-4.5 w-4.5"></i>
                     </div>
                 </div>
-                <div class="relative mt-3 h-1.5 overflow-hidden rounded-full bg-white/20">
+                <div class="relative mt-2.5 h-1.5 overflow-hidden rounded-full bg-white/20">
                     <div class="h-full rounded-full bg-white" style="width: {{ read_ratio }}%"></div>
                 </div>
             </div>
 
-            <div class="flex flex-col gap-3 px-4 py-3.5 lg:flex-row lg:items-center lg:justify-between">
-                <div class="flex min-w-0 items-start gap-3">
-                    <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
-                        <i data-lucide="info" class="h-4.5 w-4.5"></i>
+            <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-900/50">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                        <i data-lucide="scan-search" class="h-4 w-4"></i>
                     </span>
                     <div class="min-w-0">
-                        <h3 class="text-sm font-semibold text-slate-950 dark:text-white">Audit workspace information</h3>
-                        <p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">Tracks cross-user operational actions, outcomes, and recorded metadata. Personal notifications and login security events remain in their dedicated views.</p>
+                        <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Audit scope</p>
+                        <p class="mt-1 text-xs leading-5 text-slate-700 dark:text-slate-200">Cross-user operational actions, outcomes, and recorded metadata.</p>
                     </div>
                 </div>
-                <span class="inline-flex flex-shrink-0 items-center rounded-full bg-blue-50 px-3 py-1.5 text-[10px] font-semibold text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-900/40">Administrative audit scope</span>
+            </div>
+
+            <div class="rounded-xl border border-blue-200 bg-blue-50/70 px-4 py-3 dark:border-blue-900/40 dark:bg-blue-950/20">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+                        <i data-lucide="route" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <p class="text-[10px] font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-300">Workspace boundary</p>
+                        <p class="mt-1 text-xs leading-5 text-blue-700 dark:text-blue-200">Personal notifications and login security events remain in their dedicated views.</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
