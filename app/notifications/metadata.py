@@ -68,6 +68,7 @@ def metadata_items(
     event_type: str,
 ) -> list[dict[str, Any]]:
     preferred_order = (
+        'event_key',
         'task_id',
         'archive_id',
         'operation_mode',
@@ -90,6 +91,7 @@ def metadata_items(
         'reason',
     )
     label_overrides = {
+        'event_key': 'Event key',
         'task_id': 'Task ID',
         'archive_id': 'Archive ID',
         'cluster_id': 'Cluster ID',
@@ -117,7 +119,7 @@ def metadata_items(
         'submitted_environment',
     }
 
-    visible_metadata: dict[str, Any] = {}
+    visible_metadata: dict[str, Any] = {'event_key': event_type}
     for key, value in metadata.items():
         if key.startswith('previous_') or key in context_keys:
             continue
@@ -152,7 +154,7 @@ def metadata_items(
         else:
             rendered_value = _metadata_value(value)
 
-        is_identifier = key.endswith('_id') or key in {'task_id', 'checksum_sha256'}
+        is_identifier = key.endswith('_id') or key in {'event_key', 'task_id', 'checksum_sha256'}
         items.append(
             {
                 'key': key,

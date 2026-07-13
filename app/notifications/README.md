@@ -1,51 +1,48 @@
 # Notifications domain
 
-The notifications package is the central notification and administrative activity
-boundary for KAORI. Feature modules use `app.notifications.service` only; package
-internals remain private implementation details.
+Notifications is the central notification and administrative activity boundary for
+KAORI. Feature modules use `app.notifications.service`; internal modules remain
+implementation details.
 
 ## Structure
 
-- `service.py` — application use cases and the public notification-domain API.
-- `writer.py` — database persistence for already-normalized notification records.
-- `queries.py` — notification-center and activity-audit queries, filtering, and pagination.
-- `normalization.py` — safe, user-friendly message and error normalization.
-- `event_catalog.py` — event labels, concise event codes, module context, target context, and icons.
-- `metadata.py` — metadata visibility, labels, ordering, and value formatting.
-- `presentation.py` — conversion from database models into template-ready objects.
-- `feedback.py` — low-level session feedback storage and payload construction.
-- `routes.py` — HTTP/HTMX request handling only.
-- `constants.py` — shared domain constants.
+- `service.py`: public application use cases and orchestration.
+- `writer.py`: persistence of normalized notification records.
+- `queries.py`: notification-center and activity-audit reads, filters, and pagination.
+- `normalization.py`: safe, user-friendly message and error normalization.
+- `event_catalog.py`: event labels, module context, target context, source, and icons.
+- `metadata.py`: metadata visibility, ordering, labels, and formatting.
+- `presentation.py`: model-to-template transformation.
+- `feedback.py`: low-level session feedback handling.
+- `routes.py`: HTTP/HTMX boundary only.
 
 ## Dependency rule
 
-Feature modules must import notification use cases from the service:
+Feature modules import public use cases from the service:
 
 ```python
 from app.notifications.service import record_operational_activity
 ```
 
-They must not import `writer.py`, `queries.py`, `feedback.py`, or presentation helpers
-directly. Inside this package, use relative imports.
+They must not directly import writer, query, feedback, presentation, metadata, or
+event-catalog helpers. `service.py` is not a re-export facade; it owns normalization,
+persistence retry behavior, feedback orchestration, and public use-case boundaries.
 
-The intended dependency direction is:
+## Event contract
 
-```text
-feature / route / task
-        -> service.py
-        -> normalization / queries / feedback
-        -> writer / presentation / event_catalog / metadata
-        -> database model
-```
+Stored `event_type` is the stable technical event key. The Activity Audit UI shows a
+human-readable Event type only. The complete stored key, including prefixes such as
+`operational_activity_`, appears under Operational metadata as **Event key**.
 
-`service.py` is not a re-export facade. It owns notification normalization,
-persistence retry behavior, audit feedback orchestration, and the public use-case
-boundary. `writer.py` intentionally performs persistence only.
+Do not duplicate `event_type` inside producer metadata; the presentation layer adds
+Event key automatically. Keep event keys stable to preserve filters, historical
+records, and integrations.
 
 ## Adding an event
 
-1. Emit the event through `record_operational_activity()` or `create_notification()`.
-2. Add module and target classification in `event_catalog.py` when a new event family is introduced.
-3. Add metadata labels or formatting in `metadata.py` when new metadata is user-relevant.
-4. Add raw failure matching in `normalization.py`; never expose stack traces or transport exceptions to users.
-5. Keep the stored event type stable. Presentation may remove internal prefixes, such as `operational_activity_`, without changing stored data or filter values.
+1. Emit through `record_operational_activity()` or `create_notification()`.
+2. Classify a new event family in `event_catalog.py`.
+3. Add user-relevant metadata labels/formatting in `metadata.py`.
+4. Add failure matching in `normalization.py`.
+5. Never expose stack traces, SQL errors, transport exceptions, or raw payload dumps.
+6. Store identifiers useful for audit; present readable labels separately.
