@@ -6,57 +6,51 @@
       hx-swap="outerHTML"
       hx-indicator="#tls-secret-update-table-loading"
       hx-trigger="change, keyup changed delay:450ms from:input[name='search']"
-      class="grid gap-3 md:grid-cols-4">
+      class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.85fr)_minmax(16rem,1.35fr)] lg:items-end">
     <input type="hidden" name="page" value="1">
     <input type="hidden" name="per_page" value="{{ payload.pagination.per_page }}">
     <input type="hidden" name="partial_mode" value="bulk_table">
 
     <label class="block">
-        <span class="mb-1.5 block text-xs font-medium text-slate-600 dark:text-slate-300">Cluster</span>
+        <span class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Cluster</span>
         <span class="relative block">
-            <i data-lucide="boxes" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"></i>
-            <select name="cluster_id" class="w-full appearance-none rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-9 text-left text-sm font-medium text-slate-800 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+            <select name="cluster_id" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
                 <option value="">All clusters</option>
                 {% for cluster in payload.clusters %}
                     <option value="{{ cluster.id }}" {% if payload.filters.cluster_id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>
                 {% endfor %}
             </select>
-            <i data-lucide="chevron-down" class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"></i>
         </span>
     </label>
 
     <label class="block">
-        <span class="mb-1.5 block text-xs font-medium text-slate-600 dark:text-slate-300">Namespace</span>
+        <span class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Namespace</span>
         <span class="relative block">
-            <i data-lucide="box" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"></i>
-            <select name="namespace" class="w-full appearance-none rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-9 text-left text-sm font-medium text-slate-800 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+            <select name="namespace" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
                 <option value="">All namespaces</option>
                 {% for namespace in payload.namespaces %}
                     <option value="{{ namespace }}" {% if payload.filters.namespace == namespace %}selected{% endif %}>{{ namespace }}</option>
                 {% endfor %}
             </select>
-            <i data-lucide="chevron-down" class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"></i>
         </span>
     </label>
 
     <label class="block">
-        <span class="mb-1.5 block text-xs font-medium text-slate-600 dark:text-slate-300">Status</span>
+        <span class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Status</span>
         <span class="relative block">
-            <i data-lucide="circle-dot" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"></i>
-            <select name="status" class="w-full appearance-none rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-9 text-left text-sm font-medium text-slate-800 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+            <select name="status" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
                 {% for status in payload.status_options %}
                     <option value="{{ status }}" {% if payload.filters.status == status %}selected{% endif %}>{{ status.replace('_', ' ')|title }}</option>
                 {% endfor %}
             </select>
-            <i data-lucide="chevron-down" class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"></i>
         </span>
     </label>
 
     <label class="block">
-        <span class="mb-1.5 block text-xs font-medium text-slate-600 dark:text-slate-300">Search TLS Secret</span>
+        <span class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Search TLS Secret</span>
         <span class="relative block">
             <i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"></i>
-            <input type="search" name="search" value="{{ payload.filters.search }}" placeholder="Secret, namespace, CN, or issuer" class="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-3 text-left text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+            <input type="search" name="search" value="{{ payload.filters.search }}" placeholder="Secret, namespace, CN, or issuer" class="w-full rounded-xl border border-slate-300 bg-white py-2 pr-3 pl-10 text-sm text-slate-900 transition outline-none placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
         </span>
     </label>
 </form>
