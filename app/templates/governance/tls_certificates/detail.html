@@ -231,9 +231,9 @@
                             {{ (record.used_by or [])|length }} references
                         </span>
                     </div>
-                    <div class="space-y-3 p-5">
+                    <div class="grid gap-3 p-5 lg:grid-cols-2">
                         {% for consumer in record.used_by or [] %}
-                            <article class="overflow-hidden rounded-2xl border border-amber-100 bg-amber-50/60 dark:border-amber-900/30 dark:bg-amber-950/15">
+                            <article class="flex h-full flex-col overflow-hidden rounded-2xl border border-amber-100 bg-amber-50/60 dark:border-amber-900/30 dark:bg-amber-950/15">
                                 <div class="border-b border-dashed border-amber-200 px-4 py-3 dark:border-amber-900/40">
                                     <div class="flex items-center gap-3">
                                         <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white text-amber-600 shadow-sm dark:bg-slate-800 dark:text-amber-300">
@@ -247,7 +247,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="px-4 py-3">
+                                <div class="flex-1 px-4 py-3">
                                     <p class="text-xs font-medium text-amber-700 dark:text-amber-300">Mapped hosts</p>
                                     <div class="mt-2 flex flex-wrap gap-2">
                                         {% for host in consumer.hosts or [] %}
@@ -262,7 +262,7 @@
                                 </div>
                             </article>
                         {% else %}
-                            <div class="flex items-start gap-3 rounded-2xl border border-dashed border-amber-200 bg-amber-50/70 p-4 text-sm text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/15 dark:text-amber-200">
+                            <div class="flex items-start gap-3 rounded-2xl border border-dashed border-amber-200 bg-amber-50/70 p-4 text-sm text-amber-800 lg:col-span-2 dark:border-amber-900/40 dark:bg-amber-950/15 dark:text-amber-200">
                                 <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300">
                                     <i data-lucide="route-off" class="h-4 w-4"></i>
                                 </span>
