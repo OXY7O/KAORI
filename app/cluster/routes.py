@@ -40,12 +40,9 @@ from app.cluster.sync_state import (
     release_cluster_sync_lock,
 )
 from app.models import Cluster
-from app.notifications.service import (
-    create_notification,
-    get_navigation_notification_context,
-    queue_quick_action_feedback,
-    record_operational_activity,
-)
+from app.notifications.feedback import queue_quick_action_feedback
+from app.notifications.queries import get_navigation_notification_context
+from app.notifications.writer import create_notification, record_operational_activity
 from app.rbac.decorators import permission_required
 
 logger = logging.getLogger(__name__)
@@ -660,7 +657,7 @@ def test_cluster(cluster_id: str) -> ResponseReturnValue:
         result = run_test_cluster(
             cluster,
         )
-    except Exception as exc:
+    except Exception:
         logger.exception(
             'Cluster connection test failed unexpectedly for %s.',
             cluster.id,

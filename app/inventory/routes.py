@@ -42,11 +42,9 @@ from app.inventory.service import (
     get_workload_inventory,
     sync_inventory,
 )
-from app.notifications.service import (
-    get_navigation_notification_context,
-    queue_quick_action_feedback,
-    record_operational_activity,
-)
+from app.notifications.feedback import queue_quick_action_feedback
+from app.notifications.queries import get_navigation_notification_context
+from app.notifications.writer import record_operational_activity
 from app.rbac.decorators import permission_required
 
 logger = logging.getLogger(__name__)

@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from app.notifications.normalization import standardize_activity_text
+from .normalization import standardize_activity_text
 
 def changed_fields(metadata: dict[str, Any]) -> list[dict[str, str]]:
     changed_items: list[dict[str, str]] = []

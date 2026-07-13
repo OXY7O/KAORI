@@ -6,9 +6,9 @@ from typing import Any
 
 from app.models.notification import Notification
 from app.models.user import User
-from app.notifications.event_catalog import build_event_context, event_label
-from app.notifications.metadata import changed_fields, metadata_items
-from app.notifications.normalization import standardize_activity_text
+from .event_catalog import build_event_context, event_label
+from .metadata import changed_fields, metadata_items
+from .normalization import standardize_activity_text
 
 def _normalize_created_at(created_at: datetime) -> datetime:
     if created_at.tzinfo is None:

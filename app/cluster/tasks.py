@@ -15,7 +15,7 @@ from app.cluster.sync_state import (
 from app.extensions import db
 from app.inventory.service import sync_inventory
 from app.models import Cluster
-from app.notifications.service import create_notification
+from app.notifications.writer import create_notification
 
 logger = logging.getLogger(__name__)
 

@@ -5,9 +5,9 @@ from typing import Any
 
 from app.extensions import db
 from app.models.notification import Notification
-from app.notifications.constants import ALLOWED_STATUSES
-from app.notifications.feedback import build_quick_action_feedback, queue_quick_action_feedback
-from app.notifications.normalization import standardize_activity_text
+from .constants import ALLOWED_STATUSES
+from .feedback import build_quick_action_feedback, queue_quick_action_feedback
+from .normalization import standardize_activity_text
 
 logger = logging.getLogger(__name__)
 
