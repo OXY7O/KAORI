@@ -566,11 +566,18 @@
 
     const renderValueRows = (fields, type) => {
         const ui = getTypeUi(type)
-        return fields.map((field) => `
-            <div class="flex items-start justify-between gap-3 border-b border-slate-100 py-2.5 last:border-b-0 dark:border-slate-700/70">
-                <dt class="text-xs font-normal text-slate-500 dark:text-slate-400">${escapeHtml(field.label)}</dt>
-                <dd class="max-w-[12rem] break-words text-right text-xs font-normal ${ui.value}">${escapeHtml(field.value)}</dd>
-            </div>`).join('')
+        return fields.map((field) => {
+            const isApiServer = String(field.label || '').trim().toLowerCase() === 'api server'
+            const valueClasses = isApiServer
+                ? 'max-w-[15rem] overflow-x-auto whitespace-nowrap text-left text-[11px]'
+                : 'max-w-[12rem] break-words text-right text-xs'
+
+            return `
+                <div class="flex items-start justify-between gap-3 border-b border-slate-100 py-2.5 last:border-b-0 dark:border-slate-700/70">
+                    <dt class="shrink-0 text-xs font-normal text-slate-500 dark:text-slate-400">${escapeHtml(field.label)}</dt>
+                    <dd class="min-w-0 font-normal ${valueClasses} ${ui.value}" title="${escapeHtml(field.value)}">${escapeHtml(field.value)}</dd>
+                </div>`
+        }).join('')
     }
 
     const renderRelationshipRows = (node) => {
