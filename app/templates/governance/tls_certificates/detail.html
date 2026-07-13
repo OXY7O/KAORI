@@ -60,7 +60,7 @@
                     </div>
                     <div class="grid grid-cols-2 gap-2">
                         <a href="{{ url_for('governance.tls_certificates') }}"
-                           class="inline-flex min-h-[3.25rem] items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/15">
+                           class="inline-flex min-h-[3.25rem] items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-blue-700 shadow-sm transition hover:bg-blue-50">
                             <i data-lucide="arrow-left" class="h-4 w-4"></i>
                             Back
                         </a>
@@ -115,23 +115,58 @@
 
         <section class="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
             <div class="space-y-6">
-                <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-                    <div class="flex items-center gap-3">
-                        <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300"><i data-lucide="badge-check" class="h-5 w-5"></i></div>
-                        <div>
-                            <h2 class="text-base font-bold text-slate-950 dark:text-white">Certificate Identity</h2>
-                            <p class="text-sm text-slate-500 dark:text-slate-400">Issuer, subject, serial, and fingerprint metadata.</p>
+                <div class="overflow-hidden rounded-3xl border border-blue-200 bg-white shadow-sm dark:border-blue-900/40 dark:bg-slate-800">
+                    <div class="flex flex-col gap-3 border-b border-blue-100 bg-gradient-to-r from-blue-50 via-white to-indigo-50 px-5 py-4 dark:border-blue-900/40 dark:from-blue-950/25 dark:via-slate-800 dark:to-indigo-950/20 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="flex items-center gap-3">
+                            <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-sm shadow-blue-600/20">
+                                <i data-lucide="badge-check" class="h-5 w-5"></i>
+                            </span>
+                            <div>
+                                <h2 class="text-base font-semibold text-slate-950 dark:text-white">Certificate Identity</h2>
+                                <p class="text-sm text-slate-500 dark:text-slate-400">Primary subject, issuing authority, and unique certificate identifiers.</p>
+                            </div>
                         </div>
+                        <span class="inline-flex w-fit items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-400/20">
+                            X.509 certificate
+                        </span>
                     </div>
-                    <dl class="mt-5 grid gap-4 sm:grid-cols-2">
-                        <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/40"><dt class="text-xs font-bold uppercase tracking-wide text-slate-400">Common Name</dt><dd class="mt-1 break-words text-sm font-semibold text-slate-800 dark:text-slate-100">{{ record.common_name or 'N/A' }}</dd></div>
-                        <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/40"><dt class="text-xs font-bold uppercase tracking-wide text-slate-400">Issuer</dt><dd class="mt-1 break-words text-sm font-semibold text-slate-800 dark:text-slate-100">{{ record.issuer or 'N/A' }}</dd></div>
-                        <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/40"><dt class="text-xs font-bold uppercase tracking-wide text-slate-400">Serial Number</dt><dd class="mt-1 break-all font-mono text-xs font-semibold text-slate-700 dark:text-slate-200">{{ record.serial_number or 'N/A' }}</dd></div>
-                        <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/40"><dt class="text-xs font-bold uppercase tracking-wide text-slate-400">Fingerprint SHA256</dt><dd class="mt-1 break-all font-mono text-xs font-semibold text-slate-700 dark:text-slate-200">{{ record.fingerprint_sha256 or 'N/A' }}</dd></div>
-                    </dl>
-                    {% if record.parse_error %}
-                        <div class="mt-4 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200">{{ record.parse_error }}</div>
-                    {% endif %}
+                    <div class="space-y-4 p-5">
+                        <div class="grid gap-3 sm:grid-cols-2">
+                            <div class="rounded-2xl border border-blue-100 bg-blue-50/70 p-4 dark:border-blue-900/30 dark:bg-blue-950/20">
+                                <p class="text-xs font-medium text-blue-600 dark:text-blue-300">Common Name</p>
+                                <p class="mt-2 break-words text-sm font-semibold text-slate-900 dark:text-white">{{ record.common_name or 'N/A' }}</p>
+                            </div>
+                            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/40">
+                                <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Serial number</p>
+                                <p class="mt-2 break-all font-mono text-xs leading-5 text-slate-700 dark:text-slate-200">{{ record.serial_number or 'N/A' }}</p>
+                            </div>
+                        </div>
+                        <div class="rounded-2xl bg-blue-50 px-4 py-3.5 text-blue-800 dark:bg-blue-500/10 dark:text-blue-200">
+                            <div class="flex items-start gap-3">
+                                <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300">
+                                    <i data-lucide="stamp" class="h-4 w-4"></i>
+                                </span>
+                                <div class="min-w-0">
+                                    <p class="text-xs font-medium">Issuer</p>
+                                    <p class="mt-1 break-words text-xs leading-5">{{ record.issuer or 'N/A' }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="rounded-2xl bg-indigo-50 px-4 py-3.5 text-indigo-800 dark:bg-indigo-500/10 dark:text-indigo-200">
+                            <div class="flex items-start gap-3">
+                                <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-300">
+                                    <i data-lucide="fingerprint" class="h-4 w-4"></i>
+                                </span>
+                                <div class="min-w-0">
+                                    <p class="text-xs font-medium">SHA-256 fingerprint</p>
+                                    <p class="mt-1 break-all font-mono text-[11px] leading-5">{{ record.fingerprint_sha256 or 'N/A' }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% if record.parse_error %}
+                            <div class="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200">{{ record.parse_error }}</div>
+                        {% endif %}
+                    </div>
                 </div>
 
                 <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
@@ -151,53 +186,113 @@
                     </div>
                 </div>
 
-                <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-                    <div class="flex items-center gap-3">
-                        <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-300"><i data-lucide="route" class="h-5 w-5"></i></div>
-                        <div>
-                            <h2 class="text-base font-bold text-slate-950 dark:text-white">Ingress Usage</h2>
-                            <p class="text-sm text-slate-500 dark:text-slate-400">Ingress resources currently mapped to this TLS Secret.</p>
+                <div class="overflow-hidden rounded-3xl border border-amber-200 bg-white shadow-sm dark:border-amber-900/40 dark:bg-slate-800">
+                    <div class="flex flex-col gap-3 border-b border-amber-100 bg-gradient-to-r from-amber-50 via-white to-orange-50 px-5 py-4 dark:border-amber-900/40 dark:from-amber-950/20 dark:via-slate-800 dark:to-orange-950/15 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="flex items-center gap-3">
+                            <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-sm shadow-amber-500/20">
+                                <i data-lucide="route" class="h-5 w-5"></i>
+                            </span>
+                            <div>
+                                <h2 class="text-base font-semibold text-slate-950 dark:text-white">Ingress Usage</h2>
+                                <p class="text-sm text-slate-500 dark:text-slate-400">Ingress resources and mapped hosts currently referencing this TLS Secret.</p>
+                            </div>
                         </div>
+                        <span class="inline-flex w-fit items-center rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/20">
+                            {{ (record.used_by or [])|length }} references
+                        </span>
                     </div>
-                    <div class="mt-5 space-y-3">
+                    <div class="space-y-3 p-5">
                         {% for consumer in record.used_by or [] %}
-                            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/40">
-                                <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                    <div class="text-sm font-bold text-slate-900 dark:text-white">{{ consumer.namespace }} / {{ consumer.name }}</div>
-                                    <span class="inline-flex w-fit items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-xs font-bold text-slate-600 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700">
-                                        <i data-lucide="network" class="h-3.5 w-3.5"></i>
-                                        Ingress
-                                    </span>
+                            <article class="overflow-hidden rounded-2xl border border-amber-100 bg-amber-50/60 dark:border-amber-900/30 dark:bg-amber-950/15">
+                                <div class="flex flex-col gap-3 border-b border-amber-100 px-4 py-3 sm:flex-row sm:items-center sm:justify-between dark:border-amber-900/30">
+                                    <div class="flex min-w-0 items-center gap-3">
+                                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white text-amber-600 shadow-sm dark:bg-slate-800 dark:text-amber-300">
+                                            <i data-lucide="network" class="h-4 w-4"></i>
+                                        </span>
+                                        <div class="min-w-0">
+                                            <p class="text-xs text-amber-700/70 dark:text-amber-300/70">Ingress</p>
+                                            <p class="truncate text-sm font-semibold text-slate-900 dark:text-white">{{ consumer.name }}</p>
+                                        </div>
+                                    </div>
+                                    <span class="inline-flex w-fit rounded-full bg-white px-2.5 py-1 text-xs font-medium text-slate-600 ring-1 ring-inset ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700">{{ consumer.namespace }}</span>
                                 </div>
-                                <div class="mt-3 flex flex-wrap gap-1.5">
-                                    {% for host in consumer.hosts or [] %}
-                                        <span class="rounded-full bg-white px-2 py-0.5 text-[11px] font-bold text-slate-600 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700">{{ host }}</span>
-                                    {% else %}
-                                        <span class="text-xs font-semibold text-slate-400">No hosts mapped.</span>
-                                    {% endfor %}
+                                <div class="px-4 py-3">
+                                    <p class="text-xs font-medium text-amber-700 dark:text-amber-300">Mapped hosts</p>
+                                    <div class="mt-2 flex flex-wrap gap-2">
+                                        {% for host in consumer.hosts or [] %}
+                                            <a href="https://{{ host }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-200 transition hover:bg-amber-100 dark:bg-slate-800 dark:text-amber-300 dark:ring-amber-900/50 dark:hover:bg-amber-500/10">
+                                                <span>{{ host }}</span>
+                                                <i data-lucide="external-link" class="h-3 w-3"></i>
+                                            </a>
+                                        {% else %}
+                                            <span class="text-xs text-slate-500 dark:text-slate-400">No hosts mapped.</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </article>
+                        {% else %}
+                            <div class="flex items-start gap-3 rounded-2xl border border-dashed border-amber-200 bg-amber-50/70 p-4 text-sm text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/15 dark:text-amber-200">
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300">
+                                    <i data-lucide="route-off" class="h-4 w-4"></i>
+                                </span>
+                                <div>
+                                    <p class="font-medium">No Ingress mapping found</p>
+                                    <p class="mt-1 text-xs leading-5 text-amber-700/80 dark:text-amber-300/80">This TLS Secret is not currently referenced by an inventoried Ingress resource.</p>
                                 </div>
                             </div>
-                        {% else %}
-                            <div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-sm font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">No Ingress usage is currently mapped for this TLS Secret.</div>
                         {% endfor %}
                     </div>
                 </div>
+
             </div>
 
             <div class="space-y-6">
-                <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-                    <div class="flex items-center gap-3">
-                        <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300"><i data-lucide="calendar-clock" class="h-5 w-5"></i></div>
-                        <div>
-                            <h2 class="text-base font-bold text-slate-950 dark:text-white">Validity Window</h2>
-                            <p class="text-sm text-slate-500 dark:text-slate-400">Certificate lifetime and expiry status.</p>
+                <div class="overflow-hidden rounded-3xl border border-emerald-200 bg-white shadow-sm dark:border-emerald-900/40 dark:bg-slate-800">
+                    <div class="border-b border-emerald-100 bg-gradient-to-r from-emerald-50 via-white to-teal-50 px-5 py-4 dark:border-emerald-900/40 dark:from-emerald-950/20 dark:via-slate-800 dark:to-teal-950/15">
+                        <div class="flex items-center gap-3">
+                            <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-sm shadow-emerald-600/20">
+                                <i data-lucide="calendar-clock" class="h-5 w-5"></i>
+                            </span>
+                            <div>
+                                <h2 class="text-base font-semibold text-slate-950 dark:text-white">Validity Window</h2>
+                                <p class="text-sm text-slate-500 dark:text-slate-400">Certificate lifetime, remaining validity, and current expiry posture.</p>
+                            </div>
                         </div>
                     </div>
-                    <dl class="mt-5 space-y-3">
-                        <div class="flex items-center justify-between gap-4 rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/40"><dt class="text-xs font-bold uppercase tracking-wide text-slate-400">Valid From</dt><dd class="text-right text-sm font-semibold text-slate-800 dark:text-slate-100">{{ record.not_before|user_datetime('%Y-%m-%d %H:%M %Z', 'N/A') }}</dd></div>
-                        <div class="flex items-center justify-between gap-4 rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/40"><dt class="text-xs font-bold uppercase tracking-wide text-slate-400">Expires At</dt><dd class="text-right text-sm font-semibold text-slate-800 dark:text-slate-100">{{ record.not_after|user_datetime('%Y-%m-%d %H:%M %Z', 'N/A') }}</dd></div>
-                        <div class="flex items-center justify-between gap-4 rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/40"><dt class="text-xs font-bold uppercase tracking-wide text-slate-400">Remaining</dt><dd class="text-right text-sm font-semibold text-slate-800 dark:text-slate-100">{{ record.days_remaining if record.days_remaining is not none else 'N/A' }} days</dd></div>
-                    </dl>
+                    <div class="space-y-4 p-5">
+                        <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 p-4 text-white shadow-sm shadow-emerald-500/20">
+                            <div class="absolute -right-6 -top-8 h-24 w-24 rounded-full bg-white/15 blur-2xl"></div>
+                            <div class="relative flex items-end justify-between gap-4">
+                                <div>
+                                    <p class="text-xs text-emerald-50/80">Remaining validity</p>
+                                    <p class="mt-1 text-3xl font-bold">{{ record.days_remaining if record.days_remaining is not none else 'N/A' }}{% if record.days_remaining is not none %}<span class="ml-1 text-base font-medium">days</span>{% endif %}</p>
+                                </div>
+                                {% with status=record.status %}{% include "governance/tls_certificates/partials/_status_badge.html" %}{% endwith %}
+                            </div>
+                        </div>
+                        <div class="grid gap-3 sm:grid-cols-2">
+                            <div class="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4 dark:border-emerald-900/30 dark:bg-emerald-950/15">
+                                <div class="flex items-center gap-2 text-emerald-700 dark:text-emerald-300">
+                                    <i data-lucide="calendar-check" class="h-4 w-4"></i>
+                                    <p class="text-xs font-medium">Valid from</p>
+                                </div>
+                                <p class="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{{ record.not_before|user_datetime('%Y-%m-%d %H:%M %Z', 'N/A') }}</p>
+                            </div>
+                            <div class="rounded-2xl border border-teal-100 bg-teal-50/70 p-4 dark:border-teal-900/30 dark:bg-teal-950/15">
+                                <div class="flex items-center gap-2 text-teal-700 dark:text-teal-300">
+                                    <i data-lucide="calendar-x" class="h-4 w-4"></i>
+                                    <p class="text-xs font-medium">Expires at</p>
+                                </div>
+                                <p class="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{{ record.not_after|user_datetime('%Y-%m-%d %H:%M %Z', 'N/A') }}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-2.5 rounded-2xl bg-emerald-50 px-4 py-3 text-xs leading-5 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-200">
+                            <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300">
+                                <i data-lucide="lightbulb" class="h-4 w-4"></i>
+                            </span>
+                            <p>Plan certificate rotation before the expiry date so workloads and Ingress endpoints can be updated without service interruption.</p>
+                        </div>
+                    </div>
                 </div>
 
                 <div id="update-secret" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
