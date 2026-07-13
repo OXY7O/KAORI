@@ -7,11 +7,8 @@ from flask_login import current_user
 
 from app.cluster.onboarding import has_registered_clusters
 from app.governance.tls_certificates.service import (
-    apply_bulk_update,
-    apply_certificate_update,
     get_tls_certificate_detail,
     get_tls_certificate_page,
-    preview_uploaded_pair,
     sync_tls_certificates,
 )
 from app.notifications.service import (
@@ -234,180 +231,32 @@ def tls_certificates_sync():
     return redirect(url_for('governance.tls_certificates', cluster_id=cluster_id or ''))
 
 
-@permission_required('tls_certificates.update')
+
+
+# Compatibility delegates. New navigation and templates use Kubernetes Operations.
 def tls_certificates_update_preview(certificate_id: int):
-    record = get_tls_certificate_detail(certificate_id)
-    if record is None:
-        flash('TLS certificate record was not found.', 'warning')
-        return redirect(url_for('governance.tls_certificates'))
+    from app.kubernetes_operations.secrets.routes import tls_secret_rotate_preview
 
-    payload = preview_uploaded_pair(request.files, [certificate_id])
-    feedback = _record_validation_activity(
-        preview=payload,
-        selected_ids=[certificate_id],
-        record=record,
-    )
-    return render_template(
-        'governance/tls_certificates/partials/_update_preview.html',
-        record=record,
-        payload=payload,
-        operation_feedback=_notification_response_context(feedback),
-    )
+    return tls_secret_rotate_preview(certificate_id)
 
 
-@permission_required('tls_certificates.update')
 def tls_certificates_update_apply(certificate_id: int):
-    record = get_tls_certificate_detail(certificate_id)
-    result = apply_certificate_update(certificate_id, request.files)
-    is_success = result['status'] == 'success'
-    cluster = getattr(record, 'cluster', None) if record is not None else None
-    _record_tls_activity(
-        event_type='governance_tls_secret_update',
-        status='success' if is_success else 'error',
-        title='TLS Secret update completed' if is_success else 'TLS Secret update failed',
-        message=(
-            f'{record.secret_name} was updated successfully.'
-            if is_success and record is not None
-            else result['message']
-        ),
-        action_url=(
-            url_for('governance.tls_certificates_detail', certificate_id=certificate_id)
-            if record is not None
-            else url_for('governance.tls_certificates')
-        ),
-        action_label='Open TLS Secret record',
-        metadata={
-            'certificate_id': certificate_id,
-            'cluster_id': getattr(record, 'cluster_id', None),
-            'cluster_name': getattr(cluster, 'name', None),
-            'namespace': getattr(record, 'namespace', None),
-            'secret_name': getattr(record, 'secret_name', None),
-            'updated_count': 1 if is_success else 0,
-            'failed_count': 0 if is_success else 1,
-        },
-        queue_feedback=True,
-    )
-    return redirect(url_for('governance.tls_certificates_detail', certificate_id=certificate_id))
+    from app.kubernetes_operations.secrets.routes import tls_secret_rotate_apply
+
+    return tls_secret_rotate_apply(certificate_id)
 
 
-@permission_required('tls_certificates.bulk_update')
 def tls_certificates_bulk_page():
-    if has_registered_clusters() is False:
-        return redirect(url_for('governance.tls_certificates'))
-
-    payload = get_tls_certificate_page(request.args)
-    partial_mode = request.args.get('partial_mode')
-
-    if partial_mode == 'bulk_workspace':
-        return render_template(
-            'governance/tls_certificates/partials/_bulk_target_workspace.html',
-            payload=payload,
-            selected_ids=request.args.getlist('certificate_ids'),
-        )
-
-    if partial_mode == 'bulk_table':
-        return render_template(
-            'governance/tls_certificates/partials/_bulk_target_table.html',
-            payload=payload,
-            selected_ids=request.args.getlist('certificate_ids'),
-        )
-
-    return render_template(
-        'governance/tls_certificates/bulk_update.html',
-        payload=payload,
-        preview=None,
-        apply_result=None,
-        selected_ids=[],
-    )
+    return redirect(url_for('kubernetes_operations.tls_secret_bulk_rotation'), code=302)
 
 
-@permission_required('tls_certificates.bulk_update')
 def tls_certificates_bulk_preview():
-    payload = get_tls_certificate_page(request.form)
-    selected_ids = request.form.getlist('certificate_ids')
-    parsed_ids = _parse_certificate_ids(selected_ids)
-    preview = preview_uploaded_pair(request.files, parsed_ids)
-    feedback = _record_validation_activity(
-        preview=preview,
-        selected_ids=parsed_ids,
-    )
-    operation_feedback = _notification_response_context(feedback)
+    from app.kubernetes_operations.secrets.routes import tls_secret_bulk_rotation_preview
 
-    if request.headers.get('HX-Request'):
-        return render_template(
-            'governance/tls_certificates/partials/_bulk_feedback.html',
-            payload=payload,
-            preview=preview,
-            apply_result=None,
-            selected_ids=selected_ids,
-            operation_feedback=operation_feedback,
-        )
-
-    return render_template(
-        'governance/tls_certificates/bulk_update.html',
-        payload=payload,
-        preview=preview,
-        apply_result=None,
-        selected_ids=selected_ids,
-        operation_feedback=operation_feedback,
-    )
+    return tls_secret_bulk_rotation_preview()
 
 
-@permission_required('tls_certificates.bulk_update')
 def tls_certificates_bulk_apply():
-    payload = get_tls_certificate_page(request.form)
-    selected_ids = request.form.getlist('certificate_ids')
-    parsed_ids = _parse_certificate_ids(selected_ids)
-    apply_result = apply_bulk_update(request.files, parsed_ids)
-    results = apply_result.get('results') or []
-    success_count = sum(1 for item in results if item.get('status') == 'success')
-    failed_count = len(results) - success_count
-    is_success = failed_count == 0 and success_count > 0
-    is_warning = success_count > 0 and failed_count > 0
-    status = 'success' if is_success else 'warning' if is_warning else 'error'
-    title = (
-        'Bulk TLS Secret update completed'
-        if is_success
-        else 'Bulk TLS Secret update completed with warnings'
-        if is_warning
-        else 'Bulk TLS Secret update failed'
-    )
-    feedback = _record_tls_activity(
-        event_type='governance_tls_secret_bulk_update',
-        status=status,
-        title=title,
-        message=apply_result['message'],
-        action_url=url_for('governance.tls_certificates_bulk_update'),
-        action_label='Review TLS update workspace',
-        metadata={
-            'bulk_job_id': apply_result.get('bulk_job_id'),
-            'target_count': len(parsed_ids),
-            'updated_count': success_count,
-            'failed_count': failed_count,
-            'failed_targets': [
-                item['target'].secret_name
-                for item in results
-                if item.get('status') != 'success' and item.get('target') is not None
-            ],
-        },
-    )
-    operation_feedback = _notification_response_context(feedback)
+    from app.kubernetes_operations.secrets.routes import tls_secret_bulk_rotation_apply
 
-    if request.headers.get('HX-Request'):
-        return render_template(
-            'governance/tls_certificates/partials/_bulk_feedback.html',
-            payload=payload,
-            preview=None,
-            apply_result=apply_result,
-            selected_ids=selected_ids,
-            operation_feedback=operation_feedback,
-        )
-
-    return render_template(
-        'governance/tls_certificates/bulk_update.html',
-        payload=payload,
-        preview=None,
-        apply_result=apply_result,
-        selected_ids=selected_ids,
-        operation_feedback=operation_feedback,
-    )
+    return tls_secret_bulk_rotation_apply()

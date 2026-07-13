@@ -2,7 +2,6 @@
 {% set tls_certificates_active = request.endpoint and request.endpoint in [
     'governance.tls_certificates',
     'governance.tls_certificates_detail',
-    'governance.tls_certificates_bulk_page',
 ] %}
 
 <details class="sidebar-menu space-y-1" {% if governance_active %}open{% endif %}>
@@ -12,7 +11,7 @@
             <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl {{ 'bg-blue-600 text-white shadow-lg shadow-blue-600/25' if governance_active else 'bg-slate-900 text-slate-400 group-hover:bg-slate-800 group-hover:text-white' }} transition">
                 <i data-lucide="shield-check" class="h-4 w-4"></i>
             </span>
-            <span class="sidebar-expanded-only truncate whitespace-nowrap text-[13px] leading-5">K8s Operation</span>
+            <span class="sidebar-expanded-only truncate whitespace-nowrap text-[13px] leading-5">Governance</span>
         </div>
         <i data-lucide="chevron-right"
            class="sidebar-expanded-only sidebar-menu-chevron h-4 w-4 {{ 'text-blue-300' if governance_active else 'text-slate-500' }}"></i>

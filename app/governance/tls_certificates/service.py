@@ -22,7 +22,7 @@ from app.governance.tls_certificates.constants import (
     TLS_SECRET_TYPE,
     TLS_STATUS_OPTIONS,
 )
-from app.governance.tls_certificates.validator import find_uncovered_hosts, validate_certificate_pair
+from app.kubernetes.secrets.tls import find_uncovered_hosts, validate_certificate_pair
 from app.models import Cluster, TLSCertificateInventory, TLSCertificateUpdateEvent, User
 
 

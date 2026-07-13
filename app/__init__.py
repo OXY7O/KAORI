@@ -23,6 +23,7 @@ from app.governance.routes import governance_bp
 from app.health import health_bp
 from app.intelligence.routes import intelligence_bp
 from app.inventory.routes import inventory_bp
+from app.kubernetes_operations.routes import kubernetes_operations_bp
 from app.notifications.routes import notifications_bp
 from app.prometheus.routes import prometheus_bp
 from app.reports.routes import reports_bp
@@ -122,6 +123,7 @@ def create_app(config_name: str | None = None):
     app.register_blueprint(notifications_bp)
     app.register_blueprint(analytics_bp)
     app.register_blueprint(governance_bp)
+    app.register_blueprint(kubernetes_operations_bp)
     app.register_blueprint(health_bp)
     app.register_blueprint(intelligence_bp)
     app.register_blueprint(reports_bp)

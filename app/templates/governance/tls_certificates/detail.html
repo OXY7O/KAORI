@@ -124,9 +124,9 @@
             </div>
         </section>
 
-        <section class="space-y-6">
-            <div class="grid gap-6 xl:grid-cols-[1.2fr_0.8fr] xl:items-stretch">
-                <div class="overflow-hidden rounded-3xl border border-blue-200 bg-white shadow-sm h-full dark:border-blue-900/40 dark:bg-slate-800">
+        <section class="grid gap-6 xl:grid-cols-[1.2fr_0.8fr] xl:items-stretch">
+            <div class="space-y-6 xl:contents">
+                <div class="overflow-hidden rounded-3xl border border-blue-200 bg-white shadow-sm xl:col-start-1 xl:row-start-1 xl:h-full dark:border-blue-900/40 dark:bg-slate-800">
                     <div class="flex flex-col gap-3 border-b border-blue-100 bg-gradient-to-r from-blue-50 via-white to-indigo-50 px-5 py-4 dark:border-blue-900/40 dark:from-blue-950/25 dark:via-slate-800 dark:to-indigo-950/20 sm:flex-row sm:items-center sm:justify-between">
                         <div class="flex items-center gap-3">
                             <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-sm shadow-blue-600/20">
@@ -179,23 +179,124 @@
                         {% endif %}
                     </div>
                 </div>
-                {% set validity_status = record.status or 'unknown' %}
-                <div class="overflow-hidden rounded-3xl border bg-white shadow-sm h-full dark:bg-slate-800
-                            {% if validity_status == 'healthy' %}border-emerald-200 dark:border-emerald-900/40
-                            {% elif validity_status == 'warning' %}border-amber-200 dark:border-amber-900/40
-                            {% elif validity_status in ['critical', 'expired', 'invalid'] %}border-rose-200 dark:border-rose-900/40
-                            {% else %}border-slate-200 dark:border-slate-700{% endif %}">
-                    <div class="border-b bg-gradient-to-r px-5 py-4
-                                {% if validity_status == 'healthy' %}border-emerald-100 from-emerald-50 via-white to-teal-50 dark:border-emerald-900/40 dark:from-emerald-950/20 dark:via-slate-800 dark:to-teal-950/15
-                                {% elif validity_status == 'warning' %}border-amber-100 from-amber-50 via-white to-orange-50 dark:border-amber-900/40 dark:from-amber-950/20 dark:via-slate-800 dark:to-orange-950/15
-                                {% elif validity_status in ['critical', 'expired', 'invalid'] %}border-rose-100 from-rose-50 via-white to-red-50 dark:border-rose-900/40 dark:from-rose-950/20 dark:via-slate-800 dark:to-red-950/15
-                                {% else %}border-slate-200 from-slate-50 via-white to-slate-100 dark:border-slate-700 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900{% endif %}">
+
+                <div class="overflow-hidden rounded-3xl border border-violet-200 bg-white shadow-sm xl:col-start-1 xl:row-start-2 xl:self-start dark:border-violet-900/40 dark:bg-slate-800">
+                    <div class="flex flex-col gap-3 border-b border-violet-100 bg-gradient-to-r from-violet-50 via-white to-fuchsia-50 px-5 py-4 dark:border-violet-900/40 dark:from-violet-950/20 dark:via-slate-800 dark:to-fuchsia-950/15 sm:flex-row sm:items-center sm:justify-between">
                         <div class="flex items-center gap-3">
-                            <span class="flex h-10 w-10 items-center justify-center rounded-2xl text-white shadow-sm
-                                         {% if validity_status == 'healthy' %}bg-emerald-600 shadow-emerald-600/20
-                                         {% elif validity_status == 'warning' %}bg-amber-500 shadow-amber-500/20
-                                         {% elif validity_status in ['critical', 'expired', 'invalid'] %}bg-rose-600 shadow-rose-600/20
-                                         {% else %}bg-slate-600 shadow-slate-600/20{% endif %}">
+                            <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-600 text-white shadow-sm shadow-violet-600/20">
+                                <i data-lucide="globe-2" class="h-5 w-5"></i>
+                            </span>
+                            <div>
+                                <h2 class="text-base font-semibold text-slate-950 dark:text-white">Subject Alternative Names</h2>
+                                <p class="text-sm text-slate-500 dark:text-slate-400">DNS identities covered by this certificate.</p>
+                            </div>
+                        </div>
+                        <span class="inline-flex w-fit items-center rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-700 ring-1 ring-inset ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-400/20">
+                            {{ (record.dns_names or [])|length }} SANs
+                        </span>
+                    </div>
+                    <div class="space-y-4 p-5">
+                        {% if record.dns_names %}
+                            <div class="grid gap-2 sm:grid-cols-2">
+                                {% for domain in record.dns_names %}
+                                    <div class="flex min-w-0 items-center gap-2.5 rounded-2xl border border-violet-100 bg-violet-50/70 px-3.5 py-3 dark:border-violet-900/30 dark:bg-violet-950/15">
+                                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300">
+                                            <i data-lucide="shield-check" class="h-4 w-4"></i>
+                                        </span>
+                                        <span class="min-w-0 break-all text-xs font-medium text-slate-800 dark:text-slate-100">{{ domain }}</span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="flex items-start gap-3 rounded-2xl border border-dashed border-violet-200 bg-violet-50/70 p-4 text-sm text-violet-800 dark:border-violet-900/40 dark:bg-violet-950/15 dark:text-violet-200">
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300">
+                                    <i data-lucide="shield-off" class="h-4 w-4"></i>
+                                </span>
+                                <div>
+                                    <p class="font-medium">No SAN DNS names found</p>
+                                    <p class="mt-1 text-xs leading-5 text-violet-700/80 dark:text-violet-300/80">The certificate does not contain a recorded DNS Subject Alternative Name.</p>
+                                </div>
+                            </div>
+                        {% endif %}
+                        <div class="flex items-start gap-2.5 rounded-2xl bg-violet-50 px-4 py-3 text-xs leading-5 text-violet-800 dark:bg-violet-500/10 dark:text-violet-200">
+                            <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300">
+                                <i data-lucide="info" class="h-4 w-4"></i>
+                            </span>
+                            <p>SANs define the DNS names covered by this certificate and should include every hostname served by the mapped Ingress resources.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="overflow-hidden rounded-3xl border border-amber-200 bg-white shadow-sm xl:col-start-1 xl:row-start-3 xl:self-start dark:border-amber-900/40 dark:bg-slate-800">
+                    <div class="flex flex-col gap-3 border-b border-amber-100 bg-gradient-to-r from-amber-50 via-white to-orange-50 px-5 py-4 dark:border-amber-900/40 dark:from-amber-950/20 dark:via-slate-800 dark:to-orange-950/15 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="flex items-center gap-3">
+                            <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-sm shadow-amber-500/20">
+                                <i data-lucide="route" class="h-5 w-5"></i>
+                            </span>
+                            <div>
+                                <h2 class="text-base font-semibold text-slate-950 dark:text-white">Ingress Usage</h2>
+                                <p class="text-sm text-slate-500 dark:text-slate-400">Ingress resources and mapped hosts currently referencing this TLS Secret.</p>
+                            </div>
+                        </div>
+                        <span class="inline-flex w-fit items-center rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/20">
+                            {{ (record.used_by or [])|length }} references
+                        </span>
+                    </div>
+                    <div class="grid gap-3 p-5 lg:grid-cols-2">
+                        {% for consumer in record.used_by or [] %}
+                            <article class="flex h-full flex-col overflow-hidden rounded-2xl border border-amber-100 bg-amber-50/60 dark:border-amber-900/30 dark:bg-amber-950/15">
+                                <div class="border-b border-dashed border-amber-200 px-4 py-3 dark:border-amber-900/40">
+                                    <div class="flex items-center gap-3">
+                                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white text-amber-600 shadow-sm dark:bg-slate-800 dark:text-amber-300">
+                                            <i data-lucide="network" class="h-4 w-4"></i>
+                                        </span>
+                                        <div class="min-w-0 flex-1 space-y-2">
+                                            <div class="grid grid-cols-[5.5rem_minmax(0,1fr)] items-start gap-3">
+                                                <span class="text-xs font-medium text-amber-700 dark:text-amber-300">Ingress</span>
+                                                <span class="min-w-0 break-words text-sm font-semibold text-slate-900 dark:text-white">{{ consumer.name }}</span>
+                                            </div>
+                                            <div class="grid grid-cols-[5.5rem_minmax(0,1fr)] items-start gap-3">
+                                                <span class="text-xs font-medium text-amber-700 dark:text-amber-300">Namespace</span>
+                                                <span class="min-w-0 break-words text-sm font-medium text-slate-700 dark:text-slate-200">{{ consumer.namespace }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex-1 px-4 py-3">
+                                    <p class="text-xs font-medium text-amber-700 dark:text-amber-300">Mapped hosts</p>
+                                    <div class="mt-2 flex flex-wrap gap-2">
+                                        {% for host in consumer.hosts or [] %}
+                                            <a href="https://{{ host }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-200 transition hover:bg-amber-100 dark:bg-slate-800 dark:text-amber-300 dark:ring-amber-900/50 dark:hover:bg-amber-500/10">
+                                                <span>{{ host }}</span>
+                                                <i data-lucide="external-link" class="h-3 w-3"></i>
+                                            </a>
+                                        {% else %}
+                                            <span class="text-xs text-slate-500 dark:text-slate-400">No hosts mapped.</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </article>
+                        {% else %}
+                            <div class="flex items-start gap-3 rounded-2xl border border-dashed border-amber-200 bg-amber-50/70 p-4 text-sm text-amber-800 lg:col-span-2 dark:border-amber-900/40 dark:bg-amber-950/15 dark:text-amber-200">
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300">
+                                    <i data-lucide="route-off" class="h-4 w-4"></i>
+                                </span>
+                                <div>
+                                    <p class="font-medium">No Ingress mapping found</p>
+                                    <p class="mt-1 text-xs leading-5 text-amber-700/80 dark:text-amber-300/80">This TLS Secret is not currently referenced by an inventoried Ingress resource.</p>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="space-y-6 xl:contents">
+                <div class="overflow-hidden rounded-3xl border border-emerald-200 bg-white shadow-sm xl:col-start-2 xl:row-start-1 xl:h-full dark:border-emerald-900/40 dark:bg-slate-800">
+                    <div class="border-b border-emerald-100 bg-gradient-to-r from-emerald-50 via-white to-teal-50 px-5 py-4 dark:border-emerald-900/40 dark:from-emerald-950/20 dark:via-slate-800 dark:to-teal-950/15">
+                        <div class="flex items-center gap-3">
+                            <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-sm shadow-emerald-600/20">
                                 <i data-lucide="calendar-clock" class="h-5 w-5"></i>
                             </span>
                             <div>
@@ -205,212 +306,54 @@
                         </div>
                     </div>
                     <div class="space-y-4 p-5">
-                        <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r p-4 text-white shadow-sm
-                                    {% if validity_status == 'healthy' %}from-emerald-600 to-teal-500 shadow-emerald-500/20
-                                    {% elif validity_status == 'warning' %}from-amber-500 to-orange-500 shadow-amber-500/20
-                                    {% elif validity_status in ['critical', 'expired', 'invalid'] %}from-rose-600 to-red-500 shadow-rose-500/20
-                                    {% else %}from-slate-600 to-slate-500 shadow-slate-500/20{% endif %}">
+                        <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 p-4 text-white shadow-sm shadow-emerald-500/20">
                             <div class="absolute -right-6 -top-8 h-24 w-24 rounded-full bg-white/15 blur-2xl"></div>
                             <div class="relative flex items-end justify-between gap-4">
                                 <div>
-                                    <p class="text-xs
-                                              {% if validity_status == 'healthy' %}text-emerald-50/80
-                                              {% elif validity_status == 'warning' %}text-amber-50/90
-                                              {% elif validity_status in ['critical', 'expired', 'invalid'] %}text-rose-50/90
-                                              {% else %}text-slate-100/80{% endif %}">Remaining validity</p>
+                                    <p class="text-xs text-emerald-50/80">Remaining validity</p>
                                     <p class="mt-1 text-3xl font-bold">{{ record.days_remaining if record.days_remaining is not none else 'N/A' }}{% if record.days_remaining is not none %}<span class="ml-1 text-base font-medium">days</span>{% endif %}</p>
                                 </div>
                                 {% with status=record.status %}{% include "governance/tls_certificates/partials/_status_badge.html" %}{% endwith %}
                             </div>
                         </div>
                         <div class="grid gap-3 sm:grid-cols-2">
-                            <div class="rounded-2xl border p-4
-                                        {% if validity_status == 'healthy' %}border-emerald-100 bg-emerald-50/70 dark:border-emerald-900/30 dark:bg-emerald-950/15
-                                        {% elif validity_status == 'warning' %}border-amber-100 bg-amber-50/70 dark:border-amber-900/30 dark:bg-amber-950/15
-                                        {% elif validity_status in ['critical', 'expired', 'invalid'] %}border-rose-100 bg-rose-50/70 dark:border-rose-900/30 dark:bg-rose-950/15
-                                        {% else %}border-slate-200 bg-slate-50/70 dark:border-slate-700 dark:bg-slate-900/30{% endif %}">
-                                <div class="flex items-center gap-2
-                                            {% if validity_status == 'healthy' %}text-emerald-700 dark:text-emerald-300
-                                            {% elif validity_status == 'warning' %}text-amber-700 dark:text-amber-300
-                                            {% elif validity_status in ['critical', 'expired', 'invalid'] %}text-rose-700 dark:text-rose-300
-                                            {% else %}text-slate-600 dark:text-slate-300{% endif %}">
+                            <div class="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4 dark:border-emerald-900/30 dark:bg-emerald-950/15">
+                                <div class="flex items-center gap-2 text-emerald-700 dark:text-emerald-300">
                                     <i data-lucide="calendar-check" class="h-4 w-4"></i>
                                     <p class="text-xs font-medium">Valid from</p>
                                 </div>
                                 <p class="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{{ record.not_before|user_datetime('%Y-%m-%d %H:%M %Z', 'N/A') }}</p>
                             </div>
-                            <div class="rounded-2xl border p-4
-                                        {% if validity_status == 'healthy' %}border-teal-100 bg-teal-50/70 dark:border-teal-900/30 dark:bg-teal-950/15
-                                        {% elif validity_status == 'warning' %}border-orange-100 bg-orange-50/70 dark:border-orange-900/30 dark:bg-orange-950/15
-                                        {% elif validity_status in ['critical', 'expired', 'invalid'] %}border-red-100 bg-red-50/70 dark:border-red-900/30 dark:bg-red-950/15
-                                        {% else %}border-slate-200 bg-slate-50/70 dark:border-slate-700 dark:bg-slate-900/30{% endif %}">
-                                <div class="flex items-center gap-2
-                                            {% if validity_status == 'healthy' %}text-teal-700 dark:text-teal-300
-                                            {% elif validity_status == 'warning' %}text-orange-700 dark:text-orange-300
-                                            {% elif validity_status in ['critical', 'expired', 'invalid'] %}text-red-700 dark:text-red-300
-                                            {% else %}text-slate-600 dark:text-slate-300{% endif %}">
+                            <div class="rounded-2xl border border-teal-100 bg-teal-50/70 p-4 dark:border-teal-900/30 dark:bg-teal-950/15">
+                                <div class="flex items-center gap-2 text-teal-700 dark:text-teal-300">
                                     <i data-lucide="calendar-x" class="h-4 w-4"></i>
                                     <p class="text-xs font-medium">Expires at</p>
                                 </div>
                                 <p class="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{{ record.not_after|user_datetime('%Y-%m-%d %H:%M %Z', 'N/A') }}</p>
                             </div>
                         </div>
-                        <div class="flex items-start gap-2.5 rounded-2xl px-4 py-3 text-xs leading-5
-                                    {% if validity_status == 'healthy' %}bg-emerald-50 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-200
-                                    {% elif validity_status == 'warning' %}bg-amber-50 text-amber-800 dark:bg-amber-500/10 dark:text-amber-200
-                                    {% elif validity_status in ['critical', 'expired', 'invalid'] %}bg-rose-50 text-rose-800 dark:bg-rose-500/10 dark:text-rose-200
-                                    {% else %}bg-slate-50 text-slate-700 dark:bg-slate-900/40 dark:text-slate-300{% endif %}">
-                            <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg
-                                         {% if validity_status == 'healthy' %}bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300
-                                         {% elif validity_status == 'warning' %}bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300
-                                         {% elif validity_status in ['critical', 'expired', 'invalid'] %}bg-rose-100 text-rose-600 dark:bg-rose-500/15 dark:text-rose-300
-                                         {% else %}bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300{% endif %}">
+                        <div class="flex items-start gap-2.5 rounded-2xl bg-emerald-50 px-4 py-3 text-xs leading-5 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-200">
+                            <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300">
                                 <i data-lucide="lightbulb" class="h-4 w-4"></i>
                             </span>
                             <p>Plan certificate rotation before the expiry date so workloads and Ingress endpoints can be updated without service interruption.</p>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="grid gap-6 xl:grid-cols-[1.2fr_0.8fr] xl:items-start">
-                <div class="space-y-6">
-                    <div class="overflow-hidden rounded-3xl border border-violet-200 bg-white shadow-sm dark:border-violet-900/40 dark:bg-slate-800">
-                        <div class="flex flex-col gap-3 border-b border-violet-100 bg-gradient-to-r from-violet-50 via-white to-fuchsia-50 px-5 py-4 dark:border-violet-900/40 dark:from-violet-950/20 dark:via-slate-800 dark:to-fuchsia-950/15 sm:flex-row sm:items-center sm:justify-between">
-                            <div class="flex items-center gap-3">
-                                <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-600 text-white shadow-sm shadow-violet-600/20">
-                                    <i data-lucide="globe-2" class="h-5 w-5"></i>
-                                </span>
-                                <div>
-                                    <h2 class="text-base font-semibold text-slate-950 dark:text-white">Subject Alternative Names</h2>
-                                    <p class="text-sm text-slate-500 dark:text-slate-400">DNS identities covered by this certificate.</p>
-                                </div>
-                            </div>
-                            <span class="inline-flex w-fit items-center rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-700 ring-1 ring-inset ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-400/20">
-                                {{ (record.dns_names or [])|length }} SANs
-                            </span>
-                        </div>
-                        <div class="space-y-4 p-5">
-                            {% if record.dns_names %}
-                                <div class="grid gap-2 sm:grid-cols-2">
-                                    {% for domain in record.dns_names %}
-                                        <div class="flex min-w-0 items-center gap-2.5 rounded-2xl border border-violet-100 bg-violet-50/70 px-3.5 py-3 dark:border-violet-900/30 dark:bg-violet-950/15">
-                                            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300">
-                                                <i data-lucide="shield-check" class="h-4 w-4"></i>
-                                            </span>
-                                            <span class="min-w-0 break-all text-xs font-medium text-slate-800 dark:text-slate-100">{{ domain }}</span>
-                                        </div>
-                                    {% endfor %}
-                                </div>
-                            {% else %}
-                                <div class="flex items-start gap-3 rounded-2xl border border-dashed border-violet-200 bg-violet-50/70 p-4 text-sm text-violet-800 dark:border-violet-900/40 dark:bg-violet-950/15 dark:text-violet-200">
-                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300">
-                                        <i data-lucide="shield-off" class="h-4 w-4"></i>
-                                    </span>
-                                    <div>
-                                        <p class="font-medium">No SAN DNS names found</p>
-                                        <p class="mt-1 text-xs leading-5 text-violet-700/80 dark:text-violet-300/80">The certificate does not contain a recorded DNS Subject Alternative Name.</p>
-                                    </div>
-                                </div>
-                            {% endif %}
-                            <div class="flex items-start gap-2.5 rounded-2xl bg-violet-50 px-4 py-3 text-xs leading-5 text-violet-800 dark:bg-violet-500/10 dark:text-violet-200">
-                                <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300">
-                                    <i data-lucide="info" class="h-4 w-4"></i>
-                                </span>
-                                <p>SANs define the DNS names covered by this certificate and should include every hostname served by the mapped Ingress resources.</p>
-                            </div>
+                <div id="update-secret" class="rounded-2xl border border-blue-200 bg-white p-6 shadow-sm xl:col-start-2 xl:row-start-2 xl:self-start dark:border-blue-900/40 dark:bg-slate-800">
+                    <div class="flex items-start gap-3">
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300"><i data-lucide="rotate-cw" class="h-5 w-5"></i></div>
+                        <div>
+                            <h2 class="text-base font-bold text-slate-950 dark:text-white">Rotate TLS Secret</h2>
+                            <p class="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">Governance identifies certificate posture. The controlled replacement workflow is performed under Kubernetes Operations.</p>
                         </div>
                     </div>
-
-                    <div class="overflow-hidden rounded-3xl border border-amber-200 bg-white shadow-sm dark:border-amber-900/40 dark:bg-slate-800">
-                        <div class="flex flex-col gap-3 border-b border-amber-100 bg-gradient-to-r from-amber-50 via-white to-orange-50 px-5 py-4 dark:border-amber-900/40 dark:from-amber-950/20 dark:via-slate-800 dark:to-orange-950/15 sm:flex-row sm:items-center sm:justify-between">
-                            <div class="flex items-center gap-3">
-                                <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-sm shadow-amber-500/20">
-                                    <i data-lucide="route" class="h-5 w-5"></i>
-                                </span>
-                                <div>
-                                    <h2 class="text-base font-semibold text-slate-950 dark:text-white">Ingress Usage</h2>
-                                    <p class="text-sm text-slate-500 dark:text-slate-400">Ingress resources and mapped hosts currently referencing this TLS Secret.</p>
-                                </div>
-                            </div>
-                            <span class="inline-flex w-fit items-center rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/20">
-                                {{ (record.used_by or [])|length }} references
-                            </span>
-                        </div>
-                        <div class="grid gap-3 p-5 lg:grid-cols-2">
-                            {% for consumer in record.used_by or [] %}
-                                <article class="flex h-full flex-col overflow-hidden rounded-2xl border border-amber-100 bg-amber-50/60 dark:border-amber-900/30 dark:bg-amber-950/15">
-                                    <div class="border-b border-dashed border-amber-200 px-4 py-3 dark:border-amber-900/40">
-                                        <div class="flex items-center gap-3">
-                                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white text-amber-600 shadow-sm dark:bg-slate-800 dark:text-amber-300">
-                                                <i data-lucide="network" class="h-4 w-4"></i>
-                                            </span>
-                                            <div class="min-w-0 flex-1 space-y-2">
-                                                <div class="grid grid-cols-[5.5rem_minmax(0,1fr)] items-start gap-3">
-                                                    <span class="text-xs font-medium text-amber-700 dark:text-amber-300">Ingress</span>
-                                                    <span class="min-w-0 break-words text-sm font-semibold text-slate-900 dark:text-white">{{ consumer.name }}</span>
-                                                </div>
-                                                <div class="grid grid-cols-[5.5rem_minmax(0,1fr)] items-start gap-3">
-                                                    <span class="text-xs font-medium text-amber-700 dark:text-amber-300">Namespace</span>
-                                                    <span class="min-w-0 break-words text-sm font-medium text-slate-700 dark:text-slate-200">{{ consumer.namespace }}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="flex-1 px-4 py-3">
-                                        <p class="text-xs font-medium text-amber-700 dark:text-amber-300">Mapped hosts</p>
-                                        <div class="mt-2 flex flex-wrap gap-2">
-                                            {% for host in consumer.hosts or [] %}
-                                                <a href="https://{{ host }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-200 transition hover:bg-amber-100 dark:bg-slate-800 dark:text-amber-300 dark:ring-amber-900/50 dark:hover:bg-amber-500/10">
-                                                    <span>{{ host }}</span>
-                                                    <i data-lucide="external-link" class="h-3 w-3"></i>
-                                                </a>
-                                            {% else %}
-                                                <span class="text-xs text-slate-500 dark:text-slate-400">No hosts mapped.</span>
-                                            {% endfor %}
-                                        </div>
-                                    </div>
-                                </article>
-                            {% else %}
-                                <div class="flex items-start gap-3 rounded-2xl border border-dashed border-amber-200 bg-amber-50/70 p-4 text-sm text-amber-800 lg:col-span-2 dark:border-amber-900/40 dark:bg-amber-950/15 dark:text-amber-200">
-                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300">
-                                        <i data-lucide="route-off" class="h-4 w-4"></i>
-                                    </span>
-                                    <div>
-                                        <p class="font-medium">No Ingress mapping found</p>
-                                        <p class="mt-1 text-xs leading-5 text-amber-700/80 dark:text-amber-300/80">This TLS Secret is not currently referenced by an inventoried Ingress resource.</p>
-                                    </div>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                </div>
-
-                <div id="update-secret" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-                    <div class="flex items-center gap-3">
-                        <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300"><i data-lucide="upload-cloud" class="h-5 w-5"></i></div>
-                        <div>
-                            <h2 class="text-base font-bold text-slate-950 dark:text-white">Update Existing TLS Secret</h2>
-                            <p class="text-sm text-slate-500 dark:text-slate-400">Patch the existing Secret after cert/key validation.</p>
-                        </div>
-                    </div>
-                    <form method="post" action="{{ url_for('governance.tls_certificates_update_apply', certificate_id=record.id) }}" enctype="multipart/form-data" class="mt-5 space-y-4">
-                        <div>
-                            <label class="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">tls.crt</label>
-                            <input required type="file" name="tls_crt_file" accept=".crt,.pem" class="mt-2 block w-full rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 file:mr-3 file:rounded-xl file:border-0 file:bg-blue-50 file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-blue-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:file:bg-blue-500/10 dark:file:text-blue-300">
-                        </div>
-                        <div>
-                            <label class="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">tls.key</label>
-                            <input required type="file" name="tls_key_file" accept=".key,.pem" class="mt-2 block w-full rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 file:mr-3 file:rounded-xl file:border-0 file:bg-blue-50 file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-blue-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:file:bg-blue-500/10 dark:file:text-blue-300">
-                        </div>
-                        <button class="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700">
-                            <i data-lucide="shield-check" class="h-4 w-4"></i>
-                            Validate & Update Secret
-                        </button>
-                    </form>
-                    <p class="mt-4 rounded-2xl bg-slate-50 p-4 text-xs leading-5 text-slate-500 dark:bg-slate-900/40 dark:text-slate-400">
-                        Private keys are not stored in the database. Audit records only fingerprints, expiry metadata, actor, timestamp, and update result.
-                    </p>
+                    <a href="{{ url_for('kubernetes_operations.tls_secret_rotate', certificate_id=record.id) }}" class="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700">
+                        <i data-lucide="key-round" class="h-4 w-4"></i>
+                        Open TLS rotation workflow
+                    </a>
+                    <p class="mt-4 rounded-2xl bg-slate-50 p-4 text-xs leading-5 text-slate-500 dark:bg-slate-900/40 dark:text-slate-400">Certificate files and private keys are validated and applied by Secret Management. Governance retains only posture, relationship, and audit context.</p>
                 </div>
             </div>
         </section>

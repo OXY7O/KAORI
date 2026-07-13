@@ -3,6 +3,12 @@
 {% set can_inventory = current_user.is_authenticated and current_user.has_permission('inventory.view') %}
 {% set can_analytics = current_user.is_authenticated and current_user.has_permission('analytics.view') %}
 {% set can_intelligence = current_user.is_authenticated and current_user.has_permission('intelligence.view') %}
+{% set can_operations = current_user.is_authenticated and (
+    current_user.has_permission('kubernetes_secrets.view')
+    or current_user.has_permission('kubernetes_secrets.create')
+    or current_user.has_permission('kubernetes_secrets.rotate_tls')
+    or current_user.has_permission('kubernetes_secrets.bulk_rotate_tls')
+) %}
 {% set can_governance = current_user.is_authenticated and (
     current_user.has_permission('governance.view')
     or current_user.has_permission('tls_certificates.view')
@@ -57,7 +63,7 @@
             </div>
         {% endif %}
 
-        {% if can_clusters or can_inventory or can_governance %}
+        {% if can_clusters or can_inventory or can_operations or can_governance %}
             <div class="sidebar-nav-section">
                 <div class="sidebar-expanded-only mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
                     Kubernetes
@@ -74,6 +80,9 @@
                     {% endif %}
                     {% if can_inventory %}
                         {% include "components/navigation/inventory_menu.html" %}
+                    {% endif %}
+                    {% if can_operations %}
+                        {% include "components/navigation/kubernetes_operations_menu.html" %}
                     {% endif %}
                     {% if can_governance %}
                         {% include "components/navigation/governance_menu.html" %}
