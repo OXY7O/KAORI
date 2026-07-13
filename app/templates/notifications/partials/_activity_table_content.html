@@ -11,8 +11,8 @@
 
 {% if items %}
     <div class="overflow-x-auto">
-        <div style="min-width: 1020px;">
-            <div style="grid-template-columns: 8.75rem 12.5rem minmax(24rem, 1.75fr) 12rem 8rem 7rem;" class="grid items-center gap-5 border-b border-slate-200 bg-slate-50 px-6 py-3 text-left text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-400">
+        <div style="min-width: 1220px;">
+            <div style="grid-template-columns: 8rem minmax(15rem,1.1fr) minmax(22rem,1.7fr) minmax(13rem,0.9fr) 7rem 6.5rem;" class="grid items-center gap-4 border-b border-slate-200 bg-slate-50 px-6 py-3 text-left text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-400">
                 <div>Time</div>
                 <div>Actor</div>
                 <div>Activity</div>
@@ -27,7 +27,7 @@
                     {% set is_warning = item.status == 'warning' %}
                     {% set is_error = item.status == 'error' %}
                     <details class="group relative bg-white dark:bg-slate-800">
-                        <summary style="grid-template-columns: 8.75rem 12.5rem minmax(24rem, 1.75fr) 12rem 8rem 7rem;" class="grid cursor-pointer list-none items-start gap-5 px-6 py-4 text-left transition hover:bg-slate-50/80 focus:outline-none group-open:bg-blue-50/70 dark:hover:bg-slate-900 dark:group-open:bg-blue-950/30">
+                        <summary style="grid-template-columns: 8rem minmax(15rem,1.1fr) minmax(22rem,1.7fr) minmax(13rem,0.9fr) 7rem 6.5rem;" class="grid cursor-pointer list-none items-center gap-4 px-6 py-4 text-left transition hover:bg-slate-50/80 focus:outline-none group-open:bg-blue-50/70 dark:hover:bg-slate-900 dark:group-open:bg-blue-950/30">
                             <div class="relative min-w-0 pl-4">
                                 <span class="absolute left-0 top-2 h-2 w-2 rounded-full {% if item.is_read %}bg-slate-300 dark:bg-slate-600{% else %}bg-blue-500 ring-2 ring-blue-100 dark:ring-blue-900/60{% endif %}"></span>
                                 <p class="whitespace-nowrap text-[11px] font-bold text-slate-800 dark:text-slate-100">
@@ -39,7 +39,7 @@
                                 <p class="mt-1 text-[10px] text-slate-400 dark:text-slate-500">{{ item.created_label }}</p>
                             </div>
 
-                            <div class="flex min-w-0 items-start gap-2.5">
+                            <div class="flex min-w-0 items-center gap-2.5">
                                 <span class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-extrabold
                                     {% if item.event_tone == 'rose' %}bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300
                                     {% elif item.event_tone == 'cyan' %}bg-cyan-100 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300
@@ -48,18 +48,19 @@
                                     {% else %}bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200{% endif %}">
                                     {{ item.user_initials }}
                                 </span>
-                                <div class="min-w-0">
-                                    <div class="flex min-w-0 items-center gap-1.5">
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex min-w-0 items-center gap-1.5 whitespace-nowrap">
                                         <p class="truncate text-[11px] font-bold text-slate-900 dark:text-white" title="{{ item.user_label }}">{{ item.user_label }}</p>
                                         <span class="flex-shrink-0 rounded-full bg-blue-50 px-1.5 py-0.5 text-[9px] font-bold text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20">{{ item.user_role }}</span>
                                     </div>
-                                    <p class="mt-1 flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400">
-                                        <i data-lucide="key-round" class="h-3 w-3"></i>
-                                        <span class="truncate">{{ item.user_auth_source }}</span>
-                                    </p>
-                                    {% if item.user_email %}
-                                        <p class="mt-1 truncate text-[9px] text-slate-400" title="{{ item.user_email }}">{{ item.user_email }}</p>
-                                    {% endif %}
+                                    <div class="mt-1 flex min-w-0 items-center gap-1.5 whitespace-nowrap text-[9px] text-slate-500 dark:text-slate-400">
+                                        <i data-lucide="key-round" class="h-3 w-3 flex-shrink-0"></i>
+                                        <span class="flex-shrink-0">{{ item.user_auth_source }}</span>
+                                        {% if item.user_email %}
+                                            <span class="text-slate-300 dark:text-slate-600">·</span>
+                                            <span class="truncate" title="{{ item.user_email }}">{{ item.user_email }}</span>
+                                        {% endif %}
+                                    </div>
                                 </div>
                             </div>
 
@@ -74,14 +75,18 @@
                                         <i data-lucide="{{ item.event_icon }}" class="h-3.5 w-3.5"></i>
                                     </span>
                                     <div class="min-w-0">
-                                        <p class="text-[11px] font-extrabold leading-4 text-slate-950 dark:text-white">{{ item.title }}</p>
-                                        <p class="mt-1 line-clamp-2 text-[10px] leading-4 text-slate-500 dark:text-slate-400">{{ item.message }}</p>
+                                        <p class="truncate text-[11px] font-extrabold leading-4 text-slate-950 dark:text-white" title="{{ item.title }}">{{ item.title }}</p>
+                                        <p class="mt-1 truncate text-[10px] leading-4 text-slate-500 dark:text-slate-400" title="{{ item.message }}">{{ item.message }}</p>
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="min-w-0">
-                                <span class="inline-flex max-w-full items-center rounded-full px-2 py-1 text-[9px] font-bold ring-1 ring-inset
+                            {% set normalized_target_name = item.target_name|default('', true)|lower|trim %}
+                            {% set normalized_activity_title = item.title|default('', true)|lower|trim %}
+                            {% set normalized_activity_message = item.message|default('', true)|lower|trim %}
+                            {% set show_target_name = normalized_target_name and normalized_target_name != normalized_activity_title and normalized_target_name not in normalized_activity_message %}
+                            <div class="flex min-w-0 items-center gap-2" title="{{ item.target_type }}{% if item.target_name %} · {{ item.target_name }}{% endif %}">
+                                <span class="inline-flex flex-shrink-0 items-center rounded-full px-2 py-1 text-[9px] font-bold ring-1 ring-inset
                                     {% if item.event_tone == 'rose' %}bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-900
                                     {% elif item.event_tone == 'cyan' %}bg-cyan-50 text-cyan-700 ring-cyan-100 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-900/60
                                     {% elif item.event_tone == 'indigo' %}bg-indigo-50 text-indigo-700 ring-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-300 dark:ring-indigo-900/40
@@ -89,7 +94,9 @@
                                     {% else %}bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:ring-slate-700{% endif %}">
                                     {{ item.target_type }}
                                 </span>
-                                <p class="mt-2 break-words text-[10px] font-semibold leading-4 text-slate-700 dark:text-slate-200" title="{{ item.target_name }}">{{ item.target_name }}</p>
+                                {% if show_target_name %}
+                                    <p class="truncate text-[10px] font-semibold text-slate-700 dark:text-slate-200">{{ item.target_name }}</p>
+                                {% endif %}
                             </div>
 
                             <div>
