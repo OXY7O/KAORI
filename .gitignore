@@ -158,11 +158,19 @@ kubeconfig
 # Secrets
 # =====================================
 
-secrets/
+# Ignore only runtime/local secret directories at known locations.
+# Do not use a global `secrets/` rule because KAORI has source packages
+# named `secrets` under app/.
+#/secrets is reserved for local credentials at the repository root.
+/secrets/
+/instance/secrets/
+/config/secrets/
+
 *.pem
 *.key
 *.crt
 *.p12
+*.pfx
 
 # =====================================
 # Uploads
