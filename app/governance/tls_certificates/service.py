@@ -395,7 +395,7 @@ def apply_certificate_update(certificate_id: int, files: Any) -> dict[str, Any]:
         )
         db.session.commit()
         return {'status': 'success', 'message': 'TLS Secret updated successfully.'}
-    except Exception as exc:
+    except Exception:
         db.session.rollback()
         current_app.logger.exception('TLS certificate update failed')
         db.session.add(
@@ -408,12 +408,18 @@ def apply_certificate_update(certificate_id: int, files: Any) -> dict[str, Any]:
                 old_not_after=old_not_after,
                 new_not_after=validation.parsed_certificate.not_after,
                 status='failed',
-                message=str(exc),
+                message='The Kubernetes TLS Secret could not be updated.',
                 actor_user_id=getattr(actor, 'id', None),
             )
         )
         db.session.commit()
-        return {'status': 'failed', 'message': str(exc)}
+        return {
+            'status': 'failed',
+            'message': (
+                'The Kubernetes TLS Secret could not be updated. Review the cluster connection, '
+                'access permissions, and uploaded certificate pair, then retry.'
+            ),
+        }
 
 
 def apply_bulk_update(files: Any, target_ids: Iterable[int]) -> dict[str, Any]:
@@ -466,7 +472,7 @@ def apply_bulk_update(files: Any, target_ids: Iterable[int]) -> dict[str, Any]:
                 )
             )
             results.append({'target': target, 'status': 'success', 'message': 'Updated.'})
-        except Exception as exc:
+        except Exception:
             current_app.logger.exception('Bulk TLS update failed for %s/%s', target.namespace, target.secret_name)
             db.session.add(
                 _new_tls_update_event(
@@ -478,12 +484,18 @@ def apply_bulk_update(files: Any, target_ids: Iterable[int]) -> dict[str, Any]:
                     old_not_after=old_not_after,
                     new_not_after=parsed.not_after,
                     status='failed',
-                    message=str(exc),
+                    message='The Kubernetes TLS Secret could not be updated by the bulk operation.',
                     bulk_job_id=bulk_job_id,
                     actor_user_id=getattr(actor, 'id', None),
                 )
             )
-            results.append({'target': target, 'status': 'failed', 'message': str(exc)})
+            results.append(
+                {
+                    'target': target,
+                    'status': 'failed',
+                    'message': 'Update failed. Review the cluster connection and access permissions.',
+                }
+            )
 
     db.session.commit()
     success_count = sum(1 for result in results if result['status'] == 'success')

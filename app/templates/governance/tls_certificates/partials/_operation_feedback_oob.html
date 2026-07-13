@@ -1,0 +1,16 @@
+{% if operation_feedback %}
+    {% with
+        status=operation_feedback.status,
+        title=operation_feedback.title,
+        message=operation_feedback.message,
+        detail=operation_feedback.detail,
+        view_url=operation_feedback.view_url,
+        action_label=operation_feedback.action_label,
+        action_icon=operation_feedback.action_icon,
+        notification_saved=operation_feedback.notification_saved,
+        notification_context=operation_feedback.notification_context,
+        toast_oob=true
+    %}
+        {% include "components/navigation/_quick_sync_result.html" %}
+    {% endwith %}
+{% endif %}
