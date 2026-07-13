@@ -118,7 +118,7 @@ def _record_validation_activity(
         action_url=(
             url_for('governance.tls_certificates_detail', certificate_id=record.id)
             if record is not None
-            else url_for('governance.tls_certificates_bulk_page')
+            else url_for('governance.tls_certificates_bulk_update')
         ),
         action_label='Review TLS validation',
         metadata={
@@ -377,7 +377,7 @@ def tls_certificates_bulk_apply():
         status=status,
         title=title,
         message=apply_result['message'],
-        action_url=url_for('governance.tls_certificates_bulk_page'),
+        action_url=url_for('governance.tls_certificates_bulk_update'),
         action_label='Review TLS update workspace',
         metadata={
             'bulk_job_id': apply_result.get('bulk_job_id'),
