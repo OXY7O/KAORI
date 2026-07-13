@@ -492,6 +492,54 @@
                 }
             }
 
+            const operationalProgressToastByRequest = new WeakMap()
+
+            document.addEventListener('htmx:beforeRequest', (event) => {
+                const requestElement = event.detail?.elt
+                const progressOwner = requestElement?.closest?.('[data-operational-progress-title]')
+                const request = event.detail?.xhr
+
+                if (!progressOwner || !request) {
+                    return
+                }
+
+                const existingToastId = operationalProgressToastByRequest.get(request)
+                if (existingToastId) {
+                    window.dismissOperationalProgressToast(existingToastId)
+                }
+
+                const toastId = window.showOperationalProgressToast(
+                    progressOwner.dataset.operationalProgressTitle,
+                    progressOwner.dataset.operationalProgressMessage,
+                )
+
+                if (toastId) {
+                    operationalProgressToastByRequest.set(request, toastId)
+                }
+            })
+
+            const finishOperationalProgressRequest = (event) => {
+                const request = event.detail?.xhr
+
+                if (!request) {
+                    return
+                }
+
+                const toastId = operationalProgressToastByRequest.get(request)
+
+                if (!toastId) {
+                    return
+                }
+
+                window.dismissOperationalProgressToast(toastId)
+                operationalProgressToastByRequest.delete(request)
+            }
+
+            document.addEventListener('htmx:afterRequest', finishOperationalProgressRequest)
+            document.addEventListener('htmx:sendError', finishOperationalProgressRequest)
+            document.addEventListener('htmx:timeout', finishOperationalProgressRequest)
+            document.addEventListener('htmx:abort', finishOperationalProgressRequest)
+
             window.dismissQuickActionToast = (button) => {
                 if (!button) {
                     return

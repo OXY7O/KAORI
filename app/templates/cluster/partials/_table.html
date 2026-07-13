@@ -231,8 +231,8 @@
                                           hx-post="{{ url_for('cluster.test_cluster', cluster_id=cluster.id, **table_query) }}"
                                           hx-target="#cluster-table-container"
                                           hx-swap="outerHTML"
-                                          hx-on::before-request="this.dataset.progressToastId = window.showOperationalProgressToast('Cluster connection test in progress', 'Testing Kubernetes API connectivity for {{ cluster.name|e }}.') || ''"
-                                          hx-on::after-request="window.dismissOperationalProgressToast(this.dataset.progressToastId); delete this.dataset.progressToastId"
+                                          data-operational-progress-title="Cluster connection test in progress"
+                                          data-operational-progress-message="Testing Kubernetes API connectivity for {{ cluster.name|e }}."
                                           class="inline-flex">
                                         <button type="submit"
                                                 title="Test Cluster Connection"
@@ -246,8 +246,8 @@
                                           hx-post="{{ url_for('inventory.sync', cluster_id=cluster.id, **table_query) }}"
                                           hx-target="#cluster-table-container"
                                           hx-swap="outerHTML"
-                                          hx-on::before-request="this.dataset.progressToastId = window.showOperationalProgressToast('Cluster inventory sync in progress', 'Synchronizing Kubernetes inventory for {{ cluster.name|e }}.') || ''"
-                                          hx-on::after-request="window.dismissOperationalProgressToast(this.dataset.progressToastId); delete this.dataset.progressToastId"
+                                          data-operational-progress-title="Cluster inventory sync in progress"
+                                          data-operational-progress-message="Synchronizing Kubernetes inventory for {{ cluster.name|e }}."
                                           class="inline-flex">
                                         <button type="submit"
                                                 title="Sync Inventory"
