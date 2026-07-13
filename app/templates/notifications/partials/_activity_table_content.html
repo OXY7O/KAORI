@@ -200,7 +200,13 @@
                                             </div>
                                         </div>
                                         <dl class="mt-4 space-y-2.5 text-[10px]">
-                                            <div class="flex items-start justify-between gap-3"><dt class="text-slate-500 dark:text-slate-400">Event type</dt><dd class="max-w-[12rem] break-words text-right font-bold text-slate-700 dark:text-slate-200">{{ item.event_label }}</dd></div>
+                                            <div class="flex min-w-0 items-center justify-between gap-3">
+                                                <dt class="flex-shrink-0 text-slate-500 dark:text-slate-400">Event type</dt>
+                                                <dd class="flex min-w-0 items-center justify-end gap-2 text-right">
+                                                    <span class="truncate font-bold text-slate-700 dark:text-slate-200" title="{{ item.event_label }}">{{ item.event_label }}</span>
+                                                    <span class="hidden max-w-[10rem] truncate rounded-md bg-cyan-50 px-2 py-1 font-mono text-[8px] font-semibold text-cyan-700 ring-1 ring-inset ring-cyan-100 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-900/40 sm:inline-flex" title="{{ item.event_type }}">{{ item.event_type }}</span>
+                                                </dd>
+                                            </div>
                                             <div class="flex items-start justify-between gap-3"><dt class="text-slate-500 dark:text-slate-400">Recorded</dt><dd class="text-right font-bold text-slate-700 dark:text-slate-200">{{ item.created_at|user_datetime('%d %b %Y %H:%M:%S %Z') }}</dd></div>
                                             <div class="flex items-start justify-between gap-3"><dt class="text-slate-500 dark:text-slate-400">Relative time</dt><dd class="text-right font-bold text-slate-700 dark:text-slate-200">{{ item.created_label }}</dd></div>
                                         </dl>
@@ -273,32 +279,34 @@
                                 {% endif %}
 
                                 <section class="border-t border-slate-200 px-4 py-4 dark:border-slate-700">
-                                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                        <div class="flex items-center gap-2">
-                                            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200">
-                                                <i data-lucide="list-tree" class="h-4 w-4"></i>
-                                            </span>
-                                            <div>
-                                                <h4 class="text-xs font-extrabold text-slate-900 dark:text-white">Operational metadata</h4>
-                                                <p class="mt-0.5 text-[9px] text-slate-500 dark:text-slate-400">Additional values stored when this activity was recorded.</p>
-                                            </div>
-                                        </div>
-                                        <span class="self-start rounded-full bg-slate-100 px-2.5 py-1 text-[9px] font-bold text-slate-600 ring-1 ring-inset ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-600 sm:self-auto">{{ item.metadata_items|length }} fields</span>
-                                    </div>
-                                    {% if item.metadata_items %}
-                                        <dl class="mt-3 grid max-h-64 gap-2 overflow-y-auto pr-1 sm:grid-cols-2 xl:grid-cols-3">
-                                            {% for metadata in item.metadata_items %}
-                                                <div class="rounded-xl bg-slate-50 px-3 py-2.5 ring-1 ring-inset ring-slate-200 dark:bg-slate-900/60 dark:ring-slate-700">
-                                                    <dt class="text-[9px] font-bold text-slate-500 dark:text-slate-400">{{ metadata.label }}</dt>
-                                                    <dd class="mt-1 break-words text-[10px] font-extrabold leading-4 text-slate-800 dark:text-slate-100">{{ metadata.value }}</dd>
+                                    <div class="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
+                                        <div class="flex flex-col gap-2 border-b border-slate-200 bg-slate-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:bg-slate-900/40">
+                                            <div class="flex items-center gap-2.5">
+                                                <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200">
+                                                    <i data-lucide="list-tree" class="h-4 w-4"></i>
+                                                </span>
+                                                <div>
+                                                    <h4 class="text-xs font-extrabold text-slate-900 dark:text-white">Operational metadata</h4>
+                                                    <p class="mt-0.5 text-[9px] text-slate-500 dark:text-slate-400">Relevant trace values captured for this activity. Duplicate context and recorded changes are omitted.</p>
                                                 </div>
-                                            {% endfor %}
-                                        </dl>
-                                    {% else %}
-                                        <div class="mt-3 rounded-xl bg-slate-50 px-3 py-3 text-[10px] leading-5 text-slate-500 ring-1 ring-inset ring-slate-200 dark:bg-slate-900/60 dark:text-slate-400 dark:ring-slate-700">
-                                            No additional operational metadata was recorded for this activity.
+                                            </div>
+                                            <span class="self-start rounded-full bg-white px-2.5 py-1 text-[9px] font-bold text-slate-600 ring-1 ring-inset ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-600 sm:self-auto">{{ item.metadata_items|length }} fields</span>
                                         </div>
-                                    {% endif %}
+                                        {% if item.metadata_items %}
+                                            <dl class="divide-y divide-slate-100 dark:divide-slate-700 sm:grid sm:grid-cols-2 sm:divide-y-0 xl:grid-cols-3">
+                                                {% for metadata in item.metadata_items %}
+                                                    <div class="flex min-w-0 items-start justify-between gap-3 px-4 py-3 sm:border-b sm:border-r sm:border-slate-100 dark:sm:border-slate-700">
+                                                        <dt class="flex-shrink-0 text-[9px] font-semibold text-slate-500 dark:text-slate-400">{{ metadata.label }}</dt>
+                                                        <dd class="min-w-0 text-right text-[10px] font-bold leading-4 {% if metadata.tone == 'rose' %}text-rose-700 dark:text-rose-300{% else %}text-slate-800 dark:text-slate-100{% endif %} {% if metadata.is_identifier %}truncate font-mono{% else %}break-words{% endif %}" title="{{ metadata.value }}">{{ metadata.value }}</dd>
+                                                    </div>
+                                                {% endfor %}
+                                            </dl>
+                                        {% else %}
+                                            <div class="px-4 py-4 text-[10px] leading-5 text-slate-500 dark:text-slate-400">
+                                                No additional trace values are needed for this activity.
+                                            </div>
+                                        {% endif %}
+                                    </div>
                                 </section>
 
                                 <div class="flex items-start gap-2 border-t border-blue-100 bg-blue-50/70 px-4 py-3 text-[10px] leading-5 text-blue-700 dark:border-blue-900/40 dark:bg-blue-950/20 dark:text-blue-300">

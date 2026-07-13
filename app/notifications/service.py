@@ -24,6 +24,81 @@ _QUICK_ACTION_FEEDBACK_SESSION_KEY = 'quick_action_feedback'
 
 logger = logging.getLogger(__name__)
 
+_RAW_ERROR_PATTERNS = (
+    'traceback (most recent call last)',
+    'httpconnectionpool(',
+    'httpsconnectionpool(',
+    'max retries exceeded',
+    'newconnectionerror',
+    'failed to establish a new connection',
+    'connection refused',
+    'connection aborted',
+    'apiexception',
+    'status reason headers body',
+    'sqlalchemy.exc.',
+    'integrityerror',
+    'operationalerror',
+    'programmingerror',
+    'notfoundexception',
+    'exception:',
+)
+
+
+def _activity_failure_message(event_type: str, text: str) -> str:
+    normalized = text.lower()
+
+    if any(token in normalized for token in ('timeout', 'timed out', 'read timed out')):
+        return 'The operation timed out before the target service responded. Review service availability, network access, and the configured timeout.'
+    if any(token in normalized for token in ('certificate', 'ssl', 'tls', 'x509')):
+        return 'The secure connection could not be verified. Review the endpoint certificate and TLS verification settings.'
+    if any(token in normalized for token in ('401', 'unauthorized', 'authentication failed', 'invalid credential')):
+        return 'The target service rejected the configured credentials. Review the authentication settings and try again.'
+    if any(token in normalized for token in ('403', 'forbidden', 'permission denied')):
+        return 'The configured account does not have permission to complete this operation. Review the assigned access and credentials.'
+    if any(token in normalized for token in ('404', 'not found', 'notfound')):
+        return 'The requested endpoint or resource was not found. Review the configured address and resource availability.'
+    if any(token in normalized for token in ('connection refused', 'max retries exceeded', 'connectionerror', 'httpconnectionpool', 'httpsconnectionpool')):
+        return 'KAORI could not reach the configured endpoint. Review the endpoint, network route, service availability, and firewall access.'
+    if any(token in normalized for token in ('integrityerror', 'operationalerror', 'sqlalchemy', 'database')):
+        return 'KAORI could not complete the database operation. Review database availability and the application logs before retrying.'
+    if 'kubernetes' in event_type or event_type.startswith('cluster_'):
+        return 'The Kubernetes operation could not be completed. Review API reachability, kubeconfig credentials, TLS settings, and cluster compatibility.'
+    if event_type.startswith('prometheus_'):
+        return 'The Prometheus operation could not be completed. Review the endpoint, authentication, TLS settings, and service availability.'
+    if event_type.startswith('alertmanager_'):
+        return 'The Alertmanager operation could not be completed. Review the endpoint, authentication, TLS settings, and service availability.'
+    if event_type.startswith('operational_activity_'):
+        return 'The activity retention operation could not be completed safely. Review the retention status and worker logs before retrying.'
+
+    return 'The operation could not be completed. Review the related configuration and application logs, then try again.'
+
+
+def _standardize_activity_text(
+    value: str | None,
+    *,
+    event_type: str,
+    status: str,
+) -> str | None:
+    if value is None:
+        return None
+
+    normalized = re.sub(r'\s+', ' ', str(value)).strip()
+    if not normalized:
+        return None
+
+    lowered = normalized.lower()
+    looks_raw = (
+        any(pattern in lowered for pattern in _RAW_ERROR_PATTERNS)
+        or normalized.startswith(('{', '[', '<'))
+        or '\\n' in normalized
+        or len(normalized) > 700
+    )
+
+    if status in {'error', 'warning'} and looks_raw:
+        return _activity_failure_message(event_type, normalized)
+
+    return normalized
+
 
 def create_notification(
     *,
@@ -42,9 +117,21 @@ def create_notification(
     notification.user_id = user_id
     notification.event_type = event_type
     notification.status = normalized_status
-    notification.title = title
-    notification.message = message
-    notification.detail = detail
+    notification.title = _standardize_activity_text(
+        title,
+        event_type=event_type,
+        status=normalized_status,
+    ) or 'Operational activity'
+    notification.message = _standardize_activity_text(
+        message,
+        event_type=event_type,
+        status=normalized_status,
+    ) or 'The operation was recorded by KAORI.'
+    notification.detail = _standardize_activity_text(
+        detail,
+        event_type=event_type,
+        status=normalized_status,
+    )
     notification.action_url = action_url
     notification.metadata_json = metadata
 
@@ -125,15 +212,31 @@ def record_operational_activity(
     change into a failed user action.
     """
     notification_saved = True
+    normalized_status = status if status in _ALLOWED_STATUSES else 'info'
+    normalized_title = _standardize_activity_text(
+        title,
+        event_type=event_type,
+        status=normalized_status,
+    ) or 'Operational activity'
+    normalized_message = _standardize_activity_text(
+        message,
+        event_type=event_type,
+        status=normalized_status,
+    ) or 'The operation was recorded by KAORI.'
+    normalized_detail = _standardize_activity_text(
+        detail,
+        event_type=event_type,
+        status=normalized_status,
+    )
 
     try:
         create_notification(
             user_id=user_id,
             event_type=event_type,
-            status=status,
-            title=title,
-            message=message,
-            detail=detail,
+            status=normalized_status,
+            title=normalized_title,
+            message=normalized_message,
+            detail=normalized_detail,
             action_url=action_url,
             metadata=metadata,
         )
@@ -148,10 +251,10 @@ def record_operational_activity(
             create_notification(
                 user_id=user_id,
                 event_type=event_type,
-                status=status,
-                title=title,
-                message=message,
-                detail=detail,
+                status=normalized_status,
+                title=normalized_title,
+                message=normalized_message,
+                detail=normalized_detail,
                 action_url=action_url,
                 metadata=metadata,
             )
@@ -164,10 +267,10 @@ def record_operational_activity(
             )
 
     feedback = build_quick_action_feedback(
-        status=status,
-        title=title,
-        message=message,
-        detail=detail,
+        status=normalized_status,
+        title=normalized_title,
+        message=normalized_message,
+        detail=normalized_detail,
         action_url=action_url,
         action_label=action_label,
         action_icon=action_icon,
@@ -310,6 +413,14 @@ def _event_context(
             event_icon='database',
             event_tone='indigo',
         )
+    elif event_type.startswith('operational_activity_'):
+        context.update(
+            module_label='Activity Retention',
+            target_type='Retention',
+            target_name=_string_metadata(metadata, 'archive_id', 'domain') or 'Operational activity archive',
+            event_icon='archive',
+            event_tone='violet',
+        )
 
     if task_id:
         context['source_label'] = 'Background task'
@@ -392,34 +503,124 @@ def _changed_fields(metadata: dict[str, Any]) -> list[dict[str, str]]:
 
 
 def _metadata_value(value: Any) -> str:
+    if isinstance(value, dict):
+        if not value:
+            return '-'
+        return ', '.join(
+            f'{str(key).replace("_", " ").title()}: {_metadata_value(item)}'
+            for key, item in value.items()
+        )
     if isinstance(value, list):
-        return ', '.join(str(item) for item in value) if value else '-'
+        return ', '.join(_metadata_value(item) for item in value) if value else '-'
     if isinstance(value, bool):
         return 'Yes' if value else 'No'
     if value is None:
         return '-'
-    return str(value)
+    return re.sub(r'\s+', ' ', str(value)).strip() or '-'
 
 
-def _metadata_items(metadata: dict[str, Any]) -> list[dict[str, str]]:
+def _metadata_items(
+    metadata: dict[str, Any],
+    *,
+    event_type: str,
+) -> list[dict[str, Any]]:
     preferred_order = (
         'task_id',
+        'archive_id',
+        'operation_mode',
+        'domain',
         'total_count',
         'synced_count',
         'failed_count',
+        'record_count',
+        'cleanup_deleted_count',
         'failed_clusters',
         'duration_seconds',
+        'response_time_ms',
+        'version',
+        'endpoint',
+        'server',
+        'auth_type',
+        'timeout_seconds',
+        'verify_ssl',
+        'failure_code',
+        'reason',
     )
-    keys = [key for key in preferred_order if key in metadata]
-    keys.extend(sorted(key for key in metadata if key not in preferred_order))
+    label_overrides = {
+        'task_id': 'Task ID',
+        'archive_id': 'Archive ID',
+        'cluster_id': 'Cluster ID',
+        'operation_mode': 'Operation mode',
+        'total_count': 'Total resources',
+        'synced_count': 'Synchronized',
+        'failed_count': 'Failed',
+        'record_count': 'Archived records',
+        'cleanup_deleted_count': 'Cleaned records',
+        'duration_seconds': 'Duration',
+        'response_time_ms': 'Response time',
+        'timeout_seconds': 'Request timeout',
+        'verify_ssl': 'TLS verification',
+        'failure_code': 'Failure category',
+        'reason': 'Failure summary',
+        'storage_backend': 'Storage backend',
+        'checksum_sha256': 'SHA-256 checksum',
+        'size_bytes': 'Archive size',
+        'download_kind': 'Downloaded file',
+    }
+    context_keys = {
+        'cluster_name',
+        'environment',
+        'submitted_name',
+        'submitted_environment',
+    }
 
-    return [
-        {
-            'label': key.replace('_', ' ').title(),
-            'value': _metadata_value(metadata[key]),
-        }
-        for key in keys
-    ]
+    visible_metadata: dict[str, Any] = {}
+    for key, value in metadata.items():
+        if key.startswith('previous_') or key in context_keys:
+            continue
+        if key.startswith('submitted_') and key.removeprefix('submitted_') in metadata:
+            continue
+        visible_metadata[key] = value
+
+    keys = [key for key in preferred_order if key in visible_metadata]
+    keys.extend(sorted(key for key in visible_metadata if key not in preferred_order))
+
+    items: list[dict[str, Any]] = []
+    for key in keys:
+        value = visible_metadata[key]
+        if key in {'reason', 'error', 'error_message'}:
+            rendered_value = _standardize_activity_text(
+                _metadata_value(value),
+                event_type=event_type,
+                status='error',
+            ) or 'The operation did not complete successfully.'
+        elif key == 'duration_seconds':
+            rendered_value = f'{_metadata_value(value)} seconds'
+        elif key == 'response_time_ms':
+            rendered_value = f'{_metadata_value(value)} ms'
+        elif key == 'timeout_seconds':
+            rendered_value = f'{_metadata_value(value)} seconds'
+        elif key == 'size_bytes':
+            try:
+                size_value = int(value)
+                rendered_value = f'{size_value / 1024:.1f} KiB' if size_value < 1024 * 1024 else f'{size_value / (1024 * 1024):.1f} MiB'
+            except (TypeError, ValueError):
+                rendered_value = _metadata_value(value)
+        else:
+            rendered_value = _metadata_value(value)
+
+        is_identifier = key.endswith('_id') or key in {'task_id', 'checksum_sha256'}
+        items.append(
+            {
+                'key': key,
+                'label': label_overrides.get(key, key.replace('_', ' ').title()),
+                'value': rendered_value,
+                'is_identifier': is_identifier,
+                'tone': 'rose' if key in {'failed_count', 'failure_code', 'reason', 'error', 'error_message'} else 'slate',
+            }
+        )
+
+    return items
 
 
 def _user_label(user: User | None, user_id: int) -> str:
@@ -464,9 +665,21 @@ def _serialize_notification(
         'event_label': _event_label(notification.event_type),
         'status': notification.status,
         'status_label': status_labels.get(notification.status, 'Information'),
-        'title': notification.title,
-        'message': notification.message,
-        'detail': notification.detail,
+        'title': _standardize_activity_text(
+            notification.title,
+            event_type=notification.event_type,
+            status=notification.status,
+        ) or 'Operational activity',
+        'message': _standardize_activity_text(
+            notification.message,
+            event_type=notification.event_type,
+            status=notification.status,
+        ) or 'The operation was recorded by KAORI.',
+        'detail': _standardize_activity_text(
+            notification.detail,
+            event_type=notification.event_type,
+            status=notification.status,
+        ),
         'action_url': notification.action_url,
         'created_at': created_at,
         'created_label': _created_label(created_at),
@@ -481,7 +694,10 @@ def _serialize_notification(
     }
 
     if include_metadata:
-        item['metadata_items'] = _metadata_items(metadata)
+        item['metadata_items'] = _metadata_items(
+            metadata,
+            event_type=notification.event_type,
+        )
 
     return item
 
