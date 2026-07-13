@@ -6,7 +6,7 @@
       hx-swap="outerHTML"
       hx-indicator="#tls-secret-update-table-loading"
       hx-trigger="change, keyup changed delay:450ms from:input[name='search']"
-      class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.85fr)_minmax(16rem,1.35fr)] lg:items-end">
+      class="grid grid-cols-1 gap-4 md:grid-cols-4 md:items-end">
     <input type="hidden" name="page" value="1">
     <input type="hidden" name="per_page" value="{{ payload.pagination.per_page }}">
     <input type="hidden" name="partial_mode" value="bulk_table">

@@ -33,54 +33,54 @@
     </div>
 
     <div class="overflow-x-auto">
-        <table class="min-w-full text-left text-slate-900 dark:text-slate-100">
+        <table class="min-w-full text-slate-900 dark:text-slate-100">
             <thead>
-                <tr class="border-b border-slate-200 bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:border-slate-700 dark:bg-slate-700/40 dark:text-slate-300">
-                    <th class="w-[72px] px-6 py-3 text-left">Select</th>
-                    <th class="px-6 py-3 text-left">Cluster</th>
-                    <th class="px-6 py-3 text-left">Namespace</th>
-                    <th class="px-6 py-3 text-left">Secret</th>
-                    <th class="px-6 py-3 text-left">Expiry</th>
-                    <th class="px-6 py-3 text-left">Status</th>
+                <tr class="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-600 dark:border-slate-700 dark:bg-slate-700/40 dark:text-slate-300">
+                    <th class="w-[64px] px-4 py-3 text-left">Select</th>
+                    <th class="px-4 py-3 text-left">Cluster</th>
+                    <th class="px-4 py-3 text-left">Namespace</th>
+                    <th class="px-4 py-3 text-left">Secret</th>
+                    <th class="px-4 py-3 text-left">Expiry</th>
+                    <th class="px-4 py-3 text-left">Status</th>
                 </tr>
             </thead>
             <tbody>
                 {% for record in payload.records %}
                     {% set checked = selected_ids and record.id|string in selected_ids %}
-                    <tr class="border-b border-slate-100 text-sm transition hover:bg-slate-50/80 dark:border-slate-700 dark:hover:bg-slate-700/30">
-                        <td class="px-6 py-3 text-left align-middle">
-                            <label class="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-slate-200 bg-white transition hover:border-blue-300 hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-900/40 dark:hover:border-blue-500/50 dark:hover:bg-blue-500/10">
-                                <input form="tls-secret-update-form" type="checkbox" name="certificate_ids" value="{{ record.id }}" class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600" {% if checked %}checked{% endif %}>
-                            </label>
+                    <tr class="border-t border-slate-200 text-sm transition hover:bg-blue-50/30 dark:border-slate-700 dark:hover:bg-slate-700/30">
+                        <td class="px-4 py-3 text-left align-middle">
+                            <input form="tls-secret-update-form" type="checkbox" name="certificate_ids" value="{{ record.id }}" aria-label="Select {{ record.secret_name }}" class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600" {% if checked %}checked{% endif %}>
                         </td>
-                        <td class="px-6 py-3 text-left align-middle">
-                            <span class="inline-flex max-w-[220px] items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-900/40" title="{{ record.cluster.name if record.cluster else record.cluster_id }}">
-                                <i data-lucide="boxes" class="h-3.5 w-3.5 shrink-0"></i>
+                        <td class="px-4 py-3 text-left align-middle">
+                            <span class="inline-flex max-w-[220px] items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/25" title="{{ record.cluster.name if record.cluster else record.cluster_id }}">
+                                <i data-lucide="building-2" class="h-3.5 w-3.5 shrink-0"></i>
                                 <span class="truncate">{{ record.cluster.name if record.cluster else record.cluster_id }}</span>
                             </span>
                         </td>
-                        <td class="px-6 py-3 text-left align-middle">
-                            <span class="inline-flex max-w-[220px] items-center gap-1.5 rounded-full bg-violet-50 px-2.5 py-1 text-xs font-medium text-violet-700 ring-1 ring-inset ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-900/40" title="{{ record.namespace }}">
-                                <i data-lucide="box" class="h-3.5 w-3.5 shrink-0"></i>
+                        <td class="px-4 py-3 text-left align-middle">
+                            <span class="inline-flex max-w-[220px] items-center gap-1.5 rounded-full bg-violet-50 px-3 py-1 text-xs font-medium text-violet-700 ring-1 ring-inset ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-500/25" title="{{ record.namespace }}">
+                                <i data-lucide="boxes" class="h-3.5 w-3.5 shrink-0"></i>
                                 <span class="truncate">{{ record.namespace }}</span>
                             </span>
                         </td>
-                        <td class="px-6 py-3 text-left align-middle">
-                            <div class="flex max-w-[360px] items-start gap-2 text-left">
-                                <span class="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-900/40">
-                                    <i data-lucide="key-round" class="h-3.5 w-3.5"></i>
+                        <td class="px-4 py-3 text-left align-middle">
+                            <div class="flex max-w-[360px] items-center gap-2.5 text-left">
+                                <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                                    <i data-lucide="key-round" class="h-4 w-4"></i>
                                 </span>
-                                <span class="break-all font-medium text-slate-800 dark:text-slate-100">{{ record.secret_name }}</span>
+                                <div class="min-w-0">
+                                    <div class="break-all font-semibold text-slate-900 dark:text-white">{{ record.secret_name }}</div>
+                                </div>
                             </div>
                         </td>
-                        <td class="px-6 py-3 text-left align-middle">
+                        <td class="px-4 py-3 text-left align-middle">
                             {% if record.not_after %}
                                 <span class="font-medium text-slate-800 dark:text-slate-100">{{ record.days_remaining }} days</span>
                             {% else %}
                                 <span class="font-medium text-rose-600 dark:text-rose-300">Invalid</span>
                             {% endif %}
                         </td>
-                        <td class="px-6 py-3 text-left align-middle">
+                        <td class="px-4 py-3 text-left align-middle">
                             {% with status=record.status %}{% include "governance/tls_certificates/partials/_status_badge.html" %}{% endwith %}
                         </td>
                     </tr>
@@ -101,9 +101,9 @@
         </table>
     </div>
 
-    <div class="flex flex-col gap-4 border-t border-slate-200 bg-slate-50 px-6 py-4 text-left text-sm text-slate-500 lg:flex-row lg:items-center lg:justify-between dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
+    <div class="flex flex-col gap-4 border-t border-slate-200 bg-slate-50 px-6 py-4 text-sm text-slate-500 lg:flex-row lg:items-center lg:justify-between dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-            <div class="text-left">
+            <div>
                 Showing
                 <span class="font-semibold text-slate-700 dark:text-slate-200">{{ payload.pagination.start_item }}</span>
                 -
@@ -116,36 +116,34 @@
                   hx-target="#tls-secret-update-target-table"
                   hx-swap="outerHTML"
                   hx-indicator="#tls-secret-update-table-loading"
-                  class="flex items-center gap-2 text-left">
+                  class="flex items-center">
                 <input type="hidden" name="partial_mode" value="bulk_table">
                 <input type="hidden" name="page" value="1">
                 <input type="hidden" name="cluster_id" value="{{ payload.filters.cluster_id }}">
                 <input type="hidden" name="namespace" value="{{ payload.filters.namespace }}">
                 <input type="hidden" name="status" value="{{ payload.filters.status }}">
                 <input type="hidden" name="search" value="{{ payload.filters.search }}">
-                <span class="relative block">
-                    <select name="per_page"
-                            onchange="this.form.requestSubmit()"
-                            class="appearance-none rounded-xl border border-slate-300 bg-white py-2 pl-3 pr-8 text-left text-sm font-medium text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
+                <select name="per_page"
+                        aria-label="Rows per page"
+                        onchange="this.form.requestSubmit()"
+                        class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
                         {% for option in payload.pagination.allowed_per_page %}
                             <option value="{{ option }}" {% if payload.pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
                         {% endfor %}
                     </select>
-                    <i data-lucide="chevron-down" class="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"></i>
-                </span>
             </form>
         </div>
-        <div class="flex flex-wrap items-center justify-start gap-2">
+        <div class="flex flex-wrap items-center gap-2">
             {% if payload.pagination.has_prev %}
                 {% set prev_url = url_for('governance.tls_certificates_bulk_update', cluster_id=payload.filters.cluster_id, namespace=payload.filters.namespace, status=payload.filters.status, search=payload.filters.search, per_page=payload.pagination.per_page, page=payload.pagination.prev_page, partial_mode='bulk_table') %}
                 <a href="{{ prev_url }}" hx-get="{{ prev_url }}" hx-target="#tls-secret-update-target-table" hx-swap="outerHTML" hx-indicator="#tls-secret-update-table-loading" class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
                     <i data-lucide="chevron-left" class="h-4 w-4"></i>Previous
                 </a>
             {% else %}
-                <span class="inline-flex cursor-not-allowed items-center gap-2 rounded-xl border border-slate-200 bg-white/60 px-3 py-2 text-sm font-medium text-slate-400 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-500"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
+                <span class="inline-flex cursor-not-allowed items-center gap-2 rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-sm font-medium text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-600"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
             {% endif %}
 
-            <span class="rounded-xl bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-700 dark:bg-slate-700 dark:text-slate-200">Page {{ payload.pagination.page }} of {{ payload.pagination.total_pages }}</span>
+            <span class="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">Page {{ payload.pagination.page }} / {{ payload.pagination.total_pages }}</span>
 
             {% if payload.pagination.has_next %}
                 {% set next_url = url_for('governance.tls_certificates_bulk_update', cluster_id=payload.filters.cluster_id, namespace=payload.filters.namespace, status=payload.filters.status, search=payload.filters.search, per_page=payload.pagination.per_page, page=payload.pagination.next_page, partial_mode='bulk_table') %}
@@ -153,7 +151,7 @@
                     Next<i data-lucide="chevron-right" class="h-4 w-4"></i>
                 </a>
             {% else %}
-                <span class="inline-flex cursor-not-allowed items-center gap-2 rounded-xl border border-slate-200 bg-white/60 px-3 py-2 text-sm font-medium text-slate-400 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-500">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
+                <span class="inline-flex cursor-not-allowed items-center gap-2 rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-sm font-medium text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-600">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
             {% endif %}
         </div>
     </div>
