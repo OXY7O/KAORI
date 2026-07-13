@@ -83,6 +83,9 @@ RUN mkdir -p \
         /app/instance \
         /app/instance/report-render-staging \
         /app/instance/report-download-cache \
+        /app/instance/archive-download-cache \
+        /app/instance/archive-staging \
+        /app/instance/celery-beat \
     && chown -R kaori:kaori /app/instance
 
 USER kaori

@@ -9,7 +9,8 @@
     "workspace",
     "db",
     "redis",
-    "worker"
+    "worker",
+    "beat"
   ],
   "workspaceFolder": "/workspace/kaori",
   "shutdownAction": "stopCompose",

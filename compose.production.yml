@@ -90,6 +90,28 @@ services:
       - /tmp:rw,noexec,nosuid,size=128m
     stop_grace_period: 45s
 
+  # Run exactly one Beat replica for each KAORI environment.
+  beat:
+    <<: *kaori-image
+    environment:
+      APP_ENV: production
+      WAIT_FOR_DB: "true"
+    init: true
+    restart: unless-stopped
+    read_only: true
+    command:
+      - sh
+      - -c
+      - >-
+        mkdir -p /app/instance/celery-beat
+        && exec celery --app celery_worker:celery_app beat
+        --loglevel="$${CELERY_BEAT_LOG_LEVEL:-INFO}"
+        --schedule=/app/instance/celery-beat/celerybeat-schedule
+        --pidfile=/tmp/celerybeat.pid
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=128m
+    stop_grace_period: 45s
+
 
 networks:
   kaori_production:

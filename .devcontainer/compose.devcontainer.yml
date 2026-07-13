@@ -6,7 +6,12 @@ services:
       target: development
     user: root
     command: >-
-      sh -c "mkdir -p /workspace/kaori/instance /workspace/kaori/node_modules
+      sh -c "mkdir -p
+      /workspace/kaori/instance
+      /workspace/kaori/instance/archive-download-cache
+      /workspace/kaori/instance/archive-staging
+      /workspace/kaori/instance/celery-beat
+      /workspace/kaori/node_modules
       && chown -R vscode:vscode /workspace/kaori/instance /workspace/kaori/node_modules
       && exec sleep infinity"
     init: true
@@ -65,6 +70,46 @@ services:
       - .:/workspace/kaori
       - kaori_instance_data:/workspace/kaori/instance
     depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    init: true
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      APP_ENV: development
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-kaori}
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/3
+      RATELIMIT_STORAGE_URI: redis://redis:6379/2
+      POSTGRES_HOST: db
+      POSTGRES_INTERNAL_PORT: 5432
+      WAIT_FOR_DB: "true"
+    command:
+      - sh
+      - -c
+      - >-
+        until [ -w /workspace/kaori/instance ]; do sleep 1; done
+        && mkdir -p /workspace/kaori/instance/celery-beat
+        && exec celery --app celery_worker:celery_app beat
+        --loglevel="$${CELERY_BEAT_LOG_LEVEL:-INFO}"
+        --schedule=/workspace/kaori/instance/celery-beat/celerybeat-schedule
+        --pidfile=/tmp/celerybeat.pid
+    volumes:
+      - .:/workspace/kaori
+      - kaori_instance_data:/workspace/kaori/instance
+    depends_on:
+      workspace:
+        condition: service_started
       db:
         condition: service_healthy
       redis:
