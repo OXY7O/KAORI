@@ -10,9 +10,9 @@
 {%- endmacro %}
 
 {% if items %}
-    <div class="overflow-x-auto">
-        <div style="min-width: 1220px;">
-            <div style="grid-template-columns: 8rem minmax(15rem,1.1fr) minmax(22rem,1.7fr) minmax(8rem,0.55fr) 8rem 6.5rem;" class="grid items-center gap-4 border-b border-slate-200 bg-slate-50 px-6 py-3 text-left text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-400">
+    <div class="min-w-0 overflow-hidden">
+        <div class="min-w-0">
+            <div style="grid-template-columns: minmax(6.75rem,0.72fr) minmax(12rem,1.12fr) minmax(16rem,1.85fr) minmax(6.5rem,0.62fr) minmax(6.5rem,0.62fr) 6.25rem;" class="grid min-w-0 items-center gap-3 border-b border-slate-200 bg-slate-50 px-5 py-3 text-left text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-400">
                 <div>Time</div>
                 <div>Actor</div>
                 <div>Activity</div>
@@ -27,7 +27,7 @@
                     {% set is_warning = item.status == 'warning' %}
                     {% set is_error = item.status == 'error' %}
                     <details class="group relative bg-white dark:bg-slate-800">
-                        <summary style="grid-template-columns: 8rem minmax(15rem,1.1fr) minmax(22rem,1.7fr) minmax(8rem,0.55fr) 8rem 6.5rem;" class="grid cursor-pointer list-none items-center gap-4 px-6 py-4 text-left transition hover:bg-slate-50/80 focus:outline-none group-open:bg-blue-50/70 dark:hover:bg-slate-900 dark:group-open:bg-blue-950/30">
+                        <summary style="grid-template-columns: minmax(6.75rem,0.72fr) minmax(12rem,1.12fr) minmax(16rem,1.85fr) minmax(6.5rem,0.62fr) minmax(6.5rem,0.62fr) 6.25rem;" class="grid min-w-0 cursor-pointer list-none items-center gap-3 px-5 py-4 text-left transition hover:bg-slate-50/80 focus:outline-none group-open:bg-blue-50/70 dark:hover:bg-slate-900 dark:group-open:bg-blue-950/30">
                             <div class="relative min-w-0 pl-4">
                                 <span class="absolute left-0 top-2 h-2 w-2 rounded-full {% if item.is_read %}bg-slate-300 dark:bg-slate-600{% else %}bg-blue-500 ring-2 ring-blue-100 dark:ring-blue-900/60{% endif %}"></span>
                                 <p class="whitespace-nowrap text-[11px] font-bold text-slate-800 dark:text-slate-100">
