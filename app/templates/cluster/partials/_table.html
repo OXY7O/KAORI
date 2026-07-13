@@ -245,11 +245,8 @@
                                     <form method="POST"
                                           action="{{ url_for('inventory.sync', cluster_id=cluster.id, **table_query) }}"
                                           hx-post="{{ url_for('inventory.sync', cluster_id=cluster.id, **table_query) }}"
-                                          hx-target="this"
-                                          hx-swap="none"
-                                          data-operational-refresh-url="{{ url_for('cluster.cluster_table', **table_query) }}"
-                                          data-operational-progress-title="Cluster inventory sync in progress"
-                                          data-operational-progress-message="Synchronizing Kubernetes inventory for {{ cluster.name|e }}."
+                                          hx-target="#individual-sync-feedback"
+                                          hx-swap="beforeend"
                                           class="inline-flex">
                                         <button type="submit"
                                                 title="Sync Inventory"

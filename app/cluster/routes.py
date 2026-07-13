@@ -20,6 +20,12 @@ from flask_login import current_user
 from redis.exceptions import RedisError
 
 from app.cluster.forms import ClusterCreateForm, ClusterEditForm
+from app.cluster.individual_sync_state import (
+    build_individual_sync_snapshot,
+    dismiss_individual_sync_result,
+    get_tracked_individual_sync_task_ids,
+    is_individual_sync_result_dismissed,
+)
 from app.cluster.onboarding import has_registered_clusters
 from app.cluster.service import (
     build_cluster_context,
@@ -413,6 +419,65 @@ def active_sync_all_status() -> ResponseReturnValue:
             'Redis could not restore the active cluster synchronization state.',
         )
         return ''
+
+
+@cluster_bp.get('/sync-individual/active')
+@permission_required('clusters.sync')
+def active_individual_sync_statuses() -> ResponseReturnValue:
+    try:
+        snapshots = []
+        for task_id in get_tracked_individual_sync_task_ids(current_user.id):
+            snapshot = build_individual_sync_snapshot(task_id)
+            if not snapshot['is_active'] and is_individual_sync_result_dismissed(
+                task_id=task_id,
+                user_id=current_user.id,
+            ):
+                continue
+            snapshots.append(snapshot)
+        return render_template(
+            'components/navigation/_individual_sync_collection.html',
+            snapshots=snapshots,
+        )
+    except (RuntimeError, RedisError):
+        logger.exception('Could not restore individual cluster synchronization states.')
+        return ''
+
+
+@cluster_bp.get('/sync-individual/status/<string:task_id>')
+@permission_required('clusters.sync')
+def individual_sync_status(task_id: str) -> ResponseReturnValue:
+    snapshot = build_individual_sync_snapshot(task_id)
+    if snapshot['is_active']:
+        return render_template('components/navigation/_individual_sync_status.html', sync=snapshot)
+
+    return render_template(
+        'components/navigation/_quick_sync_result.html',
+        task_id=task_id,
+        dismiss_url=url_for('cluster.dismiss_individual_sync_status', task_id=task_id),
+        status=snapshot['status'],
+        title=snapshot['title'],
+        message=snapshot['message'],
+        detail=snapshot.get('detail'),
+        view_url=url_for('cluster.list_clusters'),
+        action_label='View clusters',
+        action_icon='server',
+        total_count=None,
+        synced_count=1 if snapshot['status'] == 'success' else 0,
+        failed_count=0 if snapshot['status'] == 'success' else 1,
+        duration_seconds=snapshot.get('duration_seconds'),
+        completed_label='Completed just now',
+        notification_saved=True,
+    )
+
+
+@cluster_bp.post('/sync-individual/status/<string:task_id>/dismiss')
+@permission_required('clusters.sync')
+def dismiss_individual_sync_status(task_id: str) -> ResponseReturnValue:
+    snapshot = build_individual_sync_snapshot(task_id)
+    if snapshot['is_active']:
+        return '', 409
+    dismiss_individual_sync_result(task_id=task_id, user_id=current_user.id)
+    return ''
 
 
 @cluster_bp.post('/sync-all/status/<string:task_id>/dismiss')

@@ -7,6 +7,7 @@ from typing import Any
 
 from celery import shared_task
 
+from app.cluster.individual_sync_state import store_individual_sync_metadata
 from app.cluster.sync_state import (
     claim_cluster_sync_lock,
     mark_cluster_sync_completed,
@@ -15,9 +16,7 @@ from app.cluster.sync_state import (
 from app.extensions import db
 from app.inventory.service import sync_inventory
 from app.models import Cluster
-from app.notifications.service import (
-    create_notification,
-)
+from app.notifications.service import create_notification
 
 logger = logging.getLogger(__name__)
 
@@ -296,3 +295,80 @@ def sync_all_clusters_task(
         )
 
         return result
+
+
+@shared_task(
+    bind=True,
+    name='app.cluster.tasks.sync_single_cluster',
+    acks_late=True,
+    reject_on_worker_lost=True,
+)
+def sync_single_cluster_task(
+    self,
+    *,
+    cluster_id: str,
+    requested_by_user_id: int,
+) -> dict[str, Any]:
+    task_id = self.request.id
+    started_timer = perf_counter()
+    started_at = _now_iso()
+    cluster = Cluster.query.get(cluster_id)
+    cluster_name = cluster.name if cluster is not None else 'Unknown cluster'
+    progress = {
+        'cluster_id': cluster_id,
+        'cluster_name': cluster_name,
+        'requested_by_user_id': requested_by_user_id,
+        'created_at': started_at,
+        'started_at': started_at,
+        'status': 'info',
+        'title': 'Cluster inventory sync in progress',
+        'message': f'Synchronizing Kubernetes inventory for {cluster_name}.',
+    }
+    store_individual_sync_metadata(task_id=task_id, metadata=progress)
+    self.update_state(state='PROGRESS', meta=progress)
+
+    try:
+        if cluster is None:
+            raise LookupError('The selected Kubernetes cluster no longer exists.')
+        sync_inventory(cluster)
+        result = {
+            **progress,
+            'status': 'success',
+            'title': 'Cluster inventory synchronized',
+            'message': f'{cluster_name} inventory was refreshed successfully.',
+            'detail': 'Cluster metadata, nodes, namespaces, workloads, pods, services, ingress, and storage snapshots are now up to date.',
+            'finished_at': _now_iso(),
+            'duration_seconds': round(perf_counter() - started_timer, 1),
+        }
+    except Exception as exc:
+        db.session.rollback()
+        logger.exception('Inventory synchronization failed for cluster %s.', cluster_id)
+        result = {
+            **progress,
+            'status': 'error',
+            'title': 'Cluster inventory sync failed',
+            'message': f'{cluster_name} inventory could not be refreshed.',
+            'detail': 'Review Kubernetes API compatibility, cluster credentials, TLS settings, and application logs before retrying.',
+            'finished_at': _now_iso(),
+            'duration_seconds': round(perf_counter() - started_timer, 1),
+            'error_type': type(exc).__name__,
+        }
+
+    create_notification(
+        user_id=requested_by_user_id,
+        event_type='kubernetes_inventory_sync',
+        status=result['status'],
+        title=result['title'],
+        message=result['message'],
+        detail=result['detail'],
+        action_url='/clusters/',
+        metadata={
+            'task_id': task_id,
+            'cluster_id': cluster_id,
+            'cluster_name': cluster_name,
+            'scope': 'single_cluster',
+            'duration_seconds': result['duration_seconds'],
+        },
+    )
+    store_individual_sync_metadata(task_id=task_id, metadata=result)
+    return result

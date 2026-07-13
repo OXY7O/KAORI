@@ -338,6 +338,14 @@
                 {% endif %}
             </div>
 
+            <div id="individual-sync-feedback"
+                 class="flex w-full flex-col gap-3"
+                 {% if current_user.is_authenticated and current_user.has_permission('clusters.sync') and cluster_onboarding.has_clusters %}
+                     hx-get="{{ url_for('cluster.active_individual_sync_statuses') }}"
+                     hx-trigger="load"
+                     hx-swap="innerHTML"
+                 {% endif %}></div>
+
             <div id="quick-sync-feedback"
                  class="w-full"
                  {% if current_user.is_authenticated and current_user.has_permission('clusters.sync') and cluster_onboarding.has_clusters %}

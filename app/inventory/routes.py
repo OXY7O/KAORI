@@ -1,10 +1,18 @@
 import logging
+from datetime import UTC, datetime
+from uuid import uuid4
 
-from flask import Blueprint, abort, jsonify, redirect, render_template, request, url_for
+from flask import Blueprint, abort, current_app, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user
 
+from app.cluster.individual_sync_state import (
+    INDIVIDUAL_CLUSTER_SYNC_QUEUE,
+    INDIVIDUAL_CLUSTER_SYNC_TASK_NAME,
+    register_individual_sync_task,
+)
 from app.cluster.onboarding import has_registered_clusters
 from app.cluster.service import build_cluster_context
+from app.inventory.topology import build_topology_graph, build_topology_page_context
 from app.inventory.service import (
     get_cluster_by_id,
     get_configuration_detail,
@@ -39,9 +47,7 @@ from app.inventory.service import (
     get_workload_filter_statuses,
     get_workload_filter_types,
     get_workload_inventory,
-    sync_inventory,
 )
-from app.inventory.topology import build_topology_graph, build_topology_page_context
 from app.notifications.service import (
     get_navigation_notification_context,
     queue_quick_action_feedback,
@@ -75,22 +81,47 @@ def block_clusterless_inventory_partials():
 @inventory_bp.post('/<string:cluster_id>/sync')
 @permission_required('clusters.sync')
 def sync(cluster_id: str):
-    cluster = get_cluster_by_id(
-        cluster_id,
-    )
-
+    cluster = get_cluster_by_id(cluster_id)
     if cluster is None:
         abort(404)
 
+    task_id = str(uuid4())
+    created_at = datetime.now(UTC).isoformat()
+    metadata = {
+        'cluster_id': cluster.id,
+        'cluster_name': cluster.name,
+        'requested_by_user_id': current_user.id,
+        'created_at': created_at,
+        'started_at': created_at,
+        'status': 'info',
+        'title': 'Cluster inventory sync in progress',
+        'message': f'Synchronizing Kubernetes inventory for {cluster.name}.',
+    }
+
     try:
-        sync_inventory(cluster)
+        register_individual_sync_task(
+            task_id=task_id,
+            user_id=current_user.id,
+            metadata=metadata,
+        )
+        current_app.extensions['celery'].send_task(
+            INDIVIDUAL_CLUSTER_SYNC_TASK_NAME,
+            kwargs={
+                'cluster_id': cluster.id,
+                'requested_by_user_id': current_user.id,
+            },
+            task_id=task_id,
+            queue=INDIVIDUAL_CLUSTER_SYNC_QUEUE,
+        )
+    except Exception:
+        logger.exception('Could not enqueue inventory synchronization for cluster %s.', cluster.id)
         feedback = record_operational_activity(
             user_id=current_user.id,
             event_type='kubernetes_inventory_sync',
-            status='success',
-            title='Cluster inventory synchronized',
-            message=f'{cluster.name} inventory was refreshed successfully.',
-            detail='Cluster metadata, nodes, namespaces, workloads, pods, services, ingress, and storage snapshots are now up to date.',
+            status='error',
+            title='Cluster inventory sync could not start',
+            message=f'{cluster.name} inventory synchronization could not be queued.',
+            detail='Verify Redis and the Celery inventory worker before retrying.',
             action_url=url_for('cluster.list_clusters'),
             action_label='View clusters',
             action_icon='server',
@@ -100,48 +131,22 @@ def sync(cluster_id: str):
                 'scope': 'single_cluster',
             },
         )
-    except Exception as exc:
-        logger.exception(
-            'Inventory synchronization failed for cluster %s.',
-            cluster.id,
-        )
-        feedback = record_operational_activity(
-            user_id=current_user.id,
-            event_type='kubernetes_inventory_sync',
-            status='error',
-            title='Cluster inventory sync failed',
-            message=f'{cluster.name} inventory could not be refreshed.',
-            detail=(
-                f'{type(exc).__name__}: review Kubernetes API compatibility, cluster credentials, TLS settings, '
-                'and application logs before retrying.'
-            ),
-            action_url=url_for('cluster.edit_cluster', cluster_id=cluster.id),
-            action_label='Review cluster settings',
-            action_icon='settings-2',
-            metadata={
-                'cluster_id': cluster.id,
-                'cluster_name': cluster.name,
-                'scope': 'single_cluster',
-                'reason': type(exc).__name__,
-            },
-        )
+        if request.headers.get('HX-Request') == 'true':
+            return render_template(
+                'components/navigation/_quick_sync_result.html',
+                **feedback,
+                toast_oob=True,
+                notification_context=get_navigation_notification_context(user_id=current_user.id),
+            ), 503
+        queue_quick_action_feedback(feedback)
+        return redirect(request.referrer or url_for('cluster.list_clusters'))
 
     if request.headers.get('HX-Request') == 'true':
-        table_html = render_template(
-            'cluster/partials/_table.html',
-            **_build_cluster_context_from_request(),
-        )
-        toast_html = render_template(
-            'components/navigation/_quick_sync_result.html',
-            **feedback,
-            toast_oob=True,
-            notification_context=get_navigation_notification_context(
-                user_id=current_user.id,
-            ),
-        )
-        return f'{table_html}{toast_html}'
+        return render_template(
+            'components/navigation/_individual_sync_status.html',
+            sync={**metadata, 'task_id': task_id, 'celery_state': 'PENDING', 'state_label': 'pending', 'elapsed_seconds': 0},
+        ), 202
 
-    queue_quick_action_feedback(feedback)
     return redirect(request.referrer or url_for('cluster.list_clusters'))
 
 
@@ -1173,7 +1178,6 @@ def storage_details(storage_id: int):
         'inventory/storage/partials/_storage_detail_content.html',
         item=storage_item,
     )
-
 
 def _build_cluster_context_from_request() -> dict:
     return build_cluster_context(

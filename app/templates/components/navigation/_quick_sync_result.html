@@ -36,9 +36,10 @@
                     </div>
 
                     {% if task_id is defined and task_id %}
+                        {% set resolved_dismiss_url = dismiss_url|default(url_for('cluster.dismiss_sync_all_status', task_id=task_id)) %}
                         <form method="POST"
-                              action="{{ url_for('cluster.dismiss_sync_all_status', task_id=task_id) }}"
-                              hx-post="{{ url_for('cluster.dismiss_sync_all_status', task_id=task_id) }}"
+                              action="{{ resolved_dismiss_url }}"
+                              hx-post="{{ resolved_dismiss_url }}"
                               hx-target="closest [data-quick-action-toast]"
                               hx-swap="outerHTML">
                             {% if csrf_token is defined %}
