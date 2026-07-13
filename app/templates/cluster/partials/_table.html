@@ -231,7 +231,7 @@
                                           hx-post="{{ url_for('cluster.test_cluster', cluster_id=cluster.id, **table_query) }}"
                                           hx-target="#cluster-table-container"
                                           hx-swap="outerHTML"
-                                          hx-indicator="#cluster-table-loading"
+                                          hx-on::before-request="window.showOperationalProgressToast('Cluster connection test in progress', 'Testing Kubernetes API connectivity for {{ cluster.name|e }}.')"
                                           class="inline-flex">
                                         <button type="submit"
                                                 title="Test Cluster Connection"
@@ -245,7 +245,7 @@
                                           hx-post="{{ url_for('inventory.sync', cluster_id=cluster.id, **table_query) }}"
                                           hx-target="#cluster-table-container"
                                           hx-swap="outerHTML"
-                                          hx-indicator="#cluster-table-loading"
+                                          hx-on::before-request="window.showOperationalProgressToast('Cluster inventory sync in progress', 'Synchronizing Kubernetes inventory for {{ cluster.name|e }}.')"
                                           class="inline-flex">
                                         <button type="submit"
                                                 title="Sync Inventory"
