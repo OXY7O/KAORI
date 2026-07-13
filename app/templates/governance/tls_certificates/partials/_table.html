@@ -169,7 +169,7 @@
                                                 <div class="mt-2 space-y-2">
                                                     {% for item in record.used_by[:4] %}
                                                         {% set hosts = item.hosts if item.hosts is defined else item.get('hosts', []) %}
-                                                        <div class="border-t border-dashed border-amber-200/70 pt-2 first:border-t-0 first:pt-0 dark:border-amber-400/15">
+                                                        <div class="border-t border-dashed border-amber-400/80 pt-2 first:border-t-0 first:pt-0 dark:border-amber-500/35">
                                                             <p class="break-words font-medium">{{ item.name or item.get('name', 'Unknown ingress') }}</p>
                                                             <p class="text-amber-700/75 dark:text-amber-200/70">{{ item.namespace or item.get('namespace', record.namespace) }}</p>
                                                             {% if hosts %}
