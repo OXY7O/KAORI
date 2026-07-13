@@ -68,9 +68,9 @@
                                 <div class="text-4xl font-bold leading-none" x-text="selectedCount"></div>
                                 <p class="mt-2 text-sm font-medium text-blue-50/85">Selected TLS Secrets</p>
                             </div>
-                            <div class="w-[8.5rem] rounded-xl bg-white/10 px-4 py-3 text-left">
-                                <div class="text-[10px] font-bold uppercase tracking-[0.12em] text-blue-50/75">Ready to update</div>
-                                <div class="mt-1 text-2xl font-bold leading-none">Validate</div>
+                            <div class="w-[10.5rem] rounded-xl bg-white/10 px-3 py-2.5 text-left">
+                                <div class="whitespace-nowrap text-[9px] font-bold uppercase tracking-[0.1em] text-blue-50/75">Ready to update</div>
+                                <div class="mt-1 text-xl font-bold leading-6">Validate</div>
                             </div>
                         </div>
                     </div>
@@ -82,8 +82,8 @@
                                 hx-encoding="multipart/form-data"
                                 hx-target="#tls-secret-update-feedback"
                                 hx-swap="innerHTML"
-                                hx-indicator="#tls-secret-update-action-loading"
-                                class="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-bold text-blue-700 shadow-sm transition hover:bg-blue-50">
+                                hx-on::before-request="window.showTlsSecretValidationProgress && window.showTlsSecretValidationProgress()"
+                                class="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-bold text-white shadow-sm backdrop-blur transition hover:bg-white/15">
                             <i data-lucide="shield-check" class="h-5 w-5"></i>
                             Validate Selected
                         </button>
@@ -93,7 +93,7 @@
                                 hx-encoding="multipart/form-data"
                                 hx-target="#tls-secret-update-feedback"
                                 hx-swap="innerHTML"
-                                hx-indicator="#tls-secret-update-action-loading"
+                                hx-on::before-request="window.showTlsSecretUpdateProgress && window.showTlsSecretUpdateProgress()"
                                 hx-confirm="Update selected existing TLS Secrets with the uploaded certificate and key pair?"
                                 class="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-bold text-blue-700 shadow-sm transition hover:bg-blue-50">
                             <i data-lucide="upload-cloud" class="h-5 w-5"></i>
@@ -101,9 +101,6 @@
                         </button>
                     </div>
 
-                    <div id="tls-secret-update-action-loading" class="htmx-indicator h-1 overflow-hidden rounded-full bg-white/20">
-                        <div class="h-full w-1/3 animate-pulse rounded-full bg-white"></div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -113,65 +110,62 @@
         </div>
 
         <form id="tls-secret-update-form" method="post" enctype="multipart/form-data" hx-encoding="multipart/form-data" class="space-y-6">
-            <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
-                <div class="relative overflow-hidden border-b border-slate-200 bg-gradient-to-r from-slate-50 via-white to-blue-50/70 px-6 py-5 dark:border-slate-700 dark:from-slate-800 dark:via-slate-800 dark:to-blue-950/20">
-                    <div class="absolute -right-8 -top-10 h-28 w-28 rounded-full bg-blue-200/30 blur-3xl dark:bg-blue-500/10"></div>
-                    <div class="relative flex items-start gap-3">
-                        <span class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-blue-100 text-blue-600 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-900/40">
-                            <i data-lucide="files" class="h-5 w-5"></i>
-                        </span>
-                        <div>
-                            <h2 class="text-lg font-semibold text-slate-950 dark:text-white">Upload Certificate Pair</h2>
-                            <p class="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">Upload the replacement certificate and private key. Validation must succeed before the selected Kubernetes TLS Secrets can be updated.</p>
-                        </div>
+            <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+                <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-950 dark:text-white">Upload Certificate Pair</h2>
+                        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">The uploaded pair is applied only to the selected existing TLS Secrets after validation.</p>
                     </div>
+
                 </div>
 
-                <div class="grid gap-4 p-5 lg:grid-cols-2">
-                    <label class="group relative block cursor-pointer rounded-2xl border border-blue-200 bg-blue-50/60 p-4 transition hover:border-blue-300 hover:bg-blue-50 dark:border-blue-900/40 dark:bg-blue-950/20 dark:hover:border-blue-700">
-                        <input required type="file" name="tls_crt_file" accept=".crt,.pem" class="peer sr-only">
-                        <div class="flex items-start gap-3">
-                            <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-white text-blue-600 shadow-sm ring-1 ring-inset ring-blue-200 dark:bg-slate-800 dark:text-blue-300 dark:ring-blue-900/40">
-                                <i data-lucide="badge-check" class="h-5 w-5"></i>
-                            </span>
-                            <div class="min-w-0">
-                                <p class="text-sm font-semibold text-slate-900 dark:text-white">Certificate file</p>
-                                <p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">Select <span class="font-mono">tls.crt</span> in PEM or CRT format.</p>
-                                <span class="mt-3 inline-flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-blue-700 shadow-sm ring-1 ring-inset ring-blue-200 dark:bg-slate-800 dark:text-blue-300 dark:ring-blue-900/40">
-                                    <i data-lucide="upload" class="h-3.5 w-3.5"></i>
-                                    Choose certificate
-                                </span>
-                            </div>
-                        </div>
-                    </label>
 
-                    <label class="group relative block cursor-pointer rounded-2xl border border-violet-200 bg-violet-50/60 p-4 transition hover:border-violet-300 hover:bg-violet-50 dark:border-violet-900/40 dark:bg-violet-950/20 dark:hover:border-violet-700">
-                        <input required type="file" name="tls_key_file" accept=".key,.pem" class="peer sr-only">
-                        <div class="flex items-start gap-3">
-                            <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-white text-violet-600 shadow-sm ring-1 ring-inset ring-violet-200 dark:bg-slate-800 dark:text-violet-300 dark:ring-violet-900/40">
-                                <i data-lucide="key-round" class="h-5 w-5"></i>
-                            </span>
-                            <div class="min-w-0">
-                                <p class="text-sm font-semibold text-slate-900 dark:text-white">Private key</p>
-                                <p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">Select <span class="font-mono">tls.key</span> in KEY or PEM format.</p>
-                                <span class="mt-3 inline-flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-violet-700 shadow-sm ring-1 ring-inset ring-violet-200 dark:bg-slate-800 dark:text-violet-300 dark:ring-violet-900/40">
-                                    <i data-lucide="upload" class="h-3.5 w-3.5"></i>
-                                    Choose private key
-                                </span>
-                            </div>
-                        </div>
-                    </label>
-                </div>
-
-                <div class="flex items-start gap-3 border-t border-slate-200 bg-slate-50 px-5 py-3 text-xs leading-5 text-slate-600 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300">
-                    <span class="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
-                        <i data-lucide="shield-alert" class="h-4 w-4"></i>
-                    </span>
-                    <p>The private key is used only for validation and the selected Secret update operation. It is not displayed in the activity record or notification message.</p>
+                <div class="mt-4 grid gap-4 lg:grid-cols-2">
+                    <div>
+                        <label class="text-xs font-bold uppercase tracking-wide text-slate-500">tls.crt</label>
+                        <input required type="file" name="tls_crt_file" accept=".crt,.pem" class="mt-2 block w-full rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold uppercase tracking-wide text-slate-500">tls.key</label>
+                        <input required type="file" name="tls_key_file" accept=".key,.pem" class="mt-2 block w-full rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900">
+                    </div>
                 </div>
             </section>
         </form>
 
         {% include "governance/tls_certificates/partials/_bulk_target_workspace.html" %}
     </div>
+
+    <script>
+        (() => {
+            const showTlsOperationProgress = (title, message) => {
+                const target = document.getElementById('operational-action-feedback');
+                if (!target) return;
+
+                target.innerHTML = `
+                    <div data-quick-action-toast role="status" aria-live="polite" class="quick-action-toast pointer-events-auto relative isolate w-full overflow-hidden rounded-2xl border border-blue-200 bg-white shadow-2xl shadow-slate-900/15 dark:border-blue-500/30 dark:bg-slate-900 dark:shadow-slate-950/50">
+                        <div class="h-1 bg-blue-500"></div>
+                        <div class="flex items-start gap-3 p-4">
+                            <span class="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+                                <svg class="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="9" stroke="currentColor" stroke-width="3"></circle><path class="opacity-90" fill="currentColor" d="M21 12a9 9 0 0 0-9-9v3a6 6 0 0 1 6 6h3Z"></path></svg>
+                            </span>
+                            <div class="min-w-0 flex-1">
+                                <p class="text-sm font-bold text-slate-950 dark:text-white">${title}</p>
+                                <p class="mt-1 text-xs font-semibold leading-5 text-slate-600 dark:text-slate-300">${message}</p>
+                            </div>
+                        </div>
+                    </div>`;
+            };
+
+            window.showTlsSecretValidationProgress = () => showTlsOperationProgress(
+                'TLS Secret validation in progress',
+                'Validating the uploaded certificate pair against the selected TLS Secrets.'
+            );
+
+            window.showTlsSecretUpdateProgress = () => showTlsOperationProgress(
+                'TLS Secret update in progress',
+                'Updating the selected Kubernetes TLS Secrets with the validated certificate pair.'
+            );
+        })();
+    </script>
 {% endblock dashboard_content %}
