@@ -85,8 +85,8 @@
                         <td colspan="6" class="p-0 leading-none align-top">
                             <div id="tls-secret-detail-content-{{ record.id }}" data-open="false"
                                  class="border-t border-slate-200 bg-slate-50/70 px-6 py-5 text-left dark:border-slate-700 dark:bg-slate-900/40">
-                                <div class="mb-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-950/40">
-                                    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950/40">
+                                    <div class="flex flex-col gap-3 border-b border-slate-200 bg-gradient-to-r from-white via-white to-blue-50/60 p-4 sm:flex-row sm:items-start sm:justify-between dark:border-slate-700 dark:from-slate-950/40 dark:via-slate-950/40 dark:to-blue-950/20">
                                         <div class="flex min-w-0 items-start gap-3 text-left">
                                             <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
                                                 <i data-lucide="shield-check" class="h-5 w-5"></i>
@@ -103,9 +103,8 @@
                                             Open Full Record
                                         </a>
                                     </div>
-                                </div>
 
-                                <div class="grid gap-4 xl:grid-cols-4">
+                                    <div class="grid gap-4 bg-slate-50/70 p-4 xl:grid-cols-4 dark:bg-slate-900/35">
                                     {% call detail_card(
                                         'Certificate identity',
                                         'badge-check',
@@ -228,6 +227,7 @@
                                             {{ detail_tip('SAN values are the hostnames covered by the certificate. They may differ from the Ingress hosts currently mapped to the Secret.', 'violet', 'globe-2') }}
                                         </div>
                                     {% endcall %}
+                                    </div>
                                 </div>
                             </div>
                         </td>
