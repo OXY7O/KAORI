@@ -175,7 +175,10 @@
                                                             {% if hosts %}
                                                                 <div class="mt-1 flex flex-col gap-0.5">
                                                                     {% for host in hosts %}
-                                                                        <a href="https://{{ host }}" target="_blank" rel="noopener noreferrer" class="break-all font-normal text-amber-800 underline decoration-amber-400/60 underline-offset-2 transition hover:text-amber-950 dark:text-amber-100 dark:hover:text-white">{{ host }}</a>
+                                                                        <a href="https://{{ host }}" target="_blank" rel="noopener noreferrer" class="inline-flex max-w-full items-start gap-1.5 break-all font-normal text-amber-800 transition hover:text-amber-950 dark:text-amber-100 dark:hover:text-white">
+                                                                            <span>{{ host }}</span>
+                                                                            <i data-lucide="external-link" class="mt-0.5 h-3 w-3 shrink-0"></i>
+                                                                        </a>
                                                                     {% endfor %}
                                                                 </div>
                                                             {% endif %}
