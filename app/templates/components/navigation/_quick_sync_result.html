@@ -3,7 +3,7 @@
 {% set is_error = status == 'error' %}
 {% if toast_oob|default(false) %}
     <div id="operational-action-feedback"
-         hx-swap-oob="innerHTML:#operational-action-feedback">
+         hx-swap-oob="beforeend:#operational-action-feedback">
 {% endif %}
 <div data-quick-action-toast
      role="status"

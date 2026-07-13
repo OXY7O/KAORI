@@ -320,7 +320,7 @@
         <div id="quick-action-feedback"
              style="width:min(28rem, calc(100vw - 2rem));"
              class="pointer-events-none fixed right-4 top-20 z-50 flex flex-col gap-3 sm:right-6 lg:right-8">
-            <div id="operational-action-feedback" class="w-full">
+            <div id="operational-action-feedback" class="flex w-full flex-col gap-3">
                 {% if queued_quick_action_feedback %}
                     {% with
                         status=queued_quick_action_feedback.status,
@@ -423,11 +423,14 @@
                 const container = document.getElementById('operational-action-feedback')
 
                 if (!container) {
-                    return
+                    return null
                 }
 
+                const toastId = `operational-progress-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
                 const toast = document.createElement('div')
+                toast.id = toastId
                 toast.setAttribute('data-quick-action-toast', '')
+                toast.setAttribute('data-operational-progress-toast', '')
                 toast.setAttribute('role', 'status')
                 toast.setAttribute('aria-live', 'polite')
                 toast.className = 'quick-action-toast pointer-events-auto relative isolate w-full overflow-hidden rounded-2xl border border-blue-200 bg-white shadow-2xl shadow-slate-900/15 dark:border-blue-500/30 dark:bg-slate-900 dark:shadow-slate-950/50'
@@ -468,10 +471,24 @@
                 row.append(iconWrap, copy)
                 content.append(row)
                 toast.append(content, closeButton, progressTrack)
-                container.replaceChildren(toast)
+                container.append(toast)
 
                 if (window.lucide) {
                     window.lucide.createIcons()
+                }
+
+                return toastId
+            }
+
+            window.dismissOperationalProgressToast = (toastId) => {
+                if (!toastId) {
+                    return
+                }
+
+                const toast = document.getElementById(toastId)
+
+                if (toast?.matches('[data-operational-progress-toast]')) {
+                    toast.remove()
                 }
             }
 
