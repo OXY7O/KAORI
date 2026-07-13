@@ -143,6 +143,33 @@
                 display: none;
             }
 
+            @keyframes notification-progress-indeterminate {
+                0% {
+                    transform: translateX(-120%);
+                }
+
+                50% {
+                    transform: translateX(190%);
+                }
+
+                100% {
+                    transform: translateX(420%);
+                }
+            }
+
+            .notification-progress-indeterminate {
+                width: 32%;
+                animation: notification-progress-indeterminate 1.35s ease-in-out infinite;
+                will-change: transform;
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+                .notification-progress-indeterminate {
+                    width: 100%;
+                    animation: none;
+                }
+            }
+
 
         </style>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
