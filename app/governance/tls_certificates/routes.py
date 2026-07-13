@@ -196,6 +196,7 @@ def tls_certificates_sync():
 
     selected_cluster_name = result['results'][0]['cluster'] if cluster_id and result['results'] else None
 
+    is_htmx = bool(request.headers.get('HX-Request'))
     feedback = _record_tls_activity(
         event_type='governance_tls_secret_sync',
         status=status,
@@ -210,9 +211,10 @@ def tls_certificates_sync():
             'collected_count': result['total'],
             'failed_cluster_count': len(result['errors']),
         },
+        queue_feedback=not is_htmx,
     )
 
-    if request.headers.get('HX-Request'):
+    if is_htmx:
         payload = get_tls_certificate_page({'cluster_id': cluster_id or ''})
         return render_template(
             'governance/tls_certificates/partials/_page_content.html',
@@ -229,7 +231,6 @@ def tls_certificates_sync():
             },
         )
 
-    flash(f'{title}. {message}', status)
     return redirect(url_for('governance.tls_certificates', cluster_id=cluster_id or ''))
 
 
@@ -260,7 +261,7 @@ def tls_certificates_update_apply(certificate_id: int):
     result = apply_certificate_update(certificate_id, request.files)
     is_success = result['status'] == 'success'
     cluster = getattr(record, 'cluster', None) if record is not None else None
-    feedback = _record_tls_activity(
+    _record_tls_activity(
         event_type='governance_tls_secret_update',
         status='success' if is_success else 'error',
         title='TLS Secret update completed' if is_success else 'TLS Secret update failed',
@@ -286,7 +287,6 @@ def tls_certificates_update_apply(certificate_id: int):
         },
         queue_feedback=True,
     )
-    flash(feedback['message'], 'success' if is_success else 'danger')
     return redirect(url_for('governance.tls_certificates_detail', certificate_id=certificate_id))
 
 

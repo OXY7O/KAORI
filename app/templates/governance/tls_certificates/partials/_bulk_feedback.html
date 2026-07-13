@@ -1,4 +1,4 @@
-{% if preview %}
+{% if preview and preview.validation.is_valid and preview.validation.parsed_certificate %}
     <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
         <div class="flex items-center gap-3 text-left">
             <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
@@ -6,54 +6,44 @@
             </div>
             <div>
                 <h2 class="text-lg font-semibold text-slate-950 dark:text-white">Validation Preview</h2>
-                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Review the uploaded certificate pair before updating selected existing TLS Secrets.</p>
+                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Review target expiry and SAN coverage before updating the selected TLS Secrets.</p>
             </div>
         </div>
-        {% if preview.validation.is_valid and preview.validation.parsed_certificate %}
-            <div class="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200">
-                Certificate pair is valid. New expiry: {{ preview.validation.parsed_certificate.not_after|user_datetime('%Y-%m-%d %H:%M %Z') }} · {{ preview.validation.parsed_certificate.days_remaining }} days remaining.
-            </div>
-            <div class="mt-4 overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-700">
-                <table class="min-w-full divide-y divide-slate-200 text-left text-sm dark:divide-slate-700">
-                    <thead class="bg-slate-50 text-xs font-bold uppercase tracking-wide text-slate-500 dark:bg-slate-900/50 dark:text-slate-400">
-                        <tr>
-                            <th class="px-4 py-3 text-left">Target</th>
-                            <th class="px-4 py-3 text-left">Current Expiry</th>
-                            <th class="px-4 py-3 text-left">New Expiry</th>
-                            <th class="px-4 py-3 text-left">SAN Check</th>
+        <div class="mt-4 overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-700">
+            <table class="min-w-full divide-y divide-slate-200 text-left text-sm dark:divide-slate-700">
+                <thead class="bg-slate-50 text-xs font-bold uppercase tracking-wide text-slate-500 dark:bg-slate-900/50 dark:text-slate-400">
+                    <tr>
+                        <th class="px-4 py-3 text-left">Target</th>
+                        <th class="px-4 py-3 text-left">Current Expiry</th>
+                        <th class="px-4 py-3 text-left">New Expiry</th>
+                        <th class="px-4 py-3 text-left">SAN Check</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-700/70">
+                    {% for item in preview.targets %}
+                        <tr class="text-left">
+                            <td class="px-4 py-3 text-left">
+                                <div class="font-semibold text-slate-900 dark:text-white">{{ item.target.secret_name }}</div>
+                                <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ item.target.cluster.name if item.target.cluster else item.target.cluster_id }} / {{ item.target.namespace }}</div>
+                            </td>
+                            <td class="px-4 py-3 text-left text-slate-600 dark:text-slate-300">{{ item.target.not_after|user_date('%Y-%m-%d', 'Invalid') }}</td>
+                            <td class="px-4 py-3 text-left text-slate-600 dark:text-slate-300">{{ item.new_not_after|user_date('%Y-%m-%d') }}</td>
+                            <td class="px-4 py-3 text-left">
+                                {% if item.uncovered_hosts %}
+                                    <span class="font-bold text-amber-600 dark:text-amber-300">Warning: {{ item.uncovered_hosts|join(', ') }}</span>
+                                {% else %}
+                                    <span class="font-bold text-emerald-600 dark:text-emerald-300">Ready</span>
+                                {% endif %}
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100 dark:divide-slate-700/70">
-                        {% for item in preview.targets %}
-                            <tr class="text-left">
-                                <td class="px-4 py-3 text-left">
-                                    <div class="font-semibold text-slate-900 dark:text-white">{{ item.target.secret_name }}</div>
-                                    <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ item.target.cluster.name if item.target.cluster else item.target.cluster_id }} / {{ item.target.namespace }}</div>
-                                </td>
-                                <td class="px-4 py-3 text-left text-slate-600 dark:text-slate-300">{{ item.target.not_after|user_date('%Y-%m-%d', 'Invalid') }}</td>
-                                <td class="px-4 py-3 text-left text-slate-600 dark:text-slate-300">{{ item.new_not_after|user_date('%Y-%m-%d') }}</td>
-                                <td class="px-4 py-3 text-left">
-                                    {% if item.uncovered_hosts %}
-                                        <span class="font-bold text-amber-600 dark:text-amber-300">Warning: {{ item.uncovered_hosts|join(', ') }}</span>
-                                    {% else %}
-                                        <span class="font-bold text-emerald-600 dark:text-emerald-300">Ready</span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                        {% else %}
-                            <tr>
-                                <td colspan="4" class="px-4 py-8 text-left text-sm font-semibold text-amber-600 dark:text-amber-300">No TLS Secrets selected. Select at least one target row before validating.</td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        {% else %}
-            <div class="mt-4 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200">
-                <p>Certificate validation failed:</p>
-                <ul class="mt-2 list-disc pl-5">{% for error in preview.validation.errors %}<li>{{ error }}</li>{% endfor %}</ul>
-            </div>
-        {% endif %}
+                    {% else %}
+                        <tr>
+                            <td colspan="4" class="px-4 py-8 text-left text-sm text-slate-500 dark:text-slate-400">No selected TLS Secrets are available for preview.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </section>
 {% endif %}
 
