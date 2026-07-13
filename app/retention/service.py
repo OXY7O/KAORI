@@ -12,6 +12,7 @@ from tempfile import mkdtemp
 from typing import Any, Iterator
 
 from flask import current_app
+from sqlalchemy import or_
 
 from app.extensions import db
 from app.models.archive import (
@@ -217,17 +218,48 @@ def paginate_archives(
     domain_name: str,
     page: int = 1,
     per_page: int = 5,
+    status: str = 'all',
+    trigger_type: str = 'all',
+    operation_mode: str = 'all',
+    storage_backend: str = 'all',
+    search: str = '',
 ):
     normalized_page = max(int(page or 1), 1)
-    normalized_per_page = max(5, min(int(per_page or 5), 25))
-    return (
-        ArchiveArtifact.query.filter(ArchiveArtifact.domain == domain_name)
-        .order_by(ArchiveArtifact.created_at.desc(), ArchiveArtifact.id.desc())
-        .paginate(
-            page=normalized_page,
-            per_page=normalized_per_page,
-            error_out=False,
+    normalized_per_page = int(per_page or 5)
+    if normalized_per_page not in {5, 10, 25, 50}:
+        normalized_per_page = 5
+
+    query = ArchiveArtifact.query.filter(ArchiveArtifact.domain == domain_name)
+
+    if status != 'all':
+        query = query.filter(ArchiveArtifact.status == status)
+    if trigger_type != 'all':
+        query = query.filter(ArchiveArtifact.trigger_type == trigger_type)
+    if operation_mode != 'all':
+        query = query.filter(ArchiveArtifact.operation_mode == operation_mode)
+    if storage_backend != 'all':
+        query = query.filter(ArchiveArtifact.storage_backend == storage_backend)
+
+    normalized_search = str(search or '').strip()
+    if normalized_search:
+        pattern = f'%{normalized_search}%'
+        query = query.filter(
+            or_(
+                ArchiveArtifact.id.ilike(pattern),
+                ArchiveArtifact.celery_task_id.ilike(pattern),
+                ArchiveArtifact.error_message.ilike(pattern),
+                ArchiveArtifact.data_object_key.ilike(pattern),
+                ArchiveArtifact.manifest_object_key.ilike(pattern),
+            )
         )
+
+    return query.order_by(
+        ArchiveArtifact.created_at.desc(),
+        ArchiveArtifact.id.desc(),
+    ).paginate(
+        page=normalized_page,
+        per_page=normalized_per_page,
+        error_out=False,
     )
 
 

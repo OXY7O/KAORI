@@ -1,4 +1,67 @@
-<section id="activity-retention" class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+{% macro retention_state_inputs(include_preview=true) -%}
+    <input type="hidden" name="archive_page" value="{{ retention.archive_pagination.page }}">
+    <input type="hidden" name="archive_per_page" value="{{ retention.archive_pagination.per_page }}">
+    <input type="hidden" name="archive_status" value="{{ retention.archive_filters.status }}">
+    <input type="hidden" name="archive_trigger" value="{{ retention.archive_filters.trigger_type }}">
+    <input type="hidden" name="archive_mode" value="{{ retention.archive_filters.operation_mode }}">
+    <input type="hidden" name="archive_storage" value="{{ retention.archive_filters.storage_backend }}">
+    <input type="hidden" name="archive_search" value="{{ retention.archive_filters.search }}">
+    {% if include_preview and retention.preview %}<input type="hidden" name="retention_preview" value="1">{% endif %}
+{%- endmacro %}
+
+{% macro archive_status_badge(status) -%}
+    <span class="inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold ring-1 ring-inset
+        {% if status == 'ready' %}bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-900/40
+        {% elif status in ['pending', 'archiving', 'verifying', 'cleaning'] %}bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-900/40
+        {% elif status == 'cleanup_partial' %}bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-900/40
+        {% elif status == 'expired' %}bg-slate-100 text-slate-600 ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-700
+        {% else %}bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-900{% endif %}">
+        {{ status|replace('_', ' ')|title }}
+    </span>
+{%- endmacro %}
+
+{% set panel_url = url_for('notifications.activity_retention_panel',
+    archive_page=retention.archive_pagination.page,
+    archive_per_page=retention.archive_pagination.per_page,
+    archive_status=retention.archive_filters.status,
+    archive_trigger=retention.archive_filters.trigger_type,
+    archive_mode=retention.archive_filters.operation_mode,
+    archive_storage=retention.archive_filters.storage_backend,
+    archive_search=retention.archive_filters.search,
+    retention_preview=1 if retention.preview else none) %}
+{% set preview_url = url_for('notifications.activity_retention_panel',
+    archive_page=retention.archive_pagination.page,
+    archive_per_page=retention.archive_pagination.per_page,
+    archive_status=retention.archive_filters.status,
+    archive_trigger=retention.archive_filters.trigger_type,
+    archive_mode=retention.archive_filters.operation_mode,
+    archive_storage=retention.archive_filters.storage_backend,
+    archive_search=retention.archive_filters.search,
+    retention_preview=1) %}
+{% set clear_preview_url = url_for('notifications.activity_retention_panel',
+    archive_page=retention.archive_pagination.page,
+    archive_per_page=retention.archive_pagination.per_page,
+    archive_status=retention.archive_filters.status,
+    archive_trigger=retention.archive_filters.trigger_type,
+    archive_mode=retention.archive_filters.operation_mode,
+    archive_storage=retention.archive_filters.storage_backend,
+    archive_search=retention.archive_filters.search) %}
+
+<section id="activity-retention"
+         x-data="{ cleanupModal: false }"
+         @keydown.escape.window="cleanupModal = false"
+         class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800"
+         {% if retention.has_active_archives %}
+             hx-get="{{ panel_url }}"
+             hx-trigger="every 4s"
+             hx-target="this"
+             hx-swap="outerHTML"
+         {% elif retention.poll_once %}
+             hx-get="{{ panel_url }}"
+             hx-trigger="load delay:4s"
+             hx-target="this"
+             hx-swap="outerHTML"
+         {% endif %}>
     <div class="border-b border-slate-200 px-6 py-5 dark:border-slate-700">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div class="flex items-start gap-3">
@@ -8,75 +71,174 @@
                 <div>
                     <div class="flex flex-wrap items-center gap-2">
                         <h2 class="text-lg font-semibold text-slate-950 dark:text-white">Retention &amp; Archive</h2>
-                        <span class="rounded-full px-2.5 py-1 text-[10px] font-semibold ring-1 ring-inset {% if retention.enabled %}bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-900/40{% else %}bg-slate-100 text-slate-600 ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-600{% endif %}">
+                        <span class="rounded-full px-2.5 py-1 text-[10px] font-semibold ring-1 ring-inset {% if retention.enabled %}bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-900/40{% else %}bg-slate-100 text-slate-600 ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-700{% endif %}">
                             {{ 'Enabled' if retention.enabled else 'Disabled' }}
                         </span>
+                        {% if retention.has_active_archives %}
+                            <span class="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-semibold text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-900/40">
+                                <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-blue-500"></span>
+                                {{ retention.posture.active_count }} active job{{ 's' if retention.posture.active_count != 1 else '' }}
+                            </span>
+                        {% endif %}
                     </div>
                     <p class="mt-1 max-w-3xl text-sm leading-6 text-slate-500 dark:text-slate-400">
-                        Archive eligible activity to verified Local or S3 storage before removing hot records from PostgreSQL.
+                        Archive eligible activity to verified Local, MinIO, or S3-compatible storage before removing hot records from PostgreSQL.
                     </p>
                 </div>
             </div>
 
             <div class="flex flex-wrap items-center gap-2">
-                <a href="{{ url_for('notifications.activity_log', retention_preview=1) }}#activity-retention"
-                   class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-700">
+                <button type="button"
+                        hx-get="{{ preview_url }}"
+                        hx-target="#activity-retention"
+                        hx-swap="outerHTML"
+                        hx-indicator="#activity-retention-loading"
+                        class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-700">
                     <i data-lucide="search" class="h-4 w-4"></i>
                     Preview
-                </a>
+                </button>
+                <button type="button"
+                        title="Refresh retention status"
+                        hx-get="{{ panel_url }}"
+                        hx-target="#activity-retention"
+                        hx-swap="outerHTML"
+                        hx-indicator="#activity-retention-loading"
+                        class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-600 transition hover:bg-slate-50 hover:text-blue-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-700">
+                    <i data-lucide="refresh-cw" class="h-4 w-4"></i>
+                </button>
 
                 {% if retention.enabled and current_user.has_permission('settings.manage_operational_activity_retention') %}
-                    <form method="post" action="{{ url_for('notifications.run_activity_retention') }}">
-                        {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                        <input type="hidden" name="mode" value="archive_only">
-                        <button type="submit"
-                                class="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-indigo-50 px-3.5 py-2 text-sm font-semibold text-indigo-700 transition hover:bg-blue-100 dark:border-blue-900/50 dark:bg-indigo-500/10 dark:text-indigo-300 dark:hover:bg-blue-500/20">
-                            <i data-lucide="archive" class="h-4 w-4"></i>
-                            Archive only
-                        </button>
-                    </form>
-                    <form method="post"
-                          action="{{ url_for('notifications.run_activity_retention') }}"
-                          onsubmit="return confirm('Archive eligible activity and remove only the successfully verified records from PostgreSQL?');">
-                        {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                        <input type="hidden" name="mode" value="archive_and_cleanup">
-                        <button type="submit"
+                    {% if retention.has_active_archives %}
+                        <span class="inline-flex cursor-not-allowed items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3.5 py-2 text-sm font-semibold text-blue-700 dark:border-blue-900/50 dark:bg-blue-500/10 dark:text-blue-300">
+                            <i data-lucide="loader-circle" class="h-4 w-4 animate-spin"></i>
+                            Lifecycle job in progress
+                        </span>
+                    {% else %}
+                        <form method="post"
+                              action="{{ url_for('notifications.run_activity_retention') }}"
+                              hx-post="{{ url_for('notifications.run_activity_retention') }}"
+                              hx-target="#activity-retention"
+                              hx-swap="outerHTML"
+                              hx-indicator="#activity-retention-loading"
+                              class="inline-flex">
+                            {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                            {{ retention_state_inputs() }}
+                            <input type="hidden" name="mode" value="archive_only">
+                            <button type="submit"
+                                    hx-disabled-elt="this"
+                                    class="group inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-indigo-50 px-3.5 py-2 text-sm font-semibold text-indigo-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-70 dark:border-blue-900/50 dark:bg-indigo-500/10 dark:text-indigo-300 dark:hover:bg-blue-500/20">
+                                <i data-lucide="archive" class="h-4 w-4"></i>
+                                Archive only
+                            </button>
+                        </form>
+                        <button type="button"
+                                @click="cleanupModal = true"
                                 class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-blue-700">
                             <i data-lucide="database" class="h-4 w-4"></i>
                             Archive &amp; cleanup
                         </button>
-                    </form>
+                    {% endif %}
                 {% endif %}
             </div>
         </div>
+        <div id="activity-retention-loading" class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-blue-100 dark:bg-blue-950/60">
+            <div class="h-full w-1/3 animate-pulse rounded-full bg-blue-600 dark:bg-blue-400"></div>
+        </div>
     </div>
+
+    {% if retention.feedback %}
+        <div class="border-b px-6 py-4
+            {% if retention.feedback.status == 'success' %}border-emerald-200 bg-emerald-50/80 dark:border-emerald-500/20 dark:bg-emerald-950/20
+            {% elif retention.feedback.status == 'error' %}border-rose-200 bg-rose-50 dark:border-rose-500/20 dark:bg-slate-900/30
+            {% else %}border-blue-200 bg-blue-50/80 dark:border-blue-900/50 dark:bg-blue-950/20{% endif %}">
+            <div class="flex items-start gap-3">
+                <span class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg
+                    {% if retention.feedback.status == 'success' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300
+                    {% elif retention.feedback.status == 'error' %}bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300
+                    {% else %}bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300{% endif %}">
+                    <i data-lucide="{% if retention.feedback.status == 'success' %}check-circle-2{% elif retention.feedback.status == 'error' %}circle-alert{% else %}info{% endif %}" class="h-4 w-4"></i>
+                </span>
+                <div>
+                    <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ retention.feedback.title }}</p>
+                    <p class="mt-1 text-xs leading-5 text-slate-600 dark:text-slate-300">{{ retention.feedback.message }}</p>
+                    {% if retention.feedback.detail %}<p class="mt-1 text-[10px] leading-4 text-slate-500 dark:text-slate-400">{{ retention.feedback.detail }}</p>{% endif %}
+                </div>
+            </div>
+        </div>
+    {% endif %}
 
     <div class="grid gap-3 border-b border-slate-200 bg-slate-50/70 px-6 py-5 sm:grid-cols-2 xl:grid-cols-4 dark:border-slate-700 dark:bg-slate-900/30">
         <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-800">
-            <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Hot retention</p>
-            <p class="mt-2 text-xl font-bold text-slate-900 dark:text-white">{{ retention.retention_days }} days</p>
-            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">PostgreSQL activity window</p>
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Hot retention</p>
+                    <p class="mt-2 text-xl font-bold text-slate-900 dark:text-white">{{ retention.retention_days }} days</p>
+                </div>
+                <span class="rounded-full bg-blue-50 px-2 py-1 text-[9px] font-semibold text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-900/40">PostgreSQL</span>
+            </div>
+            <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Records older than the cutoff become eligible for archive.</p>
         </div>
+
         <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-800">
-            <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Archive retention</p>
-            <p class="mt-2 text-xl font-bold text-slate-900 dark:text-white">{{ retention.archive_retention_days }} days</p>
-            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Verified archive lifecycle</p>
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Archive retention</p>
+                    <p class="mt-2 text-xl font-bold text-slate-900 dark:text-white">{{ retention.archive_retention_days }} days</p>
+                </div>
+                <span class="rounded-full bg-violet-50 px-2 py-1 text-[9px] font-semibold text-violet-700 ring-1 ring-inset ring-violet-100 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-slate-700">{{ retention.posture.stored_size_label }}</span>
+            </div>
+            <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">{{ retention.posture.total_archives }} registry record{{ 's' if retention.posture.total_archives != 1 else '' }} currently tracked.</p>
         </div>
+
         <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-800">
-            <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Scheduled run</p>
-            <p class="mt-2 text-xl font-bold text-slate-900 dark:text-white">
-                {% if retention.schedule_enabled %}{{ '%02d'|format(retention.schedule_hour) }}:{{ '%02d'|format(retention.schedule_minute) }}{% else %}Disabled{% endif %}
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Scheduled run</p>
+                    <p class="mt-2 text-xl font-bold text-slate-900 dark:text-white">
+                        {% if retention.schedule_enabled %}{{ '%02d'|format(retention.schedule_hour) }}:{{ '%02d'|format(retention.schedule_minute) }}{% else %}Disabled{% endif %}
+                    </p>
+                </div>
+                <div class="flex flex-col items-end gap-1">
+                    <span class="rounded-full px-2 py-1 text-[9px] font-semibold ring-1 ring-inset {% if retention.schedule_enabled %}bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-900/40{% else %}bg-slate-100 text-slate-600 ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-700{% endif %}">
+                        {{ 'Beat configured' if retention.schedule_enabled else 'Schedule off' }}
+                    </span>
+                    <span class="rounded-full px-2 py-1 text-[9px] font-semibold ring-1 ring-inset
+                        {% if retention.worker.tone == 'emerald' %}bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-900/40
+                        {% elif retention.worker.tone == 'amber' %}bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-900/40
+                        {% elif retention.worker.tone == 'rose' %}bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-slate-700
+                        {% else %}bg-slate-100 text-slate-600 ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-700{% endif %}"
+                          title="{{ retention.worker.detail }}">
+                        Worker {{ retention.worker.label|lower }}
+                    </span>
+                </div>
+            </div>
+            <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                {% if retention.next_schedule_label %}Next {{ retention.next_schedule_label }}{% else %}Automatic retention is not scheduled.{% endif %}
             </p>
-            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ retention.schedule_timezone }} via Celery Beat</p>
         </div>
+
         <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-800">
-            <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Archive storage</p>
-            <p class="mt-2 text-xl font-bold uppercase text-slate-900 dark:text-white">{{ retention.storage_backend }}</p>
-            <p class="mt-1 truncate text-xs text-slate-500 dark:text-slate-400" title="{{ retention.storage_location }}">{{ retention.storage_location }}</p>
+            <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                    <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Archive storage</p>
+                    <p class="mt-2 truncate text-xl font-bold text-slate-900 dark:text-white">{{ retention.storage.provider_label }}</p>
+                </div>
+                <span title="{{ retention.storage.detail }}"
+                      class="flex-shrink-0 rounded-full px-2 py-1 text-[9px] font-semibold ring-1 ring-inset
+                    {% if retention.storage.status_tone == 'emerald' %}bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-900/40
+                    {% elif retention.storage.status_tone == 'amber' %}bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-900/40
+                    {% elif retention.storage.status_tone == 'rose' %}bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-slate-700
+                    {% else %}bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-900/40{% endif %}">
+                    {{ retention.storage.status_label }}
+                </span>
+            </div>
+            <p class="mt-2 truncate text-xs text-slate-500 dark:text-slate-400" title="{{ retention.storage.location }}">{{ retention.storage.location }}</p>
+            {% if retention.storage.endpoint_label %}<p class="mt-1 truncate text-[10px] text-slate-400 dark:text-slate-500">Endpoint: {{ retention.storage.endpoint_label }}</p>{% endif %}
+            {% if retention.storage.last_verified_at %}<p class="mt-1 text-[10px] text-emerald-600 dark:text-emerald-300">Last verified {{ retention.storage.last_verified_at|user_datetime('%d %b %Y %H:%M %Z') }}</p>{% endif %}
         </div>
     </div>
 
-    <div class="grid gap-4 border-b border-slate-200 px-6 py-5 lg:grid-cols-2 dark:border-slate-700">
+    <div class="grid gap-4 border-b border-slate-200 px-6 py-5 lg:grid-cols-3 dark:border-slate-700">
         <div class="rounded-xl border border-blue-200 bg-blue-50/70 p-4 dark:border-blue-900/50 dark:bg-blue-950/20">
             <div class="flex items-start gap-3">
                 <span class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300">
@@ -84,41 +246,79 @@
                 </span>
                 <div>
                     <h3 class="text-sm font-semibold text-blue-950 dark:text-blue-100">Archive-first safety</h3>
-                    <p class="mt-1 text-xs leading-5 text-blue-700 dark:text-blue-300">
-                        Cleanup starts only after JSONL.GZ upload, manifest creation, object-size validation, and SHA-256 verification succeed.
-                    </p>
+                    <p class="mt-1 text-xs leading-5 text-blue-700 dark:text-blue-300">Cleanup starts only after JSONL.GZ, manifest, object size, and SHA-256 verification all succeed.</p>
                 </div>
             </div>
         </div>
-        <div class="rounded-xl border border-blue-200 bg-violet-50 p-4 dark:border-violet-900/50 dark:bg-slate-900/30">
+        <div class="rounded-xl border border-violet-100 bg-violet-50 p-4 dark:border-violet-900/50 dark:bg-slate-900/30">
             <div class="flex items-start gap-3">
                 <span class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300">
-                    <i data-lucide="database" class="h-4 w-4"></i>
+                    <i data-lucide="cpu" class="h-4 w-4"></i>
                 </span>
                 <div>
-                    <h3 class="text-sm font-semibold text-violet-950 dark:text-violet-100">Bounded cleanup</h3>
-                    <p class="mt-1 text-xs leading-5 text-violet-700 dark:text-violet-300">
-                        Selection is frozen by cutoff and maximum record ID. Cleanup then deletes only the exact IDs read back from the verified archive in {{ retention.batch_size }}-record transactions.
-                    </p>
+                    <h3 class="text-sm font-semibold text-violet-700 dark:text-violet-300">Background execution</h3>
+                    <p class="mt-1 text-xs leading-5 text-violet-700 dark:text-violet-300">Manual and scheduled jobs use the same retention service on the <span class="font-semibold">{{ retention.queue_name }}</span> queue. {{ retention.worker.detail }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-500/20 dark:bg-emerald-950/20">
+            <div class="flex items-start gap-3">
+                <span class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
+                    <i data-lucide="file-check-2" class="h-4 w-4"></i>
+                </span>
+                <div>
+                    <h3 class="text-sm font-semibold text-emerald-900 dark:text-emerald-100">Recovery-ready output</h3>
+                    <p class="mt-1 text-xs leading-5 text-emerald-700 dark:text-emerald-300">Every archive includes raw JSONL.GZ data and a readable manifest with range, count, schema, storage, and checksum metadata.</p>
                 </div>
             </div>
         </div>
     </div>
 
+    <div class="grid gap-3 border-b border-slate-200 bg-slate-50/50 px-6 py-4 sm:grid-cols-3 dark:border-slate-700 dark:bg-slate-900/20">
+        <div>
+            <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Last lifecycle run</p>
+            {% if retention.posture.last_run %}
+                <div class="mt-2 flex flex-wrap items-center gap-2">
+                    {{ archive_status_badge(retention.posture.last_run.status) }}
+                    <span class="text-xs font-semibold text-slate-700 dark:text-slate-200">{{ retention.posture.last_run.created_at|user_datetime('%d %b %Y %H:%M %Z') }}</span>
+                </div>
+                <p class="mt-1 text-[10px] text-slate-500 dark:text-slate-400">{{ retention.posture.last_run.record_count }} archived · {{ retention.posture.last_run.cleanup_deleted_count }} cleaned · {{ retention.posture.last_run.trigger_type|title }}</p>
+            {% else %}
+                <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">No lifecycle run has been recorded.</p>
+            {% endif %}
+        </div>
+        <div>
+            <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Registry posture</p>
+            <div class="mt-2 flex flex-wrap gap-2">
+                <span class="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold text-slate-700 dark:bg-slate-700 dark:text-slate-200">{{ retention.posture.total_archives }} total</span>
+                <span class="rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-semibold text-blue-700 dark:bg-blue-500/10 dark:text-blue-300">{{ retention.posture.active_count }} active</span>
+                <span class="rounded-full bg-rose-50 px-2.5 py-1 text-[10px] font-semibold text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">{{ retention.posture.failed_count }} failed</span>
+            </div>
+            <p class="mt-2 text-[10px] text-slate-500 dark:text-slate-400">Registry entries remain available after failures for investigation and checksum re-verification.</p>
+        </div>
+        <div>
+            <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Cleanup boundary</p>
+            <p class="mt-2 text-xs font-semibold text-slate-700 dark:text-slate-200">{{ retention.batch_size }} records per transaction</p>
+            <p class="mt-1 text-[10px] leading-4 text-slate-500 dark:text-slate-400">The cutoff and maximum source record ID are frozen before archive generation, then only archived IDs are removed.</p>
+        </div>
+    </div>
+
     {% if retention.preview %}
-        <div class="border-b border-slate-200 bg-amber-50/80 px-6 py-5 dark:border-slate-700 dark:bg-amber-950/10">
+        <div class="border-b border-slate-200 bg-amber-50/80 px-6 py-5 dark:border-slate-700 dark:bg-slate-900/30">
             <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                     <div class="flex items-center gap-2">
                         <i data-lucide="search" class="h-4 w-4 text-amber-600 dark:text-amber-300"></i>
                         <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Retention preview</h3>
                     </div>
-                    <p class="mt-1 text-xs text-slate-600 dark:text-slate-400">
-                        Read-only preview. No archive was created and no database row was removed.
-                    </p>
+                    <p class="mt-1 text-xs text-slate-600 dark:text-slate-400">Read-only preview. No archive was created and no database row was removed.</p>
                 </div>
-                <a href="{{ url_for('notifications.activity_log') }}#activity-retention"
-                   class="text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-300">Clear preview</a>
+                <button type="button"
+                        hx-get="{{ clear_preview_url }}"
+                        hx-target="#activity-retention"
+                        hx-swap="outerHTML"
+                        hx-indicator="#activity-retention-loading"
+                        class="text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-300">Clear preview</button>
             </div>
             <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
                 <div class="rounded-xl bg-white px-4 py-3 ring-1 ring-inset ring-amber-200 dark:bg-slate-800 dark:ring-amber-900/40">
@@ -126,12 +326,12 @@
                     <p class="mt-1 text-lg font-bold text-slate-900 dark:text-white">{{ retention.preview.record_count }}</p>
                 </div>
                 <div class="rounded-xl bg-white px-4 py-3 ring-1 ring-inset ring-amber-200 dark:bg-slate-800 dark:ring-amber-900/40">
-                    <p class="text-[10px] font-semibold text-slate-500 dark:text-slate-400">Cutoff</p>
-                    <p class="mt-1 text-xs font-semibold text-slate-900 dark:text-white">{{ retention.preview.cutoff_at|user_datetime('%d %b %Y %H:%M %Z') }}</p>
+                    <p class="text-[10px] font-semibold text-slate-500 dark:text-slate-400">Estimated raw size</p>
+                    <p class="mt-1 text-lg font-bold text-slate-900 dark:text-white">{{ retention.preview.estimated_size_label }}</p>
                 </div>
                 <div class="rounded-xl bg-white px-4 py-3 ring-1 ring-inset ring-amber-200 dark:bg-slate-800 dark:ring-amber-900/40">
-                    <p class="text-[10px] font-semibold text-slate-500 dark:text-slate-400">Oldest eligible</p>
-                    <p class="mt-1 text-xs font-semibold text-slate-900 dark:text-white">{{ retention.preview.range_start|user_datetime('%d %b %Y %H:%M %Z') if retention.preview.range_start else '-' }}</p>
+                    <p class="text-[10px] font-semibold text-slate-500 dark:text-slate-400">Cutoff</p>
+                    <p class="mt-1 text-xs font-semibold text-slate-900 dark:text-white">{{ retention.preview.cutoff_at|user_datetime('%d %b %Y %H:%M %Z') }}</p>
                 </div>
                 <div class="rounded-xl bg-white px-4 py-3 ring-1 ring-inset ring-amber-200 dark:bg-slate-800 dark:ring-amber-900/40">
                     <p class="text-[10px] font-semibold text-slate-500 dark:text-slate-400">Protected unread</p>
@@ -146,19 +346,73 @@
     {% endif %}
 
     <div class="px-6 py-5">
-        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
-                <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Recent archives</h3>
-                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Registry history for manual, scheduled, and CLI lifecycle runs.</p>
+                <div class="flex flex-wrap items-center gap-2">
+                    <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Recent archives</h3>
+                    <span class="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-300">{{ retention.archive_format }}</span>
+                </div>
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Filter manual, scheduled, and CLI lifecycle history without reloading the page.</p>
             </div>
-            <span class="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-300">{{ retention.archive_format }}</span>
         </div>
+
+        <form id="activity-archive-filter-form"
+              hx-get="{{ url_for('notifications.activity_retention_panel') }}"
+              hx-target="#activity-retention"
+              hx-swap="outerHTML"
+              hx-trigger="change from:select, keyup changed delay:500ms from:input[name='archive_search']"
+              hx-indicator="#activity-retention-loading"
+              class="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-5 xl:items-end">
+            <input type="hidden" name="archive_page" value="1">
+            <input type="hidden" name="archive_per_page" value="{{ retention.archive_pagination.per_page }}">
+            {% if retention.preview %}<input type="hidden" name="retention_preview" value="1">{% endif %}
+            <div>
+                <label class="mb-2 block text-xs font-medium text-slate-700 dark:text-slate-300">Status</label>
+                <select name="archive_status" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-slate-100">
+                    <option value="all">All Status</option>
+                    {% for option in retention.archive_filter_options.statuses %}<option value="{{ option }}" {% if retention.archive_filters.status == option %}selected{% endif %}>{{ option|replace('_', ' ')|title }}</option>{% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="mb-2 block text-xs font-medium text-slate-700 dark:text-slate-300">Trigger</label>
+                <select name="archive_trigger" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-slate-100">
+                    <option value="all">All Triggers</option>
+                    {% for option in retention.archive_filter_options.triggers %}<option value="{{ option }}" {% if retention.archive_filters.trigger_type == option %}selected{% endif %}>{{ option|title }}</option>{% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="mb-2 block text-xs font-medium text-slate-700 dark:text-slate-300">Mode</label>
+                <select name="archive_mode" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-slate-100">
+                    <option value="all">All Modes</option>
+                    {% for option in retention.archive_filter_options.modes %}<option value="{{ option }}" {% if retention.archive_filters.operation_mode == option %}selected{% endif %}>{{ option|replace('_', ' ')|title }}</option>{% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="mb-2 block text-xs font-medium text-slate-700 dark:text-slate-300">Storage</label>
+                <select name="archive_storage" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-slate-100">
+                    <option value="all">All Storage</option>
+                    {% for option in retention.archive_filter_options.storage_backends %}<option value="{{ option }}" {% if retention.archive_filters.storage_backend == option %}selected{% endif %}>{{ 'Local' if option == 'local' else 'S3 / MinIO' }}</option>{% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="mb-2 block text-xs font-medium text-slate-700 dark:text-slate-300">Search archive</label>
+                <div class="relative">
+                    <i data-lucide="search" class="absolute left-3 top-3 h-4 w-4 text-slate-400"></i>
+                    <input type="search"
+                           name="archive_search"
+                           value="{{ retention.archive_filters.search }}"
+                           placeholder="ID, task, object, or error..."
+                           class="w-full rounded-xl border border-slate-300 bg-white py-2 pr-3 pl-10 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-slate-100">
+                </div>
+            </div>
+        </form>
 
         {% if retention.archives %}
             <div class="mt-4 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
                 <table class="min-w-full divide-y divide-slate-200 text-left text-xs dark:divide-slate-700">
                     <thead class="bg-slate-50 text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-900/50 dark:text-slate-400">
                         <tr>
+                            <th class="px-4 py-3">Archive</th>
                             <th class="px-4 py-3">Archive range</th>
                             <th class="px-4 py-3">Records</th>
                             <th class="px-4 py-3">Mode</th>
@@ -171,6 +425,10 @@
                     <tbody class="divide-y divide-slate-200 bg-white dark:divide-slate-700 dark:bg-slate-800">
                         {% for archive in retention.archives %}
                             <tr class="align-top">
+                                <td class="px-4 py-3">
+                                    <div class="font-mono text-[11px] font-semibold text-slate-800 dark:text-slate-100">{{ archive.short_id }}</div>
+                                    {% if archive.celery_task_id %}<div style="max-width: 8rem;" class="mt-1 truncate font-mono text-[9px] text-slate-400" title="{{ archive.celery_task_id }}">Task {{ archive.celery_task_id }}</div>{% endif %}
+                                </td>
                                 <td class="px-4 py-3 text-slate-700 dark:text-slate-200">
                                     <div class="font-semibold">{{ archive.range_start|user_datetime('%d %b %Y') if archive.range_start else '-' }}</div>
                                     <div class="mt-1 text-[10px] text-slate-500 dark:text-slate-400">to {{ archive.range_end|user_datetime('%d %b %Y') if archive.range_end else '-' }}</div>
@@ -184,21 +442,14 @@
                                     <div class="mt-1 text-[10px] text-slate-400">{{ archive.trigger_type|title }}</div>
                                 </td>
                                 <td class="px-4 py-3 text-slate-600 dark:text-slate-300">
-                                    <div class="font-semibold uppercase">{{ archive.storage_backend or '-' }}</div>
+                                    <div class="font-semibold text-slate-800 dark:text-slate-100">{{ archive.storage_label }}</div>
                                     <div class="mt-1 text-[10px] text-slate-400">{{ archive.size_label }}</div>
+                                    {% if archive.checksum_short %}<div class="mt-1 font-mono text-[9px] text-slate-400" title="{{ archive.checksum_sha256 }}">SHA {{ archive.checksum_short }}…</div>{% endif %}
                                 </td>
                                 <td class="px-4 py-3">
-                                    <span class="inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold ring-1 ring-inset
-                                        {% if archive.status == 'ready' %}bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-900/40
-                                        {% elif archive.status in ['pending', 'archiving', 'verifying', 'cleaning'] %}bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-900/40
-                                        {% elif archive.status == 'cleanup_partial' %}bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-900/40
-                                        {% elif archive.status == 'expired' %}bg-slate-100 text-slate-600 ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-600
-                                        {% else %}bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-900{% endif %}">
-                                        {{ archive.status|replace('_', ' ')|title }}
-                                    </span>
-                                    {% if archive.error_message %}
-                                        <p class="mt-2 max-w-xs text-[10px] leading-4 text-rose-600 dark:text-rose-300" title="{{ archive.error_message }}">{{ archive.error_message|truncate(90) }}</p>
-                                    {% endif %}
+                                    {{ archive_status_badge(archive.status) }}
+                                    {% if archive.verified_at %}<p class="mt-2 text-[10px] text-emerald-600 dark:text-emerald-300">Checksum verified</p>{% endif %}
+                                    {% if archive.error_message %}<p class="mt-2 max-w-xs text-[10px] leading-4 text-rose-600 dark:text-rose-300" title="{{ archive.error_message }}">{{ archive.error_message|truncate(90) }}</p>{% endif %}
                                 </td>
                                 <td class="px-4 py-3 text-slate-600 dark:text-slate-300">
                                     {{ archive.created_at|user_datetime('%d %b %Y') }}
@@ -218,10 +469,17 @@
                                             </a>
                                         {% endif %}
                                         {% if archive.is_verifiable and current_user.has_permission('settings.manage_operational_activity_retention') %}
-                                            <form method="post" action="{{ url_for('notifications.verify_activity_archive', archive_id=archive.id) }}">
+                                            <form method="post"
+                                                  action="{{ url_for('notifications.verify_activity_archive', archive_id=archive.id) }}"
+                                                  hx-post="{{ url_for('notifications.verify_activity_archive', archive_id=archive.id) }}"
+                                                  hx-target="#activity-retention"
+                                                  hx-swap="outerHTML"
+                                                  hx-indicator="#activity-retention-loading">
                                                 {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                                {{ retention_state_inputs() }}
                                                 <button type="submit"
-                                                        class="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-[10px] font-semibold text-blue-700 hover:bg-blue-100 dark:border-blue-900/50 dark:bg-blue-500/10 dark:text-blue-300">
+                                                        hx-disabled-elt="this"
+                                                        class="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-[10px] font-semibold text-blue-700 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-70 dark:border-blue-900/50 dark:bg-blue-500/10 dark:text-blue-300">
                                                     <i data-lucide="shield-check" class="h-3.5 w-3.5"></i>
                                                     Verify
                                                 </button>
@@ -234,36 +492,117 @@
                     </tbody>
                 </table>
             </div>
-
-            {% if retention.archive_pagination.pages > 1 %}
-                <div class="mt-4 flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700">
-                    <p class="text-xs text-slate-500 dark:text-slate-400">
-                        Showing page {{ retention.archive_pagination.page }} of {{ retention.archive_pagination.pages }} · {{ retention.archive_pagination.total }} archives
-                    </p>
-                    <div class="flex items-center gap-2">
-                        {% if retention.archive_pagination.has_prev %}
-                            <a href="{{ url_for('notifications.activity_log', archive_page=retention.archive_pagination.prev_num, archive_per_page=retention.archive_pagination.per_page) }}#activity-retention"
-                               class="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700">
-                                <i data-lucide="chevron-left" class="h-3.5 w-3.5"></i>
-                                Previous
-                            </a>
-                        {% endif %}
-                        {% if retention.archive_pagination.has_next %}
-                            <a href="{{ url_for('notifications.activity_log', archive_page=retention.archive_pagination.next_num, archive_per_page=retention.archive_pagination.per_page) }}#activity-retention"
-                               class="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700">
-                                Next
-                                <i data-lucide="chevron-right" class="h-3.5 w-3.5"></i>
-                            </a>
-                        {% endif %}
-                    </div>
-                </div>
-            {% endif %}
         {% else %}
             <div class="mt-4 rounded-xl border border-dashed border-slate-300 px-5 py-8 text-center dark:border-slate-600">
                 <i data-lucide="archive" class="mx-auto h-6 w-6 text-slate-400"></i>
-                <p class="mt-2 text-sm font-semibold text-slate-700 dark:text-slate-200">No activity archives yet</p>
-                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Use Preview first, then run Archive only or Archive &amp; cleanup.</p>
+                <p class="mt-2 text-sm font-semibold text-slate-700 dark:text-slate-200">No archives match the current filters</p>
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Adjust the archive filters or run Preview before starting a lifecycle job.</p>
             </div>
         {% endif %}
+
+        <div class="mt-4 flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700">
+            <div class="flex flex-wrap items-center gap-3">
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                    Showing {{ retention.archive_pagination.start_item }}–{{ retention.archive_pagination.end_item }} of {{ retention.archive_pagination.total }} archives
+                </p>
+                <form hx-get="{{ url_for('notifications.activity_retention_panel') }}"
+                      hx-target="#activity-retention"
+                      hx-swap="outerHTML"
+                      hx-trigger="change"
+                      hx-indicator="#activity-retention-loading"
+                      class="flex items-center gap-2">
+                    <input type="hidden" name="archive_page" value="1">
+                    <input type="hidden" name="archive_status" value="{{ retention.archive_filters.status }}">
+                    <input type="hidden" name="archive_trigger" value="{{ retention.archive_filters.trigger_type }}">
+                    <input type="hidden" name="archive_mode" value="{{ retention.archive_filters.operation_mode }}">
+                    <input type="hidden" name="archive_storage" value="{{ retention.archive_filters.storage_backend }}">
+                    <input type="hidden" name="archive_search" value="{{ retention.archive_filters.search }}">
+                    {% if retention.preview %}<input type="hidden" name="retention_preview" value="1">{% endif %}
+                    <label class="text-xs text-slate-500 dark:text-slate-400">Per page</label>
+                    <select name="archive_per_page" class="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200">
+                        {% for option in retention.archive_pagination.allowed_per_page %}<option value="{{ option }}" {% if retention.archive_pagination.per_page == option %}selected{% endif %}>{{ option }}</option>{% endfor %}
+                    </select>
+                </form>
+            </div>
+            <div class="flex items-center gap-2">
+                {% if retention.archive_pagination.has_prev %}
+                    {% set prev_url = url_for('notifications.activity_retention_panel', archive_page=retention.archive_pagination.prev_num, archive_per_page=retention.archive_pagination.per_page, archive_status=retention.archive_filters.status, archive_trigger=retention.archive_filters.trigger_type, archive_mode=retention.archive_filters.operation_mode, archive_storage=retention.archive_filters.storage_backend, archive_search=retention.archive_filters.search, retention_preview=1 if retention.preview else none) %}
+                    <a href="{{ prev_url }}"
+                       hx-get="{{ prev_url }}"
+                       hx-target="#activity-retention"
+                       hx-swap="outerHTML"
+                       hx-indicator="#activity-retention-loading"
+                       class="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700">
+                        <i data-lucide="chevron-left" class="h-3.5 w-3.5"></i>
+                        Previous
+                    </a>
+                {% else %}
+                    <span class="inline-flex cursor-not-allowed items-center gap-1 rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-600">
+                        <i data-lucide="chevron-left" class="h-3.5 w-3.5"></i>
+                        Previous
+                    </span>
+                {% endif %}
+                <span class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">Page {{ retention.archive_pagination.page }} / {{ retention.archive_pagination.pages }}</span>
+                {% if retention.archive_pagination.has_next %}
+                    {% set next_url = url_for('notifications.activity_retention_panel', archive_page=retention.archive_pagination.next_num, archive_per_page=retention.archive_pagination.per_page, archive_status=retention.archive_filters.status, archive_trigger=retention.archive_filters.trigger_type, archive_mode=retention.archive_filters.operation_mode, archive_storage=retention.archive_filters.storage_backend, archive_search=retention.archive_filters.search, retention_preview=1 if retention.preview else none) %}
+                    <a href="{{ next_url }}"
+                       hx-get="{{ next_url }}"
+                       hx-target="#activity-retention"
+                       hx-swap="outerHTML"
+                       hx-indicator="#activity-retention-loading"
+                       class="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700">
+                        Next
+                        <i data-lucide="chevron-right" class="h-3.5 w-3.5"></i>
+                    </a>
+                {% else %}
+                    <span class="inline-flex cursor-not-allowed items-center gap-1 rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-600">
+                        Next
+                        <i data-lucide="chevron-right" class="h-3.5 w-3.5"></i>
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div x-show="cleanupModal"
+         x-transition.opacity
+         x-cloak
+         class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 px-4 backdrop-blur-sm">
+        <div class="absolute inset-0" @click="cleanupModal = false"></div>
+        <div @click.stop
+             x-transition
+             class="relative w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-800">
+            <div class="p-6">
+                <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
+                    <i data-lucide="archive-restore" class="h-6 w-6"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-slate-950 dark:text-white">Archive and clean activity records?</h3>
+                <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">KAORI will archive every eligible record, verify the data and manifest checksums, then remove only the exact verified record IDs from PostgreSQL.</p>
+                <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-500/20 dark:bg-amber-500/10">
+                    <p class="text-xs leading-5 text-amber-800 dark:text-amber-200">Cleanup cannot be undone from the UI. The verified JSONL.GZ archive and manifest remain available from Recent archives.</p>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 border-t border-slate-200 bg-slate-50 px-6 py-4 dark:border-slate-700 dark:bg-slate-900/40">
+                <button type="button"
+                        @click="cleanupModal = false"
+                        class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">Cancel</button>
+                <form method="post"
+                      action="{{ url_for('notifications.run_activity_retention') }}"
+                      hx-post="{{ url_for('notifications.run_activity_retention') }}"
+                      hx-target="#activity-retention"
+                      hx-swap="outerHTML"
+                      hx-indicator="#activity-retention-loading">
+                    {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                    {{ retention_state_inputs() }}
+                    <input type="hidden" name="mode" value="archive_and_cleanup">
+                    <button type="submit"
+                            hx-disabled-elt="this"
+                            class="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70">
+                        <i data-lucide="database" class="h-4 w-4"></i>
+                        Archive &amp; cleanup
+                    </button>
+                </form>
+            </div>
+        </div>
     </div>
 </section>

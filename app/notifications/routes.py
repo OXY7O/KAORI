@@ -43,6 +43,49 @@ def _request_int(
         return default
 
 
+def _retention_request_int(
+    name: str,
+    default: int,
+) -> int:
+    try:
+        return int(request.values.get(name, str(default)))
+    except (TypeError, ValueError):
+        return default
+
+
+def _build_retention_context_from_request(
+    *,
+    feedback: dict | None = None,
+    poll_once: bool = False,
+) -> dict:
+    return build_activity_retention_context(
+        include_preview=request.values.get('retention_preview') == '1',
+        archive_page=_retention_request_int('archive_page', 1),
+        archive_per_page=_retention_request_int('archive_per_page', 5),
+        archive_status=request.values.get('archive_status', 'all'),
+        archive_trigger=request.values.get('archive_trigger', 'all'),
+        archive_mode=request.values.get('archive_mode', 'all'),
+        archive_storage=request.values.get('archive_storage', 'all'),
+        archive_search=request.values.get('archive_search', ''),
+        feedback=feedback,
+        poll_once=poll_once,
+    )
+
+
+def _render_activity_retention_panel(
+    *,
+    feedback: dict | None = None,
+    poll_once: bool = False,
+) -> str:
+    return render_template(
+        'notifications/partials/_activity_retention.html',
+        retention=_build_retention_context_from_request(
+            feedback=feedback,
+            poll_once=poll_once,
+        ),
+    )
+
+
 def _render_notification_center() -> str:
     context = get_navigation_notification_context(
         user_id=current_user.id,
@@ -83,11 +126,7 @@ def activity_log() -> ResponseReturnValue:
             **context,
         )
 
-    context['retention'] = build_activity_retention_context(
-        include_preview=request.args.get('retention_preview') == '1',
-        archive_page=_request_int('archive_page', 1),
-        archive_per_page=_request_int('archive_per_page', 5),
-    )
+    context['retention'] = _build_retention_context_from_request()
 
     return render_template(
         'notifications/activity.html',
@@ -95,12 +134,26 @@ def activity_log() -> ResponseReturnValue:
     )
 
 
+@notifications_bp.get('/activity/retention')
+@permission_required('settings.view_operational_activity')
+def activity_retention_panel() -> ResponseReturnValue:
+    return _render_activity_retention_panel()
+
+
 @notifications_bp.post('/activity/retention/run')
 @permission_required('settings.manage_operational_activity_retention')
 def run_activity_retention() -> ResponseReturnValue:
     mode = request.form.get('mode', 'archive_only').strip().lower()
+    is_htmx = request.headers.get('HX-Request') == 'true'
     if mode not in {'archive_only', 'archive_and_cleanup'}:
-        flash('Unsupported retention operation.', 'error')
+        feedback = {
+            'status': 'error',
+            'title': 'Retention action rejected',
+            'message': 'The requested retention operation is not supported.',
+        }
+        if is_htmx:
+            return _render_activity_retention_panel(feedback=feedback)
+        flash(feedback['message'], 'error')
         return redirect(url_for('notifications.activity_log') + '#activity-retention')
 
     cleanup = mode == 'archive_and_cleanup'
@@ -133,10 +186,33 @@ def run_activity_retention() -> ResponseReturnValue:
                 'domain': 'operational_activity',
             },
         )
-        flash('Retention job queued. Refresh the archive registry to review progress.', 'success')
+        feedback = {
+            'status': 'success',
+            'title': 'Retention job queued',
+            'message': (
+                'Archive and cleanup is running in the background. Cleanup remains blocked until archive verification succeeds.'
+                if cleanup
+                else 'Archive generation is running in the background without database cleanup.'
+            ),
+            'detail': f'Task {async_result.id[:8]} was sent to the {current_app.config.get("RETENTION_CELERY_QUEUE", "inventory")} queue.',
+        }
+        if is_htmx:
+            return _render_activity_retention_panel(
+                feedback=feedback,
+                poll_once=True,
+            )
+        flash(feedback['message'], 'success')
     except Exception as exc:
         current_app.logger.exception('Could not queue operational activity retention.')
-        flash(f'Retention job could not be queued: {type(exc).__name__}.', 'error')
+        feedback = {
+            'status': 'error',
+            'title': 'Retention job could not be queued',
+            'message': f'The background task request failed with {type(exc).__name__}.',
+            'detail': 'No archive was created and no database cleanup was started.',
+        }
+        if is_htmx:
+            return _render_activity_retention_panel(feedback=feedback)
+        flash(feedback['message'], 'error')
 
     return redirect(url_for('notifications.activity_log') + '#activity-retention')
 
@@ -144,6 +220,7 @@ def run_activity_retention() -> ResponseReturnValue:
 @notifications_bp.post('/activity/archives/<archive_id>/verify')
 @permission_required('settings.manage_operational_activity_retention')
 def verify_activity_archive(archive_id: str) -> ResponseReturnValue:
+    is_htmx = request.headers.get('HX-Request') == 'true'
     try:
         result = verify_archive_artifact(archive_id)
         record_operational_activity(
@@ -160,9 +237,24 @@ def verify_activity_archive(archive_id: str) -> ResponseReturnValue:
                 'size_bytes': result.get('size_bytes'),
             },
         )
-        flash('Archive verification completed successfully.', 'success')
+        feedback = {
+            'status': 'success',
+            'title': 'Archive verification completed',
+            'message': 'The archive data and manifest match their stored size and SHA-256 checksum.',
+        }
+        if is_htmx:
+            return _render_activity_retention_panel(feedback=feedback)
+        flash(feedback['message'], 'success')
     except Exception as exc:
         current_app.logger.exception('Activity archive verification failed for %s.', archive_id)
+        feedback = {
+            'status': 'error',
+            'title': 'Archive verification failed',
+            'message': str(exc),
+            'detail': 'The archive registry was kept for investigation and no cleanup was executed by this verification action.',
+        }
+        if is_htmx:
+            return _render_activity_retention_panel(feedback=feedback)
         flash(f'Archive verification failed: {exc}', 'error')
 
     return redirect(url_for('notifications.activity_log') + '#activity-retention')
