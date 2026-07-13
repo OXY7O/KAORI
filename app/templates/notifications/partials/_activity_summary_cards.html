@@ -94,14 +94,16 @@
                     <p class="mt-1 text-sm leading-5 text-slate-500 dark:text-slate-400">Summary information is kept outside the table, following the inventory layout pattern.</p>
                 </div>
             </div>
-            <div class="mt-4 grid gap-2 sm:grid-cols-2">
-                <div class="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3 text-[11px] leading-5 text-slate-600 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-300">
-                    <span class="font-semibold text-slate-800 dark:text-slate-100">Scope:</span>
-                    cross-user operational actions, execution outcomes, and recorded metadata.
-                </div>
-                <div class="rounded-xl border border-blue-200 bg-blue-50/80 px-3.5 py-3 text-[11px] leading-5 text-blue-700 dark:border-blue-900/40 dark:bg-blue-950/20 dark:text-blue-300">
-                    <span class="font-semibold">Boundary:</span>
-                    personal notifications stay in the topbar and login security events stay in their dedicated audit view.
+            <div class="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/50">
+                <div class="flex flex-col divide-y divide-slate-200 sm:flex-row sm:divide-x sm:divide-y-0 dark:divide-slate-700">
+                    <div class="flex-1 px-3.5 py-3 text-[11px] leading-5 text-slate-600 dark:text-slate-300">
+                        <span class="font-semibold text-slate-800 dark:text-slate-100">Scope:</span>
+                        cross-user operational actions, execution outcomes, and recorded metadata.
+                    </div>
+                    <div class="flex-1 bg-blue-50/70 px-3.5 py-3 text-[11px] leading-5 text-blue-700 dark:bg-blue-950/20 dark:text-blue-300">
+                        <span class="font-semibold">Boundary:</span>
+                        personal notifications stay in the topbar and login security events stay in their dedicated audit view.
+                    </div>
                 </div>
             </div>
         </div>
