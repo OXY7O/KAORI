@@ -277,6 +277,8 @@ def get_reveal_page_context(
     can_approve: bool,
     my_page: int = 1,
     my_per_page: int = 5,
+    pending_page: int = 1,
+    pending_per_page: int = 3,
 ) -> dict[str, Any]:
     _expire_stale_requests()
 
@@ -318,20 +320,64 @@ def get_reveal_page_context(
         'page_sizes': allowed_page_sizes,
     }
 
+    pending_page_sizes = (3, 5, 10)
+    try:
+        normalized_pending_per_page = int(pending_per_page)
+    except (TypeError, ValueError):
+        normalized_pending_per_page = 3
+    if normalized_pending_per_page not in pending_page_sizes:
+        normalized_pending_per_page = 3
+
+    try:
+        normalized_pending_page = max(int(pending_page), 1)
+    except (TypeError, ValueError):
+        normalized_pending_page = 1
+
     pending_requests: list[SecretRevealRequest] = []
+    pending_total = 0
+    pending_pages = 1
     if can_approve:
-        pending_requests = (
+        pending_query = (
             SecretRevealRequest.query.filter_by(status='pending')
             .order_by(SecretRevealRequest.requested_at.asc())
-            .limit(50)
+        )
+        pending_total = pending_query.count()
+        pending_pages = max(
+            (pending_total + normalized_pending_per_page - 1)
+            // normalized_pending_per_page,
+            1,
+        )
+        normalized_pending_page = min(normalized_pending_page, pending_pages)
+        pending_requests = (
+            pending_query
+            .offset((normalized_pending_page - 1) * normalized_pending_per_page)
+            .limit(normalized_pending_per_page)
             .all()
         )
+
+    pending_pagination = {
+        'page': normalized_pending_page,
+        'per_page': normalized_pending_per_page,
+        'total': pending_total,
+        'pages': pending_pages,
+        'has_prev': normalized_pending_page > 1,
+        'has_next': normalized_pending_page < pending_pages,
+        'prev_page': normalized_pending_page - 1,
+        'next_page': normalized_pending_page + 1,
+        'start': (
+            (normalized_pending_page - 1) * normalized_pending_per_page + 1
+            if pending_total else 0
+        ),
+        'end': min(normalized_pending_page * normalized_pending_per_page, pending_total),
+        'page_sizes': pending_page_sizes,
+    }
     return {
         'global_reveal_enabled': _global_enabled(),
         'clusters': get_reveal_clusters(),
         'my_reveal_requests': my_requests,
         'my_reveal_pagination': my_pagination,
         'pending_reveal_requests': pending_requests,
+        'pending_reveal_pagination': pending_pagination,
         'reveal_policies': REVEAL_POLICIES,
         'reveal_window_seconds': int(
             current_app.config.get('KUBERNETES_SECRET_REVEAL_WINDOW_SECONDS', 15)

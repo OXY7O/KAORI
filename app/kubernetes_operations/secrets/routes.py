@@ -560,6 +560,8 @@ def _reveal_status_context() -> dict[str, Any]:
             can_approve=can_approve,
             my_page=request.args.get('my_page', 1),
             my_per_page=request.args.get('my_per_page', 5),
+            pending_page=request.args.get('pending_page', 1),
+            pending_per_page=request.args.get('pending_per_page', 3),
         ),
         'step_up_active': _secret_reveal_step_up_active(),
         'can_reveal': current_user.has_permission('kubernetes_secrets.reveal'),
