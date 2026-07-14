@@ -9,6 +9,7 @@ from typing import Any
 from flask import current_app
 from kubernetes.client.exceptions import ApiException
 from kubernetes.config.config_exception import ConfigException
+from sqlalchemy.orm import lazyload
 from urllib3.exceptions import HTTPError as Urllib3HTTPError
 
 from app.extensions import db
@@ -417,9 +418,15 @@ def get_reveal_request_for_user(
     _expire_stale_requests()
     query = SecretRevealRequest.query.filter_by(id=request_id)
     if lock_for_update:
-        # Serialize one-time consumption in PostgreSQL. The row lock is held until
-        # the successful reveal marks the request as revealed and commits.
-        query = query.with_for_update()
+        # Relationships on SecretRevealRequest use joined eager loading. PostgreSQL
+        # cannot apply FOR UPDATE to the nullable side of those LEFT OUTER JOINs.
+        # Disable relationship eager loading for this locking query and lock only
+        # the reveal-request row that guards one-time consumption.
+        query = (
+            query
+            .options(lazyload('*'))
+            .with_for_update(of=SecretRevealRequest)
+        )
     record = query.first()
     if record is None:
         raise ValueError('Secret reveal request was not found.')
@@ -475,95 +482,99 @@ def _decode_secret_value(encoded_value: str) -> tuple[str, str]:
 
 
 def reveal_secret_value(request_id: str, *, user_id: int) -> RevealedSecretValue:
-    record = get_reveal_request_for_user(
-        request_id,
-        user_id=user_id,
-        lock_for_update=True,
-    )
-    cluster = Cluster.query.filter_by(id=record.cluster_id).first()
-    if cluster is None or not _global_enabled() or not _cluster_ready(cluster):
-        raise ValueError('Protected Secret Reveal is no longer ready for this cluster.')
-
-    current_policy = get_namespace_policy(record.cluster_id, record.namespace)
-    if current_policy not in {'step_up', 'approval_required'}:
-        raise ValueError('Protected Secret Reveal is no longer enabled for this namespace.')
-    if current_policy != record.policy:
-        raise ValueError('The namespace Reveal policy changed. Submit a new reveal request.')
-
-    target = ConfigurationInventory.query.filter_by(
-        id=record.configuration_inventory_id,
-        cluster_id=record.cluster_id,
-        namespace=record.namespace,
-        name=record.secret_name,
-        object_type='Secret',
-    ).first()
-    if target is None or record.key_name not in _allowed_keys(target):
-        raise ValueError('The Secret snapshot or selected key changed. Submit a new reveal request.')
-
-    secret_object = None
-    secret_data: dict[str, str] = {}
     try:
-        with legacy_tls_context(enabled=bool(cluster.kube_allow_weak_tls)):
-            api = KubernetesClient(
-                cluster.kubeconfig,
-                verify_ssl=bool(cluster.kube_verify_ssl),
-            ).core_api()
-            secret_object = api.read_namespaced_secret(
-                name=record.secret_name,
-                namespace=record.namespace,
-                _request_timeout=10,
-            )
-        secret_data = dict(getattr(secret_object, 'data', None) or {})
-        encoded_value = secret_data.get(record.key_name)
-        if encoded_value is None:
-            raise ValueError('The selected key no longer exists in the Kubernetes Secret.')
-        display_value, encoding = _decode_secret_value(encoded_value)
-    except ApiException as exc:
-        raise ValueError(_api_error_message(exc)) from exc
-    except ConfigException as exc:
-        raise ValueError('The cluster kubeconfig is invalid or incomplete.') from exc
-    except (OSError, Urllib3HTTPError) as exc:
-        raise ValueError(
-            'KAORI could not reach the Kubernetes API using the cluster kubeconfig.'
-        ) from exc
-    finally:
-        for key in list(secret_data):
-            secret_data[key] = ''
-        secret_data.clear()
-        object_data = getattr(secret_object, 'data', None)
-        if isinstance(object_data, dict):
-            for key in list(object_data):
-                object_data[key] = ''
-            object_data.clear()
+        record = get_reveal_request_for_user(
+            request_id,
+            user_id=user_id,
+            lock_for_update=True,
+        )
+        cluster = Cluster.query.filter_by(id=record.cluster_id).first()
+        if cluster is None or not _global_enabled() or not _cluster_ready(cluster):
+            raise ValueError('Protected Secret Reveal is no longer ready for this cluster.')
 
-    revealed_at = _now()
-    record.status = 'revealed'
-    record.revealed_at = revealed_at
-    db.session.commit()
+        current_policy = get_namespace_policy(record.cluster_id, record.namespace)
+        if current_policy not in {'step_up', 'approval_required'}:
+            raise ValueError('Protected Secret Reveal is no longer enabled for this namespace.')
+        if current_policy != record.policy:
+            raise ValueError('The namespace Reveal policy changed. Submit a new reveal request.')
 
-    window_seconds = int(current_app.config.get('KUBERNETES_SECRET_REVEAL_WINDOW_SECONDS', 15))
-    return RevealedSecretValue(
-        request_id=record.id,
-        key_name=record.key_name,
-        display_value=display_value,
-        encoding=encoding,
-        revealed_at=revealed_at,
-        expires_in_seconds=window_seconds,
-        metadata={
-            'reveal_request_id': record.id,
-            'configuration_inventory_id': record.configuration_inventory_id,
-            'cluster_id': cluster.id,
-            'cluster_name': cluster.name,
-            'namespace': record.namespace,
-            'secret_name': record.secret_name,
-            'secret_type': record.secret_type,
-            'key_name': record.key_name,
-            'policy': record.policy,
-            'ticket_reference': record.ticket_reference,
-            'reason': record.reason,
-            'requester_user_id': record.requester_user_id,
-            'approver_user_id': record.approver_user_id,
-            'secret_value_recorded': False,
-            'secret_value_hash_recorded': False,
-        },
-    )
+        target = ConfigurationInventory.query.filter_by(
+            id=record.configuration_inventory_id,
+            cluster_id=record.cluster_id,
+            namespace=record.namespace,
+            name=record.secret_name,
+            object_type='Secret',
+        ).first()
+        if target is None or record.key_name not in _allowed_keys(target):
+            raise ValueError('The Secret snapshot or selected key changed. Submit a new reveal request.')
+
+        secret_object = None
+        secret_data: dict[str, str] = {}
+        try:
+            with legacy_tls_context(enabled=bool(cluster.kube_allow_weak_tls)):
+                api = KubernetesClient(
+                    cluster.kubeconfig,
+                    verify_ssl=bool(cluster.kube_verify_ssl),
+                ).core_api()
+                secret_object = api.read_namespaced_secret(
+                    name=record.secret_name,
+                    namespace=record.namespace,
+                    _request_timeout=10,
+                )
+            secret_data = dict(getattr(secret_object, 'data', None) or {})
+            encoded_value = secret_data.get(record.key_name)
+            if encoded_value is None:
+                raise ValueError('The selected key no longer exists in the Kubernetes Secret.')
+            display_value, encoding = _decode_secret_value(encoded_value)
+        except ApiException as exc:
+            raise ValueError(_api_error_message(exc)) from exc
+        except ConfigException as exc:
+            raise ValueError('The cluster kubeconfig is invalid or incomplete.') from exc
+        except (OSError, Urllib3HTTPError) as exc:
+            raise ValueError(
+                'KAORI could not reach the Kubernetes API using the cluster kubeconfig.'
+            ) from exc
+        finally:
+            for key in list(secret_data):
+                secret_data[key] = ''
+            secret_data.clear()
+            object_data = getattr(secret_object, 'data', None)
+            if isinstance(object_data, dict):
+                for key in list(object_data):
+                    object_data[key] = ''
+                object_data.clear()
+
+        revealed_at = _now()
+        record.status = 'revealed'
+        record.revealed_at = revealed_at
+        db.session.commit()
+
+        window_seconds = int(current_app.config.get('KUBERNETES_SECRET_REVEAL_WINDOW_SECONDS', 15))
+        return RevealedSecretValue(
+            request_id=record.id,
+            key_name=record.key_name,
+            display_value=display_value,
+            encoding=encoding,
+            revealed_at=revealed_at,
+            expires_in_seconds=window_seconds,
+            metadata={
+                'reveal_request_id': record.id,
+                'configuration_inventory_id': record.configuration_inventory_id,
+                'cluster_id': cluster.id,
+                'cluster_name': cluster.name,
+                'namespace': record.namespace,
+                'secret_name': record.secret_name,
+                'secret_type': record.secret_type,
+                'key_name': record.key_name,
+                'policy': record.policy,
+                'ticket_reference': record.ticket_reference,
+                'reason': record.reason,
+                'requester_user_id': record.requester_user_id,
+                'approver_user_id': record.approver_user_id,
+                'secret_value_recorded': False,
+                'secret_value_hash_recorded': False,
+            },
+        )
+    except Exception:
+        db.session.rollback()
+        raise

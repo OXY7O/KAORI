@@ -10,7 +10,8 @@ from flask_wtf.csrf import validate_csrf
 from wtforms.validators import ValidationError
 
 from app.cluster.onboarding import has_registered_clusters
-from app.extensions import limiter
+from app.extensions import db, limiter
+from app.models.user import User
 from app.kubernetes_operations.secrets.create_service import (
     execute_secret_operation,
     get_cluster_namespace_options,
@@ -550,6 +551,63 @@ def _mark_secret_reveal_step_up() -> None:
     session.modified = True
 
 
+def _reveal_status_context() -> dict[str, Any]:
+    can_approve = current_user.has_permission('kubernetes_secrets.approve_reveal')
+    return {
+        **get_reveal_page_context(
+            user_id=current_user.id,
+            can_approve=can_approve,
+        ),
+        'step_up_active': _secret_reveal_step_up_active(),
+        'can_reveal': current_user.has_permission('kubernetes_secrets.reveal'),
+        'can_approve': can_approve,
+        'notification_context': get_navigation_notification_context(
+            user_id=current_user.id,
+        ),
+    }
+
+
+def _notify_secret_reveal_approvers(record: Any) -> None:
+    if getattr(record, 'status', None) != 'pending':
+        return
+
+    approvers = User.query.filter(
+        User.account_is_active.is_(True),
+        User.deleted_at.is_(None),
+        User.id != record.requester_user_id,
+    ).all()
+
+    action_url = url_for(
+        'kubernetes_operations.reveal_secret',
+        _anchor='pending-secret-reveal-approvals',
+    )
+    metadata = _reveal_request_metadata(record)
+    for approver in approvers:
+        if not approver.has_permission('kubernetes_secrets.approve_reveal'):
+            continue
+        try:
+            create_notification(
+                user_id=approver.id,
+                event_type='kubernetes_secret_reveal_approval_required',
+                status='warning',
+                title='Secret reveal approval required',
+                message=(
+                    f'{record.requester.display_label} requested access to '
+                    f'{record.secret_name} / {record.key_name} in '
+                    f'{record.cluster.name} / {record.namespace}.'
+                ),
+                action_url=action_url,
+                metadata=metadata,
+            )
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception(
+                'Could not notify Secret reveal approver user %s for request %s.',
+                approver.id,
+                record.id,
+            )
+
+
 def _reveal_request_metadata(record: Any) -> dict[str, Any]:
     cluster = getattr(record, 'cluster', None)
     return {
@@ -591,23 +649,25 @@ def reveal_secret_page():
         else workspace_context.get('selected_namespace_policy', 'disabled')
     )
     page_context = {
-        **get_reveal_page_context(
-            user_id=current_user.id,
-            can_approve=can_approve,
-        ),
+        **_reveal_status_context(),
         **workspace_context,
         **target_context,
         'selected_inventory_id': selected_inventory_id,
         'selected_key_name': request.args.get('key_name', '').strip(),
         'selected_cluster': selected_cluster,
         'selected_namespace_policy': selected_namespace_policy,
-        'step_up_active': _secret_reveal_step_up_active(),
-        'can_reveal': can_reveal,
-        'can_approve': can_approve,
     }
     return render_template(
         'kubernetes_operations/secrets/reveal.html',
         **page_context,
+    )
+
+
+@any_permission_required('kubernetes_secrets.reveal', 'kubernetes_secrets.approve_reveal')
+def reveal_secret_status():
+    return render_template(
+        'kubernetes_operations/secrets/_reveal_request_status.html',
+        **_reveal_status_context(),
     )
 
 
@@ -661,6 +721,7 @@ def request_secret_reveal():
             metadata=result.metadata,
             queue_feedback=True,
         )
+        _notify_secret_reveal_approvers(result.request_record)
         return redirect(url_for('kubernetes_operations.reveal_secret'))
     except ValueError as exc:
         _record_secret_activity(
@@ -893,6 +954,9 @@ def reveal_secret_value(request_id: str):
             metadata=result.metadata,
         )
     except ValueError as exc:
+        # A failed locking/API query can leave PostgreSQL in an aborted transaction.
+        # Reset the session before reading request metadata or writing activity data.
+        db.session.rollback()
         try:
             record = get_reveal_request_for_user(request_id, user_id=current_user.id)
             metadata = _reveal_request_metadata(record)
@@ -908,6 +972,9 @@ def reveal_secret_value(request_id: str):
             metadata=metadata,
         )
     except Exception:
+        # Notification/activity persistence uses the same scoped session. Roll back
+        # first so the failure record is not attempted inside an aborted transaction.
+        db.session.rollback()
         current_app.logger.exception('Unexpected protected Secret reveal failure.')
         feedback = _record_secret_activity(
             event_type='kubernetes_secret_reveal_failed',

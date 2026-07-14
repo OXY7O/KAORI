@@ -386,3 +386,15 @@ The Protected Secret Reveal card uses the established emerald palette and stable
 ## Reveal request action visibility
 
 The `Reveal once` action is rendered only while a request is `approved`. An active step-up session does not revive an `expired`, `denied`, or already `revealed` request. Expired rows must provide a `Create new request` action that restores the same cluster, namespace, Secret, and key selection so the user can submit a fresh audited request. Approved rows should show their expiry timestamp to make the short validity window explicit.
+
+## Real-time approval status and notifications
+
+Protected Secret Reveal approval uses notification-driven and polling-based status updates:
+
+- A pending `approval_required` request creates a notification for every active user who has `kubernetes_secrets.approve_reveal`, excluding the requester.
+- Approval and denial create a requester notification with a direct action back to Protected Secret Reveal.
+- The request and approval panels poll `/kubernetes-operations/secrets/reveal/status` every four seconds through HTMX.
+- When an approver changes a request to `approved` or `denied`, the requester row updates without a full-page refresh.
+- An approved row displays `Reveal once` immediately when the requester's step-up session is active; otherwise it displays `Reauthenticate first`.
+- The same status poll refreshes the notification-center badge out-of-band without exposing Secret values.
+- Polling responses contain request metadata only. Secret values remain restricted to the one-time no-store reveal response.
