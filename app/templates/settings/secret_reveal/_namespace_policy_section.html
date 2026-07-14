@@ -39,12 +39,12 @@
           hx-push-url="true"
           hx-trigger="change from:select[name='namespace_policy'], keyup changed delay:500ms from:input[name='namespace_q']"
           hx-indicator="#secret-reveal-namespace-loading"
-          class="grid gap-4 lg:grid-cols-[minmax(16rem,1.4fr)_minmax(0,0.85fr)] lg:items-end">
+          class="flex flex-col gap-4 md:flex-row md:items-end">
       <input type="hidden" name="cluster_id" value="{{ selected_cluster.id }}">
       <input type="hidden" name="page" value="1">
       <input type="hidden" name="per_page" value="{{ namespace_pagination.per_page }}">
 
-      <div>
+      <div class="min-w-0 flex-1">
         <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Search Namespace</label>
         <div class="relative">
           <i data-lucide="search" class="absolute left-3 top-3 h-4 w-4 text-slate-400 dark:text-slate-500"></i>
@@ -56,7 +56,7 @@
         </div>
       </div>
 
-      <div>
+      <div class="w-full md:w-72 md:shrink-0">
         <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Reveal Policy</label>
         <select name="namespace_policy"
                 class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">

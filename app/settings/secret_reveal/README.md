@@ -81,3 +81,16 @@ app/templates/settings/secret_reveal/_namespace_policy_table_content.html
 ```
 
 Do not reintroduce a standalone custom table style for this section. Future namespace columns or row actions should extend the Inventory-style table contract above.
+### Namespace filter and column alignment
+
+The namespace filter band must remain a single horizontal row from the medium breakpoint upward: the namespace search expands to fill available width and the policy selector keeps a fixed compact width. Do not reintroduce a stacked desktop filter layout.
+
+The table uses an explicit fixed column contract so row controls do not shift between pages or policy labels:
+
+- Namespace: `31%`;
+- Inventory: `15%`;
+- Current Policy: `20%`;
+- Configure: `34%`.
+
+The Configure cell keeps the policy selector flexible and the Save button at a fixed width. The primary Save action uses a borderless blue button with a soft focus ring; native or dark hard outlines must not be added.
+

@@ -1,11 +1,17 @@
 <div class="overflow-x-auto">
-  <table class="min-w-full text-slate-900 dark:text-slate-100">
+  <table class="w-full text-slate-900 dark:text-slate-100" style="min-width: 980px; table-layout: fixed;">
+    <colgroup>
+      <col style="width: 31%;">
+      <col style="width: 15%;">
+      <col style="width: 20%;">
+      <col style="width: 34%;">
+    </colgroup>
     <thead>
       <tr class="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-600 dark:border-slate-700 dark:bg-slate-700/40 dark:text-slate-300">
-        <th class="px-4 py-3 text-left">Namespace</th>
-        <th class="px-4 py-3 text-left">Inventory</th>
-        <th class="px-4 py-3 text-left">Current Policy</th>
-        <th class="px-4 py-3 text-left">Configure</th>
+        <th class="px-5 py-3 text-left">Namespace</th>
+        <th class="px-5 py-3 text-left">Inventory</th>
+        <th class="px-5 py-3 text-left">Current Policy</th>
+        <th class="px-5 py-3 text-left">Configure</th>
       </tr>
     </thead>
     <tbody>
@@ -22,7 +28,7 @@
           {% set policy_icon = 'lock' %}
         {% endif %}
         <tr class="border-t border-slate-200 text-sm transition hover:bg-blue-50/30 dark:border-slate-700 dark:hover:bg-slate-700/30">
-          <td class="px-4 py-3">
+          <td class="px-5 py-3 align-middle">
             <div class="flex max-w-[360px] items-center gap-2.5">
               <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">
                 <i data-lucide="box" class="h-4 w-4"></i>
@@ -33,22 +39,22 @@
               </div>
             </div>
           </td>
-          <td class="px-4 py-3 text-left">
+          <td class="px-5 py-3 text-left align-middle">
             <span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ring-1 ring-inset {{ inventory_classes }}">
               <i data-lucide="{{ 'check' if row.in_inventory else 'info' }}" class="h-3.5 w-3.5"></i>
               {{ 'Current' if row.in_inventory else 'Missing' }}
             </span>
           </td>
-          <td class="px-4 py-3 text-left">
+          <td class="px-5 py-3 text-left align-middle">
             <span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ring-1 ring-inset {{ policy_classes }}">
               <i data-lucide="{{ policy_icon }}" class="h-3.5 w-3.5"></i>
               {{ reveal_policy_choices.get(row.policy, row.policy.replace('_', ' ')|title) }}
             </span>
           </td>
-          <td class="px-4 py-3">
+          <td class="px-5 py-3 align-middle">
             <form method="post"
                   action="{{ url_for('settings.secret_reveal.update_namespace_policy', cluster_id=selected_cluster.id) }}"
-                  class="flex items-center gap-2">
+                  class="flex w-full items-center gap-3">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <input type="hidden" name="namespace" value="{{ row.namespace }}">
               <input type="hidden" name="namespace_q" value="{{ namespace_filters.query }}">
@@ -58,7 +64,7 @@
               <select name="policy"
                       aria-label="Reveal policy for {{ row.namespace }}"
                       {% if not row.in_inventory and row.policy == 'disabled' %}disabled{% endif %}
-                      class="min-w-56 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10 dark:disabled:bg-slate-900 dark:disabled:text-slate-600">
+                      class="h-10 min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10 dark:disabled:bg-slate-900 dark:disabled:text-slate-600">
                 {% for value, label in reveal_policy_choices.items() %}
                   <option value="{{ value }}" {% if row.policy == value %}selected{% endif %}>{{ label }}</option>
                 {% endfor %}
@@ -66,7 +72,7 @@
               <button type="submit"
                       title="Save {{ row.namespace }} policy"
                       {% if not row.in_inventory and row.policy == 'disabled' %}disabled{% endif %}
-                      class="inline-flex items-center gap-2 rounded-xl border border-blue-600 bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:border-blue-700 hover:bg-blue-700 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400 dark:disabled:border-slate-700 dark:disabled:bg-slate-800 dark:disabled:text-slate-600">
+                      class="inline-flex h-10 w-24 shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-600 px-3 text-sm font-semibold text-white shadow-sm outline-none transition hover:bg-blue-700 focus:ring-4 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 disabled:shadow-none dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-400/20 dark:disabled:bg-slate-800 dark:disabled:text-slate-600">
                 <i data-lucide="save" class="h-4 w-4"></i>
                 Save
               </button>
