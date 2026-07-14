@@ -89,26 +89,59 @@
                             </div>
                         </div>
 
-                        <div class="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/65">
-                            <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                                <i data-lucide="list-checks" class="h-4 w-4 text-blue-600 dark:text-blue-300"></i>
-                                Cluster review notes
+                        <details class="group overflow-hidden rounded-2xl border border-blue-200/80 bg-white/85 shadow-sm backdrop-blur transition dark:border-blue-500/20 dark:bg-slate-900/65">
+                            <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-4 marker:content-none [&::-webkit-details-marker]:hidden">
+                                <div class="flex min-w-0 items-center gap-3">
+                                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+                                        <i data-lucide="list-checks" class="h-5 w-5"></i>
+                                    </span>
+                                    <div class="min-w-0">
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Cluster review notes</h3>
+                                            <span class="inline-flex rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700 dark:bg-blue-500/10 dark:text-blue-300">3 notes</span>
+                                        </div>
+                                        <p class="mt-0.5 text-xs leading-5 text-slate-500 dark:text-slate-400">Review readiness, capacity guardrails, and scheduling signals for the selected cluster.</p>
+                                    </div>
+                                </div>
+                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition group-open:rotate-180 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                                    <i data-lucide="chevron-down" class="h-4 w-4"></i>
+                                </span>
+                            </summary>
+
+                            <div class="border-t border-blue-100 bg-gradient-to-b from-blue-50/45 to-white px-4 py-4 dark:border-blue-500/10 dark:from-blue-950/10 dark:to-slate-900/20">
+                                <div class="grid gap-3">
+                                    <div class="flex items-start gap-3 rounded-2xl border border-emerald-200/80 bg-emerald-50/70 p-4 dark:border-emerald-500/20 dark:bg-emerald-500/5">
+                                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300">
+                                            <i data-lucide="circle-check-big" class="h-4 w-4"></i>
+                                        </span>
+                                        <div class="min-w-0">
+                                            <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Readiness baseline</p>
+                                            <p class="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">{{ cluster_info.ready_nodes }} of {{ cluster_info.total_nodes }} nodes are schedulable; {{ cluster_info.not_ready_nodes }} node{% if cluster_info.not_ready_nodes != 1 %}s{% endif %} currently need attention.</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-start gap-3 rounded-2xl border border-blue-200/80 bg-blue-50/70 p-4 dark:border-blue-500/20 dark:bg-blue-500/5">
+                                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+                                            <i data-lucide="shield-check" class="h-4 w-4"></i>
+                                        </span>
+                                        <div class="min-w-0">
+                                            <p class="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">Capacity guardrail</p>
+                                            <p class="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">Use {{ cluster_info.cpu_capacity }} CPU cores and {{ "%.2f"|format(cluster_info.memory_capacity / 1024**3) }} GiB memory as the cluster-level limit reference before checking workload requests and limits. Compare namespace and workload demand against this baseline to catch overcommit risk, uneven node allocation, and capacity growth before scheduling pressure becomes visible.</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-start gap-3 rounded-2xl border border-violet-200/80 bg-violet-50/70 p-4 dark:border-violet-500/20 dark:bg-violet-500/5">
+                                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-600 dark:bg-violet-500/10 dark:text-violet-300">
+                                            <i data-lucide="workflow" class="h-4 w-4"></i>
+                                        </span>
+                                        <div class="min-w-0">
+                                            <p class="text-xs font-semibold uppercase tracking-wide text-violet-700 dark:text-violet-300">Scheduling signal</p>
+                                            <p class="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">Keep pod capacity at {{ cluster_info.pod_capacity }} slots under review together with pending pods, namespace density, and node pressure details. Use this as an early signal to identify workload concentration, DaemonSet overhead, or pods that may need spreading before placement issues affect deployments.</p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="mt-3 space-y-2.5 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                                <p>
-                                    <span class="font-semibold text-slate-800 dark:text-slate-100">Readiness baseline:</span>
-                                    {{ cluster_info.ready_nodes }} of {{ cluster_info.total_nodes }} nodes are schedulable; {{ cluster_info.not_ready_nodes }} node{% if cluster_info.not_ready_nodes != 1 %}s{% endif %} currently need attention.
-                                </p>
-                                <p>
-                                    <span class="font-semibold text-slate-800 dark:text-slate-100">Capacity guardrail:</span>
-                                    use {{ cluster_info.cpu_capacity }} CPU cores and {{ "%.2f"|format(cluster_info.memory_capacity / 1024**3) }} GiB memory as the cluster-level limit reference before checking workload requests and limits. Compare namespace and workload demand against this baseline to catch overcommit risk, uneven node allocation, and capacity growth before scheduling pressure becomes visible.
-                                </p>
-                                <p>
-                                    <span class="font-semibold text-slate-800 dark:text-slate-100">Scheduling signal:</span>
-                                    keep pod capacity at {{ cluster_info.pod_capacity }} slots under review together with pending pods, namespace density, and node pressure details. Use this as an early signal to identify workload concentration, DaemonSet overhead, or pods that may need spreading before placement issues affect deployments.
-                                </p>
-                            </div>
-                        </div>
+                        </details>
 
                         <div class="grid gap-3 md:grid-cols-3">
                             <div class="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/70">
