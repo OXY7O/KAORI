@@ -65,9 +65,8 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 items-stretch gap-6 xl:grid-cols-2">
+        <div class="grid grid-cols-1 items-start gap-6 xl:grid-cols-2">
             <div id="overview-top-consumers"
-                 class="h-full"
                  hx-target="this"
                  hx-get="{{ url_for('analytics.overview_section', section='top-consumers') }}?{{ overview_query }}"
                  hx-trigger="load delay:350ms"
@@ -75,7 +74,6 @@
                 {% include "analytics/overview/partials/_section_loading.html" %}
             </div>
             <div id="overview-forecast-snapshot"
-                 class="h-full"
                  hx-target="this"
                  hx-get="{{ url_for('analytics.overview_section', section='forecast-snapshot') }}?{{ overview_query }}"
                  hx-trigger="load delay:400ms"
