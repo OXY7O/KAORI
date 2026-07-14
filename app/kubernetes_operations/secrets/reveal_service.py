@@ -97,7 +97,7 @@ def _global_enabled() -> bool:
 def _cluster_ready(cluster: Cluster) -> bool:
     return bool(
         cluster.secret_reveal_policy in {'step_up', 'approval_required'}
-        and cluster.secret_reveal_kubeconfig
+        and bool(cluster.kubeconfig)
         and cluster.secret_reveal_encryption_verified
         and cluster.secret_reveal_audit_verified
     )
@@ -409,9 +409,9 @@ def _api_error_message(exc: ApiException) -> str:
     if status == 404:
         return 'The selected Secret no longer exists in Kubernetes. Refresh inventory before retrying.'
     if status == 403:
-        return 'The dedicated Kubernetes credential is not authorized to get this Secret.'
+        return 'The cluster kubeconfig identity is not authorized to get this Secret.'
     if status == 401:
-        return 'Kubernetes authentication failed for the dedicated reveal credential.'
+        return 'Kubernetes authentication failed for the cluster kubeconfig identity.'
     if status == 429:
         return 'Kubernetes temporarily rate-limited the reveal request. Retry later.'
     return 'Kubernetes API rejected the protected Secret read operation.'
@@ -464,7 +464,7 @@ def reveal_secret_value(request_id: str, *, user_id: int) -> RevealedSecretValue
     try:
         with legacy_tls_context(enabled=bool(cluster.kube_allow_weak_tls)):
             api = KubernetesClient(
-                cluster.secret_reveal_kubeconfig or '',
+                cluster.kubeconfig,
                 verify_ssl=bool(cluster.kube_verify_ssl),
             ).core_api()
             secret_object = api.read_namespaced_secret(
@@ -480,10 +480,10 @@ def reveal_secret_value(request_id: str, *, user_id: int) -> RevealedSecretValue
     except ApiException as exc:
         raise ValueError(_api_error_message(exc)) from exc
     except ConfigException as exc:
-        raise ValueError('The dedicated Secret Reveal kubeconfig is invalid or incomplete.') from exc
+        raise ValueError('The cluster kubeconfig is invalid or incomplete.') from exc
     except (OSError, Urllib3HTTPError) as exc:
         raise ValueError(
-            'KAORI could not reach the Kubernetes API using the dedicated reveal credential.'
+            'KAORI could not reach the Kubernetes API using the cluster kubeconfig.'
         ) from exc
     finally:
         for key in list(secret_data):

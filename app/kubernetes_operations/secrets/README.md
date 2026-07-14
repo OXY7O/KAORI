@@ -58,7 +58,7 @@ Reusable TLS parsing and certificate/private-key validation live in `app/kuberne
 ## Workflow boundaries
 
 - Secret creation and Secret data replacement are separate workflows.
-- Existing Secret values remain unread by Create and Replace. Protected Reveal is the only explicit read path and is isolated behind separate policy, credentials, permissions, reauthentication, and audit controls.
+- Existing Secret values remain unread by Create and Replace. Protected Reveal is the only explicit read path and is isolated behind cluster policy, KAORI permissions, reauthentication, optional approval, rate limiting, and audit controls.
 - TLS uses a dedicated rotation workflow because certificate/private-key matching, SAN coverage, and Governance linkage require specialized validation.
 - Non-TLS replacement is an active controlled workflow for Opaque, Basic Auth, Registry, and SSH Secrets. Existing values remain unread and hidden; only submitted keys are patched.
 - ConfigMap operations belong to a separate `ConfigMap Management` operational domain. ConfigMap and Secret inventory may remain under Configuration Inventory while mutation workflows stay separate because their sensitivity and validation rules differ.
@@ -147,19 +147,27 @@ Implementation ownership:
 
 Protected Secret Reveal is active as a separate security-sensitive workflow. It must never be merged into Replace Secret Data because Kubernetes `get Secret` returns the complete Secret object to the KAORI backend even when the browser receives only one selected key.
 
+### Single-kubeconfig architecture
+
+Protected Secret Reveal uses the same kubeconfig stored on the cluster registration. KAORI does not store or select a second reveal credential. The Kubernetes cluster administrator owns the ServiceAccount/user and Role/RoleBinding design for that identity. Its permissions should be the union of only the KAORI capabilities intentionally enabled for that cluster, with namespace scope preferred over cluster-wide access.
+
+Application controls remain mandatory defense in depth: `kubernetes_secrets.reveal`, optional separation-of-duties approval, step-up authentication, reason and ticket, rate limiting, one-time consumption, no-cache responses, and payload-free activity records. This reduces credential sprawl, but the cluster identity has a larger blast radius than separate per-function credentials; review and rotate the kubeconfig whenever its Kubernetes RBAC scope changes.
+
+When migrating from the earlier dedicated-reveal-credential model, dropping the database column does not revoke the old Kubernetes credential. The Kubernetes administrator must delete or revoke the obsolete ServiceAccount token/client credential and remove its RoleBinding separately.
+
 ### Enablement gates
 
 Reveal is default-deny at every layer:
 
 1. Global configuration `KUBERNETES_SECRET_REVEAL_ENABLED=true` must be set explicitly.
 2. The target cluster must use `secret_reveal_policy=step_up` or `approval_required`.
-3. The cluster must have a dedicated reveal kubeconfig that targets the same Kubernetes API server as its primary kubeconfig.
+3. The cluster must have its normal kubeconfig registered, and the Kubernetes administrator must authorize that identity to `get` only the intended Secrets within the intended namespaces.
 4. Encryption at rest and Kubernetes audit logging at Metadata level must both be marked verified for the cluster.
 5. The user must hold `kubernetes_secrets.reveal`; approval decisions require `kubernetes_secrets.approve_reveal`.
-6. Cluster policy, prerequisite attestations, and the dedicated kubeconfig require `kubernetes_secrets.manage_reveal`; `clusters.manage` alone cannot alter these controls.
+6. Cluster policy and prerequisite attestations require `kubernetes_secrets.manage_reveal`; `clusters.manage` alone cannot alter these controls.
 7. `kubernetes_secrets.reveal` is not assigned to any built-in role by default. Admin receives approval and policy-management permissions but not reveal permission; Super Admin still has the explicit platform bypass defined by the RBAC model.
 
-The dedicated Kubernetes credential should be namespace-scoped and grant `get` on Secrets only. Do not grant `list` or `watch`. KAORI validates that the kubeconfig points to the same API server, but Kubernetes RBAC remains the authoritative resource boundary.
+The cluster kubeconfig identity should be namespace-scoped where possible. For Secret reveal, grant `get` only within the intended scope and avoid `list` or `watch`. The same identity may also carry verbs required by other enabled KAORI operations, so Kubernetes RBAC remains the authoritative resource boundary and must be reviewed as a union of explicitly enabled capabilities.
 
 ### Supported and blocked values
 
@@ -200,7 +208,7 @@ The live endpoint:
 - accepts HTTPS POST only in production;
 - is CSRF protected;
 - is rate-limited per authenticated user;
-- reads through the dedicated reveal kubeconfig;
+- reads through the cluster kubeconfig identity;
 - retrieves the Secret once, selects the approved key in request memory, and clears references to the complete data map;
 - rejects values larger than `KUBERNETES_SECRET_REVEAL_MAX_BYTES`;
 - returns UTF-8 text when safe, otherwise base64 representation;
@@ -241,6 +249,6 @@ KUBERNETES_SECRET_REVEAL_PENDING_TTL_HOURS=24
 - `SecretRevealRequest` stores workflow state only; it has no payload/value column.
 - route handlers own RBAC, reauthentication session state, rate limiting, toast/notification feedback, and activity records.
 - `templates/kubernetes_operations/secrets/reveal.html` owns request, approval, and one-time display surfaces.
-- cluster registration/edit owns per-cluster policy, dedicated kubeconfig replacement/revocation, and prerequisite attestations.
+- cluster registration owns the single kubeconfig identity; cluster registration/edit owns per-cluster Reveal policy and prerequisite attestations.
 
 Replace Secret Data remains the preferred update path when the operator already knows the intended replacement value. Protected Reveal is an exceptional read path, not a convenience default.

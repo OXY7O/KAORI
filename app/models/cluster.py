@@ -52,8 +52,6 @@ class Cluster(db.Model):
         default='disabled',
     )
 
-    secret_reveal_kubeconfig: Mapped[str | None] = mapped_column(Text, nullable=True)
-
     secret_reveal_encryption_verified: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,

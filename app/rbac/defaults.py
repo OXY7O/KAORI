@@ -12,7 +12,7 @@ DEFAULT_PERMISSIONS = [
     ('kubernetes_secrets.replace', 'k8s_operations', 'replace_secret_data', 'Replace selected data keys in existing non-TLS Kubernetes Secrets without reading current values.'),
     ('kubernetes_secrets.reveal', 'k8s_operations', 'reveal_secret_value', 'Request and perform protected one-time reveal of an approved Kubernetes Secret key.'),
     ('kubernetes_secrets.approve_reveal', 'k8s_operations', 'approve_secret_reveal', 'Approve or deny protected Kubernetes Secret reveal requests from another user.'),
-    ('kubernetes_secrets.manage_reveal', 'k8s_operations', 'manage_secret_reveal', 'Configure per-cluster Protected Secret Reveal policy, prerequisites, and dedicated kubeconfig.'),
+    ('kubernetes_secrets.manage_reveal', 'k8s_operations', 'manage_secret_reveal', 'Configure per-cluster Protected Secret Reveal policy and security prerequisites.'),
     ('kubernetes_secrets.rotate_tls', 'k8s_operations', 'rotate_tls_secret', 'Validate and rotate an existing Kubernetes TLS Secret.'),
     ('kubernetes_secrets.bulk_rotate_tls', 'k8s_operations', 'bulk_rotate_tls_secret', 'Validate and rotate multiple Kubernetes TLS Secrets.'),
     ('analytics.view', 'k8s_analytics', 'view', 'View Kubernetes analytics, capacity, trend, and alert pages.'),

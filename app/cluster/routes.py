@@ -610,12 +610,6 @@ def add_cluster() -> ResponseReturnValue:
             assert form.environment.data is not None
             assert form.kubeconfig.data is not None
 
-            reveal_kubeconfig = None
-            if can_manage_secret_reveal:
-                reveal_file = form.secret_reveal_kubeconfig.data
-                if reveal_file is not None and getattr(reveal_file, 'filename', ''):
-                    reveal_kubeconfig = reveal_file.read().decode('utf-8')
-
             cluster = create_cluster(
                 name=form.name.data,
                 environment=form.environment.data,
@@ -632,7 +626,6 @@ def add_cluster() -> ResponseReturnValue:
                     if can_manage_secret_reveal
                     else 'disabled'
                 ),
-                secret_reveal_kubeconfig=reveal_kubeconfig,
                 secret_reveal_encryption_verified=(
                     bool(form.secret_reveal_encryption_verified.data)
                     if can_manage_secret_reveal
@@ -661,7 +654,7 @@ def add_cluster() -> ResponseReturnValue:
                     'environment': cluster.environment,
                     'server': cluster.server,
                     'secret_reveal_policy': cluster.secret_reveal_policy,
-                    'secret_reveal_credential_configured': bool(cluster.secret_reveal_kubeconfig),
+                    'secret_reveal_uses_cluster_kubeconfig': cluster.secret_reveal_policy != 'disabled',
                 },
                 queue_feedback=True,
             )
@@ -855,12 +848,6 @@ def edit_cluster(cluster_id: str) -> ResponseReturnValue:
             previous_name = cluster.name
             previous_environment = cluster.environment
             previous_reveal_policy = cluster.secret_reveal_policy
-            reveal_kubeconfig = None
-            if can_manage_secret_reveal:
-                reveal_file = form.secret_reveal_kubeconfig.data
-                if reveal_file is not None and getattr(reveal_file, 'filename', ''):
-                    reveal_kubeconfig = reveal_file.read().decode('utf-8')
-
             update_cluster(
                 cluster=cluster,
                 name=name,
@@ -877,7 +864,6 @@ def edit_cluster(cluster_id: str) -> ResponseReturnValue:
                     if can_manage_secret_reveal
                     else cluster.secret_reveal_policy
                 ),
-                secret_reveal_kubeconfig=reveal_kubeconfig,
                 secret_reveal_encryption_verified=(
                     bool(form.secret_reveal_encryption_verified.data)
                     if can_manage_secret_reveal
@@ -888,11 +874,6 @@ def edit_cluster(cluster_id: str) -> ResponseReturnValue:
                     if can_manage_secret_reveal
                     else cluster.secret_reveal_audit_verified
                 ),
-                remove_secret_reveal_kubeconfig=(
-                    bool(form.secret_reveal_remove_kubeconfig.data)
-                    if can_manage_secret_reveal
-                    else False
-                ),
             )
 
             record_operational_activity(
@@ -901,7 +882,7 @@ def edit_cluster(cluster_id: str) -> ResponseReturnValue:
                 status='success',
                 title='Cluster updated',
                 message=f'{cluster.name} configuration was updated successfully.',
-                detail='Cluster identity, Kubernetes API TLS settings, and Protected Secret Reveal controls now use the saved values.',
+                detail='Cluster identity, Kubernetes API TLS settings, and Protected Secret Reveal controls now use the saved values and the cluster kubeconfig identity.',
                 action_url=url_for('cluster.list_clusters'),
                 action_label='View clusters',
                 action_icon='server',
@@ -915,7 +896,7 @@ def edit_cluster(cluster_id: str) -> ResponseReturnValue:
                     'allow_weak_tls': cluster.kube_allow_weak_tls,
                     'secret_reveal_policy': cluster.secret_reveal_policy,
                     'previous_secret_reveal_policy': previous_reveal_policy,
-                    'secret_reveal_credential_configured': bool(cluster.secret_reveal_kubeconfig),
+                    'secret_reveal_uses_cluster_kubeconfig': cluster.secret_reveal_policy != 'disabled',
                     'secret_reveal_encryption_verified': cluster.secret_reveal_encryption_verified,
                     'secret_reveal_audit_verified': cluster.secret_reveal_audit_verified,
                 },

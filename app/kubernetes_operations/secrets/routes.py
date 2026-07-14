@@ -556,18 +556,25 @@ def reveal_secret_page():
         getattr(selected_target, 'namespace', request.args.get('namespace')),
         getattr(selected_target, 'id', selected_inventory_id),
     )
-    return render_template(
-        'kubernetes_operations/secrets/reveal.html',
-        selected_inventory_id=selected_inventory_id,
-        step_up_active=_secret_reveal_step_up_active(),
-        can_reveal=current_user.has_permission('kubernetes_secrets.reveal'),
-        can_approve=current_user.has_permission('kubernetes_secrets.approve_reveal'),
-        **target_context,
-        **workspace_context,
+    can_reveal = current_user.has_permission('kubernetes_secrets.reveal')
+    can_approve = current_user.has_permission('kubernetes_secrets.approve_reveal')
+    selected_cluster = target_context.get('selected_cluster') or workspace_context.get('selected_cluster')
+    page_context = {
         **get_reveal_page_context(
             user_id=current_user.id,
-            can_approve=current_user.has_permission('kubernetes_secrets.approve_reveal'),
+            can_approve=can_approve,
         ),
+        **workspace_context,
+        **target_context,
+        'selected_inventory_id': selected_inventory_id,
+        'selected_cluster': selected_cluster,
+        'step_up_active': _secret_reveal_step_up_active(),
+        'can_reveal': can_reveal,
+        'can_approve': can_approve,
+    }
+    return render_template(
+        'kubernetes_operations/secrets/reveal.html',
+        **page_context,
     )
 
 

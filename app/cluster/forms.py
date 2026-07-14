@@ -66,11 +66,6 @@ class ClusterCreateForm(FlaskForm):
         validators=[DataRequired()],
     )
 
-    secret_reveal_kubeconfig = FileField(
-        'Dedicated Secret Reveal Kubeconfig',
-        validators=[Optional()],
-    )
-
     secret_reveal_encryption_verified = BooleanField(
         'Kubernetes Secret encryption at rest verified',
         default=False,
@@ -128,11 +123,6 @@ class ClusterEditForm(FlaskForm):
         validators=[DataRequired()],
     )
 
-    secret_reveal_kubeconfig = FileField(
-        'Dedicated Secret Reveal Kubeconfig',
-        validators=[Optional()],
-    )
-
     secret_reveal_encryption_verified = BooleanField(
         'Kubernetes Secret encryption at rest verified',
         default=False,
@@ -140,10 +130,5 @@ class ClusterEditForm(FlaskForm):
 
     secret_reveal_audit_verified = BooleanField(
         'Kubernetes audit logging at Metadata level verified',
-        default=False,
-    )
-
-    secret_reveal_remove_kubeconfig = BooleanField(
-        'Remove dedicated Secret Reveal kubeconfig',
         default=False,
     )
