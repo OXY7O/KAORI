@@ -85,6 +85,7 @@
                                 <div class="min-w-0">
                                     <div class="truncate font-semibold text-slate-900 dark:text-white">{{ cluster.name }}</div>
                                     <div class="mt-1 max-w-md truncate text-xs text-slate-500 dark:text-slate-400">{{ cluster.server or '-' }}</div>
+                                    <span class="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold {% if cluster.secret_reveal_policy == 'approval_required' %}bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300{% elif cluster.secret_reveal_policy == 'step_up' %}bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300{% else %}bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-300{% endif %}"><i data-lucide="shield-keyhole" class="h-3 w-3"></i>Reveal {{ cluster.secret_reveal_policy|replace('_', ' ')|title }}</span>
                                     {% if cluster.kube_allow_weak_tls or not cluster.kube_verify_ssl %}
                                         <div class="mt-2 flex flex-wrap items-center gap-1.5">
                                             {% if cluster.kube_allow_weak_tls %}

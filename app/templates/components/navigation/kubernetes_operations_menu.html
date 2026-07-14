@@ -1,5 +1,4 @@
 {% set operations_active = request.endpoint and request.endpoint.startswith('kubernetes_operations.') %}
-{% set secret_management_active = operations_active %}
 <details class="sidebar-menu space-y-1" {% if operations_active %}open{% endif %}>
     <summary class="{{ 'bg-blue-600/15 text-blue-300 ring-1 ring-blue-500/20' if operations_active else 'text-slate-300 hover:bg-slate-900 hover:text-white' }} sidebar-parent-link group flex cursor-pointer select-none items-center justify-between rounded-2xl px-3 py-3 text-[13px] leading-5 font-semibold">
         <div class="flex min-w-0 items-center gap-3">
@@ -9,9 +8,22 @@
         <i data-lucide="chevron-right" class="sidebar-expanded-only sidebar-menu-chevron h-4 w-4 {{ 'text-blue-300' if operations_active else 'text-slate-500' }}"></i>
     </summary>
     <div class="sidebar-expanded-only sidebar-submenu ml-7 mt-1 space-y-1 border-l border-slate-800 pl-4">
-        <a href="{{ url_for('kubernetes_operations.secret_management') }}" class="{{ 'bg-slate-900 text-blue-300' if secret_management_active else 'text-slate-400 hover:bg-slate-900 hover:text-white' }} group flex items-center gap-2 rounded-xl px-3 py-2 text-[12px] leading-4 transition">
-            <span class="h-1.5 w-1.5 rounded-full {{ 'bg-blue-400' if secret_management_active else 'bg-slate-700 group-hover:bg-slate-500' }}"></span>
-            <i data-lucide="key-round" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">Secret Management</span>
-        </a>
+        {% if current_user.has_permission('kubernetes_secrets.view') %}
+        <a href="{{ url_for('kubernetes_operations.secret_management') }}" class="{{ 'bg-slate-900 text-blue-300' if request.endpoint == 'kubernetes_operations.secret_management' else 'text-slate-400 hover:bg-slate-900 hover:text-white' }} group flex items-center gap-2 rounded-xl px-3 py-2 text-[12px] leading-4 transition"><span class="h-1.5 w-1.5 rounded-full {{ 'bg-blue-400' if request.endpoint == 'kubernetes_operations.secret_management' else 'bg-slate-700 group-hover:bg-slate-500' }}"></span><i data-lucide="key-round" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">Secret Management</span></a>
+        {% endif %}
+        {% if current_user.has_permission('kubernetes_secrets.create') %}
+        <a href="{{ url_for('kubernetes_operations.create_secret') }}" class="{{ 'bg-slate-900 text-blue-300' if request.endpoint == 'kubernetes_operations.create_secret' else 'text-slate-400 hover:bg-slate-900 hover:text-white' }} group flex items-center gap-2 rounded-xl px-3 py-2 text-[12px] leading-4 transition"><span class="h-1.5 w-1.5 rounded-full {{ 'bg-blue-400' if request.endpoint == 'kubernetes_operations.create_secret' else 'bg-slate-700 group-hover:bg-slate-500' }}"></span><i data-lucide="file-plus-2" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">Create Secret</span></a>
+        {% endif %}
+        {% if current_user.has_permission('kubernetes_secrets.replace') %}
+        <a href="{{ url_for('kubernetes_operations.replace_secret') }}" class="{{ 'bg-slate-900 text-blue-300' if request.endpoint and request.endpoint.startswith('kubernetes_operations.replace_secret') else 'text-slate-400 hover:bg-slate-900 hover:text-white' }} group flex items-center gap-2 rounded-xl px-3 py-2 text-[12px] leading-4 transition"><span class="h-1.5 w-1.5 rounded-full {{ 'bg-blue-400' if request.endpoint and request.endpoint.startswith('kubernetes_operations.replace_secret') else 'bg-slate-700 group-hover:bg-slate-500' }}"></span><i data-lucide="replace" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">Replace Secret Data</span></a>
+        {% endif %}
+        {% if current_user.has_permission('kubernetes_secrets.reveal') or current_user.has_permission('kubernetes_secrets.approve_reveal') %}
+        <a href="{{ url_for('kubernetes_operations.reveal_secret') }}" class="{{ 'bg-slate-900 text-blue-300' if request.endpoint and 'reveal_secret' in request.endpoint else 'text-slate-400 hover:bg-slate-900 hover:text-white' }} group flex items-center gap-2 rounded-xl px-3 py-2 text-[12px] leading-4 transition"><span class="h-1.5 w-1.5 rounded-full {{ 'bg-blue-400' if request.endpoint and 'reveal_secret' in request.endpoint else 'bg-slate-700 group-hover:bg-slate-500' }}"></span><i data-lucide="shield-keyhole" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">Protected Reveal</span></a>
+        {% endif %}
+        {% if current_user.has_permission('kubernetes_secrets.bulk_rotate_tls') %}
+        <a href="{{ url_for('kubernetes_operations.tls_secret_bulk_rotation') }}" class="{{ 'bg-slate-900 text-blue-300' if request.endpoint and 'tls_secret' in request.endpoint else 'text-slate-400 hover:bg-slate-900 hover:text-white' }} group flex items-center gap-2 rounded-xl px-3 py-2 text-[12px] leading-4 transition"><span class="h-1.5 w-1.5 rounded-full {{ 'bg-blue-400' if request.endpoint and 'tls_secret' in request.endpoint else 'bg-slate-700 group-hover:bg-slate-500' }}"></span><i data-lucide="rotate-cw" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">TLS Rotation</span></a>
+        {% elif current_user.has_permission('kubernetes_secrets.rotate_tls') %}
+        <a href="{{ url_for('governance.tls_certificates') }}" class="{{ 'bg-slate-900 text-blue-300' if request.endpoint and 'tls_certificates' in request.endpoint else 'text-slate-400 hover:bg-slate-900 hover:text-white' }} group flex items-center gap-2 rounded-xl px-3 py-2 text-[12px] leading-4 transition"><span class="h-1.5 w-1.5 rounded-full {{ 'bg-blue-400' if request.endpoint and 'tls_certificates' in request.endpoint else 'bg-slate-700 group-hover:bg-slate-500' }}"></span><i data-lucide="rotate-cw" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">TLS Rotation</span></a>
+        {% endif %}
     </div>
 </details>

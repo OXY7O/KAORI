@@ -8,6 +8,13 @@ from app.kubernetes_operations.secrets.routes import (
     replace_secret,
     replace_secret_content,
     replace_secret_workspace,
+    reauthenticate_secret_reveal,
+    request_secret_reveal,
+    reveal_secret_content,
+    reveal_secret_page,
+    reveal_secret_value,
+    reveal_secret_workspace,
+    decide_secret_reveal_request,
     secret_management_index,
     secret_namespace_options,
     tls_secret_bulk_rotation_apply,
@@ -83,6 +90,56 @@ kubernetes_operations_bp.add_url_rule(
     endpoint='replace_secret_content',
     view_func=replace_secret_content,
     methods=['GET'],
+)
+
+
+kubernetes_operations_bp.add_url_rule(
+    '/secrets/reveal',
+    endpoint='reveal_secret',
+    view_func=reveal_secret_page,
+    methods=['GET'],
+)
+
+kubernetes_operations_bp.add_url_rule(
+    '/secrets/reveal/workspace',
+    endpoint='reveal_secret_workspace',
+    view_func=reveal_secret_workspace,
+    methods=['GET'],
+)
+
+kubernetes_operations_bp.add_url_rule(
+    '/secrets/reveal/content',
+    endpoint='reveal_secret_content',
+    view_func=reveal_secret_content,
+    methods=['GET'],
+)
+
+kubernetes_operations_bp.add_url_rule(
+    '/secrets/reveal/request',
+    endpoint='request_secret_reveal',
+    view_func=request_secret_reveal,
+    methods=['POST'],
+)
+
+kubernetes_operations_bp.add_url_rule(
+    '/secrets/reveal/reauthenticate',
+    endpoint='reauthenticate_secret_reveal',
+    view_func=reauthenticate_secret_reveal,
+    methods=['POST'],
+)
+
+kubernetes_operations_bp.add_url_rule(
+    '/secrets/reveal/requests/<string:request_id>/decision',
+    endpoint='decide_secret_reveal_request',
+    view_func=decide_secret_reveal_request,
+    methods=['POST'],
+)
+
+kubernetes_operations_bp.add_url_rule(
+    '/secrets/reveal/requests/<string:request_id>/value',
+    endpoint='reveal_secret_value',
+    view_func=reveal_secret_value,
+    methods=['POST'],
 )
 
 

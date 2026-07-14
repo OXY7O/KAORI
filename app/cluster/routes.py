@@ -569,6 +569,9 @@ def _get_cluster_or_404(cluster_id: str) -> Cluster:
 @permission_required('clusters.manage')
 def add_cluster() -> ResponseReturnValue:
     form = ClusterCreateForm()
+    can_manage_secret_reveal = current_user.has_permission(
+        'kubernetes_secrets.manage_reveal'
+    )
 
     if form.validate_on_submit():
         kube_file = form.kubeconfig.data
@@ -595,6 +598,7 @@ def add_cluster() -> ResponseReturnValue:
             return render_template(
                 'cluster/add.html',
                 form=form,
+                can_manage_secret_reveal=can_manage_secret_reveal,
             )
 
         try:
@@ -606,6 +610,12 @@ def add_cluster() -> ResponseReturnValue:
             assert form.environment.data is not None
             assert form.kubeconfig.data is not None
 
+            reveal_kubeconfig = None
+            if can_manage_secret_reveal:
+                reveal_file = form.secret_reveal_kubeconfig.data
+                if reveal_file is not None and getattr(reveal_file, 'filename', ''):
+                    reveal_kubeconfig = reveal_file.read().decode('utf-8')
+
             cluster = create_cluster(
                 name=form.name.data,
                 environment=form.environment.data,
@@ -616,6 +626,22 @@ def add_cluster() -> ResponseReturnValue:
                 ),
                 kube_allow_weak_tls=bool(
                     form.kube_allow_weak_tls.data,
+                ),
+                secret_reveal_policy=(
+                    form.secret_reveal_policy.data or 'disabled'
+                    if can_manage_secret_reveal
+                    else 'disabled'
+                ),
+                secret_reveal_kubeconfig=reveal_kubeconfig,
+                secret_reveal_encryption_verified=(
+                    bool(form.secret_reveal_encryption_verified.data)
+                    if can_manage_secret_reveal
+                    else False
+                ),
+                secret_reveal_audit_verified=(
+                    bool(form.secret_reveal_audit_verified.data)
+                    if can_manage_secret_reveal
+                    else False
                 ),
             )
 
@@ -634,6 +660,8 @@ def add_cluster() -> ResponseReturnValue:
                     'cluster_name': cluster.name,
                     'environment': cluster.environment,
                     'server': cluster.server,
+                    'secret_reveal_policy': cluster.secret_reveal_policy,
+                    'secret_reveal_credential_configured': bool(cluster.secret_reveal_kubeconfig),
                 },
                 queue_feedback=True,
             )
@@ -707,6 +735,7 @@ def add_cluster() -> ResponseReturnValue:
     return render_template(
         'cluster/add.html',
         form=form,
+        can_manage_secret_reveal=can_manage_secret_reveal,
     )
 
 
@@ -811,6 +840,9 @@ def edit_cluster(cluster_id: str) -> ResponseReturnValue:
     form = ClusterEditForm(
         obj=cluster,
     )
+    can_manage_secret_reveal = current_user.has_permission(
+        'kubernetes_secrets.manage_reveal'
+    )
 
     if form.validate_on_submit():
         name = form.name.data
@@ -822,6 +854,13 @@ def edit_cluster(cluster_id: str) -> ResponseReturnValue:
         try:
             previous_name = cluster.name
             previous_environment = cluster.environment
+            previous_reveal_policy = cluster.secret_reveal_policy
+            reveal_kubeconfig = None
+            if can_manage_secret_reveal:
+                reveal_file = form.secret_reveal_kubeconfig.data
+                if reveal_file is not None and getattr(reveal_file, 'filename', ''):
+                    reveal_kubeconfig = reveal_file.read().decode('utf-8')
+
             update_cluster(
                 cluster=cluster,
                 name=name,
@@ -833,6 +872,27 @@ def edit_cluster(cluster_id: str) -> ResponseReturnValue:
                 kube_allow_weak_tls=bool(
                     form.kube_allow_weak_tls.data,
                 ),
+                secret_reveal_policy=(
+                    form.secret_reveal_policy.data or 'disabled'
+                    if can_manage_secret_reveal
+                    else cluster.secret_reveal_policy
+                ),
+                secret_reveal_kubeconfig=reveal_kubeconfig,
+                secret_reveal_encryption_verified=(
+                    bool(form.secret_reveal_encryption_verified.data)
+                    if can_manage_secret_reveal
+                    else cluster.secret_reveal_encryption_verified
+                ),
+                secret_reveal_audit_verified=(
+                    bool(form.secret_reveal_audit_verified.data)
+                    if can_manage_secret_reveal
+                    else cluster.secret_reveal_audit_verified
+                ),
+                remove_secret_reveal_kubeconfig=(
+                    bool(form.secret_reveal_remove_kubeconfig.data)
+                    if can_manage_secret_reveal
+                    else False
+                ),
             )
 
             record_operational_activity(
@@ -841,7 +901,7 @@ def edit_cluster(cluster_id: str) -> ResponseReturnValue:
                 status='success',
                 title='Cluster updated',
                 message=f'{cluster.name} configuration was updated successfully.',
-                detail='Cluster identity, environment, description, and Kubernetes API TLS settings now use the saved values.',
+                detail='Cluster identity, Kubernetes API TLS settings, and Protected Secret Reveal controls now use the saved values.',
                 action_url=url_for('cluster.list_clusters'),
                 action_label='View clusters',
                 action_icon='server',
@@ -853,6 +913,11 @@ def edit_cluster(cluster_id: str) -> ResponseReturnValue:
                     'previous_environment': previous_environment,
                     'verify_ssl': cluster.kube_verify_ssl,
                     'allow_weak_tls': cluster.kube_allow_weak_tls,
+                    'secret_reveal_policy': cluster.secret_reveal_policy,
+                    'previous_secret_reveal_policy': previous_reveal_policy,
+                    'secret_reveal_credential_configured': bool(cluster.secret_reveal_kubeconfig),
+                    'secret_reveal_encryption_verified': cluster.secret_reveal_encryption_verified,
+                    'secret_reveal_audit_verified': cluster.secret_reveal_audit_verified,
                 },
                 queue_feedback=True,
             )
@@ -931,6 +996,7 @@ def edit_cluster(cluster_id: str) -> ResponseReturnValue:
         'cluster/edit.html',
         form=form,
         cluster=cluster,
+        can_manage_secret_reveal=can_manage_secret_reveal,
     )
 
 

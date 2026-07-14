@@ -1,5 +1,4 @@
-<form method="POST"
-      {% if form_mode == 'add' %}enctype="multipart/form-data"{% endif %}>
+<form method="POST" enctype="multipart/form-data">
     {{ form.hidden_tag() }}
     <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
         <!-- Section Header -->
@@ -76,6 +75,25 @@
                     </div>
                 </div>
             </div>
+            {% if can_manage_secret_reveal %}
+            <div class="overflow-hidden rounded-2xl border border-blue-200 bg-blue-50/60 dark:border-blue-500/20 dark:bg-blue-500/10">
+                <div class="flex items-start gap-3 border-b border-blue-200 px-4 py-4 dark:border-blue-500/20">
+                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white"><i data-lucide="shield-keyhole" class="h-5 w-5"></i></div>
+                    <div><h3 class="text-sm font-semibold text-blue-950 dark:text-blue-100">Protected Secret Reveal</h3><p class="mt-1 text-xs leading-5 text-blue-700 dark:text-blue-200">Default-deny read access using a separate least-privilege Kubernetes credential.</p></div>
+                </div>
+                <div class="space-y-4 p-4">
+                    <label class="block"><span class="text-sm font-medium text-slate-700 dark:text-slate-200">Reveal policy</span>{{ form.secret_reveal_policy(class="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 transition focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:ring-blue-900/30") }}<span class="mt-1.5 block text-xs text-slate-500 dark:text-slate-400">Approval required is recommended for production clusters.</span></label>
+                    <label class="block"><span class="text-sm font-medium text-slate-700 dark:text-slate-200">Dedicated reveal kubeconfig</span><div class="mt-2 rounded-xl border border-dashed border-blue-300 bg-white/70 p-4 dark:border-blue-500/30 dark:bg-slate-900/50">{{ form.secret_reveal_kubeconfig(class="w-full text-sm text-slate-700 dark:text-slate-200") }}<p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Must target the same API server and should grant namespace-scoped Secret <strong>get</strong> only. Leave empty while editing to retain the current credential.</p></div></label>
+                    <div class="grid gap-3 lg:grid-cols-2">
+                        <label class="flex items-start gap-3 rounded-xl border border-blue-200 bg-white/70 p-3 dark:border-blue-500/20 dark:bg-slate-900/40">{{ form.secret_reveal_encryption_verified(class="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500") }}<span><span class="block text-sm font-medium text-slate-700 dark:text-slate-200">Encryption at rest verified</span><span class="block text-xs text-slate-500 dark:text-slate-400">Kubernetes Secret encryption is enabled and reviewed.</span></span></label>
+                        <label class="flex items-start gap-3 rounded-xl border border-blue-200 bg-white/70 p-3 dark:border-blue-500/20 dark:bg-slate-900/40">{{ form.secret_reveal_audit_verified(class="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500") }}<span><span class="block text-sm font-medium text-slate-700 dark:text-slate-200">Metadata audit verified</span><span class="block text-xs text-slate-500 dark:text-slate-400">Secret reads are audited without Request/Response bodies.</span></span></label>
+                    </div>
+                    {% if form_mode == 'edit' %}
+                    <label class="flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50/70 p-3 dark:border-rose-500/20 dark:bg-rose-500/10">{{ form.secret_reveal_remove_kubeconfig(class="mt-1 h-4 w-4 rounded border-slate-300 text-rose-600 focus:ring-rose-500") }}<span><span class="block text-sm font-semibold text-rose-800 dark:text-rose-200">Revoke dedicated reveal credential</span><span class="block text-xs text-rose-700 dark:text-rose-300">Removal is allowed only when the reveal policy is set to Disabled.</span></span></label>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
             {% if form_mode == 'add' %}
                 <div>
                     <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">Kubeconfig</label>

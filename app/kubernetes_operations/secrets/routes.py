@@ -2,10 +2,13 @@ from __future__ import annotations
 
 from typing import Any
 
-from flask import current_app, flash, redirect, render_template, request, url_for
+from datetime import UTC, datetime
+
+from flask import current_app, flash, make_response, redirect, render_template, request, session, url_for
 from flask_login import current_user
 
 from app.cluster.onboarding import has_registered_clusters
+from app.extensions import limiter
 from app.kubernetes_operations.secrets.create_service import (
     execute_secret_operation,
     get_cluster_namespace_options,
@@ -17,6 +20,15 @@ from app.kubernetes_operations.secrets.replace_service import (
     get_replace_workspace,
     get_secret_replace_context,
 )
+from app.kubernetes_operations.secrets.reveal_service import (
+    create_reveal_request,
+    decide_reveal_request,
+    get_reveal_page_context,
+    get_reveal_request_for_user,
+    get_reveal_target_context,
+    get_reveal_workspace,
+    reveal_secret_value as execute_secret_value_reveal,
+)
 from app.kubernetes_operations.secrets.service import (
     apply_bulk_update,
     apply_certificate_update,
@@ -26,10 +38,11 @@ from app.kubernetes_operations.secrets.service import (
     preview_uploaded_pair,
 )
 from app.notifications.service import (
+    create_notification,
     get_navigation_notification_context,
     record_operational_activity,
 )
-from app.rbac.decorators import permission_required
+from app.rbac.decorators import any_permission_required, permission_required
 
 
 def _parse_certificate_ids(values: list[str]) -> list[int]:
@@ -470,6 +483,395 @@ def replace_secret():
         **workspace_context,
         **get_secret_replace_context(),
     )
+
+
+_SECRET_REVEAL_STEP_UP_SESSION_KEY = 'kubernetes_secret_reveal_step_up'
+
+
+def _client_ip() -> str | None:
+    forwarded_for = request.headers.get('X-Forwarded-For')
+    if forwarded_for:
+        return forwarded_for.split(',')[0].strip() or None
+    return request.remote_addr
+
+
+def _secret_reveal_step_up_active() -> bool:
+    payload = session.get(_SECRET_REVEAL_STEP_UP_SESSION_KEY)
+    if not isinstance(payload, dict):
+        return False
+    if str(payload.get('user_id')) != str(current_user.id):
+        return False
+    authenticated_at_raw = payload.get('authenticated_at')
+    if not isinstance(authenticated_at_raw, str):
+        return False
+    try:
+        authenticated_at = datetime.fromisoformat(authenticated_at_raw)
+    except ValueError:
+        return False
+    if authenticated_at.tzinfo is None:
+        authenticated_at = authenticated_at.replace(tzinfo=UTC)
+    ttl_seconds = int(
+        current_app.config.get('KUBERNETES_SECRET_REVEAL_STEP_UP_TTL_SECONDS', 300)
+    )
+    return (datetime.now(UTC) - authenticated_at).total_seconds() <= ttl_seconds
+
+
+def _mark_secret_reveal_step_up() -> None:
+    session[_SECRET_REVEAL_STEP_UP_SESSION_KEY] = {
+        'user_id': current_user.id,
+        'authenticated_at': datetime.now(UTC).isoformat(),
+    }
+    session.modified = True
+
+
+def _reveal_request_metadata(record: Any) -> dict[str, Any]:
+    cluster = getattr(record, 'cluster', None)
+    return {
+        'reveal_request_id': getattr(record, 'id', None),
+        'configuration_inventory_id': getattr(record, 'configuration_inventory_id', None),
+        'cluster_id': getattr(record, 'cluster_id', None),
+        'cluster_name': getattr(cluster, 'name', None),
+        'namespace': getattr(record, 'namespace', None),
+        'secret_name': getattr(record, 'secret_name', None),
+        'secret_type': getattr(record, 'secret_type', None),
+        'key_name': getattr(record, 'key_name', None),
+        'policy': getattr(record, 'policy', None),
+        'ticket_reference': getattr(record, 'ticket_reference', None),
+        'reason': getattr(record, 'reason', None),
+        'requester_user_id': getattr(record, 'requester_user_id', None),
+        'approver_user_id': getattr(record, 'approver_user_id', None),
+        'request_status': getattr(record, 'status', None),
+        'secret_value_recorded': False,
+        'secret_value_hash_recorded': False,
+    }
+
+
+@any_permission_required('kubernetes_secrets.reveal', 'kubernetes_secrets.approve_reveal')
+def reveal_secret_page():
+    selected_inventory_id = request.args.get('inventory_id', '')
+    target_context = get_reveal_target_context(selected_inventory_id)
+    selected_target = target_context.get('target')
+    workspace_context = get_reveal_workspace(
+        getattr(selected_target, 'cluster_id', request.args.get('cluster_id')),
+        getattr(selected_target, 'namespace', request.args.get('namespace')),
+        getattr(selected_target, 'id', selected_inventory_id),
+    )
+    return render_template(
+        'kubernetes_operations/secrets/reveal.html',
+        selected_inventory_id=selected_inventory_id,
+        step_up_active=_secret_reveal_step_up_active(),
+        can_reveal=current_user.has_permission('kubernetes_secrets.reveal'),
+        can_approve=current_user.has_permission('kubernetes_secrets.approve_reveal'),
+        **target_context,
+        **workspace_context,
+        **get_reveal_page_context(
+            user_id=current_user.id,
+            can_approve=current_user.has_permission('kubernetes_secrets.approve_reveal'),
+        ),
+    )
+
+
+@permission_required('kubernetes_secrets.reveal')
+def reveal_secret_workspace():
+    return render_template(
+        'kubernetes_operations/secrets/_reveal_target_workspace.html',
+        **get_reveal_workspace(
+            request.args.get('cluster_id'),
+            request.args.get('namespace'),
+            request.args.get('inventory_id'),
+        ),
+        reset_content=True,
+    )
+
+
+@permission_required('kubernetes_secrets.reveal')
+def reveal_secret_content():
+    return render_template(
+        'kubernetes_operations/secrets/_reveal_request_form.html',
+        step_up_active=_secret_reveal_step_up_active(),
+        **get_reveal_target_context(request.args.get('inventory_id')),
+    )
+
+
+@permission_required('kubernetes_secrets.reveal')
+@limiter.limit(
+    lambda: current_app.config.get(
+        'KUBERNETES_SECRET_REVEAL_RATE_LIMIT',
+        '3 per 5 minutes',
+    ),
+    methods=['POST'],
+    key_func=lambda: f'user:{current_user.get_id()}',
+)
+def request_secret_reveal():
+    try:
+        result = create_reveal_request(
+            request.form,
+            requester_user_id=current_user.id,
+            requester_ip=_client_ip(),
+        )
+        _record_secret_activity(
+            event_type='kubernetes_secret_reveal_requested',
+            status=result.status,
+            title=result.title,
+            message=result.message,
+            action_url=url_for('kubernetes_operations.reveal_secret'),
+            action_label='Open Protected Secret Reveal',
+            metadata=result.metadata,
+            queue_feedback=True,
+        )
+        return redirect(url_for('kubernetes_operations.reveal_secret'))
+    except ValueError as exc:
+        _record_secret_activity(
+            event_type='kubernetes_secret_reveal_request_failed',
+            status='error',
+            title='Secret reveal request failed',
+            message=str(exc),
+            action_url=url_for('kubernetes_operations.reveal_secret'),
+            action_label='Review reveal request',
+            metadata={
+                'configuration_inventory_id': request.form.get('inventory_id'),
+                'cluster_id': request.form.get('cluster_id'),
+                'namespace': request.form.get('namespace'),
+                'key_name': request.form.get('key_name'),
+                'ticket_reference': request.form.get('ticket_reference'),
+                'secret_value_recorded': False,
+            },
+            queue_feedback=True,
+        )
+        return redirect(url_for('kubernetes_operations.reveal_secret'))
+    except Exception:
+        current_app.logger.exception('Unexpected protected Secret reveal request failure.')
+        _record_secret_activity(
+            event_type='kubernetes_secret_reveal_request_failed',
+            status='error',
+            title='Secret reveal request failed',
+            message='KAORI could not create the protected reveal request because of an internal error.',
+            action_url=url_for('kubernetes_operations.reveal_secret'),
+            action_label='Review reveal request',
+            metadata={
+                'configuration_inventory_id': request.form.get('inventory_id'),
+                'cluster_id': request.form.get('cluster_id'),
+                'namespace': request.form.get('namespace'),
+                'key_name': request.form.get('key_name'),
+                'secret_value_recorded': False,
+            },
+            queue_feedback=True,
+        )
+        return redirect(url_for('kubernetes_operations.reveal_secret'))
+
+
+@permission_required('kubernetes_secrets.reveal')
+@limiter.limit(
+    '5 per 5 minutes',
+    methods=['POST'],
+    key_func=lambda: f'user:{current_user.get_id()}',
+)
+def reauthenticate_secret_reveal():
+    password = request.form.get('password') or ''
+    if current_user.is_external:
+        feedback = _record_secret_activity(
+            event_type='kubernetes_secret_reveal_reauthentication_failed',
+            status='error',
+            title='Reauthentication unavailable',
+            message='External authentication step-up is not available yet. Use a database-managed break-glass account.',
+            action_url=url_for('kubernetes_operations.reveal_secret'),
+            action_label='Open Protected Secret Reveal',
+            metadata={'auth_source': current_user.auth_source, 'secret_value_recorded': False},
+            queue_feedback=True,
+        )
+    elif not current_user.check_password(password):
+        feedback = _record_secret_activity(
+            event_type='kubernetes_secret_reveal_reauthentication_failed',
+            status='error',
+            title='Reauthentication failed',
+            message='The current account password is incorrect.',
+            action_url=url_for('kubernetes_operations.reveal_secret'),
+            action_label='Retry reauthentication',
+            metadata={'auth_source': current_user.auth_source, 'secret_value_recorded': False},
+            queue_feedback=True,
+        )
+    else:
+        _mark_secret_reveal_step_up()
+        feedback = _record_secret_activity(
+            event_type='kubernetes_secret_reveal_reauthenticated',
+            status='success',
+            title='Protected reveal session verified',
+            message='One-time Secret reveal actions are available for the configured short session window.',
+            action_url=url_for('kubernetes_operations.reveal_secret'),
+            action_label='Open Protected Secret Reveal',
+            metadata={
+                'auth_source': current_user.auth_source,
+                'step_up_ttl_seconds': current_app.config.get(
+                    'KUBERNETES_SECRET_REVEAL_STEP_UP_TTL_SECONDS', 300
+                ),
+                'secret_value_recorded': False,
+            },
+            queue_feedback=True,
+        )
+    return redirect(url_for('kubernetes_operations.reveal_secret'))
+
+
+@permission_required('kubernetes_secrets.approve_reveal')
+def decide_secret_reveal_request(request_id: str):
+    decision = (request.form.get('decision') or '').strip().lower()
+    try:
+        if decision not in {'approve', 'deny'}:
+            raise ValueError('Unsupported Secret reveal decision.')
+        record = decide_reveal_request(
+            request_id,
+            approver_user_id=current_user.id,
+            approve=decision == 'approve',
+            decision_note=request.form.get('decision_note'),
+        )
+        approved = decision == 'approve'
+        _record_secret_activity(
+            event_type=(
+                'kubernetes_secret_reveal_approved'
+                if approved
+                else 'kubernetes_secret_reveal_denied'
+            ),
+            status='success' if approved else 'warning',
+            title='Secret reveal request approved' if approved else 'Secret reveal request denied',
+            message=(
+                'The requestor can reauthenticate and perform the one-time reveal before expiry.'
+                if approved
+                else 'The protected Secret reveal request was denied.'
+            ),
+            action_url=url_for('kubernetes_operations.reveal_secret'),
+            action_label='Review reveal requests',
+            metadata=_reveal_request_metadata(record),
+            queue_feedback=True,
+        )
+        try:
+            create_notification(
+                user_id=record.requester_user_id,
+                event_type=(
+                    'kubernetes_secret_reveal_approved'
+                    if approved
+                    else 'kubernetes_secret_reveal_denied'
+                ),
+                status='success' if approved else 'warning',
+                title=(
+                    'Secret reveal request approved'
+                    if approved
+                    else 'Secret reveal request denied'
+                ),
+                message=(
+                    'Reauthenticate and use the one-time reveal action before the approved request expires.'
+                    if approved
+                    else 'Your protected Secret reveal request was denied.'
+                ),
+                action_url=url_for('kubernetes_operations.reveal_secret'),
+                metadata=_reveal_request_metadata(record),
+            )
+        except Exception:
+            # The authorization decision is already committed. Notification delivery
+            # must never roll back or misreport the saved approval/denial outcome.
+            current_app.logger.exception(
+                'Protected Secret reveal decision saved, but requester notification failed.'
+            )
+    except ValueError as exc:
+        _record_secret_activity(
+            event_type='kubernetes_secret_reveal_decision_failed',
+            status='error',
+            title='Secret reveal decision failed',
+            message=str(exc),
+            action_url=url_for('kubernetes_operations.reveal_secret'),
+            action_label='Review reveal requests',
+            metadata={
+                'reveal_request_id': request_id,
+                'decision': decision,
+                'secret_value_recorded': False,
+            },
+            queue_feedback=True,
+        )
+    except Exception:
+        current_app.logger.exception('Unexpected protected Secret reveal decision failure.')
+        _record_secret_activity(
+            event_type='kubernetes_secret_reveal_decision_failed',
+            status='error',
+            title='Secret reveal decision failed',
+            message='KAORI could not save the reveal decision because of an internal error.',
+            action_url=url_for('kubernetes_operations.reveal_secret'),
+            action_label='Review reveal requests',
+            metadata={
+                'reveal_request_id': request_id,
+                'decision': decision,
+                'secret_value_recorded': False,
+            },
+            queue_feedback=True,
+        )
+    return redirect(url_for('kubernetes_operations.reveal_secret'))
+
+
+@permission_required('kubernetes_secrets.reveal')
+@limiter.limit(
+    lambda: current_app.config.get(
+        'KUBERNETES_SECRET_REVEAL_RATE_LIMIT',
+        '3 per 5 minutes',
+    ),
+    methods=['POST'],
+    key_func=lambda: f'user:{current_user.get_id()}',
+)
+def reveal_secret_value(request_id: str):
+    feedback: dict[str, Any]
+    revealed_value = None
+    try:
+        if not _secret_reveal_step_up_active():
+            raise ValueError('Reauthenticate before performing a protected Secret reveal.')
+        result = execute_secret_value_reveal(request_id, user_id=current_user.id)
+        revealed_value = result
+        feedback = _record_secret_activity(
+            event_type='kubernetes_secret_revealed',
+            status='success',
+            title='Secret value revealed',
+            message=(
+                f'{result.key_name} was revealed once for '
+                f'{result.expires_in_seconds} seconds. The value was not stored by KAORI.'
+            ),
+            action_url=url_for('kubernetes_operations.reveal_secret'),
+            action_label='Open Protected Secret Reveal',
+            metadata=result.metadata,
+        )
+    except ValueError as exc:
+        try:
+            record = get_reveal_request_for_user(request_id, user_id=current_user.id)
+            metadata = _reveal_request_metadata(record)
+        except ValueError:
+            metadata = {'reveal_request_id': request_id, 'secret_value_recorded': False}
+        feedback = _record_secret_activity(
+            event_type='kubernetes_secret_reveal_failed',
+            status='error',
+            title='Secret reveal failed',
+            message=str(exc),
+            action_url=url_for('kubernetes_operations.reveal_secret'),
+            action_label='Review reveal request',
+            metadata=metadata,
+        )
+    except Exception:
+        current_app.logger.exception('Unexpected protected Secret reveal failure.')
+        feedback = _record_secret_activity(
+            event_type='kubernetes_secret_reveal_failed',
+            status='error',
+            title='Secret reveal failed',
+            message='KAORI could not complete the protected reveal because of an internal error.',
+            action_url=url_for('kubernetes_operations.reveal_secret'),
+            action_label='Review reveal request',
+            metadata={'reveal_request_id': request_id, 'secret_value_recorded': False},
+        )
+
+    response = make_response(
+        render_template(
+            'kubernetes_operations/secrets/_reveal_value.html',
+            revealed_value=revealed_value,
+            operation_feedback=_notification_response_context(feedback),
+        )
+    )
+    response.headers['Cache-Control'] = 'no-store, private, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    return response
 
 
 @permission_required('kubernetes_secrets.rotate_tls')

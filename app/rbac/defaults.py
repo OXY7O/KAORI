@@ -10,6 +10,9 @@ DEFAULT_PERMISSIONS = [
     ('kubernetes_secrets.view', 'k8s_operations', 'view_secret_management', 'View Kubernetes Secret Management operations.'),
     ('kubernetes_secrets.create', 'k8s_operations', 'create_secret', 'Create validated Kubernetes Secrets through guided workflows.'),
     ('kubernetes_secrets.replace', 'k8s_operations', 'replace_secret_data', 'Replace selected data keys in existing non-TLS Kubernetes Secrets without reading current values.'),
+    ('kubernetes_secrets.reveal', 'k8s_operations', 'reveal_secret_value', 'Request and perform protected one-time reveal of an approved Kubernetes Secret key.'),
+    ('kubernetes_secrets.approve_reveal', 'k8s_operations', 'approve_secret_reveal', 'Approve or deny protected Kubernetes Secret reveal requests from another user.'),
+    ('kubernetes_secrets.manage_reveal', 'k8s_operations', 'manage_secret_reveal', 'Configure per-cluster Protected Secret Reveal policy, prerequisites, and dedicated kubeconfig.'),
     ('kubernetes_secrets.rotate_tls', 'k8s_operations', 'rotate_tls_secret', 'Validate and rotate an existing Kubernetes TLS Secret.'),
     ('kubernetes_secrets.bulk_rotate_tls', 'k8s_operations', 'bulk_rotate_tls_secret', 'Validate and rotate multiple Kubernetes TLS Secrets.'),
     ('analytics.view', 'k8s_analytics', 'view', 'View Kubernetes analytics, capacity, trend, and alert pages.'),
@@ -133,7 +136,11 @@ DEFAULT_ROLE_PERMISSIONS = {
         'reports.manage_templates', 'reports.manage_schedules',
         'reports.manage_storage', 'settings.view', 'settings.manage_integrations',
     },
-    'admin': {permission[0] for permission in DEFAULT_PERMISSIONS},
+    'admin': {
+        permission[0]
+        for permission in DEFAULT_PERMISSIONS
+        if permission[0] != 'kubernetes_secrets.reveal'
+    },
     'auditor': {
         'welcome.view', 'dashboard.view', 'clusters.view', 'inventory.view',
         'analytics.view', 'governance.view', 'tls_certificates.view',

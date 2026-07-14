@@ -71,6 +71,7 @@ def logout():
     logout_user()
 
     session.pop('auth_source', None)
+    session.pop('kubernetes_secret_reveal_step_up', None)
     session.pop('_flashes', None)
 
     return redirect(url_for('auth.login'))

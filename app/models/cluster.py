@@ -46,6 +46,26 @@ class Cluster(db.Model):
         default=False,
     )
 
+    secret_reveal_policy: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default='disabled',
+    )
+
+    secret_reveal_kubeconfig: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    secret_reveal_encryption_verified: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+    )
+
+    secret_reveal_audit_verified: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+    )
+
     server: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     status: Mapped[str] = mapped_column(String(20), nullable=False, default=ClusterStatus.UNKNOWN.value)

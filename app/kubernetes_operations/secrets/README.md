@@ -8,6 +8,7 @@ This domain owns explicit live mutations of Kubernetes Secrets. Kubernetes Inven
 
 - guided Secret creation;
 - selected-key non-TLS Secret data replacement;
+- protected one-time Secret key reveal;
 - single TLS Secret rotation;
 - bulk TLS Secret rotation;
 - centralized validation, notification, and operational audit.
@@ -36,6 +37,9 @@ This domain owns explicit live mutations of Kubernetes Secrets. Kubernetes Inven
 - `kubernetes_secrets.view`
 - `kubernetes_secrets.create`
 - `kubernetes_secrets.replace`
+- `kubernetes_secrets.reveal`
+- `kubernetes_secrets.approve_reveal`
+- `kubernetes_secrets.manage_reveal`
 - `kubernetes_secrets.rotate_tls`
 - `kubernetes_secrets.bulk_rotate_tls`
 
@@ -44,6 +48,7 @@ This domain owns explicit live mutations of Kubernetes Secrets. Kubernetes Inven
 - `/kubernetes-operations/secrets` — domain landing page;
 - `/kubernetes-operations/secrets/create` — guided create workflow;
 - `/kubernetes-operations/secrets/replace` — selected-key non-TLS replacement workflow;
+- `/kubernetes-operations/secrets/reveal` — protected request, approval, reauthentication, and one-time reveal workflow;
 - `/kubernetes-operations/secrets/tls-rotation` — existing TLS rotation workflow.
 
 ## Shared layer
@@ -53,7 +58,7 @@ Reusable TLS parsing and certificate/private-key validation live in `app/kuberne
 ## Workflow boundaries
 
 - Secret creation and Secret data replacement are separate workflows.
-- Existing Secret values are never read back or displayed by KAORI.
+- Existing Secret values remain unread by Create and Replace. Protected Reveal is the only explicit read path and is isolated behind separate policy, credentials, permissions, reauthentication, and audit controls.
 - TLS uses a dedicated rotation workflow because certificate/private-key matching, SAN coverage, and Governance linkage require specialized validation.
 - Non-TLS replacement is an active controlled workflow for Opaque, Basic Auth, Registry, and SSH Secrets. Existing values remain unread and hidden; only submitted keys are patched.
 - ConfigMap operations belong to a separate `ConfigMap Management` operational domain. ConfigMap and Secret inventory may remain under Configuration Inventory while mutation workflows stay separate because their sensitivity and validation rules differ.
@@ -70,6 +75,7 @@ The workflow cards are:
 
 - **Create Secret** — active workflow for Opaque, Basic Auth, TLS, Registry, and SSH Secret creation;
 - **Replace Secret Data** — active selected-key patch workflow for supported mutable non-TLS Secrets;
+- **Protected Secret Reveal** — active default-deny one-key read workflow for explicitly authorized users and verified clusters;
 - **TLS Rotation** — active specialized workflow for existing TLS Secrets.
 
 Unavailable operations must never appear active. The Replace card is enabled only for users with `kubernetes_secrets.replace`; other users see a restricted action.
@@ -137,32 +143,104 @@ Implementation ownership:
 - `replace_payloads.py` owns type-specific input validation and construction of the selected-key patch payload;
 - route handlers own RBAC, toast/notification feedback, and operational activity recording.
 
-## Protected Secret Reveal recommendation
+## Protected Secret Reveal contract
 
-Protected Secret Reveal is a proposed future workflow and is not active. It must remain separate from Replace Secret Data because a Kubernetes `get` request returns the complete Secret object to the KAORI backend even when the interface intends to display only one selected key. The selected-key limit can reduce browser exposure, but it does not reduce the Kubernetes API credential's ability to read the entire Secret.
+Protected Secret Reveal is active as a separate security-sensitive workflow. It must never be merged into Replace Secret Data because Kubernetes `get Secret` returns the complete Secret object to the KAORI backend even when the browser receives only one selected key.
 
-Recommended control model:
+### Enablement gates
 
-1. Keep reveal disabled globally and per cluster by default. A cluster must explicitly enable the capability.
-2. Add a dedicated `kubernetes_secrets.reveal` permission. Do not grant it automatically to Admin, Editor, Operator, Viewer, or Auditor roles; assign it only through an explicit custom role or super-admin decision.
-3. Prefer a dedicated Kubernetes credential for reveal with namespace-scoped `RoleBinding` and the `get` verb only. Do not grant `list` or `watch` on Secrets. Application RBAC must not be the only protection layer.
-4. Require step-up authentication immediately before reveal. Local users re-enter their password; SSO users must complete IdP reauthentication or MFA when that capability is available. The elevated session should expire after five minutes.
-5. Require an operational reason and ticket/reference number. Production or sensitive clusters should support four-eyes approval with no self-approval.
-6. Reveal only one Secret key at a time, masked by default, for a short window such as 15 seconds. Values must never be placed in URLs, server-rendered flash messages, notifications, activity metadata, browser storage, caches, background jobs, or database columns.
-7. Serve reveal responses only through HTTPS POST requests with CSRF protection and `Cache-Control: no-store, private`, `Pragma: no-cache`, and `X-Content-Type-Options: nosniff`. The response fragment must be removed from the DOM after the reveal window.
-8. Do not preload, cache, or persist the Kubernetes response. Select the requested key in request memory, return only that value, and discard the complete Secret object immediately.
-9. Record `requested`, `approved`, `revealed`, `denied`, and optional `copied` activity events using safe metadata only: actor, approver, cluster, namespace, Secret name, key name, reason, ticket, timestamp, source IP, and outcome. Never record the value or its hash.
-10. Rate-limit reveal attempts and alert on repeated access, cross-namespace access, or access outside an approved window.
-11. Keep high-risk keys unavailable in the UI by default: service-account tokens, `tls.key`, and SSH private keys. TLS and SSH should continue to use rotation workflows and metadata/fingerprint verification rather than plaintext reveal.
-12. Require Kubernetes Secrets encryption at rest and Kubernetes audit logging at Metadata level before enabling reveal for a cluster. Request or RequestResponse audit levels must not capture Secret bodies.
+Reveal is default-deny at every layer:
 
-Recommended user flow:
+1. Global configuration `KUBERNETES_SECRET_REVEAL_ENABLED=true` must be set explicitly.
+2. The target cluster must use `secret_reveal_policy=step_up` or `approval_required`.
+3. The cluster must have a dedicated reveal kubeconfig that targets the same Kubernetes API server as its primary kubeconfig.
+4. Encryption at rest and Kubernetes audit logging at Metadata level must both be marked verified for the cluster.
+5. The user must hold `kubernetes_secrets.reveal`; approval decisions require `kubernetes_secrets.approve_reveal`.
+6. Cluster policy, prerequisite attestations, and the dedicated kubeconfig require `kubernetes_secrets.manage_reveal`; `clusters.manage` alone cannot alter these controls.
+7. `kubernetes_secrets.reveal` is not assigned to any built-in role by default. Admin receives approval and policy-management permissions but not reveal permission; Super Admin still has the explicit platform bypass defined by the RBAC model.
 
-- Select cluster, namespace, Secret, and one key from inventory metadata.
-- Enter reason and ticket.
-- Complete step-up authentication.
-- Obtain approval when the cluster policy requires it.
-- Press and hold **Reveal for 15 seconds**.
-- KAORI performs one live Kubernetes `get`, extracts only the selected key in memory, renders a no-store response, auto-hides it, and records a value-free audit event.
+The dedicated Kubernetes credential should be namespace-scoped and grant `get` on Secrets only. Do not grant `list` or `watch`. KAORI validates that the kubeconfig points to the same API server, but Kubernetes RBAC remains the authoritative resource boundary.
 
-This capability should be implemented as a dedicated `Protected Reveal` page or modal, not embedded directly into the Replace form. Replace must continue to work without reading existing data. For longer-term maturity, integrate KAORI with an external secret manager such as Vault or a cloud secret manager so controlled retrieval and rotation use the source of truth instead of Kubernetes Secrets as the primary credential store.
+### Supported and blocked values
+
+Reveal supports one key from:
+
+- `Opaque`;
+- `kubernetes.io/basic-auth`;
+- `kubernetes.io/dockerconfigjson`.
+
+The following remain blocked:
+
+- `kubernetes.io/service-account-token`;
+- `kubernetes.io/tls` and `tls.key`;
+- `kubernetes.io/ssh-auth` and `ssh-privatekey`.
+
+TLS and SSH private-key material must use rotation and fingerprint workflows instead of plaintext display.
+
+### Request lifecycle
+
+- A request stores target identity, selected key name, policy, reason, ticket, requestor, approver, status, and expiry only.
+- Step-up clusters create an immediately approved request with a short expiry.
+- Approval-required clusters create a pending request. Requestor and approver must be different users.
+- Approval creates a short one-time window. Denial closes the request.
+- Duplicate active requests for the same requestor/cluster/namespace/Secret/key are rejected.
+- Approved requests are consumed after one successful reveal and cannot be reused.
+- Pending and approved records automatically become expired when their expiry is reached.
+
+### Reauthentication
+
+Database-managed users must re-enter their current KAORI password. The elevated session is bound to the authenticated user and expires according to `KUBERNETES_SECRET_REVEAL_STEP_UP_TTL_SECONDS`.
+
+External IdP step-up is intentionally blocked until LDAP/SSO reauthentication or MFA integration exists. A controlled database break-glass account is the temporary supported path. Logout clears the elevated reveal session.
+
+### Live read boundary
+
+The live endpoint:
+
+- accepts HTTPS POST only in production;
+- is CSRF protected;
+- is rate-limited per authenticated user;
+- reads through the dedicated reveal kubeconfig;
+- retrieves the Secret once, selects the approved key in request memory, and clears references to the complete data map;
+- rejects values larger than `KUBERNETES_SECRET_REVEAL_MAX_BYTES`;
+- returns UTF-8 text when safe, otherwise base64 representation;
+- sets `Cache-Control: no-store, private`, `Pragma: no-cache`, `Expires: 0`, and `X-Content-Type-Options: nosniff`;
+- disables HTMX history snapshots for the output container;
+- removes the rendered value from the DOM after `KUBERNETES_SECRET_REVEAL_WINDOW_SECONDS`;
+- never provides a persistent copy button.
+
+Python cannot guarantee physical zeroization of immutable memory, so the implementation minimizes object lifetime and clears mutable dictionaries immediately after extracting the selected key. The Secret value, hash, prefix, and length are never persisted or logged.
+
+### Audit and notification events
+
+The workflow emits safe activity/notification events for:
+
+- request submitted or failed;
+- request approved, denied, or decision failed;
+- reauthentication success or failure;
+- reveal success or failure;
+- rate limiting.
+
+Safe metadata includes actor IDs, target identity, selected key name, policy, reason, ticket, request status, source IP, and outcome. It explicitly records `secret_value_recorded=false` and must never include value-derived data.
+
+### Configuration
+
+```text
+KUBERNETES_SECRET_REVEAL_ENABLED=false
+KUBERNETES_SECRET_REVEAL_RATE_LIMIT=3 per 5 minutes
+KUBERNETES_SECRET_REVEAL_STEP_UP_TTL_SECONDS=300
+KUBERNETES_SECRET_REVEAL_WINDOW_SECONDS=15
+KUBERNETES_SECRET_REVEAL_MAX_BYTES=65536
+KUBERNETES_SECRET_REVEAL_APPROVAL_TTL_MINUTES=10
+KUBERNETES_SECRET_REVEAL_PENDING_TTL_HOURS=24
+```
+
+### Implementation ownership
+
+- `reveal_service.py` owns policy/readiness validation, request lifecycle, approval state, expiry, live Kubernetes read, one-time consumption, decoding, and safe metadata.
+- `SecretRevealRequest` stores workflow state only; it has no payload/value column.
+- route handlers own RBAC, reauthentication session state, rate limiting, toast/notification feedback, and activity records.
+- `templates/kubernetes_operations/secrets/reveal.html` owns request, approval, and one-time display surfaces.
+- cluster registration/edit owns per-cluster policy, dedicated kubeconfig replacement/revocation, and prerequisite attestations.
+
+Replace Secret Data remains the preferred update path when the operator already knows the intended replacement value. Protected Reveal is an exceptional read path, not a convenience default.

@@ -399,6 +399,42 @@ def get_cluster_by_id(cluster_id: str) -> Cluster | None:
     )
 
 
+SECRET_REVEAL_POLICIES = {'disabled', 'step_up', 'approval_required'}
+
+
+def _normalize_secret_reveal_configuration(
+    *,
+    policy: str,
+    reveal_kubeconfig: str | None,
+    expected_server: str | None,
+    encryption_verified: bool,
+    audit_verified: bool,
+) -> tuple[str, str | None]:
+    normalized_policy = (policy or 'disabled').strip().lower()
+    if normalized_policy not in SECRET_REVEAL_POLICIES:
+        raise ValueError('Unsupported Protected Secret Reveal policy.')
+
+    normalized_kubeconfig = (reveal_kubeconfig or '').strip() or None
+    if normalized_kubeconfig is not None:
+        reveal_result = parse_kubeconfig(normalized_kubeconfig)
+        reveal_server = (reveal_result.get('server') or '').rstrip('/')
+        normalized_expected = (expected_server or '').rstrip('/')
+        if normalized_expected and reveal_server != normalized_expected:
+            raise ValueError(
+                'The dedicated Secret Reveal kubeconfig must target the same Kubernetes API server as the cluster.'
+            )
+
+    if normalized_policy != 'disabled':
+        if normalized_kubeconfig is None:
+            raise ValueError('A dedicated Secret Reveal kubeconfig is required before enabling this policy.')
+        if not encryption_verified or not audit_verified:
+            raise ValueError(
+                'Verify Kubernetes Secret encryption at rest and Metadata-level audit logging before enabling Protected Secret Reveal.'
+            )
+
+    return normalized_policy, normalized_kubeconfig
+
+
 def create_cluster(
     name: str,
     environment: str,
@@ -406,6 +442,10 @@ def create_cluster(
     description: str | None = None,
     kube_verify_ssl: bool = True,
     kube_allow_weak_tls: bool = False,
+    secret_reveal_policy: str = 'disabled',
+    secret_reveal_kubeconfig: str | None = None,
+    secret_reveal_encryption_verified: bool = False,
+    secret_reveal_audit_verified: bool = False,
 ) -> Cluster:
     existing = Cluster.query.filter_by(
         name=name,
@@ -417,6 +457,13 @@ def create_cluster(
     result = parse_kubeconfig(
         kubeconfig,
     )
+    normalized_reveal_policy, normalized_reveal_kubeconfig = _normalize_secret_reveal_configuration(
+        policy=secret_reveal_policy,
+        reveal_kubeconfig=secret_reveal_kubeconfig,
+        expected_server=result.get('server'),
+        encryption_verified=secret_reveal_encryption_verified,
+        audit_verified=secret_reveal_audit_verified,
+    )
 
     cluster = Cluster()
 
@@ -427,6 +474,10 @@ def create_cluster(
     cluster.server = result['server']
     cluster.kube_verify_ssl = kube_verify_ssl
     cluster.kube_allow_weak_tls = kube_allow_weak_tls
+    cluster.secret_reveal_policy = normalized_reveal_policy
+    cluster.secret_reveal_kubeconfig = normalized_reveal_kubeconfig
+    cluster.secret_reveal_encryption_verified = secret_reveal_encryption_verified
+    cluster.secret_reveal_audit_verified = secret_reveal_audit_verified
 
     db.session.add(
         cluster,
@@ -488,6 +539,11 @@ def update_cluster(
     description: str | None,
     kube_verify_ssl: bool = True,
     kube_allow_weak_tls: bool = False,
+    secret_reveal_policy: str = 'disabled',
+    secret_reveal_kubeconfig: str | None = None,
+    secret_reveal_encryption_verified: bool = False,
+    secret_reveal_audit_verified: bool = False,
+    remove_secret_reveal_kubeconfig: bool = False,
 ) -> Cluster:
     existing = Cluster.query.filter(
         Cluster.name == name,
@@ -497,11 +553,26 @@ def update_cluster(
     if existing:
         raise ValueError('Cluster name already exists')
 
+    candidate_reveal_kubeconfig = (secret_reveal_kubeconfig or '').strip() or cluster.secret_reveal_kubeconfig
+    if remove_secret_reveal_kubeconfig:
+        candidate_reveal_kubeconfig = None
+    normalized_reveal_policy, normalized_reveal_kubeconfig = _normalize_secret_reveal_configuration(
+        policy=secret_reveal_policy,
+        reveal_kubeconfig=candidate_reveal_kubeconfig,
+        expected_server=cluster.server,
+        encryption_verified=secret_reveal_encryption_verified,
+        audit_verified=secret_reveal_audit_verified,
+    )
+
     cluster.name = name
     cluster.environment = environment
     cluster.description = description
     cluster.kube_verify_ssl = kube_verify_ssl
     cluster.kube_allow_weak_tls = kube_allow_weak_tls
+    cluster.secret_reveal_policy = normalized_reveal_policy
+    cluster.secret_reveal_kubeconfig = normalized_reveal_kubeconfig
+    cluster.secret_reveal_encryption_verified = secret_reveal_encryption_verified
+    cluster.secret_reveal_audit_verified = secret_reveal_audit_verified
 
     db.session.commit()
 

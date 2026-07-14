@@ -317,6 +317,53 @@ class Config:
         'Too many login attempts. Please wait a minute and try again.',
     )
 
+    # Protected Kubernetes Secret reveal. This capability is globally disabled
+    # until an operator explicitly enables it and configures per-cluster controls.
+    KUBERNETES_SECRET_REVEAL_ENABLED = _env_bool(
+        'KUBERNETES_SECRET_REVEAL_ENABLED',
+        False,
+    )
+
+    KUBERNETES_SECRET_REVEAL_RATE_LIMIT = _env_str(
+        'KUBERNETES_SECRET_REVEAL_RATE_LIMIT',
+        '3 per 5 minutes',
+    )
+
+    KUBERNETES_SECRET_REVEAL_STEP_UP_TTL_SECONDS = _bounded_env_int(
+        'KUBERNETES_SECRET_REVEAL_STEP_UP_TTL_SECONDS',
+        300,
+        60,
+        900,
+    )
+
+    KUBERNETES_SECRET_REVEAL_WINDOW_SECONDS = _bounded_env_int(
+        'KUBERNETES_SECRET_REVEAL_WINDOW_SECONDS',
+        15,
+        5,
+        60,
+    )
+
+    KUBERNETES_SECRET_REVEAL_MAX_BYTES = _bounded_env_int(
+        'KUBERNETES_SECRET_REVEAL_MAX_BYTES',
+        65536,
+        1024,
+        262144,
+    )
+
+    KUBERNETES_SECRET_REVEAL_APPROVAL_TTL_MINUTES = _bounded_env_int(
+        'KUBERNETES_SECRET_REVEAL_APPROVAL_TTL_MINUTES',
+        10,
+        1,
+        60,
+    )
+
+    KUBERNETES_SECRET_REVEAL_PENDING_TTL_HOURS = _bounded_env_int(
+        'KUBERNETES_SECRET_REVEAL_PENDING_TTL_HOURS',
+        24,
+        1,
+        168,
+    )
+
     # Login audit retention. The Login Activity UI shows the latest matching
     # records, while this value controls how long audit rows are kept before
     # cleanup-login-audit removes old entries.
