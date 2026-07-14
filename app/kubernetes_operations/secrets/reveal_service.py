@@ -26,12 +26,12 @@ SUPPORTED_REVEAL_TYPES = {
     'Opaque': {
         'label': 'Generic / Opaque',
         'tone': 'blue',
-        'icon': 'braces',
+        'icon': 'code',
     },
     'kubernetes.io/basic-auth': {
         'label': 'Basic Authentication',
         'tone': 'violet',
-        'icon': 'badge-user',
+        'icon': 'user-round',
     },
     'kubernetes.io/dockerconfigjson': {
         'label': 'Container Registry',

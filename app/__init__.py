@@ -3,6 +3,7 @@ from datetime import datetime
 
 from flask import Flask, render_template
 from flask_login import current_user
+from flask_wtf.csrf import generate_csrf
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from app.notifications.service import (
@@ -18,6 +19,7 @@ from app.commands import register_commands
 from app.common.timezone import format_date, format_datetime, normalize_timezone_name
 from app.config import CONFIG_MAP
 from app.dashboards.kubernetes.routes import kubernetes_dashboard_bp
+from app.dashboards.routes import dashboard_compat_bp
 from app.extensions import db, init_celery, limiter, login_manager, migrate, register_rate_limit_handlers
 from app.governance.routes import governance_bp
 from app.health import health_bp
@@ -67,6 +69,7 @@ def create_app(config_name: str | None = None):
             'app_version': app.config['APP_VERSION'],
             'current_year': datetime.now().year,
             'current_timezone': current_timezone,
+            'csrf_token': generate_csrf,
             'load_navigation_notification_context': load_navigation_notification_context,
             'load_quick_action_feedback': load_quick_action_feedback,
             'cluster_onboarding': build_cluster_onboarding_context(),
@@ -119,6 +122,7 @@ def create_app(config_name: str | None = None):
     # Register blueprints
     app.register_blueprint(auth_bp)
     app.register_blueprint(welcome_bp)
+    app.register_blueprint(dashboard_compat_bp)
     app.register_blueprint(kubernetes_dashboard_bp)
     app.register_blueprint(cluster_bp)
     app.register_blueprint(inventory_bp)

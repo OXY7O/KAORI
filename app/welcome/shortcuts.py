@@ -61,12 +61,12 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         'asset': 'Kubernetes',
         'targets': (
             ('kubernetes_secrets.view', 'kubernetes_operations.secret_management'),
-            ('kubernetes_secrets.create', 'kubernetes_operations.create_secret'),
-            ('kubernetes_secrets.replace', 'kubernetes_operations.replace_secret'),
-            ('kubernetes_secrets.reveal', 'kubernetes_operations.reveal_secret'),
-            ('kubernetes_secrets.approve_reveal', 'kubernetes_operations.reveal_secret'),
-            ('kubernetes_secrets.rotate_tls', 'kubernetes_operations.tls_secret_bulk_rotation'),
-            ('kubernetes_secrets.bulk_rotate_tls', 'kubernetes_operations.tls_secret_bulk_rotation'),
+            ('kubernetes_secrets.create', 'kubernetes_operations.secret_management'),
+            ('kubernetes_secrets.replace', 'kubernetes_operations.secret_management'),
+            ('kubernetes_secrets.reveal', 'kubernetes_operations.secret_management'),
+            ('kubernetes_secrets.approve_reveal', 'kubernetes_operations.secret_management'),
+            ('kubernetes_secrets.rotate_tls', 'kubernetes_operations.secret_management'),
+            ('kubernetes_secrets.bulk_rotate_tls', 'kubernetes_operations.secret_management'),
         ),
     },
     {

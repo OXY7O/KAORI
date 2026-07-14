@@ -6,6 +6,8 @@ from datetime import UTC, datetime
 
 from flask import current_app, flash, make_response, redirect, render_template, request, session, url_for
 from flask_login import current_user
+from flask_wtf.csrf import validate_csrf
+from wtforms.validators import ValidationError
 
 from app.cluster.onboarding import has_registered_clusters
 from app.extensions import limiter
@@ -84,6 +86,22 @@ def _record_secret_activity(
         metadata=metadata,
         queue_feedback=queue_feedback,
     )
+
+
+def _validate_protected_reveal_csrf() -> None:
+    """Validate CSRF only for the raw protected-reveal POST workflows.
+
+    Most existing KAORI forms use FlaskForm validation. Protected Secret Reveal
+    uses small hand-written forms, so these routes validate the generated token
+    explicitly without changing the CSRF behavior of unrelated legacy forms.
+    """
+
+    try:
+        validate_csrf(request.form.get('csrf_token'))
+    except ValidationError as exc:
+        raise ValueError(
+            'The security token is missing or expired. Refresh the page and retry.'
+        ) from exc
 
 
 def _record_validation_activity(
@@ -195,7 +213,15 @@ def _safe_opaque_entries(form: Any) -> list[dict[str, Any]]:
     return normalized or [{'key': '', 'value': '', 'visible': False}]
 
 
-@permission_required('kubernetes_secrets.view')
+@any_permission_required(
+    'kubernetes_secrets.view',
+    'kubernetes_secrets.create',
+    'kubernetes_secrets.replace',
+    'kubernetes_secrets.reveal',
+    'kubernetes_secrets.approve_reveal',
+    'kubernetes_secrets.rotate_tls',
+    'kubernetes_secrets.bulk_rotate_tls',
+)
 def secret_management_index():
     return render_template(
         'kubernetes_operations/secrets/index.html',
@@ -611,6 +637,7 @@ def reveal_secret_content():
 )
 def request_secret_reveal():
     try:
+        _validate_protected_reveal_csrf()
         result = create_reveal_request(
             request.form,
             requester_user_id=current_user.id,
@@ -674,6 +701,21 @@ def request_secret_reveal():
     key_func=lambda: f'user:{current_user.get_id()}',
 )
 def reauthenticate_secret_reveal():
+    try:
+        _validate_protected_reveal_csrf()
+    except ValueError as exc:
+        _record_secret_activity(
+            event_type='kubernetes_secret_reveal_reauthentication_failed',
+            status='error',
+            title='Reauthentication failed',
+            message=str(exc),
+            action_url=url_for('kubernetes_operations.reveal_secret'),
+            action_label='Retry reauthentication',
+            metadata={'secret_value_recorded': False},
+            queue_feedback=True,
+        )
+        return redirect(url_for('kubernetes_operations.reveal_secret'))
+
     password = request.form.get('password') or ''
     if current_user.is_external:
         feedback = _record_secret_activity(
@@ -722,6 +764,7 @@ def reauthenticate_secret_reveal():
 def decide_secret_reveal_request(request_id: str):
     decision = (request.form.get('decision') or '').strip().lower()
     try:
+        _validate_protected_reveal_csrf()
         if decision not in {'approve', 'deny'}:
             raise ValueError('Unsupported Secret reveal decision.')
         record = decide_reveal_request(
@@ -824,6 +867,7 @@ def reveal_secret_value(request_id: str):
     feedback: dict[str, Any]
     revealed_value = None
     try:
+        _validate_protected_reveal_csrf()
         if not _secret_reveal_step_up_active():
             raise ValueError('Reauthenticate before performing a protected Secret reveal.')
         result = execute_secret_value_reveal(request_id, user_id=current_user.id)

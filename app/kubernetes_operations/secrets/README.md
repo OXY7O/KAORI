@@ -252,3 +252,108 @@ KUBERNETES_SECRET_REVEAL_PENDING_TTL_HOURS=24
 - cluster registration owns the single kubeconfig identity; cluster registration/edit owns per-cluster Reveal policy and prerequisite attestations.
 
 Replace Secret Data remains the preferred update path when the operator already knows the intended replacement value. Protected Reveal is an exceptional read path, not a convenience default.
+
+## Navigation consolidation
+
+The sidebar exposes one Secret entry only: **K8s Operations > Secret Management**. Create, Replace, Protected Reveal, and TLS Rotation remain separate route-level workflows, but users enter them through permission-aware cards on the Secret Management landing page. Do not add those workflows back as sibling sidebar items.
+
+The Secret Management landing route accepts any Secret operation permission so a user who can create, replace, reveal, approve, or rotate can still reach the card workspace even without the inventory-only `kubernetes_secrets.view` permission. Cards remain visible as a capability map, but unavailable actions render as restricted and cannot link to protected endpoints.
+
+Welcome uses the same consolidated destination. Every Secret-related permission resolves to `kubernetes_operations.secret_management`, preventing role-dependent shortcuts from bypassing the domain landing page.
+
+## Protected Reveal CSRF contract
+
+Protected Reveal uses hand-written POST forms instead of `FlaskForm`. `app/__init__.py` injects `flask_wtf.csrf.generate_csrf` into Jinja as `csrf_token`, and every Reveal POST route explicitly calls `validate_csrf` before reading credentials, saving a decision, or contacting Kubernetes.
+
+A missing, invalid, or expired token must:
+
+- reject the operation before any Secret read or state mutation;
+- create a controlled error toast and operational activity record;
+- avoid logging the submitted password or any Secret-derived value;
+- instruct the user to refresh the page and retry.
+
+This scoped implementation must not be replaced with global `CSRFProtect` activation without first auditing every existing POST and HTMX form in KAORI.
+
+## Manual test scenarios
+
+Run these scenarios in a non-production namespace before enabling Protected Reveal for production.
+
+### A. Navigation and permission cards
+
+1. Sign in with a role that has only `kubernetes_secrets.create`.
+2. Confirm the sidebar shows only **Secret Management** under K8s Operations.
+3. Open Secret Management and confirm Create is active while Replace, Reveal, and TLS Rotation are restricted.
+4. Repeat with replace-only, reveal-only, approver-only, rotate-only, and bulk-rotate-only roles.
+5. Confirm direct protected URLs still return 403 when the required route permission is absent.
+
+### B. CSRF rendering and rejection
+
+1. Open `/kubernetes-operations/secrets/reveal` and confirm the page renders without `csrf_token is undefined`.
+2. Inspect each Reveal POST form and confirm a non-empty hidden `csrf_token` exists.
+3. Submit a valid form normally and confirm it reaches the expected workflow.
+4. Remove or alter the token in browser developer tools and submit again.
+5. Confirm KAORI rejects the request, shows an error toast, records a failed activity event, and performs no approval, reauthentication, or Kubernetes read.
+
+### C. Global and cluster policy gates
+
+1. Set `KUBERNETES_SECRET_REVEAL_ENABLED=false`; confirm the page displays the global-disabled state and target controls cannot be used.
+2. Enable the global switch but leave the cluster policy Disabled; confirm the cluster is not selectable.
+3. Set policy to Step-up without encryption/audit attestations; confirm saving the policy is rejected.
+4. Verify both prerequisites, enable Step-up, and confirm the cluster becomes selectable.
+5. Repeat with Approval Required.
+
+### D. Kubernetes RBAC outcomes
+
+Using the single cluster kubeconfig identity:
+
+1. Without `get` on Secret, submit an approved reveal and confirm a controlled 403 message, toast, and failed activity record.
+2. With `get` scoped to one namespace, confirm reveal succeeds only in that namespace.
+3. Attempt another namespace and confirm Kubernetes denies it.
+4. Use an invalid/expired credential and confirm a controlled authentication error.
+5. Use an unavailable API endpoint and confirm a connectivity error without traceback exposure.
+
+### E. Step-up workflow
+
+1. Submit a Step-up request with a valid reason and ticket.
+2. Attempt Reveal before reauthentication; confirm it is blocked.
+3. Enter an incorrect KAORI password; confirm failure toast/activity and no elevated session.
+4. Enter the correct password; confirm the short elevated session becomes active.
+5. Reveal once and confirm the request status becomes Revealed.
+6. Attempt to reveal the same request again; confirm it is rejected.
+7. Wait beyond `KUBERNETES_SECRET_REVEAL_STEP_UP_TTL_SECONDS`; confirm a new approved request requires reauthentication again.
+
+### F. Approval-required workflow
+
+1. User A submits a request.
+2. Confirm User A cannot approve or deny their own request.
+3. User B with `kubernetes_secrets.approve_reveal` approves it.
+4. Confirm User A receives a notification and can reveal only after reauthentication.
+5. Repeat with denial and confirm no reveal action becomes available.
+6. Let an approved request pass its expiry and confirm it cannot be consumed.
+
+### G. Secret-type and key restrictions
+
+1. Confirm Opaque, Basic Auth, and Registry key names can be requested.
+2. Confirm ServiceAccount token Secrets are blocked.
+3. Confirm TLS and SSH private-key Secrets are blocked.
+4. Attempt to alter `key_name`, `inventory_id`, cluster, or namespace in the request and confirm server-side validation rejects the mismatch.
+5. Confirm only one selected key is rendered to the browser.
+
+### H. Value handling and browser behavior
+
+1. Reveal a normal UTF-8 value and confirm it disappears after the configured window.
+2. Reveal binary data and confirm the safe base64 representation path works.
+3. Confirm browser back/forward history does not restore the value.
+4. Confirm response headers contain `Cache-Control: no-store, private`, `Pragma: no-cache`, and `X-Content-Type-Options: nosniff`.
+5. Search application logs, database activity metadata, notification payloads, Redis, and browser storage for the revealed value; no match is permitted.
+
+### I. Rate limiting and concurrent consumption
+
+1. Exceed the configured request/reveal rate limit and confirm a controlled rate-limit response and activity event.
+2. Send two concurrent Reveal POSTs for the same approved request.
+3. Confirm PostgreSQL row locking permits only one successful consumption.
+4. Confirm the second request reports that the approval has already been consumed.
+
+### J. Toast, notification, and activity coverage
+
+Verify feedback for request success/failure, reauthentication success/failure, approval, denial, reveal success/failure, CSRF failure, Kubernetes RBAC failure, expiry, and rate limiting. Activity metadata may contain target identity, actor, key name, reason, ticket, policy, and outcome, but never Secret value, value hash, prefix, length, password, token, or kubeconfig content.
