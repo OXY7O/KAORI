@@ -2,12 +2,13 @@ from __future__ import annotations
 
 from typing import Any
 
-from flask import flash, redirect, render_template, request, url_for
+from flask import current_app, flash, redirect, render_template, request, url_for
 from flask_login import current_user
 
 from app.cluster.onboarding import has_registered_clusters
 from app.kubernetes_operations.secrets.create_service import (
     execute_secret_operation,
+    get_cluster_namespace_options,
     get_secret_create_context,
 )
 from app.kubernetes_operations.secrets.service import (
@@ -144,6 +145,37 @@ def _record_validation_activity(
     )
 
 
+_SAFE_SUBMITTED_FIELDS = {
+    'cluster_id',
+    'namespace',
+    'secret_name',
+    'secret_type',
+    'immutable',
+    'username',
+    'registry_server',
+    'registry_username',
+    'registry_email',
+}
+
+
+def _safe_secret_submission(form: Any) -> dict[str, str]:
+    return {
+        key: form.get(key, '')
+        for key in _SAFE_SUBMITTED_FIELDS
+        if form.get(key) is not None
+    }
+
+
+def _safe_opaque_entries(form: Any) -> list[dict[str, Any]]:
+    keys = [value.strip() for value in form.getlist('generic_key')]
+    normalized = [
+        {'key': key, 'value': '', 'visible': False}
+        for key in keys
+        if key
+    ]
+    return normalized or [{'key': '', 'value': '', 'visible': False}]
+
+
 @permission_required('kubernetes_secrets.view')
 def secret_management_index():
     return render_template(
@@ -153,34 +185,60 @@ def secret_management_index():
 
 
 @permission_required('kubernetes_secrets.create')
+def secret_namespace_options():
+    cluster_id = request.args.get('cluster_id', '')
+    selected_namespace = request.args.get('namespace', '')
+    return render_template(
+        'kubernetes_operations/secrets/_namespace_field.html',
+        namespaces=get_cluster_namespace_options(cluster_id),
+        selected_namespace=selected_namespace,
+        cluster_selected=bool(cluster_id.strip()),
+    )
+
+
+@permission_required('kubernetes_secrets.create')
 def create_secret():
     context = get_secret_create_context()
     operation_result = None
-    submitted = request.form.to_dict(flat=True) if request.method == 'POST' else {}
+    operation_feedback = None
+    submitted = _safe_secret_submission(request.form) if request.method == 'POST' else {}
+    opaque_entries = (
+        _safe_opaque_entries(request.form)
+        if request.method == 'POST'
+        else [{'key': '', 'value': '', 'visible': False}]
+    )
+    is_htmx = request.headers.get('HX-Request') == 'true'
 
     if request.method == 'POST':
-        operation = request.form.get('operation', 'validate')
+        operation = (request.form.get('operation') or 'validate').strip().lower()
         dry_run = operation != 'create'
         try:
-            operation_result = execute_secret_operation(request.form, request.files, dry_run=dry_run)
+            if operation not in {'validate', 'create'}:
+                raise ValueError('Unsupported Secret action.')
+
+            result = execute_secret_operation(request.form, request.files, dry_run=dry_run)
+            operation_result = result.__dict__
             event_type = (
                 'kubernetes_secret_validation' if dry_run else 'kubernetes_secret_created'
             )
             feedback = _record_secret_activity(
                 event_type=event_type,
-                status=operation_result.status,
-                title=operation_result.title,
-                message=operation_result.message,
-                metadata=operation_result.metadata,
+                status=result.status,
+                title=result.title,
+                message=result.message,
+                metadata=result.metadata,
                 action_url=url_for('kubernetes_operations.create_secret'),
                 action_label='Open Create Secret',
-                queue_feedback=not dry_run,
+                queue_feedback=not is_htmx,
             )
-            operation_result = {**operation_result.__dict__, 'feedback': feedback}
         except ValueError as exc:
             title = 'Secret validation failed' if dry_run else 'Secret creation failed'
             feedback = _record_secret_activity(
-                event_type='kubernetes_secret_validation_failed' if dry_run else 'kubernetes_secret_creation_failed',
+                event_type=(
+                    'kubernetes_secret_validation_failed'
+                    if dry_run
+                    else 'kubernetes_secret_creation_failed'
+                ),
                 status='error',
                 title=title,
                 message=str(exc),
@@ -191,6 +249,9 @@ def create_secret():
                     'secret_type': request.form.get('secret_type'),
                     'operation': 'validation' if dry_run else 'creation',
                 },
+                action_url=url_for('kubernetes_operations.create_secret'),
+                action_label='Review Secret form',
+                queue_feedback=not is_htmx,
             )
             operation_result = {
                 'status': 'error',
@@ -198,13 +259,53 @@ def create_secret():
                 'message': str(exc),
                 'detail': None,
                 'metadata': {},
-                'feedback': feedback,
             }
+        except Exception:
+            current_app.logger.exception('Unexpected Kubernetes Secret operation failure.')
+            title = 'Secret validation failed' if dry_run else 'Secret creation failed'
+            message = 'KAORI could not complete the operation because of an unexpected internal error.'
+            feedback = _record_secret_activity(
+                event_type=(
+                    'kubernetes_secret_validation_failed'
+                    if dry_run
+                    else 'kubernetes_secret_creation_failed'
+                ),
+                status='error',
+                title=title,
+                message=message,
+                metadata={
+                    'cluster_id': request.form.get('cluster_id'),
+                    'namespace': request.form.get('namespace'),
+                    'secret_name': request.form.get('secret_name'),
+                    'secret_type': request.form.get('secret_type'),
+                    'operation': 'validation' if dry_run else 'creation',
+                },
+                action_url=url_for('kubernetes_operations.create_secret'),
+                action_label='Review Secret form',
+                queue_feedback=not is_htmx,
+            )
+            operation_result = {
+                'status': 'error',
+                'title': title,
+                'message': message,
+                'detail': None,
+                'metadata': {},
+            }
+
+        if is_htmx:
+            operation_feedback = _notification_response_context(feedback)
+            return render_template(
+                'kubernetes_operations/secrets/_create_operation_result.html',
+                operation_result=operation_result,
+                operation_feedback=operation_feedback,
+            )
 
     return render_template(
         'kubernetes_operations/secrets/create.html',
         operation_result=operation_result,
+        operation_feedback=operation_feedback,
         submitted=submitted,
+        opaque_entries=opaque_entries,
         **context,
     )
 

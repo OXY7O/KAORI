@@ -6,6 +6,7 @@ from app.cluster.onboarding import has_registered_clusters
 from app.kubernetes_operations.secrets.routes import (
     create_secret,
     secret_management_index,
+    secret_namespace_options,
     tls_secret_bulk_rotation_apply,
     tls_secret_bulk_rotation_page,
     tls_secret_bulk_rotation_preview,
@@ -51,6 +52,13 @@ kubernetes_operations_bp.add_url_rule(
     endpoint='create_secret',
     view_func=create_secret,
     methods=['GET', 'POST'],
+)
+
+kubernetes_operations_bp.add_url_rule(
+    '/secrets/create/namespaces',
+    endpoint='secret_namespace_options',
+    view_func=secret_namespace_options,
+    methods=['GET'],
 )
 
 kubernetes_operations_bp.add_url_rule(

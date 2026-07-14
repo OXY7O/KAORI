@@ -72,3 +72,34 @@ The workflow cards are:
 A placeholder must never imply that an unavailable operation already works. Planned workflows use a disabled action, a clear `Coming soon` status, and an explicit description of their future scope.
 
 The landing page may use compact snapshot totals in the hero, but must not add decorative charts unless they directly help the user choose or execute an operation.
+
+## Create Secret interaction contract
+
+The Create Kubernetes Secret page follows these maintenance rules:
+
+- cluster options display only the registered cluster name; environment labels are not part of target selection;
+- namespace is a controlled dropdown loaded from the latest `NamespaceInventory` snapshot for the selected cluster through `kubernetes_operations.secret_namespace_options`;
+- server-side validation rechecks that the submitted namespace belongs to the selected cluster snapshot, so manually altered requests cannot target an unrelated namespace;
+- Secret type cards use stable type-specific tones: blue for Opaque, violet for Basic Auth, emerald for TLS, cyan for Registry, and amber for SSH;
+- the Secret content section inherits the selected type tone while retaining type-specific fields and validation;
+- page-specific Secret type styling is isolated through the `page_styles` layout block rather than being mixed into global dashboard CSS;
+- Validate and Create use HTMX multipart submissions so passwords, key-value entries, and selected files remain in the browser while the result area and operational toast are updated;
+- every Validate/Create attempt reaches server-side validation and every success or failure creates a toast, operational activity entry, and notification using only safe metadata;
+- plaintext values, passwords, tokens, certificate private keys, SSH private keys, Docker auth payloads, and upload contents must never be copied into activity metadata or notification text.
+
+## Create validation boundaries
+
+Before calling the Kubernetes API, KAORI validates:
+
+- registered cluster identity;
+- namespace membership in the selected cluster inventory;
+- DNS-compatible Secret and namespace names;
+- supported Secret type and mutability value;
+- Opaque key syntax and duplicate keys;
+- Basic Auth password confirmation;
+- TLS certificate/private-key parsing, matching, expiry, UTF-8 encoding, and upload size;
+- Registry server, required credential fields, and optional email format;
+- unencrypted PEM/OpenSSH private-key parsing;
+- the Kubernetes 1 MiB Secret payload limit.
+
+Kubernetes API responses are converted to user-facing outcomes for duplicate resources, missing namespaces, invalid payloads, authorization failures, authentication failures, invalid kubeconfig, and connectivity failures. Existing Secrets remain protected by create-only API semantics and are never overwritten.
