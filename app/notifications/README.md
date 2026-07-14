@@ -46,3 +46,12 @@ records, and integrations.
 4. Add failure matching in `normalization.py`.
 5. Never expose stack traces, SQL errors, transport exceptions, or raw payload dumps.
 6. Store identifiers useful for audit; present readable labels separately.
+
+
+## Notification Center refresh boundary
+
+Operational toast responses must never include the full Notification Center markup.
+They dispatch the `kaori:notifications-changed` browser event instead. The single
+canonical `#notification-center` instance in the navbar listens for that event and
+refreshes itself from `notifications.panel` using `outerHTML`. This prevents duplicate
+notification bells from being appended beside or below toast containers.

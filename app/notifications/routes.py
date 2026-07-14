@@ -97,7 +97,6 @@ def _render_notification_center() -> str:
         navigation_unread_count=context['unread_count'],
         navigation_total_count=context['total_count'],
         navigation_display_limit=context['display_limit'],
-        notification_oob=False,
     )
 
 

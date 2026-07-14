@@ -192,7 +192,7 @@
             </div>
 
             {% set notification_context = load_navigation_notification_context() %}
-            {% with navigation_notifications=notification_context['items'], navigation_unread_count=notification_context['unread_count'], navigation_total_count=notification_context['total_count'], navigation_display_limit=notification_context['display_limit'], notification_oob=false %}
+            {% with navigation_notifications=notification_context['items'], navigation_unread_count=notification_context['unread_count'], navigation_total_count=notification_context['total_count'], navigation_display_limit=notification_context['display_limit'] %}
                 {% include "components/navigation/_notification_center.html" %}
             {% endwith %}
 
