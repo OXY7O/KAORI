@@ -55,3 +55,29 @@ app/templates/settings/secret_reveal/_namespace_policy_section.html
 ```
 
 Filtering and pagination are prepared by `app/settings/secret_reveal/service.py`; do not move this logic back to client-only DOM filtering because that would still render every namespace in the browser.
+
+## Namespace table visual contract
+
+The `Allow Reveal per Namespace` section follows the established Node Inventory table pattern so administrative tables remain visually consistent across KAORI:
+
+- white rounded table card with a dedicated title header;
+- blue entity icon and compact selected-cluster/summary labels;
+- a separate slate filter band above the data table;
+- uppercase slate table header;
+- compact rows with entity identity, ring-based status labels, and blue hover treatment;
+- rows-per-page selector in the footer, not in the filter band;
+- `Previous`, page status, and `Next` controls matching Inventory pagination;
+- one HTMX loading bar under the card header;
+- empty states use the shared `components/states/_empty_state.html` component.
+
+Template ownership is split as follows:
+
+```text
+app/templates/settings/secret_reveal/_namespace_policy_section.html
+    card header, loading indicator, filters, and content target
+
+app/templates/settings/secret_reveal/_namespace_policy_table_content.html
+    data table, row controls, empty state, page-size selector, and pagination
+```
+
+Do not reintroduce a standalone custom table style for this section. Future namespace columns or row actions should extend the Inventory-style table contract above.
