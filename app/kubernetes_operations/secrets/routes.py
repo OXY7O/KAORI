@@ -24,6 +24,7 @@ from app.kubernetes_operations.secrets.replace_service import (
     get_secret_replace_context,
 )
 from app.kubernetes_operations.secrets.reveal_service import (
+    ActiveRevealRequestExists,
     create_reveal_request,
     decide_reveal_request,
     get_reveal_page_context,
@@ -733,6 +734,33 @@ def request_secret_reveal():
         )
         _notify_secret_reveal_approvers(result.request_record)
         return redirect(url_for('kubernetes_operations.reveal_secret'))
+    except ActiveRevealRequestExists as exc:
+        db.session.rollback()
+        existing = exc.request_record
+        action_url = url_for(
+            'kubernetes_operations.reveal_secret',
+            cluster_id=existing.cluster_id,
+            namespace=existing.namespace,
+            inventory_id=existing.configuration_inventory_id,
+            key_name=existing.key_name,
+            _anchor='my-secret-reveal-requests',
+        )
+        metadata = {
+            **_reveal_request_metadata(existing),
+            'duplicate_request_blocked': True,
+            'secret_value_recorded': False,
+        }
+        _record_secret_activity(
+            event_type='kubernetes_secret_reveal_duplicate_request_blocked',
+            status='warning',
+            title='Active reveal request already exists',
+            message=str(exc),
+            action_url=action_url,
+            action_label='Open existing request',
+            metadata=metadata,
+            queue_feedback=True,
+        )
+        return redirect(action_url)
     except ValueError as exc:
         _record_secret_activity(
             event_type='kubernetes_secret_reveal_request_failed',

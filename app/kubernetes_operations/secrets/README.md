@@ -413,3 +413,8 @@ replaces itself in place. Keep these two polling boundaries independent.
 - `Security boundary` and `My reveal requests` are paired in one responsive two-column row. The security card explains the request flow using a vertical dot-and-line sequence.
 - `My reveal requests` is paginated server-side with 5, 10, or 25 rows. HTMX polling preserves the selected page and page size.
 - Pending approvals remain below the paired cards and continue to refresh through the same status boundary.
+
+
+## Active-request deduplication
+
+Protected Reveal permits only one active request for the same requester, cluster, namespace, Secret, and key. `pending` and `approved` are active states; `revealed`, `denied`, and `expired` are terminal and permit a new request. Different keys and different requesters remain independent. PostgreSQL advisory transaction locking serializes near-simultaneous submissions so duplicate rows and duplicate approver notifications are not created. A blocked duplicate produces a warning toast and `kubernetes_secret_reveal_duplicate_request_blocked` activity event, then links the requester to the existing request.
