@@ -3,6 +3,16 @@ from __future__ import annotations
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 
 from app.cluster.onboarding import has_registered_clusters
+from app.kubernetes_operations.configmaps.routes import (
+    configmap_delete_target,
+    configmap_editor,
+    configmap_management_index,
+    configmap_namespace_options,
+    configmap_workspace,
+    create_configmap_page,
+    delete_configmap_page,
+    update_configmap_page,
+)
 from app.kubernetes_operations.secrets.routes import (
     create_secret,
     replace_secret,
@@ -48,6 +58,32 @@ def block_clusterless_operations():
     flash('Add a Kubernetes cluster before running Kubernetes operations.', 'warning')
     return redirect(url_for('cluster.index'))
 
+
+
+kubernetes_operations_bp.add_url_rule(
+    '/configmaps', endpoint='configmap_management', view_func=configmap_management_index, methods=['GET']
+)
+kubernetes_operations_bp.add_url_rule(
+    '/configmaps/create', endpoint='create_configmap', view_func=create_configmap_page, methods=['GET', 'POST']
+)
+kubernetes_operations_bp.add_url_rule(
+    '/configmaps/namespaces', endpoint='configmap_namespace_options', view_func=configmap_namespace_options, methods=['GET']
+)
+kubernetes_operations_bp.add_url_rule(
+    '/configmaps/workspace', endpoint='configmap_workspace', view_func=configmap_workspace, methods=['GET']
+)
+kubernetes_operations_bp.add_url_rule(
+    '/configmaps/editor', endpoint='configmap_editor', view_func=configmap_editor, methods=['GET']
+)
+kubernetes_operations_bp.add_url_rule(
+    '/configmaps/delete-target', endpoint='configmap_delete_target', view_func=configmap_delete_target, methods=['GET']
+)
+kubernetes_operations_bp.add_url_rule(
+    '/configmaps/update', endpoint='update_configmap', view_func=update_configmap_page, methods=['GET', 'POST']
+)
+kubernetes_operations_bp.add_url_rule(
+    '/configmaps/delete', endpoint='delete_configmap', view_func=delete_configmap_page, methods=['GET', 'POST']
+)
 
 kubernetes_operations_bp.add_url_rule(
     '/secrets',

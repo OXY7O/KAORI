@@ -60,6 +60,10 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         'icon': 'wrench',
         'asset': 'Kubernetes',
         'targets': (
+            ('kubernetes_configmaps.view', 'kubernetes_operations.configmap_management'),
+            ('kubernetes_configmaps.create', 'kubernetes_operations.configmap_management'),
+            ('kubernetes_configmaps.update', 'kubernetes_operations.configmap_management'),
+            ('kubernetes_configmaps.delete', 'kubernetes_operations.configmap_management'),
             ('kubernetes_secrets.view', 'kubernetes_operations.secret_management'),
             ('kubernetes_secrets.create', 'kubernetes_operations.secret_management'),
             ('kubernetes_secrets.replace', 'kubernetes_operations.secret_management'),
