@@ -114,7 +114,7 @@
                                     </span>
                                 </summary>
                                 <div class="border-t border-slate-200 p-6 dark:border-slate-700">
-                                    <div class="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
+                                    <div class="space-y-4">
                                         <article class="rounded-2xl border border-slate-200 p-5 transition hover:border-emerald-200 hover:bg-emerald-50/40 dark:border-slate-700 dark:hover:border-emerald-800 dark:hover:bg-emerald-950/20">
                                             <div class="flex items-start gap-4">
                                                 <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300">
@@ -123,7 +123,7 @@
                                                 <div class="min-w-0">
                                                     <h4 class="font-semibold text-slate-900 dark:text-white">Readiness Baseline</h4>
                                                     <p class="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">
-                                                        {{ cluster_info.ready_nodes }} of {{ cluster_info.total_nodes }} nodes are schedulable; {{ cluster_info.not_ready_nodes }} node{% if cluster_info.not_ready_nodes != 1 %}s{% endif %} currently need attention.
+                                                        <strong class="font-bold text-emerald-700 dark:text-emerald-300">{{ cluster_info.ready_nodes }} of {{ cluster_info.total_nodes }} nodes</strong> are schedulable; <strong class="font-bold text-rose-600 dark:text-rose-300">{{ cluster_info.not_ready_nodes }} node{% if cluster_info.not_ready_nodes != 1 %}s{% endif %}</strong> need attention.
                                                     </p>
                                                 </div>
                                             </div>
@@ -137,7 +137,7 @@
                                                 <div class="min-w-0">
                                                     <h4 class="font-semibold text-slate-900 dark:text-white">Capacity Guardrail</h4>
                                                     <p class="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">
-                                                        Use {{ cluster_info.cpu_capacity }} CPU cores and {{ "%.2f"|format(cluster_info.memory_capacity / 1024**3) }} GiB memory as the cluster-level limit reference before checking workload requests and limits. Compare namespace and workload demand against this baseline to catch overcommit risk, uneven node allocation, and capacity growth before scheduling pressure becomes visible.
+                                                        Use <strong class="font-bold text-blue-700 dark:text-blue-300">{{ cluster_info.cpu_capacity }} CPU cores</strong> and <strong class="font-bold text-blue-700 dark:text-blue-300">{{ "%.2f"|format(cluster_info.memory_capacity / 1024**3) }} GiB memory</strong> as the cluster capacity reference before reviewing workload requests, limits, and overcommit risk.
                                                     </p>
                                                 </div>
                                             </div>
@@ -151,7 +151,7 @@
                                                 <div class="min-w-0">
                                                     <h4 class="font-semibold text-slate-900 dark:text-white">Scheduling Signal</h4>
                                                     <p class="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">
-                                                        Keep pod capacity at {{ cluster_info.pod_capacity }} slots under review together with pending pods, namespace density, and node pressure details. Use this as an early signal to identify workload concentration, DaemonSet overhead, or pods that may need spreading before placement issues affect deployments.
+                                                        Review <strong class="font-bold text-violet-700 dark:text-violet-300">{{ cluster_info.pod_capacity }} pod slots</strong> together with pending pods, namespace density, and node pressure to catch placement risk early.
                                                     </p>
                                                 </div>
                                             </div>
