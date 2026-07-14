@@ -7,6 +7,7 @@ This domain owns explicit live mutations of Kubernetes Secrets. Kubernetes Inven
 ## Current workflows
 
 - guided Secret creation;
+- selected-key non-TLS Secret data replacement;
 - single TLS Secret rotation;
 - bulk TLS Secret rotation;
 - centralized validation, notification, and operational audit.
@@ -34,6 +35,7 @@ This domain owns explicit live mutations of Kubernetes Secrets. Kubernetes Inven
 
 - `kubernetes_secrets.view`
 - `kubernetes_secrets.create`
+- `kubernetes_secrets.replace`
 - `kubernetes_secrets.rotate_tls`
 - `kubernetes_secrets.bulk_rotate_tls`
 
@@ -41,6 +43,7 @@ This domain owns explicit live mutations of Kubernetes Secrets. Kubernetes Inven
 
 - `/kubernetes-operations/secrets` — domain landing page;
 - `/kubernetes-operations/secrets/create` — guided create workflow;
+- `/kubernetes-operations/secrets/replace` — selected-key non-TLS replacement workflow;
 - `/kubernetes-operations/secrets/tls-rotation` — existing TLS rotation workflow.
 
 ## Shared layer
@@ -52,7 +55,7 @@ Reusable TLS parsing and certificate/private-key validation live in `app/kuberne
 - Secret creation and Secret data replacement are separate workflows.
 - Existing Secret values are never read back or displayed by KAORI.
 - TLS uses a dedicated rotation workflow because certificate/private-key matching, SAN coverage, and Governance linkage require specialized validation.
-- Non-TLS replacement is a planned controlled workflow for Opaque, Basic Auth, Registry, and SSH Secrets. It must require users to submit complete replacement material rather than editing revealed values.
+- Non-TLS replacement is an active controlled workflow for Opaque, Basic Auth, Registry, and SSH Secrets. Existing values remain unread and hidden; only submitted keys are patched.
 - ConfigMap operations belong to a separate `ConfigMap Management` operational domain. ConfigMap and Secret inventory may remain under Configuration Inventory while mutation workflows stay separate because their sensitivity and validation rules differ.
 
 ## Landing-page data
@@ -66,10 +69,10 @@ The Secret Management landing page is action-oriented. It must prioritize operat
 The workflow cards are:
 
 - **Create Secret** — active workflow for Opaque, Basic Auth, TLS, Registry, and SSH Secret creation;
-- **Replace Secret Data** — visible placeholder for the planned non-TLS replacement workflow;
+- **Replace Secret Data** — active selected-key patch workflow for supported mutable non-TLS Secrets;
 - **TLS Rotation** — active specialized workflow for existing TLS Secrets.
 
-A placeholder must never imply that an unavailable operation already works. Planned workflows use a disabled action, a clear `Coming soon` status, and an explicit description of their future scope.
+Unavailable operations must never appear active. The Replace card is enabled only for users with `kubernetes_secrets.replace`; other users see a restricted action.
 
 The landing page may use compact snapshot totals in the hero, but must not add decorative charts unless they directly help the user choose or execute an operation.
 
@@ -103,3 +106,33 @@ Before calling the Kubernetes API, KAORI validates:
 - the Kubernetes 1 MiB Secret payload limit.
 
 Kubernetes API responses are converted to user-facing outcomes for duplicate resources, missing namespaces, invalid payloads, authorization failures, authentication failures, invalid kubeconfig, and connectivity failures. Existing Secrets remain protected by create-only API semantics and are never overwritten.
+
+
+## Replace Secret Data contract
+
+The replacement workflow uses the latest `ConfigurationInventory` snapshot only for cluster, namespace, Secret identity, type, immutability, and observed key names. It must not call `read_namespaced_secret`, deserialize current Secret data, or reveal existing values in the browser.
+
+Replacement semantics:
+
+- `********` is a placeholder only and is never submitted as a Secret value;
+- a blank existing-key field omits that key from the Kubernetes patch, preserving its current server value;
+- blank is reserved for preserve semantics, so this workflow does not write an empty-string value; a future clear-value action must use an explicit separate control;
+- a populated field replaces only the submitted key;
+- Opaque replacement may patch observed keys and add new keys, but does not delete keys;
+- Basic Auth can replace username and password independently; password confirmation is required when password changes;
+- Container Registry is atomic because `.dockerconfigjson` is one payload: when any registry field changes, server, username, and password/token must all be submitted as a complete replacement bundle;
+- SSH replacement submits one complete private key through upload or paste; blank input is a no-op;
+- TLS Secrets remain excluded and use the dedicated TLS Rotation workflow;
+- immutable Secrets are visible as immutable targets but cannot be selected or patched.
+
+Every Apply request runs Kubernetes server-side dry-run immediately before the real patch. The patch contains only submitted keys, and the Kubernetes response body is not preloaded so KAORI does not deserialize Secret data returned by the API.
+
+Validate and Replace attempts always generate an operational toast, notification, and activity record. Safe metadata may include target identity, Secret type, operation, updated key names/count, and `existing_values_read=false`. Values, passwords, tokens, registry payloads, and private keys must never enter logs, activity metadata, notifications, or background jobs.
+
+The default Editor and Admin roles receive `kubernetes_secrets.replace`. Existing installations must run `flask seed-rbac` after applying this change so the permission catalog and built-in role assignments are synchronized.
+
+Implementation ownership:
+
+- `replace_service.py` owns inventory target lookup, Kubernetes dry-run/patch execution, API error mapping, and safe operation metadata;
+- `replace_payloads.py` owns type-specific input validation and construction of the selected-key patch payload;
+- route handlers own RBAC, toast/notification feedback, and operational activity recording.

@@ -11,6 +11,12 @@ from app.kubernetes_operations.secrets.create_service import (
     get_cluster_namespace_options,
     get_secret_create_context,
 )
+from app.kubernetes_operations.secrets.replace_service import (
+    execute_secret_replacement,
+    get_replace_target_context,
+    get_replace_workspace,
+    get_secret_replace_context,
+)
 from app.kubernetes_operations.secrets.service import (
     apply_bulk_update,
     apply_certificate_update,
@@ -307,6 +313,162 @@ def create_secret():
         submitted=submitted,
         opaque_entries=opaque_entries,
         **context,
+    )
+
+
+def _replacement_target_metadata(target: Any | None, *, operation: str) -> dict[str, Any]:
+    return {
+        'configuration_inventory_id': getattr(target, 'id', None),
+        'cluster_id': getattr(target, 'cluster_id', None),
+        'namespace': getattr(target, 'namespace', None),
+        'secret_name': getattr(target, 'name', None),
+        'secret_type': getattr(target, 'secret_type', None),
+        'operation': operation,
+        'existing_values_read': False,
+    }
+
+
+@permission_required('kubernetes_secrets.replace')
+def replace_secret_workspace():
+    return render_template(
+        'kubernetes_operations/secrets/_replace_target_workspace.html',
+        **get_replace_workspace(
+            request.args.get('cluster_id'),
+            request.args.get('namespace'),
+            request.args.get('inventory_id'),
+        ),
+        reset_content=True,
+    )
+
+
+@permission_required('kubernetes_secrets.replace')
+def replace_secret_content():
+    return render_template(
+        'kubernetes_operations/secrets/_replace_content_form.html',
+        **get_replace_target_context(request.args.get('inventory_id')),
+    )
+
+
+@permission_required('kubernetes_secrets.replace')
+def replace_secret():
+    operation_result = None
+    operation_feedback = None
+    reset_replace_form = False
+    is_htmx = request.headers.get('HX-Request') == 'true'
+    selected_inventory_id = request.form.get('inventory_id', '') if request.method == 'POST' else ''
+    target_context = get_replace_target_context(selected_inventory_id)
+    selected_target = target_context.get('target')
+    workspace_context = get_replace_workspace(
+        getattr(selected_target, 'cluster_id', None),
+        getattr(selected_target, 'namespace', None),
+        getattr(selected_target, 'id', None),
+    )
+
+    if request.method == 'POST':
+        operation = (request.form.get('operation') or 'validate').strip().lower()
+        dry_run = operation != 'replace'
+        try:
+            if operation not in {'validate', 'replace'}:
+                raise ValueError('Unsupported Secret replacement action.')
+
+            result = execute_secret_replacement(request.form, request.files, dry_run=dry_run)
+            operation_result = result.__dict__
+            reset_replace_form = not dry_run
+            feedback = _record_secret_activity(
+                event_type=(
+                    'kubernetes_secret_replacement_validation'
+                    if dry_run
+                    else 'kubernetes_secret_data_replaced'
+                ),
+                status=result.status,
+                title=result.title,
+                message=result.message,
+                metadata=result.metadata,
+                action_url=url_for('kubernetes_operations.replace_secret'),
+                action_label='Open Replace Secret Data',
+                queue_feedback=not is_htmx,
+            )
+        except ValueError as exc:
+            title = (
+                'Secret replacement validation failed'
+                if dry_run
+                else 'Secret data replacement failed'
+            )
+            feedback = _record_secret_activity(
+                event_type=(
+                    'kubernetes_secret_replacement_validation_failed'
+                    if dry_run
+                    else 'kubernetes_secret_data_replacement_failed'
+                ),
+                status='error',
+                title=title,
+                message=str(exc),
+                metadata=_replacement_target_metadata(
+                    selected_target,
+                    operation='validation' if dry_run else 'replacement',
+                ),
+                action_url=url_for('kubernetes_operations.replace_secret'),
+                action_label='Review replacement form',
+                queue_feedback=not is_htmx,
+            )
+            operation_result = {
+                'status': 'error',
+                'title': title,
+                'message': str(exc),
+                'detail': None,
+                'metadata': {},
+            }
+        except Exception:
+            current_app.logger.exception('Unexpected Kubernetes Secret replacement failure.')
+            title = (
+                'Secret replacement validation failed'
+                if dry_run
+                else 'Secret data replacement failed'
+            )
+            message = 'KAORI could not complete the replacement because of an unexpected internal error.'
+            feedback = _record_secret_activity(
+                event_type=(
+                    'kubernetes_secret_replacement_validation_failed'
+                    if dry_run
+                    else 'kubernetes_secret_data_replacement_failed'
+                ),
+                status='error',
+                title=title,
+                message=message,
+                metadata=_replacement_target_metadata(
+                    selected_target,
+                    operation='validation' if dry_run else 'replacement',
+                ),
+                action_url=url_for('kubernetes_operations.replace_secret'),
+                action_label='Review replacement form',
+                queue_feedback=not is_htmx,
+            )
+            operation_result = {
+                'status': 'error',
+                'title': title,
+                'message': message,
+                'detail': None,
+                'metadata': {},
+            }
+
+        if is_htmx:
+            operation_feedback = _notification_response_context(feedback)
+            return render_template(
+                'kubernetes_operations/secrets/_replace_operation_result.html',
+                operation_result=operation_result,
+                operation_feedback=operation_feedback,
+                reset_replace_form=reset_replace_form,
+                **target_context,
+            )
+
+    return render_template(
+        'kubernetes_operations/secrets/replace.html',
+        operation_result=operation_result,
+        operation_feedback=operation_feedback,
+        selected_inventory_id=selected_inventory_id,
+        **target_context,
+        **workspace_context,
+        **get_secret_replace_context(),
     )
 
 

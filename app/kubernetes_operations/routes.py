@@ -5,6 +5,9 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 from app.cluster.onboarding import has_registered_clusters
 from app.kubernetes_operations.secrets.routes import (
     create_secret,
+    replace_secret,
+    replace_secret_content,
+    replace_secret_workspace,
     secret_management_index,
     secret_namespace_options,
     tls_secret_bulk_rotation_apply,
@@ -60,6 +63,28 @@ kubernetes_operations_bp.add_url_rule(
     view_func=secret_namespace_options,
     methods=['GET'],
 )
+
+kubernetes_operations_bp.add_url_rule(
+    '/secrets/replace',
+    endpoint='replace_secret',
+    view_func=replace_secret,
+    methods=['GET', 'POST'],
+)
+
+kubernetes_operations_bp.add_url_rule(
+    '/secrets/replace/workspace',
+    endpoint='replace_secret_workspace',
+    view_func=replace_secret_workspace,
+    methods=['GET'],
+)
+
+kubernetes_operations_bp.add_url_rule(
+    '/secrets/replace/content',
+    endpoint='replace_secret_content',
+    view_func=replace_secret_content,
+    methods=['GET'],
+)
+
 
 kubernetes_operations_bp.add_url_rule(
     '/secrets/tls/<int:certificate_id>/rotate',
