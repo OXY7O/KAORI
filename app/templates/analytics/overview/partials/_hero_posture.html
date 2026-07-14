@@ -16,26 +16,32 @@
     'critical': 'Immediate attention required.',
     'unknown': 'Signal status unavailable.'
 }.get(posture_status, posture.description) %}
-<div class="rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur xl:min-h-[176px]">
+<div class="rounded-2xl border border-blue-100 bg-white/95 p-5 text-slate-950 shadow-lg shadow-blue-950/10 backdrop-blur dark:border-blue-900/70 dark:bg-slate-950/90 dark:text-white xl:min-h-[176px]">
     <div class="flex h-full flex-col justify-start gap-3">
         <div class="flex items-start justify-between gap-4">
             <div class="min-w-0">
-                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-50/80">Operational posture</p>
+                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700 dark:text-blue-300">Operational posture</p>
                 <div class="mt-2 text-4xl font-bold leading-none">{{ posture.value }}</div>
-                <p class="mt-1 text-sm leading-5 text-blue-50/85">{{ posture_short_description }}</p>
+                <p class="mt-1 text-sm leading-5 text-slate-500 dark:text-slate-400">{{ posture_short_description }}</p>
             </div>
             <span class="inline-flex shrink-0 rounded-full px-3 py-1.5 text-xs font-bold capitalize ring-1 ring-inset {{ posture_badge_class }}">
                 {{ posture.status }}
             </span>
         </div>
         <div class="mt-2 grid grid-cols-2 gap-3">
-            <div class="rounded-xl bg-white/10 px-4 py-3">
-                <p class="text-xs text-blue-50/75">Actionable</p>
-                <p class="mt-1 text-2xl font-semibold">{{ actionable.total_count|default(0) }}</p>
+            <div class="rounded-2xl border border-blue-100 bg-blue-50/80 px-4 py-3 shadow-sm dark:border-blue-900/60 dark:bg-blue-950/35">
+                <div class="flex items-center justify-between gap-3">
+                    <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Actionable</p>
+                    <span class="h-2 w-2 rounded-full bg-blue-500"></span>
+                </div>
+                <p class="mt-1 text-2xl font-bold tracking-tight text-blue-700 dark:text-blue-300">{{ actionable.total_count|default(0) }}</p>
             </div>
-            <div class="rounded-xl bg-white/10 px-4 py-3">
-                <p class="text-xs text-blue-50/75">Active Alerts</p>
-                <p class="mt-1 text-2xl font-semibold">{{ active_alerts }}</p>
+            <div class="rounded-2xl border border-cyan-100 bg-cyan-50/80 px-4 py-3 shadow-sm dark:border-cyan-900/60 dark:bg-cyan-950/30">
+                <div class="flex items-center justify-between gap-3">
+                    <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Active Alerts</p>
+                    <span class="h-2 w-2 rounded-full bg-cyan-500"></span>
+                </div>
+                <p class="mt-1 text-2xl font-bold tracking-tight text-cyan-700 dark:text-cyan-300">{{ active_alerts }}</p>
             </div>
         </div>
     </div>
