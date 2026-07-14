@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 DEFAULT_PERMISSIONS = [
-    ('welcome.view', 'workspace', 'view', 'View the OpsIn Observability welcome workspace.'),
+    ('welcome.view', 'workspace', 'view', 'View the KAORI welcome workspace.'),
     ('dashboard.view', 'k8s_dashboard', 'view', 'View the Kubernetes operations dashboard.'),
     ('clusters.view', 'k8s_cluster', 'view', 'View Kubernetes cluster records and connection status.'),
     ('clusters.manage', 'k8s_cluster', 'manage', 'Create, edit, and delete Kubernetes cluster records.'),
