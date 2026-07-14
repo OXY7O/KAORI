@@ -1,0 +1,96 @@
+<section id="dashboard-capacity-snapshot" x-data="{ open: false }" class="h-full rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <div @click="open = !open" class="flex cursor-pointer select-none items-center gap-4 border-b border-slate-100 px-6 py-5 dark:border-slate-800">
+        <div class="flex min-w-0 flex-1 items-center gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300">
+                <i data-lucide="gauge" class="h-5 w-5"></i>
+            </div>
+            <div class="min-w-0">
+                <h2 class="font-semibold text-slate-950 dark:text-white">Capacity Snapshot</h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Worker-node CPU, memory, and pod headroom; control-plane nodes are excluded.</p>
+            </div>
+        </div>
+        <div class="ml-auto flex flex-shrink-0 items-center gap-3">
+            <a @click.stop href="/analytics/capacity"
+               class="text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-300">View capacity</a>
+            <button type="button"
+                    class="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:border-blue-200 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-400 dark:hover:border-blue-800 dark:hover:text-blue-300"
+                    @click.stop="open = !open"
+                    :aria-expanded="open.toString()"
+                    aria-label="Toggle section">
+                <i data-lucide="chevron-down" class="h-4 w-4 transition-transform duration-200" :class="open ? 'rotate-180' : ''"></i>
+            </button>
+        </div>
+    </div>
+
+    <div x-cloak x-show="open" x-transition class="p-6">
+        {% if not dashboard.selected_cluster_id %}
+            {% with message="Select a cluster to view live worker-node capacity and headroom from Prometheus." %}
+                {% include "dashboards/kubernetes/partials/_cluster_required_empty_state.html" %}
+            {% endwith %}
+        {% else %}
+            <div class="space-y-5">
+                <div class="flex items-start gap-3 rounded-2xl border border-blue-100 bg-blue-50/70 p-4 text-xs leading-5 text-blue-800 dark:border-blue-900/60 dark:bg-blue-950/30 dark:text-blue-200">
+                    <i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0"></i>
+                    <p><span class="font-semibold">Data scope:</span> only nodes without the <code class="rounded bg-blue-100 px-1 py-0.5 dark:bg-blue-900/60">control-plane</code> or <code class="rounded bg-blue-100 px-1 py-0.5 dark:bg-blue-900/60">master</code> role are included, matching Capacity Analysis.</p>
+                </div>
+
+                {% for item in dashboard.capacity_snapshot.items %}
+                    <div>
+                        <div class="mb-2 flex items-center justify-between text-sm">
+                            <span class="font-medium text-slate-700 dark:text-slate-200">{{ item.label }}</span>
+                            <span class="text-slate-500 dark:text-slate-400">
+                                {% if item.used_percent is not none %}
+                                    {{ item.used_percent|round(0) }}% used
+                                {% else %}
+                                    No metrics
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="h-2.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                            <div class="h-full rounded-full bg-blue-600"
+                                 style="width: {{ item.used_percent if item.used_percent is not none else 0 }}%"></div>
+                        </div>
+                        <div class="mt-1 flex items-center justify-between gap-4 text-xs text-slate-500 dark:text-slate-400">
+                            <span>{{ item.description }}</span>
+                            <span class="shrink-0">
+                                {% if item.headroom_percent is not none %}
+                                    {{ item.headroom_percent|round(0) }}% headroom
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                {% endfor %}
+
+                <div class="rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm dark:border-slate-800 dark:bg-slate-950/40">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <i data-lucide="shield-check" class="h-4 w-4 text-slate-500"></i>
+                        <span class="font-medium text-slate-700 dark:text-slate-200">Overall risk:</span>
+                        <span class="font-semibold {% if dashboard.capacity_snapshot.risk in ['Critical', 'High'] %}text-red-600 dark:text-red-300 {% elif dashboard.capacity_snapshot.risk == 'Medium' %}text-amber-600 dark:text-amber-300 {% elif dashboard.capacity_snapshot.risk == 'Low' %}text-emerald-600 dark:text-emerald-300 {% else %}text-slate-500 dark:text-slate-400{% endif %}">
+                            {{ dashboard.capacity_snapshot.risk }}
+                        </span>
+                    </div>
+                    <p class="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">{{ dashboard.capacity_snapshot.insight }}</p>
+
+                    <div class="mt-4 grid gap-3 md:grid-cols-2">
+                        <div class="rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
+                            <div class="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-200">
+                                <i data-lucide="circle-help" class="h-3.5 w-3.5 text-blue-500"></i>
+                                What this means
+                            </div>
+                            <p class="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">{{ dashboard.capacity_snapshot.risk_detail }}</p>
+                        </div>
+                        <div class="rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
+                            <div class="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-200">
+                                <i data-lucide="list-checks" class="h-3.5 w-3.5 text-blue-500"></i>
+                                Recommended action
+                            </div>
+                            <p class="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">{{ dashboard.capacity_snapshot.recommended_action }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</section>

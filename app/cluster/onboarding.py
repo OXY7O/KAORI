@@ -14,12 +14,14 @@ _KUBERNETES_SCOPE_BLUEPRINTS = {
     'analytics',
     'cluster',
     'dashboard',
+    'kubernetes_dashboard',
     'governance',
     'inventory',
 }
 
 _BANNER_EXCLUDED_ENDPOINTS = {
     'cluster.add_cluster',
+    'welcome.index',
     'dashboard.welcome',
 }
 

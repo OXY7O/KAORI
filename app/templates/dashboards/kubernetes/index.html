@@ -1,0 +1,6 @@
+{% extends "layouts/app.html" %}
+{% set page_title = "Kubernetes Operations Dashboard" %}
+{% block title %}Kubernetes Operations Dashboard · KAORI{% endblock title %}
+{% block dashboard_content %}
+    <div id="dashboard-content" class="space-y-6">{% include "dashboards/kubernetes/partials/_content.html" %}</div>
+{% endblock dashboard_content %}

@@ -1,8 +1,8 @@
 {% set endpoint = request.endpoint or '' %}
-{% if endpoint == 'dashboard.welcome' %}
+{% if endpoint == 'welcome.index' %}
     {% set nav_workspace = 'Welcome' %}
     {% set nav_icon = 'sparkles' %}
-{% elif endpoint.startswith('dashboard.') %}
+{% elif endpoint.startswith('kubernetes_dashboard.') %}
     {% set nav_workspace = 'Kubernetes Operations' %}
     {% set nav_icon = 'layout-dashboard' %}
 {% elif endpoint.startswith('cluster.') %}

@@ -29,7 +29,7 @@ def _get_client_ip() -> str | None:
 )
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for('dashboard.welcome'))
+        return redirect(url_for('welcome.index'))
 
     form = LoginForm()
 
@@ -55,7 +55,7 @@ def login():
             login_user(result.user, remember=form.remember.data)
             session['auth_source'] = result.source
 
-            return redirect(url_for('dashboard.welcome'))
+            return redirect(url_for('welcome.index'))
 
         if result.reason == 'database_unavailable':
             flash(result.message or DATABASE_UNAVAILABLE_MESSAGE, 'danger')
