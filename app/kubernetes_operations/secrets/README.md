@@ -58,3 +58,17 @@ Reusable TLS parsing and certificate/private-key validation live in `app/kuberne
 ## Landing-page data
 
 Secret Management overview metrics and type distribution are read from the latest `ConfigurationInventory` database snapshot. The landing page must not call the live Kubernetes API. Live API access is reserved for explicit validation and mutation actions.
+
+## Landing-page presentation
+
+The Secret Management landing page is action-oriented. It must prioritize operational workflows and security boundaries rather than inventory analytics or Secret-type distribution charts.
+
+The workflow cards are:
+
+- **Create Secret** — active workflow for Opaque, Basic Auth, TLS, Registry, and SSH Secret creation;
+- **Replace Secret Data** — visible placeholder for the planned non-TLS replacement workflow;
+- **TLS Rotation** — active specialized workflow for existing TLS Secrets.
+
+A placeholder must never imply that an unavailable operation already works. Planned workflows use a disabled action, a clear `Coming soon` status, and an explicit description of their future scope.
+
+The landing page may use compact snapshot totals in the hero, but must not add decorative charts unless they directly help the user choose or execute an operation.
