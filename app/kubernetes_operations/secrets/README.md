@@ -406,3 +406,10 @@ not embed the navigation Notification Center as a nested OOB fragment, because a
 repeating HTMX response can duplicate the notification trigger outside the navbar.
 The canonical `#notification-center` owns its own `/notifications/panel` polling and
 replaces itself in place. Keep these two polling boundaries independent.
+
+## Protected Reveal layout and request pagination
+
+- The one-time value card uses a neutral surface without a hard border. Sensitive emphasis is limited to the badge and value surface.
+- `Security boundary` and `My reveal requests` are paired in one responsive two-column row. The security card explains the request flow using a vertical dot-and-line sequence.
+- `My reveal requests` is paginated server-side with 5, 10, or 25 rows. HTMX polling preserves the selected page and page size.
+- Pending approvals remain below the paired cards and continue to refresh through the same status boundary.
