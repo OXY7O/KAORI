@@ -16,36 +16,26 @@
     'critical': 'Immediate attention required.',
     'unknown': 'Signal status unavailable.'
 }.get(posture_status, posture.description) %}
-<div class="relative overflow-hidden rounded-2xl border border-white/25 bg-gradient-to-br from-blue-700 via-blue-600 to-cyan-500 p-5 text-white shadow-[0_18px_40px_-18px_rgba(3,37,99,0.85)] ring-1 ring-inset ring-white/15 xl:min-h-[176px]">
-    <div class="pointer-events-none absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-white/70 to-transparent"></div>
-    <div class="pointer-events-none absolute -right-10 -top-14 h-36 w-36 rounded-full bg-white/15 blur-2xl"></div>
-    <div class="pointer-events-none absolute -bottom-16 -left-10 h-36 w-36 rounded-full bg-blue-950/25 blur-2xl"></div>
-
-    <div class="relative flex h-full flex-col justify-start gap-3">
+<div class="rounded-2xl border border-white/15 bg-white/10 p-5 text-white shadow-sm backdrop-blur xl:min-h-[176px]">
+    <div class="flex h-full flex-col justify-between gap-4">
         <div class="flex items-start justify-between gap-4">
             <div class="min-w-0">
-                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-100">Operational posture</p>
-                <div class="mt-2 text-4xl font-bold leading-none text-white drop-shadow-sm">{{ posture.value }}</div>
-                <p class="mt-1 text-sm leading-5 text-blue-50/90">{{ posture_short_description }}</p>
+                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-50/85">Operational posture</p>
+                <div class="mt-2 text-4xl font-bold leading-none text-white">{{ posture.value }}</div>
+                <p class="mt-1 text-sm leading-5 text-blue-50/75">{{ posture_short_description }}</p>
             </div>
             <span class="inline-flex shrink-0 rounded-full px-3 py-1.5 text-xs font-bold capitalize shadow-sm ring-1 ring-inset {{ posture_badge_class }}">
                 {{ posture.status }}
             </span>
         </div>
 
-        <div class="mt-2 grid grid-cols-2 gap-3">
-            <div class="rounded-2xl border border-white/20 bg-blue-950/20 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.20),0_8px_18px_-12px_rgba(3,37,99,0.9)] backdrop-blur-sm">
-                <div class="flex items-center justify-between gap-3">
-                    <p class="text-xs font-medium text-blue-100">Actionable</p>
-                    <span class="h-2 w-2 rounded-full bg-blue-100 shadow-[0_0_10px_rgba(219,234,254,0.9)]"></span>
-                </div>
+        <div class="grid grid-cols-2 gap-3">
+            <div class="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 shadow-sm backdrop-blur">
+                <p class="text-xs font-medium text-blue-50/75">Actionable</p>
                 <p class="mt-1 text-2xl font-bold tracking-tight text-white">{{ actionable.total_count|default(0) }}</p>
             </div>
-            <div class="rounded-2xl border border-white/20 bg-cyan-950/20 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.20),0_8px_18px_-12px_rgba(8,47,73,0.9)] backdrop-blur-sm">
-                <div class="flex items-center justify-between gap-3">
-                    <p class="text-xs font-medium text-cyan-50">Active Alerts</p>
-                    <span class="h-2 w-2 rounded-full bg-cyan-100 shadow-[0_0_10px_rgba(207,250,254,0.9)]"></span>
-                </div>
+            <div class="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 shadow-sm backdrop-blur">
+                <p class="text-xs font-medium text-blue-50/75">Active Alerts</p>
                 <p class="mt-1 text-2xl font-bold tracking-tight text-white">{{ active_alerts }}</p>
             </div>
         </div>
