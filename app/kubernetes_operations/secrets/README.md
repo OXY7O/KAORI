@@ -398,3 +398,11 @@ Protected Secret Reveal approval uses notification-driven and polling-based stat
 - An approved row displays `Reveal once` immediately when the requester's step-up session is active; otherwise it displays `Reauthenticate first`.
 - The same status poll refreshes the notification-center badge out-of-band without exposing Secret values.
 - Polling responses contain request metadata only. Secret values remain restricted to the one-time no-store reveal response.
+
+## Real-time approval UI boundary
+
+The Secret Reveal status poll updates only `#secret-reveal-request-status`. It must
+not embed the navigation Notification Center as a nested OOB fragment, because a
+repeating HTMX response can duplicate the notification trigger outside the navbar.
+The canonical `#notification-center` owns its own `/notifications/panel` polling and
+replaces itself in place. Keep these two polling boundaries independent.
