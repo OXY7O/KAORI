@@ -673,6 +673,14 @@ def reveal_secret_status():
     )
 
 
+@permission_required('kubernetes_secrets.approve_reveal')
+def reveal_secret_approvals():
+    return render_template(
+        'kubernetes_operations/secrets/_reveal_pending_approvals.html',
+        **_reveal_status_context(),
+    )
+
+
 @permission_required('kubernetes_secrets.reveal')
 def reveal_secret_workspace():
     return render_template(

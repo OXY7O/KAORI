@@ -23,6 +23,7 @@ from app.kubernetes_operations.secrets.routes import (
     reveal_secret_content,
     reveal_secret_page,
     reveal_secret_status,
+    reveal_secret_approvals,
     reveal_secret_value,
     reveal_secret_workspace,
     decide_secret_reveal_request,
@@ -143,6 +144,14 @@ kubernetes_operations_bp.add_url_rule(
     view_func=reveal_secret_status,
     methods=['GET'],
 )
+
+kubernetes_operations_bp.add_url_rule(
+    '/secrets/reveal/approvals',
+    endpoint='reveal_secret_approvals',
+    view_func=reveal_secret_approvals,
+    methods=['GET'],
+)
+
 
 kubernetes_operations_bp.add_url_rule(
     '/secrets/reveal/workspace',
