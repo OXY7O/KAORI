@@ -382,3 +382,15 @@ Verify feedback for request success/failure, reauthentication success/failure, a
 Secret Management workflow cards must use color utilities already present in the compiled Tailwind output. A card must not introduce a new palette only through a Jinja template unless the CSS build is also regenerated and verified. Missing generated utilities can leave icon containers and primary actions white while a generic border renders as a hard dark outline.
 
 The Protected Secret Reveal card uses the established emerald palette and stable Lucide icons (`shield-check`, `eye`, and `settings`). Its primary action is a solid emerald button, while namespace-policy management remains a neutral secondary action. When changing card colors, verify the required background, border, text, gradient, and dark-mode classes in `app/static/css/output.css` before delivery.
+
+## Secret Management workflow-card visual contract
+
+The workflow cards on the Secret Management landing page use a neutral surface:
+
+- white/slate background and slate border for every card;
+- no domain-colored card background, gradient, or top accent strip;
+- no card translate, hover shadow, or hover elevation effect;
+- color remains limited to the workflow icon, availability badge, and primary action;
+- supporting information panels use the same neutral slate surface.
+
+This keeps the four workflows visually equal and prevents card color from implying priority or severity.
