@@ -19,7 +19,6 @@ from app.commands import register_commands
 from app.common.timezone import format_date, format_datetime, normalize_timezone_name
 from app.config import CONFIG_MAP
 from app.dashboards.kubernetes.routes import kubernetes_dashboard_bp
-from app.dashboards.routes import dashboard_compat_bp
 from app.extensions import db, init_celery, limiter, login_manager, migrate, register_rate_limit_handlers
 from app.governance.routes import governance_bp
 from app.health import health_bp
@@ -122,7 +121,6 @@ def create_app(config_name: str | None = None):
     # Register blueprints
     app.register_blueprint(auth_bp)
     app.register_blueprint(welcome_bp)
-    app.register_blueprint(dashboard_compat_bp)
     app.register_blueprint(kubernetes_dashboard_bp)
     app.register_blueprint(cluster_bp)
     app.register_blueprint(inventory_bp)
