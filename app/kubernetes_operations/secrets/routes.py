@@ -598,6 +598,7 @@ def reveal_secret_page():
         **workspace_context,
         **target_context,
         'selected_inventory_id': selected_inventory_id,
+        'selected_key_name': request.args.get('key_name', '').strip(),
         'selected_cluster': selected_cluster,
         'selected_namespace_policy': selected_namespace_policy,
         'step_up_active': _secret_reveal_step_up_active(),
@@ -628,6 +629,7 @@ def reveal_secret_content():
     return render_template(
         'kubernetes_operations/secrets/_reveal_request_form.html',
         step_up_active=_secret_reveal_step_up_active(),
+        selected_key_name=request.args.get('key_name', '').strip(),
         **get_reveal_target_context(request.args.get('inventory_id')),
     )
 
