@@ -75,7 +75,7 @@
                 {% set analytics_posture_label = 'Workload posture' %}
                 {% include "analytics/components/_blocked_posture.html" %}
             {% else %}
-            <div class="rounded-2xl border border-white/15 bg-white/10 p-5 text-white shadow-sm backdrop-blur xl:min-h-[176px]">
+            <div class="rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur xl:min-h-[176px]">
                 <div class="flex h-full flex-col justify-start gap-3">
                     <div class="flex items-start justify-between gap-4">
                         <div class="min-w-0">
@@ -88,11 +88,11 @@
                         </span>
                     </div>
                     <div class="mt-2 grid grid-cols-2 gap-3">
-                        <div class="rounded-xl border border-white/10 bg-white/10 px-4 py-3 shadow-sm">
+                        <div class="rounded-xl bg-white/10 px-4 py-3">
                             <p class="text-xs text-blue-50/75">Governance Findings</p>
                             <p class="mt-1 text-2xl font-semibold">{{ finding_count }}</p>
                         </div>
-                        <div class="rounded-xl border border-white/10 bg-white/10 px-4 py-3 shadow-sm">
+                        <div class="rounded-xl bg-white/10 px-4 py-3">
                             <p class="text-xs text-blue-50/75">Time Range</p>
                             <p class="mt-1 text-2xl font-semibold">{{ selected_time_range }}</p>
                         </div>

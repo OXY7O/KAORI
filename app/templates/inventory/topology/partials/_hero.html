@@ -38,14 +38,14 @@
         </div>
 
         <div class="flex w-full flex-col gap-3 sm:max-w-[360px] xl:w-[360px] xl:flex-shrink-0">
-            <div class="flex min-h-[7rem] flex-col justify-center rounded-2xl border border-white/15 bg-white/10 p-4 text-white shadow-sm backdrop-blur">
+            <div class="flex min-h-[7rem] flex-col justify-center rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
                 <p class="text-xs font-medium uppercase tracking-[0.2em] text-blue-50/80">Relationship snapshot</p>
                 <div class="mt-3 flex min-h-[4.5rem] items-end justify-between gap-4">
                     <div class="min-w-0">
                         <div id="topology-hero-relationships" class="text-3xl font-bold leading-none">{{ graph.summary.relationships }}</div>
                         <p class="mt-2 whitespace-nowrap text-sm text-blue-50/80">Visible relationships</p>
                     </div>
-                    <div class="w-[10rem] flex-shrink-0 rounded-xl border border-white/10 bg-white/10 px-2.5 py-2 text-right shadow-sm">
+                    <div class="w-[10rem] flex-shrink-0 rounded-xl bg-white/10 px-2.5 py-2 text-right">
                         <div class="whitespace-nowrap text-[9px] font-medium uppercase tracking-[0.05em] text-blue-50/75">Last collected</div>
                         <div id="topology-hero-collected" class="mt-1 truncate text-xs font-semibold leading-5">Latest snapshot</div>
                     </div>
