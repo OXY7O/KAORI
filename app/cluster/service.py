@@ -399,26 +399,6 @@ def get_cluster_by_id(cluster_id: str) -> Cluster | None:
     )
 
 
-SECRET_REVEAL_POLICIES = {'disabled', 'step_up', 'approval_required'}
-
-
-def _normalize_secret_reveal_configuration(
-    *,
-    policy: str,
-    encryption_verified: bool,
-    audit_verified: bool,
-) -> str:
-    normalized_policy = (policy or 'disabled').strip().lower()
-    if normalized_policy not in SECRET_REVEAL_POLICIES:
-        raise ValueError('Unsupported Protected Secret Reveal policy.')
-
-    if normalized_policy != 'disabled' and (not encryption_verified or not audit_verified):
-        raise ValueError(
-            'Verify Kubernetes Secret encryption at rest and Metadata-level audit logging before enabling Protected Secret Reveal.'
-        )
-
-    return normalized_policy
-
 
 def create_cluster(
     name: str,
@@ -427,9 +407,6 @@ def create_cluster(
     description: str | None = None,
     kube_verify_ssl: bool = True,
     kube_allow_weak_tls: bool = False,
-    secret_reveal_policy: str = 'disabled',
-    secret_reveal_encryption_verified: bool = False,
-    secret_reveal_audit_verified: bool = False,
 ) -> Cluster:
     existing = Cluster.query.filter_by(
         name=name,
@@ -441,12 +418,6 @@ def create_cluster(
     result = parse_kubeconfig(
         kubeconfig,
     )
-    normalized_reveal_policy = _normalize_secret_reveal_configuration(
-        policy=secret_reveal_policy,
-        encryption_verified=secret_reveal_encryption_verified,
-        audit_verified=secret_reveal_audit_verified,
-    )
-
     cluster = Cluster()
 
     cluster.name = name
@@ -456,9 +427,6 @@ def create_cluster(
     cluster.server = result['server']
     cluster.kube_verify_ssl = kube_verify_ssl
     cluster.kube_allow_weak_tls = kube_allow_weak_tls
-    cluster.secret_reveal_policy = normalized_reveal_policy
-    cluster.secret_reveal_encryption_verified = secret_reveal_encryption_verified
-    cluster.secret_reveal_audit_verified = secret_reveal_audit_verified
 
     db.session.add(
         cluster,
@@ -520,9 +488,6 @@ def update_cluster(
     description: str | None,
     kube_verify_ssl: bool = True,
     kube_allow_weak_tls: bool = False,
-    secret_reveal_policy: str = 'disabled',
-    secret_reveal_encryption_verified: bool = False,
-    secret_reveal_audit_verified: bool = False,
 ) -> Cluster:
     existing = Cluster.query.filter(
         Cluster.name == name,
@@ -532,20 +497,11 @@ def update_cluster(
     if existing:
         raise ValueError('Cluster name already exists')
 
-    normalized_reveal_policy = _normalize_secret_reveal_configuration(
-        policy=secret_reveal_policy,
-        encryption_verified=secret_reveal_encryption_verified,
-        audit_verified=secret_reveal_audit_verified,
-    )
-
     cluster.name = name
     cluster.environment = environment
     cluster.description = description
     cluster.kube_verify_ssl = kube_verify_ssl
     cluster.kube_allow_weak_tls = kube_allow_weak_tls
-    cluster.secret_reveal_policy = normalized_reveal_policy
-    cluster.secret_reveal_encryption_verified = secret_reveal_encryption_verified
-    cluster.secret_reveal_audit_verified = secret_reveal_audit_verified
 
     db.session.commit()
 

@@ -82,7 +82,7 @@ def _record_secret_activity(
         detail=detail,
         action_url=action_url or url_for('kubernetes_operations.secret_management'),
         action_label=action_label,
-        action_icon='key-round',
+        action_icon='key',
         metadata=metadata,
         queue_feedback=queue_feedback,
     )
@@ -585,6 +585,11 @@ def reveal_secret_page():
     can_reveal = current_user.has_permission('kubernetes_secrets.reveal')
     can_approve = current_user.has_permission('kubernetes_secrets.approve_reveal')
     selected_cluster = target_context.get('selected_cluster') or workspace_context.get('selected_cluster')
+    selected_namespace_policy = (
+        target_context.get('selected_namespace_policy')
+        if target_context.get('target') is not None
+        else workspace_context.get('selected_namespace_policy', 'disabled')
+    )
     page_context = {
         **get_reveal_page_context(
             user_id=current_user.id,
@@ -594,6 +599,7 @@ def reveal_secret_page():
         **target_context,
         'selected_inventory_id': selected_inventory_id,
         'selected_cluster': selected_cluster,
+        'selected_namespace_policy': selected_namespace_policy,
         'step_up_active': _secret_reveal_step_up_active(),
         'can_reveal': can_reveal,
         'can_approve': can_approve,

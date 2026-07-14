@@ -58,7 +58,7 @@ Reusable TLS parsing and certificate/private-key validation live in `app/kuberne
 ## Workflow boundaries
 
 - Secret creation and Secret data replacement are separate workflows.
-- Existing Secret values remain unread by Create and Replace. Protected Reveal is the only explicit read path and is isolated behind cluster policy, KAORI permissions, reauthentication, optional approval, rate limiting, and audit controls.
+- Existing Secret values remain unread by Create and Replace. Protected Reveal is the only explicit read path and is isolated behind cluster readiness, namespace policy, KAORI permissions, reauthentication, optional approval, rate limiting, and audit controls.
 - TLS uses a dedicated rotation workflow because certificate/private-key matching, SAN coverage, and Governance linkage require specialized validation.
 - Non-TLS replacement is an active controlled workflow for Opaque, Basic Auth, Registry, and SSH Secrets. Existing values remain unread and hidden; only submitted keys are patched.
 - ConfigMap operations belong to a separate `ConfigMap Management` operational domain. ConfigMap and Secret inventory may remain under Configuration Inventory while mutation workflows stay separate because their sensitivity and validation rules differ.
@@ -160,14 +160,32 @@ When migrating from the earlier dedicated-reveal-credential model, dropping the 
 Reveal is default-deny at every layer:
 
 1. Global configuration `KUBERNETES_SECRET_REVEAL_ENABLED=true` must be set explicitly.
-2. The target cluster must use `secret_reveal_policy=step_up` or `approval_required`.
+2. The target namespace must have an explicit `step_up` or `approval_required` policy under **Settings > Secret Reveal**. Missing policy records are disabled by default.
 3. The cluster must have its normal kubeconfig registered, and the Kubernetes administrator must authorize that identity to `get` only the intended Secrets within the intended namespaces.
 4. Encryption at rest and Kubernetes audit logging at Metadata level must both be marked verified for the cluster.
 5. The user must hold `kubernetes_secrets.reveal`; approval decisions require `kubernetes_secrets.approve_reveal`.
-6. Cluster policy and prerequisite attestations require `kubernetes_secrets.manage_reveal`; `clusters.manage` alone cannot alter these controls.
+6. Cluster readiness attestations and namespace policies require `kubernetes_secrets.manage_reveal`; `clusters.manage` alone cannot alter these controls.
 7. `kubernetes_secrets.reveal` is not assigned to any built-in role by default. Admin receives approval and policy-management permissions but not reveal permission; Super Admin still has the explicit platform bypass defined by the RBAC model.
 
 The cluster kubeconfig identity should be namespace-scoped where possible. For Secret reveal, grant `get` only within the intended scope and avoid `list` or `watch`. The same identity may also carry verbs required by other enabled KAORI operations, so Kubernetes RBAC remains the authoritative resource boundary and must be reviewed as a union of explicitly enabled capabilities.
+
+
+### Namespace policy ownership
+
+Reveal authorization follows a strict hierarchy:
+
+```text
+Global feature switch
+→ Cluster readiness attestations
+→ Explicit namespace policy
+→ KAORI user permission
+→ Step-up / approval
+→ Kubernetes RBAC
+```
+
+Namespace policy records are stored in `secret_reveal_namespace_policies` with a unique `(cluster_id, namespace)` boundary. There is no implicit all-namespace policy and migration does not copy the former cluster-wide policy, so upgrades return to default-deny until namespaces are explicitly enabled. Changing or disabling a namespace policy expires active requests for that namespace; disabling cluster readiness expires all active requests for the cluster.
+
+The Settings page lists namespaces from the latest `NamespaceInventory` snapshot. A removed namespace policy can still be disabled even if its snapshot is stale, but new access cannot be granted to a namespace missing from inventory.
 
 ### Supported and blocked values
 
@@ -188,8 +206,8 @@ TLS and SSH private-key material must use rotation and fingerprint workflows ins
 ### Request lifecycle
 
 - A request stores target identity, selected key name, policy, reason, ticket, requestor, approver, status, and expiry only.
-- Step-up clusters create an immediately approved request with a short expiry.
-- Approval-required clusters create a pending request. Requestor and approver must be different users.
+- Step-up namespaces create an immediately approved request with a short expiry.
+- Approval-required namespaces create a pending request. Requestor and approver must be different users.
 - Approval creates a short one-time window. Denial closes the request.
 - Duplicate active requests for the same requestor/cluster/namespace/Secret/key are rejected.
 - Approved requests are consumed after one successful reveal and cannot be reused.
@@ -245,17 +263,18 @@ KUBERNETES_SECRET_REVEAL_PENDING_TTL_HOURS=24
 
 ### Implementation ownership
 
-- `reveal_service.py` owns policy/readiness validation, request lifecycle, approval state, expiry, live Kubernetes read, one-time consumption, decoding, and safe metadata.
+- `reveal_policy.py` owns namespace-scoped policy validation, cluster readiness, and policy persistence.
+- `reveal_service.py` owns request lifecycle, approval state, expiry, live Kubernetes read, one-time consumption, decoding, and safe metadata.
 - `SecretRevealRequest` stores workflow state only; it has no payload/value column.
 - route handlers own RBAC, reauthentication session state, rate limiting, toast/notification feedback, and activity records.
 - `templates/kubernetes_operations/secrets/reveal.html` owns request, approval, and one-time display surfaces.
-- cluster registration owns the single kubeconfig identity; cluster registration/edit owns per-cluster Reveal policy and prerequisite attestations.
+- cluster registration owns the single kubeconfig identity only. **Settings > Secret Reveal** owns cluster readiness attestations and explicit namespace policies.
 
 Replace Secret Data remains the preferred update path when the operator already knows the intended replacement value. Protected Reveal is an exceptional read path, not a convenience default.
 
 ## Navigation consolidation
 
-The sidebar exposes one Secret entry only: **K8s Operations > Secret Management**. Create, Replace, Protected Reveal, and TLS Rotation remain separate route-level workflows, but users enter them through permission-aware cards on the Secret Management landing page. Do not add those workflows back as sibling sidebar items.
+The sidebar exposes one operational Secret entry only: **K8s Operations > Secret Management**. Create, Replace, Protected Reveal, and TLS Rotation remain separate route-level workflows, but users enter them through permission-aware cards on the Secret Management landing page. Reveal governance is configured separately under **Settings > Secret Reveal**. Do not add operational workflows back as sibling sidebar items.
 
 The Secret Management landing route accepts any Secret operation permission so a user who can create, replace, reveal, approve, or rotate can still reach the card workspace even without the inventory-only `kubernetes_secrets.view` permission. Cards remain visible as a capability map, but unavailable actions render as restricted and cannot link to protected endpoints.
 
@@ -294,13 +313,13 @@ Run these scenarios in a non-production namespace before enabling Protected Reve
 4. Remove or alter the token in browser developer tools and submit again.
 5. Confirm KAORI rejects the request, shows an error toast, records a failed activity event, and performs no approval, reauthentication, or Kubernetes read.
 
-### C. Global and cluster policy gates
+### C. Global, cluster-readiness, and namespace-policy gates
 
 1. Set `KUBERNETES_SECRET_REVEAL_ENABLED=false`; confirm the page displays the global-disabled state and target controls cannot be used.
-2. Enable the global switch but leave the cluster policy Disabled; confirm the cluster is not selectable.
-3. Set policy to Step-up without encryption/audit attestations; confirm saving the policy is rejected.
-4. Verify both prerequisites, enable Step-up, and confirm the cluster becomes selectable.
-5. Repeat with Approval Required.
+2. Enable the global switch but leave every namespace Disabled in **Settings > Secret Reveal**; confirm the cluster is not selectable.
+3. Try enabling a namespace before encryption/audit attestations are verified; confirm saving is rejected.
+4. Verify both cluster prerequisites, enable one namespace as Step-up, and confirm only that namespace is selectable.
+5. Enable another namespace as Approval Required and confirm each namespace follows its own policy.
 
 ### D. Kubernetes RBAC outcomes
 

@@ -46,11 +46,6 @@ class Cluster(db.Model):
         default=False,
     )
 
-    secret_reveal_policy: Mapped[str] = mapped_column(
-        String(32),
-        nullable=False,
-        default='disabled',
-    )
 
     secret_reveal_encryption_verified: Mapped[bool] = mapped_column(
         Boolean,

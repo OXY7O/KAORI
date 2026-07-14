@@ -20,7 +20,7 @@ from app.models.notification import Notification
 from app.models.prometheus import PrometheusConfig
 from app.models.rbac import Permission, Role, RolePermission
 from app.models.report import Report, ReportSchedule, ReportScheduleRun, ReportTemplate
-from app.models.secret_reveal import SecretRevealRequest
+from app.models.secret_reveal import SecretRevealNamespacePolicy, SecretRevealRequest
 from app.models.user import User
 
 __all__ = [
@@ -52,5 +52,6 @@ __all__ = [
     'ReportTemplate',
     'ReportSchedule',
     'ReportScheduleRun',
+    'SecretRevealNamespacePolicy',
     'SecretRevealRequest',
 ]

@@ -3,9 +3,65 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime
 
+from sqlalchemy import UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.extensions import db
+
+
+class SecretRevealNamespacePolicy(db.Model):
+    __tablename__ = 'secret_reveal_namespace_policies'
+    __table_args__ = (
+        UniqueConstraint(
+            'cluster_id',
+            'namespace',
+            name='uq_secret_reveal_namespace_policy_cluster_namespace',
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(
+        db.String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+    )
+    cluster_id: Mapped[str] = mapped_column(
+        db.ForeignKey('clusters.id', ondelete='CASCADE'),
+        nullable=False,
+        index=True,
+    )
+    namespace: Mapped[str] = mapped_column(
+        db.String(255),
+        nullable=False,
+        index=True,
+    )
+    policy: Mapped[str] = mapped_column(
+        db.String(32),
+        nullable=False,
+        index=True,
+    )
+    created_by_user_id: Mapped[int | None] = mapped_column(
+        db.ForeignKey('users.id', ondelete='SET NULL'),
+        nullable=True,
+    )
+    updated_by_user_id: Mapped[int | None] = mapped_column(
+        db.ForeignKey('users.id', ondelete='SET NULL'),
+        nullable=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
+
+    cluster = relationship('Cluster', lazy='joined')
+    created_by = relationship('User', foreign_keys=[created_by_user_id], lazy='joined')
+    updated_by = relationship('User', foreign_keys=[updated_by_user_id], lazy='joined')
 
 
 class SecretRevealRequest(db.Model):

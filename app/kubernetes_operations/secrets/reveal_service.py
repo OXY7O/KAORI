@@ -14,13 +14,15 @@ from urllib3.exceptions import HTTPError as Urllib3HTTPError
 from app.extensions import db
 from app.kubernetes.client import KubernetesClient
 from app.kubernetes.tls import legacy_tls_context
-from app.models import Cluster, ConfigurationInventory, NamespaceInventory, SecretRevealRequest
+from app.models import Cluster, ConfigurationInventory, SecretRevealRequest
+from app.kubernetes_operations.secrets.reveal_policy import (
+    REVEAL_NAMESPACE_POLICIES,
+    cluster_reveal_readiness,
+    get_enabled_namespace_names,
+    get_namespace_policy,
+)
 
-REVEAL_POLICIES = {
-    'disabled': 'Disabled',
-    'step_up': 'Step-up authentication',
-    'approval_required': 'Approval required',
-}
+REVEAL_POLICIES = REVEAL_NAMESPACE_POLICIES
 
 SUPPORTED_REVEAL_TYPES = {
     'Opaque': {
@@ -31,7 +33,7 @@ SUPPORTED_REVEAL_TYPES = {
     'kubernetes.io/basic-auth': {
         'label': 'Basic Authentication',
         'tone': 'violet',
-        'icon': 'user-round',
+        'icon': 'user',
     },
     'kubernetes.io/dockerconfigjson': {
         'label': 'Container Registry',
@@ -95,12 +97,7 @@ def _global_enabled() -> bool:
 
 
 def _cluster_ready(cluster: Cluster) -> bool:
-    return bool(
-        cluster.secret_reveal_policy in {'step_up', 'approval_required'}
-        and bool(cluster.kubeconfig)
-        and cluster.secret_reveal_encryption_verified
-        and cluster.secret_reveal_audit_verified
-    )
+    return cluster_reveal_readiness(cluster)
 
 
 def _expire_stale_requests() -> None:
@@ -120,7 +117,11 @@ def get_reveal_clusters() -> list[Cluster]:
     if not _global_enabled():
         return []
     clusters = Cluster.query.order_by(Cluster.name.asc()).all()
-    return [cluster for cluster in clusters if _cluster_ready(cluster)]
+    return [
+        cluster
+        for cluster in clusters
+        if _cluster_ready(cluster) and get_enabled_namespace_names(cluster.id)
+    ]
 
 
 def get_reveal_workspace(
@@ -137,15 +138,7 @@ def get_reveal_workspace(
 
     cluster_available = bool(_global_enabled() and cluster is not None and _cluster_ready(cluster))
     if cluster_available:
-        namespaces = [
-            value
-            for (value,) in (
-                NamespaceInventory.query.with_entities(NamespaceInventory.namespace)
-                .filter(NamespaceInventory.cluster_id == normalized_cluster_id)
-                .order_by(NamespaceInventory.namespace.asc())
-                .all()
-            )
-        ]
+        namespaces = get_enabled_namespace_names(normalized_cluster_id)
 
     if cluster_available and normalized_namespace in namespaces:
         targets = (
@@ -166,6 +159,11 @@ def get_reveal_workspace(
         'targets': targets,
         'selected_target_id': selected_target_id,
         'selected_cluster': cluster if cluster_available else None,
+        'selected_namespace_policy': (
+            get_namespace_policy(normalized_cluster_id, normalized_namespace)
+            if cluster_available and normalized_namespace in namespaces
+            else 'disabled'
+        ),
     }
 
 
@@ -195,15 +193,34 @@ def _allowed_keys(target: ConfigurationInventory) -> list[str]:
 def get_reveal_target_context(inventory_id: str | int | None) -> dict[str, Any]:
     target = get_reveal_target(inventory_id)
     if target is None:
-        return {'target': None, 'type_config': None, 'key_names': [], 'selected_cluster': None}
+        return {
+            'target': None,
+            'type_config': None,
+            'key_names': [],
+            'selected_cluster': None,
+            'selected_namespace_policy': 'disabled',
+        }
     cluster = Cluster.query.filter_by(id=target.cluster_id).first()
-    if cluster is None or not _global_enabled() or not _cluster_ready(cluster):
-        return {'target': None, 'type_config': None, 'key_names': [], 'selected_cluster': None}
+    namespace_policy = get_namespace_policy(target.cluster_id, target.namespace)
+    if (
+        cluster is None
+        or not _global_enabled()
+        or not _cluster_ready(cluster)
+        or namespace_policy not in {'step_up', 'approval_required'}
+    ):
+        return {
+            'target': None,
+            'type_config': None,
+            'key_names': [],
+            'selected_cluster': None,
+            'selected_namespace_policy': 'disabled',
+        }
     return {
         'target': target,
         'type_config': SUPPORTED_REVEAL_TYPES[target.secret_type],
         'key_names': _allowed_keys(target),
         'selected_cluster': cluster,
+        'selected_namespace_policy': namespace_policy,
     }
 
 
@@ -253,7 +270,11 @@ def create_reveal_request(
 
     cluster = Cluster.query.filter_by(id=target.cluster_id).first()
     if cluster is None or not _cluster_ready(cluster):
-        raise ValueError('Protected Secret Reveal is not enabled and verified for this cluster.')
+        raise ValueError('Protected Secret Reveal security readiness is not verified for this cluster.')
+
+    namespace_policy = get_namespace_policy(cluster.id, target.namespace)
+    if namespace_policy not in {'step_up', 'approval_required'}:
+        raise ValueError('Protected Secret Reveal is disabled for the selected namespace.')
 
     submitted_cluster_id = _required(form.get('cluster_id'), 'Cluster')
     submitted_namespace = _required(form.get('namespace'), 'Namespace')
@@ -282,14 +303,14 @@ def create_reveal_request(
     if existing_request is not None:
         raise ValueError('An active reveal request already exists for this Secret key.')
 
-    if cluster.secret_reveal_policy == 'approval_required':
+    if namespace_policy == 'approval_required':
         status = 'pending'
         expires_at = now + timedelta(
             hours=int(current_app.config.get('KUBERNETES_SECRET_REVEAL_PENDING_TTL_HOURS', 24))
         )
         title = 'Secret reveal request submitted'
         message = 'An authorized approver must approve this request before the value can be revealed.'
-    elif cluster.secret_reveal_policy == 'step_up':
+    elif namespace_policy == 'step_up':
         status = 'approved'
         expires_at = now + timedelta(
             minutes=int(current_app.config.get('KUBERNETES_SECRET_REVEAL_APPROVAL_TTL_MINUTES', 10))
@@ -297,7 +318,7 @@ def create_reveal_request(
         title = 'Secret reveal request ready'
         message = 'Reauthenticate and use the one-time reveal action before the request expires.'
     else:
-        raise ValueError('Protected Secret Reveal is disabled for this cluster.')
+        raise ValueError('Protected Secret Reveal is disabled for the selected namespace.')
 
     record = SecretRevealRequest(
         configuration_inventory_id=target.id,
@@ -306,7 +327,7 @@ def create_reveal_request(
         secret_name=target.name,
         secret_type=target.secret_type or 'Opaque',
         key_name=key_name,
-        policy=cluster.secret_reveal_policy,
+        policy=namespace_policy,
         reason=reason,
         ticket_reference=ticket_reference,
         status=status,
@@ -332,7 +353,7 @@ def create_reveal_request(
             'secret_name': target.name,
             'secret_type': target.secret_type,
             'key_name': key_name,
-            'policy': cluster.secret_reveal_policy,
+            'policy': namespace_policy,
             'ticket_reference': ticket_reference,
             'reason': reason,
             'request_status': status,
@@ -356,6 +377,20 @@ def decide_reveal_request(
         raise ValueError('Only pending reveal requests can be approved or denied.')
     if record.requester_user_id == approver_user_id:
         raise ValueError('Requestors cannot approve or deny their own Secret reveal requests.')
+
+    if approve:
+        cluster = Cluster.query.filter_by(id=record.cluster_id).first()
+        current_policy = get_namespace_policy(record.cluster_id, record.namespace)
+        if (
+            cluster is None
+            or not _global_enabled()
+            or not _cluster_ready(cluster)
+            or current_policy != 'approval_required'
+            or record.policy != current_policy
+        ):
+            raise ValueError(
+                'This request can no longer be approved because the cluster readiness or namespace policy changed.'
+            )
 
     now = _now()
     record.approver_user_id = approver_user_id
@@ -447,7 +482,13 @@ def reveal_secret_value(request_id: str, *, user_id: int) -> RevealedSecretValue
     )
     cluster = Cluster.query.filter_by(id=record.cluster_id).first()
     if cluster is None or not _global_enabled() or not _cluster_ready(cluster):
-        raise ValueError('Protected Secret Reveal is no longer enabled for this cluster.')
+        raise ValueError('Protected Secret Reveal is no longer ready for this cluster.')
+
+    current_policy = get_namespace_policy(record.cluster_id, record.namespace)
+    if current_policy not in {'step_up', 'approval_required'}:
+        raise ValueError('Protected Secret Reveal is no longer enabled for this namespace.')
+    if current_policy != record.policy:
+        raise ValueError('The namespace Reveal policy changed. Submit a new reveal request.')
 
     target = ConfigurationInventory.query.filter_by(
         id=record.configuration_inventory_id,

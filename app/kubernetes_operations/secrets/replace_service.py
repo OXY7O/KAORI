@@ -24,7 +24,7 @@ SUPPORTED_REPLACE_TYPES = {
         'key': 'basic-auth',
         'label': 'Basic Authentication',
         'tone': 'violet',
-        'icon': 'user-round',
+        'icon': 'user',
     },
     'kubernetes.io/dockerconfigjson': {
         'key': 'dockerconfigjson',
@@ -36,7 +36,7 @@ SUPPORTED_REPLACE_TYPES = {
         'key': 'ssh-auth',
         'label': 'SSH Authentication',
         'tone': 'amber',
-        'icon': 'terminal',
+        'icon': 'key',
     },
 }
 

@@ -6,11 +6,6 @@ from wtforms.validators import DataRequired, Length, Optional
 from app.cluster.constants import ENVIRONMENTS
 
 ENVIRONMENT_CHOICES = ENVIRONMENTS
-SECRET_REVEAL_POLICY_CHOICES = [
-    ('disabled', 'Disabled'),
-    ('step_up', 'Step-up authentication'),
-    ('approval_required', 'Approval required'),
-]
 
 
 class ClusterCreateForm(FlaskForm):
@@ -59,23 +54,6 @@ class ClusterCreateForm(FlaskForm):
         default=False,
     )
 
-    secret_reveal_policy = SelectField(
-        'Protected Secret Reveal Policy',
-        choices=SECRET_REVEAL_POLICY_CHOICES,
-        default='disabled',
-        validators=[DataRequired()],
-    )
-
-    secret_reveal_encryption_verified = BooleanField(
-        'Kubernetes Secret encryption at rest verified',
-        default=False,
-    )
-
-    secret_reveal_audit_verified = BooleanField(
-        'Kubernetes audit logging at Metadata level verified',
-        default=False,
-    )
-
 
 class ClusterEditForm(FlaskForm):
     name = StringField(
@@ -113,22 +91,5 @@ class ClusterEditForm(FlaskForm):
 
     kube_allow_weak_tls = BooleanField(
         'Allow legacy TLS certificate',
-        default=False,
-    )
-
-    secret_reveal_policy = SelectField(
-        'Protected Secret Reveal Policy',
-        choices=SECRET_REVEAL_POLICY_CHOICES,
-        default='disabled',
-        validators=[DataRequired()],
-    )
-
-    secret_reveal_encryption_verified = BooleanField(
-        'Kubernetes Secret encryption at rest verified',
-        default=False,
-    )
-
-    secret_reveal_audit_verified = BooleanField(
-        'Kubernetes audit logging at Metadata level verified',
         default=False,
     )

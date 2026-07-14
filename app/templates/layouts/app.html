@@ -360,10 +360,36 @@
         <script src="https://unpkg.com/htmx.org@2.0.4"></script>
         <script src="https://unpkg.com/lucide@latest"></script>
         <script>
-            document.addEventListener('DOMContentLoaded', () => {
-                if (window.lucide) {
-                    window.lucide.createIcons()
+            window.renderKaoriIcons = () => {
+                if (!window.lucide) {
+                    return
                 }
+
+                try {
+                    window.lucide.createIcons()
+                } catch (error) {
+                    console.warn('Lucide icon rendering failed.', error)
+                }
+
+                const unresolvedIcons = document.querySelectorAll('i[data-lucide]')
+                if (!unresolvedIcons.length) {
+                    return
+                }
+
+                unresolvedIcons.forEach((icon) => {
+                    console.warn(`Unsupported Lucide icon: ${icon.dataset.lucide}`)
+                    icon.dataset.lucide = 'circle'
+                })
+
+                try {
+                    window.lucide.createIcons()
+                } catch (error) {
+                    console.warn('Lucide fallback icon rendering failed.', error)
+                }
+            }
+
+            document.addEventListener('DOMContentLoaded', () => {
+                window.renderKaoriIcons()
             })
 
             document.body.addEventListener('htmx:afterSwap', (event) => {
@@ -371,9 +397,7 @@
                     window.Alpine.initTree(event.detail.elt)
                 }
 
-                if (window.lucide) {
-                    window.lucide.createIcons()
-                }
+                window.renderKaoriIcons()
             })
 
             window.prepareInventoryDetail = (kind, id, button) => {
