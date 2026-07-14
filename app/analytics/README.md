@@ -23,3 +23,11 @@ Do not copy PromQL normalization or dependency-health handling across workspaces
 Supported time ranges are `1h`, `6h`, `12h`, `24h`, `7d`, `30d`, and `60d`.
 Use one HTMX loading indicator and preserve filter state across pagination/refresh.
 Capacity Analysis must retain the agreed Cluster -> Node selector hierarchy.
+
+## Analytics overview Prometheus status flow
+
+- The overview shell validates cluster selection and Prometheus configuration only.
+- Live connection health is owned by the dedicated `prometheus-status` lazy section.
+- Do not run a separate Prometheus health check before every lazy overview section; this creates contradictory status and unnecessary load.
+- A transient failure in one analytics query must be rendered in that section and must not replace unrelated sections with a page-level connection blocker.
+- Overview section endpoints are HTMX partial endpoints. Direct browser navigation must redirect to the full Analytics Overview page.

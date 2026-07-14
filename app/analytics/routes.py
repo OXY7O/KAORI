@@ -75,7 +75,10 @@ def overview():
         time_range=selected_time_range,
         hydrate_live_sections=False,
     )
-    _, _, _, dependency_context = build_analysis_utilization_context(request.args)
+    _, _, _, dependency_context = build_analysis_utilization_context(
+        request.args,
+        check_prometheus_connection=False,
+    )
 
     return render_template(
         'analytics/overview/index.html',
@@ -120,7 +123,19 @@ def overview_section(section: str):
     if selected_time_range not in VALID_ANALYTICS_TIME_RANGES:
         selected_time_range = '24h'
 
-    _, _, _, dependency_context = build_analysis_utilization_context(request.args)
+    if request.headers.get('HX-Request') != 'true':
+        return redirect(
+            url_for(
+                'analytics.overview',
+                cluster_id=request.args.get('cluster_id'),
+                time_range=selected_time_range,
+            )
+        )
+
+    _, _, _, dependency_context = build_analysis_utilization_context(
+        request.args,
+        check_prometheus_connection=False,
+    )
     dependency_blocker = dependency_context['dependency_blocker']
 
     if dependency_blocker:

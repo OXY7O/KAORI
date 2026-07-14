@@ -35,6 +35,8 @@ def get_default_prometheus_status() -> dict[str, Any]:
 
 def build_analysis_utilization_context(
     query_args: Mapping[str, Any],
+    *,
+    check_prometheus_connection: bool = True,
 ) -> tuple[list[Cluster], Cluster | None, UtilizationService | None, dict[str, Any]]:
     clusters = Cluster.query.order_by(
         Cluster.name,
@@ -132,6 +134,16 @@ def build_analysis_utilization_context(
     utilization_service = UtilizationService(
         prometheus,
     )
+
+    if not check_prometheus_connection:
+        base_context['prometheus_status'] = {
+            'connected': False,
+            'response_time_ms': None,
+            'label': 'Prometheus check pending',
+            'description': 'Connection health is loaded by the dedicated Prometheus status section.',
+            'error': None,
+        }
+        return clusters, cluster, utilization_service, base_context
 
     try:
         prometheus_status = utilization_service.get_prometheus_status()

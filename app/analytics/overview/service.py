@@ -300,7 +300,7 @@ def _get_prometheus_status(*, cluster_id: str) -> dict[str, Any]:
         'status_tone': 'gray',
         'endpoint': '',
         'response_time_ms': None,
-        'message': 'Prometheus configuration is not available for this cluster.',
+        'message': 'Prometheus is not configured for the selected cluster.',
         'last_checked_at': _utc_now_display(),
     }
 
@@ -361,7 +361,7 @@ def _get_prometheus_status(*, cluster_id: str) -> dict[str, Any]:
         'message': str(
             prometheus_result.get(
                 'message',
-                'Prometheus connection is healthy.' if connected else 'Prometheus connection failed.',
+                'Prometheus responded to the latest health check.' if connected else 'The latest Prometheus health check failed.',
             )
         ),
         'last_checked_at': _utc_now_display(),
