@@ -8,6 +8,7 @@ from app.welcome.shortcuts import build_welcome_shortcuts
 welcome_bp = Blueprint('welcome', __name__)
 
 
+@welcome_bp.route('/')
 @welcome_bp.route('/welcome')
 @login_required
 def index():

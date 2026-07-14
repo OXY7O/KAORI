@@ -7,12 +7,12 @@ Welcome is intentionally outside this package because it is a platform-wide land
 
 | Workspace | Python package | Template root | Blueprint | Canonical URL |
 |---|---|---|---|---|
-| Welcome | `app/welcome` | `templates/welcome` | `welcome` | `/welcome` |
+| Welcome | `app/welcome` | `templates/welcome` | `welcome` | `/` and `/welcome` |
 | Kubernetes Dashboard | `app/dashboards/kubernetes` | `templates/dashboards/kubernetes` | `kubernetes_dashboard` | `/dashboards/kubernetes` |
 | Server Dashboard | `app/dashboards/server` | `templates/dashboards/server` | reserved | reserved |
 | HCI Dashboard | `app/dashboards/hci` | `templates/dashboards/hci` | reserved | reserved |
 
-The legacy `dashboard` compatibility blueprint preserves `dashboard.index`, `dashboard.section`, and `dashboard.welcome`. The root URL `/` and old lazy-section URL `/dashboard/section/<section>` redirect to canonical Kubernetes endpoints; `/dashboard/welcome` redirects to the canonical Welcome page.
+The application now uses canonical routes only. The removed `dashboard` compatibility blueprint, `app/dashboard` package, and `templates/dashboard` tree must not be recreated. Internal links, redirects, tests, and extensions must use `welcome.*` or the relevant asset-dashboard blueprint directly.
 
 ## Mandatory domain rules
 
@@ -22,6 +22,7 @@ The legacy `dashboard` compatibility blueprint preserves `dashboard.index`, `das
 - Every domain owns its own route, schema, orchestration service, section builders, and templates.
 - Shared visual components belong under `templates/dashboards/common`; data-bound section templates stay inside their asset domain.
 - Domain permissions must remain explicit. Kubernetes currently uses `dashboard.view`; Server and HCI must receive separate permission keys before their routes are enabled.
+- Welcome is the universal authenticated landing page and must remain outside asset-dashboard permissions.
 
 ## Kubernetes service structure
 
@@ -40,6 +41,25 @@ Database loading and defensive queries are isolated in `repository.py`. Reusable
 
 A new dashboard section must not be implemented directly in the orchestration function. Add a section builder module, return a typed schema object, and let the orchestrator compose it.
 
-## Compatibility boundary
+## Removed legacy surface
 
-`app/dashboard` and `templates/dashboard` are temporary import/template shims. They contain no business implementation. New imports and includes must use the canonical packages above. Remove the shims only after downstream extensions and tests no longer reference the legacy paths.
+The following locations and endpoints are retired and must not be referenced:
+
+```text
+app/dashboard/
+app/templates/dashboard/
+app/dashboards/routes.py
+dashboard.index
+dashboard.section
+dashboard.welcome
+/dashboard/section/<section>
+/dashboard/welcome
+```
+
+Use these canonical surfaces instead:
+
+```text
+welcome.index                       -> / or /welcome
+kubernetes_dashboard.index          -> /dashboards/kubernetes
+kubernetes_dashboard.section        -> /dashboards/kubernetes/section/<section>
+```

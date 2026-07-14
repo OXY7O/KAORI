@@ -13,7 +13,6 @@ from app.models.cluster import Cluster
 _KUBERNETES_SCOPE_BLUEPRINTS = {
     'analytics',
     'cluster',
-    'dashboard',
     'kubernetes_dashboard',
     'governance',
     'inventory',
@@ -22,7 +21,6 @@ _KUBERNETES_SCOPE_BLUEPRINTS = {
 _BANNER_EXCLUDED_ENDPOINTS = {
     'cluster.add_cluster',
     'welcome.index',
-    'dashboard.welcome',
 }
 
 
