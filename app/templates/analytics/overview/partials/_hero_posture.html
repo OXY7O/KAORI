@@ -16,32 +16,37 @@
     'critical': 'Immediate attention required.',
     'unknown': 'Signal status unavailable.'
 }.get(posture_status, posture.description) %}
-<div class="rounded-2xl border border-blue-100 bg-white/95 p-5 text-slate-950 shadow-lg shadow-blue-950/10 backdrop-blur dark:border-blue-900/70 dark:bg-slate-950/90 dark:text-white xl:min-h-[176px]">
-    <div class="flex h-full flex-col justify-start gap-3">
+<div class="relative overflow-hidden rounded-2xl border border-white/25 bg-gradient-to-br from-blue-700 via-blue-600 to-cyan-500 p-5 text-white shadow-[0_18px_40px_-18px_rgba(3,37,99,0.85)] ring-1 ring-inset ring-white/15 xl:min-h-[176px]">
+    <div class="pointer-events-none absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-white/70 to-transparent"></div>
+    <div class="pointer-events-none absolute -right-10 -top-14 h-36 w-36 rounded-full bg-white/15 blur-2xl"></div>
+    <div class="pointer-events-none absolute -bottom-16 -left-10 h-36 w-36 rounded-full bg-blue-950/25 blur-2xl"></div>
+
+    <div class="relative flex h-full flex-col justify-start gap-3">
         <div class="flex items-start justify-between gap-4">
             <div class="min-w-0">
-                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700 dark:text-blue-300">Operational posture</p>
-                <div class="mt-2 text-4xl font-bold leading-none">{{ posture.value }}</div>
-                <p class="mt-1 text-sm leading-5 text-slate-500 dark:text-slate-400">{{ posture_short_description }}</p>
+                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-100">Operational posture</p>
+                <div class="mt-2 text-4xl font-bold leading-none text-white drop-shadow-sm">{{ posture.value }}</div>
+                <p class="mt-1 text-sm leading-5 text-blue-50/90">{{ posture_short_description }}</p>
             </div>
-            <span class="inline-flex shrink-0 rounded-full px-3 py-1.5 text-xs font-bold capitalize ring-1 ring-inset {{ posture_badge_class }}">
+            <span class="inline-flex shrink-0 rounded-full px-3 py-1.5 text-xs font-bold capitalize shadow-sm ring-1 ring-inset {{ posture_badge_class }}">
                 {{ posture.status }}
             </span>
         </div>
+
         <div class="mt-2 grid grid-cols-2 gap-3">
-            <div class="rounded-2xl border border-blue-100 bg-blue-50/80 px-4 py-3 shadow-sm dark:border-blue-900/60 dark:bg-blue-950/35">
+            <div class="rounded-2xl border border-white/20 bg-blue-950/20 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.20),0_8px_18px_-12px_rgba(3,37,99,0.9)] backdrop-blur-sm">
                 <div class="flex items-center justify-between gap-3">
-                    <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Actionable</p>
-                    <span class="h-2 w-2 rounded-full bg-blue-500"></span>
+                    <p class="text-xs font-medium text-blue-100">Actionable</p>
+                    <span class="h-2 w-2 rounded-full bg-blue-100 shadow-[0_0_10px_rgba(219,234,254,0.9)]"></span>
                 </div>
-                <p class="mt-1 text-2xl font-bold tracking-tight text-blue-700 dark:text-blue-300">{{ actionable.total_count|default(0) }}</p>
+                <p class="mt-1 text-2xl font-bold tracking-tight text-white">{{ actionable.total_count|default(0) }}</p>
             </div>
-            <div class="rounded-2xl border border-cyan-100 bg-cyan-50/80 px-4 py-3 shadow-sm dark:border-cyan-900/60 dark:bg-cyan-950/30">
+            <div class="rounded-2xl border border-white/20 bg-cyan-950/20 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.20),0_8px_18px_-12px_rgba(8,47,73,0.9)] backdrop-blur-sm">
                 <div class="flex items-center justify-between gap-3">
-                    <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Active Alerts</p>
-                    <span class="h-2 w-2 rounded-full bg-cyan-500"></span>
+                    <p class="text-xs font-medium text-cyan-50">Active Alerts</p>
+                    <span class="h-2 w-2 rounded-full bg-cyan-100 shadow-[0_0_10px_rgba(207,250,254,0.9)]"></span>
                 </div>
-                <p class="mt-1 text-2xl font-bold tracking-tight text-cyan-700 dark:text-cyan-300">{{ active_alerts }}</p>
+                <p class="mt-1 text-2xl font-bold tracking-tight text-white">{{ active_alerts }}</p>
             </div>
         </div>
     </div>
