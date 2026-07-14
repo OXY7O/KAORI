@@ -36,3 +36,22 @@ Every save action emits a toast/notification and Operational Activity record con
 - Disabling cluster readiness immediately expires pending/approved requests and suspends all namespace policies without deleting them.
 - Changing or disabling a namespace policy expires pending/approved requests for that namespace.
 - The global environment switch remains outside the database and is displayed read-only.
+
+## Namespace list behavior
+
+The namespace policy list is intentionally server-side filtered and paginated so the Settings page remains usable for clusters with large namespace inventories.
+
+- default page size: `10`;
+- supported page sizes: `10`, `25`, and `50`;
+- filters: namespace text and policy state;
+- pagination/filter updates use HTMX with full-page fallback;
+- policy saves preserve the active search, filter, page, and page-size context;
+- rows remain compact and never repeat the selected cluster name.
+
+The canonical namespace table partial is:
+
+```text
+app/templates/settings/secret_reveal/_namespace_policy_section.html
+```
+
+Filtering and pagination are prepared by `app/settings/secret_reveal/service.py`; do not move this logic back to client-only DOM filtering because that would still render every namespace in the browser.

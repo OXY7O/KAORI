@@ -78,6 +78,10 @@
         </div>
         <form method="post" action="{{ url_for('settings.secret_reveal.update_readiness', cluster_id=selected_cluster.id) }}" class="mt-5 space-y-3">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="namespace_q" value="{{ namespace_filters.query }}">
+          <input type="hidden" name="namespace_policy" value="{{ namespace_filters.policy }}">
+          <input type="hidden" name="page" value="{{ namespace_pagination.page }}">
+          <input type="hidden" name="per_page" value="{{ namespace_pagination.per_page }}">
           <label class="flex items-start gap-3 rounded-xl border border-blue-200 bg-white/80 p-4 dark:border-blue-500/20 dark:bg-slate-900/40"><input type="checkbox" name="encryption_verified" value="1" {% if selected_cluster.secret_reveal_encryption_verified %}checked{% endif %} class="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"><span><span class="block text-sm font-medium text-slate-800 dark:text-slate-100">Encryption at rest verified</span><span class="mt-1 block text-xs leading-5 text-slate-500 dark:text-slate-400">Kubernetes Secret encryption configuration has been reviewed for this cluster.</span></span></label>
           <label class="flex items-start gap-3 rounded-xl border border-blue-200 bg-white/80 p-4 dark:border-blue-500/20 dark:bg-slate-900/40"><input type="checkbox" name="audit_verified" value="1" {% if selected_cluster.secret_reveal_audit_verified %}checked{% endif %} class="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"><span><span class="block text-sm font-medium text-slate-800 dark:text-slate-100">Metadata audit verified</span><span class="mt-1 block text-xs leading-5 text-slate-500 dark:text-slate-400">Secret reads are audited without request or response payloads.</span></span></label>
           <button type="submit" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"><i data-lucide="save" class="h-4 w-4"></i>Save cluster readiness</button>
@@ -96,51 +100,7 @@
   </section>
 
   {% if selected_cluster %}
-  <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
-    <div class="flex flex-col gap-4 border-b border-slate-200 bg-slate-50/80 px-5 py-4 dark:border-slate-700 dark:bg-slate-900/40 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-      <div class="flex items-start gap-3"><div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300"><i data-lucide="box" class="h-5 w-5"></i></div><div><h2 class="text-sm font-semibold text-slate-950 dark:text-white">3. Allow Reveal per namespace</h2><p class="mt-1 text-sm leading-5 text-slate-600 dark:text-slate-300">Default is disabled. An enabled policy applies only to the selected cluster and namespace.</p></div></div>
-      <div class="relative w-full max-w-sm"><i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"></i><input id="secret-reveal-namespace-search" type="search" placeholder="Search namespace..." class="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-9 pr-3 text-sm text-slate-900 outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 dark:border-slate-600 dark:bg-slate-900 dark:text-white"></div>
-    </div>
-
-    {% if namespace_rows %}
-    <div class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
-        <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-900/40 dark:text-slate-400"><tr><th class="px-5 py-3 sm:px-6">Namespace</th><th class="px-5 py-3">Inventory</th><th class="px-5 py-3">Reveal policy</th><th class="px-5 py-3 text-right sm:px-6">Action</th></tr></thead>
-        <tbody id="secret-reveal-namespace-table" class="divide-y divide-slate-100 dark:divide-slate-700/70">
-          {% for row in namespace_rows %}
-          <tr data-namespace-row data-namespace="{{ row.namespace|lower }}" class="transition hover:bg-slate-50 dark:hover:bg-slate-700/30">
-            <td class="px-5 py-4 sm:px-6"><div class="flex items-center gap-3"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300"><i data-lucide="box" class="h-4 w-4"></i></span><div><p class="font-semibold text-slate-900 dark:text-white">{{ row.namespace }}</p><p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ selected_cluster.name }}</p></div></div></td>
-            <td class="px-5 py-4"><span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium {{ 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300' if row.in_inventory else 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300' }}"><i data-lucide="{{ 'check' if row.in_inventory else 'info' }}" class="h-3.5 w-3.5"></i>{{ 'Current snapshot' if row.in_inventory else 'Missing from snapshot' }}</span></td>
-            <td class="px-5 py-4" colspan="2">
-              <form method="post" action="{{ url_for('settings.secret_reveal.update_namespace_policy', cluster_id=selected_cluster.id) }}" class="flex flex-col gap-3 sm:flex-row sm:items-center justify-end">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="namespace" value="{{ row.namespace }}">
-                <select name="policy" {% if not row.in_inventory and row.policy == 'disabled' %}disabled{% endif %} class="min-w-56 rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 disabled:cursor-not-allowed disabled:bg-slate-100 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:disabled:bg-slate-800">
-                  {% for value, label in reveal_policy_choices.items() %}<option value="{{ value }}" {% if row.policy == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
-                </select>
-                <button type="submit" {% if not row.in_inventory and row.policy == 'disabled' %}disabled{% endif %} class="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-slate-100 dark:disabled:bg-slate-800"><i data-lucide="save" class="h-4 w-4"></i>Save</button>
-              </form>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% else %}
-    <div class="p-8 text-center"><i data-lucide="box" class="mx-auto h-8 w-8 text-slate-400"></i><h3 class="mt-3 text-sm font-semibold text-slate-900 dark:text-white">No namespace snapshot available</h3><p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Run Kubernetes inventory sync for {{ selected_cluster.name }} before enabling Reveal access.</p></div>
-    {% endif %}
-  </section>
+  {% include "settings/secret_reveal/_namespace_policy_section.html" %}
   {% endif %}
 </div>
-<script>
-  ;(() => {
-    const search = document.getElementById('secret-reveal-namespace-search')
-    if (!search) return
-    search.addEventListener('input', () => {
-      const query = search.value.trim().toLowerCase()
-      document.querySelectorAll('[data-namespace-row]').forEach((row) => {
-        row.classList.toggle('hidden', !row.dataset.namespace.includes(query))
-      })
-    })
-  })()
-</script>
 {% endblock dashboard_content %}

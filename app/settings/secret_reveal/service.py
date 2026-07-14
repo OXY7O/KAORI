@@ -1,19 +1,84 @@
 from __future__ import annotations
 
+from math import ceil
 from typing import Any
 
 from flask import current_app
 
-from app.models import Cluster, SecretRevealNamespacePolicy
 from app.kubernetes_operations.secrets.reveal_policy import (
     REVEAL_NAMESPACE_POLICIES,
     build_namespace_policy_rows,
     cluster_reveal_readiness,
 )
+from app.models import Cluster, SecretRevealNamespacePolicy
+
+_NAMESPACE_PER_PAGE_OPTIONS = (10, 25, 50)
+_NAMESPACE_POLICY_FILTERS = {
+    'all': 'All policies',
+    'enabled': 'Enabled only',
+    'disabled': 'Disabled',
+    'step_up': 'Step-up authentication',
+    'approval_required': 'Approval required',
+    'missing': 'Missing from inventory',
+}
+
+
+def _normalize_page(value: str | int | None) -> int:
+    try:
+        return max(int(value or 1), 1)
+    except (TypeError, ValueError):
+        return 1
+
+
+def _normalize_per_page(value: str | int | None) -> int:
+    try:
+        per_page = int(value or 10)
+    except (TypeError, ValueError):
+        per_page = 10
+    if per_page not in _NAMESPACE_PER_PAGE_OPTIONS:
+        return 10
+    return per_page
+
+
+def _normalize_policy_filter(value: str | None) -> str:
+    normalized = (value or 'all').strip().lower()
+    if normalized not in _NAMESPACE_POLICY_FILTERS:
+        return 'all'
+    return normalized
+
+
+def _filter_namespace_rows(
+    rows: list[dict[str, Any]],
+    *,
+    query: str,
+    policy_filter: str,
+) -> list[dict[str, Any]]:
+    filtered_rows = rows
+    if query:
+        filtered_rows = [
+            row for row in filtered_rows if query in row['namespace'].lower()
+        ]
+
+    if policy_filter == 'enabled':
+        return [
+            row
+            for row in filtered_rows
+            if row['policy'] in {'step_up', 'approval_required'}
+        ]
+    if policy_filter == 'missing':
+        return [row for row in filtered_rows if not row['in_inventory']]
+    if policy_filter != 'all':
+        return [row for row in filtered_rows if row['policy'] == policy_filter]
+    return filtered_rows
 
 
 def build_secret_reveal_settings_context(
     selected_cluster_id: str | None,
+    *,
+    namespace_query: str | None = None,
+    namespace_policy_filter: str | None = None,
+    page: str | int | None = None,
+    per_page: str | int | None = None,
 ) -> dict[str, Any]:
     clusters = Cluster.query.order_by(Cluster.name.asc()).all()
     selected_cluster = None
@@ -27,9 +92,29 @@ def build_secret_reveal_settings_context(
     elif clusters:
         selected_cluster = clusters[0]
 
-    namespace_rows: list[dict[str, Any]] = []
+    all_namespace_rows: list[dict[str, Any]] = []
     if selected_cluster is not None:
-        namespace_rows = build_namespace_policy_rows(selected_cluster)
+        all_namespace_rows = build_namespace_policy_rows(selected_cluster)
+
+    normalized_query = (namespace_query or '').strip().lower()
+    normalized_policy_filter = _normalize_policy_filter(namespace_policy_filter)
+    normalized_per_page = _normalize_per_page(per_page)
+    requested_page = _normalize_page(page)
+
+    filtered_namespace_rows = _filter_namespace_rows(
+        all_namespace_rows,
+        query=normalized_query,
+        policy_filter=normalized_policy_filter,
+    )
+    filtered_total = len(filtered_namespace_rows)
+    total_pages = max(ceil(filtered_total / normalized_per_page), 1)
+    current_page = min(requested_page, total_pages)
+    start_offset = (current_page - 1) * normalized_per_page
+    namespace_rows = filtered_namespace_rows[
+        start_offset : start_offset + normalized_per_page
+    ]
+    start_item = start_offset + 1 if filtered_total else 0
+    end_item = min(start_offset + normalized_per_page, filtered_total)
 
     total_enabled_namespaces = SecretRevealNamespacePolicy.query.filter(
         SecretRevealNamespacePolicy.policy.in_(('step_up', 'approval_required'))
@@ -45,10 +130,42 @@ def build_secret_reveal_settings_context(
         .count()
     )
 
+    selected_enabled_namespace_count = sum(
+        row['policy'] in {'step_up', 'approval_required'}
+        for row in all_namespace_rows
+    )
+
     return {
         'clusters': clusters,
         'selected_cluster': selected_cluster,
         'namespace_rows': namespace_rows,
+        'namespace_filters': {
+            'query': (namespace_query or '').strip(),
+            'policy': normalized_policy_filter,
+            'per_page': normalized_per_page,
+        },
+        'namespace_filter_options': _NAMESPACE_POLICY_FILTERS,
+        'namespace_per_page_options': _NAMESPACE_PER_PAGE_OPTIONS,
+        'namespace_pagination': {
+            'page': current_page,
+            'per_page': normalized_per_page,
+            'total_items': filtered_total,
+            'total_pages': total_pages,
+            'start_item': start_item,
+            'end_item': end_item,
+            'has_prev': current_page > 1,
+            'has_next': current_page < total_pages,
+            'prev_page': max(current_page - 1, 1),
+            'next_page': min(current_page + 1, total_pages),
+        },
+        'namespace_summary': {
+            'total': len(all_namespace_rows),
+            'enabled': selected_enabled_namespace_count,
+            'disabled': sum(
+                row['policy'] == 'disabled' for row in all_namespace_rows
+            ),
+            'missing': sum(not row['in_inventory'] for row in all_namespace_rows),
+        },
         'reveal_policy_choices': REVEAL_NAMESPACE_POLICIES,
         'global_reveal_enabled': bool(
             current_app.config.get('KUBERNETES_SECRET_REVEAL_ENABLED', False)
@@ -59,8 +176,5 @@ def build_secret_reveal_settings_context(
         ),
         'protected_cluster_count': protected_cluster_count,
         'total_enabled_namespaces': total_enabled_namespaces,
-        'selected_enabled_namespace_count': sum(
-            row['policy'] in {'step_up', 'approval_required'}
-            for row in namespace_rows
-        ),
+        'selected_enabled_namespace_count': selected_enabled_namespace_count,
     }

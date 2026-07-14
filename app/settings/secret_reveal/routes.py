@@ -27,6 +27,15 @@ def _validate_csrf() -> None:
         ) from exc
 
 
+def _settings_redirect(cluster_id: str):
+    redirect_args: dict[str, str] = {'cluster_id': cluster_id}
+    for key in ('namespace_q', 'namespace_policy', 'page', 'per_page'):
+        value = (request.form.get(key) or '').strip()
+        if value:
+            redirect_args[key] = value
+    return redirect(url_for('settings.secret_reveal.index', **redirect_args))
+
+
 def _cluster_or_error(cluster_id: str) -> Cluster:
     cluster = Cluster.query.filter_by(id=cluster_id).first()
     if cluster is None:
@@ -63,7 +72,13 @@ def _record_settings_activity(
 @bp.route('/')
 @permission_required('kubernetes_secrets.manage_reveal')
 def index():
-    context = build_secret_reveal_settings_context(request.args.get('cluster_id'))
+    context = build_secret_reveal_settings_context(
+        request.args.get('cluster_id'),
+        namespace_query=request.args.get('namespace_q'),
+        namespace_policy_filter=request.args.get('namespace_policy'),
+        page=request.args.get('page'),
+        per_page=request.args.get('per_page'),
+    )
     return render_template('settings/secret_reveal/index.html', **context)
 
 
@@ -122,7 +137,7 @@ def update_readiness(cluster_id: str):
             message='KAORI could not save the cluster security readiness settings.',
             metadata={'cluster_id': cluster_id},
         )
-    return redirect(url_for('settings.secret_reveal.index', cluster_id=cluster_id))
+    return _settings_redirect(cluster_id)
 
 
 @bp.route('/cluster/<string:cluster_id>/namespace-policy', methods=['POST'])
@@ -185,4 +200,4 @@ def update_namespace_policy(cluster_id: str):
                 'requested_policy': requested_policy,
             },
         )
-    return redirect(url_for('settings.secret_reveal.index', cluster_id=cluster_id))
+    return _settings_redirect(cluster_id)

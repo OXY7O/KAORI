@@ -38,7 +38,7 @@ SUPPORTED_REVEAL_TYPES = {
     'kubernetes.io/dockerconfigjson': {
         'label': 'Container Registry',
         'tone': 'cyan',
-        'icon': 'container',
+        'icon': 'boxes',
     },
 }
 

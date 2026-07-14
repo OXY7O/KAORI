@@ -30,7 +30,7 @@ SUPPORTED_REPLACE_TYPES = {
         'key': 'dockerconfigjson',
         'label': 'Container Registry',
         'tone': 'cyan',
-        'icon': 'container',
+        'icon': 'boxes',
     },
     'kubernetes.io/ssh-auth': {
         'key': 'ssh-auth',

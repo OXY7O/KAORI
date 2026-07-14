@@ -361,7 +361,17 @@
         <script src="https://unpkg.com/lucide@latest"></script>
         <script>
             window.renderKaoriIcons = () => {
+                const renderTextFallback = (icons) => {
+                    icons.forEach((icon) => {
+                        icon.removeAttribute('data-lucide')
+                        icon.setAttribute('aria-hidden', 'true')
+                        icon.classList.add('inline-flex', 'items-center', 'justify-center')
+                        icon.textContent = '•'
+                    })
+                }
+
                 if (!window.lucide) {
+                    renderTextFallback(document.querySelectorAll('i[data-lucide]'))
                     return
                 }
 
@@ -385,6 +395,11 @@
                     window.lucide.createIcons()
                 } catch (error) {
                     console.warn('Lucide fallback icon rendering failed.', error)
+                }
+
+                const stillUnresolvedIcons = document.querySelectorAll('i[data-lucide]')
+                if (stillUnresolvedIcons.length) {
+                    renderTextFallback(stillUnresolvedIcons)
                 }
             }
 
