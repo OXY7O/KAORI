@@ -7,7 +7,6 @@ from typing import Any
 
 from kubernetes import client
 from kubernetes.client import ApiException
-from sqlalchemy import and_
 
 from app.models.cluster import Cluster
 from app.kubernetes.client import KubernetesClient
@@ -20,8 +19,15 @@ _MAX_PAYLOAD = 1024 * 1024
 
 @dataclass(frozen=True)
 class ConfigMapTarget:
-    inventory: ConfigurationInventory
     cluster: Cluster
+    namespace: str
+    name: str
+
+
+@dataclass(frozen=True)
+class LiveConfigMapOption:
+    name: str
+    immutable: bool
 
 
 def _cluster(cluster_id: str) -> Cluster:
@@ -80,24 +86,67 @@ def get_namespaces(cluster_id: str) -> list[str]:
     )
 
 
-def get_configmaps(cluster_id: str, namespace: str) -> list[ConfigurationInventory]:
+def get_configmaps(cluster_id: str, namespace: str) -> list[LiveConfigMapOption]:
+    """Return ConfigMaps directly from the selected Kubernetes namespace."""
     if not cluster_id or not namespace:
         return []
-    return ConfigurationInventory.query.filter_by(
-        cluster_id=cluster_id,
-        namespace=namespace,
-        object_type='ConfigMap',
-    ).order_by(ConfigurationInventory.name.asc()).all()
+    cluster = _cluster(cluster_id)
+    namespace = _validate_name(namespace, 'Namespace')
+    try:
+        response = _api(cluster).list_namespaced_config_map(namespace=namespace)
+    except ApiException as exc:
+        if exc.status == 404:
+            raise ValueError('The selected namespace no longer exists in Kubernetes.') from exc
+        if exc.status == 403:
+            raise ValueError(
+                'Kubernetes denied the live ConfigMap lookup. Verify ConfigMap list RBAC for this namespace.'
+            ) from exc
+        if exc.status == 401:
+            raise ValueError(
+                'Kubernetes authentication failed while loading live ConfigMaps.'
+            ) from exc
+        raise ValueError(
+            'KAORI could not load live ConfigMaps from the selected Kubernetes namespace.'
+        ) from exc
+    options = [
+        LiveConfigMapOption(
+            name=item.metadata.name,
+            immutable=bool(getattr(item, 'immutable', False)),
+        )
+        for item in (response.items or [])
+        if getattr(getattr(item, 'metadata', None), 'name', None)
+    ]
+    return sorted(options, key=lambda item: item.name)
 
 
-def get_target(inventory_id: int) -> ConfigMapTarget:
-    record = ConfigurationInventory.query.filter_by(
-        id=inventory_id,
-        object_type='ConfigMap',
-    ).first()
-    if record is None:
-        raise ValueError('The selected ConfigMap is no longer available in inventory.')
-    return ConfigMapTarget(inventory=record, cluster=_cluster(record.cluster_id))
+def get_target(cluster_id: str, namespace: str, configmap_name: str) -> ConfigMapTarget:
+    return ConfigMapTarget(
+        cluster=_cluster((cluster_id or '').strip()),
+        namespace=_validate_name(namespace, 'Namespace'),
+        name=_validate_name(configmap_name, 'ConfigMap name'),
+    )
+
+
+
+
+def _bound_target(form: Any) -> ConfigMapTarget:
+    selected = (
+        (form.get('cluster_id') or '').strip(),
+        (form.get('namespace') or '').strip(),
+        (form.get('configmap_name') or '').strip(),
+    )
+    bound = (
+        (form.get('target_cluster_id') or '').strip(),
+        (form.get('target_namespace') or '').strip(),
+        (form.get('target_configmap_name') or '').strip(),
+    )
+    if not all(bound):
+        raise ValueError('Reload the selected ConfigMap before submitting this operation.')
+    if selected != bound:
+        raise ValueError(
+            'The ConfigMap selection changed after the editor was loaded. Reload the target and retry.'
+        )
+    return get_target(*bound)
 
 
 def _validate_name(value: str, label: str) -> str:
@@ -215,8 +264,8 @@ def create_configmap(form: Any, *, dry_run: bool) -> dict[str, Any]:
 def read_configmap(target: ConfigMapTarget) -> dict[str, Any]:
     try:
         obj = _api(target.cluster).read_namespaced_config_map(
-            name=target.inventory.name,
-            namespace=target.inventory.namespace,
+            name=target.name,
+            namespace=target.namespace,
         )
     except ApiException as exc:
         raise _safe_api_error(exc, 'read operation') from exc
@@ -235,14 +284,14 @@ def read_configmap(target: ConfigMapTarget) -> dict[str, Any]:
 
 def get_impact_context(target: ConfigMapTarget) -> list[dict[str, str]]:
     pods = PodInventory.query.filter_by(
-        cluster_id=target.inventory.cluster_id,
-        namespace=target.inventory.namespace,
+        cluster_id=target.cluster.id,
+        namespace=target.namespace,
     ).all()
     impacts: dict[tuple[str, str], dict[str, str]] = {}
     for pod in pods:
         references = pod.configuration_references or []
         if not any(
-            ref.get('type') == 'ConfigMap' and ref.get('name') == target.inventory.name
+            ref.get('type') == 'ConfigMap' and ref.get('name') == target.name
             for ref in references
         ):
             continue
@@ -281,12 +330,9 @@ def _diff(existing: dict[str, Any], proposed_data: dict[str, str], proposed_bina
 
 
 def update_configmap(form: Any, *, dry_run: bool) -> dict[str, Any]:
-    inventory_id = int(form.get('inventory_id') or 0)
-    target = get_target(inventory_id)
-    if form.get('cluster_id') != target.inventory.cluster_id or form.get('namespace') != target.inventory.namespace:
-        raise ValueError('The submitted ConfigMap target does not match inventory.')
+    target = _bound_target(form)
     existing = read_configmap(target)
-    if existing['immutable'] or target.inventory.immutable:
+    if existing['immutable']:
         raise ValueError('This ConfigMap is immutable and cannot be updated. Create a new ConfigMap instead.')
     proposed_data, proposed_binary, mode = _submitted_update(form, existing)
     diff = _diff(existing, proposed_data, proposed_binary)
@@ -320,8 +366,8 @@ def update_configmap(form: Any, *, dry_run: bool) -> dict[str, Any]:
         body['binaryData'] = binary_patch
     try:
         result = _api(target.cluster).patch_namespaced_config_map(
-            name=target.inventory.name,
-            namespace=target.inventory.namespace,
+            name=target.name,
+            namespace=target.namespace,
             body=body,
             dry_run='All' if dry_run else None,
         )
@@ -330,8 +376,8 @@ def update_configmap(form: Any, *, dry_run: bool) -> dict[str, Any]:
     return {
         'cluster_id': target.cluster.id,
         'cluster_name': target.cluster.name,
-        'namespace': target.inventory.namespace,
-        'configmap_name': target.inventory.name,
+        'namespace': target.namespace,
+        'configmap_name': target.name,
         'mode': mode,
         'diff': diff,
         'resource_version': getattr(getattr(result, 'metadata', None), 'resource_version', None),
@@ -340,16 +386,16 @@ def update_configmap(form: Any, *, dry_run: bool) -> dict[str, Any]:
 
 
 def delete_configmap(form: Any, *, dry_run: bool) -> dict[str, Any]:
-    inventory_id = int(form.get('inventory_id') or 0)
-    target = get_target(inventory_id)
-    if form.get('confirm_name') != target.inventory.name:
+    target = _bound_target(form)
+    if form.get('confirm_name') != target.name:
         raise ValueError('Type the exact ConfigMap name to confirm deletion.')
+    live = read_configmap(target)
     impacts = get_impact_context(target)
     body = client.V1DeleteOptions(propagation_policy='Background')
     try:
         _api(target.cluster).delete_namespaced_config_map(
-            name=target.inventory.name,
-            namespace=target.inventory.namespace,
+            name=target.name,
+            namespace=target.namespace,
             body=body,
             dry_run='All' if dry_run else None,
         )
@@ -358,8 +404,8 @@ def delete_configmap(form: Any, *, dry_run: bool) -> dict[str, Any]:
     return {
         'cluster_id': target.cluster.id,
         'cluster_name': target.cluster.name,
-        'namespace': target.inventory.namespace,
-        'configmap_name': target.inventory.name,
-        'key_names': sorted(target.inventory.key_names or []),
+        'namespace': target.namespace,
+        'configmap_name': target.name,
+        'key_names': sorted([*live['data'].keys(), *live['binary_data'].keys()]),
         'impact_count': len(impacts),
     }
