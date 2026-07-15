@@ -74,7 +74,6 @@ def configmap_namespace_options():
 
 @permission_required('kubernetes_configmaps.create')
 def create_configmap_page():
-    result = None
     feedback = None
     if request.method == 'POST':
         dry_run = request.form.get('operation') != 'create'
@@ -94,7 +93,6 @@ def create_configmap_page():
                 status='success', title=title, message=message, metadata=metadata,
                 action_url=url_for('kubernetes_operations.create_configmap'),
             )
-            result = {'status': 'success', 'title': title, 'message': message}
         except ValueError as exc:
             title = 'ConfigMap validation failed' if dry_run else 'ConfigMap creation failed'
             metadata = {
@@ -108,7 +106,6 @@ def create_configmap_page():
                 status='error', title=title, message=str(exc), metadata=metadata,
                 action_url=url_for('kubernetes_operations.create_configmap'),
             )
-            result = {'status': 'error', 'title': title, 'message': str(exc)}
         except Exception:
             current_app.logger.exception('Unexpected ConfigMap create failure.')
             title = 'ConfigMap operation failed'
@@ -118,10 +115,10 @@ def create_configmap_page():
                 message=message, metadata={'operation': 'creation'},
                 action_url=url_for('kubernetes_operations.create_configmap'),
             )
-            result = {'status': 'error', 'title': title, 'message': message}
         if request.headers.get('HX-Request') == 'true':
-            return render_template('kubernetes_operations/configmaps/_operation_result.html', operation_result=result, **_oob(feedback))
-    return render_template('kubernetes_operations/configmaps/create.html', operation_result=result, operation_feedback=feedback, **get_context())
+            return render_template('kubernetes_operations/configmaps/_operation_notification.html', **_oob(feedback))
+        return redirect(url_for('kubernetes_operations.create_configmap'))
+    return render_template('kubernetes_operations/configmaps/create.html', **get_context())
 
 
 @any_permission_required('kubernetes_configmaps.update', 'kubernetes_configmaps.delete')
@@ -167,7 +164,6 @@ def configmap_delete_target():
 
 @permission_required('kubernetes_configmaps.update')
 def update_configmap_page():
-    result = None
     feedback = None
     selected_inventory_id = request.values.get('inventory_id', '')
     target = None
@@ -197,7 +193,6 @@ def update_configmap_page():
                 status='success', title=title, message=message, metadata=metadata,
                 action_url=url_for('kubernetes_operations.update_configmap', inventory_id=request.form.get('inventory_id')),
             )
-            result = {'status': 'success', 'title': title, 'message': message, 'diff': diff}
         except ValueError as exc:
             title = 'ConfigMap update validation failed' if dry_run else 'ConfigMap update failed'
             feedback = _feedback(
@@ -205,15 +200,14 @@ def update_configmap_page():
                 message=str(exc), metadata={'inventory_id': request.form.get('inventory_id'), 'operation': 'validation' if dry_run else 'update'},
                 action_url=url_for('kubernetes_operations.update_configmap'),
             )
-            result = {'status': 'error', 'title': title, 'message': str(exc)}
         if request.headers.get('HX-Request') == 'true':
-            return render_template('kubernetes_operations/configmaps/_operation_result.html', operation_result=result, **_oob(feedback))
-    return render_template('kubernetes_operations/configmaps/update.html', operation_result=result, operation_feedback=feedback, target=target, live=live, impacts=impacts, selected_namespaces=get_namespaces(target.inventory.cluster_id) if target else [], selected_configmaps=get_configmaps(target.inventory.cluster_id, target.inventory.namespace) if target else [], **get_context())
+            return render_template('kubernetes_operations/configmaps/_operation_notification.html', **_oob(feedback))
+        return redirect(url_for('kubernetes_operations.update_configmap', inventory_id=request.form.get('inventory_id')))
+    return render_template('kubernetes_operations/configmaps/update.html', target=target, live=live, impacts=impacts, selected_namespaces=get_namespaces(target.inventory.cluster_id) if target else [], selected_configmaps=get_configmaps(target.inventory.cluster_id, target.inventory.namespace) if target else [], **get_context())
 
 
 @permission_required('kubernetes_configmaps.delete')
 def delete_configmap_page():
-    result = None
     feedback = None
     selected_inventory_id = request.values.get('inventory_id', '')
     target = None
@@ -241,7 +235,6 @@ def delete_configmap_page():
                 status='success', title=title, message=message, metadata=metadata,
                 action_url=url_for('kubernetes_operations.configmap_management'),
             )
-            result = {'status': 'success', 'title': title, 'message': message}
             if not dry_run:
                 target = None
         except ValueError as exc:
@@ -251,7 +244,7 @@ def delete_configmap_page():
                 message=str(exc), metadata={'inventory_id': request.form.get('inventory_id'), 'operation': 'validation' if dry_run else 'delete'},
                 action_url=url_for('kubernetes_operations.delete_configmap'),
             )
-            result = {'status': 'error', 'title': title, 'message': str(exc)}
         if request.headers.get('HX-Request') == 'true':
-            return render_template('kubernetes_operations/configmaps/_operation_result.html', operation_result=result, **_oob(feedback))
-    return render_template('kubernetes_operations/configmaps/delete.html', operation_result=result, operation_feedback=feedback, target=target, impacts=impacts, selected_namespaces=get_namespaces(target.inventory.cluster_id) if target else [], selected_configmaps=get_configmaps(target.inventory.cluster_id, target.inventory.namespace) if target else [], **get_context())
+            return render_template('kubernetes_operations/configmaps/_operation_notification.html', **_oob(feedback))
+        return redirect(url_for('kubernetes_operations.delete_configmap'))
+    return render_template('kubernetes_operations/configmaps/delete.html', target=target, impacts=impacts, selected_namespaces=get_namespaces(target.inventory.cluster_id) if target else [], selected_configmaps=get_configmaps(target.inventory.cluster_id, target.inventory.namespace) if target else [], **get_context())

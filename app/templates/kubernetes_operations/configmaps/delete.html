@@ -3,10 +3,9 @@
 {% block dashboard_content %}
 <div class="space-y-6">
   <section class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 px-6 py-6 text-white shadow-lg shadow-blue-500/20 sm:px-7"><div class="absolute -right-14 -top-16 h-48 w-48 rounded-full border border-white/10 bg-white/5"></div><div class="absolute -bottom-20 right-24 h-44 w-44 rounded-full border border-white/10 bg-white/5"></div><div class="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between"><div class="flex min-w-0 items-start gap-4"><div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-white/15"><i data-lucide="trash-2" class="h-6 w-6"></i></div><div><div class="flex flex-wrap items-center gap-2 text-xs font-semibold"><span class="rounded-full border border-white/15 bg-white/10 px-3 py-1">ConfigMap Management</span><span class="rounded-full border border-white/15 bg-white/10 px-3 py-1">Destructive workflow</span></div><h1 class="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">Delete Kubernetes ConfigMap</h1><p class="mt-2 max-w-3xl text-sm leading-6 text-blue-50/90">Review current workload usage, validate the target against Kubernetes, and remove one ConfigMap through a controlled destructive operation.</p></div></div><a href="{{ url_for('kubernetes_operations.configmap_management') }}" class="inline-flex shrink-0 items-center justify-center gap-2 self-start rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/15 lg:self-center"><i data-lucide="arrow-left" class="h-4 w-4"></i>ConfigMap Management</a></div></section>
+  <div id="configmap-operation-feedback" class="hidden" aria-hidden="true"></div>
 
-  <div id="configmap-operation-result">{% include 'kubernetes_operations/configmaps/_operation_result.html' %}</div>
-
-  <form method="post" hx-post="{{ url_for('kubernetes_operations.delete_configmap') }}" hx-target="#configmap-operation-result" hx-swap="innerHTML" class="space-y-6">
+<form method="post" hx-post="{{ url_for('kubernetes_operations.delete_configmap') }}" hx-target="#configmap-operation-feedback" hx-swap="innerHTML" class="space-y-6">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
       <div class="space-y-6">

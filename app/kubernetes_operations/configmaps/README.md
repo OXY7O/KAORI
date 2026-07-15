@@ -87,3 +87,8 @@ Restart remains a separate future action and permission.
 - `kubernetes_configmap_delete_failed`
 
 Safe metadata includes cluster, namespace, ConfigMap name, operation, key names, diff key lists, impact count, and resource version. Never store submitted or existing values.
+
+
+## Operation feedback delivery
+
+ConfigMap create, update, delete, and server-side validation outcomes are delivered through the shared KAORI notification/toast channel. Workflow pages intentionally do not render inline operation-result cards, Flask-style messages, or diff summary labels after submission. HTMX responses target a hidden feedback sink and publish the global notification out-of-band. Non-HTMX submissions use POST/Redirect/GET while the queued notification remains available through the navigation notification service.

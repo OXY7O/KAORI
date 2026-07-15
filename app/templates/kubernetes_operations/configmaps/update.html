@@ -6,10 +6,9 @@
     <div class="absolute -right-14 -top-16 h-48 w-48 rounded-full border border-white/10 bg-white/5"></div><div class="absolute -bottom-20 right-24 h-44 w-44 rounded-full border border-white/10 bg-white/5"></div>
     <div class="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between"><div class="flex min-w-0 items-start gap-4"><div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-white/15"><i data-lucide="file-pen-line" class="h-6 w-6"></i></div><div><div class="flex flex-wrap items-center gap-2 text-xs font-semibold"><span class="rounded-full border border-white/15 bg-white/10 px-3 py-1">ConfigMap Management</span><span class="rounded-full border border-white/15 bg-white/10 px-3 py-1">View & update</span></div><h1 class="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">View & Update ConfigMap</h1><p class="mt-2 max-w-3xl text-sm leading-6 text-blue-50/90">Load current values from Kubernetes, review workload impact, preview the diff, and apply a validated merge or full replacement.</p></div></div><a href="{{ url_for('kubernetes_operations.configmap_management') }}" class="inline-flex shrink-0 items-center justify-center gap-2 self-start rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/15 lg:self-center"><i data-lucide="arrow-left" class="h-4 w-4"></i>ConfigMap Management</a></div>
   </section>
+  <div id="configmap-operation-feedback" class="hidden" aria-hidden="true"></div>
 
-  <div id="configmap-operation-result">{% include 'kubernetes_operations/configmaps/_operation_result.html' %}</div>
-
-  <form method="post" hx-post="{{ url_for('kubernetes_operations.update_configmap') }}" hx-target="#configmap-operation-result" hx-swap="innerHTML" class="space-y-6">
+<form method="post" hx-post="{{ url_for('kubernetes_operations.update_configmap') }}" hx-target="#configmap-operation-feedback" hx-swap="innerHTML" class="space-y-6">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
       <div class="space-y-6">
