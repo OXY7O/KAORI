@@ -1,174 +1,185 @@
 <div class="overflow-x-auto">
-  <table class="w-full text-slate-900 dark:text-slate-100" style="min-width: 980px; table-layout: fixed;">
-    <colgroup>
-      <col style="width: 31%;">
-      <col style="width: 15%;">
-      <col style="width: 20%;">
-      <col style="width: 34%;">
-    </colgroup>
-    <thead>
-      <tr class="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-600 dark:border-slate-700 dark:bg-slate-700/40 dark:text-slate-300">
-        <th class="px-5 py-3 text-left">Namespace</th>
-        <th class="px-5 py-3 text-left">Inventory</th>
-        <th class="px-5 py-3 text-left">Current Policy</th>
-        <th class="px-5 py-3 text-left">Configure</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for row in namespace_rows %}
-        {% set inventory_classes = 'bg-green-50 text-green-700 ring-green-200 dark:bg-green-500/10 dark:text-green-300 dark:ring-green-500/25' if row.in_inventory else 'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/25' %}
-        {% if row.policy == 'approval_required' %}
-          {% set policy_classes = 'bg-purple-50 text-purple-700 ring-purple-200 dark:bg-purple-500/10 dark:text-purple-300 dark:ring-purple-500/25' %}
-          {% set policy_icon = 'users' %}
-        {% elif row.policy == 'step_up' %}
-          {% set policy_classes = 'bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/25' %}
-          {% set policy_icon = 'shield-check' %}
-        {% else %}
-          {% set policy_classes = 'bg-slate-50 text-slate-700 ring-slate-200 dark:bg-slate-700/50 dark:text-slate-300 dark:ring-slate-600' %}
-          {% set policy_icon = 'lock' %}
-        {% endif %}
-        <tr class="border-t border-slate-200 text-sm transition hover:bg-blue-50/30 dark:border-slate-700 dark:hover:bg-slate-700/30">
-          <td class="px-5 py-3 align-middle">
-            <div class="flex max-w-[360px] items-center gap-2.5">
-              <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">
-                <i data-lucide="box" class="h-4 w-4"></i>
-              </span>
-              <div class="min-w-0">
-                <div class="truncate font-semibold text-slate-900 dark:text-white" title="{{ row.namespace }}">{{ row.namespace }}</div>
-                <div class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Namespace-scoped Secret access</div>
-              </div>
-            </div>
-          </td>
-          <td class="px-5 py-3 text-left align-middle">
-            <span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ring-1 ring-inset {{ inventory_classes }}">
-              <i data-lucide="{{ 'check' if row.in_inventory else 'info' }}" class="h-3.5 w-3.5"></i>
-              {{ 'Current' if row.in_inventory else 'Missing' }}
-            </span>
-          </td>
-          <td class="px-5 py-3 text-left align-middle">
-            <span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ring-1 ring-inset {{ policy_classes }}">
-              <i data-lucide="{{ policy_icon }}" class="h-3.5 w-3.5"></i>
-              {{ reveal_policy_choices.get(row.policy, row.policy.replace('_', ' ')|title) }}
-            </span>
-          </td>
-          <td class="px-5 py-3 align-middle">
-            <form method="post"
-                  action="{{ url_for('settings.secret_reveal.update_namespace_policy', cluster_id=selected_cluster.id) }}"
-                  class="flex w-full items-center gap-3">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <input type="hidden" name="namespace" value="{{ row.namespace }}">
-              <input type="hidden" name="namespace_q" value="{{ namespace_filters.query }}">
-              <input type="hidden" name="namespace_policy" value="{{ namespace_filters.policy }}">
-              <input type="hidden" name="page" value="{{ namespace_pagination.page }}">
-              <input type="hidden" name="per_page" value="{{ namespace_pagination.per_page }}">
-              <select name="policy"
-                      aria-label="Reveal policy for {{ row.namespace }}"
-                      {% if not row.in_inventory and row.policy == 'disabled' %}disabled{% endif %}
-                      class="h-10 min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10 dark:disabled:bg-slate-900 dark:disabled:text-slate-600">
-                {% for value, label in reveal_policy_choices.items() %}
-                  <option value="{{ value }}" {% if row.policy == value %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-              </select>
-              <button type="submit"
-                      title="Save {{ row.namespace }} policy"
-                      {% if not row.in_inventory and row.policy == 'disabled' %}disabled{% endif %}
-                      class="inline-flex h-10 w-24 shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-600 px-3 text-sm font-semibold text-white shadow-sm outline-none transition hover:bg-blue-700 focus:ring-4 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 disabled:shadow-none dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-400/20 dark:disabled:bg-slate-800 dark:disabled:text-slate-600">
-                <i data-lucide="save" class="h-4 w-4"></i>
-                Save
-              </button>
-            </form>
-          </td>
-        </tr>
-      {% else %}
-        <tr>
-          <td colspan="4" class="p-0">
-            {% if namespace_summary.total %}
-              {% set empty_state_icon = 'search' %}
-              {% set empty_state_title = 'No namespace matches the current filters' %}
-              {% set empty_state_description = 'Adjust the search or Reveal policy filter to show namespace settings.' %}
+    <table class="w-full text-slate-900 dark:text-slate-100"
+           style="min-width: 980px;
+                  table-layout: fixed">
+        <colgroup>
+            <col style="width: 31%;">
+            <col style="width: 15%;">
+            <col style="width: 20%;">
+            <col style="width: 34%;">
+        </colgroup>
+        <thead>
+            <tr class="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-600 dark:border-slate-700 dark:bg-slate-700/40 dark:text-slate-300">
+                <th class="px-5 py-3 text-left">Namespace</th>
+                <th class="px-5 py-3 text-left">Inventory</th>
+                <th class="px-5 py-3 text-left">Current Policy</th>
+                <th class="px-5 py-3 text-left">Configure</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in namespace_rows %}
+                {% set inventory_classes = 'bg-green-50 text-green-700 ring-green-200 dark:bg-green-500/10 dark:text-green-300 dark:ring-green-500/25' if row.in_inventory else 'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/25' %}
+                {% if row.policy == 'approval_required' %}
+                    {% set policy_classes = "bg-purple-50 text-purple-700 ring-purple-200 dark:bg-purple-500/10 dark:text-purple-300 dark:ring-purple-500/25" %}
+                    {% set policy_icon = "users" %}
+                {% elif row.policy == 'step_up' %}
+                    {% set policy_classes = "bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/25" %}
+                    {% set policy_icon = "shield-check" %}
+                {% else %}
+                    {% set policy_classes = "bg-slate-50 text-slate-700 ring-slate-200 dark:bg-slate-700/50 dark:text-slate-300 dark:ring-slate-600" %}
+                    {% set policy_icon = "lock" %}
+                {% endif %}
+                <tr class="border-t border-slate-200 text-sm transition hover:bg-blue-50/30 dark:border-slate-700 dark:hover:bg-slate-700/30">
+                    <td class="px-5 py-3 align-middle">
+                        <div class="flex max-w-[360px] items-center gap-2.5">
+                            <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                                <i data-lucide="box" class="h-4 w-4"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <div class="truncate font-semibold text-slate-900 dark:text-white"
+                                     title="{{ row.namespace }}">{{ row.namespace }}</div>
+                                <div class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Namespace-scoped Secret access</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-5 py-3 text-left align-middle">
+                        <span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ring-1 ring-inset {{ inventory_classes }}">
+                            <i data-lucide="{{ 'check' if row.in_inventory else 'info' }}"
+                               class="h-3.5 w-3.5"></i>
+                            {{ 'Current' if row.in_inventory else 'Missing' }}
+                        </span>
+                    </td>
+                    <td class="px-5 py-3 text-left align-middle">
+                        <span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ring-1 ring-inset {{ policy_classes }}">
+                            <i data-lucide="{{ policy_icon }}" class="h-3.5 w-3.5"></i>
+                            {{ reveal_policy_choices.get(row.policy, row.policy.replace('_', ' ') |title) }}
+                        </span>
+                    </td>
+                    <td class="px-5 py-3 align-middle">
+                        <form method="post"
+                              action="{{ url_for('settings.secret_reveal.update_namespace_policy', cluster_id=selected_cluster.id) }}"
+                              class="flex w-full items-center gap-3">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="namespace" value="{{ row.namespace }}">
+                            <input type="hidden"
+                                   name="namespace_q"
+                                   value="{{ namespace_filters.query }}">
+                            <input type="hidden"
+                                   name="namespace_policy"
+                                   value="{{ namespace_filters.policy }}">
+                            <input type="hidden" name="page" value="{{ namespace_pagination.page }}">
+                            <input type="hidden"
+                                   name="per_page"
+                                   value="{{ namespace_pagination.per_page }}">
+                            <select name="policy"
+                                    aria-label="Reveal policy for {{ row.namespace }}"
+                                    {% if not row.in_inventory and row.policy == 'disabled' %}disabled{% endif %}
+                                    class="h-10 min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10 dark:disabled:bg-slate-900 dark:disabled:text-slate-600">
+                                {% for value, label in reveal_policy_choices.items() %}
+                                    <option value="{{ value }}" {% if row.policy == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit"
+                                    title="Save {{ row.namespace }} policy"
+                                    {% if not row.in_inventory and row.policy == 'disabled' %}disabled{% endif %}
+                                    class="inline-flex h-10 w-24 shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-600 px-3 text-sm font-semibold text-white shadow-sm outline-none transition hover:bg-blue-700 focus:ring-4 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 disabled:shadow-none dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-400/20 dark:disabled:bg-slate-800 dark:disabled:text-slate-600">
+                                <i data-lucide="save" class="h-4 w-4"></i>
+                                Save
+                            </button>
+                        </form>
+                    </td>
+                </tr>
             {% else %}
-              {% set empty_state_icon = 'box' %}
-              {% set empty_state_title = 'No namespace snapshot available' %}
-              {% set empty_state_description = 'Run Kubernetes inventory sync before enabling namespace-level Secret Reveal.' %}
-            {% endif %}
-            {% set empty_state_min_height = 'min-h-[190px]' %}
-            {% include 'components/states/_empty_state.html' %}
-          </td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+                <tr>
+                    <td colspan="4" class="p-0">
+                        {% if namespace_summary.total %}
+                            {% set empty_state_icon = "search" %}
+                            {% set empty_state_title = "No namespace matches the current filters" %}
+                            {% set empty_state_description = "Adjust the search or Reveal policy filter to show namespace settings." %}
+                        {% else %}
+                            {% set empty_state_icon = "box" %}
+                            {% set empty_state_title = "No namespace snapshot available" %}
+                            {% set empty_state_description = "Run Kubernetes inventory sync before enabling namespace-level Secret Reveal." %}
+                        {% endif %}
+                        {% set empty_state_min_height = "min-h-[190px]" %}
+                        {% include 'components/states/_empty_state.html' %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
-
 <div class="flex flex-col gap-4 border-t border-slate-200 bg-slate-50 px-6 py-4 text-sm text-slate-500 lg:flex-row lg:items-center lg:justify-between dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
-  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-    <div>
-      Showing <span class="font-semibold text-slate-700 dark:text-slate-200">{{ namespace_pagination.start_item }}</span> -
-      <span class="font-semibold text-slate-700 dark:text-slate-200">{{ namespace_pagination.end_item }}</span> of
-      <span class="font-semibold text-slate-700 dark:text-slate-200">{{ namespace_pagination.total_items }}</span>
-      {{ 'namespace' if namespace_pagination.total_items == 1 else 'namespaces' }}
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+        <div>
+            Showing <span class="font-semibold text-slate-700 dark:text-slate-200">{{ namespace_pagination.start_item }}</span> -
+            <span class="font-semibold text-slate-700 dark:text-slate-200">{{ namespace_pagination.end_item }}</span> of
+            <span class="font-semibold text-slate-700 dark:text-slate-200">{{ namespace_pagination.total_items }}</span>
+            {{ 'namespace' if namespace_pagination.total_items == 1 else 'namespaces' }}
+        </div>
+        <form method="get"
+              action="{{ url_for('settings.secret_reveal.index') }}"
+              hx-get="{{ url_for('settings.secret_reveal.index') }}"
+              hx-target="#secret-reveal-namespace-table-content"
+              hx-select="#secret-reveal-namespace-table-content"
+              hx-swap="innerHTML"
+              hx-push-url="true"
+              hx-indicator="#secret-reveal-namespace-loading"
+              class="flex items-center">
+            <input type="hidden" name="cluster_id" value="{{ selected_cluster.id }}">
+            <input type="hidden"
+                   name="namespace_q"
+                   value="{{ namespace_filters.query }}">
+            <input type="hidden"
+                   name="namespace_policy"
+                   value="{{ namespace_filters.policy }}">
+            <input type="hidden" name="page" value="1">
+            <select name="per_page"
+                    aria-label="Rows per page"
+                    onchange="this.form.requestSubmit()"
+                    class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
+                {% for option in namespace_per_page_options %}
+                    <option value="{{ option }}"
+                            {% if namespace_pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
+                {% endfor %}
+            </select>
+        </form>
     </div>
-    <form method="get"
-          action="{{ url_for('settings.secret_reveal.index') }}"
-          hx-get="{{ url_for('settings.secret_reveal.index') }}"
-          hx-target="#secret-reveal-namespace-table-content"
-          hx-select="#secret-reveal-namespace-table-content"
-          hx-swap="innerHTML"
-          hx-push-url="true"
-          hx-indicator="#secret-reveal-namespace-loading"
-          class="flex items-center">
-      <input type="hidden" name="cluster_id" value="{{ selected_cluster.id }}">
-      <input type="hidden" name="namespace_q" value="{{ namespace_filters.query }}">
-      <input type="hidden" name="namespace_policy" value="{{ namespace_filters.policy }}">
-      <input type="hidden" name="page" value="1">
-      <select name="per_page"
-              aria-label="Rows per page"
-              onchange="this.form.requestSubmit()"
-              class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
-        {% for option in namespace_per_page_options %}
-          <option value="{{ option }}" {% if namespace_pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
-        {% endfor %}
-      </select>
-    </form>
-  </div>
-
-  <div class="flex flex-wrap items-center gap-2">
-    {% if namespace_pagination.has_prev %}
-      {% set prev_url = url_for('settings.secret_reveal.index', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.prev_page, per_page=namespace_pagination.per_page) %}
-      <a href="{{ prev_url }}"
-         hx-get="{{ prev_url }}"
-         hx-target="#secret-reveal-namespace-table-content"
-         hx-select="#secret-reveal-namespace-table-content"
-         hx-swap="innerHTML"
-         hx-push-url="true"
-         hx-indicator="#secret-reveal-namespace-loading"
-         class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
-        <i data-lucide="chevron-left" class="h-4 w-4"></i>Previous
-      </a>
-    {% else %}
-      <span class="inline-flex cursor-not-allowed items-center gap-2 rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-sm font-medium text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-600">
-        <i data-lucide="chevron-left" class="h-4 w-4"></i>Previous
-      </span>
-    {% endif %}
-
-    <span class="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">Page {{ namespace_pagination.page }} / {{ namespace_pagination.total_pages }}</span>
-
-    {% if namespace_pagination.has_next %}
-      {% set next_url = url_for('settings.secret_reveal.index', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.next_page, per_page=namespace_pagination.per_page) %}
-      <a href="{{ next_url }}"
-         hx-get="{{ next_url }}"
-         hx-target="#secret-reveal-namespace-table-content"
-         hx-select="#secret-reveal-namespace-table-content"
-         hx-swap="innerHTML"
-         hx-push-url="true"
-         hx-indicator="#secret-reveal-namespace-loading"
-         class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
-        Next<i data-lucide="chevron-right" class="h-4 w-4"></i>
-      </a>
-    {% else %}
-      <span class="inline-flex cursor-not-allowed items-center gap-2 rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-sm font-medium text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-600">
-        Next<i data-lucide="chevron-right" class="h-4 w-4"></i>
-      </span>
-    {% endif %}
-  </div>
+    <div class="flex flex-wrap items-center gap-2">
+        {% if namespace_pagination.has_prev %}
+            {% set prev_url = url_for('settings.secret_reveal.index', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.prev_page, per_page=namespace_pagination.per_page) %}
+            <a href="{{ prev_url }}"
+               hx-get="{{ prev_url }}"
+               hx-target="#secret-reveal-namespace-table-content"
+               hx-select="#secret-reveal-namespace-table-content"
+               hx-swap="innerHTML"
+               hx-push-url="true"
+               hx-indicator="#secret-reveal-namespace-loading"
+               class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
+                <i data-lucide="chevron-left" class="h-4 w-4"></i>Previous
+            </a>
+        {% else %}
+            <span class="inline-flex cursor-not-allowed items-center gap-2 rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-sm font-medium text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-600">
+                <i data-lucide="chevron-left" class="h-4 w-4"></i>Previous
+            </span>
+        {% endif %}
+        <span class="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">Page {{ namespace_pagination.page }} / {{ namespace_pagination.total_pages }}</span>
+        {% if namespace_pagination.has_next %}
+            {% set next_url = url_for('settings.secret_reveal.index', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.next_page, per_page=namespace_pagination.per_page) %}
+            <a href="{{ next_url }}"
+               hx-get="{{ next_url }}"
+               hx-target="#secret-reveal-namespace-table-content"
+               hx-select="#secret-reveal-namespace-table-content"
+               hx-swap="innerHTML"
+               hx-push-url="true"
+               hx-indicator="#secret-reveal-namespace-loading"
+               class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
+                Next<i data-lucide="chevron-right" class="h-4 w-4"></i>
+            </a>
+        {% else %}
+            <span class="inline-flex cursor-not-allowed items-center gap-2 rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-sm font-medium text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-600">
+                Next<i data-lucide="chevron-right" class="h-4 w-4"></i>
+            </span>
+        {% endif %}
+    </div>
 </div>

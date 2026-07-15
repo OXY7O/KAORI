@@ -1,30 +1,30 @@
 {% set endpoint = request.endpoint or '' %}
 {% if endpoint == 'welcome.index' %}
-    {% set nav_workspace = 'Welcome' %}
-    {% set nav_icon = 'sparkles' %}
+    {% set nav_workspace = "Welcome" %}
+    {% set nav_icon = "sparkles" %}
 {% elif endpoint.startswith('kubernetes_dashboard.') %}
-    {% set nav_workspace = 'Kubernetes Operations' %}
-    {% set nav_icon = 'layout-dashboard' %}
+    {% set nav_workspace = "Kubernetes Operations" %}
+    {% set nav_icon = "layout-dashboard" %}
 {% elif endpoint.startswith('cluster.') %}
-    {% set nav_workspace = 'Kubernetes Cluster' %}
-    {% set nav_icon = 'server' %}
+    {% set nav_workspace = "Kubernetes Cluster" %}
+    {% set nav_icon = "server" %}
 {% elif endpoint.startswith('inventory.') %}
-    {% set nav_workspace = 'K8s Inventory' %}
-    {% set nav_icon = 'boxes' %}
+    {% set nav_workspace = "K8s Inventory" %}
+    {% set nav_icon = "boxes" %}
 {% elif endpoint.startswith('analytics.') %}
-    {% set nav_workspace = 'K8s Analytics' %}
-    {% set nav_icon = 'bar-chart-3' %}
+    {% set nav_workspace = "K8s Analytics" %}
+    {% set nav_icon = "bar-chart-3" %}
 {% elif endpoint.startswith('intelligence.') %}
-    {% set nav_workspace = 'Intelligence' %}
+    {% set nav_workspace = "Intelligence" %}
 {% elif endpoint.startswith('reports.') %}
-    {% set nav_workspace = 'Reports' %}
-    {% set nav_icon = 'file-text' %}
+    {% set nav_workspace = "Reports" %}
+    {% set nav_icon = "file-text" %}
 {% elif endpoint.startswith('settings.') %}
-    {% set nav_workspace = 'Settings' %}
-    {% set nav_icon = 'settings-2' %}
+    {% set nav_workspace = "Settings" %}
+    {% set nav_icon = "settings-2" %}
 {% else %}
-    {% set nav_workspace = 'Workspace' %}
-    {% set nav_icon = 'compass' %}
+    {% set nav_workspace = "Workspace" %}
+    {% set nav_icon = "compass" %}
 {% endif %}
 {% set current_page_label = nav_workspace %}
 {% set current_user_role = current_user.role|default('admin', true)|replace('_', ' ')|title %}
@@ -38,17 +38,18 @@
                     class="group inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-blue-500/30 dark:hover:bg-blue-500/10 dark:hover:text-blue-300"
                     :title="sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'"
                     aria-label="Toggle sidebar">
-                <i data-lucide="chevrons-left" class="sidebar-toggle-expanded-icon h-5 w-5"></i>
-                <i data-lucide="chevrons-right" class="sidebar-toggle-collapsed-icon h-5 w-5"></i>
+                <i data-lucide="chevrons-left"
+                   class="sidebar-toggle-expanded-icon h-5 w-5"></i>
+                <i data-lucide="chevrons-right"
+                   class="sidebar-toggle-collapsed-icon h-5 w-5"></i>
             </button>
-
             <div class="inline-flex h-10 min-w-0 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 shadow-sm transition dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
                 <span class="truncate">KAORI</span>
-                <i data-lucide="chevron-right" class="h-3.5 w-3.5 flex-shrink-0 text-slate-400"></i>
+                <i data-lucide="chevron-right"
+                   class="h-3.5 w-3.5 flex-shrink-0 text-slate-400"></i>
                 <span class="truncate text-blue-600 dark:text-blue-400">{{ current_page_label }}</span>
             </div>
         </div>
-
         <!-- Center: future global search placeholder -->
         <div class="hidden min-w-0 flex-1 justify-center xl:flex">
             <button type="button"
@@ -63,7 +64,6 @@
                 </span>
             </button>
         </div>
-
         <!-- Right: actions -->
         <div class="flex flex-shrink-0 items-center gap-2 sm:gap-3">
             <!-- Quick actions -->
@@ -79,7 +79,6 @@
                     <span>Quick Actions</span>
                     <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400"></i>
                 </button>
-
                 <button @click="quickOpen = !quickOpen; notificationOpen = false; userOpen = false"
                         type="button"
                         class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-blue-500/30 dark:hover:bg-blue-500/10 dark:hover:text-blue-300 md:hidden"
@@ -87,12 +86,11 @@
                         :aria-expanded="quickOpen.toString()">
                     <i data-lucide="zap" class="h-5 w-5"></i>
                 </button>
-
                 <div x-cloak
                      x-show="quickOpen"
                      @click.outside="quickOpen = false"
                      x-transition.origin.top.right
-                     style="width:min(23rem, calc(100vw - 2rem));"
+                     style="width:min(23rem, calc(100vw - 2rem))"
                      class="absolute right-0 mt-3 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/15 dark:border-slate-700 dark:bg-slate-900 dark:shadow-slate-950/50">
                     <div class="border-b border-slate-100 px-4 py-3 dark:border-slate-800">
                         <div class="flex items-center gap-3">
@@ -105,7 +103,6 @@
                             </div>
                         </div>
                     </div>
-
                     <div class="p-2.5">
                         {% if current_user.has_permission('clusters.sync') %}
                             {% if cluster_onboarding.has_clusters %}
@@ -125,7 +122,8 @@
                                             @click="quickOpen = false; document.getElementById('quick-sync-feedback')?.replaceChildren()"
                                             class="group relative flex w-full items-start gap-3 overflow-hidden rounded-2xl border border-blue-100 bg-blue-50/70 p-3 text-left transition hover:border-blue-200 hover:bg-blue-50 disabled:cursor-wait disabled:opacity-75 dark:border-blue-500/20 dark:bg-blue-500/5 dark:hover:border-blue-500/30 dark:hover:bg-blue-500/10">
                                         <span class="relative z-10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm shadow-blue-600/20">
-                                            <i data-lucide="refresh-cw" class="h-4 w-4 group-[.htmx-request]:animate-spin"></i>
+                                            <i data-lucide="refresh-cw"
+                                               class="h-4 w-4 group-[.htmx-request]:animate-spin"></i>
                                         </span>
                                         <span class="relative z-10 min-w-0 flex-1">
                                             <span class="flex items-center justify-between gap-2">
@@ -161,9 +159,7 @@
                                 </a>
                             {% endif %}
                         {% endif %}
-
                         <div class="my-2 border-t border-slate-100 dark:border-slate-800"></div>
-
                         <a href="{{ url_for('reports.generate_report') }}"
                            class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-xs text-slate-600 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800">
                             <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-300">
@@ -175,7 +171,6 @@
                             </span>
                             <i data-lucide="chevron-right" class="h-4 w-4 text-slate-300"></i>
                         </a>
-
                         <a href="{{ url_for('analytics.alerts') }}"
                            class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-xs text-slate-600 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800">
                             <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-300">
@@ -190,12 +185,10 @@
                     </div>
                 </div>
             </div>
-
             {% set notification_context = load_navigation_notification_context() %}
             {% with navigation_notifications=notification_context['items'], navigation_unread_count=notification_context['unread_count'], navigation_total_count=notification_context['total_count'], navigation_display_limit=notification_context['display_limit'] %}
                 {% include "components/navigation/_notification_center.html" %}
             {% endwith %}
-
             <!-- Theme -->
             <button id="theme-toggle"
                     type="button"
@@ -203,7 +196,6 @@
                     title="Toggle theme">
                 <i id="theme-icon" data-lucide="moon" class="h-5 w-5"></i>
             </button>
-
             <!-- User menu -->
             <div class="relative">
                 <button @click="userOpen = !userOpen; quickOpen = false; notificationOpen = false"
@@ -213,12 +205,10 @@
                     <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600 text-white">
                         <i data-lucide="user" class="h-4 w-4"></i>
                     </span>
-                    <span class="hidden max-w-28 truncate text-xs font-semibold lg:inline">
-                        {{ current_user.username }}
-                    </span>
-                    <i data-lucide="chevron-down" class="hidden h-4 w-4 text-slate-400 lg:block"></i>
+                    <span class="hidden max-w-28 truncate text-xs font-semibold lg:inline">{{ current_user.username }}</span>
+                    <i data-lucide="chevron-down"
+                       class="hidden h-4 w-4 text-slate-400 lg:block"></i>
                 </button>
-
                 <div x-cloak
                      x-show="userOpen"
                      @click.outside="userOpen = false"

@@ -10,7 +10,7 @@
                 <th class="px-4 py-3 text-left">CPU</th>
                 <th class="px-4 py-3 text-left">Memory</th>
                 <th class="px-4 py-3 text-left">Storage</th>
-                <th class="px-4 py-3 text-left">Details</th>
+                <th class="px-4 py-3 text-right">Details</th>
             </tr>
         </thead>
         <tbody>
@@ -19,7 +19,8 @@
                 {% set role_classes = 'bg-purple-50 text-purple-700 ring-purple-200 dark:bg-purple-500/10 dark:text-purple-300 dark:ring-purple-500/25' if node.role in ['control-plane', 'master'] else 'bg-cyan-50 text-cyan-700 ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-500/25' %}
                 <tr class="border-t border-slate-200 text-sm transition hover:bg-blue-50/30 dark:border-slate-700 dark:hover:bg-slate-700/30">
                     <td class="px-4 py-3">
-                        <span class="inline-flex max-w-[220px] items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/25" title="{{ node.cluster_name }}">
+                        <span class="inline-flex max-w-[220px] items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/25"
+                              title="{{ node.cluster_name }}">
                             <i data-lucide="building-2" class="h-3.5 w-3.5 shrink-0"></i>
                             <span class="truncate">{{ node.cluster_name }}</span>
                         </span>
@@ -30,16 +31,16 @@
                                 <i data-lucide="server" class="h-4 w-4"></i>
                             </span>
                             <div class="min-w-0">
-                                <div class="truncate font-semibold text-slate-900 dark:text-white" title="{{ node.node_name }}">{{ node.node_name }}</div>
+                                <div class="truncate font-semibold text-slate-900 dark:text-white"
+                                     title="{{ node.node_name }}">{{ node.node_name }}</div>
                                 {% if node.hostname_address and node.hostname_address != node.node_name %}
-                                    <div class="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400" title="{{ node.hostname_address }}">{{ node.hostname_address }}</div>
+                                    <div class="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400"
+                                         title="{{ node.hostname_address }}">{{ node.hostname_address }}</div>
                                 {% endif %}
                             </div>
                         </div>
                     </td>
-                    <td class="px-4 py-3 text-slate-600 dark:text-slate-300">
-                        {{ node.internal_ip or '-' }}
-                    </td>
+                    <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ node.internal_ip or '-' }}</td>
                     <td class="px-4 py-3 text-left">
                         <span class="inline-flex rounded-full px-3 py-1 text-xs font-medium ring-1 ring-inset {{ status_classes }}">{{ node.status }}</span>
                     </td>
@@ -49,7 +50,7 @@
                     <td class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-200">{{ node.cpu or '-' }}</td>
                     <td class="px-4 py-3 text-left text-slate-600 dark:text-slate-300">{{ node.memory_display }}</td>
                     <td class="px-4 py-3 text-left text-slate-600 dark:text-slate-300">{{ node.ephemeral_storage_display }}</td>
-                    <td class="px-4 py-3 text-left">
+                    <td class="px-4 py-3 text-right">
                         <button type="button"
                                 data-node-toggle="true"
                                 data-node-id="{{ node.id }}"
@@ -71,10 +72,10 @@
             {% else %}
                 <tr>
                     <td colspan="9" class="p-0">
-                        {% set empty_state_icon = 'server-cog' %}
-                        {% set empty_state_title = 'No node inventory found' %}
-                        {% set empty_state_description = 'Adjust the active filters or sync cluster inventory to collect Kubernetes node data.' %}
-                        {% set empty_state_min_height = 'min-h-[190px]' %}
+                        {% set empty_state_icon = "server-cog" %}
+                        {% set empty_state_title = "No node inventory found" %}
+                        {% set empty_state_description = "Adjust the active filters or sync cluster inventory to collect Kubernetes node data." %}
+                        {% set empty_state_min_height = "min-h-[190px]" %}
                         {% include 'components/states/_empty_state.html' %}
                     </td>
                 </tr>
@@ -82,7 +83,6 @@
         </tbody>
     </table>
 </div>
-
 <div class="flex flex-col gap-4 border-t border-slate-200 bg-slate-50 px-6 py-4 text-sm text-slate-500 lg:flex-row lg:items-center lg:justify-between dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
         <div>
@@ -106,12 +106,12 @@
                     onchange="this.form.requestSubmit()"
                     class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
                 {% for option in pagination.allowed_per_page %}
-                    <option value="{{ option }}" {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
+                    <option value="{{ option }}"
+                            {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
                 {% endfor %}
             </select>
         </form>
     </div>
-
     <div class="flex flex-wrap items-center gap-2">
         {% if pagination.has_prev %}
             {% set prev_url = url_for('inventory.nodes', cluster_id=selected_cluster_id, role=selected_role, status=selected_status, search=search, page=pagination.prev_page, per_page=pagination.per_page) %}
@@ -128,9 +128,7 @@
                 <i data-lucide="chevron-left" class="h-4 w-4"></i>Previous
             </span>
         {% endif %}
-
         <span class="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">Page {{ pagination.page }} / {{ pagination.total_pages }}</span>
-
         {% if pagination.has_next %}
             {% set next_url = url_for('inventory.nodes', cluster_id=selected_cluster_id, role=selected_role, status=selected_status, search=search, page=pagination.next_page, per_page=pagination.per_page) %}
             <a href="{{ next_url }}"

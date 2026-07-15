@@ -1,398 +1,399 @@
 {% extends "layouts/app.html" %}
 {% block title %}Roles & Access{% endblock title %}
 {% block dashboard_content %}
-{% macro module_label(value) -%}
-    {{ (value or 'general')|replace('_', ' ')|title }}
-{%- endmacro %}
-{% macro action_label(value) -%}
-    {{ (value or 'view')|replace('_', ' ')|title }}
-{%- endmacro %}
-{% macro permission_label(permission) -%}
-    {{ action_label(permission.action or permission.key.split('.')[-1]) }}
-{%- endmacro %}
-{% macro permission_chip(permission) -%}
-    {{ module_label(permission.module or permission.key.split('.')[0]) }} · {{ permission_label(permission) }}
-{%- endmacro %}
-{% set total_roles = roles|length %}
-{% set system_roles = roles|selectattr('is_system')|list|length %}
-{% set custom_roles = total_roles - system_roles %}
-{% set active_roles = roles|selectattr('is_active')|list|length %}
-{% set assigned_ns = namespace(total=0) %}
-{% for role in roles %}
-    {% set assigned_ns.total = assigned_ns.total + (role.users|length) %}
-{% endfor %}
-{% set matrix_actions = permission_actions|default(['view', 'manage', 'generate', 'sync', 'delete', 'view_login_activity']) %}
-
-<div class="space-y-6">
-    <section class="overflow-hidden rounded-3xl border border-blue-500/20 bg-gradient-to-br from-blue-600 via-blue-500 to-cyan-500 p-6 text-white shadow-xl shadow-blue-950/20">
-        <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div class="flex gap-4">
-                <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/20">
-                    <i data-lucide="shield-check" class="h-7 w-7"></i>
-                </div>
-                <div class="max-w-4xl">
-                    <div class="mb-2 text-xs font-bold uppercase tracking-[0.28em] text-blue-100">Access Management</div>
-                    <h1 class="text-3xl font-extrabold tracking-tight">Roles & Access</h1>
-                    <p class="mt-2 max-w-3xl text-sm leading-6 text-blue-50 sm:text-base">Manage default and custom access levels across KAORI modules and administrative actions.</p>
-                    <div class="mt-4 flex flex-wrap gap-2">
-                        <span class="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-bold ring-1 ring-white/15"><i data-lucide="lock-keyhole" class="h-3.5 w-3.5"></i> System Roles Locked</span>
-                        <span class="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-bold ring-1 ring-white/15"><i data-lucide="badge-check" class="h-3.5 w-3.5"></i> Permission Matrix Enabled</span>
-                        <span class="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-bold ring-1 ring-white/15"><i data-lucide="users" class="h-3.5 w-3.5"></i> User Assignment Ready</span>
+    {% macro module_label(value) -%}
+        {{ (value or 'general')|replace('_', ' ') |title }}
+    {%- endmacro %}
+    {% macro action_label(value) -%}
+        {{ (value or 'view')|replace('_', ' ') |title }}
+    {%- endmacro %}
+    {% macro permission_label(permission) -%}
+        {{ action_label(permission.action or permission.key.split('.')[-1] ) }}
+    {%- endmacro %}
+    {% macro permission_chip(permission) -%}
+        {{ module_label(permission.module or permission.key.split('.')[0] ) }} · {{ permission_label(permission) }}
+    {%- endmacro %}
+    {% set total_roles = roles|length %}
+    {% set system_roles = roles|selectattr('is_system')|list|length %}
+    {% set custom_roles = total_roles - system_roles %}
+    {% set active_roles = roles|selectattr('is_active')|list|length %}
+    {% set assigned_ns = namespace(total=0) %}
+    {% for role in roles %}
+        {% set assigned_ns.total = assigned_ns.total + (role.users|length) %}
+    {% endfor %}
+    {% set matrix_actions = permission_actions|default(['view', 'manage', 'generate', 'sync', 'delete', 'view_login_activity']) %}
+    <div class="space-y-6">
+        <section class="overflow-hidden rounded-3xl border border-blue-500/20 bg-gradient-to-br from-blue-600 via-blue-500 to-cyan-500 p-6 text-white shadow-xl shadow-blue-950/20">
+            <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+                <div class="flex gap-4">
+                    <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/20">
+                        <i data-lucide="shield-check" class="h-7 w-7"></i>
                     </div>
-                </div>
-            </div>
-            <div class="flex flex-col gap-3 sm:flex-row lg:flex-col xl:flex-row">
-                <a href="{{ url_for('settings.users') }}" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-white/10 px-4 py-2.5 text-sm font-bold text-white ring-1 ring-white/25 transition hover:bg-white/15">
-                    <i data-lucide="users" class="h-4 w-4"></i>
-                    Manage Users
-                </a>
-                <a href="{{ url_for('settings.new_role') }}" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-4 py-2.5 text-sm font-bold text-blue-700 shadow-lg shadow-blue-950/20 transition hover:bg-blue-50">
-                    <i data-lucide="plus" class="h-4 w-4"></i>
-                    New Custom Role
-                </a>
-            </div>
-        </div>
-    </section>
-
-    <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-            <div class="flex items-center gap-4">
-                <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300"><i data-lucide="shield" class="h-6 w-6"></i></div>
-                <div>
-                    <p class="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Total Roles</p>
-                    <div class="mt-1 text-3xl font-extrabold text-slate-950 dark:text-white">{{ total_roles }}</div>
-                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Across access profiles</p>
-                </div>
-            </div>
-        </div>
-        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-            <div class="flex items-center gap-4">
-                <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-purple-50 text-purple-600 dark:bg-purple-950/50 dark:text-purple-300"><i data-lucide="lock-keyhole" class="h-6 w-6"></i></div>
-                <div>
-                    <p class="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">System Roles</p>
-                    <div class="mt-1 text-3xl font-extrabold text-slate-950 dark:text-white">{{ system_roles }}</div>
-                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Default roles locked</p>
-                </div>
-            </div>
-        </div>
-        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-            <div class="flex items-center gap-4">
-                <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-300"><i data-lucide="user-cog" class="h-6 w-6"></i></div>
-                <div>
-                    <p class="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Custom Roles</p>
-                    <div class="mt-1 text-3xl font-extrabold text-slate-950 dark:text-white">{{ custom_roles }}</div>
-                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Create & customize</p>
-                </div>
-            </div>
-        </div>
-        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-            <div class="flex items-center gap-4">
-                <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-300"><i data-lucide="users-round" class="h-6 w-6"></i></div>
-                <div>
-                    <p class="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Assigned Users</p>
-                    <div class="mt-1 text-3xl font-extrabold text-slate-950 dark:text-white">{{ assigned_ns.total }}</div>
-                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Across all roles</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]"
-             x-data="{
-                roleQuery: '',
-                roleType: 'all',
-                rolesPage: 1,
-                rolesPerPage: 5,
-                rolesData: [
-                    {% for role in roles %}
-                        {
-                            id: {{ role.id|string|tojson|forceescape }},
-                            type: {{ ('system' if role.is_system else 'custom')|tojson|forceescape }},
-                            search: {{ ((role.display_name or '') ~ ' ' ~ (role.name or '') ~ ' ' ~ (role.description or ''))|lower|tojson|forceescape }}
-                        }{{ ',' if not loop.last else '' }}
-                    {% endfor %}
-                ],
-                filteredRoles() {
-                    const query = this.roleQuery.toLowerCase().trim();
-                    return this.rolesData.filter((role) => {
-                        const matchesQuery = !query || role.search.includes(query);
-                        const matchesType = this.roleType === 'all' || role.type === this.roleType;
-                        return matchesQuery && matchesType;
-                    });
-                },
-                totalRolePages() {
-                    return Math.max(1, Math.ceil(this.filteredRoles().length / this.rolesPerPage));
-                },
-                roleInCurrentPage(roleId) {
-                    const ids = this.filteredRoles().map((role) => role.id);
-                    const index = ids.indexOf(String(roleId));
-                    const start = (this.rolesPage - 1) * this.rolesPerPage;
-                    const end = start + this.rolesPerPage;
-                    return index >= start && index < end;
-                },
-                visibleStart() {
-                    if (this.filteredRoles().length === 0) return 0;
-                    return ((this.rolesPage - 1) * this.rolesPerPage) + 1;
-                },
-                visibleEnd() {
-                    return Math.min(this.rolesPage * this.rolesPerPage, this.filteredRoles().length);
-                }
-             }">
-        <div class="space-y-6">
-            <div class="rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
-                <div class="flex flex-col gap-4 border-b border-slate-200 px-5 py-4 dark:border-slate-800 lg:flex-row lg:items-center lg:justify-between">
-                    <div class="flex items-center gap-3">
-                        <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300"><i data-lucide="key-round" class="h-5 w-5"></i></div>
-                        <div>
-                            <h2 class="text-base font-extrabold text-slate-950 dark:text-white">Access Roles</h2>
-                            <p class="text-sm text-slate-500 dark:text-slate-400">Define and manage access roles for KAORI.</p>
+                    <div class="max-w-4xl">
+                        <div class="mb-2 text-xs font-bold uppercase tracking-[0.28em] text-blue-100">Access Management</div>
+                        <h1 class="text-3xl font-extrabold tracking-tight">Roles & Access</h1>
+                        <p class="mt-2 max-w-3xl text-sm leading-6 text-blue-50 sm:text-base">Manage default and custom access levels across KAORI modules and administrative actions.</p>
+                        <div class="mt-4 flex flex-wrap gap-2">
+                            <span class="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-bold ring-1 ring-white/15"><i data-lucide="lock-keyhole" class="h-3.5 w-3.5"></i> System Roles Locked</span>
+                            <span class="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-bold ring-1 ring-white/15"><i data-lucide="badge-check" class="h-3.5 w-3.5"></i> Permission Matrix Enabled</span>
+                            <span class="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-bold ring-1 ring-white/15"><i data-lucide="users" class="h-3.5 w-3.5"></i> User Assignment Ready</span>
                         </div>
                     </div>
-                    <div class="flex flex-col gap-2 sm:flex-row">
-                        <div class="relative">
-                            <i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"></i>
-                            <input x-model="roleQuery" @input="rolesPage = 1" type="search" placeholder="Search roles..." class="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-sm font-medium text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:focus:ring-blue-950 sm:w-64">
-                        </div>
-                        <select x-model="roleType" @change="rolesPage = 1" class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-bold text-slate-600 shadow-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:focus:ring-blue-950">
-                            <option value="all">All Roles</option>
-                            <option value="system">System Roles</option>
-                            <option value="custom">Custom Roles</option>
-                        </select>
+                </div>
+                <div class="flex flex-col gap-3 sm:flex-row lg:flex-col xl:flex-row">
+                    <a href="{{ url_for('settings.users') }}"
+                       class="inline-flex items-center justify-center gap-2 rounded-2xl bg-white/10 px-4 py-2.5 text-sm font-bold text-white ring-1 ring-white/25 transition hover:bg-white/15">
+                        <i data-lucide="users" class="h-4 w-4"></i>
+                        Manage Users
+                    </a>
+                    <a href="{{ url_for('settings.new_role') }}"
+                       class="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-4 py-2.5 text-sm font-bold text-blue-700 shadow-lg shadow-blue-950/20 transition hover:bg-blue-50">
+                        <i data-lucide="plus" class="h-4 w-4"></i>
+                        New Custom Role
+                    </a>
+                </div>
+            </div>
+        </section>
+        <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+                <div class="flex items-center gap-4">
+                    <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                        <i data-lucide="shield" class="h-6 w-6"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Total Roles</p>
+                        <div class="mt-1 text-3xl font-extrabold text-slate-950 dark:text-white">{{ total_roles }}</div>
+                        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Across access profiles</p>
                     </div>
                 </div>
-
-                <div class="divide-y divide-slate-100 dark:divide-slate-800">
-                    {% for role in roles %}
-                        {% set assigned_users = role.users|length %}
-                        {% set permission_count = role.permissions|length %}
-                        {% set role_type = 'system' if role.is_system else 'custom' %}
-                        <article x-data="{ open: {{ 'true' if loop.first else 'false' }} }"
-                                 x-show="roleInCurrentPage('{{ role.id }}')"
-                                 x-cloak
-                                 class="group transition hover:bg-slate-50/80 dark:hover:bg-slate-900/40">
-                            <button type="button" @click="open = !open" class="flex w-full flex-col gap-4 px-5 py-4 text-left transition sm:flex-row sm:items-center sm:justify-between">
-                                <div class="min-w-0 flex flex-1 items-start gap-3">
-                                    <span class="mt-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl {{ 'bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300' if role.is_system else 'bg-purple-50 text-purple-600 dark:bg-purple-950/50 dark:text-purple-300' }}">
-                                        <i data-lucide="{{ 'shield-check' if role.is_system else 'sparkles' }}" class="h-4 w-4"></i>
-                                    </span>
-                                    <div class="min-w-0">
-                                        <div class="flex flex-wrap items-center gap-2">
-                                            <h3 class="text-base font-extrabold text-slate-950 dark:text-white">{{ role.display_name }}</h3>
-                                            <span class="rounded-full px-2.5 py-1 text-xs font-bold {{ 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300' if role.is_system else 'bg-purple-50 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300' }}">{{ 'System' if role.is_system else 'Custom' }}</span>
+            </div>
+            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+                <div class="flex items-center gap-4">
+                    <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-purple-50 text-purple-600 dark:bg-purple-950/50 dark:text-purple-300">
+                        <i data-lucide="lock-keyhole" class="h-6 w-6"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">System Roles</p>
+                        <div class="mt-1 text-3xl font-extrabold text-slate-950 dark:text-white">{{ system_roles }}</div>
+                        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Default roles locked</p>
+                    </div>
+                </div>
+            </div>
+            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+                <div class="flex items-center gap-4">
+                    <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-300">
+                        <i data-lucide="user-cog" class="h-6 w-6"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Custom Roles</p>
+                        <div class="mt-1 text-3xl font-extrabold text-slate-950 dark:text-white">{{ custom_roles }}</div>
+                        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Create & customize</p>
+                    </div>
+                </div>
+            </div>
+            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+                <div class="flex items-center gap-4">
+                    <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-300">
+                        <i data-lucide="users-round" class="h-6 w-6"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Assigned Users</p>
+                        <div class="mt-1 text-3xl font-extrabold text-slate-950 dark:text-white">{{ assigned_ns.total }}</div>
+                        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Across all roles</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <section class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]" x-data="{ roleQuery: '', roleType: 'all', rolesPage: 1, rolesPerPage: 5, rolesData: [
+            {% for role in roles %} { id: {{ role.id|string|tojson|forceescape }}, type: {{ ('system' if role.is_system else 'custom')|tojson|forceescape }}, search: {{ ((role.display_name or '') ~ ' ' ~ (role.name or '') ~ ' ' ~ (role.description or ''))|lower|tojson|forceescape }} }{{ ',' if not loop.last else '' }} {% endfor %}
+            ], filteredRoles() { const query = this.roleQuery.toLowerCase().trim(); return this.rolesData.filter((role) => { const matchesQuery = !query || role.search.includes(query); const matchesType = this.roleType === 'all' || role.type === this.roleType; return matchesQuery && matchesType; }); }, totalRolePages() { return Math.max(1, Math.ceil(this.filteredRoles().length / this.rolesPerPage)); }, roleInCurrentPage(roleId) { const ids = this.filteredRoles().map((role) => role.id); const index = ids.indexOf(String(roleId)); const start = (this.rolesPage - 1) * this.rolesPerPage; const end = start + this.rolesPerPage; return index >= start && index < end; }, visibleStart() { if (this.filteredRoles().length === 0) return 0; return ((this.rolesPage - 1) * this.rolesPerPage) + 1; }, visibleEnd() { return Math.min(this.rolesPage * this.rolesPerPage, this.filteredRoles().length); } }">
+            <div class="space-y-6">
+                <div class="rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
+                    <div class="flex flex-col gap-4 border-b border-slate-200 px-5 py-4 dark:border-slate-800 lg:flex-row lg:items-center lg:justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                                <i data-lucide="key-round" class="h-5 w-5"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-base font-extrabold text-slate-950 dark:text-white">Access Roles</h2>
+                                <p class="text-sm text-slate-500 dark:text-slate-400">Define and manage access roles for KAORI.</p>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-2 sm:flex-row">
+                            <div class="relative">
+                                <i data-lucide="search"
+                                   class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"></i>
+                                <input x-model="roleQuery"
+                                       @input="rolesPage = 1"
+                                       type="search"
+                                       placeholder="Search roles..."
+                                       class="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-sm font-medium text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:focus:ring-blue-950 sm:w-64">
+                            </div>
+                            <select x-model="roleType"
+                                    @change="rolesPage = 1"
+                                    class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-bold text-slate-600 shadow-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:focus:ring-blue-950">
+                                <option value="all">All Roles</option>
+                                <option value="system">System Roles</option>
+                                <option value="custom">Custom Roles</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="divide-y divide-slate-100 dark:divide-slate-800">
+                        {% for role in roles %}
+                            {% set assigned_users = role.users|length %}
+                            {% set permission_count = role.permissions|length %}
+                            {% set role_type = 'system' if role.is_system else 'custom' %}
+                            <article x-data="{ open: {{ 'true' if loop.first else 'false' }} }"
+                                     x-show="roleInCurrentPage('{{ role.id }}')"
+                                     x-cloak
+                                     class="group transition hover:bg-slate-50/80 dark:hover:bg-slate-900/40">
+                                <button type="button"
+                                        @click="open = !open"
+                                        class="flex w-full flex-col gap-4 px-5 py-4 text-left transition sm:flex-row sm:items-center sm:justify-between">
+                                    <div class="min-w-0 flex flex-1 items-start gap-3">
+                                        <span class="mt-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl {{ 'bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300' if role.is_system else 'bg-purple-50 text-purple-600 dark:bg-purple-950/50 dark:text-purple-300' }}">
+                                            <i data-lucide="{{ 'shield-check' if role.is_system else 'sparkles' }}"
+                                               class="h-4 w-4"></i>
+                                        </span>
+                                        <div class="min-w-0">
+                                            <div class="flex flex-wrap items-center gap-2">
+                                                <h3 class="text-base font-extrabold text-slate-950 dark:text-white">{{ role.display_name }}</h3>
+                                                <span class="rounded-full px-2.5 py-1 text-xs font-bold {{ 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300' if role.is_system else 'bg-purple-50 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300' }}">{{ 'System' if role.is_system else 'Custom' }}</span>
+                                            </div>
+                                            <p class="mt-1 line-clamp-1 text-sm text-slate-500 dark:text-slate-400">{{ role.description or 'Custom access role for selected KAORI modules and actions.' }}</p>
                                         </div>
-                                        <p class="mt-1 line-clamp-1 text-sm text-slate-500 dark:text-slate-400">{{ role.description or 'Custom access role for selected KAORI modules and actions.' }}</p>
+                                    </div>
+                                    <div class="flex shrink-0 flex-wrap items-center gap-2 text-sm">
+                                        <span class="inline-flex items-center gap-1.5 rounded-full {{ 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300' if role.is_active else 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400' }} px-3 py-1 text-xs font-bold"><i data-lucide="circle-check" class="h-3.5 w-3.5"></i>{{ 'Active' if role.is_active else 'Inactive' }}</span>
+                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300"><i data-lucide="shield-check" class="h-3.5 w-3.5"></i>{{ permission_count }} Permissions</span>
+                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300"><i data-lucide="users" class="h-3.5 w-3.5"></i>{{ assigned_users }} Users</span>
+                                        <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm transition group-hover:border-blue-200 group-hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                                            <i data-lucide="chevron-down"
+                                               class="h-4 w-4 transition-transform duration-200"
+                                               :class="open ? 'rotate-180' : ''"></i>
+                                        </span>
+                                    </div>
+                                </button>
+                                <div x-show="open"
+                                     x-collapse
+                                     class="border-t border-slate-100 px-5 pb-5 pt-4 dark:border-slate-800">
+                                    <div class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_170px]">
+                                        <div class="min-w-0">
+                                            <div class="flex items-center justify-between gap-3">
+                                                <div class="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Permissions included</div>
+                                                <span class="hidden items-center gap-1.5 text-xs font-semibold text-slate-400 sm:inline-flex"><i data-lucide="lock-keyhole" class="h-3.5 w-3.5"></i>{{ 'Default Role · Locked' if role.is_system else 'Custom Role' }}</span>
+                                            </div>
+                                            <div class="mt-3 flex flex-wrap gap-2">
+                                                {% for permission in role.permissions %}
+                                                    <span title="{{ permission.description or permission.key }}"
+                                                          class="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700 ring-1 ring-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:ring-blue-900/60"><i data-lucide="check-circle-2" class="h-3 w-3"></i>{{ permission_chip(permission) }}</span>
+                                                {% endfor %}
+                                                {% if role.permissions|length == 0 %}
+                                                    <span class="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">No permissions assigned</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="flex shrink-0 flex-col gap-2">
+                                            <a href="{{ url_for('settings.edit_role', role_id=role.id) }}"
+                                               class="inline-flex items-center justify-center gap-2 rounded-xl border border-blue-200 bg-white px-3 py-2 text-sm font-bold text-blue-700 shadow-sm transition hover:bg-blue-50 dark:border-blue-900/60 dark:bg-slate-900 dark:text-blue-300 dark:hover:bg-blue-950/40">
+                                                <i data-lucide="{{ 'eye' if role.is_system else 'pencil' }}"
+                                                   class="h-4 w-4"></i>
+                                                {{ 'View Role' if role.is_system else 'Edit Role' }}
+                                            </a>
+                                            <div class="rounded-2xl bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-500 dark:bg-slate-900/60 dark:text-slate-400">
+                                                {{ 'Default role permissions are locked.' if role.is_system else 'Custom role can be adjusted from its permission matrix and role configuration.' }}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="flex shrink-0 flex-wrap items-center gap-2 text-sm">
-                                    <span class="inline-flex items-center gap-1.5 rounded-full {{ 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300' if role.is_active else 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400' }} px-3 py-1 text-xs font-bold"><i data-lucide="circle-check" class="h-3.5 w-3.5"></i>{{ 'Active' if role.is_active else 'Inactive' }}</span>
-                                    <span class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300"><i data-lucide="shield-check" class="h-3.5 w-3.5"></i>{{ permission_count }} Permissions</span>
-                                    <span class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300"><i data-lucide="users" class="h-3.5 w-3.5"></i>{{ assigned_users }} Users</span>
-                                    <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm transition group-hover:border-blue-200 group-hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
-                                        <i data-lucide="chevron-down" class="h-4 w-4 transition-transform duration-200" :class="open ? 'rotate-180' : ''"></i>
-                                    </span>
+                            </article>
+                        {% else %}
+                            <div class="p-10 text-center">
+                                <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 dark:bg-slate-900">
+                                    <i data-lucide="shield-alert" class="h-7 w-7"></i>
                                 </div>
+                                <h3 class="mt-4 text-base font-extrabold text-slate-950 dark:text-white">No roles configured</h3>
+                                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Run the RBAC seed command or create a custom role.</p>
+                            </div>
+                        {% endfor %}
+                        <div x-show="filteredRoles().length === 0"
+                             x-cloak
+                             class="p-10 text-center">
+                            <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 dark:bg-slate-900">
+                                <i data-lucide="search-x" class="h-7 w-7"></i>
+                            </div>
+                            <h3 class="mt-4 text-base font-extrabold text-slate-950 dark:text-white">No matching roles</h3>
+                            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Adjust the search keyword or role type filter to view more access roles.</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-3 border-t border-slate-200 bg-white px-5 py-4 dark:border-slate-800 dark:bg-slate-950 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="text-sm font-medium text-slate-500 dark:text-slate-400">
+                            Viewing <span class="font-extrabold text-slate-800 dark:text-slate-100"
+       x-text="visibleStart()"></span>
+                            - <span class="font-extrabold text-slate-800 dark:text-slate-100"
+       x-text="visibleEnd()"></span>
+                            of <span class="font-extrabold text-slate-800 dark:text-slate-100"
+       x-text="filteredRoles().length"></span>
+                            matching access roles
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button type="button"
+                                    @click="rolesPage = Math.max(1, rolesPage - 1)"
+                                    :disabled="rolesPage <= 1"
+                                    class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-600 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800">
+                                <i data-lucide="chevron-left" class="h-4 w-4"></i>
+                                Previous
                             </button>
-
-                            <div x-show="open" x-collapse class="border-t border-slate-100 px-5 pb-5 pt-4 dark:border-slate-800">
-                                <div class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_170px]">
-                                    <div class="min-w-0">
-                                        <div class="flex items-center justify-between gap-3">
-                                            <div class="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Permissions included</div>
-                                            <span class="hidden items-center gap-1.5 text-xs font-semibold text-slate-400 sm:inline-flex"><i data-lucide="lock-keyhole" class="h-3.5 w-3.5"></i>{{ 'Default Role · Locked' if role.is_system else 'Custom Role' }}</span>
-                                        </div>
-                                        <div class="mt-3 flex flex-wrap gap-2">
-                                            {% for permission in role.permissions %}
-                                                <span title="{{ permission.description or permission.key }}" class="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700 ring-1 ring-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:ring-blue-900/60"><i data-lucide="check-circle-2" class="h-3 w-3"></i>{{ permission_chip(permission) }}</span>
+                            <span class="rounded-xl bg-blue-50 px-3 py-2 text-sm font-extrabold text-blue-700 dark:bg-blue-950/50 dark:text-blue-300">
+                                Page <span x-text="rolesPage"></span> of <span x-text="totalRolePages()"></span>
+                            </span>
+                            <button type="button"
+                                    @click="rolesPage = Math.min(totalRolePages(), rolesPage + 1)"
+                                    :disabled="rolesPage >= totalRolePages()"
+                                    class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-600 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800">
+                                Next
+                                <i data-lucide="chevron-right" class="h-4 w-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="border-t border-slate-200 bg-slate-50 px-5 py-3 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400">
+                        <span class="inline-flex items-center gap-2"><i data-lucide="info" class="h-4 w-4 text-blue-500"></i>System roles are protected and cannot be modified or deleted. Create custom roles for specific access needs.</span>
+                    </div>
+                </div>
+                <div class="rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
+                    <div class="flex items-center gap-3 border-b border-slate-200 px-5 py-4 dark:border-slate-800">
+                        <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                            <i data-lucide="pencil-ruler" class="h-5 w-5"></i>
+                        </div>
+                        <div>
+                            <h2 class="font-extrabold text-slate-950 dark:text-white">Role Editor Preview</h2>
+                            <p class="text-sm text-slate-500 dark:text-slate-400">Preview the complete permission action coverage used by the role editor.</p>
+                        </div>
+                    </div>
+                    <div class="grid gap-5 p-5 xl:grid-cols-[minmax(0,1fr)_230px]">
+                        <div class="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800">
+                            <table class="min-w-full divide-y divide-slate-200 text-left text-sm dark:divide-slate-800">
+                                <thead class="bg-slate-50 text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:bg-slate-900/60 dark:text-slate-400">
+                                    <tr>
+                                        <th class="px-3 py-3">Action</th>
+                                        {% for module_name, module_permissions in permissions_by_module.items() %}
+                                            <th class="px-3 py-3">{{ module_label(module_name) }}</th>
+                                        {% endfor %}
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                                    {% for action in matrix_actions %}
+                                        <tr>
+                                            <td class="whitespace-nowrap px-3 py-3 font-bold text-slate-700 dark:text-slate-200">{{ action_label(action) }}</td>
+                                            {% for module_name, module_permissions in permissions_by_module.items() %}
+                                                {% set cell = namespace(found=false) %}
+                                                {% for permission in module_permissions %}
+                                                    {% if (permission.action or permission.key.split('.')[-1]) == action %}
+                                                        {% set cell.found = true %}
+                                                    {% endif %}
+                                                {% endfor %}
+                                                <td class="px-3 py-3">
+                                                    {% if cell.found %}
+                                                        <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-300"><i data-lucide="check" class="h-3.5 w-3.5"></i></span>
+                                                    {% else %}
+                                                        <span class="text-slate-300 dark:text-slate-700">—</span>
+                                                    {% endif %}
+                                                </td>
                                             {% endfor %}
-                                            {% if role.permissions|length == 0 %}
-                                                <span class="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">No permissions assigned</span>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                    <div class="flex shrink-0 flex-col gap-2">
-                                        <a href="{{ url_for('settings.edit_role', role_id=role.id) }}" class="inline-flex items-center justify-center gap-2 rounded-xl border border-blue-200 bg-white px-3 py-2 text-sm font-bold text-blue-700 shadow-sm transition hover:bg-blue-50 dark:border-blue-900/60 dark:bg-slate-900 dark:text-blue-300 dark:hover:bg-blue-950/40">
-                                            <i data-lucide="{{ 'eye' if role.is_system else 'pencil' }}" class="h-4 w-4"></i>
-                                            {{ 'View Role' if role.is_system else 'Edit Role' }}
-                                        </a>
-                                        <div class="rounded-2xl bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-500 dark:bg-slate-900/60 dark:text-slate-400">
-                                            {{ 'Default role permissions are locked.' if role.is_system else 'Custom role can be adjusted from its permission matrix and role configuration.' }}
-                                        </div>
-                                    </div>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-200">
+                            <h3 class="font-extrabold">Matrix highlights</h3>
+                            <ul class="mt-3 space-y-3 leading-5">
+                                <li class="flex gap-2"><i data-lucide="check" class="mt-0.5 h-4 w-4 shrink-0"></i><span>Covers {{ matrix_actions|length }} permission actions across {{ permissions_by_module|length }} modules.</span></li>
+                                <li class="flex gap-2"><i data-lucide="check" class="mt-0.5 h-4 w-4 shrink-0"></i><span>Includes operational, reporting, user lifecycle, and integration controls when available.</span></li>
+                                <li class="flex gap-2"><i data-lucide="check" class="mt-0.5 h-4 w-4 shrink-0"></i><span>Changes apply only to users assigned to the selected role.</span></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <aside class="space-y-4">
+                <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+                    <div class="flex items-center gap-3">
+                        <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-600 dark:bg-cyan-950/50 dark:text-cyan-300">
+                            <i data-lucide="book-open" class="h-5 w-5"></i>
+                        </div>
+                        <div>
+                            <h2 class="font-extrabold text-slate-950 dark:text-white">Permission Catalog</h2>
+                            <p class="text-sm text-slate-500 dark:text-slate-400">Available permissions organized by module.</p>
+                        </div>
+                    </div>
+                    <div class="mt-4 divide-y divide-slate-100 rounded-2xl border border-slate-200 dark:divide-slate-800 dark:border-slate-800">
+                        {% for module_name, module_permissions in permissions_by_module.items() %}
+                            <div class="grid gap-3 px-3 py-2.5 sm:grid-cols-[105px_minmax(0,1fr)]">
+                                <div class="flex items-center gap-2 font-bold text-slate-800 dark:text-slate-100">
+                                    <i data-lucide="box" class="h-4 w-4 text-blue-500"></i>
+                                    {{ module_label(module_name) }}
+                                </div>
+                                <div class="flex flex-wrap gap-1.5">
+                                    {% for permission in module_permissions %}
+                                        <span title="{{ permission.description or permission.key }}"
+                                              class="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-700 ring-1 ring-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:ring-blue-900/60">{{ permission_label(permission) }}</span>
+                                    {% endfor %}
                                 </div>
                             </div>
-                        </article>
-                    {% else %}
-                        <div class="p-10 text-center">
-                            <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 dark:bg-slate-900"><i data-lucide="shield-alert" class="h-7 w-7"></i></div>
-                            <h3 class="mt-4 text-base font-extrabold text-slate-950 dark:text-white">No roles configured</h3>
-                            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Run the RBAC seed command or create a custom role.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="overflow-hidden rounded-3xl border border-blue-500/20 bg-gradient-to-br from-blue-600 via-blue-500 to-cyan-500 p-5 text-white shadow-lg shadow-blue-950/20">
+                    <div class="flex gap-3">
+                        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white ring-1 ring-white/20">
+                            <i data-lucide="shield-alert" class="h-5 w-5"></i>
                         </div>
-                    {% endfor %}
-                    <div x-show="filteredRoles().length === 0" x-cloak class="p-10 text-center">
-                        <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 dark:bg-slate-900"><i data-lucide="search-x" class="h-7 w-7"></i></div>
-                        <h3 class="mt-4 text-base font-extrabold text-slate-950 dark:text-white">No matching roles</h3>
-                        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Adjust the search keyword or role type filter to view more access roles.</p>
+                        <div>
+                            <div class="text-xs font-bold uppercase tracking-[0.18em] text-blue-100">Access Guardrail</div>
+                            <h3 class="mt-1 font-extrabold text-white">Access Design Notes</h3>
+                            <p class="mt-2 text-sm leading-6 text-blue-50">Default roles are locked to keep access behavior predictable. Use custom roles when a team needs a narrower or broader permission set than the built-in baseline.</p>
+                            <div class="mt-4 flex flex-wrap gap-2">
+                                <span class="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-xs font-bold ring-1 ring-white/15"><i data-lucide="lock-keyhole" class="h-3.5 w-3.5"></i> Default Role · Locked</span>
+                                <span class="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-xs font-bold ring-1 ring-white/15"><i data-lucide="sparkles" class="h-3.5 w-3.5"></i> Custom Access Ready</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="flex flex-col gap-3 border-t border-slate-200 bg-white px-5 py-4 dark:border-slate-800 dark:bg-slate-950 sm:flex-row sm:items-center sm:justify-between">
-                    <div class="text-sm font-medium text-slate-500 dark:text-slate-400">
-                        Viewing <span class="font-extrabold text-slate-800 dark:text-slate-100" x-text="visibleStart()"></span>
-                        - <span class="font-extrabold text-slate-800 dark:text-slate-100" x-text="visibleEnd()"></span>
-                        of <span class="font-extrabold text-slate-800 dark:text-slate-100" x-text="filteredRoles().length"></span>
-                        matching access roles
+                <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+                    <div class="flex items-center gap-3">
+                        <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                            <i data-lucide="users-round" class="h-5 w-5"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-extrabold text-slate-950 dark:text-white">Role Assignment Snapshot</h3>
+                            <p class="text-sm text-slate-500 dark:text-slate-400">Current assignment counts.</p>
+                        </div>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <button type="button"
-                                @click="rolesPage = Math.max(1, rolesPage - 1)"
-                                :disabled="rolesPage <= 1"
-                                class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-600 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800">
-                            <i data-lucide="chevron-left" class="h-4 w-4"></i>
-                            Previous
-                        </button>
-                        <span class="rounded-xl bg-blue-50 px-3 py-2 text-sm font-extrabold text-blue-700 dark:bg-blue-950/50 dark:text-blue-300">
-                            Page <span x-text="rolesPage"></span> of <span x-text="totalRolePages()"></span>
-                        </span>
-                        <button type="button"
-                                @click="rolesPage = Math.min(totalRolePages(), rolesPage + 1)"
-                                :disabled="rolesPage >= totalRolePages()"
-                                class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-600 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800">
-                            Next
-                            <i data-lucide="chevron-right" class="h-4 w-4"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="border-t border-slate-200 bg-slate-50 px-5 py-3 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400">
-                    <span class="inline-flex items-center gap-2"><i data-lucide="info" class="h-4 w-4 text-blue-500"></i>System roles are protected and cannot be modified or deleted. Create custom roles for specific access needs.</span>
-                </div>
-            </div>
-
-            <div class="rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
-                <div class="flex items-center gap-3 border-b border-slate-200 px-5 py-4 dark:border-slate-800">
-                    <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300"><i data-lucide="pencil-ruler" class="h-5 w-5"></i></div>
-                    <div>
-                        <h2 class="font-extrabold text-slate-950 dark:text-white">Role Editor Preview</h2>
-                        <p class="text-sm text-slate-500 dark:text-slate-400">Preview the complete permission action coverage used by the role editor.</p>
-                    </div>
-                </div>
-                <div class="grid gap-5 p-5 xl:grid-cols-[minmax(0,1fr)_230px]">
-                    <div class="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800">
-                        <table class="min-w-full divide-y divide-slate-200 text-left text-sm dark:divide-slate-800">
+                    <div class="mt-4 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800">
+                        <table class="min-w-full divide-y divide-slate-100 text-left text-sm dark:divide-slate-800">
                             <thead class="bg-slate-50 text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:bg-slate-900/60 dark:text-slate-400">
                                 <tr>
-                                    <th class="px-3 py-3">Action</th>
-                                    {% for module_name, module_permissions in permissions_by_module.items() %}
-                                        <th class="px-3 py-3">{{ module_label(module_name) }}</th>
-                                    {% endfor %}
+                                    <th class="px-3 py-2.5">Role</th>
+                                    <th class="px-3 py-2.5">Assigned Users</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                                {% for action in matrix_actions %}
+                                {% for role in roles[:6] %}
                                     <tr>
-                                        <td class="whitespace-nowrap px-3 py-3 font-bold text-slate-700 dark:text-slate-200">{{ action_label(action) }}</td>
-                                        {% for module_name, module_permissions in permissions_by_module.items() %}
-                                            {% set cell = namespace(found=false) %}
-                                            {% for permission in module_permissions %}
-                                                {% if (permission.action or permission.key.split('.')[-1]) == action %}
-                                                    {% set cell.found = true %}
-                                                {% endif %}
-                                            {% endfor %}
-                                            <td class="px-3 py-3">
-                                                {% if cell.found %}
-                                                    <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-300"><i data-lucide="check" class="h-3.5 w-3.5"></i></span>
-                                                {% else %}
-                                                    <span class="text-slate-300 dark:text-slate-700">—</span>
-                                                {% endif %}
-                                            </td>
-                                        {% endfor %}
+                                        <td class="px-3 py-2.5 font-bold text-slate-800 dark:text-slate-100">{{ role.display_name }}</td>
+                                        <td class="px-3 py-2.5 text-slate-500 dark:text-slate-400">{{ role.users|length }} users</td>
                                     </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
                     </div>
-                    <div class="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-200">
-                        <h3 class="font-extrabold">Matrix highlights</h3>
-                        <ul class="mt-3 space-y-3 leading-5">
-                            <li class="flex gap-2"><i data-lucide="check" class="mt-0.5 h-4 w-4 shrink-0"></i><span>Covers {{ matrix_actions|length }} permission actions across {{ permissions_by_module|length }} modules.</span></li>
-                            <li class="flex gap-2"><i data-lucide="check" class="mt-0.5 h-4 w-4 shrink-0"></i><span>Includes operational, reporting, user lifecycle, and integration controls when available.</span></li>
-                            <li class="flex gap-2"><i data-lucide="check" class="mt-0.5 h-4 w-4 shrink-0"></i><span>Changes apply only to users assigned to the selected role.</span></li>
-                        </ul>
-                    </div>
+                    <a href="{{ url_for('settings.users') }}"
+                       class="mt-4 inline-flex items-center gap-2 text-sm font-bold text-blue-700 hover:text-blue-800 dark:text-blue-300">
+                        View user assignments <i data-lucide="arrow-right" class="h-4 w-4"></i>
+                    </a>
                 </div>
-            </div>
-        </div>
-
-        <aside class="space-y-4">
-            <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-                <div class="flex items-center gap-3">
-                    <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-600 dark:bg-cyan-950/50 dark:text-cyan-300"><i data-lucide="book-open" class="h-5 w-5"></i></div>
-                    <div>
-                        <h2 class="font-extrabold text-slate-950 dark:text-white">Permission Catalog</h2>
-                        <p class="text-sm text-slate-500 dark:text-slate-400">Available permissions organized by module.</p>
-                    </div>
-                </div>
-                <div class="mt-4 divide-y divide-slate-100 rounded-2xl border border-slate-200 dark:divide-slate-800 dark:border-slate-800">
-                    {% for module_name, module_permissions in permissions_by_module.items() %}
-                        <div class="grid gap-3 px-3 py-2.5 sm:grid-cols-[105px_minmax(0,1fr)]">
-                            <div class="flex items-center gap-2 font-bold text-slate-800 dark:text-slate-100">
-                                <i data-lucide="box" class="h-4 w-4 text-blue-500"></i>
-                                {{ module_label(module_name) }}
-                            </div>
-                            <div class="flex flex-wrap gap-1.5">
-                                {% for permission in module_permissions %}
-                                    <span title="{{ permission.description or permission.key }}" class="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-700 ring-1 ring-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:ring-blue-900/60">{{ permission_label(permission) }}</span>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    {% endfor %}
-                </div>
-            </div>
-
-            <div class="overflow-hidden rounded-3xl border border-blue-500/20 bg-gradient-to-br from-blue-600 via-blue-500 to-cyan-500 p-5 text-white shadow-lg shadow-blue-950/20">
-                <div class="flex gap-3">
-                    <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white ring-1 ring-white/20"><i data-lucide="shield-alert" class="h-5 w-5"></i></div>
-                    <div>
-                        <div class="text-xs font-bold uppercase tracking-[0.18em] text-blue-100">Access Guardrail</div>
-                        <h3 class="mt-1 font-extrabold text-white">Access Design Notes</h3>
-                        <p class="mt-2 text-sm leading-6 text-blue-50">Default roles are locked to keep access behavior predictable. Use custom roles when a team needs a narrower or broader permission set than the built-in baseline.</p>
-                        <div class="mt-4 flex flex-wrap gap-2">
-                            <span class="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-xs font-bold ring-1 ring-white/15"><i data-lucide="lock-keyhole" class="h-3.5 w-3.5"></i> Default Role · Locked</span>
-                            <span class="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-xs font-bold ring-1 ring-white/15"><i data-lucide="sparkles" class="h-3.5 w-3.5"></i> Custom Access Ready</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-                <div class="flex items-center gap-3">
-                    <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300"><i data-lucide="users-round" class="h-5 w-5"></i></div>
-                    <div>
-                        <h3 class="font-extrabold text-slate-950 dark:text-white">Role Assignment Snapshot</h3>
-                        <p class="text-sm text-slate-500 dark:text-slate-400">Current assignment counts.</p>
-                    </div>
-                </div>
-                <div class="mt-4 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800">
-                    <table class="min-w-full divide-y divide-slate-100 text-left text-sm dark:divide-slate-800">
-                        <thead class="bg-slate-50 text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:bg-slate-900/60 dark:text-slate-400">
-                            <tr>
-                                <th class="px-3 py-2.5">Role</th>
-                                <th class="px-3 py-2.5">Assigned Users</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                            {% for role in roles[:6] %}
-                                <tr>
-                                    <td class="px-3 py-2.5 font-bold text-slate-800 dark:text-slate-100">{{ role.display_name }}</td>
-                                    <td class="px-3 py-2.5 text-slate-500 dark:text-slate-400">{{ role.users|length }} users</td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                <a href="{{ url_for('settings.users') }}" class="mt-4 inline-flex items-center gap-2 text-sm font-bold text-blue-700 hover:text-blue-800 dark:text-blue-300">
-                    View user assignments <i data-lucide="arrow-right" class="h-4 w-4"></i>
-                </a>
-            </div>
-        </aside>
-    </section>
-</div>
+            </aside>
+        </section>
+    </div>
 {% endblock dashboard_content %}

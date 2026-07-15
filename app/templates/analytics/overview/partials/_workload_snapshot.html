@@ -21,18 +21,19 @@
     </div>
     <div class="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2">
         {% set cards = [
-            {'label': 'Missing CPU Requests', 'value': payload.workload_snapshot.missing_cpu_requests, 'icon': 'cpu', 'tone': 'red'},
-            {'label': 'Missing Memory Requests', 'value': payload.workload_snapshot.missing_memory_requests, 'icon': 'memory-stick', 'tone': 'red'},
-            {'label': 'Missing CPU Limits', 'value': payload.workload_snapshot.missing_cpu_limits, 'icon': 'gauge', 'tone': 'amber'},
-            {'label': 'Missing Memory Limits', 'value': payload.workload_snapshot.missing_memory_limits, 'icon': 'gauge-circle', 'tone': 'amber'},
-            {'label': 'Over-provisioned', 'value': payload.workload_snapshot.over_provisioned, 'icon': 'arrow-up-circle', 'tone': 'emerald'},
-            {'label': 'Under-provisioned', 'value': payload.workload_snapshot.under_provisioned, 'icon': 'arrow-down-circle', 'tone': 'violet'}
-        ] %}
+                    {'label': 'Missing CPU Requests', 'value': payload.workload_snapshot.missing_cpu_requests, 'icon': 'cpu', 'tone': 'red'},
+                    {'label': 'Missing Memory Requests', 'value': payload.workload_snapshot.missing_memory_requests, 'icon': 'memory-stick', 'tone': 'red'},
+                    {'label': 'Missing CPU Limits', 'value': payload.workload_snapshot.missing_cpu_limits, 'icon': 'gauge', 'tone': 'amber'},
+                    {'label': 'Missing Memory Limits', 'value': payload.workload_snapshot.missing_memory_limits, 'icon': 'gauge-circle', 'tone': 'amber'},
+                    {'label': 'Over-provisioned', 'value': payload.workload_snapshot.over_provisioned, 'icon': 'arrow-up-circle', 'tone': 'emerald'},
+                    {'label': 'Under-provisioned', 'value': payload.workload_snapshot.under_provisioned, 'icon': 'arrow-down-circle', 'tone': 'violet'}
+                ] %}
         {% for card in cards %}
             <div class="flex min-h-20 items-center rounded-xl border border-slate-200 p-4 transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-950/60">
                 <div class="flex items-center justify-between gap-3">
                     <span class="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
-                        <i data-lucide="{{ card.icon }}" class="h-4 w-4 {% if card.tone == 'red' %}text-red-600 dark:text-red-300 {% elif card.tone == 'amber' %}text-amber-600 dark:text-amber-300 {% elif card.tone == 'emerald' %}text-emerald-600 dark:text-emerald-300 {% else %}text-violet-600 dark:text-violet-300{% endif %}"></i>
+                        <i data-lucide="{{ card.icon }}"
+                           class="h-4 w-4 {% if card.tone == 'red' %}text-red-600 dark:text-red-300 {% elif card.tone == 'amber' %}text-amber-600 dark:text-amber-300 {% elif card.tone == 'emerald' %}text-emerald-600 dark:text-emerald-300 {% else %}text-violet-600 dark:text-violet-300{% endif %}"></i>
                         {{ card.label }}
                     </span>
                     <span class="text-lg font-bold {% if card.tone == 'red' %}text-red-600 dark:text-red-300 {% elif card.tone == 'amber' %}text-amber-600 dark:text-amber-300 {% elif card.tone == 'emerald' %}text-emerald-600 dark:text-emerald-300 {% else %}text-violet-600 dark:text-violet-300{% endif %}">{{ card.value }}</span>

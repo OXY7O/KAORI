@@ -36,11 +36,13 @@
                         </div>
                     </div>
                     <div class="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
-                        <a href="{{ url_for('reports.generate_report') }}" class="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-blue-700 shadow-sm transition hover:bg-blue-50">
+                        <a href="{{ url_for('reports.generate_report') }}"
+                           class="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-blue-700 shadow-sm transition hover:bg-blue-50">
                             <i data-lucide="plus-circle" class="h-4 w-4"></i>
                             Generate
                         </a>
-                        <a href="#custom-template-form" class="inline-flex items-center justify-center gap-2 rounded-xl border border-white/30 px-3 py-2 text-sm font-semibold text-white transition hover:bg-white/10">
+                        <a href="#custom-template-form"
+                           class="inline-flex items-center justify-center gap-2 rounded-xl border border-white/30 px-3 py-2 text-sm font-semibold text-white transition hover:bg-white/10">
                             <i data-lucide="pencil-ruler" class="h-4 w-4"></i>
                             Create Template
                         </a>
@@ -48,15 +50,14 @@
                 </div>
             </div>
         </section>
-
         <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {% for card in payload.summary_cards %}
                 {% set tone_class = {
-                    'blue': 'bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300',
-                    'green': 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-300',
-                    'purple': 'bg-violet-50 text-violet-600 dark:bg-violet-950/50 dark:text-violet-300',
-                    'amber': 'bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-300'
-                }.get(card.tone, 'bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-300') %}
+                                    'blue': 'bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300',
+                                    'green': 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-300',
+                                    'purple': 'bg-violet-50 text-violet-600 dark:bg-violet-950/50 dark:text-violet-300',
+                                    'amber': 'bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-300'
+                                }.get(card.tone, 'bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-300') %}
                 <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
                     <div class="flex items-start gap-4">
                         <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl {{ tone_class }}">
@@ -71,9 +72,11 @@
                 </article>
             {% endfor %}
         </section>
-
-        <section x-data="{ open: false }" class="rounded-2xl border border-blue-100 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-            <button type="button" @click="open = !open" class="flex w-full items-center justify-between gap-4 px-5 py-4 text-left">
+        <section x-data="{ open: false }"
+                 class="rounded-2xl border border-blue-100 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+            <button type="button"
+                    @click="open = !open"
+                    class="flex w-full items-center justify-between gap-4 px-5 py-4 text-left">
                 <span class="flex min-w-0 items-center gap-3">
                     <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
                         <i data-lucide="shield-check" class="h-[18px] w-[18px]"></i>
@@ -88,7 +91,9 @@
                     <i x-show="open" data-lucide="chevron-up" class="h-4 w-4"></i>
                 </span>
             </button>
-            <div x-show="open" x-collapse class="border-t border-slate-100 px-5 pb-5 pt-4 dark:border-slate-800">
+            <div x-show="open"
+                 x-collapse
+                 class="border-t border-slate-100 px-5 pb-5 pt-4 dark:border-slate-800">
                 <div class="grid gap-3 md:grid-cols-3">
                     <div class="rounded-2xl bg-blue-50 p-4 dark:bg-blue-950/30">
                         <p class="text-sm font-semibold text-blue-900 dark:text-blue-100">Immutable baseline</p>
@@ -105,7 +110,6 @@
                 </div>
             </div>
         </section>
-
         <section class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
             <div class="space-y-6">
                 <section id="templates-registry" class="space-y-4">
@@ -151,39 +155,48 @@
                             <input type="hidden" name="page" value="1">
                             <label class="block">
                                 <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Report Type</span>
-                                <select name="report_type" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                                <select name="report_type"
+                                        class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
                                     {% for option in payload.filter_options.report_types %}
-                                        <option value="{{ option.value }}" {% if payload.selected_filters.report_type == option.value %}selected{% endif %}>{{ option.label }}</option>
+                                        <option value="{{ option.value }}"
+                                                {% if payload.selected_filters.report_type == option.value %}selected{% endif %}>{{ option.label }}</option>
                                     {% endfor %}
                                 </select>
                             </label>
                             <label class="block">
                                 <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Status</span>
-                                <select name="status" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                                <select name="status"
+                                        class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
                                     {% for option in payload.filter_options.statuses %}
-                                        <option value="{{ option.value }}" {% if payload.selected_filters.status == option.value %}selected{% endif %}>{{ option.label }}</option>
+                                        <option value="{{ option.value }}"
+                                                {% if payload.selected_filters.status == option.value %}selected{% endif %}>{{ option.label }}</option>
                                     {% endfor %}
                                 </select>
                             </label>
                             <label class="block">
                                 <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Search</span>
                                 <div class="relative mt-1">
-                                    <i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"></i>
-                                    <input type="search" name="search" value="{{ payload.selected_filters.search }}" placeholder="Search template..." class="w-full rounded-xl border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                                    <i data-lucide="search"
+                                       class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"></i>
+                                    <input type="search"
+                                           name="search"
+                                           value="{{ payload.selected_filters.search }}"
+                                           placeholder="Search template..."
+                                           class="w-full rounded-xl border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
                                 </div>
                             </label>
                         </form>
                     </div>
-
                     <div class="space-y-4">
                         {% for template in payload.templates %}
                             {% set status_class = {
-                                'blue': 'bg-blue-50 text-blue-700 ring-blue-600/20 dark:bg-blue-950/50 dark:text-blue-300 dark:ring-blue-400/20',
-                                'green': 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-400/20',
-                                'purple': 'bg-violet-50 text-violet-700 ring-violet-600/20 dark:bg-violet-950/50 dark:text-violet-300 dark:ring-violet-400/20',
-                                'gray': 'bg-slate-100 text-slate-700 ring-slate-600/20 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-400/20'
-                            }.get(template.status_tone, 'bg-slate-100 text-slate-700 ring-slate-600/20 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-400/20') %}
-                            <article x-data="{ detailsOpen: false }" class="rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:border-blue-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:hover:border-blue-800">
+                                                            'blue': 'bg-blue-50 text-blue-700 ring-blue-600/20 dark:bg-blue-950/50 dark:text-blue-300 dark:ring-blue-400/20',
+                                                            'green': 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-400/20',
+                                                            'purple': 'bg-violet-50 text-violet-700 ring-violet-600/20 dark:bg-violet-950/50 dark:text-violet-300 dark:ring-violet-400/20',
+                                                            'gray': 'bg-slate-100 text-slate-700 ring-slate-600/20 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-400/20'
+                                                        }.get(template.status_tone, 'bg-slate-100 text-slate-700 ring-slate-600/20 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-400/20') %}
+                            <article x-data="{ detailsOpen: false }"
+                                     class="rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:border-blue-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:hover:border-blue-800">
                                 <div class="p-5">
                                     <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                                         <div class="flex min-w-0 items-start gap-4">
@@ -194,7 +207,8 @@
                                                 <div class="flex flex-wrap items-center gap-2">
                                                     <h3 class="text-base font-semibold text-slate-950 dark:text-white">{{ template.name }}</h3>
                                                     <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset {{ status_class }}">
-                                                        <i data-lucide="{% if template.source == 'system' %}shield-check{% else %}pencil-ruler{% endif %}" class="h-3.5 w-3.5"></i>
+                                                        <i data-lucide="{% if template.source == 'system' %}shield-check{% else %}pencil-ruler{% endif %}"
+                                                           class="h-3.5 w-3.5"></i>
                                                         {{ template.status_label }}
                                                     </span>
                                                 </div>
@@ -207,17 +221,21 @@
                                             </div>
                                         </div>
                                         <div class="flex shrink-0 flex-wrap items-center gap-2">
-                                            <button type="button" @click="detailsOpen = !detailsOpen" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
+                                            <button type="button"
+                                                    @click="detailsOpen = !detailsOpen"
+                                                    class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
                                                 <i x-show="!detailsOpen" data-lucide="chevron-down" class="h-4 w-4"></i>
                                                 <i x-show="detailsOpen" data-lucide="chevron-up" class="h-4 w-4"></i>
                                                 <span x-text="detailsOpen ? 'Hide details' : 'View more'"></span>
                                             </button>
-                                            <a href="{{ template.generate_href }}" class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">
+                                            <a href="{{ template.generate_href }}"
+                                               class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">
                                                 <i data-lucide="plus-circle" class="h-4 w-4"></i>
                                                 Generate
                                             </a>
                                             {% if template.can_edit %}
-                                                <a href="{{ template.edit_href }}#custom-template-form" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
+                                                <a href="{{ template.edit_href }}#custom-template-form"
+                                                   class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
                                                     <i data-lucide="pencil" class="h-4 w-4"></i>
                                                     Edit
                                                 </a>
@@ -225,16 +243,22 @@
                                             {% if template.can_duplicate %}
                                                 <form method="POST" action="{{ template.duplicate_href }}">
                                                     {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                                                    <button type="submit" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
+                                                    <button type="submit"
+                                                            class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
                                                         <i data-lucide="copy" class="h-4 w-4"></i>
                                                         Duplicate
                                                     </button>
                                                 </form>
                                             {% endif %}
                                             {% if template.can_delete %}
-                                                <form method="POST" action="{{ template.delete_href }}" onsubmit="return confirm('Delete this custom template?');">
-                                                    {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                                                    <button type="submit" class="inline-flex items-center gap-2 rounded-xl border border-red-200 px-3 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50 dark:border-red-900/60 dark:text-red-300 dark:hover:bg-red-950/30">
+                                                <form method="POST"
+                                                      action="{{ template.delete_href }}"
+                                                      onsubmit="return confirm('Delete this custom template?');">
+                                                    {% if csrf_token is defined %}
+                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                    {% endif %}
+                                                    <button type="submit"
+                                                            class="inline-flex items-center gap-2 rounded-xl border border-red-200 px-3 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50 dark:border-red-900/60 dark:text-red-300 dark:hover:bg-red-950/30">
                                                         <i data-lucide="trash-2" class="h-4 w-4"></i>
                                                         Delete
                                                     </button>
@@ -242,7 +266,9 @@
                                             {% endif %}
                                         </div>
                                     </div>
-                                    <div x-show="detailsOpen" x-collapse class="mt-5 border-t border-slate-100 pt-4 dark:border-slate-800">
+                                    <div x-show="detailsOpen"
+                                         x-collapse
+                                         class="mt-5 border-t border-slate-100 pt-4 dark:border-slate-800">
                                         <div class="grid gap-3 text-sm md:grid-cols-2 xl:grid-cols-3">
                                             <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
                                                 <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Domain</p>
@@ -282,7 +308,6 @@
                             </div>
                         {% endfor %}
                     </div>
-
                     <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
                         <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                             <form method="GET"
@@ -293,9 +318,15 @@
                                   hx-swap="outerHTML"
                                   hx-push-url="true"
                                   class="flex flex-wrap items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-                                <input type="hidden" name="report_type" value="{{ payload.selected_filters.report_type }}">
-                                <input type="hidden" name="status" value="{{ payload.selected_filters.status }}">
-                                <input type="hidden" name="search" value="{{ payload.selected_filters.search }}">
+                                <input type="hidden"
+                                       name="report_type"
+                                       value="{{ payload.selected_filters.report_type }}">
+                                <input type="hidden"
+                                       name="status"
+                                       value="{{ payload.selected_filters.status }}">
+                                <input type="hidden"
+                                       name="search"
+                                       value="{{ payload.selected_filters.search }}">
                                 <input type="hidden" name="page" value="1">
                                 <span>{{ payload.pagination.label }}</span>
                                 <select name="per_page"
@@ -307,7 +338,8 @@
                                         hx-include="closest form"
                                         class="rounded-lg border border-slate-300 bg-white px-2 py-1 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
                                     {% for option in payload.pagination.per_page_options %}
-                                        <option value="{{ option }}" {% if payload.pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
+                                        <option value="{{ option }}"
+                                                {% if payload.pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
                                     {% endfor %}
                                 </select>
                             </form>
@@ -338,22 +370,29 @@
                     </div>
                 </section>
             </div>
-
             <aside class="space-y-6">
                 {% set form = payload.edit_template or payload.create_form %}
-                <section id="custom-template-form" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                <section id="custom-template-form"
+                         class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
                     <div class="flex items-start justify-between gap-4">
                         <div class="flex items-center gap-3">
                             <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
                                 <i data-lucide="pencil-ruler" class="h-4 w-4"></i>
                             </div>
                             <div>
-                                <h2 class="text-base font-semibold text-slate-950 dark:text-white">{% if payload.edit_template %}Edit Custom Template{% else %}Create Custom Template{% endif %}</h2>
+                                <h2 class="text-base font-semibold text-slate-950 dark:text-white">
+                                    {% if payload.edit_template %}
+                                        Edit Custom Template
+                                    {% else %}
+                                        Create Custom Template
+                                    {% endif %}
+                                </h2>
                                 <p class="text-xs text-slate-500 dark:text-slate-400">Custom templates pre-fill Generate Report with selected sections.</p>
                             </div>
                         </div>
                         {% if payload.edit_template %}
-                            <a href="{{ url_for('reports.report_templates') }}#custom-template-form" class="text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-300">New</a>
+                            <a href="{{ url_for('reports.report_templates') }}#custom-template-form"
+                               class="text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-300">New</a>
                         {% endif %}
                     </div>
                     <form method="POST"
@@ -363,24 +402,38 @@
                         {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                         <label class="block">
                             <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Template Name</span>
-                            <input type="text" name="name" required value="{{ form.name }}" placeholder="Example: Weekly Capacity Review" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                            <input type="text"
+                                   name="name"
+                                   required
+                                   value="{{ form.name }}"
+                                   placeholder="Example: Weekly Capacity Review"
+                                   class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
                         </label>
                         <label class="block">
                             <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Description</span>
-                            <textarea name="description" rows="3" placeholder="Describe when this template should be used." class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">{{ form.description }}</textarea>
+                            <textarea name="description"
+                                      rows="3"
+                                      placeholder="Describe when this template should be used."
+                                      class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">{{ form.description }}</textarea>
                         </label>
                         <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
                             <label class="block">
                                 <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Report Type</span>
-                                <select name="report_type" data-template-report-type class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                                <select name="report_type"
+                                        data-template-report-type
+                                        class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
                                     {% for option in payload.filter_options.report_types %}
-                                        {% if option.value %}<option value="{{ option.value }}" {% if form.report_type == option.value %}selected{% endif %}>{{ option.label }}</option>{% endif %}
+                                        {% if option.value %}
+                                            <option value="{{ option.value }}"
+                                                    {% if form.report_type == option.value %}selected{% endif %}>{{ option.label }}</option>
+                                        {% endif %}
                                     {% endfor %}
                                 </select>
                             </label>
                             <label class="block">
                                 <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Status</span>
-                                <select name="status" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                                <select name="status"
+                                        class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
                                     <option value="draft" {% if form.status == 'draft' %}selected{% endif %}>Draft</option>
                                     <option value="active" {% if form.status == 'active' %}selected{% endif %}>Active</option>
                                 </select>
@@ -389,14 +442,21 @@
                         <div>
                             <div class="flex items-center justify-between gap-3">
                                 <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Sections</span>
-                                <button type="button" data-template-reset-sections class="text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-300">Reset default</button>
+                                <button type="button"
+                                        data-template-reset-sections
+                                        class="text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-300">Reset default</button>
                             </div>
                             <div class="mt-2 space-y-2" data-template-section-list>
                                 {% for report_type, options in payload.section_options_by_report_type.items() %}
-                                    <div data-template-section-group="{{ report_type }}" class="space-y-2 {% if form.report_type != report_type %}hidden{% endif %}">
+                                    <div data-template-section-group="{{ report_type }}"
+                                         class="space-y-2 {% if form.report_type != report_type %}hidden{% endif %}">
                                         {% for option in options %}
                                             <label class="flex gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm transition hover:border-blue-200 dark:border-slate-700 dark:bg-slate-950 dark:hover:border-blue-800">
-                                                <input type="checkbox" name="sections" value="{{ option.value }}" {% if option.value in form.sections %}checked{% endif %} class="mt-1 rounded border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-900">
+                                                <input type="checkbox"
+                                                       name="sections"
+                                                       value="{{ option.value }}"
+                                                       {% if option.value in form.sections %}checked{% endif %}
+                                                       class="mt-1 rounded border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-900">
                                                 <span>
                                                     <span class="font-semibold text-slate-700 dark:text-slate-200">{{ option.label }}</span>
                                                     <span class="block text-xs leading-5 text-slate-500 dark:text-slate-400">{{ option.description }}</span>
@@ -407,15 +467,22 @@
                                 {% endfor %}
                             </div>
                         </div>
-                        <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">
+                        <button type="submit"
+                                class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">
                             <i data-lucide="save" class="h-4 w-4"></i>
-                            {% if payload.edit_template %}Save Template{% else %}Create Template{% endif %}
+                            {% if payload.edit_template %}
+                                Save Template
+                            {% else %}
+                                Create Template
+                            {% endif %}
                         </button>
                     </form>
                 </section>
-
-                <section x-data="{ open: false }" class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                    <button type="button" @click="open = !open" class="flex w-full items-center justify-between gap-4 px-5 py-4 text-left">
+                <section x-data="{ open: false }"
+                         class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                    <button type="button"
+                            @click="open = !open"
+                            class="flex w-full items-center justify-between gap-4 px-5 py-4 text-left">
                         <span class="flex min-w-0 items-center gap-3">
                             <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
                                 <i data-lucide="book-open" class="h-[18px] w-[18px]"></i>
@@ -430,7 +497,9 @@
                             <i x-show="open" data-lucide="chevron-up" class="h-4 w-4"></i>
                         </span>
                     </button>
-                    <div x-show="open" x-collapse class="border-t border-slate-100 px-5 pb-5 pt-4 dark:border-slate-800">
+                    <div x-show="open"
+                         x-collapse
+                         class="border-t border-slate-100 px-5 pb-5 pt-4 dark:border-slate-800">
                         <ul class="space-y-3">
                             {% for item in payload.template_context %}
                                 <li class="flex gap-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
@@ -441,9 +510,11 @@
                         </ul>
                     </div>
                 </section>
-
-                <section x-data="{ open: false }" class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                    <button type="button" @click="open = !open" class="flex w-full items-center justify-between gap-4 px-5 py-4 text-left">
+                <section x-data="{ open: false }"
+                         class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                    <button type="button"
+                            @click="open = !open"
+                            class="flex w-full items-center justify-between gap-4 px-5 py-4 text-left">
                         <span class="flex min-w-0 items-center gap-3">
                             <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
                                 <i data-lucide="workflow" class="h-[18px] w-[18px]"></i>
@@ -458,14 +529,16 @@
                             <i x-show="open" data-lucide="chevron-up" class="h-4 w-4"></i>
                         </span>
                     </button>
-                    <div x-show="open" x-collapse class="divide-y divide-slate-100 border-t border-slate-100 dark:divide-slate-800 dark:border-slate-800">
+                    <div x-show="open"
+                         x-collapse
+                         class="divide-y divide-slate-100 border-t border-slate-100 dark:divide-slate-800 dark:border-slate-800">
                         {% for item in payload.renderer_readiness %}
                             {% set tone_class = {
-                                'blue': 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300',
-                                'green': 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300',
-                                'gray': 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
-                                'amber': 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300'
-                            }.get(item.tone, 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300') %}
+                                                            'blue': 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300',
+                                                            'green': 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300',
+                                                            'gray': 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
+                                                            'amber': 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300'
+                                                        }.get(item.tone, 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300') %}
                             <div class="px-5 py-4">
                                 <div class="flex items-center justify-between gap-3">
                                     <div class="flex items-center gap-2">

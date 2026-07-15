@@ -161,7 +161,9 @@
                                               hx-swap="outerHTML settle:150ms"
                                               hx-indicator="#users-refresh-indicator"
                                               hx-include="#users-filter-form">
-                                            {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                            {% if csrf_token is defined %}
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            {% endif %}
                                             <button class="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 px-2.5 py-1.5 text-xs font-bold text-amber-700 transition hover:bg-amber-50 dark:border-amber-900/60 dark:text-amber-300 dark:hover:bg-amber-950/30"><i data-lucide="pause-circle" class="h-3.5 w-3.5"></i>Deactivate</button>
                                         </form>
                                     {% else %}

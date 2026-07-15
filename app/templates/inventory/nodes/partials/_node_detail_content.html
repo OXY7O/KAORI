@@ -2,32 +2,26 @@
 {% set status_classes = 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' if node.status == 'Ready' else ('bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300' if node.status == 'NotReady' else 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300') %}
 {% set has_pressure = node.memory_pressure == 'True' or node.disk_pressure == 'True' or node.pid_pressure == 'True' %}
 {% if node.status == 'NotReady' or node.ready_condition == 'False' %}
-    {% set condition_posture = 'Critical' %}
-    {% set condition_posture_classes = 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300' %}
+    {% set condition_posture = "Critical" %}
+    {% set condition_posture_classes = "bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300" %}
 {% elif node.status != 'Ready' or node.ready_condition not in ['True', 'False'] %}
-    {% set condition_posture = 'Unknown' %}
-    {% set condition_posture_classes = 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300' %}
+    {% set condition_posture = "Unknown" %}
+    {% set condition_posture_classes = "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300" %}
 {% elif has_pressure or node.scheduling_display == 'Cordoned' %}
-    {% set condition_posture = 'Warning' %}
-    {% set condition_posture_classes = 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300' %}
+    {% set condition_posture = "Warning" %}
+    {% set condition_posture_classes = "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300" %}
 {% else %}
-    {% set condition_posture = 'Normal' %}
-    {% set condition_posture_classes = 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' %}
+    {% set condition_posture = "Normal" %}
+    {% set condition_posture_classes = "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300" %}
 {% endif %}
-
 {% macro node_detail_row(label, value='-', tone='blue', mono=False) -%}
     {% set display_value = value if value not in [None, ''] else '-' %}
     <div class="flex items-start justify-between gap-3">
         <span class="shrink-0 text-xs font-normal leading-5 text-slate-500 dark:text-slate-400">{{ label }}</span>
-        <span class="max-w-[68%] break-words text-right text-xs font-normal leading-5 {{ 'font-mono' if mono else '' }}
-            {% if tone == 'cyan' %}text-cyan-700 dark:text-cyan-300
-            {% elif tone == 'violet' %}text-violet-700 dark:text-violet-300
-            {% elif tone == 'amber' %}text-amber-700 dark:text-amber-300
-            {% else %}text-blue-700 dark:text-blue-300{% endif %}"
+        <span class="max-w-[68%] break-words text-right text-xs font-normal leading-5 {{ 'font-mono' if mono else '' }} {% if tone == 'cyan' %}text-cyan-700 dark:text-cyan-300 {% elif tone == 'violet' %}text-violet-700 dark:text-violet-300 {% elif tone == 'amber' %}text-amber-700 dark:text-amber-300 {% else %}text-blue-700 dark:text-blue-300{% endif %}"
               title="{{ display_value }}">{{ display_value }}</span>
     </div>
 {%- endmacro %}
-
 <div class="bg-slate-50/80 px-4 py-4 dark:bg-slate-950/40">
     <div class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
         <div class="flex flex-col gap-3 border-b border-slate-200 bg-gradient-to-r from-slate-50 via-white to-blue-50/60 px-5 py-4 dark:border-slate-700 dark:from-slate-900 dark:via-slate-900 dark:to-blue-950/20 sm:flex-row sm:items-center sm:justify-between">
@@ -48,7 +42,6 @@
                 {{ node.status }}
             </span>
         </div>
-
         <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
             {% call detail_card(
                 'Node identity',
@@ -56,23 +49,22 @@
                 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300',
                 node.role,
                 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300'
-            ) %}
+                ) %}
                 {{ node_detail_row('System UUID', node.system_uuid, 'blue') }}
                 {{ node_detail_row('Cluster', node.cluster_name, 'blue') }}
                 {{ node_detail_row('Age', node.age, 'blue') }}
-                {{ node_detail_row('Collected', node.collected_at|user_datetime('%Y-%m-%d %H:%M %Z'), 'blue') }}
+                {{ node_detail_row('Collected', node.collected_at|user_datetime('%Y-%m-%d %H:%M %Z') , 'blue') }}
                 <div class="mt-auto pt-2">
                     {{ detail_tip('Age is calculated from the Kubernetes node creation timestamp and helps distinguish newly joined nodes from long-lived nodes.', 'blue', 'clock-3') }}
                 </div>
             {% endcall %}
-
             {% call detail_card(
                 'Connectivity',
                 'network',
                 'bg-cyan-50 text-cyan-600 dark:bg-cyan-950/40 dark:text-cyan-300',
                 node.scheduled_pod_count ~ ' Pods',
                 'bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300'
-            ) %}
+                ) %}
                 {{ node_detail_row('Internal IP', node.internal_ip or '-', 'cyan') }}
                 {{ node_detail_row('External IP', node.external_ip or '-', 'cyan') }}
                 {{ node_detail_row('Scheduled Pods', node.scheduled_pod_count, 'cyan') }}
@@ -84,28 +76,26 @@
                     {{ detail_tip('Internal IP is used for node communication inside the cluster. External IP can be empty for private or on-premises nodes.', 'cyan', 'network') }}
                 </div>
             {% endcall %}
-
             {% call detail_card(
                 'Platform & runtime',
                 'cpu',
                 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300',
                 node.operating_system_display,
                 'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300'
-            ) %}
+                ) %}
                 {{ node_detail_row('Operating system', node.os_image or '-', 'violet') }}
                 {{ node_detail_row('Kubelet version', node.kubelet_version, 'violet') }}
                 {{ node_detail_row('Kube-proxy version', node.kube_proxy_version, 'violet') }}
                 {{ node_detail_row('Architecture', node.architecture, 'violet') }}
                 {{ detail_tip('OS image and component versions are reported by the Kubernetes node status. A missing kube-proxy version means the node did not publish that value.', 'violet', 'cpu', False, True) }}
             {% endcall %}
-
             {% call detail_card(
                 'Scheduling & conditions',
                 'clipboard-check',
                 'bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-300',
                 condition_posture,
                 condition_posture_classes
-            ) %}
+                ) %}
                 <div class="flex items-start justify-between gap-3">
                     <span class="shrink-0 text-xs font-normal leading-5 text-slate-500 dark:text-slate-400">Scheduling</span>
                     <span class="rounded-full px-2 py-0.5 text-xs font-normal leading-5 {{ 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' if node.scheduling_display == 'Schedulable' else ('bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300' if node.scheduling_display == 'Cordoned' else 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300') }}">{{ node.scheduling_display }}</span>
@@ -125,7 +115,8 @@
                     {% if node.taints %}
                         <div class="flex min-w-0 flex-wrap gap-1.5">
                             {% for taint in node.taints %}
-                                <span class="inline-flex max-w-full items-center rounded-full bg-amber-50 px-2 py-1 text-[10px] font-normal leading-4 tracking-tight text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/25" title="{{ taint }}">
+                                <span class="inline-flex max-w-full items-center rounded-full bg-amber-50 px-2 py-1 text-[10px] font-normal leading-4 tracking-tight text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/25"
+                                      title="{{ taint }}">
                                     <span class="break-all">{{ taint }}</span>
                                 </span>
                             {% endfor %}
@@ -135,7 +126,6 @@
                     {% endif %}
                 </div>
             {% endcall %}
-
             <section class="rounded-2xl border border-slate-200 bg-white p-4 md:col-span-2 xl:col-span-4 dark:border-slate-700 dark:bg-slate-950/40">
                 <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
                     <div class="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white">
@@ -151,20 +141,23 @@
                         <div class="flex flex-wrap gap-1.5">
                             {% for key, value in node.labels.items() %}
                                 {% if key.startswith('node-role.kubernetes.io/') %}
-                                    {% set node_label_classes = 'bg-violet-50 text-violet-700 ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-500/25' %}
+                                    {% set node_label_classes = "bg-violet-50 text-violet-700 ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-500/25" %}
                                 {% elif key.startswith('topology.kubernetes.io/') or key.startswith('failure-domain.beta.kubernetes.io/') %}
-                                    {% set node_label_classes = 'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/25' %}
+                                    {% set node_label_classes = "bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/25" %}
                                 {% elif key.startswith('node.kubernetes.io/') %}
-                                    {% set node_label_classes = 'bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/25' %}
+                                    {% set node_label_classes = "bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/25" %}
                                 {% elif key == 'kubernetes.io/hostname' %}
-                                    {% set node_label_classes = 'bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/25' %}
+                                    {% set node_label_classes = "bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/25" %}
                                 {% elif key.startswith('kubernetes.io/') or key.startswith('beta.kubernetes.io/') %}
-                                    {% set node_label_classes = 'bg-cyan-50 text-cyan-700 ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-500/25' %}
+                                    {% set node_label_classes = "bg-cyan-50 text-cyan-700 ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-500/25" %}
                                 {% else %}
-                                    {% set node_label_classes = 'bg-teal-50 text-teal-700 ring-teal-200 dark:bg-teal-500/10 dark:text-teal-300 dark:ring-teal-500/25' %}
+                                    {% set node_label_classes = "bg-teal-50 text-teal-700 ring-teal-200 dark:bg-teal-500/10 dark:text-teal-300 dark:ring-teal-500/25" %}
                                 {% endif %}
-                                <span class="inline-flex max-w-full items-center rounded-full px-2 py-0.5 text-[10px] font-normal leading-4 ring-1 ring-inset {{ node_label_classes }}" title="{{ key }}{% if value %}={{ value }}{% endif %}">
-                                    <span class="break-all">{{ key }}{% if value %}=<span class="font-normal">{{ value }}</span>{% endif %}</span>
+                                <span class="inline-flex max-w-full items-center rounded-full px-2 py-0.5 text-[10px] font-normal leading-4 ring-1 ring-inset {{ node_label_classes }}"
+                                      title="{{ key }}{% if value %}={{ value }}{% endif %}">
+                                    <span class="break-all">{{ key }}
+                                        {% if value %}=<span class="font-normal">{{ value }}</span>{% endif %}
+                                    </span>
                                 </span>
                             {% endfor %}
                         </div>
@@ -174,6 +167,5 @@
                 {% endif %}
             </section>
         </div>
-
     </div>
 </div>

@@ -4,7 +4,8 @@
     <div class="space-y-6">
         <!-- Hero -->
         <section class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 px-6 py-6 text-white shadow-lg shadow-blue-500/20">
-            <div class="absolute inset-y-0 right-0 hidden w-1/3 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.22),transparent_55%)] lg:block"></div>
+            <div class="absolute inset-y-0 right-0 hidden w-1/3 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.22),transparent_55%)] lg:block">
+            </div>
             <div class="absolute -top-16 right-10 h-40 w-40 rounded-full bg-white/10 blur-3xl"></div>
             <div class="absolute -bottom-20 right-32 h-48 w-48 rounded-full bg-cyan-300/20 blur-3xl"></div>
             <div class="relative grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px] xl:items-stretch">
@@ -60,16 +61,15 @@
                 </div>
             </div>
         </section>
-
         <!-- Summary Cards -->
         <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {% for card in payload.summary_cards %}
                 {% set tone_class = {
-                    'blue': 'bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300',
-                    'green': 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-300',
-                    'purple': 'bg-violet-50 text-violet-600 dark:bg-violet-950/50 dark:text-violet-300',
-                    'red': 'bg-rose-50 text-rose-600 dark:bg-rose-950/50 dark:text-rose-300'
-                }.get(card.tone, 'bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-300') %}
+                                    'blue': 'bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300',
+                                    'green': 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-300',
+                                    'purple': 'bg-violet-50 text-violet-600 dark:bg-violet-950/50 dark:text-violet-300',
+                                    'red': 'bg-rose-50 text-rose-600 dark:bg-rose-950/50 dark:text-rose-300'
+                                }.get(card.tone, 'bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-300') %}
                 <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
                     <div class="flex items-start gap-4">
                         <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl {{ tone_class }}">
@@ -85,7 +85,8 @@
             {% endfor %}
         </section>
         <!-- Lifecycle and Storage Context -->
-        <section class="grid items-stretch gap-6 xl:grid-cols-2" x-data="{ lifecycleOpen: false, storageOpen: false }">
+        <section class="grid items-stretch gap-6 xl:grid-cols-2"
+                 x-data="{ lifecycleOpen: false, storageOpen: false }">
             <article class="flex h-full flex-col rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
                 <button type="button"
                         class="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
@@ -102,20 +103,25 @@
                     </div>
                     <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300">
                         <i data-lucide="chevron-down" class="h-4 w-4" x-show="!lifecycleOpen"></i>
-                        <i data-lucide="chevron-up" class="h-4 w-4" x-show="lifecycleOpen" x-cloak></i>
+                        <i data-lucide="chevron-up"
+                           class="h-4 w-4"
+                           x-show="lifecycleOpen"
+                           x-cloak></i>
                     </span>
                 </button>
-                <div class="flex-1 border-t border-slate-200 px-5 py-4 dark:border-slate-700" x-show="lifecycleOpen" x-cloak>
+                <div class="flex-1 border-t border-slate-200 px-5 py-4 dark:border-slate-700"
+                     x-show="lifecycleOpen"
+                     x-cloak>
                     <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
                         {% for item in payload.lifecycle_status %}
                             {% set dot_class = {
-                                'blue': 'bg-blue-500',
-                                'gray': 'bg-slate-400',
-                                'amber': 'bg-amber-500',
-                                'green': 'bg-emerald-500',
-                                'red': 'bg-rose-500',
-                                'purple': 'bg-violet-500'
-                            }.get(item.tone, 'bg-slate-400') %}
+                                                            'blue': 'bg-blue-500',
+                                                            'gray': 'bg-slate-400',
+                                                            'amber': 'bg-amber-500',
+                                                            'green': 'bg-emerald-500',
+                                                            'red': 'bg-rose-500',
+                                                            'purple': 'bg-violet-500'
+                                                        }.get(item.tone, 'bg-slate-400') %}
                             <div class="rounded-xl bg-slate-50 p-3 dark:bg-slate-950">
                                 <div class="flex items-center justify-between gap-3">
                                     <div class="flex min-w-0 items-center gap-2">
@@ -149,16 +155,18 @@
                         <i data-lucide="chevron-up" class="h-4 w-4" x-show="storageOpen" x-cloak></i>
                     </span>
                 </button>
-                <div class="flex-1 border-t border-slate-200 px-5 py-4 dark:border-slate-700" x-show="storageOpen" x-cloak>
+                <div class="flex-1 border-t border-slate-200 px-5 py-4 dark:border-slate-700"
+                     x-show="storageOpen"
+                     x-cloak>
                     <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
                         {% for item in payload.storage_context %}
                             {% set dot_class = {
-                                'gray': 'bg-slate-400',
-                                'amber': 'bg-amber-500',
-                                'blue': 'bg-blue-500',
-                                'green': 'bg-emerald-500',
-                                'red': 'bg-rose-500'
-                            }.get(item.tone, 'bg-slate-400') %}
+                                                            'gray': 'bg-slate-400',
+                                                            'amber': 'bg-amber-500',
+                                                            'blue': 'bg-blue-500',
+                                                            'green': 'bg-emerald-500',
+                                                            'red': 'bg-rose-500'
+                                                        }.get(item.tone, 'bg-slate-400') %}
                             <div class="rounded-xl bg-slate-50 p-3 dark:bg-slate-950">
                                 <div class="flex items-center justify-between gap-3">
                                     <div class="flex min-w-0 items-center gap-2">
@@ -197,49 +205,65 @@
                   hx-indicator="#reports-table-loading"
                   hx-on::after-swap="if (window.lucide) { window.lucide.createIcons(); }"
                   class="grid gap-3 lg:grid-cols-[180px_190px_170px_170px_minmax(0,1fr)] lg:items-end">
-                <input type="hidden" name="per_page" value="{{ payload.selected_filters.per_page }}">
+                <input type="hidden"
+                       name="per_page"
+                       value="{{ payload.selected_filters.per_page }}">
                 <input type="hidden" name="page" value="1">
                 <label class="block">
                     <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Cluster</span>
-                    <select name="cluster_id" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                    <select name="cluster_id"
+                            class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
                         {% for option in payload.filter_options.clusters %}
-                            <option value="{{ option.value }}" {% if payload.selected_filters.cluster_id == option.value %}selected{% endif %}>{{ option.label }}</option>
+                            <option value="{{ option.value }}"
+                                    {% if payload.selected_filters.cluster_id == option.value %}selected{% endif %}>{{ option.label }}</option>
                         {% endfor %}
                     </select>
                 </label>
                 <label class="block">
                     <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Report Type</span>
-                    <select name="report_type" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                    <select name="report_type"
+                            class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
                         {% for option in payload.filter_options.report_types %}
-                            <option value="{{ option.value }}" {% if payload.selected_filters.report_type == option.value %}selected{% endif %}>{{ option.label }}</option>
+                            <option value="{{ option.value }}"
+                                    {% if payload.selected_filters.report_type == option.value %}selected{% endif %}>{{ option.label }}</option>
                         {% endfor %}
                     </select>
                 </label>
                 <label class="block">
                     <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Status</span>
-                    <select name="status" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                    <select name="status"
+                            class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
                         {% for option in payload.filter_options.statuses %}
-                            <option value="{{ option.value }}" {% if payload.selected_filters.status == option.value %}selected{% endif %}>{{ option.label }}</option>
+                            <option value="{{ option.value }}"
+                                    {% if payload.selected_filters.status == option.value %}selected{% endif %}>{{ option.label }}</option>
                         {% endfor %}
                     </select>
                 </label>
                 <label class="block">
                     <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Period</span>
-                    <select name="period" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                    <select name="period"
+                            class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
                         {% for option in payload.filter_options.periods %}
-                            <option value="{{ option.value }}" {% if payload.selected_filters.period == option.value %}selected{% endif %}>{{ option.label }}</option>
+                            <option value="{{ option.value }}"
+                                    {% if payload.selected_filters.period == option.value %}selected{% endif %}>{{ option.label }}</option>
                         {% endfor %}
                     </select>
                 </label>
                 <label class="block">
                     <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Search</span>
                     <div class="relative mt-1">
-                        <i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"></i>
-                        <input type="search" name="search" value="{{ payload.selected_filters.search }}" placeholder="Search report name..." class="w-full rounded-xl border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                        <i data-lucide="search"
+                           class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"></i>
+                        <input type="search"
+                               name="search"
+                               value="{{ payload.selected_filters.search }}"
+                               placeholder="Search report name..."
+                               class="w-full rounded-xl border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
                     </div>
                 </label>
             </form>
-            <div id="reports-table-loading" class="htmx-indicator mt-4 h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+            <div id="reports-table-loading"
+                 class="htmx-indicator mt-4 h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
                 <div class="h-full w-full animate-pulse rounded-full bg-blue-600 transition-all duration-300"></div>
             </div>
         </section>
@@ -258,10 +282,14 @@
                     </div>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
-                    <form id="bulk-archive-reports-form" method="POST" action="{{ url_for('reports.bulk_archive_generated_reports') }}" class="inline-flex">
+                    <form id="bulk-archive-reports-form"
+                          method="POST"
+                          action="{{ url_for('reports.bulk_archive_generated_reports') }}"
+                          class="inline-flex">
                         {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                         <input type="hidden" name="next" value="{{ request.full_path }}">
-                        <button type="submit" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-blue-200 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:border-blue-700 dark:hover:text-blue-300">
+                        <button type="submit"
+                                class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-blue-200 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:border-blue-700 dark:hover:text-blue-300">
                             <i data-lucide="archive" class="h-3.5 w-3.5"></i>
                             Archive selected
                         </button>
@@ -277,7 +305,11 @@
                     <thead class="bg-slate-50 dark:bg-slate-950">
                         <tr>
                             <th class="w-10 px-5 py-3 text-left">
-                                <input type="checkbox" x-model="selectAllReports" @change="toggleReports()" aria-label="Select all archiveable reports" class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950">
+                                <input type="checkbox"
+                                       x-model="selectAllReports"
+                                       @change="toggleReports()"
+                                       aria-label="Select all archiveable reports"
+                                       class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950">
                             </th>
                             <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Report</th>
                             <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Type</th>
@@ -291,7 +323,13 @@
                             <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                                 <tr>
                                     <td class="px-5 py-4 align-top">
-                                        <input type="checkbox" name="report_ids" value="{{ report.id }}" form="bulk-archive-reports-form" {% if not report.can_archive_report %}disabled{% endif %} aria-label="Select {{ report.name }}" class="generated-report-checkbox h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:bg-slate-950">
+                                        <input type="checkbox"
+                                               name="report_ids"
+                                               value="{{ report.id }}"
+                                               form="bulk-archive-reports-form"
+                                               {% if not report.can_archive_report %}disabled{% endif %}
+                                               aria-label="Select {{ report.name }}"
+                                               class="generated-report-checkbox h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:bg-slate-950">
                                     </td>
                                     <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-200">
                                         <div class="min-w-0">
@@ -303,22 +341,29 @@
                                                 </span>
                                                 <span class="text-xs text-slate-500 dark:text-slate-400">{{ report.output_format }} • {{ report.sections_count }} sections</span>
                                             </div>
-                                            <button type="button" @click="openReportId = openReportId === '{{ report.id }}' ? null : '{{ report.id }}'" class="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 transition hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-200">
+                                            <button type="button"
+                                                    @click="openReportId = openReportId === '{{ report.id }}' ? null : '{{ report.id }}'"
+                                                    class="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 transition hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-200">
                                                 <span x-text="openReportId === '{{ report.id }}' ? 'Hide details' : 'View more'"></span>
-                                                <i data-lucide="chevron-down" class="h-3.5 w-3.5" x-show="openReportId !== '{{ report.id }}'"></i>
-                                                <i data-lucide="chevron-up" class="h-3.5 w-3.5" x-show="openReportId === '{{ report.id }}'" x-cloak></i>
+                                                <i data-lucide="chevron-down"
+                                                   class="h-3.5 w-3.5"
+                                                   x-show="openReportId !== '{{ report.id }}'"></i>
+                                                <i data-lucide="chevron-up"
+                                                   class="h-3.5 w-3.5"
+                                                   x-show="openReportId === '{{ report.id }}'"
+                                                   x-cloak></i>
                                             </button>
                                         </div>
                                     </td>
                                     <td class="px-5 py-4 text-sm text-slate-500 dark:text-slate-400">{{ report.report_type }}</td>
                                     <td class="px-5 py-4 text-sm">
                                         {% set status_class = {
-                                            'blue': 'bg-blue-50 text-blue-700 ring-blue-600/20 dark:bg-blue-950/50 dark:text-blue-300 dark:ring-blue-400/20',
-                                            'purple': 'bg-violet-50 text-violet-700 ring-violet-600/20 dark:bg-violet-950/50 dark:text-violet-300 dark:ring-violet-400/20',
-                                            'green': 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-400/20',
-                                            'red': 'bg-rose-50 text-rose-700 ring-rose-600/20 dark:bg-rose-950/50 dark:text-rose-300 dark:ring-rose-400/20',
-                                            'gray': 'bg-slate-100 text-slate-700 ring-slate-600/20 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-400/20'
-                                        }.get(report.status_meta.tone, 'bg-slate-100 text-slate-700 ring-slate-600/20 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-400/20') %}
+                                                                                    'blue': 'bg-blue-50 text-blue-700 ring-blue-600/20 dark:bg-blue-950/50 dark:text-blue-300 dark:ring-blue-400/20',
+                                                                                    'purple': 'bg-violet-50 text-violet-700 ring-violet-600/20 dark:bg-violet-950/50 dark:text-violet-300 dark:ring-violet-400/20',
+                                                                                    'green': 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-400/20',
+                                                                                    'red': 'bg-rose-50 text-rose-700 ring-rose-600/20 dark:bg-rose-950/50 dark:text-rose-300 dark:ring-rose-400/20',
+                                                                                    'gray': 'bg-slate-100 text-slate-700 ring-slate-600/20 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-400/20'
+                                                                                }.get(report.status_meta.tone, 'bg-slate-100 text-slate-700 ring-slate-600/20 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-400/20') %}
                                         <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset {{ status_class }}">
                                             <i data-lucide="{{ report.status_meta.icon }}" class="h-3.5 w-3.5"></i>
                                             {{ report.status_meta.label }}
@@ -326,29 +371,43 @@
                                     </td>
                                     <td class="px-5 py-4 text-sm text-slate-500 dark:text-slate-400">{{ report.created_at }}</td>
                                     <td class="px-5 py-4 text-right text-sm">
-                                        <div class="relative inline-flex" x-data="{ actionOpen: false }" @click.outside="actionOpen = false">
-                                            <button type="button" @click="actionOpen = !actionOpen" class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-blue-200 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:border-blue-700 dark:hover:text-blue-300">
+                                        <div class="relative inline-flex"
+                                             x-data="{ actionOpen: false }"
+                                             @click.outside="actionOpen = false">
+                                            <button type="button"
+                                                    @click="actionOpen = !actionOpen"
+                                                    class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-blue-200 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:border-blue-700 dark:hover:text-blue-300">
                                                 Actions
                                                 <i data-lucide="chevron-down" class="h-3.5 w-3.5" x-show="!actionOpen"></i>
-                                                <i data-lucide="chevron-up" class="h-3.5 w-3.5" x-show="actionOpen" x-cloak></i>
+                                                <i data-lucide="chevron-up"
+                                                   class="h-3.5 w-3.5"
+                                                   x-show="actionOpen"
+                                                   x-cloak></i>
                                             </button>
-                                            <div x-show="actionOpen" x-cloak class="absolute right-0 z-20 mt-9 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 text-left shadow-lg dark:border-slate-700 dark:bg-slate-950">
-                                                <a href="{{ url_for('reports.generated_report_detail', report_id=report.id) }}" class="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-blue-700 dark:text-slate-300 dark:hover:bg-slate-900 dark:hover:text-blue-300">
+                                            <div x-show="actionOpen"
+                                                 x-cloak
+                                                 class="absolute right-0 z-20 mt-9 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 text-left shadow-lg dark:border-slate-700 dark:bg-slate-950">
+                                                <a href="{{ url_for('reports.generated_report_detail', report_id=report.id) }}"
+                                                   class="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-blue-700 dark:text-slate-300 dark:hover:bg-slate-900 dark:hover:text-blue-300">
                                                     <i data-lucide="arrow-up-right" class="h-3.5 w-3.5"></i>
                                                     View detail
                                                 </a>
                                                 {% if report.can_generate_pdf %}
-                                                    <form method="POST" action="{{ url_for('reports.generate_report_pdf', report_id=report.id) }}">
+                                                    <form method="POST"
+                                                          action="{{ url_for('reports.generate_report_pdf', report_id=report.id) }}">
                                                         {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                                                         <input type="hidden" name="next" value="{{ request.full_path }}">
-                                                        <button type="submit" class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50 dark:text-emerald-300 dark:hover:bg-emerald-950/40">
-                                                            <i data-lucide="{{ 'refresh-cw' if report.raw_status == 'ready' else 'file-plus-2' }}" class="h-3.5 w-3.5"></i>
+                                                        <button type="submit"
+                                                                class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50 dark:text-emerald-300 dark:hover:bg-emerald-950/40">
+                                                            <i data-lucide="{{ 'refresh-cw' if report.raw_status == 'ready' else 'file-plus-2' }}"
+                                                               class="h-3.5 w-3.5"></i>
                                                             {{ report.generate_pdf_label }}
                                                         </button>
                                                     </form>
                                                 {% endif %}
                                                 {% if report.can_download_pdf %}
-                                                    <a href="{{ url_for('reports.download_report_pdf', report_id=report.id) }}" class="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-50 dark:text-blue-300 dark:hover:bg-blue-950/40">
+                                                    <a href="{{ url_for('reports.download_report_pdf', report_id=report.id) }}"
+                                                       class="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-50 dark:text-blue-300 dark:hover:bg-blue-950/40">
                                                         <i data-lucide="download" class="h-3.5 w-3.5"></i>
                                                         Download
                                                     </a>
@@ -359,19 +418,23 @@
                                                     </span>
                                                 {% endif %}
                                                 {% if report.can_archive_report %}
-                                                    <form method="POST" action="{{ url_for('reports.archive_generated_report', report_id=report.id) }}">
+                                                    <form method="POST"
+                                                          action="{{ url_for('reports.archive_generated_report', report_id=report.id) }}">
                                                         {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                                                         <input type="hidden" name="next" value="{{ request.full_path }}">
-                                                        <button type="submit" class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-semibold text-slate-600 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-900">
+                                                        <button type="submit"
+                                                                class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-semibold text-slate-600 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-900">
                                                             <i data-lucide="archive" class="h-3.5 w-3.5"></i>
                                                             Archive
                                                         </button>
                                                     </form>
                                                 {% elif report.can_restore_report %}
-                                                    <form method="POST" action="{{ url_for('reports.restore_generated_report', report_id=report.id) }}">
+                                                    <form method="POST"
+                                                          action="{{ url_for('reports.restore_generated_report', report_id=report.id) }}">
                                                         {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                                                         <input type="hidden" name="next" value="{{ request.full_path }}">
-                                                        <button type="submit" class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-semibold text-slate-600 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-900">
+                                                        <button type="submit"
+                                                                class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-semibold text-slate-600 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-900">
                                                             <i data-lucide="rotate-ccw" class="h-3.5 w-3.5"></i>
                                                             Restore
                                                         </button>
@@ -396,12 +459,12 @@
                                             </div>
                                             <div class="rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
                                                 {% set file_state_class = {
-                                                    'green': 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-400/20',
-                                                    'blue': 'bg-blue-50 text-blue-700 ring-blue-600/20 dark:bg-blue-950/50 dark:text-blue-300 dark:ring-blue-400/20',
-                                                    'purple': 'bg-violet-50 text-violet-700 ring-violet-600/20 dark:bg-violet-950/50 dark:text-violet-300 dark:ring-violet-400/20',
-                                                    'amber': 'bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-950/50 dark:text-amber-300 dark:ring-amber-400/20',
-                                                    'red': 'bg-rose-50 text-rose-700 ring-rose-600/20 dark:bg-rose-950/50 dark:text-rose-300 dark:ring-rose-400/20'
-                                                }.get(report.file_state.tone, 'bg-slate-100 text-slate-700 ring-slate-600/20 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-400/20') %}
+                                                                                                    'green': 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-400/20',
+                                                                                                    'blue': 'bg-blue-50 text-blue-700 ring-blue-600/20 dark:bg-blue-950/50 dark:text-blue-300 dark:ring-blue-400/20',
+                                                                                                    'purple': 'bg-violet-50 text-violet-700 ring-violet-600/20 dark:bg-violet-950/50 dark:text-violet-300 dark:ring-violet-400/20',
+                                                                                                    'amber': 'bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-950/50 dark:text-amber-300 dark:ring-amber-400/20',
+                                                                                                    'red': 'bg-rose-50 text-rose-700 ring-rose-600/20 dark:bg-rose-950/50 dark:text-rose-300 dark:ring-rose-400/20'
+                                                                                                }.get(report.file_state.tone, 'bg-slate-100 text-slate-700 ring-slate-600/20 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-400/20') %}
                                                 <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Artifact</p>
                                                 <span class="mt-1 inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset {{ file_state_class }}">
                                                     <i data-lucide="{{ report.file_state.icon }}" class="h-3.5 w-3.5"></i>
@@ -427,7 +490,8 @@
                                         </div>
                                         <h3 class="mt-4 text-base font-semibold text-slate-950 dark:text-white">No generated reports yet</h3>
                                         <p class="mt-2 max-w-md text-sm leading-6 text-slate-500 dark:text-slate-400">Generated reports will appear here after you create your first infrastructure report.</p>
-                                        <a href="{{ url_for('reports.generate_report') }}" class="mt-5 inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-300 dark:hover:bg-blue-900/50">
+                                        <a href="{{ url_for('reports.generate_report') }}"
+                                           class="mt-5 inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-300 dark:hover:bg-blue-900/50">
                                             <i data-lucide="plus-circle" class="h-4 w-4"></i>
                                             Generate Report
                                         </a>
@@ -451,16 +515,29 @@
                       hx-indicator="#reports-table-loading"
                       hx-on::after-swap="if (window.lucide) { window.lucide.createIcons(); }"
                       class="flex flex-wrap items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-                    <input type="hidden" name="cluster_id" value="{{ payload.selected_filters.cluster_id }}">
-                    <input type="hidden" name="report_type" value="{{ payload.selected_filters.report_type }}">
-                    <input type="hidden" name="status" value="{{ payload.selected_filters.status }}">
-                    <input type="hidden" name="period" value="{{ payload.selected_filters.period }}">
-                    <input type="hidden" name="search" value="{{ payload.selected_filters.search }}">
+                    <input type="hidden"
+                           name="cluster_id"
+                           value="{{ payload.selected_filters.cluster_id }}">
+                    <input type="hidden"
+                           name="report_type"
+                           value="{{ payload.selected_filters.report_type }}">
+                    <input type="hidden"
+                           name="status"
+                           value="{{ payload.selected_filters.status }}">
+                    <input type="hidden"
+                           name="period"
+                           value="{{ payload.selected_filters.period }}">
+                    <input type="hidden"
+                           name="search"
+                           value="{{ payload.selected_filters.search }}">
                     <input type="hidden" name="page" value="1">
                     <span>{{ payload.pagination.label }}</span>
-                    <select name="per_page" aria-label="Reports per page" class="rounded-lg border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                    <select name="per_page"
+                            aria-label="Reports per page"
+                            class="rounded-lg border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
                         {% for option in payload.filter_options.per_page_options %}
-                            <option value="{{ option.value }}" {% if payload.selected_filters.per_page == option.value %}selected{% endif %}>{{ option.label }}</option>
+                            <option value="{{ option.value }}"
+                                    {% if payload.selected_filters.per_page == option.value %}selected{% endif %}>{{ option.label }}</option>
                         {% endfor %}
                     </select>
                 </form>
@@ -469,24 +546,44 @@
                         {% set prev_url = url_for('reports.generated_reports', cluster_id=payload.selected_filters.cluster_id, report_type=payload.selected_filters.report_type, status=payload.selected_filters.status, period=payload.selected_filters.period, search=payload.selected_filters.search, per_page=payload.selected_filters.per_page, page=payload.pagination.prev_page) %}
                         {% set next_url = url_for('reports.generated_reports', cluster_id=payload.selected_filters.cluster_id, report_type=payload.selected_filters.report_type, status=payload.selected_filters.status, period=payload.selected_filters.period, search=payload.selected_filters.search, per_page=payload.selected_filters.per_page, page=payload.pagination.next_page) %}
                         {% if payload.pagination.has_prev %}
-                            <a href="{{ prev_url }}" hx-get="{{ prev_url }}" hx-target="#reports-table" hx-select="#reports-table" hx-swap="outerHTML" hx-push-url="true" hx-indicator="#reports-table-loading" hx-on::after-swap="if (window.lucide) { window.lucide.createIcons(); }" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-blue-200 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:border-blue-700 dark:hover:text-blue-300">
+                            <a href="{{ prev_url }}"
+                               hx-get="{{ prev_url }}"
+                               hx-target="#reports-table"
+                               hx-select="#reports-table"
+                               hx-swap="outerHTML"
+                               hx-push-url="true"
+                               hx-indicator="#reports-table-loading"
+                               hx-on::after-swap="if (window.lucide) { window.lucide.createIcons(); }"
+                               class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-blue-200 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:border-blue-700 dark:hover:text-blue-300">
                                 <i data-lucide="chevron-left" class="h-4 w-4"></i>
                                 Previous
                             </a>
                         {% else %}
-                            <button type="button" disabled class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-400 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-600">
+                            <button type="button"
+                                    disabled
+                                    class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-400 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-600">
                                 <i data-lucide="chevron-left" class="h-4 w-4"></i>
                                 Previous
                             </button>
                         {% endif %}
                         <span class="rounded-xl bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 dark:bg-blue-950/50 dark:text-blue-300">Page {{ payload.pagination.page }} of {{ payload.pagination.total_pages }}</span>
                         {% if payload.pagination.has_next %}
-                            <a href="{{ next_url }}" hx-get="{{ next_url }}" hx-target="#reports-table" hx-select="#reports-table" hx-swap="outerHTML" hx-push-url="true" hx-indicator="#reports-table-loading" hx-on::after-swap="if (window.lucide) { window.lucide.createIcons(); }" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-blue-200 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:border-blue-700 dark:hover:text-blue-300">
+                            <a href="{{ next_url }}"
+                               hx-get="{{ next_url }}"
+                               hx-target="#reports-table"
+                               hx-select="#reports-table"
+                               hx-swap="outerHTML"
+                               hx-push-url="true"
+                               hx-indicator="#reports-table-loading"
+                               hx-on::after-swap="if (window.lucide) { window.lucide.createIcons(); }"
+                               class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-blue-200 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:border-blue-700 dark:hover:text-blue-300">
                                 Next
                                 <i data-lucide="chevron-right" class="h-4 w-4"></i>
                             </a>
                         {% else %}
-                            <button type="button" disabled class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-400 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-600">
+                            <button type="button"
+                                    disabled
+                                    class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-400 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-600">
                                 Next
                                 <i data-lucide="chevron-right" class="h-4 w-4"></i>
                             </button>

@@ -282,7 +282,8 @@
                             <div class="mt-3 grid gap-2">
                                 {% for rule in payload.retention_policy.policy_rules %}
                                     <div class="flex items-start gap-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                                        <i data-lucide="shield-check" class="mt-1 h-4 w-4 shrink-0 text-emerald-500"></i>
+                                        <i data-lucide="shield-check"
+                                           class="mt-1 h-4 w-4 shrink-0 text-emerald-500"></i>
                                         <span>{{ rule }}</span>
                                     </div>
                                 {% endfor %}

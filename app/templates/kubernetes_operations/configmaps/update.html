@@ -1,47 +1,131 @@
 {% extends "layouts/app.html" %}
 {% block title %}View & Update ConfigMap{% endblock title %}
 {% block dashboard_content %}
-<div class="space-y-6">
-  <section class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 px-6 py-6 text-white shadow-lg shadow-blue-500/20 sm:px-7">
-    <div class="absolute -right-14 -top-16 h-48 w-48 rounded-full border border-white/10 bg-white/5"></div><div class="absolute -bottom-20 right-24 h-44 w-44 rounded-full border border-white/10 bg-white/5"></div>
-    <div class="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between"><div class="flex min-w-0 items-start gap-4"><div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-white/15"><i data-lucide="file-pen-line" class="h-6 w-6"></i></div><div><div class="flex flex-wrap items-center gap-2 text-xs font-semibold"><span class="rounded-full border border-white/15 bg-white/10 px-3 py-1">ConfigMap Management</span><span class="rounded-full border border-white/15 bg-white/10 px-3 py-1">View & update</span></div><h1 class="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">View & Update ConfigMap</h1><p class="mt-2 max-w-3xl text-sm leading-6 text-blue-50/90">Load current values from Kubernetes, review workload impact, preview the diff, and apply a validated merge or full replacement.</p></div></div><a href="{{ url_for('kubernetes_operations.configmap_management') }}" class="inline-flex shrink-0 items-center justify-center gap-2 self-start rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/15 lg:self-center"><i data-lucide="arrow-left" class="h-4 w-4"></i>ConfigMap Management</a></div>
-  </section>
-  <div id="configmap-operation-feedback" class="hidden" aria-hidden="true"></div>
-
-<form method="post" hx-post="{{ url_for('kubernetes_operations.update_configmap') }}" hx-target="#configmap-operation-feedback" hx-swap="innerHTML" class="space-y-6">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
-      <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800 xl:col-start-1 xl:row-start-1">
-        <div class="flex items-start gap-3 border-b border-slate-200 bg-slate-50/80 px-5 py-4 dark:border-slate-700 dark:bg-slate-900/40 sm:px-6">
-          <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300"><i data-lucide="search" class="h-4 w-4"></i></div>
-          <div><h2 class="text-sm font-semibold text-slate-950 dark:text-white">Select ConfigMap</h2><p class="mt-1 text-sm leading-5 text-slate-600 dark:text-slate-300">Choose the cluster, namespace, and ConfigMap to load its current Kubernetes state.</p></div>
-        </div>
-        <div class="p-5 sm:p-6"><div id="configmap-workspace">{% set workspace_mode='update' %}{% set namespaces = selected_namespaces %}{% set configmaps = selected_configmaps %}{% include 'kubernetes_operations/configmaps/_workspace.html' %}</div></div>
-      </section>
-
-      <section class="overflow-hidden rounded-2xl border border-violet-200 bg-white shadow-sm dark:border-violet-500/20 dark:bg-slate-800 xl:col-start-2 xl:row-start-1">
-        <div class="border-b border-violet-100 bg-violet-50/70 px-5 py-4 dark:border-violet-500/20 dark:bg-violet-500/10">
-          <div class="flex items-center gap-3"><i data-lucide="shield-check" class="h-5 w-5 text-violet-600 dark:text-violet-300"></i><h2 class="text-sm font-semibold text-slate-950 dark:text-white">Update guardrails</h2></div>
-        </div>
-        <div class="space-y-4 p-5 text-sm text-slate-600 dark:text-slate-300">
-          <div class="flex gap-3"><i data-lucide="eye" class="mt-0.5 h-4 w-4 shrink-0 text-violet-600"></i><p>Current Kubernetes values are loaded before editing.</p></div>
-          <div class="flex gap-3"><i data-lucide="git-compare" class="mt-0.5 h-4 w-4 shrink-0 text-blue-600"></i><p>Preview shows the effective change before apply.</p></div>
-          <div class="flex gap-3"><i data-lucide="boxes" class="mt-0.5 h-4 w-4 shrink-0 text-amber-600"></i><p>Workload references remain visible for impact review.</p></div>
-        </div>
-      </section>
-
-      <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800 xl:col-start-1 xl:row-start-2">
-        <div class="flex items-start gap-3 border-b border-slate-200 bg-slate-50/80 px-5 py-4 dark:border-slate-700 dark:bg-slate-900/40 sm:px-6"><div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-cyan-100 text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-300"><i data-lucide="diff" class="h-4 w-4"></i></div><div><h2 class="text-sm font-semibold text-slate-950 dark:text-white">Current values & proposed changes</h2><p class="mt-1 text-sm leading-5 text-slate-600 dark:text-slate-300">Edit entries, select merge or replacement behavior, and review the generated diff before applying.</p></div></div>
-        <div id="configmap-editor" class="p-5 sm:p-6">{% if target or target_error %}{% include 'kubernetes_operations/configmaps/_editor.html' %}{% else %}<div class="rounded-xl border border-dashed border-slate-300 px-6 py-10 text-center dark:border-slate-600"><div class="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-400 dark:bg-slate-700"><i data-lucide="file-search" class="h-5 w-5"></i></div><p class="mt-3 text-sm font-medium text-slate-700 dark:text-slate-200">Select a ConfigMap to begin</p><p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Current keys and workload context will appear here.</p></div>{% endif %}</div>
-      </section>
-
-      <section class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:flex-row sm:items-center sm:justify-between sm:px-6 xl:col-start-1 xl:row-start-3"><div><p class="text-sm font-semibold text-slate-900 dark:text-white">Review the effective change before applying</p><p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Preview performs validation without modifying the selected ConfigMap.</p></div><div class="flex flex-wrap gap-3 sm:justify-end"><button name="operation" value="validate" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-5 text-sm font-semibold text-blue-700 transition hover:bg-blue-100 focus:outline-none focus:ring-4 focus:ring-blue-500/10 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300"><i data-lucide="scan-search" class="h-4 w-4"></i>Preview & Validate</button><button name="operation" value="update" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-500/20"><i data-lucide="save" class="h-4 w-4"></i>Apply Update</button></div></section>
-
-      <aside class="self-start xl:sticky xl:top-6 xl:col-start-2 xl:row-start-2">
-        <section class="rounded-2xl bg-gradient-to-br from-blue-700 via-blue-600 to-cyan-500 p-5 text-white shadow-lg shadow-blue-500/15"><div class="flex items-center gap-3"><div class="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15"><i data-lucide="workflow" class="h-5 w-5"></i></div><div><h2 class="text-sm font-semibold">Update flow</h2><p class="mt-1 text-xs text-blue-50/80">Inspect before changing.</p></div></div><div class="mt-5 space-y-3 text-xs leading-5 text-blue-50/90"><p><strong class="text-white">1.</strong> Select the existing ConfigMap.</p><p><strong class="text-white">2.</strong> Review current data and consumers.</p><p><strong class="text-white">3.</strong> Preview and validate the diff.</p><p><strong class="text-white">4.</strong> Apply the approved update.</p></div></section>
-      </aside>
-
+    <div class="space-y-6">
+        <section class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 px-6 py-6 text-white shadow-lg shadow-blue-500/20 sm:px-7">
+            <div class="absolute -right-14 -top-16 h-48 w-48 rounded-full border border-white/10 bg-white/5"></div>
+            <div class="absolute -bottom-20 right-24 h-44 w-44 rounded-full border border-white/10 bg-white/5"></div>
+            <div class="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                <div class="flex min-w-0 items-start gap-4">
+                    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-white/15">
+                        <i data-lucide="file-pen-line" class="h-6 w-6"></i>
+                    </div>
+                    <div>
+                        <div class="flex flex-wrap items-center gap-2 text-xs font-semibold"><span class="rounded-full border border-white/15 bg-white/10 px-3 py-1">ConfigMap Management</span><span class="rounded-full border border-white/15 bg-white/10 px-3 py-1">View & update</span></div>
+                        <h1 class="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">View & Update ConfigMap</h1>
+                        <p class="mt-2 max-w-3xl text-sm leading-6 text-blue-50/90">Load current values from Kubernetes, review workload impact, preview the diff, and apply a validated merge or full replacement.</p>
+                    </div>
+                </div>
+                <a href="{{ url_for('kubernetes_operations.configmap_management') }}"
+                   class="inline-flex shrink-0 items-center justify-center gap-2 self-start rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/15 lg:self-center"><i data-lucide="arrow-left" class="h-4 w-4"></i>ConfigMap Management</a>
+            </div>
+        </section>
+        <div id="configmap-operation-feedback" class="hidden" aria-hidden="true"></div>
+        <form method="post"
+              hx-post="{{ url_for('kubernetes_operations.update_configmap') }}"
+              hx-target="#configmap-operation-feedback"
+              hx-swap="innerHTML"
+              class="space-y-6">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+                <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800 xl:col-start-1 xl:row-start-1">
+                    <div class="flex items-start gap-3 border-b border-slate-200 bg-slate-50/80 px-5 py-4 dark:border-slate-700 dark:bg-slate-900/40 sm:px-6">
+                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300">
+                            <i data-lucide="search" class="h-4 w-4"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-sm font-semibold text-slate-950 dark:text-white">Select ConfigMap</h2>
+                            <p class="mt-1 text-sm leading-5 text-slate-600 dark:text-slate-300">Choose the cluster, namespace, and ConfigMap to load its current Kubernetes state.</p>
+                        </div>
+                    </div>
+                    <div class="p-5 sm:p-6">
+                        <div id="configmap-workspace">{% set workspace_mode = "update" %}{% set namespaces = selected_namespaces %}{% set configmaps = selected_configmaps %}
+                            {% include 'kubernetes_operations/configmaps/_workspace.html' %}
+                        </div>
+                    </div>
+                </section>
+                <section class="overflow-hidden rounded-2xl border border-violet-200 bg-white shadow-sm dark:border-violet-500/20 dark:bg-slate-800 xl:col-start-2 xl:row-start-1">
+                    <div class="border-b border-violet-100 bg-violet-50/70 px-5 py-4 dark:border-violet-500/20 dark:bg-violet-500/10">
+                        <div class="flex items-center gap-3">
+                            <i data-lucide="shield-check"
+                               class="h-5 w-5 text-violet-600 dark:text-violet-300"></i>
+                            <h2 class="text-sm font-semibold text-slate-950 dark:text-white">Update guardrails</h2>
+                        </div>
+                    </div>
+                    <div class="space-y-4 p-5 text-sm text-slate-600 dark:text-slate-300">
+                        <div class="flex gap-3">
+                            <i data-lucide="eye" class="mt-0.5 h-4 w-4 shrink-0 text-violet-600"></i>
+                            <p>Current Kubernetes values are loaded before editing.</p>
+                        </div>
+                        <div class="flex gap-3">
+                            <i data-lucide="git-compare"
+                               class="mt-0.5 h-4 w-4 shrink-0 text-blue-600"></i>
+                            <p>Preview shows the effective change before apply.</p>
+                        </div>
+                        <div class="flex gap-3">
+                            <i data-lucide="boxes" class="mt-0.5 h-4 w-4 shrink-0 text-amber-600"></i>
+                            <p>Workload references remain visible for impact review.</p>
+                        </div>
+                    </div>
+                </section>
+                <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800 xl:col-start-1 xl:row-start-2">
+                    <div class="flex items-start gap-3 border-b border-slate-200 bg-slate-50/80 px-5 py-4 dark:border-slate-700 dark:bg-slate-900/40 sm:px-6">
+                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-cyan-100 text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-300">
+                            <i data-lucide="diff" class="h-4 w-4"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-sm font-semibold text-slate-950 dark:text-white">Current values & proposed changes</h2>
+                            <p class="mt-1 text-sm leading-5 text-slate-600 dark:text-slate-300">Edit entries, select merge or replacement behavior, and review the generated diff before applying.</p>
+                        </div>
+                    </div>
+                    <div id="configmap-editor" class="p-5 sm:p-6">
+                        {% if target or target_error %}
+                            {% include 'kubernetes_operations/configmaps/_editor.html' %}
+                        {% else %}
+                            <div class="rounded-xl border border-dashed border-slate-300 px-6 py-10 text-center dark:border-slate-600">
+                                <div class="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-400 dark:bg-slate-700">
+                                    <i data-lucide="file-search" class="h-5 w-5"></i>
+                                </div>
+                                <p class="mt-3 text-sm font-medium text-slate-700 dark:text-slate-200">Select a ConfigMap to begin</p>
+                                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Current keys and workload context will appear here.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </section>
+                <section class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:flex-row sm:items-center sm:justify-between sm:px-6 xl:col-start-1 xl:row-start-3">
+                    <div>
+                        <p class="text-sm font-semibold text-slate-900 dark:text-white">Review the effective change before applying</p>
+                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Preview performs validation without modifying the selected ConfigMap.</p>
+                    </div>
+                    <div class="flex flex-wrap gap-3 sm:justify-end">
+                        <button name="operation"
+                                value="validate"
+                                class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-5 text-sm font-semibold text-blue-700 transition hover:bg-blue-100 focus:outline-none focus:ring-4 focus:ring-blue-500/10 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300"><i data-lucide="scan-search" class="h-4 w-4"></i>Preview & Validate</button>
+                        <button name="operation"
+                                value="update"
+                                class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-500/20"><i data-lucide="save" class="h-4 w-4"></i>Apply Update</button>
+                    </div>
+                </section>
+                <aside class="self-start xl:sticky xl:top-6 xl:col-start-2 xl:row-start-2">
+                    <section class="rounded-2xl bg-gradient-to-br from-blue-700 via-blue-600 to-cyan-500 p-5 text-white shadow-lg shadow-blue-500/15">
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15">
+                                <i data-lucide="workflow" class="h-5 w-5"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-sm font-semibold">Update flow</h2>
+                                <p class="mt-1 text-xs text-blue-50/80">Inspect before changing.</p>
+                            </div>
+                        </div>
+                        <div class="mt-5 space-y-3 text-xs leading-5 text-blue-50/90">
+                            <p><strong class="text-white">1.</strong> Select the existing ConfigMap.</p>
+                            <p><strong class="text-white">2.</strong> Review current data and consumers.</p>
+                            <p><strong class="text-white">3.</strong> Preview and validate the diff.</p>
+                            <p><strong class="text-white">4.</strong> Apply the approved update.</p>
+                        </div>
+                    </section>
+                </aside>
+            </div>
+        </form>
     </div>
-  </form>
-</div>
 {% endblock dashboard_content %}

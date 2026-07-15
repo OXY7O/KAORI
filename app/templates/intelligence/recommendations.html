@@ -4,10 +4,10 @@
     {% set endpoint_name = 'intelligence.catalog' if payload.page_mode == 'catalog' else 'intelligence.recommendations' %}
     <div class="space-y-6">
         <section class="relative min-h-[16.5rem] overflow-hidden rounded-3xl bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 px-6 py-6 text-white shadow-lg shadow-blue-500/20 sm:px-7 sm:py-7">
-            <div class="absolute inset-y-0 right-0 hidden w-1/3 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.22),transparent_55%)] lg:block"></div>
+            <div class="absolute inset-y-0 right-0 hidden w-1/3 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.22),transparent_55%)] lg:block">
+            </div>
             <div class="absolute -top-16 right-10 h-40 w-40 rounded-full bg-white/10 blur-3xl"></div>
             <div class="absolute -bottom-20 right-32 h-48 w-48 rounded-full bg-cyan-300/20 blur-3xl"></div>
-
             <div class="relative grid gap-6 xl:grid-cols-[minmax(0,1fr)_400px] xl:items-start">
                 <div class="space-y-5">
                     <div class="flex items-start gap-4">
@@ -38,7 +38,6 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur xl:min-h-[176px]">
                     <div class="flex h-full flex-col justify-start gap-3">
                         <div class="flex items-start justify-between gap-4">
@@ -52,14 +51,15 @@
                             </span>
                         </div>
                         <div class="mt-2 grid grid-cols-2 gap-3">
-                            <a href="{{ url_for('intelligence.recommendations') }}" class="rounded-xl bg-white/10 px-4 py-3 text-center text-xs font-semibold transition hover:bg-white/15">Recommendations</a>
-                            <a href="{{ url_for('intelligence.alert_intelligence') }}" class="rounded-xl bg-white/10 px-4 py-3 text-center text-xs font-semibold transition hover:bg-white/15">Alert Intelligence</a>
+                            <a href="{{ url_for('intelligence.recommendations') }}"
+                               class="rounded-xl bg-white/10 px-4 py-3 text-center text-xs font-semibold transition hover:bg-white/15">Recommendations</a>
+                            <a href="{{ url_for('intelligence.alert_intelligence') }}"
+                               class="rounded-xl bg-white/10 px-4 py-3 text-center text-xs font-semibold transition hover:bg-white/15">Alert Intelligence</a>
                         </div>
                     </div>
                 </div>
             </div>
         </section>
-
         <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {% for card in payload.summary_cards %}
                 <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
@@ -76,7 +76,6 @@
                 </div>
             {% endfor %}
         </section>
-
         <section class="grid gap-4 lg:grid-cols-3">
             {% for card in payload.context_cards %}
                 <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
@@ -92,8 +91,8 @@
                 </div>
             {% endfor %}
         </section>
-
-        <section id="recommendation-catalog" class="rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+        <section id="recommendation-catalog"
+                 class="rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
             <div class="border-b border-slate-200 p-5 dark:border-slate-700">
                 <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div>
@@ -101,22 +100,23 @@
                         <h2 class="mt-1 text-xl font-black text-slate-950 dark:text-white">{{ payload.page_title }} data workspace</h2>
                         <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Filter recommendation catalog definitions by domain, logic type, signal source, severity, and target resource.</p>
                     </div>
-                    <a href="{{ url_for('intelligence.catalog') }}" class="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
+                    <a href="{{ url_for('intelligence.catalog') }}"
+                       class="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
                         <i data-lucide="list-checks" class="h-4 w-4"></i>
                         Open Catalog
                     </a>
                 </div>
-
-                <div id="recommendation-filter-loading" class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-blue-100 dark:bg-blue-950/60">
+                <div id="recommendation-filter-loading"
+                     class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-blue-100 dark:bg-blue-950/60">
                     <div class="h-full w-1/3 animate-pulse rounded-full bg-blue-600 dark:bg-blue-400"></div>
                 </div>
-
                 <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
-                    <div data-recommendation-filter-help class="flex flex-wrap gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
-                    <span class="rounded-full bg-slate-100 px-2.5 py-1 dark:bg-slate-800">Domain filters asset family</span>
-                    <span class="rounded-full bg-slate-100 px-2.5 py-1 dark:bg-slate-800">Resource filters target object</span>
-                    <span class="rounded-full bg-slate-100 px-2.5 py-1 dark:bg-slate-800">Source filters signal origin</span>
-                    <span class="rounded-full bg-slate-100 px-2.5 py-1 dark:bg-slate-800">Logic filters rule type</span>
+                    <div data-recommendation-filter-help
+                         class="flex flex-wrap gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                        <span class="rounded-full bg-slate-100 px-2.5 py-1 dark:bg-slate-800">Domain filters asset family</span>
+                        <span class="rounded-full bg-slate-100 px-2.5 py-1 dark:bg-slate-800">Resource filters target object</span>
+                        <span class="rounded-full bg-slate-100 px-2.5 py-1 dark:bg-slate-800">Source filters signal origin</span>
+                        <span class="rounded-full bg-slate-100 px-2.5 py-1 dark:bg-slate-800">Logic filters rule type</span>
                     </div>
                     <a href="{{ url_for(endpoint_name) }}"
                        hx-get="{{ url_for(endpoint_name) }}"
@@ -131,7 +131,6 @@
                         Reset filters
                     </a>
                 </div>
-
                 <form id="recommendation-catalog-filter"
                       class="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4"
                       autocomplete="off"
@@ -145,49 +144,76 @@
                       hx-indicator="#recommendation-filter-loading"
                       hx-on::config-request="const form = document.getElementById('recommendation-catalog-filter'); if (form) { new FormData(form).forEach((value, key) => { event.detail.parameters[key] = value; }); event.detail.parameters.page = '1'; }">
                     <input type="hidden" name="page" value="1">
-                    <input type="hidden" name="per_page" value="{{ payload.pagination.per_page }}">
-                    <select name="domain" title="Filter by asset domain" class="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                    <input type="hidden"
+                           name="per_page"
+                           value="{{ payload.pagination.per_page }}">
+                    <select name="domain"
+                            title="Filter by asset domain"
+                            class="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
                         {% for option in payload.filter_options.domains %}
-                            <option value="{{ option.value }}" {% if payload.filters.domain == option.value %}selected{% endif %}>{{ option.label }}</option>
+                            <option value="{{ option.value }}"
+                                    {% if payload.filters.domain == option.value %}selected{% endif %}>{{ option.label }}</option>
                         {% endfor %}
                     </select>
-                    <select name="logic_type" title="Filter by rule logic type" class="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                    <select name="logic_type"
+                            title="Filter by rule logic type"
+                            class="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
                         {% for option in payload.filter_options.logic_types %}
-                            <option value="{{ option.value }}" {% if payload.filters.logic_type == option.value %}selected{% endif %}>{{ option.label }}</option>
+                            <option value="{{ option.value }}"
+                                    {% if payload.filters.logic_type == option.value %}selected{% endif %}>{{ option.label }}</option>
                         {% endfor %}
                     </select>
-                    <select name="signal_source" title="Filter by signal source" class="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                    <select name="signal_source"
+                            title="Filter by signal source"
+                            class="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
                         {% for option in payload.filter_options.signal_sources %}
-                            <option value="{{ option.value }}" {% if payload.filters.signal_source == option.value %}selected{% endif %}>{{ option.label }}</option>
+                            <option value="{{ option.value }}"
+                                    {% if payload.filters.signal_source == option.value %}selected{% endif %}>{{ option.label }}</option>
                         {% endfor %}
                     </select>
-                    <select name="status" title="Filter by rule/finding status" class="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                    <select name="status"
+                            title="Filter by rule/finding status"
+                            class="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
                         {% for option in payload.filter_options.statuses %}
-                            <option value="{{ option.value }}" {% if payload.filters.status == option.value %}selected{% endif %}>{{ option.label }}</option>
+                            <option value="{{ option.value }}"
+                                    {% if payload.filters.status == option.value %}selected{% endif %}>{{ option.label }}</option>
                         {% endfor %}
                     </select>
-                    <select name="severity" title="Filter by severity" class="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                    <select name="severity"
+                            title="Filter by severity"
+                            class="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
                         {% for option in payload.filter_options.severities %}
-                            <option value="{{ option.value }}" {% if payload.filters.severity == option.value %}selected{% endif %}>{{ option.label }}</option>
+                            <option value="{{ option.value }}"
+                                    {% if payload.filters.severity == option.value %}selected{% endif %}>{{ option.label }}</option>
                         {% endfor %}
                     </select>
-                    <select name="source_kind" title="Filter by target resource type" class="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                    <select name="source_kind"
+                            title="Filter by target resource type"
+                            class="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
                         {% for option in payload.filter_options.source_kinds %}
-                            <option value="{{ option.value }}" {% if payload.filters.source_kind == option.value %}selected{% endif %}>{{ option.label }}</option>
+                            <option value="{{ option.value }}"
+                                    {% if payload.filters.source_kind == option.value %}selected{% endif %}>{{ option.label }}</option>
                         {% endfor %}
                     </select>
-                    <select name="category" title="Filter by recommendation category" class="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                    <select name="category"
+                            title="Filter by recommendation category"
+                            class="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
                         {% for option in payload.filter_options.categories %}
-                            <option value="{{ option.value }}" {% if payload.filters.category == option.value %}selected{% endif %}>{{ option.label }}</option>
+                            <option value="{{ option.value }}"
+                                    {% if payload.filters.category == option.value %}selected{% endif %}>{{ option.label }}</option>
                         {% endfor %}
                     </select>
                     <div class="relative">
-                        <i data-lucide="search" class="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400"></i>
-                        <input type="search" name="q" value="{{ payload.filters.q }}" placeholder="Search catalog..." class="w-full rounded-2xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                        <i data-lucide="search"
+                           class="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400"></i>
+                        <input type="search"
+                               name="q"
+                               value="{{ payload.filters.q }}"
+                               placeholder="Search catalog..."
+                               class="w-full rounded-2xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
                     </div>
                 </form>
             </div>
-
             {% if payload.page_mode != 'catalog' %}
                 <div class="p-5">
                     <div class="mb-4 grid gap-3 lg:grid-cols-4">
@@ -208,7 +234,6 @@
                             <p class="mt-1 text-xs leading-5 text-slate-600 dark:text-slate-400">Optimization backlog item.</p>
                         </div>
                     </div>
-
                     <div class="w-full overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
                         <div class="overflow-x-auto">
                             <table class="w-full min-w-[76rem] table-fixed divide-y divide-slate-200 text-left dark:divide-slate-700">
@@ -238,10 +263,10 @@
                                                 <p class="mt-1 truncate text-xs font-semibold text-slate-500 dark:text-slate-400">{{ item.severity_label }}</p>
                                             </td>
                                             <td class="px-4 py-3">
-                                                <p class="truncate text-sm font-bold text-slate-950 dark:text-white" title="{{ item.title }}">{{ item.title }}</p>
-                                                <p class="mt-1 truncate text-xs text-slate-500 dark:text-slate-400" title="{{ item.rule_key }}">
-                                                    {{ item.rule_key }}
-                                                </p>
+                                                <p class="truncate text-sm font-bold text-slate-950 dark:text-white"
+                                                   title="{{ item.title }}">{{ item.title }}</p>
+                                                <p class="mt-1 truncate text-xs text-slate-500 dark:text-slate-400"
+                                                   title="{{ item.rule_key }}">{{ item.rule_key }}</p>
                                             </td>
                                             <td class="px-4 py-3">
                                                 <div class="flex min-w-0 flex-nowrap items-center gap-2 overflow-hidden">
@@ -268,11 +293,14 @@
                                                         class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
                                                         data-recommendation-detail-toggle="{{ loop.index }}">
                                                     View More
-                                                    <i data-lucide="chevron-down" class="h-3.5 w-3.5" data-recommendation-detail-icon="{{ loop.index }}"></i>
+                                                    <i data-lucide="chevron-down"
+                                                       class="h-3.5 w-3.5"
+                                                       data-recommendation-detail-icon="{{ loop.index }}"></i>
                                                 </button>
                                             </td>
                                         </tr>
-                                        <tr id="recommendation-detail-row-{{ loop.index }}" class="hidden bg-slate-50/80 dark:bg-slate-950/40">
+                                        <tr id="recommendation-detail-row-{{ loop.index }}"
+                                            class="hidden bg-slate-50/80 dark:bg-slate-950/40">
                                             <td colspan="5" class="px-4 py-5">
                                                 <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
                                                     <div class="space-y-4">
@@ -318,7 +346,6 @@
                                                             </div>
                                                         </div>
                                                     </div>
-
                                                     <div class="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4 shadow-sm dark:border-emerald-900/40 dark:bg-emerald-950/20">
                                                         <div class="flex items-start gap-3">
                                                             <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-emerald-600 ring-1 ring-emerald-100 dark:bg-slate-900 dark:text-emerald-300 dark:ring-emerald-900/40">
@@ -345,7 +372,8 @@
                                                             <span class="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-700">{{ label }}</span>
                                                         {% endfor %}
                                                     </div>
-                                                    <a href="{{ url_for('intelligence.catalog', q=item.rule_key.split(':')[0]) }}" class="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-blue-700">
+                                                    <a href="{{ url_for('intelligence.catalog', q=item.rule_key.split(':')[0] ) }}"
+                                                       class="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-blue-700">
                                                         View Catalog Rule
                                                         <i data-lucide="arrow-up-right" class="h-3.5 w-3.5"></i>
                                                     </a>
@@ -390,13 +418,18 @@
                                         <span class="inline-flex items-center gap-1.5"><i data-lucide="tag" class="h-3.5 w-3.5"></i>{{ item.category_label }}</span>
                                     </div>
                                 </div>
-                                <button type="button" @click="open = !open" class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
+                                <button type="button"
+                                        @click="open = !open"
+                                        class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
                                     <span x-text="open ? 'Hide details' : 'View more'"></span>
                                     <i data-lucide="chevron-down" x-show="!open" class="h-4 w-4"></i>
                                     <i data-lucide="chevron-up" x-show="open" x-cloak class="h-4 w-4"></i>
                                 </button>
                             </div>
-                            <div x-show="open" x-collapse x-cloak class="mt-5 grid gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/40 lg:grid-cols-2">
+                            <div x-show="open"
+                                 x-collapse
+                                 x-cloak
+                                 class="mt-5 grid gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/40 lg:grid-cols-2">
                                 <div>
                                     <p class="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">What it checks</p>
                                     <p class="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-300">{{ item.condition_summary }}</p>
@@ -458,14 +491,22 @@
                     <input type="hidden" name="category" value="{{ payload.filters.category }}">
                     <input type="hidden" name="severity" value="{{ payload.filters.severity }}">
                     <input type="hidden" name="status" value="{{ payload.filters.status }}">
-                    <input type="hidden" name="source_kind" value="{{ payload.filters.source_kind }}">
-                    <input type="hidden" name="logic_type" value="{{ payload.filters.logic_type }}">
-                    <input type="hidden" name="signal_source" value="{{ payload.filters.signal_source }}">
+                    <input type="hidden"
+                           name="source_kind"
+                           value="{{ payload.filters.source_kind }}">
+                    <input type="hidden"
+                           name="logic_type"
+                           value="{{ payload.filters.logic_type }}">
+                    <input type="hidden"
+                           name="signal_source"
+                           value="{{ payload.filters.signal_source }}">
                     <input type="hidden" name="q" value="{{ payload.filters.q }}">
                     <span>{{ payload.pagination.label }}</span>
-                    <select name="per_page" class="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                    <select name="per_page"
+                            class="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
                         {% for option in payload.filter_options.per_page %}
-                            <option value="{{ option }}" {% if payload.pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
+                            <option value="{{ option }}"
+                                    {% if payload.pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
                         {% endfor %}
                     </select>
                 </form>
@@ -499,8 +540,7 @@
             </div>
         </section>
     </div>
-
-<script>
+    <script>
 (function () {
     function bindRecommendationDetailToggles(root) {
         var scope = root || document;
@@ -539,6 +579,5 @@
         }
     });
 })();
-</script>
-
+    </script>
 {% endblock dashboard_content %}

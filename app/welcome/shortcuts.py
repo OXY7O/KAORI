@@ -9,10 +9,9 @@ WELCOME_WORKSPACE_GROUP_DEFINITIONS: tuple[dict[str, str], ...] = (
     {
         'key': 'visibility',
         'eyebrow': 'Understand',
-        'title': 'Visibility & operational insight',
+        'title': 'Visibility & Operational Insight',
         'description': (
-            'Explore infrastructure posture, inventory, relationships, analytics, '
-            'and prioritized operational context.'
+            'Explore infrastructure posture, inventory, relationships, analytics, and prioritized operational insights.'
         ),
         'icon': 'scan-search',
     },
@@ -31,8 +30,7 @@ WELCOME_WORKSPACE_GROUP_DEFINITIONS: tuple[dict[str, str], ...] = (
         'eyebrow': 'Assure',
         'title': 'Governance & reporting',
         'description': (
-            'Review lifecycle controls, operational evidence, historical context, '
-            'and management-ready outputs.'
+            'Review lifecycle controls, operational evidence, historical context, and management-ready outputs.'
         ),
         'icon': 'shield-check',
     },
@@ -65,8 +63,7 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         'title': 'Kubernetes Inventory',
         'label': 'Asset visibility',
         'description': (
-            'Explore infrastructure identity, status, configuration, and resource '
-            'relationships collected from connected environments.'
+            'Gain visibility into Kubernetes resources, their status, configuration, and relationships across connected clusters.'
         ),
         'icon': 'boxes',
         'scope': 'Compute',
@@ -77,8 +74,7 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         'title': 'Kubernetes Analytics',
         'label': 'Operational analytics',
         'description': (
-            'Analyze utilization, capacity, workload efficiency, storage, forecast '
-            'risk, top consumers, alerts, and anomalies.'
+            'Explore utilization, capacity, workload efficiency, storage, forecast risks, top consumers, alerts, and anomalies.'
         ),
         'icon': 'chart-column',
         'scope': 'Compute',
@@ -89,8 +85,7 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         'title': 'Intelligence',
         'label': 'Decision support',
         'description': (
-            'Review contextual recommendations, alert intelligence, rule definitions, '
-            'impacted assets, and remediation guidance.'
+            'Identify operational findings, understand affected assets, and follow prioritized remediation guidance.'
         ),
         'icon': 'brain-circuit',
         'scope': 'Cross-domain',
@@ -101,8 +96,7 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         'title': 'Kubernetes Cluster',
         'label': 'Integration & sync',
         'description': (
-            'Manage registered environments, connection readiness, inventory '
-            'synchronization, and integration status.'
+            'Manage registered environments, connection readiness, inventory synchronization, and integration status.'
         ),
         'icon': 'server-cog',
         'scope': 'Compute',

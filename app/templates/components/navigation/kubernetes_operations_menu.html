@@ -1,43 +1,43 @@
 {% set operations_active = request.endpoint and request.endpoint.startswith('kubernetes_operations.') %}
-{% set configmap_operations_visible =
-    current_user.has_permission('kubernetes_configmaps.view')
+{% set configmap_operations_visible = current_user.has_permission('kubernetes_configmaps.view')
     or current_user.has_permission('kubernetes_configmaps.create')
     or current_user.has_permission('kubernetes_configmaps.update')
-    or current_user.has_permission('kubernetes_configmaps.delete')
-%}
-{% set secret_operations_visible =
-    current_user.has_permission('kubernetes_secrets.view')
+    or current_user.has_permission('kubernetes_configmaps.delete') %}
+{% set secret_operations_visible = current_user.has_permission('kubernetes_secrets.view')
     or current_user.has_permission('kubernetes_secrets.create')
     or current_user.has_permission('kubernetes_secrets.replace')
     or current_user.has_permission('kubernetes_secrets.reveal')
     or current_user.has_permission('kubernetes_secrets.approve_reveal')
     or current_user.has_permission('kubernetes_secrets.rotate_tls')
-    or current_user.has_permission('kubernetes_secrets.bulk_rotate_tls')
-%}
+    or current_user.has_permission('kubernetes_secrets.bulk_rotate_tls') %}
 {% if secret_operations_visible or configmap_operations_visible %}
-<details class="sidebar-menu space-y-1" {% if operations_active %}open{% endif %}>
-    <summary class="{{ 'bg-blue-600/15 text-blue-300 ring-1 ring-blue-500/20' if operations_active else 'text-slate-300 hover:bg-slate-900 hover:text-white' }} sidebar-parent-link group flex cursor-pointer select-none items-center justify-between rounded-2xl px-3 py-3 text-[13px] leading-5 font-semibold">
-        <div class="flex min-w-0 items-center gap-3">
-            <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl {{ 'bg-blue-600 text-white shadow-lg shadow-blue-600/25' if operations_active else 'bg-slate-900 text-slate-400 group-hover:bg-slate-800 group-hover:text-white' }} transition"><i data-lucide="wrench" class="h-4 w-4"></i></span>
-            <span class="sidebar-expanded-only truncate whitespace-nowrap">K8s Operations</span>
+    <details class="sidebar-menu space-y-1"
+             {% if operations_active %}open{% endif %}>
+        <summary class="{{ 'bg-blue-600/15 text-blue-300 ring-1 ring-blue-500/20' if operations_active else 'text-slate-300 hover:bg-slate-900 hover:text-white' }} sidebar-parent-link group flex cursor-pointer select-none items-center justify-between rounded-2xl px-3 py-3 text-[13px] leading-5 font-semibold">
+            <div class="flex min-w-0 items-center gap-3">
+                <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl {{ 'bg-blue-600 text-white shadow-lg shadow-blue-600/25' if operations_active else 'bg-slate-900 text-slate-400 group-hover:bg-slate-800 group-hover:text-white' }} transition"><i data-lucide="wrench" class="h-4 w-4"></i></span>
+                <span class="sidebar-expanded-only truncate whitespace-nowrap">K8s Operations</span>
+            </div>
+            <i data-lucide="chevron-right"
+               class="sidebar-expanded-only sidebar-menu-chevron h-4 w-4 {{ 'text-blue-300' if operations_active else 'text-slate-500' }}"></i>
+        </summary>
+        <div class="sidebar-expanded-only sidebar-submenu ml-7 mt-1 space-y-1 border-l border-slate-800 pl-4">
+            {% if configmap_operations_visible %}
+                <a href="{{ url_for('kubernetes_operations.configmap_management') }}"
+                   class="{{ 'bg-slate-900 text-blue-300' if request.endpoint and request.endpoint.startswith('kubernetes_operations.configmap') else 'text-slate-400 hover:bg-slate-900 hover:text-white' }} group flex items-center gap-2 rounded-xl px-3 py-2 text-[12px] leading-4 transition">
+                    <span class="h-1.5 w-1.5 rounded-full {{ 'bg-blue-400' if request.endpoint and request.endpoint.startswith('kubernetes_operations.configmap') else 'bg-slate-700 group-hover:bg-slate-500' }}"></span>
+                    <i data-lucide="file-cog" class="h-3.5 w-3.5"></i>
+                    <span class="truncate whitespace-nowrap">ConfigMap Management</span>
+                </a>
+            {% endif %}
+            {% if secret_operations_visible %}
+                <a href="{{ url_for('kubernetes_operations.secret_management') }}"
+                   class="{{ 'bg-slate-900 text-blue-300' if request.endpoint and request.endpoint.startswith('kubernetes_operations.secret') or request.endpoint and request.endpoint.startswith('kubernetes_operations.tls_secret') else 'text-slate-400 hover:bg-slate-900 hover:text-white' }} group flex items-center gap-2 rounded-xl px-3 py-2 text-[12px] leading-4 transition">
+                    <span class="h-1.5 w-1.5 rounded-full {{ 'bg-blue-400' if request.endpoint and request.endpoint.startswith('kubernetes_operations.secret') or request.endpoint and request.endpoint.startswith('kubernetes_operations.tls_secret') else 'bg-slate-700 group-hover:bg-slate-500' }}"></span>
+                    <i data-lucide="key-round" class="h-3.5 w-3.5"></i>
+                    <span class="truncate whitespace-nowrap">Secret Management</span>
+                </a>
+            {% endif %}
         </div>
-        <i data-lucide="chevron-right" class="sidebar-expanded-only sidebar-menu-chevron h-4 w-4 {{ 'text-blue-300' if operations_active else 'text-slate-500' }}"></i>
-    </summary>
-    <div class="sidebar-expanded-only sidebar-submenu ml-7 mt-1 space-y-1 border-l border-slate-800 pl-4">
-        {% if configmap_operations_visible %}
-        <a href="{{ url_for('kubernetes_operations.configmap_management') }}" class="{{ 'bg-slate-900 text-blue-300' if request.endpoint and request.endpoint.startswith('kubernetes_operations.configmap') else 'text-slate-400 hover:bg-slate-900 hover:text-white' }} group flex items-center gap-2 rounded-xl px-3 py-2 text-[12px] leading-4 transition">
-            <span class="h-1.5 w-1.5 rounded-full {{ 'bg-blue-400' if request.endpoint and request.endpoint.startswith('kubernetes_operations.configmap') else 'bg-slate-700 group-hover:bg-slate-500' }}"></span>
-            <i data-lucide="file-cog" class="h-3.5 w-3.5"></i>
-            <span class="truncate whitespace-nowrap">ConfigMap Management</span>
-        </a>
-        {% endif %}
-        {% if secret_operations_visible %}
-        <a href="{{ url_for('kubernetes_operations.secret_management') }}" class="{{ 'bg-slate-900 text-blue-300' if request.endpoint and request.endpoint.startswith('kubernetes_operations.secret') or request.endpoint and request.endpoint.startswith('kubernetes_operations.tls_secret') else 'text-slate-400 hover:bg-slate-900 hover:text-white' }} group flex items-center gap-2 rounded-xl px-3 py-2 text-[12px] leading-4 transition">
-            <span class="h-1.5 w-1.5 rounded-full {{ 'bg-blue-400' if request.endpoint and request.endpoint.startswith('kubernetes_operations.secret') or request.endpoint and request.endpoint.startswith('kubernetes_operations.tls_secret') else 'bg-slate-700 group-hover:bg-slate-500' }}"></span>
-            <i data-lucide="key-round" class="h-3.5 w-3.5"></i>
-            <span class="truncate whitespace-nowrap">Secret Management</span>
-        </a>
-        {% endif %}
-    </div>
-</details>
+    </details>
 {% endif %}

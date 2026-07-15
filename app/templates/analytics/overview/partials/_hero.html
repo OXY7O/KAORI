@@ -18,13 +18,12 @@
     'critical': 'Immediate attention required.',
     'unknown': 'Signal status unavailable.'
 }.get(posture_status, posture.description) %}
-
 <div class="space-y-4">
     <section class="relative overflow-hidden min-h-[16.5rem] rounded-3xl bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 px-6 py-6 text-white shadow-lg shadow-blue-500/20 sm:px-7 sm:py-7">
-        <div class="absolute inset-y-0 right-0 hidden w-1/3 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.22),transparent_55%)] lg:block"></div>
+        <div class="absolute inset-y-0 right-0 hidden w-1/3 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.22),transparent_55%)] lg:block">
+        </div>
         <div class="absolute -top-16 right-10 h-40 w-40 rounded-full bg-white/10 blur-3xl"></div>
         <div class="absolute -bottom-20 right-32 h-48 w-48 rounded-full bg-cyan-300/20 blur-3xl"></div>
-
         <div class="relative grid gap-6 xl:grid-cols-[minmax(0,1fr)_400px] xl:items-start">
             <div class="space-y-5">
                 <div class="flex items-start gap-4">
@@ -62,9 +61,8 @@
                     </div>
                 </div>
             </div>
-
             {% if dependency_blocker %}
-                {% set analytics_posture_label = 'Analytics posture' %}
+                {% set analytics_posture_label = "Analytics posture" %}
                 {% include "analytics/components/_blocked_posture.html" %}
             {% else %}
                 <div id="overview-hero-posture"
@@ -72,66 +70,70 @@
                      hx-disinherit="hx-target hx-select hx-push-url hx-indicator"
                      hx-get="{{ url_for('analytics.overview_section', section='hero-posture') }}?{{ overview_query }}"
                      hx-trigger="load delay:650ms"
-                     hx-swap="innerHTML">
-                    {% include "analytics/overview/partials/_hero_posture_loading.html" %}
-                </div>
+                     hx-swap="innerHTML">{% include "analytics/overview/partials/_hero_posture_loading.html" %}</div>
             {% endif %}
         </div>
     </section>
-
     {% if not dependency_blocker %}
-    <form id="analytics-overview-filter"
-          method="get"
-          hx-get="{{ url_for('analytics.overview') }}"
-          hx-trigger="change from:select delay:120ms"
-          hx-target="#analytics-overview-page"
-          hx-select="#analytics-overview-page"
-          hx-swap="outerHTML"
-          hx-push-url="true"
-          hx-indicator="#analytics-overview-refresh-indicator"
-          class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-        <div class="px-6 py-4">
-            <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(340px,420px)] lg:items-center">
-                <div id="overview-prometheus-status"
-                     hx-target="this"
-                     hx-select="unset"
-                     hx-disinherit="hx-target hx-select hx-push-url hx-indicator"
-                     hx-get="{{ url_for('analytics.overview_section', section='prometheus-status') }}?{{ overview_query }}"
-                     hx-trigger="load delay:100ms"
-                     hx-swap="innerHTML">
-                    {% include "analytics/overview/partials/_prometheus_status_loading.html" %}
+        <form id="analytics-overview-filter"
+              method="get"
+              hx-get="{{ url_for('analytics.overview') }}"
+              hx-trigger="change from:select delay:120ms"
+              hx-target="#analytics-overview-page"
+              hx-select="#analytics-overview-page"
+              hx-swap="outerHTML"
+              hx-push-url="true"
+              hx-indicator="#analytics-overview-refresh-indicator"
+              class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+            <div class="px-6 py-4">
+                <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(340px,420px)] lg:items-center">
+                    <div id="overview-prometheus-status"
+                         hx-target="this"
+                         hx-select="unset"
+                         hx-disinherit="hx-target hx-select hx-push-url hx-indicator"
+                         hx-get="{{ url_for('analytics.overview_section', section='prometheus-status') }}?{{ overview_query }}"
+                         hx-trigger="load delay:100ms"
+                         hx-swap="innerHTML">
+                        {% include "analytics/overview/partials/_prometheus_status_loading.html" %}
+                    </div>
+                    <div class="grid gap-3 sm:grid-cols-2">
+                        <label class="block">
+                            <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Cluster</span>
+                            <select name="cluster_id"
+                                    class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-800 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
+                                {% for cluster in payload.clusters %}
+                                    <option value="{{ cluster.id }}"
+                                            {% if cluster.id|string == payload.selected_cluster_id|string %}selected{% endif %}>{{ cluster.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label class="block">
+                            <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Time Range</span>
+                            <select name="time_range"
+                                    class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-800 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
+                                <option value="1h"
+                                        {% if payload.selected_time_range == "1h" %}selected{% endif %}>Last 1 Hour</option>
+                                <option value="6h"
+                                        {% if payload.selected_time_range == "6h" %}selected{% endif %}>Last 6 Hours</option>
+                                <option value="12h"
+                                        {% if payload.selected_time_range == "12h" %}selected{% endif %}>Last 12 Hours</option>
+                                <option value="24h"
+                                        {% if payload.selected_time_range == "24h" %}selected{% endif %}>Last 24 Hours</option>
+                                <option value="7d"
+                                        {% if payload.selected_time_range == "7d" %}selected{% endif %}>Last 7 Days</option>
+                                <option value="30d"
+                                        {% if payload.selected_time_range == "30d" %}selected{% endif %}>Last 30 Days</option>
+                                <option value="60d"
+                                        {% if payload.selected_time_range == "60d" %}selected{% endif %}>Last 60 Days</option>
+                            </select>
+                        </label>
+                    </div>
                 </div>
-                <div class="grid gap-3 sm:grid-cols-2">
-                    <label class="block">
-                        <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Cluster</span>
-                        <select name="cluster_id"
-                                class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-800 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
-                            {% for cluster in payload.clusters %}
-                                <option value="{{ cluster.id }}" {% if cluster.id|string == payload.selected_cluster_id|string %}selected{% endif %}>{{ cluster.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </label>
-                    <label class="block">
-                        <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Time Range</span>
-                        <select name="time_range"
-                                class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-800 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
-                            <option value="1h" {% if payload.selected_time_range == "1h" %}selected{% endif %}>Last 1 Hour</option>
-                            <option value="6h" {% if payload.selected_time_range == "6h" %}selected{% endif %}>Last 6 Hours</option>
-                            <option value="12h" {% if payload.selected_time_range == "12h" %}selected{% endif %}>Last 12 Hours</option>
-                            <option value="24h" {% if payload.selected_time_range == "24h" %}selected{% endif %}>Last 24 Hours</option>
-                            <option value="7d" {% if payload.selected_time_range == "7d" %}selected{% endif %}>Last 7 Days</option>
-                            <option value="30d" {% if payload.selected_time_range == "30d" %}selected{% endif %}>Last 30 Days</option>
-                            <option value="60d" {% if payload.selected_time_range == "60d" %}selected{% endif %}>Last 60 Days</option>
-                        </select>
-                    </label>
+                <div id="analytics-overview-refresh-indicator"
+                     class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-blue-100 dark:bg-blue-950/60">
+                    <div class="h-full w-1/3 animate-pulse rounded-full bg-blue-600 dark:bg-blue-400"></div>
                 </div>
             </div>
-
-            <div id="analytics-overview-refresh-indicator"
-                 class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-blue-100 dark:bg-blue-950/60">
-                <div class="h-full w-1/3 animate-pulse rounded-full bg-blue-600 dark:bg-blue-400"></div>
-            </div>
-        </div>
-    </form>
+        </form>
     {% endif %}
 </div>

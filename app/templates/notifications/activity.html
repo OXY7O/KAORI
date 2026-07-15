@@ -4,10 +4,10 @@
 {% block dashboard_content %}
     <div class="space-y-6">
         <section class="relative min-h-[13.25rem] overflow-hidden rounded-3xl bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 px-6 py-6 text-white shadow-lg shadow-blue-500/20 sm:px-7 sm:py-7">
-            <div class="absolute inset-y-0 right-0 hidden w-1/3 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.22),transparent_55%)] lg:block"></div>
+            <div class="absolute inset-y-0 right-0 hidden w-1/3 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.22),transparent_55%)] lg:block">
+            </div>
             <div class="absolute -top-16 right-10 h-40 w-40 rounded-full bg-white/10 blur-3xl"></div>
             <div class="absolute -bottom-20 right-32 h-48 w-48 rounded-full bg-cyan-300/20 blur-3xl"></div>
-
             <div class="relative flex min-h-[10rem] flex-col gap-6 xl:flex-row xl:items-stretch xl:justify-between">
                 <div class="flex min-w-0 flex-1 flex-col justify-between gap-4 xl:pr-8">
                     <div class="flex items-start gap-4">
@@ -25,7 +25,6 @@
                             </p>
                         </div>
                     </div>
-
                     <div class="flex min-h-10 flex-wrap items-center gap-3 sm:ml-[4.5rem] xl:max-w-4xl">
                         <div class="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-medium">
                             <i data-lucide="list-checks" class="h-4 w-4"></i>
@@ -41,7 +40,6 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="flex w-full flex-col gap-3 sm:max-w-[360px] xl:w-[360px] xl:flex-shrink-0">
                     <div class="flex min-h-[7rem] flex-col justify-center rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
                         <p class="text-xs font-medium uppercase tracking-[0.2em] text-blue-50/80">Review posture</p>
@@ -64,13 +62,9 @@
                 </div>
             </div>
         </section>
-
         {% include "notifications/partials/_activity_retention.html" %}
-
         {% include "notifications/partials/_activity_summary_cards.html" %}
-
         {% include "notifications/partials/_activity_table_card.html" %}
-
         <div class="rounded-2xl border border-slate-200 bg-white px-5 py-4 text-xs leading-5 text-slate-500 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
             Operational Activity is an administrative audit workspace. Personal notifications remain available from the topbar, while login events and security-sensitive administration remain in their dedicated audit views.
         </div>

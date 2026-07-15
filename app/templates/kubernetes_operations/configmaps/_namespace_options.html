@@ -1,6 +1,16 @@
-<label class="block text-sm font-medium text-slate-700 dark:text-slate-200" for="namespace">Namespace</label>
-<select id="namespace" name="namespace" required class="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-  <option value="">Select namespace</option>
-  {% for namespace in namespaces %}<option value="{{ namespace }}" {{ 'selected' if namespace == selected_namespace else '' }}>{{ namespace }}</option>{% endfor %}
+<label class="block text-sm font-medium text-slate-700 dark:text-slate-200"
+       for="namespace">Namespace</label>
+<select id="namespace"
+        name="namespace"
+        required
+        class="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+    <option value="">Select namespace</option>
+    {% for namespace in namespaces %}
+        <option value="{{ namespace }}"
+                {{ 'selected' if namespace == selected_namespace else '' }}>{{ namespace }}
+        </option>
+    {% endfor %}
 </select>
-{% if not namespaces %}<p class="mt-2 text-xs text-amber-600 dark:text-amber-300">No live namespace is available, or KAORI could not read namespaces from this cluster.</p>{% endif %}
+{% if not namespaces %}
+    <p class="mt-2 text-xs text-amber-600 dark:text-amber-300">No live namespace is available, or KAORI could not read namespaces from this cluster.</p>
+{% endif %}

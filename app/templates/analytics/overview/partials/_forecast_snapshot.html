@@ -12,7 +12,6 @@
             <i data-lucide="arrow-right" class="h-4 w-4"></i>
         </a>
     </div>
-
     <div class="flex flex-1 flex-col justify-between space-y-5">
         <div class="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200 dark:bg-slate-950/60 dark:ring-slate-700">
             {% if payload.forecast_snapshot.series %}
@@ -87,7 +86,6 @@
                     </div>
                 </div>
             {% endif %}
-
             <div class="mt-4 rounded-xl border {% if payload.forecast_snapshot.risk_count > 0 %}border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/40 {% else %}border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/40{% endif %} px-4 py-3">
                 <div class="flex items-start gap-2">
                     <i data-lucide="{% if payload.forecast_snapshot.risk_count > 0 %}triangle-alert{% else %}check-circle{% endif %}"
@@ -98,7 +96,6 @@
                 </div>
             </div>
         </div>
-
         <div class="rounded-2xl border border-slate-200 p-4 dark:border-slate-700">
             <div class="mb-4">
                 <h3 class="text-sm font-bold text-slate-900 dark:text-white">Trend Summary</h3>
@@ -106,11 +103,11 @@
             </div>
             <div class="space-y-3">
                 {% set trends = [
-                    {"label": "CPU Trend", "value": payload.forecast_snapshot.cpu_trend, "icon": "cpu"},
-                    {"label": "Memory Trend", "value": payload.forecast_snapshot.memory_trend, "icon": "memory-stick"},
-                    {"label": "Storage Trend", "value": payload.forecast_snapshot.storage_trend, "icon": "database"},
-                    {"label": "Pod Trend", "value": payload.forecast_snapshot.pod_trend, "icon": "boxes"}
-                ] %}
+                                    {"label": "CPU Trend", "value": payload.forecast_snapshot.cpu_trend, "icon": "cpu"},
+                                    {"label": "Memory Trend", "value": payload.forecast_snapshot.memory_trend, "icon": "memory-stick"},
+                                    {"label": "Storage Trend", "value": payload.forecast_snapshot.storage_trend, "icon": "database"},
+                                    {"label": "Pod Trend", "value": payload.forecast_snapshot.pod_trend, "icon": "boxes"}
+                                ] %}
                 {% for trend in trends %}
                     <div class="flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2 dark:border-slate-700">
                         <span class="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">

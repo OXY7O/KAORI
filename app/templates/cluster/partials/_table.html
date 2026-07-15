@@ -202,14 +202,14 @@
                             <div class="text-xs text-slate-500 dark:text-slate-400">
                                 <div class="font-medium text-slate-700 dark:text-slate-300">
                                     {% if cluster.last_check %}
-                                        Checked {{ cluster.last_check|user_datetime('%Y-%m-%d %H:%M %Z') }}
+                                        Checked {{ cluster.last_check|user_datetime("%Y-%m-%d %H:%M %Z") }}
                                     {% else %}
                                         Check pending
                                     {% endif %}
                                 </div>
                                 <div class="mt-1">
                                     {% if inventory.synced_at %}
-                                        Synced {{ inventory.synced_at|user_datetime('%Y-%m-%d %H:%M %Z') }}
+                                        Synced {{ inventory.synced_at|user_datetime("%Y-%m-%d %H:%M %Z") }}
                                     {% else %}
                                         Inventory pending
                                     {% endif %}
@@ -239,7 +239,8 @@
                                                 title="Test Cluster Connection"
                                                 hx-disabled-elt="this"
                                                 class="group inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600 disabled:cursor-wait disabled:opacity-70 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-blue-500 dark:hover:bg-blue-950/40 dark:hover:text-blue-300">
-                                            <i data-lucide="plug-zap" class="h-4 w-4 group-[.htmx-request]:animate-spin"></i>
+                                            <i data-lucide="plug-zap"
+                                               class="h-4 w-4 group-[.htmx-request]:animate-spin"></i>
                                         </button>
                                     </form>
                                     <form method="POST"
@@ -252,7 +253,8 @@
                                                 title="Sync Inventory"
                                                 hx-disabled-elt="this"
                                                 class="group inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-emerald-600 transition hover:border-emerald-300 hover:bg-emerald-50 disabled:cursor-wait disabled:opacity-70 dark:border-slate-700 dark:bg-slate-900 dark:text-emerald-300 dark:hover:border-emerald-500 dark:hover:bg-emerald-950/40">
-                                            <i data-lucide="refresh-cw" class="h-4 w-4 group-[.htmx-request]:animate-spin"></i>
+                                            <i data-lucide="refresh-cw"
+                                               class="h-4 w-4 group-[.htmx-request]:animate-spin"></i>
                                         </button>
                                     </form>
                                 {% endif %}

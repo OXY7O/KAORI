@@ -14,7 +14,6 @@
             </div>
         </div>
     </div>
-
     <div class="px-5 py-4 sm:px-6">
         <div class="grid gap-3 lg:grid-cols-2 xl:grid-cols-[minmax(170px,1fr)_minmax(130px,.7fr)_minmax(130px,.7fr)_minmax(130px,.7fr)_minmax(180px,1fr)_minmax(240px,1.2fr)] xl:items-end">
             <label class="block min-w-0">
@@ -25,54 +24,55 @@
                         hx-on::config-request="event.detail.parameters.namespace = ''; event.detail.parameters.search = ''; event.detail.parameters.page = '1';"
                         class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 pr-9 text-sm font-semibold text-slate-800 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
                     {% for cluster in clusters %}
-                        <option value="{{ cluster.id }}" {% if selected_cluster_id == cluster.id %}selected{% endif %}>
+                        <option value="{{ cluster.id }}"
+                                {% if selected_cluster_id == cluster.id %}selected{% endif %}>
                             {{ cluster.name }}
                         </option>
                     {% endfor %}
                 </select>
             </label>
-
             <label class="block min-w-0">
                 <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Source</span>
                 <select name="source"
                         class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 pr-9 text-sm font-semibold text-slate-800 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
                     <option value="auto" {% if selected_source == 'auto' %}selected{% endif %}>Auto</option>
-                    <option value="alertmanager" {% if selected_source == 'alertmanager' %}selected{% endif %}>Alertmanager</option>
-                    <option value="prometheus" {% if selected_source == 'prometheus' %}selected{% endif %}>Prometheus</option>
+                    <option value="alertmanager"
+                            {% if selected_source == 'alertmanager' %}selected{% endif %}>Alertmanager</option>
+                    <option value="prometheus"
+                            {% if selected_source == 'prometheus' %}selected{% endif %}>Prometheus</option>
                 </select>
             </label>
-
             <label class="block min-w-0">
                 <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Severity</span>
                 <select name="severity"
                         class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 pr-9 text-sm font-semibold text-slate-800 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
                     {% for option in severity_options %}
-                        <option value="{{ option }}" {% if selected_severity == option %}selected{% endif %}>{{ option | title }}</option>
+                        <option value="{{ option }}"
+                                {% if selected_severity == option %}selected{% endif %}>{{ option | title }}</option>
                     {% endfor %}
                 </select>
             </label>
-
             <label class="block min-w-0">
                 <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Status</span>
                 <select name="status"
                         class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 pr-9 text-sm font-semibold text-slate-800 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
                     {% for option in status_options %}
-                        <option value="{{ option }}" {% if selected_status == option %}selected{% endif %}>{{ option | title }}</option>
+                        <option value="{{ option }}"
+                                {% if selected_status == option %}selected{% endif %}>{{ option | title }}</option>
                     {% endfor %}
                 </select>
             </label>
-
             <label class="block min-w-0">
                 <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Namespace</span>
                 <select name="namespace"
                         class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 pr-9 text-sm font-semibold text-slate-800 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
                     <option value="" {% if not selected_namespace %}selected{% endif %}>All Namespaces</option>
                     {% for namespace in namespace_options %}
-                        <option value="{{ namespace }}" {% if selected_namespace == namespace %}selected{% endif %}>{{ namespace }}</option>
+                        <option value="{{ namespace }}"
+                                {% if selected_namespace == namespace %}selected{% endif %}>{{ namespace }}</option>
                     {% endfor %}
                 </select>
             </label>
-
             <label class="relative block min-w-0">
                 <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Search</span>
                 <i data-lucide="search"
@@ -84,8 +84,8 @@
                        class="mt-1 w-full min-w-0 rounded-xl border border-slate-300 bg-white py-2 pl-10 pr-3 text-sm font-semibold text-slate-800 shadow-sm outline-none transition placeholder:font-normal placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
             </label>
         </div>
-
-        <div id="alerts-refresh-indicator" class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-blue-100 dark:bg-blue-950/60">
+        <div id="alerts-refresh-indicator"
+             class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-blue-100 dark:bg-blue-950/60">
             <div class="h-full w-1/3 animate-pulse rounded-full bg-blue-600 dark:bg-blue-400"></div>
         </div>
     </div>

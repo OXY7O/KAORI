@@ -1,18 +1,14 @@
 {% macro context_label(item) -%}
-    <span class="inline-flex max-w-full items-center gap-1 rounded-full px-2 py-1 text-[9px] font-bold leading-none ring-1 ring-inset
-        {% if item.tone == 'emerald' %}bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-900/40
-        {% elif item.tone == 'amber' %}bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-900/40
-        {% elif item.tone == 'indigo' %}bg-indigo-50 text-indigo-700 ring-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-300 dark:ring-indigo-900/40
-        {% else %}bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20{% endif %}">
+    <span class="inline-flex max-w-full items-center gap-1 rounded-full px-2 py-1 text-[9px] font-bold leading-none ring-1 ring-inset {% if item.tone == 'emerald' %}bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-900/40 {% elif item.tone == 'amber' %}bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-900/40 {% elif item.tone == 'indigo' %}bg-indigo-50 text-indigo-700 ring-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-300 dark:ring-indigo-900/40 {% else %}bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20{% endif %}">
         <span class="font-semibold">{{ item.label }}:</span>
         <span class="truncate">{{ item.value }}</span>
     </span>
 {%- endmacro %}
-
 {% if items %}
     <div class="min-w-0 overflow-hidden">
         <div class="min-w-0">
-            <div style="grid-template-columns: minmax(6.75rem,0.72fr) minmax(12rem,1.12fr) minmax(16rem,1.85fr) minmax(6.5rem,0.62fr) minmax(6.5rem,0.62fr) 6.25rem;" class="grid min-w-0 items-center gap-3 border-b border-slate-200 bg-slate-50 px-5 py-3 text-left text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-400">
+            <div style="grid-template-columns: minmax(6.75rem,0.72fr) minmax(12rem,1.12fr) minmax(16rem,1.85fr) minmax(6.5rem,0.62fr) minmax(6.5rem,0.62fr) 6.25rem"
+                 class="grid min-w-0 items-center gap-3 border-b border-slate-200 bg-slate-50 px-5 py-3 text-left text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-400">
                 <div>Time</div>
                 <div>Actor</div>
                 <div>Activity</div>
@@ -20,37 +16,32 @@
                 <div>Result</div>
                 <div>Details</div>
             </div>
-
             <div class="divide-y divide-slate-200 dark:divide-slate-700">
                 {% for item in items %}
                     {% set is_success = item.status == 'success' %}
                     {% set is_warning = item.status == 'warning' %}
                     {% set is_error = item.status == 'error' %}
                     <details class="group relative bg-white dark:bg-slate-800">
-                        <summary style="grid-template-columns: minmax(6.75rem,0.72fr) minmax(12rem,1.12fr) minmax(16rem,1.85fr) minmax(6.5rem,0.62fr) minmax(6.5rem,0.62fr) 6.25rem;" class="grid min-w-0 cursor-pointer list-none items-center gap-3 px-5 py-4 text-left transition hover:bg-slate-50/80 focus:outline-none group-open:bg-blue-50/70 dark:hover:bg-slate-900 dark:group-open:bg-blue-950/30">
+                        <summary style="grid-template-columns: minmax(6.75rem,0.72fr) minmax(12rem,1.12fr) minmax(16rem,1.85fr) minmax(6.5rem,0.62fr) minmax(6.5rem,0.62fr) 6.25rem"
+                                 class="grid min-w-0 cursor-pointer list-none items-center gap-3 px-5 py-4 text-left transition hover:bg-slate-50/80 focus:outline-none group-open:bg-blue-50/70 dark:hover:bg-slate-900 dark:group-open:bg-blue-950/30">
                             <div class="relative min-w-0 pl-4">
                                 <span class="absolute left-0 top-2 h-2 w-2 rounded-full {% if item.is_read %}bg-slate-300 dark:bg-slate-600{% else %}bg-blue-500 ring-2 ring-blue-100 dark:ring-blue-900/60{% endif %}"></span>
                                 <p class="whitespace-nowrap text-[11px] font-bold text-slate-800 dark:text-slate-100">
-                                    {{ item.created_at|user_datetime('%d %b %Y') }}
+                                    {{ item.created_at|user_datetime("%d %b %Y") }}
                                 </p>
                                 <p class="mt-1 whitespace-nowrap text-[10px] font-semibold text-slate-500 dark:text-slate-400">
-                                    {{ item.created_at|user_datetime('%H:%M:%S %Z') }}
+                                    {{ item.created_at|user_datetime("%H:%M:%S %Z") }}
                                 </p>
                                 <p class="mt-1 text-[10px] text-slate-400 dark:text-slate-500">{{ item.created_label }}</p>
                             </div>
-
                             <div class="flex min-w-0 items-center gap-2.5">
-                                <span class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-extrabold
-                                    {% if item.event_tone == 'rose' %}bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300
-                                    {% elif item.event_tone == 'cyan' %}bg-cyan-100 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300
-                                    {% elif item.event_tone == 'indigo' %}bg-indigo-100 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300
-                                    {% elif item.event_tone == 'blue' %}bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300
-                                    {% else %}bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200{% endif %}">
+                                <span class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-extrabold {% if item.event_tone == 'rose' %}bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300 {% elif item.event_tone == 'cyan' %}bg-cyan-100 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300 {% elif item.event_tone == 'indigo' %}bg-indigo-100 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300 {% elif item.event_tone == 'blue' %}bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300 {% else %}bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200{% endif %}">
                                     {{ item.user_initials }}
                                 </span>
                                 <div class="min-w-0 flex-1">
                                     <div class="flex min-w-0 items-center gap-1.5 whitespace-nowrap">
-                                        <p class="truncate text-[11px] font-bold text-slate-900 dark:text-white" title="{{ item.user_label }}">{{ item.user_label }}</p>
+                                        <p class="truncate text-[11px] font-bold text-slate-900 dark:text-white"
+                                           title="{{ item.user_label }}">{{ item.user_label }}</p>
                                         <span class="flex-shrink-0 rounded-full bg-blue-50 px-1.5 py-0.5 text-[9px] font-bold text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20">{{ item.user_role }}</span>
                                     </div>
                                     <div class="mt-1 flex min-w-0 items-center gap-1.5 whitespace-nowrap text-[9px] text-slate-500 dark:text-slate-400">
@@ -63,65 +54,46 @@
                                     </div>
                                 </div>
                             </div>
-
                             <div class="min-w-0">
                                 <div class="flex items-start gap-2.5">
-                                    <span class="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg
-                                        {% if item.event_tone == 'rose' %}bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-300
-                                        {% elif item.event_tone == 'cyan' %}bg-cyan-50 text-cyan-600 dark:bg-cyan-500/10 dark:text-cyan-300
-                                        {% elif item.event_tone == 'indigo' %}bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-300
-                                        {% elif item.event_tone == 'blue' %}bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300
-                                        {% else %}bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300{% endif %}">
+                                    <span class="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg {% if item.event_tone == 'rose' %}bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-300 {% elif item.event_tone == 'cyan' %}bg-cyan-50 text-cyan-600 dark:bg-cyan-500/10 dark:text-cyan-300 {% elif item.event_tone == 'indigo' %}bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-300 {% elif item.event_tone == 'blue' %}bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300 {% else %}bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300{% endif %}">
                                         <i data-lucide="{{ item.event_icon }}" class="h-3.5 w-3.5"></i>
                                     </span>
                                     <div class="min-w-0">
-                                        <p class="truncate text-[11px] font-extrabold leading-4 text-slate-950 dark:text-white" title="{{ item.title }}">{{ item.title }}</p>
-                                        <p class="mt-1 truncate text-[10px] leading-4 text-slate-500 dark:text-slate-400" title="{{ item.message }}">{{ item.message }}</p>
+                                        <p class="truncate text-[11px] font-extrabold leading-4 text-slate-950 dark:text-white"
+                                           title="{{ item.title }}">{{ item.title }}</p>
+                                        <p class="mt-1 truncate text-[10px] leading-4 text-slate-500 dark:text-slate-400"
+                                           title="{{ item.message }}">{{ item.message }}</p>
                                     </div>
                                 </div>
                             </div>
-
-                            <div class="flex min-w-0 items-center" title="{{ item.target_type }}{% if item.target_name %} · {{ item.target_name }}{% endif %}">
-                                <span class="inline-flex max-w-full items-center rounded-full px-2 py-1 text-[9px] font-bold ring-1 ring-inset
-                                    {% if item.event_tone == 'rose' %}bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-900
-                                    {% elif item.event_tone == 'cyan' %}bg-cyan-50 text-cyan-700 ring-cyan-100 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-900/60
-                                    {% elif item.event_tone == 'indigo' %}bg-indigo-50 text-indigo-700 ring-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-300 dark:ring-indigo-900/40
-                                    {% elif item.event_tone == 'blue' %}bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20
-                                    {% else %}bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:ring-slate-700{% endif %}">
+                            <div class="flex min-w-0 items-center"
+                                 title="{{ item.target_type }}{% if item.target_name %} · {{ item.target_name }}{% endif %}">
+                                <span class="inline-flex max-w-full items-center rounded-full px-2 py-1 text-[9px] font-bold ring-1 ring-inset {% if item.event_tone == 'rose' %}bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-900 {% elif item.event_tone == 'cyan' %}bg-cyan-50 text-cyan-700 ring-cyan-100 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-900/60 {% elif item.event_tone == 'indigo' %}bg-indigo-50 text-indigo-700 ring-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-300 dark:ring-indigo-900/40 {% elif item.event_tone == 'blue' %}bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20 {% else %}bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:ring-slate-700{% endif %}">
                                     <span class="truncate">{{ item.target_type }}</span>
                                 </span>
                             </div>
-
                             <div>
-                                <span class="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[9px] font-bold ring-1 ring-inset
-                                    {% if is_success %}bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-900/40
-                                    {% elif is_warning %}bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-900/40
-                                    {% elif is_error %}bg-red-50 text-red-700 ring-red-200 dark:bg-red-500/10 dark:text-red-300 dark:ring-red-500/20
-                                    {% else %}bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20{% endif %}">
-                                    <i data-lucide="{% if is_success %}check-circle-2{% elif is_warning %}alert-triangle{% elif is_error %}x-circle{% else %}info{% endif %}" class="h-3 w-3"></i>
+                                <span class="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[9px] font-bold ring-1 ring-inset {% if is_success %}bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-900/40 {% elif is_warning %}bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-900/40 {% elif is_error %}bg-red-50 text-red-700 ring-red-200 dark:bg-red-500/10 dark:text-red-300 dark:ring-red-500/20 {% else %}bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20{% endif %}">
+                                    <i data-lucide="{% if is_success %}check-circle-2{% elif is_warning %}alert-triangle{% elif is_error %}x-circle{% else %}info{% endif %}"
+                                       class="h-3 w-3"></i>
                                     {{ item.status_label }}
                                 </span>
                             </div>
-
                             <div class="flex justify-start pr-2">
                                 <span class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[10px] font-bold text-slate-600 shadow-sm transition group-open:border-blue-200 group-open:bg-blue-50 group-open:text-blue-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:group-open:border-blue-900/60 dark:group-open:bg-blue-950/40 dark:group-open:text-blue-300">
                                     <i data-lucide="eye" class="h-3.5 w-3.5"></i>
                                     <span>Details</span>
-                                    <i data-lucide="chevron-down" class="h-3.5 w-3.5 transition group-open:rotate-180"></i>
+                                    <i data-lucide="chevron-down"
+                                       class="h-3.5 w-3.5 transition group-open:rotate-180"></i>
                                 </span>
                             </div>
                         </summary>
-
                         <div class="border-t border-blue-100 bg-gradient-to-br from-slate-50 via-white to-blue-50/70 px-5 py-5 dark:border-blue-900/40 dark:from-slate-900 dark:via-slate-900 dark:to-blue-950/20">
                             <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/80">
                                 <div class="flex flex-col gap-4 border-b border-slate-200 bg-gradient-to-r from-white via-blue-50/40 to-indigo-50/60 px-5 py-4 lg:flex-row lg:items-start lg:justify-between dark:border-slate-700 dark:from-slate-800 dark:via-blue-950/20 dark:to-indigo-950/20">
                                     <div class="flex min-w-0 items-start gap-3">
-                                        <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl shadow-sm
-                                            {% if item.event_tone == 'rose' %}bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300
-                                            {% elif item.event_tone == 'cyan' %}bg-cyan-100 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300
-                                            {% elif item.event_tone == 'indigo' %}bg-indigo-100 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300
-                                            {% elif item.event_tone == 'blue' %}bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300
-                                            {% else %}bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200{% endif %}">
+                                        <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl shadow-sm {% if item.event_tone == 'rose' %}bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300 {% elif item.event_tone == 'cyan' %}bg-cyan-100 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300 {% elif item.event_tone == 'indigo' %}bg-indigo-100 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300 {% elif item.event_tone == 'blue' %}bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300 {% else %}bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200{% endif %}">
                                             <i data-lucide="{{ item.event_icon }}" class="h-5 w-5"></i>
                                         </span>
                                         <div class="min-w-0">
@@ -136,14 +108,10 @@
                                             </div>
                                         </div>
                                     </div>
-
                                     <div class="flex flex-shrink-0 flex-wrap items-center gap-2 lg:max-w-xs lg:justify-end">
-                                        <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[10px] font-extrabold ring-1 ring-inset
-                                            {% if is_success %}bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-900/40
-                                            {% elif is_warning %}bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-900/40
-                                            {% elif is_error %}bg-red-50 text-red-700 ring-red-200 dark:bg-red-500/10 dark:text-red-300 dark:ring-red-500/20
-                                            {% else %}bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20{% endif %}">
-                                            <i data-lucide="{% if is_success %}check-circle-2{% elif is_warning %}alert-triangle{% elif is_error %}x-circle{% else %}info{% endif %}" class="h-3.5 w-3.5"></i>
+                                        <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[10px] font-extrabold ring-1 ring-inset {% if is_success %}bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-900/40 {% elif is_warning %}bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-900/40 {% elif is_error %}bg-red-50 text-red-700 ring-red-200 dark:bg-red-500/10 dark:text-red-300 dark:ring-red-500/20 {% else %}bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20{% endif %}">
+                                            <i data-lucide="{% if is_success %}check-circle-2{% elif is_warning %}alert-triangle{% elif is_error %}x-circle{% else %}info{% endif %}"
+                                               class="h-3.5 w-3.5"></i>
                                             {{ item.status_label }}
                                         </span>
                                         <span class="inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1.5 text-[9px] font-bold text-slate-600 ring-1 ring-inset ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-600">
@@ -152,7 +120,6 @@
                                         </span>
                                     </div>
                                 </div>
-
                                 <div class="grid gap-4 p-4 xl:grid-cols-12">
                                     <section class="flex min-h-[12rem] flex-col rounded-xl border border-blue-100 bg-blue-50/40 p-4 xl:col-span-4 dark:border-blue-900/40 dark:bg-blue-950/15">
                                         <div class="flex items-center gap-2">
@@ -172,12 +139,26 @@
                                             </div>
                                         </div>
                                         <dl class="mt-4 space-y-2.5 text-[10px]">
-                                            <div class="flex items-start justify-between gap-3"><dt class="text-slate-500 dark:text-slate-400">Role</dt><dd class="text-right font-bold text-slate-700 dark:text-slate-200">{{ item.user_role }}</dd></div>
-                                            <div class="flex items-start justify-between gap-3"><dt class="text-slate-500 dark:text-slate-400">Authentication</dt><dd class="text-right font-bold text-slate-700 dark:text-slate-200">{{ item.user_auth_source }}</dd></div>
-                                            <div class="flex items-start justify-between gap-3"><dt class="text-slate-500 dark:text-slate-400">Notification</dt><dd class="text-right font-bold text-slate-700 dark:text-slate-200">{{ item.read_label }}</dd></div>
+                                            <div class="flex items-start justify-between gap-3">
+                                                <dt class="text-slate-500 dark:text-slate-400">Role</dt>
+                                                <dd class="text-right font-bold text-slate-700 dark:text-slate-200">
+                                                    {{ item.user_role }}
+                                                </dd>
+                                            </div>
+                                            <div class="flex items-start justify-between gap-3">
+                                                <dt class="text-slate-500 dark:text-slate-400">Authentication</dt>
+                                                <dd class="text-right font-bold text-slate-700 dark:text-slate-200">
+                                                    {{ item.user_auth_source }}
+                                                </dd>
+                                            </div>
+                                            <div class="flex items-start justify-between gap-3">
+                                                <dt class="text-slate-500 dark:text-slate-400">Notification</dt>
+                                                <dd class="text-right font-bold text-slate-700 dark:text-slate-200">
+                                                    {{ item.read_label }}
+                                                </dd>
+                                            </div>
                                         </dl>
                                     </section>
-
                                     <section class="flex min-h-[12rem] flex-col rounded-xl border border-cyan-100 bg-cyan-50/35 p-4 xl:col-span-4 dark:border-cyan-900/50 dark:bg-cyan-950/10">
                                         <div class="flex items-center gap-2">
                                             <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-100 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300">
@@ -202,13 +183,25 @@
                                         <dl class="mt-4 space-y-2.5 text-[10px]">
                                             <div class="flex min-w-0 items-center justify-between gap-3">
                                                 <dt class="flex-shrink-0 text-slate-500 dark:text-slate-400">Event type</dt>
-                                                <dd class="min-w-0 truncate text-right font-bold text-slate-700 dark:text-slate-200" title="{{ item.event_label }}">{{ item.event_label }}</dd>
+                                                <dd class="min-w-0 truncate text-right font-bold text-slate-700 dark:text-slate-200"
+                                                    title="{{ item.event_label }}">
+                                                    {{ item.event_label }}
+                                                </dd>
                                             </div>
-                                            <div class="flex items-start justify-between gap-3"><dt class="text-slate-500 dark:text-slate-400">Recorded</dt><dd class="text-right font-bold text-slate-700 dark:text-slate-200">{{ item.created_at|user_datetime('%d %b %Y %H:%M:%S %Z') }}</dd></div>
-                                            <div class="flex items-start justify-between gap-3"><dt class="text-slate-500 dark:text-slate-400">Relative time</dt><dd class="text-right font-bold text-slate-700 dark:text-slate-200">{{ item.created_label }}</dd></div>
+                                            <div class="flex items-start justify-between gap-3">
+                                                <dt class="text-slate-500 dark:text-slate-400">Recorded</dt>
+                                                <dd class="text-right font-bold text-slate-700 dark:text-slate-200">
+                                                    {{ item.created_at|user_datetime("%d %b %Y %H:%M:%S %Z") }}
+                                                </dd>
+                                            </div>
+                                            <div class="flex items-start justify-between gap-3">
+                                                <dt class="text-slate-500 dark:text-slate-400">Relative time</dt>
+                                                <dd class="text-right font-bold text-slate-700 dark:text-slate-200">
+                                                    {{ item.created_label }}
+                                                </dd>
+                                            </div>
                                         </dl>
                                     </section>
-
                                     <section class="flex min-h-[12rem] flex-col rounded-xl border border-amber-100 bg-amber-50/35 p-4 xl:col-span-4 dark:border-amber-900/40 dark:bg-amber-950/10">
                                         <div class="flex items-center gap-2">
                                             <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
@@ -222,7 +215,9 @@
                                         <dl class="mt-4 space-y-3 text-[10px]">
                                             <div>
                                                 <dt class="text-slate-500 dark:text-slate-400">Target</dt>
-                                                <dd class="mt-1 break-words font-extrabold text-slate-800 dark:text-slate-100">{{ item.target_type }} · {{ item.target_name }}</dd>
+                                                <dd class="mt-1 break-words font-extrabold text-slate-800 dark:text-slate-100">
+                                                    {{ item.target_type }} · {{ item.target_name }}
+                                                </dd>
                                             </div>
                                             <div>
                                                 <dt class="text-slate-500 dark:text-slate-400">Context</dt>
@@ -234,7 +229,8 @@
                                             </div>
                                         </dl>
                                         {% if item.action_url %}
-                                            <a href="{{ item.action_url }}" class="mt-auto inline-flex items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-[10px] font-bold text-white shadow-sm transition hover:bg-blue-700">
+                                            <a href="{{ item.action_url }}"
+                                               class="mt-auto inline-flex items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-[10px] font-bold text-white shadow-sm transition hover:bg-blue-700">
                                                 Open related workspace
                                                 <i data-lucide="arrow-up-right" class="h-3.5 w-3.5"></i>
                                             </a>
@@ -245,7 +241,6 @@
                                         {% endif %}
                                     </section>
                                 </div>
-
                                 {% if item.changed_fields %}
                                     <section class="border-t border-slate-200 px-4 py-4 dark:border-slate-700">
                                         <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -264,7 +259,8 @@
                                             {% for field in item.changed_fields %}
                                                 <div class="rounded-xl border border-violet-100 bg-violet-50/35 p-3 dark:border-violet-900/40 dark:bg-violet-950/10">
                                                     <p class="text-[9px] font-extrabold uppercase tracking-wide text-violet-600 dark:text-violet-300">{{ field.label }}</p>
-                                                    <div class="mt-2 grid items-center gap-2 text-[10px]" style="grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);">
+                                                    <div class="mt-2 grid items-center gap-2 text-[10px]"
+                                                         style="grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr)">
                                                         <span class="break-words rounded-lg bg-white px-2.5 py-2 font-semibold text-slate-500 ring-1 ring-inset ring-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:ring-slate-700">{{ field.before }}</span>
                                                         <i data-lucide="arrow-right" class="h-3.5 w-3.5 text-violet-500"></i>
                                                         <span class="break-words rounded-lg bg-white px-2.5 py-2 font-extrabold text-slate-800 ring-1 ring-inset ring-violet-200 dark:bg-slate-800 dark:text-slate-100 dark:ring-violet-900/50">{{ field.after }}</span>
@@ -274,7 +270,6 @@
                                         </div>
                                     </section>
                                 {% endif %}
-
                                 <section class="border-t border-slate-200 px-4 py-4 dark:border-slate-700">
                                     <div class="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
                                         <div class="flex flex-col gap-2 border-b border-slate-200 bg-slate-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:bg-slate-900/40">
@@ -294,7 +289,10 @@
                                                 {% for metadata in item.metadata_items %}
                                                     <div class="flex min-w-0 items-start justify-between gap-3 px-4 py-3 sm:border-b sm:border-r sm:border-slate-100 dark:sm:border-slate-700">
                                                         <dt class="flex-shrink-0 text-[9px] font-semibold text-slate-500 dark:text-slate-400">{{ metadata.label }}</dt>
-                                                        <dd class="min-w-0 text-right text-[10px] font-bold leading-4 {% if metadata.tone == 'rose' %}text-rose-700 dark:text-rose-300{% else %}text-slate-800 dark:text-slate-100{% endif %} {% if metadata.is_identifier %}truncate font-mono{% else %}break-words{% endif %}" title="{{ metadata.value }}">{{ metadata.value }}</dd>
+                                                        <dd class="min-w-0 text-right text-[10px] font-bold leading-4 {% if metadata.tone == 'rose' %}text-rose-700 dark:text-rose-300{% else %}text-slate-800 dark:text-slate-100{% endif %} {% if metadata.is_identifier %}truncate font-mono{% else %}break-words{% endif %}"
+                                                            title="{{ metadata.value }}">
+                                                            {{ metadata.value }}
+                                                        </dd>
                                                     </div>
                                                 {% endfor %}
                                             </dl>
@@ -305,7 +303,6 @@
                                         {% endif %}
                                     </div>
                                 </section>
-
                                 <div class="flex items-start gap-2 border-t border-blue-100 bg-blue-50/70 px-4 py-3 text-[10px] leading-5 text-blue-700 dark:border-blue-900/40 dark:bg-blue-950/20 dark:text-blue-300">
                                     <i data-lucide="info" class="mt-0.5 h-3.5 w-3.5 flex-shrink-0"></i>
                                     <span>This detail shows only the operational context captured when the activity was recorded. Values that were not stored are not reconstructed.</span>
@@ -318,13 +315,12 @@
         </div>
     </div>
 {% else %}
-    {% set empty_state_icon = 'history' %}
-    {% set empty_state_title = 'No operational activity found' %}
-    {% set empty_state_description = 'Cross-user background actions and operational events will appear here. Adjust the active filters if activity already exists.' %}
-    {% set empty_state_min_height = 'min-h-[260px]' %}
+    {% set empty_state_icon = "history" %}
+    {% set empty_state_title = "No operational activity found" %}
+    {% set empty_state_description = "Cross-user background actions and operational events will appear here. Adjust the active filters if activity already exists." %}
+    {% set empty_state_min_height = "min-h-[260px]" %}
     {% include "components/states/_empty_state.html" %}
 {% endif %}
-
 <div class="flex flex-col gap-4 border-t border-slate-200 bg-slate-50 px-6 py-4 text-sm text-slate-500 lg:flex-row lg:items-center lg:justify-between dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
         <div>
@@ -353,12 +349,12 @@
                     onchange="this.form.requestSubmit()"
                     class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
                 {% for option in pagination.allowed_per_page %}
-                    <option value="{{ option }}" {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
+                    <option value="{{ option }}"
+                            {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
                 {% endfor %}
             </select>
         </form>
     </div>
-
     <div class="flex flex-wrap items-center gap-2">
         {% set prev_url = url_for('notifications.activity_log', page=pagination.prev_page, per_page=pagination.per_page, user_id=filters.user_id, status=filters.status, event_type=filters.event_type, read_state=filters.read_state, search=filters.search) %}
         {% if pagination.has_prev %}
@@ -378,11 +374,9 @@
                 Previous
             </span>
         {% endif %}
-
         <span class="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
             Page {{ pagination.page }} / {{ pagination.total_pages }}
         </span>
-
         {% set next_url = url_for('notifications.activity_log', page=pagination.next_page, per_page=pagination.per_page, user_id=filters.user_id, status=filters.status, event_type=filters.event_type, read_state=filters.read_state, search=filters.search) %}
         {% if pagination.has_next %}
             <a href="{{ next_url }}"

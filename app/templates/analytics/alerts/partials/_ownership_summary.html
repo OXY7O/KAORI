@@ -3,7 +3,8 @@
         <summary class="flex cursor-pointer list-none flex-col gap-4 px-6 py-5 lg:flex-row lg:items-start lg:justify-between">
             <div class="flex items-start gap-3">
                 <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl {{ ownership_summary.class }}">
-                    <i data-lucide="{{ ownership_summary.icon|default('users') }}" class="h-5 w-5"></i>
+                    <i data-lucide="{{ ownership_summary.icon|default('users') }}"
+                       class="h-5 w-5"></i>
                 </div>
                 <div>
                     <div class="flex flex-wrap items-center gap-2">
@@ -20,7 +21,8 @@
                     Score {{ ownership_summary.score }}/100
                 </span>
                 <span class="inline-flex w-fit items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700 transition group-open:bg-blue-50 group-open:text-blue-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:group-open:bg-blue-950/50 dark:group-open:text-blue-300">
-                    <i data-lucide="chevron-down" class="h-4 w-4 transition group-open:rotate-180"></i>
+                    <i data-lucide="chevron-down"
+                       class="h-4 w-4 transition group-open:rotate-180"></i>
                     Details
                 </span>
             </div>
@@ -41,11 +43,11 @@
             </div>
             <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 {% set cards = [
-                    ('Owners', ownership_summary.owner_count, ownership_summary.missing_owner_count ~ ' missing'),
-                    ('Runbooks', ownership_summary.runbook_count, ownership_summary.missing_runbook_count ~ ' missing'),
-                    ('Contacts', ownership_summary.contact_count, ownership_summary.missing_contact_count ~ ' missing'),
-                    ('Alert Coverage', ownership_summary.alert_count, ownership_summary.source|title ~ ' source')
-                ] %}
+                                    ('Owners', ownership_summary.owner_count, ownership_summary.missing_owner_count ~ ' missing'),
+                                    ('Runbooks', ownership_summary.runbook_count, ownership_summary.missing_runbook_count ~ ' missing'),
+                                    ('Contacts', ownership_summary.contact_count, ownership_summary.missing_contact_count ~ ' missing'),
+                                    ('Alert Coverage', ownership_summary.alert_count, ownership_summary.source|title ~ ' source')
+                                ] %}
                 {% for label, value, desc in cards %}
                     <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/40">
                         <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ label }}</p>
@@ -68,7 +70,8 @@
                                     <span class="font-semibold text-slate-950 dark:text-white">{{ owner.count }}</span>
                                 </div>
                                 <div class="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                                    <div class="h-full rounded-full bg-blue-500" style="width: {{ owner.percent }}%"></div>
+                                    <div class="h-full rounded-full bg-blue-500"
+                                         style="width: {{ owner.percent }}%"></div>
                                 </div>
                             </div>
                         {% else %}
@@ -83,7 +86,9 @@
                     </div>
                     <div class="mt-4 space-y-3">
                         {% for item in ownership_summary.runbook_items %}
-                            <a href="{{ item.url }}" target="_blank" rel="noopener noreferrer"
+                            <a href="{{ item.url }}"
+                               target="_blank"
+                               rel="noopener noreferrer"
                                class="block rounded-xl bg-slate-50 p-3 text-sm transition hover:bg-slate-100 dark:bg-slate-800/60 dark:hover:bg-slate-800">
                                 <div class="font-semibold text-slate-900 dark:text-white">{{ item.name }}</div>
                                 <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ item.namespace }} · {{ item.owner }}</div>

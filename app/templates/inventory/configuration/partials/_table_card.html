@@ -1,4 +1,5 @@
-<div id="configuration-inventory-card" class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+<div id="configuration-inventory-card"
+     class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
     <div class="border-b border-slate-200 px-6 py-5 dark:border-slate-700">
         <div class="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
             <div class="flex items-center gap-3">
@@ -16,34 +17,31 @@
                 Open Cluster List
             </a>
         </div>
-
-        <div id="configuration-table-loading" class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-blue-100 dark:bg-blue-950/60">
+        <div id="configuration-table-loading"
+             class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-blue-100 dark:bg-blue-950/60">
             <div class="h-full w-1/3 animate-pulse rounded-full bg-blue-600 dark:bg-blue-400"></div>
         </div>
     </div>
-
     <div class="border-b border-slate-200 px-6 py-4 dark:border-slate-700">
-        <form
-            hx-get="{{ url_for('inventory.configuration') }}"
-            hx-target="#configuration-inventory-card"
-            hx-swap="outerHTML"
-            hx-trigger="change from:select, keyup changed delay:500ms from:input[name='search']"
-            hx-indicator="#configuration-table-loading"
-            class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)_minmax(0,0.85fr)_minmax(16rem,1.4fr)] lg:items-end">
+        <form hx-get="{{ url_for('inventory.configuration') }}"
+              hx-target="#configuration-inventory-card"
+              hx-swap="outerHTML"
+              hx-trigger="change from:select, keyup changed delay:500ms from:input[name='search']"
+              hx-indicator="#configuration-table-loading"
+              class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)_minmax(0,0.85fr)_minmax(16rem,1.4fr)] lg:items-end">
             <input type="hidden" name="page" value="1">
             <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
-
             <div>
                 <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Cluster</label>
                 <select name="cluster_id"
                         class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
                     <option value="">All Clusters</option>
                     {% for cluster in clusters %}
-                        <option value="{{ cluster.id }}" {% if selected_cluster_id == cluster.id|string or selected_cluster_id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>
+                        <option value="{{ cluster.id }}"
+                                {% if selected_cluster_id == cluster.id|string or selected_cluster_id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>
                     {% endfor %}
                 </select>
             </div>
-
             <div>
                 <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Namespace</label>
                 <select name="namespace"
@@ -54,22 +52,22 @@
                     {% endfor %}
                 </select>
             </div>
-
             <div>
                 <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Type</label>
                 <select name="type"
                         class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
                     <option value="">All Types</option>
                     {% for type_name in inventory.types %}
-                        <option value="{{ type_name }}" {% if selected_type == type_name %}selected{% endif %}>{{ type_name }}</option>
+                        <option value="{{ type_name }}"
+                                {% if selected_type == type_name %}selected{% endif %}>{{ type_name }}</option>
                     {% endfor %}
                 </select>
             </div>
-
             <div>
                 <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Search Object</label>
                 <div class="relative">
-                    <i data-lucide="search" class="absolute top-3 left-3 h-4 w-4 text-slate-400 dark:text-slate-500"></i>
+                    <i data-lucide="search"
+                       class="absolute top-3 left-3 h-4 w-4 text-slate-400 dark:text-slate-500"></i>
                     <input type="text"
                            name="search"
                            value="{{ search }}"
@@ -79,8 +77,5 @@
             </div>
         </form>
     </div>
-
-    <div id="configuration-table-content">
-        {% include "inventory/configuration/partials/_table_content.html" %}
-    </div>
+    <div id="configuration-table-content">{% include "inventory/configuration/partials/_table_content.html" %}</div>
 </div>

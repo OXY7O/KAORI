@@ -7,14 +7,15 @@
                 <th class="px-5 py-4 text-left">Object</th>
                 <th class="px-5 py-4 text-left">Type</th>
                 <th class="px-5 py-4 text-left">Keys</th>
-                <th class="px-5 py-4 text-left">Details</th>
+                <th class="px-5 py-4 text-right">Details</th>
             </tr>
         </thead>
         <tbody>
             {% for item in inventory['items'] %}
                 <tr class="border-t border-slate-200 text-sm transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-700/30">
                     <td class="px-5 py-4 align-middle">
-                        <span class="inline-flex max-w-[220px] items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/25" title="{{ item.cluster_name }}">
+                        <span class="inline-flex max-w-[220px] items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/25"
+                              title="{{ item.cluster_name }}">
                             <i data-lucide="building-2" class="h-3.5 w-3.5 shrink-0"></i>
                             <span class="truncate">{{ item.cluster_name }}</span>
                         </span>
@@ -24,16 +25,19 @@
                             <span class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300">
                                 <i data-lucide="folder-tree" class="h-3.5 w-3.5"></i>
                             </span>
-                            <span class="truncate font-semibold text-slate-800 dark:text-slate-100" title="{{ item.namespace }}">{{ item.namespace }}</span>
+                            <span class="truncate font-semibold text-slate-800 dark:text-slate-100"
+                                  title="{{ item.namespace }}">{{ item.namespace }}</span>
                         </div>
                     </td>
                     <td class="max-w-[320px] px-5 py-4 align-middle">
                         <div class="flex items-center gap-2">
                             <span class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-xl {{ 'bg-violet-100 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300' if item.type == 'Secret' else 'bg-cyan-100 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300' }}">
-                                <i data-lucide="{{ 'key-round' if item.type == 'Secret' else 'file-json-2' }}" class="h-3.5 w-3.5"></i>
+                                <i data-lucide="{{ 'key-round' if item.type == 'Secret' else 'file-json-2' }}"
+                                   class="h-3.5 w-3.5"></i>
                             </span>
                             <div class="min-w-0">
-                                <div class="truncate font-semibold text-slate-800 dark:text-slate-100" title="{{ item.name }}">{{ item.name }}</div>
+                                <div class="truncate font-semibold text-slate-800 dark:text-slate-100"
+                                     title="{{ item.name }}">{{ item.name }}</div>
                             </div>
                         </div>
                     </td>
@@ -41,7 +45,7 @@
                         <span class="inline-flex rounded-full px-3 py-1 text-xs font-medium ring-1 ring-inset {{ 'bg-violet-50 text-violet-700 ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-500/25' if item.type == 'Secret' else 'bg-cyan-50 text-cyan-700 ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-500/25' }}">{{ item.type }}</span>
                     </td>
                     <td class="px-5 py-4 align-middle font-semibold text-slate-700 dark:text-slate-200">{{ item.key_count }}</td>
-                    <td class="px-5 py-4 align-middle">
+                    <td class="px-5 py-4 text-right align-middle">
                         <button type="button"
                                 data-configuration-toggle="true"
                                 data-configuration-id="{{ item.id }}"
@@ -64,10 +68,10 @@
             {% else %}
                 <tr>
                     <td colspan="6" class="p-0">
-                        {% set empty_state_icon = 'file-key-2' %}
-                        {% set empty_state_title = 'No configuration objects found' %}
-                        {% set empty_state_description = 'Adjust filters or sync inventory to collect ConfigMap and Secret metadata.' %}
-                        {% set empty_state_min_height = 'min-h-[190px]' %}
+                        {% set empty_state_icon = "file-key-2" %}
+                        {% set empty_state_title = "No configuration objects found" %}
+                        {% set empty_state_description = "Adjust filters or sync inventory to collect ConfigMap and Secret metadata." %}
+                        {% set empty_state_min_height = "min-h-[190px]" %}
                         {% include 'components/states/_empty_state.html' %}
                     </td>
                 </tr>
@@ -75,37 +79,51 @@
         </tbody>
     </table>
 </div>
-
 <div class="flex flex-col gap-4 border-t border-slate-200 bg-slate-50 px-6 py-4 text-sm text-slate-500 lg:flex-row lg:items-center lg:justify-between dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
         <div>Showing <span class="font-semibold text-slate-700 dark:text-slate-200">{{ pagination.start_item }}</span> - <span class="font-semibold text-slate-700 dark:text-slate-200">{{ pagination.end_item }}</span> of <span class="font-semibold text-slate-700 dark:text-slate-200">{{ pagination.total_items }}</span> {{ 'object' if pagination.total_items == 1 else 'objects' }}</div>
-        <form hx-get="{{ url_for('inventory.configuration') }}" hx-target="#configuration-inventory-card" hx-swap="outerHTML" hx-indicator="#configuration-table-loading" class="flex items-center gap-2">
+        <form hx-get="{{ url_for('inventory.configuration') }}"
+              hx-target="#configuration-inventory-card"
+              hx-swap="outerHTML"
+              hx-indicator="#configuration-table-loading"
+              class="flex items-center gap-2">
             <input type="hidden" name="page" value="1">
             <input type="hidden" name="cluster_id" value="{{ selected_cluster_id }}">
             <input type="hidden" name="namespace" value="{{ selected_namespace }}">
             <input type="hidden" name="type" value="{{ selected_type }}">
             <input type="hidden" name="search" value="{{ search }}">
-            <select name="per_page" aria-label="Rows per page" onchange="this.form.requestSubmit()" class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
+            <select name="per_page"
+                    aria-label="Rows per page"
+                    onchange="this.form.requestSubmit()"
+                    class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
                 {% for option in pagination.allowed_per_page %}
-                    <option value="{{ option }}" {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
+                    <option value="{{ option }}"
+                            {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
                 {% endfor %}
             </select>
         </form>
     </div>
-
     <div class="flex flex-wrap items-center gap-2">
         {% if pagination.has_prev %}
             {% set prev_url = url_for('inventory.configuration', cluster_id=selected_cluster_id, namespace=selected_namespace, type=selected_type, search=search, page=pagination.prev_page, per_page=pagination.per_page, partial_mode='table_content') %}
-            <a href="{{ prev_url }}" hx-get="{{ prev_url }}" hx-target="#configuration-table-content" hx-swap="innerHTML" hx-indicator="#configuration-table-loading" class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
+            <a href="{{ prev_url }}"
+               hx-get="{{ prev_url }}"
+               hx-target="#configuration-table-content"
+               hx-swap="innerHTML"
+               hx-indicator="#configuration-table-loading"
+               class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
         {% else %}
             <span class="inline-flex cursor-not-allowed items-center gap-2 rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-sm font-medium text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-600"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
         {% endif %}
-
         <span class="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">Page {{ pagination.page }} / {{ pagination.total_pages }}</span>
-
         {% if pagination.has_next %}
             {% set next_url = url_for('inventory.configuration', cluster_id=selected_cluster_id, namespace=selected_namespace, type=selected_type, search=search, page=pagination.next_page, per_page=pagination.per_page, partial_mode='table_content') %}
-            <a href="{{ next_url }}" hx-get="{{ next_url }}" hx-target="#configuration-table-content" hx-swap="innerHTML" hx-indicator="#configuration-table-loading" class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
+            <a href="{{ next_url }}"
+               hx-get="{{ next_url }}"
+               hx-target="#configuration-table-content"
+               hx-swap="innerHTML"
+               hx-indicator="#configuration-table-loading"
+               class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
         {% else %}
             <span class="inline-flex cursor-not-allowed items-center gap-2 rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-sm font-medium text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-600">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
         {% endif %}

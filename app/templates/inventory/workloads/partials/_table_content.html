@@ -9,7 +9,7 @@
                 <th class="px-5 py-4">State</th>
                 <th class="px-5 py-4">Pods</th>
                 <th class="px-5 py-4">Containers</th>
-                <th class="px-5 py-4">Details</th>
+                <th class="px-5 py-4 text-right">Details</th>
             </tr>
         </thead>
         <tbody>
@@ -32,7 +32,8 @@
                             <span class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-orange-100 text-orange-700 dark:bg-orange-500/10 dark:text-orange-300">
                                 <i data-lucide="boxes" class="h-3.5 w-3.5"></i>
                             </span>
-                            <span class="truncate font-semibold text-slate-800 dark:text-slate-100" title="{{ workload.name }}">{{ workload.name }}</span>
+                            <span class="truncate font-semibold text-slate-800 dark:text-slate-100"
+                                  title="{{ workload.name }}">{{ workload.name }}</span>
                         </div>
                     </td>
                     <td class="px-5 py-4 align-middle">
@@ -65,7 +66,7 @@
                     </td>
                     <td class="px-5 py-4 align-middle font-semibold text-slate-700 dark:text-slate-200">{{ workload.pod_count }}</td>
                     <td class="px-5 py-4 align-middle font-semibold text-slate-700 dark:text-slate-200">{{ workload.container_count }}</td>
-                    <td class="px-5 py-4 align-middle">
+                    <td class="px-5 py-4 text-right align-middle">
                         <button type="button"
                                 data-workload-toggle="true"
                                 data-workload-id="{{ workload.id }}"
@@ -87,10 +88,10 @@
             {% else %}
                 <tr>
                     <td colspan="8" class="p-0">
-                        {% set empty_state_icon = 'boxes' %}
-                        {% set empty_state_title = 'No workload inventory found' %}
-                        {% set empty_state_description = 'Adjust the active filters or sync cluster inventory to collect Kubernetes workload data.' %}
-                        {% set empty_state_min_height = 'min-h-[190px]' %}
+                        {% set empty_state_icon = "boxes" %}
+                        {% set empty_state_title = "No workload inventory found" %}
+                        {% set empty_state_description = "Adjust the active filters or sync cluster inventory to collect Kubernetes workload data." %}
+                        {% set empty_state_min_height = "min-h-[190px]" %}
                         {% include 'components/states/_empty_state.html' %}
                     </td>
                 </tr>
@@ -98,7 +99,6 @@
         </tbody>
     </table>
 </div>
-
 <div class="flex flex-col gap-4 border-t border-slate-200 bg-slate-50 px-6 py-4 text-sm text-slate-500 lg:flex-row lg:items-center lg:justify-between dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
         <div>
@@ -123,23 +123,33 @@
                     onchange="this.form.requestSubmit()"
                     class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
                 {% for option in pagination.allowed_per_page %}
-                    <option value="{{ option }}" {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
+                    <option value="{{ option }}"
+                            {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
                 {% endfor %}
             </select>
         </form>
     </div>
-
     <div class="flex flex-wrap items-center gap-2">
         {% if pagination.has_prev %}
             {% set prev_url = url_for('inventory.workloads', cluster_id=selected_cluster_id, namespace=selected_namespace, type=selected_type, status=selected_status, search=search, page=pagination.prev_page, per_page=pagination.per_page) %}
-            <a href="{{ prev_url }}" hx-get="{{ prev_url }}" hx-target="#workloads-table-content" hx-swap="innerHTML" hx-indicator="#workloads-table-loading" class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
+            <a href="{{ prev_url }}"
+               hx-get="{{ prev_url }}"
+               hx-target="#workloads-table-content"
+               hx-swap="innerHTML"
+               hx-indicator="#workloads-table-loading"
+               class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
         {% else %}
             <span class="inline-flex cursor-not-allowed items-center gap-2 rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-sm font-medium text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-600"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
         {% endif %}
         <span class="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">Page {{ pagination.page }} / {{ pagination.total_pages }}</span>
         {% if pagination.has_next %}
             {% set next_url = url_for('inventory.workloads', cluster_id=selected_cluster_id, namespace=selected_namespace, type=selected_type, status=selected_status, search=search, page=pagination.next_page, per_page=pagination.per_page) %}
-            <a href="{{ next_url }}" hx-get="{{ next_url }}" hx-target="#workloads-table-content" hx-swap="innerHTML" hx-indicator="#workloads-table-loading" class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
+            <a href="{{ next_url }}"
+               hx-get="{{ next_url }}"
+               hx-target="#workloads-table-content"
+               hx-swap="innerHTML"
+               hx-indicator="#workloads-table-loading"
+               class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
         {% else %}
             <span class="inline-flex cursor-not-allowed items-center gap-2 rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-sm font-medium text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-600">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
         {% endif %}

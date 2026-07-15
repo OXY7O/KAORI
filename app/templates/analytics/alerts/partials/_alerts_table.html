@@ -1,54 +1,60 @@
 <div id="alerts-table-container">
-<div class="overflow-x-auto">
-    <table class="min-w-[1180px] table-fixed divide-y divide-slate-200 dark:divide-slate-800">
-        <colgroup>
-            <col class="w-[34%]">
-            <col class="w-[10%]">
-            <col class="w-[8%]">
-            <col class="w-[20%]">
-            <col class="w-[10%]">
-            <col class="w-[10%]">
-            <col class="w-[8%]">
-        </colgroup>
-        <thead class="bg-slate-50 dark:bg-slate-800/60">
-            <tr>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Alert</th>
-                <th scope="col" class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Severity</th>
-                <th scope="col" class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Status</th>
-                <th scope="col" class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Namespace</th>
-                <th scope="col" class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Source</th>
-                <th scope="col" class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Started</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Details</th>
-            </tr>
-        </thead>
-        <tbody x-data="{ openAlert: null }"
-               class="divide-y divide-slate-200 bg-white dark:divide-slate-800 dark:bg-slate-900">
-            {% if alerts %}
-                {% for alert in alerts %}
-                    {% set row_key = 'alert-' ~ loop.index0 %}
-                    {% include "analytics/alerts/partials/_alerts_table_row.html" %}
-                {% endfor %}
-            {% else %}
+    <div class="overflow-x-auto">
+        <table class="min-w-[1180px] table-fixed divide-y divide-slate-200 dark:divide-slate-800">
+            <colgroup>
+                <col class="w-[34%]">
+                <col class="w-[10%]">
+                <col class="w-[8%]">
+                <col class="w-[20%]">
+                <col class="w-[10%]">
+                <col class="w-[10%]">
+                <col class="w-[8%]">
+            </colgroup>
+            <thead class="bg-slate-50 dark:bg-slate-800/60">
                 <tr>
-                    <td colspan="7" class="p-0">
-                        {% set empty_state_icon = 'bell-off' %}
-                        {% set empty_state_title = 'No alerts detected' %}
-                        {% set empty_state_description = 'No alert matched the selected filters and source mode.' %}
-                        {% set empty_state_min_height = 'min-h-[210px]' %}
-                        {% include "components/states/_empty_state.html" %}
-                    </td>
+                    <th scope="col"
+                        class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Alert</th>
+                    <th scope="col"
+                        class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Severity</th>
+                    <th scope="col"
+                        class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Status</th>
+                    <th scope="col"
+                        class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Namespace</th>
+                    <th scope="col"
+                        class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Source</th>
+                    <th scope="col"
+                        class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Started</th>
+                    <th scope="col"
+                        class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Details</th>
                 </tr>
-            {% endif %}
-        </tbody>
-    </table>
-</div>
-{% set pagination = alerts_pagination %}
-{% set endpoint_name = "analytics.alerts_table" %}
-{% set target_id = "#alerts-table-container" %}
-{% set row_label = "alerts" %}
-{% set page_size_name = "alerts_per_page" %}
-{% set sibling_page_size_name = "anomalies_per_page" %}
-{% set sibling_page_size_value = selected_anomalies_per_page %}
-{% include "analytics/alerts/partials/_pagination.html" %}
-
+            </thead>
+            <tbody x-data="{ openAlert: null }"
+                   class="divide-y divide-slate-200 bg-white dark:divide-slate-800 dark:bg-slate-900">
+                {% if alerts %}
+                    {% for alert in alerts %}
+                        {% set row_key = 'alert-' ~ loop.index0 %}
+                        {% include "analytics/alerts/partials/_alerts_table_row.html" %}
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="p-0">
+                            {% set empty_state_icon = "bell-off" %}
+                            {% set empty_state_title = "No alerts detected" %}
+                            {% set empty_state_description = "No alert matched the selected filters and source mode." %}
+                            {% set empty_state_min_height = "min-h-[210px]" %}
+                            {% include "components/states/_empty_state.html" %}
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+    {% set pagination = alerts_pagination %}
+    {% set endpoint_name = "analytics.alerts_table" %}
+    {% set target_id = "#alerts-table-container" %}
+    {% set row_label = "alerts" %}
+    {% set page_size_name = "alerts_per_page" %}
+    {% set sibling_page_size_name = "anomalies_per_page" %}
+    {% set sibling_page_size_value = selected_anomalies_per_page %}
+    {% include "analytics/alerts/partials/_pagination.html" %}
 </div>

@@ -1,259 +1,254 @@
 {% extends "layouts/app.html" %}
 {% block title %}{{ 'Add User' if mode == 'create' else 'Edit User' }}{% endblock title %}
 {% block dashboard_content %}
-<div class="space-y-6">
-    <section class="relative overflow-hidden rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-600 via-blue-500 to-sky-400 p-6 shadow-sm dark:border-blue-900/50 dark:from-blue-950 dark:via-blue-900 dark:to-slate-900">
-        <div class="pointer-events-none absolute -right-16 -top-16 h-44 w-44 rounded-full bg-white/20 blur-3xl"></div>
-        <div class="pointer-events-none absolute bottom-0 right-32 h-28 w-28 rounded-full bg-cyan-200/20 blur-2xl"></div>
-        <div class="relative flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div class="flex items-start gap-4">
-                <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15 text-white ring-1 ring-white/25 backdrop-blur">
-                    <i data-lucide="{{ 'user-plus' if mode == 'create' else 'pencil-line' }}" class="h-7 w-7"></i>
-                </div>
-                <div>
-                    <h1 class="text-3xl font-bold tracking-tight text-white">{{ 'Add User' if mode == 'create' else 'Edit User' }}</h1>
-                    <p class="mt-2 max-w-3xl text-sm leading-6 text-blue-50 sm:text-base">
-                        {{ 'Create a local or external identity record and assign access controls.' if mode == 'create' else 'Update user profile, authentication source, status, and access level.' }}
-                    </p>
-                    <div class="mt-4 flex flex-wrap gap-2">
-                        {% if mode == 'edit' and user %}
-                            <span class="inline-flex items-center gap-1.5 rounded-lg bg-white/15 px-3 py-1 text-xs font-semibold text-white ring-1 ring-white/20 backdrop-blur">
-                                <i data-lucide="user" class="h-3.5 w-3.5"></i>
-                                {{ user.display_label }}
-                            </span>
-                            {% if user.is_super_admin %}
-                                <span class="inline-flex items-center gap-1.5 rounded-lg bg-purple-300/25 px-3 py-1 text-xs font-semibold text-white ring-1 ring-purple-100/30 backdrop-blur">
-                                    <i data-lucide="shield-check" class="h-3.5 w-3.5"></i>
-                                    Super Admin
+    <div class="space-y-6">
+        <section class="relative overflow-hidden rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-600 via-blue-500 to-sky-400 p-6 shadow-sm dark:border-blue-900/50 dark:from-blue-950 dark:via-blue-900 dark:to-slate-900">
+            <div class="pointer-events-none absolute -right-16 -top-16 h-44 w-44 rounded-full bg-white/20 blur-3xl"></div>
+            <div class="pointer-events-none absolute bottom-0 right-32 h-28 w-28 rounded-full bg-cyan-200/20 blur-2xl"></div>
+            <div class="relative flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div class="flex items-start gap-4">
+                    <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15 text-white ring-1 ring-white/25 backdrop-blur">
+                        <i data-lucide="{{ 'user-plus' if mode == 'create' else 'pencil-line' }}"
+                           class="h-7 w-7"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-bold tracking-tight text-white">{{ 'Add User' if mode == 'create' else 'Edit User' }}</h1>
+                        <p class="mt-2 max-w-3xl text-sm leading-6 text-blue-50 sm:text-base">
+                            {{ 'Create a local or external identity record and assign access controls.' if mode == 'create' else 'Update user profile, authentication source, status, and access level.' }}
+                        </p>
+                        <div class="mt-4 flex flex-wrap gap-2">
+                            {% if mode == 'edit' and user %}
+                                <span class="inline-flex items-center gap-1.5 rounded-lg bg-white/15 px-3 py-1 text-xs font-semibold text-white ring-1 ring-white/20 backdrop-blur">
+                                    <i data-lucide="user" class="h-3.5 w-3.5"></i>
+                                    {{ user.display_label }}
                                 </span>
-                            {% elif user.role_name == 'admin' %}
-                                <span class="inline-flex items-center gap-1.5 rounded-lg bg-sky-200/20 px-3 py-1 text-xs font-semibold text-white ring-1 ring-sky-100/30 backdrop-blur">
-                                    <i data-lucide="shield" class="h-3.5 w-3.5"></i>
-                                    Admin
-                                </span>
+                                {% if user.is_super_admin %}
+                                    <span class="inline-flex items-center gap-1.5 rounded-lg bg-purple-300/25 px-3 py-1 text-xs font-semibold text-white ring-1 ring-purple-100/30 backdrop-blur">
+                                        <i data-lucide="shield-check" class="h-3.5 w-3.5"></i>
+                                        Super Admin
+                                    </span>
+                                {% elif user.role_name == 'admin' %}
+                                    <span class="inline-flex items-center gap-1.5 rounded-lg bg-sky-200/20 px-3 py-1 text-xs font-semibold text-white ring-1 ring-sky-100/30 backdrop-blur">
+                                        <i data-lucide="shield" class="h-3.5 w-3.5"></i>
+                                        Admin
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex items-center gap-1.5 rounded-lg bg-sky-200/20 px-3 py-1 text-xs font-semibold text-white ring-1 ring-sky-100/30 backdrop-blur">
+                                        <i data-lucide="badge-check" class="h-3.5 w-3.5"></i>
+                                        {{ user.role_display_name }}
+                                    </span>
+                                {% endif %}
                             {% else %}
+                                <span class="inline-flex items-center gap-1.5 rounded-lg bg-white/15 px-3 py-1 text-xs font-semibold text-white ring-1 ring-white/20 backdrop-blur">
+                                    <i data-lucide="database" class="h-3.5 w-3.5"></i>
+                                    Database User Ready
+                                </span>
                                 <span class="inline-flex items-center gap-1.5 rounded-lg bg-sky-200/20 px-3 py-1 text-xs font-semibold text-white ring-1 ring-sky-100/30 backdrop-blur">
-                                    <i data-lucide="badge-check" class="h-3.5 w-3.5"></i>
-                                    {{ user.role_display_name }}
+                                    <i data-lucide="network" class="h-3.5 w-3.5"></i>
+                                    External Shadow Supported
                                 </span>
                             {% endif %}
-                        {% else %}
-                            <span class="inline-flex items-center gap-1.5 rounded-lg bg-white/15 px-3 py-1 text-xs font-semibold text-white ring-1 ring-white/20 backdrop-blur">
-                                <i data-lucide="database" class="h-3.5 w-3.5"></i>
-                                Database User Ready
-                            </span>
-                            <span class="inline-flex items-center gap-1.5 rounded-lg bg-sky-200/20 px-3 py-1 text-xs font-semibold text-white ring-1 ring-sky-100/30 backdrop-blur">
-                                <i data-lucide="network" class="h-3.5 w-3.5"></i>
-                                External Shadow Supported
-                            </span>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-            <a href="{{ url_for('settings.users') }}"
-               class="inline-flex items-center justify-center gap-2 rounded-xl bg-white/20 px-4 py-2.5 text-sm font-semibold text-white ring-1 ring-white/25 backdrop-blur transition hover:bg-white/25 hover:shadow-md focus:outline-none focus:ring-4 focus:ring-white/20">
-                <i data-lucide="arrow-left" class="h-4 w-4"></i>
-                Back to Users
-            </a>
-        </div>
-    </section>
-
-    <form method="post">
-        {{ form.hidden_tag() }}
-        <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
-            <div class="flex items-center gap-3 border-b border-slate-200 px-6 py-5 dark:border-slate-700">
-                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-                    <i data-lucide="settings-2" class="h-5 w-5"></i>
-                </div>
-                <div>
-                    <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Account Configuration</h2>
-                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Manage identity fields, source ownership, role assignment, and lifecycle state.</p>
-                </div>
-            </div>
-
-
-            {% if form_feedback %}
-                {% set feedback_tone = 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-300' if form_feedback.status == 'success' else 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-300' if form_feedback.status == 'warning' else 'border-red-200 bg-red-50 text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-300' %}
-                <div class="border-b border-slate-200 px-6 py-4 dark:border-slate-700">
-                    <div class="flex items-start gap-3 rounded-xl border px-4 py-3 text-sm font-medium {{ feedback_tone }}">
-                        <i data-lucide="{{ 'check-circle-2' if form_feedback.status == 'success' else 'alert-triangle' }}" class="mt-0.5 h-5 w-5 shrink-0"></i>
-                        <div>
-                            <p class="font-bold">{{ form_feedback.title }}</p>
-                            <p class="mt-1 leading-5">{{ form_feedback.message }}</p>
                         </div>
                     </div>
                 </div>
-            {% endif %}
-
-            {% if form.errors %}
-                <div class="border-b border-red-200 bg-red-50 px-6 py-4 dark:border-red-900/60 dark:bg-red-950/30">
-                    <div class="flex items-start gap-3">
-                        <i data-lucide="alert-circle" class="mt-0.5 h-5 w-5 text-red-500"></i>
-                        <div>
-                            <h3 class="font-medium text-red-700 dark:text-red-300">Validation Error</h3>
-                            <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-red-600 dark:text-red-300">
-                                {% for field, errors in form.errors.items() %}
-                                    {% for error in errors %}
-                                        <li>{{ error }}</li>
+                <a href="{{ url_for('settings.users') }}"
+                   class="inline-flex items-center justify-center gap-2 rounded-xl bg-white/20 px-4 py-2.5 text-sm font-semibold text-white ring-1 ring-white/25 backdrop-blur transition hover:bg-white/25 hover:shadow-md focus:outline-none focus:ring-4 focus:ring-white/20">
+                    <i data-lucide="arrow-left" class="h-4 w-4"></i>
+                    Back to Users
+                </a>
+            </div>
+        </section>
+        <form method="post">
+            {{ form.hidden_tag() }}
+            <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+                <div class="flex items-center gap-3 border-b border-slate-200 px-6 py-5 dark:border-slate-700">
+                    <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                        <i data-lucide="settings-2" class="h-5 w-5"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Account Configuration</h2>
+                        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Manage identity fields, source ownership, role assignment, and lifecycle state.</p>
+                    </div>
+                </div>
+                {% if form_feedback %}
+                    {% set feedback_tone = 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-300' if form_feedback.status == 'success' else 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-300' if form_feedback.status == 'warning' else 'border-red-200 bg-red-50 text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-300' %}
+                    <div class="border-b border-slate-200 px-6 py-4 dark:border-slate-700">
+                        <div class="flex items-start gap-3 rounded-xl border px-4 py-3 text-sm font-medium {{ feedback_tone }}">
+                            <i data-lucide="{{ 'check-circle-2' if form_feedback.status == 'success' else 'alert-triangle' }}"
+                               class="mt-0.5 h-5 w-5 shrink-0"></i>
+                            <div>
+                                <p class="font-bold">{{ form_feedback.title }}</p>
+                                <p class="mt-1 leading-5">{{ form_feedback.message }}</p>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+                {% if form.errors %}
+                    <div class="border-b border-red-200 bg-red-50 px-6 py-4 dark:border-red-900/60 dark:bg-red-950/30">
+                        <div class="flex items-start gap-3">
+                            <i data-lucide="alert-circle" class="mt-0.5 h-5 w-5 text-red-500"></i>
+                            <div>
+                                <h3 class="font-medium text-red-700 dark:text-red-300">Validation Error</h3>
+                                <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-red-600 dark:text-red-300">
+                                    {% for field, errors in form.errors.items() %}
+                                        {% for error in errors %}
+                                            <li>{{ error }}</li>
+                                        {% endfor %}
                                     {% endfor %}
-                                {% endfor %}
-                            </ul>
+                                </ul>
+                            </div>
                         </div>
                     </div>
-                </div>
-            {% endif %}
-
-            <div class="space-y-6 p-6">
-                <div class="grid gap-5 lg:grid-cols-2">
-                    <div>
-                        <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">Username</label>
-                        {{ form.username(class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 transition focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:ring-blue-900/30") }}
-                    </div>
-                    <div>
-                        <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">Email</label>
-                        {{ form.email(class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 transition focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:ring-blue-900/30") }}
-                    </div>
-                    <div>
-                        <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">Display Name</label>
-                        {{ form.display_name(class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 transition focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:ring-blue-900/30", placeholder="Optional friendly name") }}
-                        <p class="mt-2 flex items-start gap-1.5 text-xs leading-5 text-slate-500 dark:text-slate-400">
-                            <i data-lucide="info" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-blue-500"></i>
-                            Display name is optional. If empty, KAORI will show the username as the account label.
-                        </p>
-                    </div>
-                    <div>
-                        <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">Role</label>
-                        {{ form.role_id(class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 transition focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:ring-blue-900/30") }}
-                        {% if not can_manage_admin_fields %}
-                            <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Administrator-level roles are restricted to super admins.</p>
-                        {% endif %}
-                    </div>
-                    <div>
-                        <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">Auth Source</label>
-                        {{ form.auth_source(class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 transition focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:ring-blue-900/30") }}
-                    </div>
-                    <div>
-                        <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">External ID</label>
-                        {{ form.external_id(class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 transition focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:ring-blue-900/30", placeholder="LDAP DN, OIDC subject, or SAML NameID") }}
-                    </div>
-                    {% if mode == 'create' %}
+                {% endif %}
+                <div class="space-y-6 p-6">
+                    <div class="grid gap-5 lg:grid-cols-2">
                         <div>
-                            <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">Initial Password</label>
-                            {{ form.password(class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 transition focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:ring-blue-900/30") }}
-                            <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Required for database-managed users. External users authenticate through their configured identity provider.</p>
+                            <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">Username</label>
+                            {{ form.username(class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 transition focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:ring-blue-900/30") }}
                         </div>
                         <div>
-                            <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">Confirm Initial Password</label>
-                            {{ form.confirm_password(class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 transition focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:ring-blue-900/30") }}
+                            <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">Email</label>
+                            {{ form.email(class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 transition focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:ring-blue-900/30") }}
                         </div>
-                    {% else %}
-                        <div class="lg:col-span-2">
-                            <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/60 dark:bg-amber-950/30">
-                                <div class="flex items-start gap-3">
-                                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
-                                        <i data-lucide="key-round" class="h-5 w-5"></i>
-                                    </div>
-                                    <div class="min-w-0 flex-1">
-                                        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                                            <div>
-                                                <h3 class="text-sm font-extrabold text-amber-900 dark:text-amber-100">Password is managed separately</h3>
-                                                <p class="mt-1 text-sm leading-6 text-amber-800 dark:text-amber-200">Editing a user profile does not change credentials. Use the dedicated password reset flow for database-managed accounts so role/profile updates stay separated from credential changes.</p>
+                        <div>
+                            <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">Display Name</label>
+                            {{ form.display_name(class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 transition focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:ring-blue-900/30", placeholder="Optional friendly name") }}
+                            <p class="mt-2 flex items-start gap-1.5 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                                <i data-lucide="info" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-blue-500"></i>
+                                Display name is optional. If empty, KAORI will show the username as the account label.
+                            </p>
+                        </div>
+                        <div>
+                            <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">Role</label>
+                            {{ form.role_id(class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 transition focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:ring-blue-900/30") }}
+                            {% if not can_manage_admin_fields %}
+                                <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Administrator-level roles are restricted to super admins.</p>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">Auth Source</label>
+                            {{ form.auth_source(class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 transition focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:ring-blue-900/30") }}
+                        </div>
+                        <div>
+                            <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">External ID</label>
+                            {{ form.external_id(class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 transition focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:ring-blue-900/30", placeholder="LDAP DN, OIDC subject, or SAML NameID") }}
+                        </div>
+                        {% if mode == 'create' %}
+                            <div>
+                                <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">Initial Password</label>
+                                {{ form.password(class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 transition focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:ring-blue-900/30") }}
+                                <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Required for database-managed users. External users authenticate through their configured identity provider.</p>
+                            </div>
+                            <div>
+                                <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">Confirm Initial Password</label>
+                                {{ form.confirm_password(class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 transition focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:ring-blue-900/30") }}
+                            </div>
+                        {% else %}
+                            <div class="lg:col-span-2">
+                                <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/60 dark:bg-amber-950/30">
+                                    <div class="flex items-start gap-3">
+                                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
+                                            <i data-lucide="key-round" class="h-5 w-5"></i>
+                                        </div>
+                                        <div class="min-w-0 flex-1">
+                                            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                                <div>
+                                                    <h3 class="text-sm font-extrabold text-amber-900 dark:text-amber-100">Password is managed separately</h3>
+                                                    <p class="mt-1 text-sm leading-6 text-amber-800 dark:text-amber-200">Editing a user profile does not change credentials. Use the dedicated password reset flow for database-managed accounts so role/profile updates stay separated from credential changes.</p>
+                                                </div>
+                                                {% if reset_password_allowed %}
+                                                    <a href="{{ url_for('settings.reset_user_password', user_id=user.id) }}"
+                                                       class="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-amber-600 px-4 py-2 text-xs font-extrabold text-white shadow-sm transition hover:bg-amber-700 focus:outline-none focus:ring-4 focus:ring-amber-200 dark:bg-amber-500 dark:hover:bg-amber-400 dark:focus:ring-amber-900/40">
+                                                        <i data-lucide="key-round" class="h-4 w-4"></i>
+                                                        Reset Password
+                                                    </a>
+                                                {% elif user and user.auth_source == 'database' %}
+                                                    <span class="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-amber-200 bg-white px-4 py-2 text-xs font-extrabold text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200"
+                                                          title="{{ reset_password_reason or 'Password reset is restricted for this account.' }}">
+                                                        <i data-lucide="lock" class="h-4 w-4"></i>
+                                                        Reset Restricted
+                                                    </span>
+                                                {% endif %}
                                             </div>
-                                            {% if reset_password_allowed %}
-                                                <a href="{{ url_for('settings.reset_user_password', user_id=user.id) }}"
-                                                   class="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-amber-600 px-4 py-2 text-xs font-extrabold text-white shadow-sm transition hover:bg-amber-700 focus:outline-none focus:ring-4 focus:ring-amber-200 dark:bg-amber-500 dark:hover:bg-amber-400 dark:focus:ring-amber-900/40">
-                                                    <i data-lucide="key-round" class="h-4 w-4"></i>
-                                                    Reset Password
-                                                </a>
-                                            {% elif user and user.auth_source == 'database' %}
-                                                <span class="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-amber-200 bg-white px-4 py-2 text-xs font-extrabold text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200"
-                                                      title="{{ reset_password_reason or 'Password reset is restricted for this account.' }}">
-                                                    <i data-lucide="lock" class="h-4 w-4"></i>
-                                                    Reset Restricted
-                                                </span>
+                                            {% if user and user.auth_source != 'database' %}
+                                                <div class="mt-3 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-bold text-amber-700 ring-1 ring-amber-200 dark:bg-amber-950/40 dark:text-amber-200 dark:ring-amber-800">
+                                                    <i data-lucide="network" class="h-3.5 w-3.5"></i>
+                                                    Credentials are controlled by {{ user.auth_source|upper }}.
+                                                </div>
+                                            {% elif user and reset_password_reason %}
+                                                <div class="mt-3 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-bold text-amber-700 ring-1 ring-amber-200 dark:bg-amber-950/40 dark:text-amber-200 dark:ring-amber-800">
+                                                    <i data-lucide="info" class="h-3.5 w-3.5"></i>
+                                                    {{ reset_password_reason }}
+                                                </div>
+                                            {% endif %}
+                                            {% if user and user.is_super_admin and current_user.id != user.id and reset_password_allowed %}
+                                                <div class="mt-3 inline-flex items-center gap-2 rounded-full bg-purple-50 px-3 py-1 text-xs font-bold text-purple-700 ring-1 ring-purple-100 dark:bg-purple-950/40 dark:text-purple-200 dark:ring-purple-900/60">
+                                                    <i data-lucide="shield" class="h-3.5 w-3.5"></i>
+                                                    Super admin reset is allowed only for another database-managed super admin.
+                                                </div>
                                             {% endif %}
                                         </div>
-                                        {% if user and user.auth_source != 'database' %}
-                                            <div class="mt-3 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-bold text-amber-700 ring-1 ring-amber-200 dark:bg-amber-950/40 dark:text-amber-200 dark:ring-amber-800">
-                                                <i data-lucide="network" class="h-3.5 w-3.5"></i>
-                                                Credentials are controlled by {{ user.auth_source|upper }}.
-                                            </div>
-                                        {% elif user and reset_password_reason %}
-                                            <div class="mt-3 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-bold text-amber-700 ring-1 ring-amber-200 dark:bg-amber-950/40 dark:text-amber-200 dark:ring-amber-800">
-                                                <i data-lucide="info" class="h-3.5 w-3.5"></i>
-                                                {{ reset_password_reason }}
-                                            </div>
-                                        {% endif %}
-                                        {% if user and user.is_super_admin and current_user.id != user.id and reset_password_allowed %}
-                                            <div class="mt-3 inline-flex items-center gap-2 rounded-full bg-purple-50 px-3 py-1 text-xs font-bold text-purple-700 ring-1 ring-purple-100 dark:bg-purple-950/40 dark:text-purple-200 dark:ring-purple-900/60">
-                                                <i data-lucide="shield" class="h-3.5 w-3.5"></i>
-                                                Super admin reset is allowed only for another database-managed super admin.
-                                            </div>
-                                        {% endif %}
                                     </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/50">
+                        <div class="flex items-start gap-3">
+                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+                                <i data-lucide="shield-check" class="h-5 w-5"></i>
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Lifecycle & Administrative Controls</h3>
+                                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Status and super-admin changes are protected by backend safeguards to prevent lockout.</p>
+                                <div class="mt-4 flex flex-wrap gap-4">
+                                    <label class="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">{{ form.is_active(class="rounded border-slate-300 text-blue-600 focus:ring-blue-500") }} Active</label>
+                                    {% if can_manage_admin_fields %}
+                                        <label class="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">{{ form.is_super_admin(class="rounded border-slate-300 text-blue-600 focus:ring-blue-500") }} Super Admin</label>
+                                    {% else %}
+                                        <span class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                                            <i data-lucide="lock" class="h-3.5 w-3.5"></i>
+                                            Super Admin assignment restricted
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% if mode == 'edit' and user and user.is_super_admin %}
+                        <div class="rounded-2xl border border-purple-200 bg-purple-50 p-4 text-sm text-purple-800 dark:border-purple-900/60 dark:bg-purple-950/30 dark:text-purple-200">
+                            <div class="flex items-start gap-3">
+                                <i data-lucide="shield-check" class="mt-0.5 h-5 w-5 shrink-0"></i>
+                                <div>
+                                    <p class="font-extrabold">This account has Super Admin privileges.</p>
+                                    <p class="mt-1 text-purple-700 dark:text-purple-300">Only another super admin can downgrade, deactivate, or delete it. The last active super admin is protected from downgrade, deactivation, and deletion.</p>
+                                </div>
+                            </div>
+                        </div>
+                    {% elif mode == 'edit' and user and user.role_name == 'admin' %}
+                        <div class="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800 dark:border-blue-900/60 dark:bg-blue-950/30 dark:text-blue-200">
+                            <div class="flex items-start gap-3">
+                                <i data-lucide="shield" class="mt-0.5 h-5 w-5 shrink-0"></i>
+                                <div>
+                                    <p class="font-extrabold">This account is an administrator.</p>
+                                    <p class="mt-1 text-blue-700 dark:text-blue-300">Administrator-level accounts can only be managed by super admins.</p>
                                 </div>
                             </div>
                         </div>
                     {% endif %}
                 </div>
-
-                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/50">
-                    <div class="flex items-start gap-3">
-                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
-                            <i data-lucide="shield-check" class="h-5 w-5"></i>
-                        </div>
-                        <div class="min-w-0 flex-1">
-                            <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Lifecycle & Administrative Controls</h3>
-                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Status and super-admin changes are protected by backend safeguards to prevent lockout.</p>
-                            <div class="mt-4 flex flex-wrap gap-4">
-                                <label class="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">{{ form.is_active(class="rounded border-slate-300 text-blue-600 focus:ring-blue-500") }} Active</label>
-                                {% if can_manage_admin_fields %}
-                                    <label class="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">{{ form.is_super_admin(class="rounded border-slate-300 text-blue-600 focus:ring-blue-500") }} Super Admin</label>
-                                {% else %}
-                                    <span class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                                        <i data-lucide="lock" class="h-3.5 w-3.5"></i>
-                                        Super Admin assignment restricted
-                                    </span>
-                                {% endif %}
-                            </div>
-                        </div>
+                <div class="flex flex-col gap-3 border-t border-slate-200 bg-slate-50 px-6 py-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:bg-slate-900/40">
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Changes affect KAORI access, local login behavior, and RBAC authorization.</p>
+                    <div class="flex justify-end gap-3">
+                        <a href="{{ url_for('settings.users') }}"
+                           class="rounded-xl border border-slate-300 px-5 py-2.5 font-medium text-slate-700 transition hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700">Cancel</a>
+                        <button class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 font-medium text-white transition hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500">
+                            <i data-lucide="save" class="h-4 w-4"></i>
+                            <span>{{ 'Create User' if mode == 'create' else 'Update User' }}</span>
+                        </button>
                     </div>
                 </div>
-
-                {% if mode == 'edit' and user and user.is_super_admin %}
-                    <div class="rounded-2xl border border-purple-200 bg-purple-50 p-4 text-sm text-purple-800 dark:border-purple-900/60 dark:bg-purple-950/30 dark:text-purple-200">
-                        <div class="flex items-start gap-3">
-                            <i data-lucide="shield-check" class="mt-0.5 h-5 w-5 shrink-0"></i>
-                            <div>
-                                <p class="font-extrabold">This account has Super Admin privileges.</p>
-                                <p class="mt-1 text-purple-700 dark:text-purple-300">Only another super admin can downgrade, deactivate, or delete it. The last active super admin is protected from downgrade, deactivation, and deletion.</p>
-                            </div>
-                        </div>
-                    </div>
-                {% elif mode == 'edit' and user and user.role_name == 'admin' %}
-                    <div class="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800 dark:border-blue-900/60 dark:bg-blue-950/30 dark:text-blue-200">
-                        <div class="flex items-start gap-3">
-                            <i data-lucide="shield" class="mt-0.5 h-5 w-5 shrink-0"></i>
-                            <div>
-                                <p class="font-extrabold">This account is an administrator.</p>
-                                <p class="mt-1 text-blue-700 dark:text-blue-300">Administrator-level accounts can only be managed by super admins.</p>
-                            </div>
-                        </div>
-                    </div>
-                {% endif %}
             </div>
-
-            <div class="flex flex-col gap-3 border-t border-slate-200 bg-slate-50 px-6 py-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:bg-slate-900/40">
-                <p class="text-xs text-slate-500 dark:text-slate-400">Changes affect KAORI access, local login behavior, and RBAC authorization.</p>
-                <div class="flex justify-end gap-3">
-                    <a href="{{ url_for('settings.users') }}" class="rounded-xl border border-slate-300 px-5 py-2.5 font-medium text-slate-700 transition hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700">Cancel</a>
-                    <button class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 font-medium text-white transition hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500">
-                        <i data-lucide="save" class="h-4 w-4"></i>
-                        <span>{{ 'Create User' if mode == 'create' else 'Update User' }}</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </form>
-</div>
+        </form>
+    </div>
 {% endblock dashboard_content %}

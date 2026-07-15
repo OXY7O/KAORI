@@ -11,10 +11,11 @@
             {{ percentage }}
         {% endif %}
     {% endmacro %}
-
-    <div id="capacity-page" class="space-y-6" data-analytics-page-tracker="capacity-load-tracker" data-analytics-page-request-tracking="false">
+    <div id="capacity-page"
+         class="space-y-6"
+         data-analytics-page-tracker="capacity-load-tracker"
+         data-analytics-page-request-tracking="false">
         {% include "analytics/capacity/partials/_hero.html" %}
-
         {% if dependency_blocker %}
             {% if dependency_blocker.kind == 'cluster_required' %}
                 {% include "components/cluster/_onboarding_banner.html" %}
@@ -22,17 +23,15 @@
                 {% include "components/dependencies/_blocker.html" %}
             {% endif %}
         {% endif %}
-
         {% if not dependency_blocker %}
-        {% set analytics_tracker_id = 'capacity-load-tracker' %}
-        {% set analytics_page_id = 'capacity-page' %}
-        {% set analytics_load_title = 'Loading capacity analysis' %}
-        {% set analytics_load_description = 'Loading Prometheus-backed capacity signals.' %}
-        {% set analytics_load_complete_title = 'Capacity analysis fully loaded' %}
-        {% set analytics_load_complete_description = 'All capacity analysis sections have finished loading.' %}
-        {% include "analytics/partials/_load_tracker.html" %}
+            {% set analytics_tracker_id = "capacity-load-tracker" %}
+            {% set analytics_page_id = "capacity-page" %}
+            {% set analytics_load_title = "Loading capacity analysis" %}
+            {% set analytics_load_description = "Loading Prometheus-backed capacity signals." %}
+            {% set analytics_load_complete_title = "Capacity analysis fully loaded" %}
+            {% set analytics_load_complete_description = "All capacity analysis sections have finished loading." %}
+            {% include "analytics/partials/_load_tracker.html" %}
         {% endif %}
-
         {% if error and not dependency_blocker %}
             <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
                 <div class="flex items-start gap-3">
@@ -93,21 +92,20 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="grid gap-0 divide-y divide-slate-200 dark:divide-slate-700 xl:grid-cols-4 xl:divide-x xl:divide-y-0">
                     {% for card in kpi_cards %}
                         {% if loop.index0 == 0 %}
-                            {% set icon_tone = 'bg-blue-50 text-blue-600 ring-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:ring-blue-900' %}
-                            {% set bar_tone = 'bg-blue-500' %}
+                            {% set icon_tone = "bg-blue-50 text-blue-600 ring-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:ring-blue-900" %}
+                            {% set bar_tone = "bg-blue-500" %}
                         {% elif loop.index0 == 1 %}
-                            {% set icon_tone = 'bg-indigo-50 text-indigo-600 ring-indigo-100 dark:bg-indigo-950/40 dark:text-indigo-300 dark:ring-indigo-900' %}
-                            {% set bar_tone = 'bg-indigo-500' %}
+                            {% set icon_tone = "bg-indigo-50 text-indigo-600 ring-indigo-100 dark:bg-indigo-950/40 dark:text-indigo-300 dark:ring-indigo-900" %}
+                            {% set bar_tone = "bg-indigo-500" %}
                         {% elif loop.index0 == 2 %}
-                            {% set icon_tone = 'bg-cyan-50 text-cyan-600 ring-cyan-100 dark:bg-cyan-950/40 dark:text-cyan-300 dark:ring-cyan-900' %}
-                            {% set bar_tone = 'bg-cyan-500' %}
+                            {% set icon_tone = "bg-cyan-50 text-cyan-600 ring-cyan-100 dark:bg-cyan-950/40 dark:text-cyan-300 dark:ring-cyan-900" %}
+                            {% set bar_tone = "bg-cyan-500" %}
                         {% else %}
-                            {% set icon_tone = 'bg-violet-50 text-violet-600 ring-violet-100 dark:bg-violet-950/40 dark:text-violet-300 dark:ring-violet-900' %}
-                            {% set bar_tone = 'bg-violet-500' %}
+                            {% set icon_tone = "bg-violet-50 text-violet-600 ring-violet-100 dark:bg-violet-950/40 dark:text-violet-300 dark:ring-violet-900" %}
+                            {% set bar_tone = "bg-violet-500" %}
                         {% endif %}
                         <article class="relative bg-white px-6 py-5 transition hover:bg-slate-50/80 dark:bg-slate-900 dark:hover:bg-slate-950/40">
                             <div class="absolute inset-x-6 top-0 h-0.5 rounded-full {{ bar_tone }}"></div>
@@ -157,28 +155,26 @@
                             </span>
                         </div>
                     </div>
-
                     <div class="space-y-4 p-6">
                         {% for key, section in allocation_summary.items() %}
                             {% if key == 'cpu' %}
-                                {% set section_icon = 'cpu' %}
-                                {% set icon_class = 'bg-blue-50 text-blue-600 ring-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:ring-blue-900' %}
-                                {% set summary_tone = 'bg-blue-50 text-blue-700 ring-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:ring-blue-900' %}
+                                {% set section_icon = "cpu" %}
+                                {% set icon_class = "bg-blue-50 text-blue-600 ring-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:ring-blue-900" %}
+                                {% set summary_tone = "bg-blue-50 text-blue-700 ring-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:ring-blue-900" %}
                             {% elif key == 'memory' %}
-                                {% set section_icon = 'memory-stick' %}
-                                {% set icon_class = 'bg-emerald-50 text-emerald-600 ring-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:ring-emerald-900' %}
-                                {% set summary_tone = 'bg-emerald-50 text-emerald-700 ring-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:ring-emerald-900' %}
+                                {% set section_icon = "memory-stick" %}
+                                {% set icon_class = "bg-emerald-50 text-emerald-600 ring-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:ring-emerald-900" %}
+                                {% set summary_tone = "bg-emerald-50 text-emerald-700 ring-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:ring-emerald-900" %}
                             {% else %}
-                                {% set section_icon = 'boxes' %}
-                                {% set icon_class = 'bg-cyan-50 text-cyan-600 ring-cyan-100 dark:bg-cyan-950/40 dark:text-cyan-300 dark:ring-cyan-900' %}
-                                {% set summary_tone = 'bg-cyan-50 text-cyan-700 ring-cyan-100 dark:bg-cyan-950/40 dark:text-cyan-300 dark:ring-cyan-900' %}
+                                {% set section_icon = "boxes" %}
+                                {% set icon_class = "bg-cyan-50 text-cyan-600 ring-cyan-100 dark:bg-cyan-950/40 dark:text-cyan-300 dark:ring-cyan-900" %}
+                                {% set summary_tone = "bg-cyan-50 text-cyan-700 ring-cyan-100 dark:bg-cyan-950/40 dark:text-cyan-300 dark:ring-cyan-900" %}
                             {% endif %}
-
                             {% set allocatable_item = section['items'][0] if section['items']|length > 0 else {} %}
                             {% set actual_item = section['items'][3] if section['items']|length > 3 else {} %}
                             {% set peak_item = section['items'][4] if section['items']|length > 4 else actual_item %}
-
-                            <details class="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900" {% if loop.first %}open{% endif %}>
+                            <details class="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900"
+                                     {% if loop.first %}open{% endif %}>
                                 <summary class="cursor-pointer list-none px-4 py-4 transition hover:bg-slate-50 dark:hover:bg-slate-950/40">
                                     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                                         <div class="flex min-w-0 items-center gap-3">
@@ -192,12 +188,9 @@
                                                         {{ section['status']['label'] }}
                                                     </span>
                                                 </div>
-                                                <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                                                    Allocation, current usage, and peak pressure.
-                                                </p>
+                                                <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Allocation, current usage, and peak pressure.</p>
                                             </div>
                                         </div>
-
                                         <div class="grid gap-2 sm:grid-cols-3 sm:min-w-[360px]">
                                             <div class="rounded-xl px-3 py-2 ring-1 {{ summary_tone }}">
                                                 <div class="text-[11px] font-medium opacity-80">Capacity</div>
@@ -212,14 +205,13 @@
                                                 <div class="mt-0.5 truncate text-xs font-bold">{{ peak_item.get('display', '-') }}</div>
                                             </div>
                                         </div>
-
                                         <span class="inline-flex shrink-0 items-center justify-center text-slate-400 transition group-open:text-blue-600 dark:text-slate-500 dark:group-open:text-blue-300">
-                                            <i data-lucide="chevron-down" class="h-4 w-4 transition group-open:rotate-180"></i>
+                                            <i data-lucide="chevron-down"
+                                               class="h-4 w-4 transition group-open:rotate-180"></i>
                                             <span class="sr-only">Toggle capacity details</span>
                                         </span>
                                     </div>
                                 </summary>
-
                                 <div class="border-t border-slate-200 bg-slate-50/60 p-4 dark:border-slate-700 dark:bg-slate-950/30">
                                     <div class="space-y-3">
                                         {% for item in section['items'] %}
@@ -239,7 +231,6 @@
                             </details>
                         {% endfor %}
                     </div>
-
                     <div class="border-t border-slate-200 bg-slate-50 px-6 py-4 dark:border-slate-700 dark:bg-slate-950/40">
                         <div class="flex flex-wrap gap-4 text-xs text-slate-500 dark:text-slate-400">
                             <span class="inline-flex items-center gap-2">
@@ -275,9 +266,7 @@
                             </div>
                             <div>
                                 <h2 class="text-lg font-semibold text-white">Capacity Risk Summary</h2>
-                                <p class="mt-1 text-sm text-blue-50/85">
-                                    Current compute and scheduling headroom, plus governance findings.
-                                </p>
+                                <p class="mt-1 text-sm text-blue-50/85">Current compute and scheduling headroom, plus governance findings.</p>
                             </div>
                         </div>
                     </div>
@@ -285,14 +274,14 @@
                         <div class="grid gap-4 md:grid-cols-3">
                             {% for item in risk_summary %}
                                 {% if item['resource'] == 'cpu' %}
-                                    {% set icon_class = 'bg-blue-50 text-blue-600 ring-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:ring-blue-900' %}
-                                    {% set progress_class = 'bg-blue-600' %}
+                                    {% set icon_class = "bg-blue-50 text-blue-600 ring-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:ring-blue-900" %}
+                                    {% set progress_class = "bg-blue-600" %}
                                 {% elif item['resource'] == 'memory' %}
-                                    {% set icon_class = 'bg-indigo-50 text-indigo-600 ring-indigo-100 dark:bg-indigo-950/40 dark:text-indigo-300 dark:ring-indigo-900' %}
-                                    {% set progress_class = 'bg-indigo-600' %}
+                                    {% set icon_class = "bg-indigo-50 text-indigo-600 ring-indigo-100 dark:bg-indigo-950/40 dark:text-indigo-300 dark:ring-indigo-900" %}
+                                    {% set progress_class = "bg-indigo-600" %}
                                 {% else %}
-                                    {% set icon_class = 'bg-cyan-50 text-cyan-600 ring-cyan-100 dark:bg-cyan-950/40 dark:text-cyan-300 dark:ring-cyan-900' %}
-                                    {% set progress_class = 'bg-cyan-600' %}
+                                    {% set icon_class = "bg-cyan-50 text-cyan-600 ring-cyan-100 dark:bg-cyan-950/40 dark:text-cyan-300 dark:ring-cyan-900" %}
+                                    {% set progress_class = "bg-cyan-600" %}
                                 {% endif %}
                                 <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
                                     <div class="flex h-full flex-col">
@@ -310,7 +299,6 @@
                                                 {{ item['status']['label'] }}
                                             </span>
                                         </div>
-
                                         <div class="mt-6">
                                             <div class="text-4xl font-bold tracking-tight text-slate-950 dark:text-white">
                                                 {{ "%.1f"|format(item['headroom']) }}%
@@ -319,14 +307,14 @@
                                                 Remaining worker {{ item['label']|lower }} capacity.
                                             </p>
                                         </div>
-
                                         <div class="mt-6">
                                             <div class="mb-2 flex items-center justify-between text-xs font-medium text-slate-500 dark:text-slate-400">
                                                 <span>Headroom</span>
                                                 <span>{{ "%.1f"|format(item['headroom']) }}%</span>
                                             </div>
                                             <div class="h-2.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                                                <div class="h-full rounded-full {{ progress_class }}" style="width: {{ item['headroom'] }}%;"></div>
+                                                <div class="h-full rounded-full {{ progress_class }}"
+                                                     style="width: {{ item['headroom'] }}%"></div>
                                             </div>
                                         </div>
                                     </div>
@@ -339,7 +327,9 @@
                                     <h3 class="font-semibold text-slate-900 dark:text-white">Headroom Overview</h3>
                                     <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Visual summary of current CPU, memory, and pod headroom.</p>
                                 </div>
-                                <div class="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 text-white"><i data-lucide="gauge" class="h-5 w-5"></i></div>
+                                <div class="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 text-white">
+                                    <i data-lucide="gauge" class="h-5 w-5"></i>
+                                </div>
                             </div>
                             <div class="grid gap-4 sm:grid-cols-3">
                                 {% for item in risk_summary %}
@@ -409,7 +399,7 @@
                 </section>
             </div>
             {% include "analytics/capacity/partials/_recommendations.html" %}
-{% endif %}
+        {% endif %}
     </div>
     {% block scripts %}
         <script>

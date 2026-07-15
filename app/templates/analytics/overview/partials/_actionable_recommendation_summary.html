@@ -29,33 +29,33 @@
             <div class="flex flex-wrap items-center gap-3">
                 {% for source in top_sources[:3] %}
                     {% set source_class = {
-                        'green': 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300',
-                        'amber': 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300',
-                        'red': 'bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300',
-                        'gray': 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
-                    }.get(source.tone, 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300') %}
+                                            'green': 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300',
+                                            'amber': 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300',
+                                            'red': 'bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300',
+                                            'gray': 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                                        }.get(source.tone, 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300') %}
                     <span class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
                         {{ source.label }}
                         <span class="rounded-lg px-2 py-1 text-xs font-bold {{ source_class }}">{{ source.count }}</span>
                     </span>
                 {% endfor %}
                 <span class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
-                    <i data-lucide="chevron-down" class="h-4 w-4 transition group-open:rotate-180"></i>
+                    <i data-lucide="chevron-down"
+                       class="h-4 w-4 transition group-open:rotate-180"></i>
                     Details
                 </span>
             </div>
         </summary>
-
         <div class="border-t border-slate-200 p-6 dark:border-slate-700">
             <div class="grid items-stretch gap-4 lg:grid-cols-[1.4fr_0.6fr]">
                 <div class="grid items-stretch gap-3 md:grid-cols-2 xl:grid-cols-3">
                     {% for source in summary.sources %}
                         {% set source_class = {
-                            'green': 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300',
-                            'amber': 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300',
-                            'red': 'bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300',
-                            'gray': 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
-                        }.get(source.tone, 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300') %}
+                                                    'green': 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300',
+                                                    'amber': 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300',
+                                                    'red': 'bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300',
+                                                    'gray': 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                                                }.get(source.tone, 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300') %}
                         <a href="{{ source.href }}?cluster_id={{ payload.selected_cluster_id }}&time_range={{ payload.selected_time_range }}"
                            class="flex h-full rounded-2xl border border-slate-200 p-4 transition hover:border-blue-200 hover:bg-slate-50 dark:border-slate-700 dark:hover:border-blue-700 dark:hover:bg-slate-950">
                             <div class="flex w-full items-center justify-between gap-4">

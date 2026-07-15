@@ -22,12 +22,12 @@
                     Anomalies <span class="ml-2 text-base font-bold text-violet-600 dark:text-violet-300">{{ alerts.recent_anomalies }}</span>
                 </span>
                 <span class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
-                    <i data-lucide="chevron-down" class="h-4 w-4 transition group-open:rotate-180"></i>
+                    <i data-lucide="chevron-down"
+                       class="h-4 w-4 transition group-open:rotate-180"></i>
                     Details
                 </span>
             </div>
         </summary>
-
         <div class="border-t border-slate-200 p-6 dark:border-slate-700">
             <div class="mb-5 flex items-center justify-end">
                 <a href="{{ alerts.href }}?cluster_id={{ payload.selected_cluster_id }}&time_range={{ payload.selected_time_range }}"
@@ -49,8 +49,14 @@
                             </div>
                         </div>
                         <div class="mt-5 grid grid-cols-2 gap-3">
-                            <div class="rounded-xl bg-white p-3 dark:bg-slate-900"><p class="text-xs text-slate-500 dark:text-slate-400">Firing</p><p class="mt-1 text-2xl font-bold text-red-600 dark:text-red-300">{{ alerts.firing_alerts }}</p></div>
-                            <div class="rounded-xl bg-white p-3 dark:bg-slate-900"><p class="text-xs text-slate-500 dark:text-slate-400">Pending</p><p class="mt-1 text-2xl font-bold text-amber-600 dark:text-amber-300">{{ alerts.pending_alerts }}</p></div>
+                            <div class="rounded-xl bg-white p-3 dark:bg-slate-900">
+                                <p class="text-xs text-slate-500 dark:text-slate-400">Firing</p>
+                                <p class="mt-1 text-2xl font-bold text-red-600 dark:text-red-300">{{ alerts.firing_alerts }}</p>
+                            </div>
+                            <div class="rounded-xl bg-white p-3 dark:bg-slate-900">
+                                <p class="text-xs text-slate-500 dark:text-slate-400">Pending</p>
+                                <p class="mt-1 text-2xl font-bold text-amber-600 dark:text-amber-300">{{ alerts.pending_alerts }}</p>
+                            </div>
                         </div>
                     </div>
                     <p class="mt-4 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs leading-5 text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
@@ -69,8 +75,14 @@
                             </div>
                         </div>
                         <div class="mt-5 grid grid-cols-2 gap-3">
-                            <div class="rounded-xl bg-white p-3 dark:bg-slate-900"><p class="text-xs text-slate-500 dark:text-slate-400">Critical</p><p class="mt-1 text-2xl font-bold text-red-600 dark:text-red-300">{{ alerts.critical_alerts }}</p></div>
-                            <div class="rounded-xl bg-white p-3 dark:bg-slate-900"><p class="text-xs text-slate-500 dark:text-slate-400">Warning</p><p class="mt-1 text-2xl font-bold text-amber-600 dark:text-amber-300">{{ alerts.warning_alerts }}</p></div>
+                            <div class="rounded-xl bg-white p-3 dark:bg-slate-900">
+                                <p class="text-xs text-slate-500 dark:text-slate-400">Critical</p>
+                                <p class="mt-1 text-2xl font-bold text-red-600 dark:text-red-300">{{ alerts.critical_alerts }}</p>
+                            </div>
+                            <div class="rounded-xl bg-white p-3 dark:bg-slate-900">
+                                <p class="text-xs text-slate-500 dark:text-slate-400">Warning</p>
+                                <p class="mt-1 text-2xl font-bold text-amber-600 dark:text-amber-300">{{ alerts.warning_alerts }}</p>
+                            </div>
                         </div>
                     </div>
                     <p class="mt-4 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs leading-5 text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">

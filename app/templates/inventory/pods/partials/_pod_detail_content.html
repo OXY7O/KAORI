@@ -1,12 +1,10 @@
 {% from 'inventory/components/_detail_macros.html' import detail_shell, detail_card, detail_row, detail_status_row, detail_tip %}
-
 {% set phase_classes = {
-    'Running': 'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/25',
-    'Pending': 'bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/25',
-    'Succeeded': 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-400/25',
-    'Failed': 'bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-400/25'
+    "Running": "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/25",
+    "Pending": "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/25",
+    "Succeeded": "bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-400/25",
+    "Failed": "bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-400/25"
 } %}
-
 {% call detail_shell(
     pod.name,
     'Pod identity, ownership, placement, configuration, and runtime state from the latest Kubernetes inventory snapshot.',
@@ -16,7 +14,7 @@
     'bg-indigo-50 text-indigo-700 ring-1 ring-inset ring-indigo-200 dark:bg-indigo-500/10 dark:text-indigo-300 dark:ring-indigo-400/25',
     pod.status,
     phase_classes.get(pod.status, 'bg-slate-100 text-slate-700 ring-1 ring-inset ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-600')
-) %}
+    ) %}
     <div class="space-y-4 lg:col-span-3">
         <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {% call detail_card(
@@ -25,15 +23,14 @@
                 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300',
                 pod.owner_type,
                 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-400/25'
-            ) %}
+                ) %}
                 {{ detail_row('Cluster', pod.cluster_name, false, 'blue') }}
                 {{ detail_row('Namespace', pod.namespace, false, 'blue') }}
                 {{ detail_row('Owner', (pod.owner_type ~ ' · ' ~ pod.owner_name) if pod.owner_type != 'Standalone' else 'Standalone', false, 'blue') }}
                 {{ detail_row('Age', pod.age, false, 'blue') }}
                 {{ detail_row('Kubernetes UID', pod.uid, true, 'blue') }}
-                {{ detail_row('Created', pod.created_at|user_datetime('%Y-%m-%d %H:%M %Z'), false, 'blue') }}
-                {{ detail_row('Collected', pod.collected_at|user_datetime('%Y-%m-%d %H:%M %Z'), false, 'blue') }}
-
+                {{ detail_row('Created', pod.created_at|user_datetime('%Y-%m-%d %H:%M %Z') , false, 'blue') }}
+                {{ detail_row('Collected', pod.collected_at|user_datetime('%Y-%m-%d %H:%M %Z') , false, 'blue') }}
                 <div class="pt-1">
                     <div class="mb-2 text-[11px] font-normal text-blue-700 dark:text-blue-300">Ownership chain</div>
                     <div class="space-y-0">
@@ -45,31 +42,29 @@
                                 <span class="relative mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-blue-500 ring-4 ring-blue-50 dark:ring-blue-500/10"></span>
                                 <div class="min-w-0">
                                     <div class="text-[10px] font-normal text-blue-600 dark:text-blue-300">{{ owner.kind }}</div>
-                                    <div class="truncate text-xs font-medium text-slate-700 dark:text-slate-200" title="{{ owner.name }}">{{ owner.name }}</div>
+                                    <div class="truncate text-xs font-medium text-slate-700 dark:text-slate-200"
+                                         title="{{ owner.name }}">{{ owner.name }}</div>
                                 </div>
                             </div>
                         {% endfor %}
                     </div>
                 </div>
-
                 {{ detail_tip('Pod age uses the Kubernetes creation timestamp. Collected shows when KAORI refreshed this snapshot.', 'blue', 'clock-3', false, true, 'min-h-28') }}
             {% endcall %}
-
             {% call detail_card(
                 'Runtime state',
                 'activity',
                 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300',
                 pod.ready,
                 'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/25'
-            ) %}
-                {{ detail_status_row('Phase', pod.status, 'success' if pod.status in ['Running', 'Succeeded'] else ('warning' if pod.status == 'Pending' else ('danger' if pod.status == 'Failed' else 'neutral'))) }}
+                ) %}
+                {{ detail_status_row('Phase', pod.status, 'success' if pod.status in ['Running', 'Succeeded'] else ('warning' if pod.status == 'Pending' else ('danger' if pod.status == 'Failed' else 'neutral') )) }}
                 {{ detail_row('Ready containers', pod.ready, false, 'emerald') }}
                 {{ detail_row('Regular containers', pod.configuration.container_count, false, 'emerald') }}
                 {{ detail_row('Init containers', pod.configuration.init_container_count, false, 'emerald') }}
                 {{ detail_row('Restarts', pod.restarts, false, 'emerald') }}
                 {{ detail_row('QoS class', pod.qos_class, false, 'emerald') }}
                 {{ detail_row('Reason', pod.reason or '-', false, 'emerald') }}
-
                 {% if pod.conditions %}
                     <div class="rounded-xl bg-emerald-50 px-3 py-3 text-emerald-900 ring-1 ring-inset ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-100 dark:ring-emerald-500/20">
                         <div class="flex items-start gap-2.5">
@@ -84,7 +79,8 @@
                                 <div class="mt-2 space-y-1.5">
                                     {% for condition in pod.conditions %}
                                         <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-3 text-xs font-normal leading-5">
-                                            <span class="truncate text-emerald-700/80 dark:text-emerald-200/80" title="{{ condition.type }}">{{ condition.type }}</span>
+                                            <span class="truncate text-emerald-700/80 dark:text-emerald-200/80"
+                                                  title="{{ condition.type }}">{{ condition.type }}</span>
                                             {% if condition.status == 'True' %}
                                                 <span class="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-normal text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:ring-emerald-400/25">True</span>
                                             {% elif condition.status == 'False' %}
@@ -99,23 +95,20 @@
                         </div>
                     </div>
                 {% endif %}
-
                 {% if pod.message %}
                     <div class="rounded-xl bg-amber-50 px-3 py-2.5 text-xs leading-5 text-amber-800 dark:bg-amber-500/10 dark:text-amber-200">
                         {{ pod.message }}
                     </div>
                 {% endif %}
-
                 {{ detail_tip('Runtime state is a point-in-time snapshot. Historical failures and restart anomalies remain in Analytics.', 'emerald', 'info', false, true, 'min-h-28') }}
             {% endcall %}
-
             {% call detail_card(
                 'Placement & network',
                 'map-pin',
                 'bg-cyan-50 text-cyan-600 dark:bg-cyan-950/40 dark:text-cyan-300',
                 pod.host_ip or 'Not reported',
                 'bg-cyan-50 text-cyan-700 ring-1 ring-inset ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-400/25'
-            ) %}
+                ) %}
                 {{ detail_row('Node', pod.node or 'Not scheduled', false, 'cyan') }}
                 {{ detail_row('Pod IP', pod.ip or '-', false, 'cyan') }}
                 {{ detail_row('Host IP', pod.host_ip or '-', false, 'cyan') }}
@@ -126,27 +119,25 @@
                 {{ detail_status_row('Affinity', 'Configured' if pod.placement.affinity_configured else 'Not configured', 'info' if pod.placement.affinity_configured else 'neutral') }}
                 {{ detail_row('Topology spread', pod.placement.topology_spread_count, false, 'cyan') }}
                 {{ detail_status_row('Host network', 'True' if pod.placement.host_network else 'False', 'warning' if pod.placement.host_network else 'neutral') }}
-
                 {% if pod.placement.node_selector %}
                     <div class="flex flex-wrap gap-1.5 pt-1">
                         {% for key, value in pod.placement.node_selector.items() %}
-                            <span class="inline-flex max-w-full rounded-full bg-cyan-50 px-2 py-0.5 text-[10px] font-normal text-cyan-700 ring-1 ring-inset ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-400/25" title="{{ key }}={{ value }}">
+                            <span class="inline-flex max-w-full rounded-full bg-cyan-50 px-2 py-0.5 text-[10px] font-normal text-cyan-700 ring-1 ring-inset ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-400/25"
+                                  title="{{ key }}={{ value }}">
                                 <span class="truncate">{{ key }}={{ value }}</span>
                             </span>
                         {% endfor %}
                     </div>
                 {% endif %}
-
                 {{ detail_tip('Host IP identifies the node network address currently hosting this Pod. Pod IP remains the address assigned to the Pod instance.', 'teal', 'network', false, true, 'min-h-28') }}
             {% endcall %}
-
             {% call detail_card(
                 'Pod configuration',
                 'settings-2',
                 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300',
                 pod.configuration.container_count ~ ' container(s)',
                 'bg-violet-50 text-violet-700 ring-1 ring-inset ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-400/25'
-            ) %}
+                ) %}
                 {{ detail_row('Service account', pod.configuration.service_account, false, 'violet') }}
                 {{ detail_row('Restart policy', pod.configuration.restart_policy, false, 'violet') }}
                 {{ detail_row('DNS policy', pod.configuration.dns_policy, false, 'violet') }}
@@ -157,11 +148,9 @@
                 {{ detail_row('Regular containers', pod.configuration.container_count, false, 'violet') }}
                 {{ detail_row('Init containers', pod.configuration.init_container_count, false, 'violet') }}
                 {{ detail_row('Ephemeral containers', pod.configuration.ephemeral_container_count, false, 'violet') }}
-
                 {{ detail_tip('Configuration comes from the Pod specification. Secret values and mounted file content are never displayed.', 'violet', 'shield-check', false, true, 'min-h-28') }}
             {% endcall %}
         </div>
-
         <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-950/40">
             <div class="flex flex-col gap-3 border-b border-slate-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700">
                 <div class="flex items-center gap-3">
@@ -175,7 +164,6 @@
                 </div>
                 <span class="self-start rounded-full bg-fuchsia-50 px-2.5 py-1 text-xs font-semibold text-fuchsia-700 ring-1 ring-inset ring-fuchsia-200 sm:self-auto dark:bg-fuchsia-500/10 dark:text-fuchsia-300 dark:ring-fuchsia-400/25">{{ pod.container_statuses|length }} entries</span>
             </div>
-
             {% if pod.container_statuses %}
                 <div class="overflow-x-auto">
                     <table class="min-w-full text-left text-xs">
@@ -204,7 +192,8 @@
                                         {% endif %}
                                     </td>
                                     <td class="max-w-[360px] px-4 py-3">
-                                        <div class="break-all font-medium text-slate-700 dark:text-slate-200" title="{{ container.image }}">{{ container.image }}</div>
+                                        <div class="break-all font-medium text-slate-700 dark:text-slate-200"
+                                             title="{{ container.image }}">{{ container.image }}</div>
                                         <div class="mt-1 text-[10px] text-slate-400">Pull policy: {{ container.pull_policy }}</div>
                                     </td>
                                     <td class="px-4 py-3">
@@ -234,10 +223,10 @@
                                     <td class="px-4 py-3 font-semibold {{ 'text-amber-700 dark:text-amber-300' if container.restart_count > 0 else 'text-slate-700 dark:text-slate-300' }}">{{ container.restart_count }}</td>
                                     <td class="px-4 py-3 text-[10px] leading-5 text-slate-500 dark:text-slate-400">
                                         {% if container.started_at_value %}
-                                            <div>Started {{ container.started_at_value|user_datetime('%Y-%m-%d %H:%M %Z') }}</div>
+                                            <div>Started {{ container.started_at_value|user_datetime("%Y-%m-%d %H:%M %Z") }}</div>
                                         {% endif %}
                                         {% if container.finished_at_value %}
-                                            <div>Finished {{ container.finished_at_value|user_datetime('%Y-%m-%d %H:%M %Z') }}</div>
+                                            <div>Finished {{ container.finished_at_value|user_datetime("%Y-%m-%d %H:%M %Z") }}</div>
                                         {% endif %}
                                         {% if not container.started_at_value and not container.finished_at_value %}-{% endif %}
                                     </td>
@@ -250,7 +239,6 @@
                 <div class="px-4 py-5">{{ detail_tip('Container runtime status is not reported in this snapshot. Restart the worker and sync the cluster again.', 'amber', 'triangle-alert') }}</div>
             {% endif %}
         </section>
-
         <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-950/40">
             <div class="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-4 dark:border-slate-700">
                 <div class="flex items-center gap-3">
@@ -264,7 +252,6 @@
                 </div>
                 <span class="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/25">{{ pod.volumes|length }}</span>
             </div>
-
             {% if pod.volumes %}
                 <div class="overflow-x-auto">
                     <table class="min-w-full text-left text-xs">
@@ -304,7 +291,6 @@
                 <div class="px-4 py-5">{{ detail_tip('No volumes are configured for this Pod.', 'slate', 'info') }}</div>
             {% endif %}
         </section>
-
         <section class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-950/40">
             <div class="mb-4 flex items-center justify-between gap-3">
                 <div class="flex items-center gap-3">
@@ -318,23 +304,25 @@
                 </div>
                 <span class="rounded-full bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-700 ring-1 ring-inset ring-teal-200 dark:bg-teal-500/10 dark:text-teal-300 dark:ring-teal-400/25">{{ pod.labels|length }} labels</span>
             </div>
-
             {% if pod.labels %}
                 <div class="flex max-h-44 flex-wrap gap-2 overflow-y-auto pr-1">
                     {% for key, value in pod.labels.items() %}
                         {% if key.startswith('app.kubernetes.io/') %}
-                            {% set label_classes = 'bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-400/25' %}
+                            {% set label_classes = "bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-400/25" %}
                         {% elif key in ['pod-template-hash', 'controller-revision-hash'] %}
-                            {% set label_classes = 'bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-600' %}
+                            {% set label_classes = "bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-600" %}
                         {% elif key in ['environment', 'env'] or 'environment' in key %}
-                            {% set label_classes = 'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/25' %}
+                            {% set label_classes = "bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/25" %}
                         {% elif key in ['team', 'owner'] or 'team' in key or 'owner' in key %}
-                            {% set label_classes = 'bg-cyan-50 text-cyan-700 ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-400/25' %}
+                            {% set label_classes = "bg-cyan-50 text-cyan-700 ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-400/25" %}
                         {% else %}
-                            {% set label_classes = 'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/25' %}
+                            {% set label_classes = "bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/25" %}
                         {% endif %}
-                        <span class="inline-flex max-w-full rounded-full px-2.5 py-1 text-[10px] font-normal ring-1 ring-inset {{ label_classes }}" title="{{ key }}={{ value }}">
-                            <span class="break-all">{{ key }}{% if value not in [None, ''] %}={{ value }}{% endif %}</span>
+                        <span class="inline-flex max-w-full rounded-full px-2.5 py-1 text-[10px] font-normal ring-1 ring-inset {{ label_classes }}"
+                              title="{{ key }}={{ value }}">
+                            <span class="break-all">{{ key }}
+                                {% if value not in [None, ''] %}={{ value }}{% endif %}
+                            </span>
                         </span>
                     {% endfor %}
                 </div>
@@ -342,7 +330,6 @@
                 {{ detail_tip('No labels are recorded for this Pod.', 'slate', 'info') }}
             {% endif %}
         </section>
-
         <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-950/40">
             <div class="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-4 dark:border-slate-700">
                 <div class="flex items-center gap-3">
@@ -356,7 +343,6 @@
                 </div>
                 <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 ring-1 ring-inset ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-600">{{ pod.annotations|length }}</span>
             </div>
-
             {% if pod.annotations %}
                 <div class="max-h-64 overflow-y-auto">
                     {% for key, value in pod.annotations.items() %}
@@ -370,7 +356,6 @@
                 <div class="px-4 py-5">{{ detail_tip('No annotations are recorded for this Pod.', 'slate', 'info') }}</div>
             {% endif %}
         </section>
-
         {% if not pod.details_reported %}
             {{ detail_tip('This Pod still uses a legacy snapshot. Restart the Celery worker and sync the cluster again to populate complete runtime, placement, volume, and annotation metadata.', 'amber', 'triangle-alert', true) }}
         {% else %}

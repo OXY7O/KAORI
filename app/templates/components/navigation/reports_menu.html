@@ -41,7 +41,6 @@
         <i data-lucide="chevron-right"
            class="sidebar-expanded-only sidebar-menu-chevron h-4 w-4 {{ 'text-blue-300' if reports_active else 'text-slate-500' }}"></i>
     </summary>
-
     <div class="sidebar-expanded-only sidebar-submenu ml-7 mt-1 space-y-1 border-l border-slate-800 pl-4">
         {% if current_user.has_permission('reports.view') %}
             <a href="{{ url_for('reports.overview') }}"

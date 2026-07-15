@@ -1,67 +1,37 @@
 {% from 'inventory/components/_detail_macros.html' import detail_shell, detail_card, detail_row, detail_status_row, detail_tip %}
-
 {% macro service_object_card(title, badge, icon, tone='cyan') -%}
-    <div class="rounded-xl px-3 py-3 ring-1 ring-inset
-        {% if tone == 'violet' %}bg-violet-50 text-violet-900 ring-violet-100 dark:bg-violet-500/10 dark:text-violet-100 dark:ring-violet-500/20
-        {% elif tone == 'emerald' %}bg-emerald-50 text-emerald-900 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-100 dark:ring-emerald-500/20
-        {% elif tone == 'amber' %}bg-amber-50 text-amber-900 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-100 dark:ring-amber-500/20
-        {% else %}bg-cyan-50 text-cyan-900 ring-cyan-100 dark:bg-cyan-500/10 dark:text-cyan-100 dark:ring-cyan-500/20{% endif %}">
+    <div class="rounded-xl px-3 py-3 ring-1 ring-inset {% if tone == 'violet' %}bg-violet-50 text-violet-900 ring-violet-100 dark:bg-violet-500/10 dark:text-violet-100 dark:ring-violet-500/20 {% elif tone == 'emerald' %}bg-emerald-50 text-emerald-900 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-100 dark:ring-emerald-500/20 {% elif tone == 'amber' %}bg-amber-50 text-amber-900 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-100 dark:ring-amber-500/20 {% else %}bg-cyan-50 text-cyan-900 ring-cyan-100 dark:bg-cyan-500/10 dark:text-cyan-100 dark:ring-cyan-500/20{% endif %}">
         <div class="flex items-start gap-2.5">
-            <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg
-                {% if tone == 'violet' %}bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300
-                {% elif tone == 'emerald' %}bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300
-                {% elif tone == 'amber' %}bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300
-                {% else %}bg-cyan-100 text-cyan-600 dark:bg-cyan-500/15 dark:text-cyan-300{% endif %}">
+            <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg {% if tone == 'violet' %}bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300 {% elif tone == 'emerald' %}bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300 {% elif tone == 'amber' %}bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300 {% else %}bg-cyan-100 text-cyan-600 dark:bg-cyan-500/15 dark:text-cyan-300{% endif %}">
                 <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
             </span>
             <div class="min-w-0 flex-1">
                 <div class="flex items-center justify-between gap-3">
-                    <span class="truncate text-xs font-normal
-                        {% if tone == 'violet' %}text-violet-800 dark:text-violet-100
-                        {% elif tone == 'emerald' %}text-emerald-800 dark:text-emerald-100
-                        {% elif tone == 'amber' %}text-amber-950 dark:text-amber-100
-                        {% else %}text-cyan-800 dark:text-cyan-100{% endif %}"
+                    <span class="truncate text-xs font-normal {% if tone == 'violet' %}text-violet-800 dark:text-violet-100 {% elif tone == 'emerald' %}text-emerald-800 dark:text-emerald-100 {% elif tone == 'amber' %}text-amber-950 dark:text-amber-100 {% else %}text-cyan-800 dark:text-cyan-100{% endif %}"
                           title="{{ title }}">{{ title }}</span>
-                    <span class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-normal
-                        {% if tone == 'violet' %}bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-200
-                        {% elif tone == 'emerald' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-200
-                        {% elif tone == 'amber' %}bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-200
-                        {% else %}bg-cyan-100 text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-200{% endif %}">{{ badge }}</span>
+                    <span class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-normal {% if tone == 'violet' %}bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-200 {% elif tone == 'emerald' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-200 {% elif tone == 'amber' %}bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-200 {% else %}bg-cyan-100 text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-200{% endif %}">{{ badge }}</span>
                 </div>
-                <div class="mt-1.5 space-y-1">
-                    {{ caller() }}
-                </div>
+                <div class="mt-1.5 space-y-1">{{ caller() }}</div>
             </div>
         </div>
     </div>
 {%- endmacro %}
-
 {% macro service_object_row(label, value, tone='cyan', mono=false) -%}
     {% set display_value = value if value not in [None, ''] else '-' %}
     <div class="flex items-start justify-between gap-3 text-xs font-normal leading-5">
-        <span class="shrink-0
-            {% if tone == 'violet' %}text-violet-600 dark:text-violet-300
-            {% elif tone == 'emerald' %}text-emerald-600 dark:text-emerald-300
-            {% elif tone == 'amber' %}text-amber-700/80 dark:text-amber-200/80
-            {% else %}text-cyan-600 dark:text-cyan-300{% endif %}"
+        <span class="shrink-0 {% if tone == 'violet' %}text-violet-600 dark:text-violet-300 {% elif tone == 'emerald' %}text-emerald-600 dark:text-emerald-300 {% elif tone == 'amber' %}text-amber-700/80 dark:text-amber-200/80 {% else %}text-cyan-600 dark:text-cyan-300{% endif %}"
               title="{{ label }}">{{ label }}</span>
-        <span class="max-w-[68%] {{ 'break-all' if mono else 'break-words' }} text-right font-normal
-            {% if tone == 'violet' %}text-violet-800 dark:text-violet-100
-            {% elif tone == 'emerald' %}text-emerald-800 dark:text-emerald-100
-            {% elif tone == 'amber' %}text-amber-950 dark:text-amber-100
-            {% else %}text-cyan-800 dark:text-cyan-100{% endif %}"
+        <span class="max-w-[68%] {{ 'break-all' if mono else 'break-words' }} text-right font-normal {% if tone == 'violet' %}text-violet-800 dark:text-violet-100 {% elif tone == 'emerald' %}text-emerald-800 dark:text-emerald-100 {% elif tone == 'amber' %}text-amber-950 dark:text-amber-100 {% else %}text-cyan-800 dark:text-cyan-100{% endif %}"
               title="{{ display_value }}">{{ display_value }}</span>
     </div>
 {%- endmacro %}
-
 {% set type_classes = {
-    'ClusterIP': 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-400/25',
-    'Headless': 'bg-cyan-50 text-cyan-700 ring-1 ring-inset ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-400/25',
-    'NodePort': 'bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/25',
-    'LoadBalancer': 'bg-violet-50 text-violet-700 ring-1 ring-inset ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-400/25',
-    'ExternalName': 'bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-400/25'
+    "ClusterIP": "bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-400/25",
+    "Headless": "bg-cyan-50 text-cyan-700 ring-1 ring-inset ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-400/25",
+    "NodePort": "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/25",
+    "LoadBalancer": "bg-violet-50 text-violet-700 ring-1 ring-inset ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-400/25",
+    "ExternalName": "bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-400/25"
 } %}
-
 {% call detail_shell(
     service.name,
     'Service identity, exposure behavior, port mappings, selectors, and endpoint state from the latest Kubernetes inventory snapshot.',
@@ -71,7 +41,7 @@
     'bg-indigo-50 text-indigo-700 ring-1 ring-inset ring-indigo-200 dark:bg-indigo-500/10 dark:text-indigo-300 dark:ring-indigo-400/25',
     service.type,
     type_classes.get(service.type, 'bg-slate-100 text-slate-700 ring-1 ring-inset ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-600')
-) %}
+    ) %}
     <div class="space-y-4 lg:col-span-3">
         <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {% call detail_card('Object identity', 'badge-info', 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300', service.type, type_classes.get(service.type, 'bg-slate-100 text-slate-700')) %}
@@ -80,11 +50,10 @@
                 {{ detail_row('Type', service.type, false, 'blue') }}
                 {{ detail_row('Age', service.age, false, 'blue') }}
                 {{ detail_row('Kubernetes UID', service.uid, true, 'blue') }}
-                {{ detail_row('Created', service.created_at|user_datetime('%Y-%m-%d %H:%M %Z'), false, 'blue') }}
-                {{ detail_row('Collected', service.collected_at|user_datetime('%Y-%m-%d %H:%M %Z'), false, 'blue') }}
+                {{ detail_row('Created', service.created_at|user_datetime('%Y-%m-%d %H:%M %Z') , false, 'blue') }}
+                {{ detail_row('Collected', service.collected_at|user_datetime('%Y-%m-%d %H:%M %Z') , false, 'blue') }}
                 {{ detail_tip(service.type_description, 'blue', 'lightbulb', false, true, 'min-h-28') }}
             {% endcall %}
-
             {% call detail_card('Network configuration', 'globe-2', 'bg-cyan-50 text-cyan-600 dark:bg-cyan-950/40 dark:text-cyan-300', service.cluster_ip, 'bg-cyan-50 text-cyan-700 ring-1 ring-inset ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-400/25') %}
                 {{ detail_row('Cluster IP', service.cluster_ip, false, 'cyan') }}
                 {{ detail_row('External address', service.external_ips|join(', ') if service.external_ips else '-', false, 'cyan') }}
@@ -97,7 +66,6 @@
                 {{ detail_row('Load balancer class', service.load_balancer_class, false, 'cyan') }}
                 {{ detail_tip('Cluster IP and external addresses are current Service endpoints. Exposure behavior depends on the selected Service type.', 'cyan', 'network', false, true, 'min-h-28') }}
             {% endcall %}
-
             {% call detail_card('Port mapping', 'plug-zap', 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300', service.port_count ~ ' port(s)', 'bg-violet-50 text-violet-700 ring-1 ring-inset ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-400/25') %}
                 {% if service.ports %}
                     {% for port in service.ports %}
@@ -112,7 +80,6 @@
                 {% endif %}
                 {{ detail_tip('Port mappings describe Service-to-target forwarding only. Traffic utilization remains in Analytics.', 'violet', 'route', false, true, 'min-h-28') }}
             {% endcall %}
-
             {% call detail_card('Selection & endpoints', 'scan-search', 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300', service.ready_endpoint_count ~ ' ready', 'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/25') %}
                 {{ detail_row('Selector labels', service.selectors|length, false, 'emerald') }}
                 {{ detail_row('Selectors', service.selectors|join(', ') if service.selectors else '-', true, 'emerald') }}
@@ -125,12 +92,14 @@
                 {{ detail_tip('Selectors resolve matching Pods, while endpoint readiness reflects the latest Kubernetes Endpoints snapshot.', 'emerald', 'info', false, true, 'min-h-28') }}
             {% endcall %}
         </div>
-
         <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-950/40">
             <div class="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-4 dark:border-slate-700">
                 <div class="flex items-center gap-3">
                     <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-cyan-50 text-cyan-600 dark:bg-cyan-950/40 dark:text-cyan-300"><i data-lucide="waypoints" class="h-4 w-4"></i></span>
-                    <div><h4 class="text-sm font-semibold text-slate-900 dark:text-white">Endpoint addresses</h4><p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Ready and not-ready backend addresses registered for this Service.</p></div>
+                    <div>
+                        <h4 class="text-sm font-semibold text-slate-900 dark:text-white">Endpoint addresses</h4>
+                        <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Ready and not-ready backend addresses registered for this Service.</p>
+                    </div>
                 </div>
                 <span class="rounded-full bg-cyan-50 px-2.5 py-1 text-xs font-semibold text-cyan-700 ring-1 ring-inset ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-400/25">{{ service.ready_endpoint_count + service.not_ready_endpoint_count }}</span>
             </div>
@@ -151,7 +120,9 @@
                             {% endcall %}
                         {% endfor %}
                     </div>
-                    {% if service.endpoints_truncated %}<p class="mt-3 text-[11px] text-slate-400">Showing the first 12 addresses from each endpoint state.</p>{% endif %}
+                    {% if service.endpoints_truncated %}
+                        <p class="mt-3 text-[11px] text-slate-400">Showing the first 12 addresses from each endpoint state.</p>
+                    {% endif %}
                 {% elif service.endpoints_reported %}
                     {{ detail_tip('No endpoint address is registered for this Service in the latest snapshot.', 'amber', 'triangle-alert') }}
                 {% else %}
@@ -159,12 +130,14 @@
                 {% endif %}
             </div>
         </section>
-
         <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-950/40">
             <div class="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-4 dark:border-slate-700">
                 <div class="flex items-center gap-3">
                     <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300"><i data-lucide="package-check" class="h-4 w-4"></i></span>
-                    <div><h4 class="text-sm font-semibold text-slate-900 dark:text-white">Selected Pods</h4><p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Pods matching the Service selector in the current inventory snapshot.</p></div>
+                    <div>
+                        <h4 class="text-sm font-semibold text-slate-900 dark:text-white">Selected Pods</h4>
+                        <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Pods matching the Service selector in the current inventory snapshot.</p>
+                    </div>
                 </div>
                 <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/25">{{ service.pod_count }}</span>
             </div>
@@ -179,7 +152,9 @@
                             {% endcall %}
                         {% endfor %}
                     </div>
-                    {% if service.pods_truncated %}<p class="mt-3 text-[11px] text-slate-400">Showing the first 8 selected Pods.</p>{% endif %}
+                    {% if service.pods_truncated %}
+                        <p class="mt-3 text-[11px] text-slate-400">Showing the first 8 selected Pods.</p>
+                    {% endif %}
                 {% elif service.has_selector %}
                     {{ detail_tip('The Service has a selector, but no matching Pod is present in the latest inventory snapshot.', 'amber', 'triangle-alert') }}
                 {% else %}
@@ -187,23 +162,56 @@
                 {% endif %}
             </div>
         </section>
-
         <section class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-950/40">
             <div class="mb-3 flex items-center justify-between gap-3">
-                <div class="flex items-center gap-3"><span class="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300"><i data-lucide="tags" class="h-4 w-4"></i></span><div><h4 class="text-sm font-semibold text-slate-900 dark:text-white">Service labels</h4><p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Metadata labels attached to this Service object.</p></div></div>
+                <div class="flex items-center gap-3">
+                    <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300"><i data-lucide="tags" class="h-4 w-4"></i></span>
+                    <div>
+                        <h4 class="text-sm font-semibold text-slate-900 dark:text-white">Service labels</h4>
+                        <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Metadata labels attached to this Service object.</p>
+                    </div>
+                </div>
                 <span class="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-400/25">{{ service.labels|length }}</span>
             </div>
-            {% if service.labels %}<div class="flex max-h-44 flex-wrap gap-2 overflow-y-auto pr-1">{% for key, value in service.labels %}<span class="inline-flex max-w-full rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-normal text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-400/25" title="{{ key }}={{ value }}"><span class="break-all">{{ key }}{% if value %}={{ value }}{% endif %}</span></span>{% endfor %}</div>{% else %}{{ detail_tip('No label is recorded for this Service.', 'slate', 'info') }}{% endif %}
+            {% if service.labels %}
+                <div class="flex max-h-44 flex-wrap gap-2 overflow-y-auto pr-1">
+                    {% for key, value in service.labels %}
+                        <span class="inline-flex max-w-full rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-normal text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-400/25"
+                              title="{{ key }}={{ value }}"><span class="break-all">{{ key }}
+                            {% if value %}={{ value }}{% endif %}
+                        </span></span>
+                    {% endfor %}
+                </div>
+            {% else %}
+                {{ detail_tip('No label is recorded for this Service.', 'slate', 'info') }}
+            {% endif %}
         </section>
-
         <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-950/40">
             <div class="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-4 dark:border-slate-700">
-                <div class="flex items-center gap-3"><span class="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-300"><i data-lucide="notebook-tabs" class="h-4 w-4"></i></span><div><h4 class="text-sm font-semibold text-slate-900 dark:text-white">Service annotations</h4><p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Annotation keys and values attached to this Service.</p></div></div>
+                <div class="flex items-center gap-3">
+                    <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-300"><i data-lucide="notebook-tabs" class="h-4 w-4"></i></span>
+                    <div>
+                        <h4 class="text-sm font-semibold text-slate-900 dark:text-white">Service annotations</h4>
+                        <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Annotation keys and values attached to this Service.</p>
+                    </div>
+                </div>
                 <span class="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/25">{{ service.annotations|length }}</span>
             </div>
-            {% if service.annotations %}<div class="max-h-64 overflow-y-auto"><div class="divide-y divide-slate-200 dark:divide-slate-700">{% for key, value in service.annotations %}<div class="grid gap-1 px-4 py-3 text-xs md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] md:gap-4"><div class="break-all font-normal text-slate-700 dark:text-slate-200">{{ key }}</div><div class="break-all text-slate-500 dark:text-slate-400">{{ value or '-' }}</div></div>{% endfor %}</div></div>{% else %}<div class="p-4">{{ detail_tip('No annotation is recorded for this Service.', 'slate', 'info') }}</div>{% endif %}
+            {% if service.annotations %}
+                <div class="max-h-64 overflow-y-auto">
+                    <div class="divide-y divide-slate-200 dark:divide-slate-700">
+                        {% for key, value in service.annotations %}
+                            <div class="grid gap-1 px-4 py-3 text-xs md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] md:gap-4">
+                                <div class="break-all font-normal text-slate-700 dark:text-slate-200">{{ key }}</div>
+                                <div class="break-all text-slate-500 dark:text-slate-400">{{ value or '-' }}</div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% else %}
+                <div class="p-4">{{ detail_tip('No annotation is recorded for this Service.', 'slate', 'info') }}</div>
+            {% endif %}
         </section>
-
         {{ detail_tip('This section contains point-in-time Service inventory data. Traffic rate, latency, errors, trends, and recommendations remain in Analytics and Intelligence.', 'blue', 'info') }}
     </div>
 {% endcall %}

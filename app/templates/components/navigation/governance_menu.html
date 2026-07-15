@@ -3,8 +3,8 @@
     'governance.tls_certificates',
     'governance.tls_certificates_detail',
 ] %}
-
-<details class="sidebar-menu space-y-1" {% if governance_active %}open{% endif %}>
+<details class="sidebar-menu space-y-1"
+         {% if governance_active %}open{% endif %}>
     <!-- Governance Parent -->
     <summary class="{{ 'bg-blue-600/15 text-blue-300 ring-1 ring-blue-500/20' if governance_active else 'text-slate-300 hover:bg-slate-900 hover:text-white' }} sidebar-parent-link group flex cursor-pointer select-none items-center justify-between rounded-2xl px-3 py-3 text-[13px] leading-5 font-semibold">
         <div class="flex min-w-0 items-center gap-3">
@@ -16,7 +16,6 @@
         <i data-lucide="chevron-right"
            class="sidebar-expanded-only sidebar-menu-chevron h-4 w-4 {{ 'text-blue-300' if governance_active else 'text-slate-500' }}"></i>
     </summary>
-
     <!-- Governance Sub Menu -->
     <div class="sidebar-expanded-only sidebar-submenu ml-7 mt-1 space-y-1 border-l border-slate-800 pl-4">
         <a href="{{ url_for('governance.tls_certificates') }}"

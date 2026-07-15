@@ -2,10 +2,10 @@
 {% set risk_total = payload.summary.warning + payload.summary.critical + payload.summary.expired + payload.summary.invalid %}
 {% set healthy_total = total_secrets - risk_total if total_secrets > risk_total else 0 %}
 <div class="relative min-h-[13.25rem] overflow-hidden rounded-3xl bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 px-6 py-6 text-white shadow-lg shadow-blue-500/20 sm:px-7 sm:py-7">
-    <div class="absolute inset-y-0 right-0 hidden w-1/3 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.22),transparent_55%)] lg:block"></div>
+    <div class="absolute inset-y-0 right-0 hidden w-1/3 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.22),transparent_55%)] lg:block">
+    </div>
     <div class="absolute -top-16 right-10 h-40 w-40 rounded-full bg-white/10 blur-3xl"></div>
     <div class="absolute -bottom-20 right-32 h-48 w-48 rounded-full bg-cyan-300/20 blur-3xl"></div>
-
     <div class="relative flex min-h-[10rem] flex-col gap-6 xl:flex-row xl:items-stretch xl:justify-between">
         <div class="flex min-w-0 flex-1 flex-col justify-between gap-4 xl:pr-8">
             <div class="flex items-start gap-4">
@@ -23,7 +23,6 @@
                     </p>
                 </div>
             </div>
-
             <div class="flex min-h-10 flex-wrap items-center gap-3 sm:ml-[4.5rem] xl:max-w-4xl">
                 {% if cluster_onboarding.is_blocked %}
                     <div class="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-medium">
@@ -50,7 +49,6 @@
                 {% endif %}
             </div>
         </div>
-
         <div class="flex w-full flex-col gap-3 sm:max-w-[360px] xl:w-[360px] xl:flex-shrink-0">
             {% if cluster_onboarding.is_blocked %}
                 <div class="flex min-h-[10rem] flex-col justify-center rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur">
@@ -78,9 +76,18 @@
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-2">
-                    <form method="post" action="{{ url_for('governance.tls_certificates_sync') }}" hx-post="{{ url_for('governance.tls_certificates_sync') }}" hx-target="#tls-certificates-page-content" hx-swap="outerHTML" hx-indicator="#tls-certificates-table-loading" hx-on::before-request="window.showTlsSecretSyncProgress && window.showTlsSecretSyncProgress()">
-                        <input type="hidden" name="cluster_id" value="{{ payload.filters.cluster_id }}">
-                        <button type="submit" class="inline-flex min-h-[3.25rem] w-full items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-blue-700 shadow-sm transition hover:bg-blue-50">
+                    <form method="post"
+                          action="{{ url_for('governance.tls_certificates_sync') }}"
+                          hx-post="{{ url_for('governance.tls_certificates_sync') }}"
+                          hx-target="#tls-certificates-page-content"
+                          hx-swap="outerHTML"
+                          hx-indicator="#tls-certificates-table-loading"
+                          hx-on::before-request="window.showTlsSecretSyncProgress && window.showTlsSecretSyncProgress()">
+                        <input type="hidden"
+                               name="cluster_id"
+                               value="{{ payload.filters.cluster_id }}">
+                        <button type="submit"
+                                class="inline-flex min-h-[3.25rem] w-full items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-blue-700 shadow-sm transition hover:bg-blue-50">
                             <i data-lucide="refresh-cw" class="h-4 w-4"></i>
                             Sync TLS
                         </button>

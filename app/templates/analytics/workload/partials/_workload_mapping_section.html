@@ -74,7 +74,7 @@
                 </select>
             </form>
         </div>
-</div>
+    </div>
     <div class="p-6">
         {% set total_workloads = workload_mapping_rows|length %}
         {% set page_workloads = workload_mapping_payload.rows|length %}
@@ -136,7 +136,6 @@
                 </div>
             </div>
         </div>
-
         <div class="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-700">
             <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-700">
                 <thead>
@@ -333,10 +332,10 @@
                     {% else %}
                         <tr>
                             <td colspan="9" class="p-0">
-                                {% set empty_state_icon = 'boxes' %}
-                                {% set empty_state_title = 'No workload mapping data available' %}
-                                {% set empty_state_description = 'Workload mapping will appear after Prometheus and inventory data match the selected namespace and filters.' %}
-                                {% set empty_state_min_height = 'min-h-[190px]' %}
+                                {% set empty_state_icon = "boxes" %}
+                                {% set empty_state_title = "No workload mapping data available" %}
+                                {% set empty_state_description = "Workload mapping will appear after Prometheus and inventory data match the selected namespace and filters." %}
+                                {% set empty_state_min_height = "min-h-[190px]" %}
                                 {% include "components/states/_empty_state.html" %}
                             </td>
                         </tr>

@@ -1,5 +1,6 @@
 {% set analytics_active = request.endpoint and request.endpoint.startswith('analytics.') %}
-<details class="sidebar-menu space-y-1" {% if analytics_active %}open{% endif %}>
+<details class="sidebar-menu space-y-1"
+         {% if analytics_active %}open{% endif %}>
     <!-- Analytics Parent -->
     <summary class="{{ 'bg-blue-600/15 text-blue-300 ring-1 ring-blue-500/20' if analytics_active else 'text-slate-300 hover:bg-slate-900 hover:text-white' }} sidebar-parent-link group flex cursor-pointer select-none items-center justify-between rounded-2xl px-3 py-3 text-[13px] leading-5 font-semibold">
         <div class="flex min-w-0 items-center gap-3">
@@ -11,9 +12,8 @@
         <i data-lucide="chevron-right"
            class="sidebar-expanded-only sidebar-menu-chevron h-4 w-4 {{ 'text-blue-300' if analytics_active else 'text-slate-500' }}"></i>
     </summary>
-
     <!-- Analytics Sub Menu -->
-<div class="sidebar-expanded-only sidebar-submenu ml-7 mt-1 space-y-1 border-l border-slate-800 pl-4">
+    <div class="sidebar-expanded-only sidebar-submenu ml-7 mt-1 space-y-1 border-l border-slate-800 pl-4">
         <a href="{{ url_for('analytics.overview') }}"
            class="{{ 'bg-slate-900 text-blue-300' if request.endpoint == 'analytics.overview' else 'text-slate-400 hover:bg-slate-900 hover:text-white' }} group flex items-center gap-2 rounded-xl px-3 py-2 text-[12px] leading-4 transition">
             <span class="h-1.5 w-1.5 rounded-full {{ 'bg-blue-400' if request.endpoint == 'analytics.overview' else 'bg-slate-700 group-hover:bg-slate-500' }}"></span>

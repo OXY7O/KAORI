@@ -3,7 +3,8 @@
 {% block dashboard_content %}
     <div class="space-y-6">
         <section class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 px-6 py-6 text-white shadow-lg shadow-blue-500/20">
-            <div class="absolute inset-y-0 right-0 hidden w-1/3 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.35),transparent_55%)] lg:block"></div>
+            <div class="absolute inset-y-0 right-0 hidden w-1/3 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.35),transparent_55%)] lg:block">
+            </div>
             <div class="relative grid gap-6 lg:grid-cols-[1fr_360px] lg:items-center">
                 <div>
                     <div class="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold ring-1 ring-white/20">
@@ -23,13 +24,14 @@
                     <h2 class="mt-2 text-2xl font-black">{{ payload.engine_status }}</h2>
                     <p class="mt-2 text-sm leading-6 text-blue-50">{{ payload.engine_description }}</p>
                     <div class="mt-4 grid grid-cols-2 gap-2 text-xs font-semibold">
-                        <a href="{{ url_for('analytics.alerts') }}" class="rounded-2xl bg-white/15 px-3 py-2 text-center transition hover:bg-white/20">Current Alerts</a>
-                        <a href="{{ url_for('intelligence.catalog') }}" class="rounded-2xl bg-white/15 px-3 py-2 text-center transition hover:bg-white/20">Catalog</a>
+                        <a href="{{ url_for('analytics.alerts') }}"
+                           class="rounded-2xl bg-white/15 px-3 py-2 text-center transition hover:bg-white/20">Current Alerts</a>
+                        <a href="{{ url_for('intelligence.catalog') }}"
+                           class="rounded-2xl bg-white/15 px-3 py-2 text-center transition hover:bg-white/20">Catalog</a>
                     </div>
                 </div>
             </div>
         </section>
-
         <section class="grid gap-4 lg:grid-cols-3">
             {% for card in payload.boundaries %}
                 <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
@@ -45,7 +47,6 @@
                 </div>
             {% endfor %}
         </section>
-
         <section class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
             <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
