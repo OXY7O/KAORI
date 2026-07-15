@@ -1,136 +1,172 @@
 {% extends "layouts/app.html" %}
 {% set page_title = "Welcome" %}
 {% block title %}Welcome · KAORI{% endblock title %}
+{% block page_styles %}
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/welcome.css') }}" />
+{% endblock page_styles %}
 {% block dashboard_content %}
-    <div class="space-y-6">
-        <section class="relative min-h-[16.5rem] overflow-hidden rounded-3xl bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 px-6 py-6 text-white shadow-lg shadow-blue-500/20 sm:px-7 sm:py-7">
-            <div class="pointer-events-none absolute inset-y-0 right-0 hidden w-1/3 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.22),transparent_55%)] lg:block"></div>
-            <div class="pointer-events-none absolute -top-16 right-10 h-40 w-40 rounded-full bg-white/10 blur-3xl"></div>
-            <div class="pointer-events-none absolute -bottom-20 right-32 h-48 w-48 rounded-full bg-cyan-300/20 blur-3xl"></div>
+    <div class="kaori-welcome-page">
+        <section class="kaori-welcome-hero">
+            <div class="kaori-welcome-hero-glow kaori-welcome-hero-glow--one" aria-hidden="true"></div>
+            <div class="kaori-welcome-hero-glow kaori-welcome-hero-glow--two" aria-hidden="true"></div>
 
-            <div class="relative grid gap-6 xl:grid-cols-[minmax(0,1fr)_400px] xl:items-start">
-                <div class="space-y-5">
-                    <div class="flex items-start gap-4">
-                        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white shadow-sm backdrop-blur">
-                            <i data-lucide="sparkles" class="h-6 w-6"></i>
-                        </div>
-                        <div class="min-w-0">
-                            <div class="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold tracking-wide text-blue-50 shadow-sm backdrop-blur">
-                                <i data-lucide="orbit" class="h-3.5 w-3.5"></i>
-                                Unified infrastructure operations workspace
-                            </div>
-                            <h1 class="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
-                                Welcome to KAORI, {{ current_user.display_label }}.
-                            </h1>
-                            <p class="mt-2 max-w-4xl text-sm leading-6 text-blue-50/90 sm:text-base">
-                                Unified observability, analytics, governance, and intelligent recommendations for modern infrastructure across Kubernetes, Server, and HCI environments.
-                            </p>
-                            <div class="mt-4 flex flex-wrap items-center gap-2.5">
-                                <span class="inline-flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-2 text-sm font-semibold text-blue-50 shadow-sm backdrop-blur">
-                                    <i data-lucide="shield-user" class="h-4 w-4"></i>
-                                    {{ current_user.role_display_name }}
-                                </span>
-                                <span class="inline-flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-2 text-sm font-semibold text-blue-50 shadow-sm backdrop-blur">
-                                    <i data-lucide="panel-top-open" class="h-4 w-4"></i>
-                                    {{ shortcut_count }} available workspaces
-                                </span>
-                            </div>
-                        </div>
-                    </div>
+            <div class="kaori-welcome-hero-copy">
+                <div class="kaori-welcome-kicker">
+                    <i data-lucide="orbit" aria-hidden="true"></i>
+                    Infrastructure operations workspace
                 </div>
 
-                <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-700 via-blue-600 to-cyan-500 p-5 shadow-xl shadow-blue-950/20 backdrop-blur-md">
-                    <div class="pointer-events-none absolute -right-12 -top-16 h-40 w-40 rounded-full bg-white/20 blur-3xl"></div>
-                    <div class="relative">
-                        <div class="flex items-start justify-between gap-4">
-                            <div>
-                                <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-blue-50/75">Primary infrastructure scope</p>
-                                <h2 class="mt-2 text-xl font-bold text-white">One workspace, three asset domains</h2>
-                            </div>
-                            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-950/30 text-cyan-100 shadow-inner">
-                                <i data-lucide="network" class="h-5 w-5"></i>
-                            </span>
-                        </div>
-
-                        <div class="mt-5 grid grid-cols-3 gap-3">
-                            <div class="rounded-2xl bg-blue-950/30 px-3 py-3 shadow-inner">
-                                <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-white/15 text-white">
-                                    <i data-lucide="container" class="h-4 w-4"></i>
-                                </span>
-                                <p class="mt-3 text-sm font-bold text-white">Kubernetes</p>
-                                <p class="mt-1 text-[10px] leading-4 text-blue-50/70">Container platforms</p>
-                            </div>
-                            <div class="rounded-2xl bg-blue-950/30 px-3 py-3 shadow-inner">
-                                <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-white/15 text-white">
-                                    <i data-lucide="server" class="h-4 w-4"></i>
-                                </span>
-                                <p class="mt-3 text-sm font-bold text-white">Server</p>
-                                <p class="mt-1 text-[10px] leading-4 text-blue-50/70">Host workloads</p>
-                            </div>
-                            <div class="rounded-2xl bg-blue-950/30 px-3 py-3 shadow-inner">
-                                <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-white/15 text-white">
-                                    <i data-lucide="blocks" class="h-4 w-4"></i>
-                                </span>
-                                <p class="mt-3 text-sm font-bold text-white">HCI</p>
-                                <p class="mt-1 text-[10px] leading-4 text-blue-50/70">Provider platforms</p>
-                            </div>
-                        </div>
-
-                        <p class="mt-4 text-xs leading-5 text-blue-50/75">
-                            Workspace visibility follows the modules enabled for your assigned role.
+                <div class="kaori-welcome-title-row">
+                    <span class="kaori-welcome-title-icon" aria-hidden="true">
+                        <i data-lucide="sparkles"></i>
+                    </span>
+                    <div>
+                        <h1>Welcome to KAORI, {{ current_user.display_label }}.</h1>
+                        <p>
+                            Access unified infrastructure visibility, controlled operational workflows,
+                            analytics, reporting, governance, and administration from one role-aware workspace.
                         </p>
                     </div>
                 </div>
-            </div>
-        </section>
 
-        <section class="space-y-4">
-            <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                    <div class="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 ring-1 ring-inset ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-400/20">
-                        <i data-lucide="panels-top-left" class="h-3.5 w-3.5"></i>
-                        Role-aware navigation
+                <div class="kaori-welcome-hero-badges">
+                    <span>
+                        <i data-lucide="shield-user" aria-hidden="true"></i>
+                        {{ current_user.role_display_name }}
+                    </span>
+                    <span>
+                        <i data-lucide="panels-top-left" aria-hidden="true"></i>
+                        {{ shortcut_count }} available workspace{{ '' if shortcut_count == 1 else 's' }}
+                    </span>
+                    <span>
+                        <i data-lucide="layers-3" aria-hidden="true"></i>
+                        {{ workspace_group_count }} capability area{{ '' if workspace_group_count == 1 else 's' }}
+                    </span>
+                </div>
+            </div>
+
+            <aside class="kaori-welcome-access-card" aria-label="Current access scope">
+                <div class="kaori-welcome-access-card__top">
+                    <div>
+                        <p>Your access scope</p>
+                        <h2>Role-aware workspace</h2>
                     </div>
-                    <h2 class="mt-3 text-xl font-bold tracking-tight text-slate-950 dark:text-white">Available workspaces</h2>
-                    <p class="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">
-                        Open a KAORI workspace directly. Only destinations permitted by your current role are shown.
+                    <span aria-hidden="true">
+                        <i data-lucide="key-round"></i>
+                    </span>
+                </div>
+
+                <div class="kaori-welcome-access-stats">
+                    <div>
+                        <strong>{{ shortcut_count }}</strong>
+                        <span>Workspaces</span>
+                    </div>
+                    <div>
+                        <strong>{{ workspace_group_count }}</strong>
+                        <span>Capability areas</span>
+                    </div>
+                </div>
+
+                <div class="kaori-welcome-access-note">
+                    <i data-lucide="shield-check" aria-hidden="true"></i>
+                    <p>
+                        Only workspaces permitted by <strong>{{ current_user.role_display_name }}</strong>
+                        are rendered. Every protected route and action remains validated server-side.
                     </p>
                 </div>
-                <div class="inline-flex items-center gap-2 self-start rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-600 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 sm:self-auto">
-                    <i data-lucide="key-round" class="h-4 w-4 text-blue-600 dark:text-blue-300"></i>
-                    {{ current_user.role_display_name }} access · {{ shortcut_count }} shortcuts
+            </aside>
+        </section>
+
+        <section class="kaori-workspace-catalog" data-workspace-catalog>
+            <header class="kaori-workspace-catalog__header">
+                <div>
+                    <div class="kaori-workspace-section-label">
+                        <i data-lucide="layout-grid" aria-hidden="true"></i>
+                        Available workspaces
+                    </div>
+                    <h2>Open the capability you need</h2>
+                    <p>
+                        Workspaces are grouped by operational purpose and automatically filtered by your assigned permissions.
+                    </p>
                 </div>
+
+                <label class="kaori-workspace-search">
+                    <span class="sr-only">Search available workspaces</span>
+                    <i data-lucide="search" aria-hidden="true"></i>
+                    <input type="search"
+                           placeholder="Search workspaces"
+                           autocomplete="off"
+                           data-workspace-search />
+                    <kbd>/</kbd>
+                </label>
+            </header>
+
+            <div class="kaori-workspace-result-bar" aria-live="polite">
+                <span>
+                    <i data-lucide="shield-check" aria-hidden="true"></i>
+                    {{ current_user.role_display_name }} access
+                </span>
+                <strong data-workspace-result-count>{{ shortcut_count }} workspaces available</strong>
             </div>
 
-            <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {% for shortcut in shortcuts %}
-                    <a href="{{ shortcut.href }}"
-                       class="group relative flex min-h-64 flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-lg hover:shadow-blue-500/10 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-500/40">
-                        <div class="pointer-events-none absolute -right-14 -top-14 h-32 w-32 rounded-full bg-blue-100 blur-3xl transition dark:bg-blue-500/5"></div>
-                        <div class="relative flex flex-1 flex-col">
-                            <div class="flex items-start justify-between gap-4">
-                                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 shadow-sm transition dark:bg-blue-500/10 dark:text-blue-300">
-                                    <i data-lucide="{{ shortcut.icon }}" class="h-5 w-5"></i>
-                                </span>
-                                <span class="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:bg-slate-800 dark:text-slate-300">
-                                    {{ shortcut.asset }}
-                                </span>
-                            </div>
+            <div class="kaori-workspace-groups">
+                {% for group in workspace_groups %}
+                    <section class="kaori-workspace-group" data-workspace-group>
+                        <header class="kaori-workspace-group__header">
+                            <span class="kaori-workspace-group__icon" aria-hidden="true">
+                                <i data-lucide="{{ group.icon }}"></i>
+                            </span>
+                            <p>{{ group.eyebrow }}</p>
+                            <h3>{{ group.title }}</h3>
+                            <div class="kaori-workspace-group__divider"></div>
+                            <span class="kaori-workspace-group__count">
+                                <strong data-group-result-count>{{ group.shortcut_count }}</strong>
+                                available
+                            </span>
+                            <p class="kaori-workspace-group__description">{{ group.description }}</p>
+                        </header>
 
-                            <p class="mt-5 text-[10px] font-bold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-300">{{ shortcut.label }}</p>
-                            <h3 class="mt-1 text-base font-bold text-slate-950 dark:text-white">{{ shortcut.title }}</h3>
-                            <p class="mt-2 flex-1 text-sm leading-6 text-slate-500 dark:text-slate-400">{{ shortcut.description }}</p>
+                        <div class="kaori-workspace-grid">
+                            {% for shortcut in group.shortcuts %}
+                                <a href="{{ shortcut.href }}"
+                                   class="kaori-workspace-card"
+                                   data-workspace-card
+                                   data-search-text="{{ shortcut.search_text }}">
+                                    <div class="kaori-workspace-card__top">
+                                        <span class="kaori-workspace-card__icon" aria-hidden="true">
+                                            <i data-lucide="{{ shortcut.icon }}"></i>
+                                        </span>
+                                        <span class="kaori-workspace-card__scope">{{ shortcut.scope }}</span>
+                                    </div>
 
-                            <div class="mt-5 flex items-center justify-between border-t border-slate-100 pt-4 dark:border-slate-800">
-                                <span class="text-sm font-bold text-blue-700 dark:text-blue-300">Open workspace</span>
-                                <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600 transition dark:bg-blue-500/10 dark:text-blue-300">
-                                    <i data-lucide="arrow-right" class="h-4 w-4"></i>
-                                </span>
-                            </div>
+                                    <div class="kaori-workspace-card__body">
+                                        <p>{{ shortcut.label }}</p>
+                                        <h4>{{ shortcut.title }}</h4>
+                                        <span>{{ shortcut.description }}</span>
+                                    </div>
+
+                                    <div class="kaori-workspace-card__action">
+                                        <strong>Open workspace</strong>
+                                        <span aria-hidden="true">
+                                            <i data-lucide="arrow-up-right"></i>
+                                        </span>
+                                    </div>
+                                </a>
+                            {% endfor %}
                         </div>
-                    </a>
+                    </section>
                 {% endfor %}
+            </div>
+
+            <div class="kaori-workspace-empty" data-workspace-empty hidden>
+                <span aria-hidden="true"><i data-lucide="search-x"></i></span>
+                <h3>No permitted workspace matches this search</h3>
+                <p>Try a different capability, function, or infrastructure scope.</p>
             </div>
         </section>
     </div>
 {% endblock dashboard_content %}
+{% block scripts %}
+    <script src="{{ url_for('static', filename='js/welcome.js') }}"></script>
+{% endblock scripts %}

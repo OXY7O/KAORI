@@ -5,60 +5,120 @@ from typing import Any
 from flask import url_for
 from flask_login import current_user
 
+WELCOME_WORKSPACE_GROUP_DEFINITIONS: tuple[dict[str, str], ...] = (
+    {
+        'key': 'visibility',
+        'eyebrow': 'Understand',
+        'title': 'Visibility & operational insight',
+        'description': (
+            'Explore infrastructure posture, inventory, relationships, analytics, '
+            'and prioritized operational context.'
+        ),
+        'icon': 'scan-search',
+    },
+    {
+        'key': 'operations',
+        'eyebrow': 'Act',
+        'title': 'Infrastructure operations',
+        'description': (
+            'Open controlled workflows for integration management, synchronization, '
+            'configuration, and infrastructure-changing activities.'
+        ),
+        'icon': 'workflow',
+    },
+    {
+        'key': 'assurance',
+        'eyebrow': 'Assure',
+        'title': 'Governance & reporting',
+        'description': (
+            'Review lifecycle controls, operational evidence, historical context, '
+            'and management-ready outputs.'
+        ),
+        'icon': 'shield-check',
+    },
+    {
+        'key': 'platform',
+        'eyebrow': 'Administer',
+        'title': 'Platform administration',
+        'description': (
+            'Manage personal settings, access control, audit visibility, integrations, '
+            'and platform configuration within assigned authority.'
+        ),
+        'icon': 'settings-2',
+    },
+)
+
 WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
     {
         'title': 'Kubernetes Operations Dashboard',
-        'label': 'Command center',
+        'label': 'Operational overview',
         'description': (
-            'Review cluster health, capacity risk, alerts, top consumers, '
+            'Review cluster posture, capacity risk, alerts, top consumers, '
             'reporting readiness, and prioritized actions.'
         ),
         'icon': 'layout-dashboard',
-        'asset': 'Kubernetes',
+        'scope': 'Compute',
+        'group': 'visibility',
         'targets': (('dashboard.view', 'kubernetes_dashboard.index'),),
-    },
-    {
-        'title': 'Kubernetes Cluster',
-        'label': 'Connection & sync',
-        'description': (
-            'Review registered clusters, connectivity, inventory synchronization, '
-            'and integration readiness.'
-        ),
-        'icon': 'server-cog',
-        'asset': 'Kubernetes',
-        'targets': (('clusters.view', 'cluster.list_clusters'),),
     },
     {
         'title': 'Kubernetes Inventory',
         'label': 'Asset visibility',
         'description': (
-            'Explore clusters, nodes, namespaces, workloads, Pods, services, '
-            'ingress, storage, and configuration relationships.'
+            'Explore infrastructure identity, status, configuration, and resource '
+            'relationships collected from connected environments.'
         ),
         'icon': 'boxes',
-        'asset': 'Kubernetes',
+        'scope': 'Compute',
+        'group': 'visibility',
         'targets': (('inventory.view', 'inventory.overview'),),
     },
     {
         'title': 'Kubernetes Analytics',
-        'label': 'Analytics',
+        'label': 'Operational analytics',
         'description': (
             'Analyze utilization, capacity, workload efficiency, storage, forecast '
             'risk, top consumers, alerts, and anomalies.'
         ),
         'icon': 'chart-column',
-        'asset': 'Kubernetes',
+        'scope': 'Compute',
+        'group': 'visibility',
         'targets': (('analytics.view', 'analytics.overview'),),
     },
     {
-        'title': 'Kubernetes Operations',
-        'label': 'Controlled actions',
+        'title': 'Intelligence',
+        'label': 'Decision support',
         'description': (
-            'Run permission-aware operational workflows such as validated Secret '
-            'management and TLS rotation.'
+            'Review contextual recommendations, alert intelligence, rule definitions, '
+            'impacted assets, and remediation guidance.'
+        ),
+        'icon': 'brain-circuit',
+        'scope': 'Cross-domain',
+        'group': 'visibility',
+        'targets': (('intelligence.view', 'intelligence.recommendations'),),
+    },
+    {
+        'title': 'Kubernetes Cluster',
+        'label': 'Integration & sync',
+        'description': (
+            'Manage registered environments, connection readiness, inventory '
+            'synchronization, and integration status.'
+        ),
+        'icon': 'server-cog',
+        'scope': 'Compute',
+        'group': 'operations',
+        'targets': (('clusters.view', 'cluster.list_clusters'),),
+    },
+    {
+        'title': 'Kubernetes Operations',
+        'label': 'Controlled workflows',
+        'description': (
+            'Run permission-aware configuration and protected infrastructure '
+            'operations with validation, safeguards, and audit context.'
         ),
         'icon': 'wrench',
-        'asset': 'Kubernetes',
+        'scope': 'Compute',
+        'group': 'operations',
         'targets': (
             ('kubernetes_configmaps.view', 'kubernetes_operations.configmap_management'),
             ('kubernetes_configmaps.create', 'kubernetes_operations.configmap_management'),
@@ -74,25 +134,15 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         ),
     },
     {
-        'title': 'Intelligence',
-        'label': 'Recommendations',
-        'description': (
-            'Review contextual recommendations, alert intelligence, rule definitions, '
-            'impacted assets, and remediation guidance.'
-        ),
-        'icon': 'brain-circuit',
-        'asset': 'Cross-domain',
-        'targets': (('intelligence.view', 'intelligence.recommendations'),),
-    },
-    {
         'title': 'Governance',
         'label': 'Policy & lifecycle',
         'description': (
-            'Review infrastructure governance posture, beginning with Kubernetes TLS '
-            'certificate inventory and lifecycle controls.'
+            'Review infrastructure governance posture, lifecycle exposure, policy '
+            'context, and controlled remediation workflows.'
         ),
         'icon': 'shield-check',
-        'asset': 'Cross-domain',
+        'scope': 'Cross-domain',
+        'group': 'assurance',
         'targets': (
             ('governance.view', 'governance.overview'),
             ('tls_certificates.view', 'governance.tls_certificates'),
@@ -100,13 +150,14 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
     },
     {
         'title': 'Reports',
-        'label': 'Management output',
+        'label': 'History & management output',
         'description': (
-            'Open operational reports, generated artifacts, templates, schedules, '
-            'and storage workflows available to your role.'
+            'Open operational history, generated reports, templates, schedules, '
+            'storage, retention, and management-ready outputs available to your role.'
         ),
         'icon': 'file-text',
-        'asset': 'Cross-domain',
+        'scope': 'Cross-domain',
+        'group': 'assurance',
         'targets': (
             ('reports.view', 'reports.overview'),
             ('reports.generate', 'reports.generate_report'),
@@ -117,13 +168,14 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
     },
     {
         'title': 'Access Management',
-        'label': 'Administration',
+        'label': 'Identity, access & audit',
         'description': (
-            'Manage users, roles, permissions, login activity, or operational audit '
-            'records according to assigned authority.'
+            'Manage users, roles, permissions, login activity, and operational '
+            'audit records according to assigned authority.'
         ),
         'icon': 'users-round',
-        'asset': 'Platform',
+        'scope': 'Platform',
+        'group': 'platform',
         'targets': (
             ('users.view', 'settings.users'),
             ('roles.view', 'settings.roles'),
@@ -133,23 +185,27 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
     },
     {
         'title': 'Account & Settings',
-        'label': 'Personal workspace',
+        'label': 'Personal & system settings',
         'description': (
-            'Manage your account and time preferences; elevated roles can also '
-            'configure integrations and system settings.'
+            'Manage your account and preferences; authorized roles can also configure '
+            'integrations and platform-level settings.'
         ),
         'icon': 'settings-2',
-        'asset': 'Platform',
+        'scope': 'Platform',
+        'group': 'platform',
         'targets': ((None, 'settings.account'),),
     },
 )
 
 
-def build_welcome_shortcuts() -> list[dict[str, str]]:
-    shortcuts: list[dict[str, str]] = []
+def build_welcome_workspace_groups() -> list[dict[str, Any]]:
+    shortcuts_by_group: dict[str, list[dict[str, str]]] = {
+        group['key']: [] for group in WELCOME_WORKSPACE_GROUP_DEFINITIONS
+    }
 
     for definition in WELCOME_SHORTCUT_DEFINITIONS:
         resolved_endpoint: str | None = None
+
         for permission_key, endpoint in definition['targets']:
             if permission_key is None or current_user.has_permission(permission_key):
                 resolved_endpoint = endpoint
@@ -158,15 +214,38 @@ def build_welcome_shortcuts() -> list[dict[str, str]]:
         if resolved_endpoint is None:
             continue
 
-        shortcuts.append(
+        shortcuts_by_group[definition['group']].append(
             {
                 'title': definition['title'],
                 'label': definition['label'],
                 'description': definition['description'],
                 'icon': definition['icon'],
-                'asset': definition['asset'],
+                'scope': definition['scope'],
                 'href': url_for(resolved_endpoint),
+                'search_text': ' '.join(
+                    (
+                        definition['title'],
+                        definition['label'],
+                        definition['description'],
+                        definition['scope'],
+                    )
+                ).lower(),
             }
         )
 
-    return shortcuts
+    groups: list[dict[str, Any]] = []
+
+    for group_definition in WELCOME_WORKSPACE_GROUP_DEFINITIONS:
+        shortcuts = shortcuts_by_group[group_definition['key']]
+        if not shortcuts:
+            continue
+
+        groups.append(
+            {
+                **group_definition,
+                'shortcuts': shortcuts,
+                'shortcut_count': len(shortcuts),
+            }
+        )
+
+    return groups

@@ -1,0 +1,970 @@
+.kaori-welcome-page {
+    display: grid;
+    gap: 24px;
+}
+
+.kaori-welcome-hero {
+    position: relative;
+    display: grid;
+    min-height: 280px;
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 400px);
+    align-items: stretch;
+    gap: 28px;
+    overflow: hidden;
+    padding: 28px;
+    border-radius: 28px;
+    color: #fff;
+    background: linear-gradient(118deg, #1d4ed8 0%, #2563eb 48%, #0891b2 100%);
+    box-shadow: 0 24px 55px rgba(37, 99, 235, 0.23);
+}
+
+.kaori-welcome-hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    opacity: 0.26;
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+    background-size: 44px 44px;
+    mask-image: linear-gradient(90deg, #000, transparent 82%);
+}
+
+.kaori-welcome-hero-glow {
+    position: absolute;
+    border-radius: 999px;
+    filter: blur(60px);
+}
+
+.kaori-welcome-hero-glow--one {
+    top: -90px;
+    left: 32%;
+    width: 250px;
+    height: 250px;
+    background: rgba(255, 255, 255, 0.18);
+}
+
+.kaori-welcome-hero-glow--two {
+    right: 310px;
+    bottom: -120px;
+    width: 260px;
+    height: 260px;
+    background: rgba(103, 232, 249, 0.18);
+}
+
+.kaori-welcome-hero-copy,
+.kaori-welcome-access-card {
+    position: relative;
+    z-index: 1;
+}
+
+.kaori-welcome-hero-copy {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.kaori-welcome-kicker,
+.kaori-workspace-section-label {
+    display: inline-flex;
+    width: fit-content;
+    align-items: center;
+    gap: 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.kaori-welcome-kicker {
+    padding: 7px 11px;
+    color: #dbeafe;
+    background: rgba(255, 255, 255, 0.12);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+}
+
+.kaori-welcome-kicker svg,
+.kaori-workspace-section-label svg {
+    width: 15px;
+    height: 15px;
+}
+
+.kaori-welcome-title-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin-top: 21px;
+}
+
+.kaori-welcome-title-icon {
+    display: flex;
+    width: 50px;
+    height: 50px;
+    flex: 0 0 50px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 17px;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.14);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12), 0 12px 26px rgba(30, 64, 175, 0.18);
+    backdrop-filter: blur(12px);
+}
+
+.kaori-welcome-title-icon svg {
+    width: 24px;
+    height: 24px;
+}
+
+.kaori-welcome-title-row h1 {
+    margin: 0;
+    font-size: clamp(28px, 3vw, 40px);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.035em;
+}
+
+.kaori-welcome-title-row p {
+    max-width: 790px;
+    margin: 10px 0 0;
+    color: rgba(239, 246, 255, 0.9);
+    font-size: 14px;
+    line-height: 1.75;
+}
+
+.kaori-welcome-hero-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 9px;
+    margin-top: 24px;
+    padding-left: 66px;
+}
+
+.kaori-welcome-hero-badges span {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 11px;
+    border-radius: 999px;
+    color: #eff6ff;
+    background: rgba(255, 255, 255, 0.11);
+    font-size: 11px;
+    font-weight: 700;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+}
+
+.kaori-welcome-hero-badges svg {
+    width: 14px;
+    height: 14px;
+}
+
+.kaori-welcome-access-card {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden;
+    padding: 22px;
+    border-radius: 24px;
+    background:
+        radial-gradient(circle at 90% 0%, rgba(103, 232, 249, 0.27), transparent 36%),
+        linear-gradient(145deg, rgba(30, 64, 175, 0.9), rgba(14, 116, 144, 0.82));
+    box-shadow: 0 20px 40px rgba(23, 37, 84, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(18px);
+}
+
+.kaori-welcome-access-card::after {
+    content: "";
+    position: absolute;
+    right: -45px;
+    bottom: -65px;
+    width: 180px;
+    height: 180px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 50%;
+    box-shadow: 0 0 0 28px rgba(255, 255, 255, 0.035), 0 0 0 56px rgba(255, 255, 255, 0.025);
+}
+
+.kaori-welcome-access-card__top,
+.kaori-welcome-access-stats,
+.kaori-welcome-access-note {
+    position: relative;
+    z-index: 1;
+}
+
+.kaori-welcome-access-card__top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
+}
+
+.kaori-welcome-access-card__top p {
+    margin: 0;
+    color: rgba(224, 242, 254, 0.72);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+
+.kaori-welcome-access-card__top h2 {
+    margin: 7px 0 0;
+    font-size: 19px;
+    font-weight: 800;
+}
+
+.kaori-welcome-access-card__top > span {
+    display: flex;
+    width: 43px;
+    height: 43px;
+    flex: 0 0 43px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 15px;
+    color: #cffafe;
+    background: rgba(15, 23, 42, 0.24);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.kaori-welcome-access-card__top svg {
+    width: 19px;
+    height: 19px;
+}
+
+.kaori-welcome-access-stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 22px;
+}
+
+.kaori-welcome-access-stats > div {
+    padding: 14px;
+    border-radius: 17px;
+    background: rgba(15, 23, 42, 0.2);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+}
+
+.kaori-welcome-access-stats strong {
+    display: block;
+    font-size: 25px;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.kaori-welcome-access-stats span {
+    display: block;
+    margin-top: 7px;
+    color: rgba(224, 242, 254, 0.72);
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.kaori-welcome-access-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-top: 16px;
+    padding: 12px 13px;
+    border-radius: 16px;
+    color: #e0f2fe;
+    background: rgba(15, 23, 42, 0.18);
+    font-size: 10px;
+    line-height: 1.6;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.kaori-welcome-access-note svg {
+    width: 15px;
+    height: 15px;
+    flex: 0 0 15px;
+    margin-top: 1px;
+    color: #a5f3fc;
+}
+
+.kaori-welcome-access-note p {
+    margin: 0;
+}
+
+.kaori-workspace-catalog {
+    display: grid;
+    gap: 16px;
+}
+
+.kaori-workspace-catalog__header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+}
+
+.kaori-workspace-section-label {
+    padding: 6px 10px;
+    color: #1d4ed8;
+    background: #eff6ff;
+    box-shadow: inset 0 0 0 1px #dbeafe;
+}
+
+.dark .kaori-workspace-section-label {
+    color: #93c5fd;
+    background: rgba(37, 99, 235, 0.12);
+    box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.15);
+}
+
+.kaori-workspace-catalog__header h2 {
+    margin: 11px 0 0;
+    color: #0f172a;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+.dark .kaori-workspace-catalog__header h2 {
+    color: #f8fafc;
+}
+
+.kaori-workspace-catalog__header p {
+    max-width: 760px;
+    margin: 5px 0 0;
+    color: #64748b;
+    font-size: 12px;
+    line-height: 1.65;
+}
+
+.dark .kaori-workspace-catalog__header p {
+    color: #94a3b8;
+}
+
+.kaori-workspace-search {
+    position: relative;
+    display: flex;
+    width: min(330px, 100%);
+    flex: 0 0 min(330px, 100%);
+    align-items: center;
+}
+
+.kaori-workspace-search > svg {
+    position: absolute;
+    left: 13px;
+    width: 16px;
+    height: 16px;
+    color: #64748b;
+    pointer-events: none;
+}
+
+.kaori-workspace-search input {
+    width: 100%;
+    min-height: 42px;
+    padding: 10px 42px 10px 38px;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    outline: none;
+    color: #0f172a;
+    background: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.04);
+    transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.kaori-workspace-search input:focus {
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1), 0 8px 22px rgba(15, 23, 42, 0.04);
+}
+
+.dark .kaori-workspace-search input {
+    border-color: #334155;
+    color: #f8fafc;
+    background: #0f172a;
+}
+
+.kaori-workspace-search kbd {
+    position: absolute;
+    right: 11px;
+    display: flex;
+    width: 23px;
+    height: 23px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #e2e8f0;
+    border-radius: 7px;
+    color: #64748b;
+    background: #f8fafc;
+    font-size: 10px;
+    font-weight: 700;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+
+.dark .kaori-workspace-search kbd {
+    border-color: #334155;
+    color: #94a3b8;
+    background: #1e293b;
+}
+
+.kaori-workspace-result-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 11px 14px;
+    border: 1px solid #dbeafe;
+    border-radius: 14px;
+    color: #475569;
+    background: linear-gradient(90deg, #eff6ff, #f8fafc);
+    font-size: 10px;
+}
+
+.dark .kaori-workspace-result-bar {
+    border-color: rgba(59, 130, 246, 0.18);
+    color: #94a3b8;
+    background: linear-gradient(90deg, rgba(37, 99, 235, 0.1), rgba(15, 23, 42, 0.72));
+}
+
+.kaori-workspace-result-bar span {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-weight: 700;
+}
+
+.kaori-workspace-result-bar svg {
+    width: 14px;
+    height: 14px;
+    color: #2563eb;
+}
+
+.kaori-workspace-result-bar strong {
+    color: #1e40af;
+    font-weight: 800;
+}
+
+.dark .kaori-workspace-result-bar strong {
+    color: #93c5fd;
+}
+
+.kaori-workspace-groups {
+    display: grid;
+    gap: 16px;
+}
+
+.kaori-workspace-group {
+    display: grid;
+    grid-template-columns: 235px minmax(0, 1fr);
+    gap: 18px;
+    padding: 18px;
+    border: 1px solid #e2e8f0;
+    border-radius: 22px;
+    background: rgba(255, 255, 255, 0.72);
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.035);
+}
+
+.dark .kaori-workspace-group {
+    border-color: #1e293b;
+    background: rgba(15, 23, 42, 0.66);
+}
+
+.kaori-workspace-group__header {
+    position: relative;
+    overflow: hidden;
+    padding: 18px;
+    border-radius: 18px;
+    color: #dbeafe;
+    background:
+        radial-gradient(circle at 100% 0%, rgba(34, 211, 238, 0.2), transparent 38%),
+        linear-gradient(145deg, #172554, #1e3a8a 58%, #155e75);
+    box-shadow: 0 14px 30px rgba(30, 64, 175, 0.15);
+}
+
+.kaori-workspace-group__header::after {
+    content: "";
+    position: absolute;
+    right: -36px;
+    bottom: -54px;
+    width: 130px;
+    height: 130px;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 50%;
+    box-shadow: 0 0 0 22px rgba(255, 255, 255, 0.025);
+}
+
+.kaori-workspace-group__icon,
+.kaori-workspace-group__header > p,
+.kaori-workspace-group__header > h3,
+.kaori-workspace-group__divider,
+.kaori-workspace-group__count {
+    position: relative;
+    z-index: 1;
+}
+
+.kaori-workspace-group__icon {
+    display: flex;
+    width: 38px;
+    height: 38px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 13px;
+    color: #cffafe;
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.kaori-workspace-group__icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+.kaori-workspace-group__header > p:not(.kaori-workspace-group__description) {
+    margin: 16px 0 0;
+    color: #7dd3fc;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.17em;
+    text-transform: uppercase;
+}
+
+.kaori-workspace-group__header h3 {
+    margin: 5px 0 0;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 1.35;
+}
+
+.kaori-workspace-group__divider {
+    width: 42px;
+    height: 2px;
+    margin-top: 13px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #60a5fa, #22d3ee);
+}
+
+.kaori-workspace-group__count {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 5px;
+    margin-top: 13px;
+    color: rgba(219, 234, 254, 0.72);
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.kaori-workspace-group__count strong {
+    color: #fff;
+    font-size: 17px;
+    font-weight: 800;
+}
+
+.kaori-workspace-group__description {
+    position: relative;
+    z-index: 1;
+    margin: 12px 0 0;
+    color: rgba(219, 234, 254, 0.72);
+    font-size: 10px;
+    line-height: 1.6;
+}
+
+.kaori-workspace-grid {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.kaori-workspace-card {
+    position: relative;
+    display: flex;
+    min-width: 0;
+    min-height: 205px;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 18px;
+    color: inherit;
+    background: #fff;
+    box-shadow: 0 5px 16px rgba(15, 23, 42, 0.035);
+    text-decoration: none;
+    transition: transform 170ms ease, border-color 170ms ease, box-shadow 170ms ease;
+}
+
+.kaori-workspace-card::after {
+    content: "";
+    position: absolute;
+    top: -44px;
+    right: -44px;
+    width: 105px;
+    height: 105px;
+    border-radius: 50%;
+    background: rgba(219, 234, 254, 0.65);
+    filter: blur(18px);
+    transition: transform 170ms ease, background 170ms ease;
+}
+
+.kaori-workspace-card:hover {
+    transform: translateY(-3px);
+    border-color: #93c5fd;
+    box-shadow: 0 16px 28px rgba(37, 99, 235, 0.1);
+}
+
+.kaori-workspace-card:hover::after {
+    transform: scale(1.15);
+    background: rgba(186, 230, 253, 0.8);
+}
+
+.dark .kaori-workspace-card {
+    border-color: #334155;
+    background: #0f172a;
+}
+
+.dark .kaori-workspace-card::after {
+    background: rgba(37, 99, 235, 0.12);
+}
+
+.dark .kaori-workspace-card:hover {
+    border-color: rgba(96, 165, 250, 0.6);
+}
+
+.kaori-workspace-card__top,
+.kaori-workspace-card__body,
+.kaori-workspace-card__action {
+    position: relative;
+    z-index: 1;
+}
+
+.kaori-workspace-card__top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.kaori-workspace-card__icon {
+    display: flex;
+    width: 39px;
+    height: 39px;
+    flex: 0 0 39px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 13px;
+    color: #2563eb;
+    background: linear-gradient(145deg, #eff6ff, #e0f2fe);
+    box-shadow: inset 0 0 0 1px #dbeafe;
+}
+
+.dark .kaori-workspace-card__icon {
+    color: #93c5fd;
+    background: rgba(37, 99, 235, 0.13);
+    box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.12);
+}
+
+.kaori-workspace-card__icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+.kaori-workspace-card__scope {
+    max-width: 110px;
+    overflow: hidden;
+    padding: 5px 8px;
+    border-radius: 999px;
+    color: #64748b;
+    background: #f1f5f9;
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.dark .kaori-workspace-card__scope {
+    color: #cbd5e1;
+    background: #1e293b;
+}
+
+.kaori-workspace-card__body {
+    flex: 1;
+    margin-top: 17px;
+}
+
+.kaori-workspace-card__body > p {
+    margin: 0;
+    color: #2563eb;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.dark .kaori-workspace-card__body > p {
+    color: #93c5fd;
+}
+
+.kaori-workspace-card__body h4 {
+    margin: 5px 0 0;
+    color: #0f172a;
+    font-size: 14px;
+    font-weight: 800;
+    line-height: 1.35;
+}
+
+.dark .kaori-workspace-card__body h4 {
+    color: #f8fafc;
+}
+
+.kaori-workspace-card__body > span {
+    display: -webkit-box;
+    overflow: hidden;
+    margin-top: 7px;
+    color: #64748b;
+    font-size: 10px;
+    line-height: 1.55;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+}
+
+.dark .kaori-workspace-card__body > span {
+    color: #94a3b8;
+}
+
+.kaori-workspace-card__action {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 15px;
+    padding-top: 12px;
+    border-top: 1px solid #f1f5f9;
+}
+
+.dark .kaori-workspace-card__action {
+    border-color: #1e293b;
+}
+
+.kaori-workspace-card__action strong {
+    color: #1d4ed8;
+    font-size: 10px;
+    font-weight: 800;
+}
+
+.dark .kaori-workspace-card__action strong {
+    color: #93c5fd;
+}
+
+.kaori-workspace-card__action span {
+    display: flex;
+    width: 28px;
+    height: 28px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9px;
+    color: #2563eb;
+    background: #eff6ff;
+    transition: transform 170ms ease, background 170ms ease;
+}
+
+.kaori-workspace-card:hover .kaori-workspace-card__action span {
+    transform: translate(2px, -2px);
+    background: #dbeafe;
+}
+
+.dark .kaori-workspace-card__action span {
+    color: #93c5fd;
+    background: rgba(37, 99, 235, 0.13);
+}
+
+.kaori-workspace-card__action svg {
+    width: 14px;
+    height: 14px;
+}
+
+.kaori-workspace-empty {
+    padding: 42px 24px;
+    border: 1px dashed #cbd5e1;
+    border-radius: 20px;
+    text-align: center;
+    background: #fff;
+}
+
+.dark .kaori-workspace-empty {
+    border-color: #334155;
+    background: #0f172a;
+}
+
+.kaori-workspace-empty > span {
+    display: flex;
+    width: 48px;
+    height: 48px;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    border-radius: 16px;
+    color: #2563eb;
+    background: #eff6ff;
+}
+
+.dark .kaori-workspace-empty > span {
+    color: #93c5fd;
+    background: rgba(37, 99, 235, 0.13);
+}
+
+.kaori-workspace-empty svg {
+    width: 21px;
+    height: 21px;
+}
+
+.kaori-workspace-empty h3 {
+    margin: 14px 0 0;
+    color: #0f172a;
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.dark .kaori-workspace-empty h3 {
+    color: #f8fafc;
+}
+
+.kaori-workspace-empty p {
+    margin: 6px 0 0;
+    color: #64748b;
+    font-size: 10px;
+}
+
+[hidden] {
+    display: none !important;
+}
+
+@media (max-width: 1280px) {
+    .kaori-workspace-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 1024px) {
+    .kaori-welcome-hero {
+        grid-template-columns: 1fr;
+    }
+
+    .kaori-welcome-access-card {
+        min-height: 220px;
+    }
+
+    .kaori-workspace-group {
+        grid-template-columns: 1fr;
+    }
+
+    .kaori-workspace-group__header {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 4px 13px;
+    }
+
+    .kaori-workspace-group__icon {
+        grid-row: 1 / span 3;
+    }
+
+    .kaori-workspace-group__header > p:not(.kaori-workspace-group__description) {
+        margin: 0;
+    }
+
+    .kaori-workspace-group__header h3 {
+        margin: 0;
+    }
+
+    .kaori-workspace-group__divider,
+    .kaori-workspace-group__description {
+        display: none;
+    }
+
+    .kaori-workspace-group__count {
+        grid-column: 3;
+        grid-row: 1 / span 3;
+        margin: 0;
+    }
+}
+
+@media (max-width: 720px) {
+    .kaori-welcome-hero {
+        padding: 21px;
+        border-radius: 22px;
+    }
+
+    .kaori-welcome-title-row {
+        gap: 12px;
+    }
+
+    .kaori-welcome-title-icon {
+        width: 43px;
+        height: 43px;
+        flex-basis: 43px;
+    }
+
+    .kaori-welcome-title-row h1 {
+        font-size: 27px;
+    }
+
+    .kaori-welcome-hero-badges {
+        padding-left: 0;
+    }
+
+    .kaori-workspace-catalog__header {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .kaori-workspace-search {
+        width: 100%;
+        flex-basis: auto;
+    }
+
+    .kaori-workspace-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 520px) {
+    .kaori-welcome-title-row {
+        display: block;
+    }
+
+    .kaori-welcome-title-icon {
+        margin-bottom: 13px;
+    }
+
+    .kaori-welcome-access-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .kaori-workspace-result-bar {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .kaori-workspace-group {
+        padding: 12px;
+    }
+
+    .kaori-workspace-group__header {
+        grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .kaori-workspace-group__count {
+        grid-column: 2;
+        grid-row: auto;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .kaori-workspace-card,
+    .kaori-workspace-card::after,
+    .kaori-workspace-card__action span {
+        transition: none;
+    }
+}

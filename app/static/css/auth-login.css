@@ -192,26 +192,46 @@ input {
     box-shadow: 0 0 18px rgba(34, 211, 238, 0.35);
 }
 
+.kaori-brand-eyebrow {
+    margin: 0;
+    color: #7dd3fc;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+}
+
+.kaori-brand-heading {
+    max-width: 520px;
+    margin: 8px 0 0;
+    color: #f8fafc;
+    font-size: clamp(1.45rem, 2.4vw, 2.1rem);
+    font-weight: 800;
+    letter-spacing: -0.035em;
+    line-height: 1.16;
+}
+
 .kaori-brand-description {
     max-width: 520px;
-    margin: 0;
+    margin: 11px 0 0;
     color: #94a3b8;
-    font-size: 0.8rem;
-    line-height: 1.6;
+    font-size: 0.78rem;
+    line-height: 1.65;
 }
 
 .kaori-feature-list {
     display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     margin-top: 22px;
     gap: 9px;
 }
 
 .kaori-feature {
     display: flex;
+    min-width: 0;
     align-items: flex-start;
     gap: 9px;
-    max-width: 510px;
-    padding: 9px 12px;
+    padding: 11px 12px;
     border: 1px solid rgba(148, 163, 184, 0.11);
     border-radius: 13px;
     background: rgba(255, 255, 255, 0.035);
@@ -260,7 +280,7 @@ input {
     background: rgba(5, 150, 105, 0.18);
 }
 
-.kaori-feature h2 {
+.kaori-feature h3 {
     margin: 0;
     color: #f8fafc;
     font-size: 0.82rem;
@@ -668,6 +688,8 @@ input {
     .kaori-brand-network,
     .kaori-feature-list,
     .kaori-brand-description,
+    .kaori-brand-eyebrow,
+    .kaori-brand-heading,
     .kaori-brand-divider,
     .kaori-brand-footnote {
         display: none;
