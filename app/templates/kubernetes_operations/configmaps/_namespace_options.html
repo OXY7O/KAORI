@@ -3,4 +3,4 @@
   <option value="">Select namespace</option>
   {% for namespace in namespaces %}<option value="{{ namespace }}" {{ 'selected' if namespace == selected_namespace else '' }}>{{ namespace }}</option>{% endfor %}
 </select>
-{% if not namespaces %}<p class="mt-2 text-xs text-amber-600 dark:text-amber-300">No namespace snapshot is available for this cluster. Run inventory sync first.</p>{% endif %}
+{% if not namespaces %}<p class="mt-2 text-xs text-amber-600 dark:text-amber-300">No live namespace is available, or KAORI could not read namespaces from this cluster.</p>{% endif %}

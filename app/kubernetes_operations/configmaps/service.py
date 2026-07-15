@@ -11,7 +11,7 @@ from sqlalchemy import and_
 
 from app.models.cluster import Cluster
 from app.kubernetes.client import KubernetesClient
-from app.models.inventory import ConfigurationInventory, NamespaceInventory, PodInventory
+from app.models.inventory import ConfigurationInventory, PodInventory
 
 _DNS_SUBDOMAIN = re.compile(r'^[a-z0-9](?:[-a-z0-9.]*[a-z0-9])?$')
 _KEY_PATTERN = re.compile(r'^[A-Za-z0-9._-]+$')
@@ -50,13 +50,34 @@ def get_context() -> dict[str, Any]:
 
 
 def get_namespaces(cluster_id: str) -> list[str]:
+    """Return the current namespace list directly from the selected cluster.
+
+    Operational ConfigMap workflows intentionally do not use inventory snapshots
+    for namespace selection because create/delete operations can make inventory
+    stale until the next synchronization.
+    """
     if not cluster_id:
         return []
-    return [
-        row.namespace
-        for row in NamespaceInventory.query.filter_by(cluster_id=cluster_id)
-        .order_by(NamespaceInventory.namespace.asc()).all()
-    ]
+    cluster = _cluster(cluster_id)
+    try:
+        response = _api(cluster).list_namespace()
+    except ApiException as exc:
+        if exc.status == 403:
+            raise ValueError(
+                'Kubernetes denied the live namespace lookup. Verify namespace list RBAC for this cluster.'
+            ) from exc
+        if exc.status == 401:
+            raise ValueError(
+                'Kubernetes authentication failed while loading live namespaces.'
+            ) from exc
+        raise ValueError(
+            'KAORI could not load live namespaces from the selected Kubernetes cluster.'
+        ) from exc
+    return sorted(
+        item.metadata.name
+        for item in (response.items or [])
+        if getattr(getattr(item, 'metadata', None), 'name', None)
+    )
 
 
 def get_configmaps(cluster_id: str, namespace: str) -> list[ConfigurationInventory]:
@@ -88,9 +109,25 @@ def _validate_name(value: str, label: str) -> str:
 
 def _validate_namespace(value: str, cluster_id: str) -> str:
     value = _validate_name(value, 'Namespace')
-    exists = NamespaceInventory.query.filter_by(cluster_id=cluster_id, namespace=value).first()
-    if exists is None:
-        raise ValueError('The selected namespace does not belong to the selected cluster inventory.')
+    cluster = _cluster(cluster_id)
+    try:
+        _api(cluster).read_namespace(name=value)
+    except ApiException as exc:
+        if exc.status == 404:
+            raise ValueError(
+                'The selected namespace no longer exists in the Kubernetes cluster.'
+            ) from exc
+        if exc.status == 403:
+            raise ValueError(
+                'Kubernetes denied namespace verification. Verify namespace read RBAC for this cluster.'
+            ) from exc
+        if exc.status == 401:
+            raise ValueError(
+                'Kubernetes authentication failed while verifying the namespace.'
+            ) from exc
+        raise ValueError(
+            'KAORI could not verify the selected namespace against the live Kubernetes cluster.'
+        ) from exc
     return value
 
 
