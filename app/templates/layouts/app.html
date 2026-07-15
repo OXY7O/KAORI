@@ -178,7 +178,8 @@
               rel="stylesheet" />
         <link rel="stylesheet"
               href="{{ url_for('static', filename='css/output.css') }}" />
-        {% block page_styles %}{% endblock page_styles %}
+        {% block page_styles %}
+        {% endblock page_styles %}
         <style>
             /* KAORI sidebar density standard */
             .kubereport-sidebar nav > :not([hidden]) ~ :not([hidden]) {
@@ -292,17 +293,8 @@
         </style>
     </head>
     <body class="h-full overflow-hidden bg-slate-50 font-sans text-slate-900 antialiased transition-colors duration-300 dark:bg-slate-900 dark:text-slate-100">
-        <div x-data="{
-                 sidebarOpen: localStorage.getItem('kubereport.sidebarOpen') !== 'false',
-                 init() {
-                     document.documentElement.classList.toggle('sidebar-collapsed', !this.sidebarOpen)
-
-                     this.$watch('sidebarOpen', value => {
-                         localStorage.setItem('kubereport.sidebarOpen', value ? 'true' : 'false')
-                         document.documentElement.classList.toggle('sidebar-collapsed', !value)
-                     })
-                 }
-             }"
+        <div x-data="{ sidebarOpen: localStorage.getItem('kubereport.sidebarOpen') !== 'false' }"
+             x-init="document.documentElement.classList.toggle('sidebar-collapsed', !sidebarOpen); $watch('sidebarOpen', value => { localStorage.setItem('kubereport.sidebarOpen', value ? 'true' : 'false'); document.documentElement.classList.toggle('sidebar-collapsed', !value); })"
              @toggle-sidebar.window="sidebarOpen = !sidebarOpen"
              class="flex h-full min-h-0 overflow-hidden">
             {% include "components/navigation/sidebar.html" %}
@@ -319,7 +311,7 @@
         </div>
         {% set queued_quick_action_feedback = load_quick_action_feedback() %}
         <div id="quick-action-feedback"
-             style="width:min(28rem, calc(100vw - 2rem));"
+             style="width:min(28rem, calc(100vw - 2rem))"
              class="pointer-events-none fixed right-4 top-20 z-50 flex flex-col gap-3 sm:right-6 lg:right-8">
             <div id="operational-action-feedback" class="flex w-full flex-col gap-3">
                 {% if queued_quick_action_feedback %}
@@ -333,27 +325,19 @@
                         action_icon=queued_quick_action_feedback.action_icon,
                         completed_label=queued_quick_action_feedback.completed_label,
                         notification_saved=queued_quick_action_feedback.notification_saved
-                    %}
+                        %}
                         {% include "components/navigation/_quick_sync_result.html" %}
                     {% endwith %}
                 {% endif %}
             </div>
-
             <div id="individual-sync-feedback"
                  class="flex w-full flex-col gap-3"
-                 {% if current_user.is_authenticated and current_user.has_permission('clusters.sync') and cluster_onboarding.has_clusters %}
-                     hx-get="{{ url_for('cluster.active_individual_sync_statuses') }}"
-                     hx-trigger="load"
-                     hx-swap="innerHTML"
-                 {% endif %}></div>
-
+                 {% if current_user.is_authenticated and current_user.has_permission('clusters.sync') and cluster_onboarding.has_clusters %} hx-get="{{ url_for('cluster.active_individual_sync_statuses') }}" hx-trigger="load" hx-swap="innerHTML" {% endif %}>
+            </div>
             <div id="quick-sync-feedback"
                  class="w-full"
-                 {% if current_user.is_authenticated and current_user.has_permission('clusters.sync') and cluster_onboarding.has_clusters %}
-                     hx-get="{{ url_for('cluster.active_sync_all_status') }}"
-                     hx-trigger="load"
-                     hx-swap="innerHTML"
-                 {% endif %}></div>
+                 {% if current_user.is_authenticated and current_user.has_permission('clusters.sync') and cluster_onboarding.has_clusters %} hx-get="{{ url_for('cluster.active_sync_all_status') }}" hx-trigger="load" hx-swap="innerHTML" {% endif %}>
+            </div>
         </div>
         <script defer
                 src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
