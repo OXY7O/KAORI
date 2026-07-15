@@ -8,28 +8,29 @@
 {% block dashboard_content %}
     <div class="kaori-welcome-page">
         <section class="kaori-welcome-hero">
-            <div class="kaori-welcome-hero-glow kaori-welcome-hero-glow--one" aria-hidden="true"></div>
-            <div class="kaori-welcome-hero-glow kaori-welcome-hero-glow--two" aria-hidden="true"></div>
-
+            <div class="kaori-welcome-hero-glow kaori-welcome-hero-glow--one"
+                 aria-hidden="true"></div>
+            <div class="kaori-welcome-hero-glow kaori-welcome-hero-glow--two"
+                 aria-hidden="true"></div>
             <div class="kaori-welcome-hero-copy">
                 <div class="kaori-welcome-kicker">
                     <i data-lucide="orbit" aria-hidden="true"></i>
                     Infrastructure operations workspace
                 </div>
-
                 <div class="kaori-welcome-title-row">
                     <span class="kaori-welcome-title-icon" aria-hidden="true">
                         <i data-lucide="sparkles"></i>
                     </span>
                     <div>
-                        <h1>Welcome to KAORI, {{ current_user.display_label }}.</h1>
+                        <h1 class="kaori-welcome-heading">
+                            <span>Welcome to KAORI, {{ current_user.role_display_name }}.</span>
+                            <span class="kaori-welcome-heading__user">{{ current_user.display_label }}</span>
+                        </h1>
                         <p>
-                            Access unified infrastructure visibility, controlled operational workflows,
-                            analytics, reporting, governance, and administration from one role-aware workspace.
+                           Operate and govern infrastructure through an extensible workspace for visibility, workflows, analytics, reporting, and administration
                         </p>
                     </div>
                 </div>
-
                 <div class="kaori-welcome-hero-badges">
                     <span>
                         <i data-lucide="shield-user" aria-hidden="true"></i>
@@ -45,18 +46,16 @@
                     </span>
                 </div>
             </div>
-
             <aside class="kaori-welcome-access-card" aria-label="Current access scope">
                 <div class="kaori-welcome-access-card__top">
                     <div>
                         <p>Your access scope</p>
-                        <h2>Role-aware workspace</h2>
+                        <h2>Role Aware Workspace</h2>
                     </div>
                     <span aria-hidden="true">
                         <i data-lucide="key-round"></i>
                     </span>
                 </div>
-
                 <div class="kaori-welcome-access-stats">
                     <div>
                         <strong>{{ shortcut_count }}</strong>
@@ -64,33 +63,28 @@
                     </div>
                     <div>
                         <strong>{{ workspace_group_count }}</strong>
-                        <span>Capability areas</span>
+                        <span>Capability Areas</span>
                     </div>
                 </div>
-
                 <div class="kaori-welcome-access-note">
                     <i data-lucide="shield-check" aria-hidden="true"></i>
                     <p>
                         Only workspaces permitted by <strong>{{ current_user.role_display_name }}</strong>
-                        are rendered. Every protected route and action remains validated server-side.
+                        are rendered. All protected routes and actions remain enforced server-side.
                     </p>
                 </div>
             </aside>
         </section>
-
         <section class="kaori-workspace-catalog" data-workspace-catalog>
             <header class="kaori-workspace-catalog__header">
                 <div>
                     <div class="kaori-workspace-section-label">
                         <i data-lucide="layout-grid" aria-hidden="true"></i>
-                        Available workspaces
+                        Available Workspaces
                     </div>
-                    <h2>Open the capability you need</h2>
-                    <p>
-                        Workspaces are grouped by operational purpose and automatically filtered by your assigned permissions.
-                    </p>
+                    <h2>Open The Capability You Need</h2>
+                    <p>Workspaces are grouped by operational purpose and automatically filtered by your assigned permissions.</p>
                 </div>
-
                 <label class="kaori-workspace-search">
                     <span class="sr-only">Search available workspaces</span>
                     <i data-lucide="search" aria-hidden="true"></i>
@@ -101,7 +95,6 @@
                     <kbd>/</kbd>
                 </label>
             </header>
-
             <div class="kaori-workspace-result-bar" aria-live="polite">
                 <span>
                     <i data-lucide="shield-check" aria-hidden="true"></i>
@@ -109,7 +102,6 @@
                 </span>
                 <strong data-workspace-result-count>{{ shortcut_count }} workspaces available</strong>
             </div>
-
             <div class="kaori-workspace-groups">
                 {% for group in workspace_groups %}
                     <section class="kaori-workspace-group" data-workspace-group>
@@ -126,7 +118,6 @@
                             </span>
                             <p class="kaori-workspace-group__description">{{ group.description }}</p>
                         </header>
-
                         <div class="kaori-workspace-grid">
                             {% for shortcut in group.shortcuts %}
                                 <a href="{{ shortcut.href }}"
@@ -139,13 +130,11 @@
                                         </span>
                                         <span class="kaori-workspace-card__scope">{{ shortcut.scope }}</span>
                                     </div>
-
                                     <div class="kaori-workspace-card__body">
                                         <p>{{ shortcut.label }}</p>
                                         <h4>{{ shortcut.title }}</h4>
                                         <span>{{ shortcut.description }}</span>
                                     </div>
-
                                     <div class="kaori-workspace-card__action">
                                         <strong>Open workspace</strong>
                                         <span aria-hidden="true">
@@ -158,7 +147,6 @@
                     </section>
                 {% endfor %}
             </div>
-
             <div class="kaori-workspace-empty" data-workspace-empty hidden>
                 <span aria-hidden="true"><i data-lucide="search-x"></i></span>
                 <h3>No permitted workspace matches this search</h3>

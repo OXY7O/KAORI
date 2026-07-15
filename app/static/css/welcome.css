@@ -126,6 +126,19 @@
     letter-spacing: -0.035em;
 }
 
+.kaori-welcome-heading > span {
+    display: block;
+}
+
+.kaori-welcome-heading__user {
+    margin-top: 6px;
+    color: rgba(239, 246, 255, 0.88);
+    font-size: 0.62em;
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: -0.015em;
+}
+
 .kaori-welcome-title-row p {
     max-width: 790px;
     margin: 10px 0 0;
