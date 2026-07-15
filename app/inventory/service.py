@@ -36,6 +36,12 @@ from app.models import (
 
 INVENTORY_FRESHNESS_HOURS = 24
 
+_WORKLOAD_UPDATE_STRATEGIES = {
+    'rollingupdate': ('Rolling Update', 'rolling_update'),
+    'recreate': ('Recreate', 'recreate'),
+    'ondelete': ('On Delete', 'on_delete'),
+}
+
 
 def _normalize_datetime(
     value: datetime | None,
@@ -2810,6 +2816,42 @@ def get_workload_filter_statuses(
     return [row[0] for row in rows if row[0]]
 
 
+def _workload_update_strategy(
+    workload_type: str,
+    details: dict[str, Any],
+) -> tuple[str, str]:
+    if workload_type in {'Job', 'CronJob'}:
+        return 'Not applicable', 'not_applicable'
+
+    delivery_rows = details.get('delivery_rows') or []
+
+    if not isinstance(delivery_rows, list):
+        return 'Not reported', 'unknown'
+
+    for row in delivery_rows:
+        if not isinstance(row, dict):
+            continue
+
+        label = str(row.get('label') or '').strip().lower()
+
+        if label not in {'strategy', 'update strategy'}:
+            continue
+
+        raw_value = str(row.get('value') or '').strip()
+
+        if not raw_value or raw_value in {'-', 'None'}:
+            break
+
+        normalized_value = raw_value.replace(' ', '').lower()
+
+        return _WORKLOAD_UPDATE_STRATEGIES.get(
+            normalized_value,
+            (raw_value, 'other'),
+        )
+
+    return 'Not reported', 'unknown'
+
+
 def get_workload_inventory(
     cluster_id=None,
     namespace=None,
@@ -2919,6 +2961,11 @@ def get_workload_inventory(
             0,
         )
 
+        update_strategy, update_strategy_key = _workload_update_strategy(
+            current_type,
+            details,
+        )
+
         workloads_data.append(
             {
                 'id': workload.id,
@@ -2930,6 +2977,8 @@ def get_workload_inventory(
                 'status': status_name,
                 'state_display': details.get('state_display') or workload.ready or status_name,
                 'pod_count': pod_count,
+                'update_strategy': update_strategy,
+                'update_strategy_key': update_strategy_key,
                 'container_count': int(pod_template.get('container_count') or 0),
                 'init_container_count': int(pod_template.get('init_container_count') or 0),
                 'age': format_age(
