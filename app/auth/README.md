@@ -1,6 +1,7 @@
 # Authentication domain
 
-Authentication owns login flows, provider handling, login audit recording, and security-result presentation.
+Authentication owns login flows, provider handling, login audit recording, and
+security-result presentation.
 
 ## Boundaries
 
@@ -10,12 +11,22 @@ Authentication owns login flows, provider handling, login audit recording, and s
 - `results.py`: typed authentication outcomes.
 - `routes.py`: request/session boundary.
 
-Login Activity is separate from Operational Activity. Never copy credentials, tokens, provider payloads, or raw authentication exceptions into user-visible audit records. Provider adapters return normalized results to the service layer.
+Login Activity is separate from Operational Activity. Never copy credentials,
+tokens, provider payloads, or raw authentication exceptions into user-visible audit
+records. Provider adapters return normalized results to the service layer.
 
-## Login presentation contract
+## Login presentation direction
 
-- The login page describes KAORI through global infrastructure-operation capabilities, not through the technologies or products currently integrated.
-- Capability messaging may cover visibility, controlled operations, operational intelligence, governance, reporting, audit, and administration.
-- The login page must not claim that a capability or integration is available to the user before authentication and RBAC evaluation.
-- After successful authentication, the user is redirected to the role-aware Welcome workspace catalog.
-- Login presentation is maintained in `templates/auth/` and `static/css/auth-login.css`; authentication behavior remains owned by the Python service and route layers.
+The login page introduces KAORI as a global infrastructure operations platform,
+not as a list of currently integrated products. Keep the brand panel concise and
+spacious:
+
+- one short platform label;
+- one two-line value statement;
+- one supporting sentence;
+- four compact capability cues: Visibility, Control, Intelligence, and Assurance.
+
+Do not expand the login page into a feature catalog. Product-, provider-, and
+asset-specific information belongs after authentication in role-aware workspaces.
+The form description may explain that available workspaces follow the signed-in
+user's role, while actual authorization must remain enforced on protected routes.
