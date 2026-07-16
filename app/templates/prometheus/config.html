@@ -1,5 +1,24 @@
 {% extends "layouts/app.html" %}
 {% block title %}Prometheus Configuration{% endblock title %}
+{% block page_styles %}
+    <style>
+        .prometheus-config-layout {
+            display: grid;
+            gap: 1.5rem;
+            align-items: start;
+        }
+
+        .prometheus-config-layout > * {
+            min-width: 0;
+        }
+
+        @media (min-width: 1280px) {
+            .prometheus-config-layout--split {
+                grid-template-columns: minmax(0, 0.96fr) minmax(0, 1.04fr);
+            }
+        }
+    </style>
+{% endblock page_styles %}
 {% block dashboard_content %}
     <div class="space-y-6">
         <!-- Hero Header -->
@@ -41,7 +60,7 @@
             </div>
 
         </div>
-        <div class="grid gap-6 {% if config and config.endpoint %}lg:grid-cols-[minmax(360px,0.92fr)_minmax(0,1.08fr)] lg:items-start{% endif %}">
+        <div class="prometheus-config-layout {% if config and config.endpoint %}prometheus-config-layout--split{% endif %}">
             {% if config and config.endpoint %}
                 <div class="min-w-0">
                     {% include 'prometheus/partials/_analytics_readiness.html' %}
@@ -49,24 +68,27 @@
             {% endif %}
 
             <div class="min-w-0">
-                <!-- Form Card -->
+                <!-- Connection Settings Card -->
                 {% set current_auth_type = form.auth_type.data or 'none' %}
                 {% set current_detection_mode = form.version_detection_mode.data or 'automatic' %}
                 {% set current_password = form.password.data or (config.password if config and config.password else '') %}
                 {% set current_bearer_token = form.bearer_token.data or (config.bearer_token if config and config.bearer_token else '') %}
                 <form method="POST" x-data="{ authType: '{{ current_auth_type }}', detectionMode: '{{ current_detection_mode }}' }">
             {{ form.hidden_tag() }}
-            <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+            <div class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
                 <!-- Header -->
-                <div class="flex items-center gap-3 border-b border-slate-200 px-6 py-5 dark:border-slate-700">
-                    <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
-                        <i data-lucide="settings-2" class="h-5 w-5"></i>
-                    </div>
-                    <div>
-                        <h2 class="text-lg font-semibold text-slate-950 dark:text-white">Connection Settings</h2>
-                        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                            Define endpoint, authentication method, timeout, and SSL behavior for Prometheus queries.
-                        </p>
+                <div class="border-b border-slate-200 px-6 py-5 dark:border-slate-800">
+                    <div class="flex items-start gap-3">
+                        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-700 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-400/20">
+                            <i data-lucide="settings-2" class="h-5 w-5"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-300">Integration Configuration</p>
+                            <h2 class="mt-1 text-xl font-bold text-slate-950 dark:text-white">Connection Settings</h2>
+                            <p class="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">
+                                Define the endpoint, authentication, timeout, compatibility mode, and TLS verification used by Prometheus queries.
+                            </p>
+                        </div>
                     </div>
                 </div>
                 <!-- Validation -->
@@ -161,18 +183,17 @@
                     </label>
                 </div>
                 <!-- Footer -->
-                <div class="border-t border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/40">
-                    <div class="flex flex-col gap-3 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
-                        <p class="text-xs text-slate-500 dark:text-slate-400">
-                            Test Connection is a fast endpoint check. Run Full Validation after the connection succeeds to audit metrics, labels, PromQL, and retention.
-                        </p>
-                        <div class="flex justify-end gap-3">
+                <div class="border-t border-slate-200 bg-slate-50/80 px-6 py-5 dark:border-slate-800 dark:bg-slate-900/50">
+                    <p class="text-xs leading-5 text-slate-500 dark:text-slate-400">
+                        Test Connection performs a fast endpoint check. Run Full Validation after connectivity succeeds to audit metric availability, labels, PromQL contracts, and retention coverage.
+                    </p>
+                    <div class="mt-4 grid gap-2.5 sm:grid-cols-2">
                         <button type="button"
                                 hx-post="{{ url_for('prometheus.test_connection', cluster_id=cluster.id) }}"
                                 hx-target="#operational-action-feedback"
                                 hx-swap="innerHTML"
                                 hx-disabled-elt="this"
-                                class="group inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-wait disabled:opacity-70 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
+                                class="group inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-wait disabled:opacity-70 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
                             <i data-lucide="plug-zap"
                                class="h-4 w-4 group-[.htmx-request]:animate-spin"></i>
                             Test Connection
@@ -184,18 +205,17 @@
                                 hx-target="#operational-action-feedback"
                                 hx-swap="innerHTML"
                                 hx-disabled-elt="this"
-                                class="group inline-flex items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-semibold text-blue-700 transition hover:bg-blue-100 disabled:cursor-wait disabled:opacity-70 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300 dark:hover:bg-blue-500/20">
+                                class="group inline-flex w-full items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-semibold text-blue-700 transition hover:bg-blue-100 disabled:cursor-wait disabled:opacity-70 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300 dark:hover:bg-blue-500/20">
                             <i data-lucide="scan-search" class="h-4 w-4 group-[.htmx-request]:animate-pulse"></i>
                             Run Full Validation
                         </button>
                         <button type="submit"
                                 data-operation-submit
                                 data-loading-label="Saving Prometheus..."
-                                class="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 dark:hover:bg-blue-500">
+                                class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 sm:col-span-2 dark:hover:bg-blue-500">
                             <i data-lucide="save" class="h-4 w-4"></i>
                             <span data-operation-submit-label>Save Configuration</span>
                         </button>
-                        </div>
                     </div>
                 </div>
             </div>

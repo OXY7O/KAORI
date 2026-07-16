@@ -5,14 +5,14 @@
 {% set domain_summary = summary.get('domain_summary', {}) if summary else {} %}
 {% set blocked_details = summary.get('blocked_details', []) if summary else [] %}
 <section id="prometheus-analytics-readiness" class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950" {% if oob|default(false) %}hx-swap-oob="outerHTML"{% endif %}>
-  <div class="px-6 py-5">
+  <div class="border-b border-slate-200 px-6 py-5 dark:border-slate-800">
     <div class="flex flex-col gap-4">
       <div class="flex items-start gap-3">
         <span class="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-700 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-400/20"><i data-lucide="chart-no-axes-combined" class="h-5 w-5"></i></span>
         <div>
           <p class="text-xs font-semibold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-300">Kubernetes Analytics</p>
           <h2 class="mt-1 text-xl font-bold text-slate-950 dark:text-white">Analytics readiness</h2>
-          <p class="mt-1 max-w-2xl text-sm text-slate-500 dark:text-slate-400">Endpoint compatibility, PromQL contracts, metric schemas, and historical coverage.</p>
+          <p class="mt-1 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">Review endpoint compatibility, PromQL contracts, metric schemas, and historical coverage before analytics consumption.</p>
         </div>
       </div>
       <div class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -34,7 +34,7 @@
       </div>
     </div>
   </div>
-  <div class="grid gap-4 px-5 pb-5 sm:grid-cols-2">
+  <div class="grid gap-4 px-5 py-5 sm:grid-cols-2">
     {% set cards = [
       ('Endpoint','route' if (config.endpoint_product or 'prometheus') == 'thanos' else 'activity', 'Thanos Query' if (config.endpoint_product or 'prometheus') == 'thanos' else 'Direct Prometheus', config.detected_version or 'Not detected'),
       ('Compatibility','shield-check', compatibility_status|replace('_',' ')|title, config.compatibility_profile or 'Profile pending'),
