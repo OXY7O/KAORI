@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, Integer, JSON, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.extensions import db
@@ -69,8 +69,9 @@ class Cluster(db.Model):
     kubernetes_platform: Mapped[str | None] = mapped_column(String(100), nullable=True)
     kubernetes_compatibility_status: Mapped[str | None] = mapped_column(String(40), nullable=True)
     kubernetes_compatibility_profile: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    kubernetes_lifecycle_status: Mapped[str | None] = mapped_column(String(40), nullable=True)
     kubernetes_readiness_status: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    kubernetes_lifecycle_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    kubernetes_api_discovery_summary: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     kubernetes_validation_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     kubernetes_last_validated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 

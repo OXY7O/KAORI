@@ -19,6 +19,7 @@ from app.inventory.collector import (
     get_workloads,
 )
 from app.kubernetes.client import KubernetesClient
+from app.kubernetes.compatibility import KubernetesDiscovery, list_cluster_resource
 from app.kubernetes.tls import legacy_tls_context
 from app.models import (
     Cluster,
@@ -545,6 +546,8 @@ def save_workloads(
     cluster: Cluster,
     apps_api: AppsV1Api,
     batch_api: BatchV1Api | None = None,
+    *,
+    cronjob_items: list[Any] | None = None,
 ) -> None:
     WorkloadInventory.query.filter_by(
         cluster_id=cluster.id,
@@ -555,6 +558,7 @@ def save_workloads(
     workloads = get_workloads(
         apps_api,
         batch_api,
+        cronjob_items=cronjob_items,
     )
 
     for workload in workloads:
@@ -711,7 +715,9 @@ def save_services(
 
 def save_ingresses(
     cluster: Cluster,
-    api: NetworkingV1Api,
+    api: NetworkingV1Api | None,
+    *,
+    ingress_items: list[Any] | None = None,
 ) -> None:
     IngressInventory.query.filter_by(
         cluster_id=cluster.id,
@@ -721,6 +727,7 @@ def save_ingresses(
 
     ingresses = get_ingresses(
         api,
+        ingress_items=ingress_items,
     )
 
     for ingress in ingresses:
@@ -801,14 +808,24 @@ def save_storage_inventory(
 def save_configuration_inventory(
     cluster: Cluster,
     api: CoreV1Api,
+    *,
+    include_configmaps: bool = True,
+    include_secrets: bool = True,
 ) -> None:
-    ConfigurationInventory.query.filter_by(
-        cluster_id=cluster.id,
-    ).delete(
-        synchronize_session=False,
-    )
+    if include_configmaps:
+        ConfigurationInventory.query.filter_by(
+            cluster_id=cluster.id, object_type='ConfigMap',
+        ).delete(synchronize_session=False)
+    if include_secrets:
+        ConfigurationInventory.query.filter_by(
+            cluster_id=cluster.id, object_type='Secret',
+        ).delete(synchronize_session=False)
 
-    for item in get_configuration_inventory(api):
+    for item in get_configuration_inventory(
+        api,
+        include_configmaps=include_configmaps,
+        include_secrets=include_secrets,
+    ):
         inventory = ConfigurationInventory()
         inventory.cluster_id = cluster.id
         inventory.namespace = item['namespace']
@@ -903,6 +920,24 @@ def sync_inventory(
 
             storage_api = client.storage_api()
 
+            current_stage = 'API discovery'
+            discovery = KubernetesDiscovery(core_api.api_client).discover()
+            adapters = discovery['selected_adapters']
+            cluster.kubernetes_compatibility_profile = discovery['api_profile']
+            cluster.kubernetes_compatibility_status = discovery['compatibility_status']
+            cluster.kubernetes_readiness_status = discovery['readiness_status']
+            cluster.kubernetes_api_discovery_summary = discovery
+
+            cronjob_items = None
+            cronjob_adapter = adapters.get('inventory.cronjobs')
+            if cronjob_adapter and cronjob_adapter.get('stability') == 'legacy':
+                cronjob_items = list_cluster_resource(core_api.api_client, cronjob_adapter)
+
+            ingress_items = None
+            ingress_adapter = adapters.get('inventory.ingresses')
+            if ingress_adapter and ingress_adapter.get('stability') == 'legacy':
+                ingress_items = list_cluster_resource(core_api.api_client, ingress_adapter)
+
             current_stage = 'cluster information'
             save_cluster_info(
                 cluster,
@@ -930,6 +965,7 @@ def sync_inventory(
                 cluster,
                 apps_api,
                 batch_api,
+                cronjob_items=cronjob_items,
             )
             db.session.flush()
 
@@ -950,10 +986,12 @@ def sync_inventory(
             db.session.flush()
 
             current_stage = 'ingresses'
-            save_ingresses(
-                cluster,
-                networking_api,
-            )
+            if ingress_adapter:
+                save_ingresses(
+                    cluster,
+                    networking_api if ingress_adapter.get('stability') == 'stable' else None,
+                    ingress_items=ingress_items,
+                )
             db.session.flush()
 
             current_stage = 'storage'
@@ -968,6 +1006,8 @@ def sync_inventory(
             save_configuration_inventory(
                 cluster,
                 core_api,
+                include_configmaps='inventory.configmaps' in adapters,
+                include_secrets='inventory.secrets' in adapters,
             )
             db.session.flush()
 

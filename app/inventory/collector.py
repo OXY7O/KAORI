@@ -1,4 +1,6 @@
 import base64
+import re
+from types import SimpleNamespace
 from typing import Any, cast
 
 from kubernetes.client import (
@@ -93,6 +95,19 @@ def _model_value(source, *keys: str, default=None):
                 return value
 
     return default
+
+
+def _to_modelish(value):
+    """Convert raw discovery payloads to attribute objects used by collectors."""
+    if isinstance(value, list):
+        return [_to_modelish(item) for item in value]
+    if not isinstance(value, dict):
+        return value
+
+    def snake(name: str) -> str:
+        return re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower()
+
+    return SimpleNamespace(**{snake(key): _to_modelish(item) for key, item in value.items()})
 
 
 def _metadata_details(metadata) -> dict:
@@ -282,6 +297,7 @@ def _detail_row(label: str, value) -> dict[str, str]:
 def get_workloads(
     api: AppsV1Api,
     batch_api: BatchV1Api | None = None,
+    cronjob_items: list[Any] | None = None,
 ) -> list[dict]:
     workloads: list[dict] = []
 
@@ -526,21 +542,23 @@ def get_workloads(
             }
         )
 
-    try:
-        cronjobs = cast(
-            V1CronJobList,
-            batch_api.list_cron_job_for_all_namespaces(),
-        )
-        cronjob_items = cronjobs.items or []
-    except NotFoundException:
-        cronjob_items = []
-    except ApiException as exc:
-        if getattr(exc, 'status', None) == 404:
+    if cronjob_items is None:
+        try:
+            cronjobs = cast(
+                V1CronJobList,
+                batch_api.list_cron_job_for_all_namespaces(),
+            )
+            cronjob_items = list(cronjobs.items or [])
+        except NotFoundException:
             cronjob_items = []
-        else:
-            raise
+        except ApiException as exc:
+            if getattr(exc, 'status', None) == 404:
+                cronjob_items = []
+            else:
+                raise
 
-    for cronjob in cronjob_items:
+    for raw_cronjob in cronjob_items:
+        cronjob = _to_modelish(raw_cronjob)
         metadata = cronjob.metadata
         spec = cronjob.spec
         status = cronjob.status
@@ -1255,16 +1273,23 @@ def get_services(
 
 
 def get_ingresses(
-    api: NetworkingV1Api,
+    api: NetworkingV1Api | None = None,
+    *,
+    ingress_items: list[Any] | None = None,
 ) -> list[dict]:
-    result = cast(
-        V1IngressList,
-        api.list_ingress_for_all_namespaces(),
-    )
+    if ingress_items is None:
+        if api is None:
+            return []
+        result = cast(
+            V1IngressList,
+            api.list_ingress_for_all_namespaces(),
+        )
+        ingress_items = list(result.items or [])
 
     ingresses: list[dict] = []
 
-    for ingress in result.items or []:
+    for raw_ingress in ingress_items:
+        ingress = _to_modelish(raw_ingress)
         metadata = ingress.metadata
         spec = ingress.spec
         status = ingress.status
@@ -1277,17 +1302,20 @@ def get_ingresses(
 
         def _backend_to_dict(backend):
             service = getattr(backend, 'service', None)
-            if service is None:
-                return {'service_name': '-', 'service_port': '-'}
+            if service is not None:
+                port = getattr(service, 'port', None)
+                port_value = '-'
+                if port is not None:
+                    port_value = getattr(port, 'name', None) or getattr(port, 'number', None) or '-'
+                return {
+                    'service_name': getattr(service, 'name', None) or '-',
+                    'service_port': str(port_value),
+                }
 
-            port = getattr(service, 'port', None)
-            port_value = '-'
-            if port is not None:
-                port_value = getattr(port, 'name', None) or getattr(port, 'number', None) or '-'
-
+            # networking/extensions v1beta1 schema
             return {
-                'service_name': getattr(service, 'name', None) or '-',
-                'service_port': str(port_value),
+                'service_name': getattr(backend, 'service_name', None) or '-',
+                'service_port': str(getattr(backend, 'service_port', None) or '-'),
             }
 
         default_backend = None
@@ -1373,15 +1401,29 @@ def get_ingresses(
 
 def get_configuration_inventory(
     api: CoreV1Api,
+    *,
+    include_configmaps: bool = True,
+    include_secrets: bool = True,
 ) -> list[dict]:
     items: list[dict] = []
 
-    config_maps = cast(
-        V1ConfigMapList,
-        api.list_config_map_for_all_namespaces(),
-    )
+    try:
+        if not include_configmaps:
+            raise PermissionError
+        config_maps = cast(
+            V1ConfigMapList,
+            api.list_config_map_for_all_namespaces(),
+        )
+        config_map_items = config_maps.items or []
+    except PermissionError:
+        config_map_items = []
+    except ApiException as exc:
+        if getattr(exc, 'status', None) in {403, 404}:
+            config_map_items = []
+        else:
+            raise
 
-    for config_map in config_maps.items or []:
+    for config_map in config_map_items:
         metadata = config_map.metadata
         if metadata is None or not metadata.namespace or not metadata.name:
             continue
@@ -1411,12 +1453,23 @@ def get_configuration_inventory(
             }
         )
 
-    secrets = cast(
-        V1SecretList,
-        api.list_secret_for_all_namespaces(),
-    )
+    try:
+        if not include_secrets:
+            raise PermissionError
+        secrets = cast(
+            V1SecretList,
+            api.list_secret_for_all_namespaces(),
+        )
+        secret_items = secrets.items or []
+    except PermissionError:
+        secret_items = []
+    except ApiException as exc:
+        if getattr(exc, 'status', None) in {403, 404}:
+            secret_items = []
+        else:
+            raise
 
-    for secret in secrets.items or []:
+    for secret in secret_items:
         metadata = secret.metadata
         if metadata is None or not metadata.namespace or not metadata.name:
             continue

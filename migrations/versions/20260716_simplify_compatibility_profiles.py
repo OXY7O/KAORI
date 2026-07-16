@@ -1,7 +1,7 @@
-"""Simplify Kubernetes, Prometheus, and Alertmanager compatibility profiles.
+"""simplify compatibility profiles and add Kubernetes API discovery evidence
 
 Revision ID: 20260716_profile_names
-Revises: 20260716_split_prom_compat
+Revises: 20260716_prom_endpoint_source
 """
 from alembic import op
 import sqlalchemy as sa
@@ -13,75 +13,69 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Keep the original VARCHAR(100) width while renaming and normalizing legacy
-    # values. PostgreSQL validates existing rows before shrinking a column, so
-    # narrowing to VARCHAR(8) first would fail for legacy profile identifiers.
-    with op.batch_alter_table('prometheus_configs') as batch:
-        batch.alter_column(
-            'source_prometheus_profile',
-            new_column_name='source_prometheus_major',
-            existing_type=sa.String(length=100),
-            existing_nullable=True,
-        )
-
-    op.execute(
-        """
+    # Keep the old width while legacy identifiers are normalized.
+    op.alter_column(
+        'prometheus_configs',
+        'source_prometheus_profile',
+        new_column_name='source_prometheus_major',
+        existing_type=sa.String(length=100),
+        existing_nullable=True,
+    )
+    op.execute("""
         UPDATE prometheus_configs
-        SET source_prometheus_major = CASE source_prometheus_major
-            WHEN 'prometheus-v2-kubernetes-v1' THEN '2'
-            WHEN 'prometheus-v3-kubernetes-v1' THEN '3'
-            WHEN 'prometheus-http-v2' THEN '2'
-            WHEN 'prometheus-http-v3' THEN '3'
-            WHEN '2' THEN '2'
-            WHEN '3' THEN '3'
+        SET source_prometheus_major = CASE
+            WHEN source_prometheus_major IN ('2', 'prometheus-http-v2', 'prometheus-v2-kubernetes-v1') THEN '2'
+            WHEN source_prometheus_major IN ('3', 'prometheus-http-v3', 'prometheus-v3-kubernetes-v1') THEN '3'
             ELSE NULL
         END
-        """
+    """)
+    op.alter_column(
+        'prometheus_configs',
+        'source_prometheus_major',
+        existing_type=sa.String(length=100),
+        type_=sa.String(length=8),
+        existing_nullable=True,
     )
+    op.execute("""
+        UPDATE prometheus_configs
+        SET compatibility_profile = CASE
+            WHEN compatibility_profile = 'prometheus-v2-kubernetes-v1' THEN 'prometheus-http-v2'
+            WHEN compatibility_profile = 'prometheus-v3-kubernetes-v1' THEN 'prometheus-http-v3'
+            ELSE compatibility_profile
+        END,
+        query_profile = CASE
+            WHEN query_profile IN ('promql-kubernetes-v2', 'promql-kubernetes-v3', 'prometheus-kubernetes-v1')
+                THEN 'promql-kubernetes-v1'
+            ELSE query_profile
+        END
+    """)
+    op.execute("""
+        UPDATE alertmanager_configs
+        SET compatibility_profile = CASE
+            WHEN compatibility_profile = 'alertmanager-v2-legacy' THEN 'alertmanager-api-v2-legacy'
+            WHEN compatibility_profile = 'alertmanager-v2-current' THEN 'alertmanager-api-v2-current'
+            ELSE compatibility_profile
+        END
+    """)
+    op.add_column('alertmanager_configs', sa.Column('capability_profile', sa.String(length=100), nullable=True))
+    op.execute("UPDATE alertmanager_configs SET capability_profile = 'alert-management-v1' WHERE endpoint IS NOT NULL")
 
-    with op.batch_alter_table('prometheus_configs') as batch:
-        batch.alter_column(
-            'source_prometheus_major',
-            existing_type=sa.String(length=100),
-            type_=sa.String(length=8),
-            existing_nullable=True,
-        )
-
-    with op.batch_alter_table('alertmanager_configs') as batch:
-        batch.add_column(sa.Column('capability_profile', sa.String(length=100), nullable=True))
-
-    with op.batch_alter_table('clusters') as batch:
-        batch.add_column(sa.Column('kubernetes_lifecycle_status', sa.String(length=40), nullable=True))
-
-    op.execute("UPDATE prometheus_configs SET compatibility_profile = CASE compatibility_profile WHEN 'prometheus-v2-kubernetes-v1' THEN 'prometheus-http-v2' WHEN 'prometheus-v3-kubernetes-v1' THEN 'prometheus-http-v3' ELSE compatibility_profile END")
-    op.execute("UPDATE prometheus_configs SET query_profile = 'promql-kubernetes-v1' WHERE query_profile IN ('prometheus-kubernetes-v1', 'promql-kubernetes-v2', 'promql-kubernetes-v3')")
-    op.execute("UPDATE alertmanager_configs SET compatibility_profile = CASE compatibility_profile WHEN 'alertmanager-v2-legacy' THEN 'alertmanager-api-v2-legacy' WHEN 'alertmanager-v2-current' THEN 'alertmanager-api-v2-current' ELSE compatibility_profile END")
-    op.execute("UPDATE alertmanager_configs SET capability_profile = 'alert-management-v1'")
-    op.execute("UPDATE clusters SET kubernetes_compatibility_profile = 'kubernetes-api-v1' WHERE kubernetes_compatibility_profile IS NOT NULL")
+    op.add_column('clusters', sa.Column('kubernetes_lifecycle_status', sa.String(length=20), nullable=True))
+    op.add_column('clusters', sa.Column('kubernetes_api_discovery_summary', sa.JSON(), nullable=True))
+    op.execute("UPDATE clusters SET kubernetes_compatibility_profile = 'kubernetes-api-v1' WHERE kubernetes_version IS NOT NULL")
 
 
 def downgrade() -> None:
-    # Widen before restoring the longer legacy profile identifiers.
-    with op.batch_alter_table('prometheus_configs') as batch:
-        batch.alter_column(
-            'source_prometheus_major',
-            existing_type=sa.String(length=8),
-            type_=sa.String(length=100),
-            existing_nullable=True,
-        )
-
-    op.execute("UPDATE prometheus_configs SET source_prometheus_major = CASE source_prometheus_major WHEN '2' THEN 'prometheus-v2-kubernetes-v1' WHEN '3' THEN 'prometheus-v3-kubernetes-v1' ELSE source_prometheus_major END")
-    op.execute("UPDATE prometheus_configs SET compatibility_profile = CASE compatibility_profile WHEN 'prometheus-http-v2' THEN 'prometheus-v2-kubernetes-v1' WHEN 'prometheus-http-v3' THEN 'prometheus-v3-kubernetes-v1' ELSE compatibility_profile END")
-    op.execute("UPDATE alertmanager_configs SET compatibility_profile = CASE compatibility_profile WHEN 'alertmanager-api-v2-legacy' THEN 'alertmanager-v2-legacy' WHEN 'alertmanager-api-v2-current' THEN 'alertmanager-v2-current' ELSE compatibility_profile END")
-
-    with op.batch_alter_table('clusters') as batch:
-        batch.drop_column('kubernetes_lifecycle_status')
-    with op.batch_alter_table('alertmanager_configs') as batch:
-        batch.drop_column('capability_profile')
-    with op.batch_alter_table('prometheus_configs') as batch:
-        batch.alter_column(
-            'source_prometheus_major',
-            new_column_name='source_prometheus_profile',
-            existing_type=sa.String(length=100),
-            existing_nullable=True,
-        )
+    op.drop_column('clusters', 'kubernetes_api_discovery_summary')
+    op.drop_column('clusters', 'kubernetes_lifecycle_status')
+    op.drop_column('alertmanager_configs', 'capability_profile')
+    op.alter_column('prometheus_configs', 'source_prometheus_major', existing_type=sa.String(length=8), type_=sa.String(length=100), existing_nullable=True)
+    op.execute("""
+        UPDATE prometheus_configs
+        SET source_prometheus_major = CASE
+            WHEN source_prometheus_major = '2' THEN 'prometheus-v2-kubernetes-v1'
+            WHEN source_prometheus_major = '3' THEN 'prometheus-v3-kubernetes-v1'
+            ELSE NULL
+        END
+    """)
+    op.alter_column('prometheus_configs', 'source_prometheus_major', new_column_name='source_prometheus_profile', existing_type=sa.String(length=100), existing_nullable=True)

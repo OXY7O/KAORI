@@ -110,6 +110,10 @@
                                             <i data-lucide="box" class="h-3.5 w-3.5"></i>
                                             {{ inventory.version or '-' }}
                                         </span>
+                                        <span class="inline-flex items-center gap-1" title="{{ inventory.api_profile }}">
+                                            <i data-lucide="braces" class="h-3.5 w-3.5"></i>
+                                            {{ inventory.lifecycle_status|title }}
+                                        </span>
                                     </div>
                                 </div>
                             </div>

@@ -10,10 +10,7 @@ from app.integrations.compatibility import (
     CompatibilityProfile,
     CompatibilityResult,
     evaluate_compatibility,
-    PROMQL_KUBERNETES_PROFILE,
     get_profile,
-    prometheus_major_for_profile,
-    prometheus_profile_for_major,
 )
 from app.models import Cluster, PrometheusConfig
 from app.prometheus.client import PrometheusClient
@@ -28,8 +25,13 @@ class PrometheusCompatibilityResolution:
     endpoint_version: str
     endpoint_compatibility: CompatibilityResult
     endpoint_profile: CompatibilityProfile | None
-    source_prometheus_major: str | None
-    query_profile: str = PROMQL_KUBERNETES_PROFILE
+    source_profile: CompatibilityProfile
+
+    @property
+    def query_profile(self) -> str:
+        if not self.source_profile.query_profile:
+            raise PrometheusError('The selected Prometheus source profile has no PromQL profile.')
+        return self.source_profile.query_profile
 
 
 class PrometheusService:
@@ -137,12 +139,11 @@ class PrometheusService:
         endpoint_version = build_info.get('data', {}).get('version', 'unknown')
 
         if detection_mode == 'manual':
-            source_profile = prometheus_profile_for_major(config.source_prometheus_major)
+            source_profile = get_profile('prometheus', f'prometheus-http-v{config.source_prometheus_major}')
             if source_profile is None:
                 raise PrometheusError(
-                    'Manual mode requires a supported Prometheus source major version.'
+                    'Manual mode requires a supported Prometheus source version profile.'
                 )
-            source_major = config.source_prometheus_major
             endpoint_product = 'thanos'
             endpoint_compatibility = evaluate_compatibility(
                 endpoint_product,
@@ -151,6 +152,7 @@ class PrometheusService:
                     'prometheus_api_v1',
                     'instant_query',
                     'range_query',
+                    'long_term_history',
                 ),
             )
         else:
@@ -160,7 +162,19 @@ class PrometheusService:
                 endpoint_version,
                 capabilities=('instant_query', 'range_query'),
             )
-            source_major = prometheus_major_for_profile(endpoint_compatibility.profile_key)
+            source_profile = get_profile('prometheus', endpoint_compatibility.profile_key)
+            if source_profile is None:
+                # Unsupported/unknown versions are represented by the endpoint result;
+                # use a harmless placeholder only so persistence can complete.
+                source_profile = CompatibilityProfile(
+                    key='unmatched-prometheus-source',
+                    product='prometheus',
+                    version_constraint='>=0',
+                    support_level='blocked',
+                    required_capabilities=(),
+                    notes='No supported Prometheus source profile matched.',
+                    query_profile=None,
+                )
 
         endpoint_profile = get_profile(endpoint_product, endpoint_compatibility.profile_key)
         return PrometheusCompatibilityResolution(
@@ -168,7 +182,7 @@ class PrometheusService:
             endpoint_version=endpoint_version,
             endpoint_compatibility=endpoint_compatibility,
             endpoint_profile=endpoint_profile,
-            source_prometheus_major=source_major,
+            source_profile=source_profile,
         )
 
     @staticmethod
@@ -180,8 +194,12 @@ class PrometheusService:
         config.detected_version = resolution.endpoint_version
         config.compatibility_status = resolution.endpoint_compatibility.status
         config.compatibility_profile = resolution.endpoint_compatibility.profile_key
-        config.source_prometheus_major = resolution.source_prometheus_major
-        config.query_profile = resolution.query_profile
+        config.source_prometheus_major = (
+            resolution.source_profile.key.rsplit('v', 1)[-1]
+            if resolution.source_profile.key.startswith('prometheus-http-v')
+            else None
+        )
+        config.query_profile = resolution.source_profile.query_profile
 
     @staticmethod
     def _validation_message(

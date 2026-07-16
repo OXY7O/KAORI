@@ -149,7 +149,6 @@ def _row(key: str, name: str, cluster: Cluster, config: object | None) -> dict[s
         'query_profile': getattr(config, 'query_profile', None) if key == 'prometheus' and config else None,
         'version_detection_mode': getattr(config, 'version_detection_mode', 'automatic') if key == 'prometheus' and config else None,
         'source_prometheus_major': getattr(config, 'source_prometheus_major', None) if key == 'prometheus' and config else None,
-        'capability_profile': getattr(config, 'capability_profile', None) if key == 'alertmanager' and config else None,
         'query_status': getattr(config, 'query_validation_status', None) if key == 'prometheus' and config else None,
         'retention': getattr(config, 'retention_validation_summary', None) if key == 'prometheus' and config else None,
     }

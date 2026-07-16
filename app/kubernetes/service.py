@@ -8,7 +8,8 @@ from kubernetes.client.rest import ApiException
 
 from app.common.integration_errors import describe_integration_failure
 from app.kubernetes.client import KubernetesClient
-from app.integrations.compatibility import evaluate_compatibility, get_kubernetes_lifecycle
+from app.integrations.compatibility import evaluate_compatibility, kubernetes_lifecycle
+from app.kubernetes.compatibility import KubernetesDiscovery
 from app.kubernetes.tls import legacy_tls_context
 
 logger = logging.getLogger(__name__)
@@ -35,19 +36,24 @@ def test_cluster_connection(
 
         git_version = getattr(version_info, 'git_version', None) or 'unknown'
         platform = getattr(version_info, 'platform', None)
-        compatibility = evaluate_compatibility(
-            'kubernetes',
-            git_version,
-            capabilities=('core_v1', 'apps_v1', 'networking_v1', 'storage_v1'),
-        )
-        lifecycle = get_kubernetes_lifecycle(git_version)
-        compatibility_status = compatibility.status
-        readiness_status = compatibility.readiness
-        validation_message = compatibility.message
-        if compatibility.readiness != 'blocked' and lifecycle.status == 'legacy':
+        compatibility = evaluate_compatibility('kubernetes', git_version)
+        discovery = KubernetesDiscovery(api.api_client).discover()
+        lifecycle = kubernetes_lifecycle(git_version)
+
+        compatibility_status = discovery['compatibility_status']
+        readiness_status = discovery['readiness_status']
+        if compatibility.status == 'unsupported_version':
+            compatibility_status = compatibility.status
+            readiness_status = compatibility.readiness
+        elif lifecycle == 'legacy' and compatibility_status == 'compatible':
             compatibility_status = 'compatible_with_warnings'
             readiness_status = 'degraded'
-            validation_message = f'{compatibility.message} {lifecycle.message}'
+
+        messages = [compatibility.message]
+        if discovery['legacy_features']:
+            messages.append('Legacy adapters selected for: ' + ', '.join(discovery['legacy_features']))
+        if discovery['blocked_features']:
+            messages.append('Unavailable features: ' + ', '.join(discovery['blocked_features']))
 
         return {
             'success': True,
@@ -56,9 +62,10 @@ def test_cluster_connection(
             'platform': platform,
             'compatibility_status': compatibility_status,
             'readiness_status': readiness_status,
-            'compatibility_profile': compatibility.profile_key,
-            'lifecycle_status': lifecycle.status,
-            'validation_message': validation_message,
+            'compatibility_profile': discovery['api_profile'],
+            'lifecycle_status': lifecycle,
+            'api_discovery_summary': discovery,
+            'validation_message': ' '.join(messages),
             'error': None,
             'reason': None,
             'failure_code': None,
