@@ -93,3 +93,48 @@ A direct Prometheus endpoint uses automatic runtime discovery. A Prometheus-comp
 ### Interactive Prometheus validation boundary
 
 Prometheus connection testing is intentionally split from full readiness validation. `Test Connection` is a short endpoint/API/profile check suitable for synchronous HTMX feedback. `Run Full Validation` owns metric discovery, required-label checks, versioned PromQL audit, and retention probes. This separation prevents Thanos-backed endpoints from appearing stuck while a large `/api/v1/series` audit is running and makes the cost of the operation explicit to the administrator.
+
+## Final compatibility-domain ownership
+
+KAORI evaluates three independent compatibility domains. A successful check in one domain must not be reused as evidence for another.
+
+### Kubernetes compatibility
+
+Consumers: Kubernetes Inventory, Kubernetes Operations, and Kubernetes Governance.
+
+Evidence:
+
+- Kubernetes server version;
+- discovered API groups and resources;
+- required RBAC verbs;
+- deprecated or removed APIs;
+- readiness per feature.
+
+### Prometheus compatibility
+
+Consumers: Kubernetes Analytics, dashboard live metrics, Prometheus-backed reports, and Prometheus-backed intelligence.
+
+Automatic mode contacts a direct Prometheus endpoint. `detected_version` and `compatibility_profile` therefore represent Prometheus.
+
+Manual mode contacts Thanos Query. `detected_version` and `compatibility_profile` therefore represent Thanos, while `source_prometheus_profile` represents the administrator-selected Prometheus major contract used to select the PromQL profile. The Thanos endpoint version must never be treated as a Prometheus runtime version.
+
+Both modes require full validation of required metrics, label schemas, PromQL, and retention before Analytics readiness can become Ready.
+
+### Alertmanager compatibility
+
+Consumers: Alerts & Anomalies, Alert Intelligence, silence workflows, and routing posture.
+
+Alertmanager is detected automatically from its direct endpoint and validated through API v2 capabilities. Alertmanager compatibility is not inferred from Prometheus, Thanos, or Kubernetes versions.
+
+## Prometheus persisted identity
+
+| Field | Direct Prometheus | Thanos Query mode |
+|---|---|---|
+| `endpoint_product` | `prometheus` | `thanos` |
+| `detected_version` | Prometheus runtime | Thanos runtime |
+| `compatibility_profile` | Prometheus endpoint profile | Thanos endpoint profile |
+| `source_prometheus_profile` | detected Prometheus profile | selected Prometheus 2.x/3.x source profile |
+| `query_profile` | selected from detected source | selected from manual source profile |
+| `readiness_status` | Kubernetes Analytics readiness | Kubernetes Analytics readiness |
+
+Configuration changes invalidate all compatibility evidence. Existing manual-mode records created before this split must be revalidated because earlier builds could store a synthetic Prometheus major or a Thanos version in the same field.

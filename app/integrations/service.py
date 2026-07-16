@@ -123,7 +123,12 @@ def _stats(rows: list[dict[str, Any]]) -> dict[str, int]:
 def _row(key: str, name: str, cluster: Cluster, config: object | None) -> dict[str, Any]:
     configured = bool(config and getattr(config, 'endpoint', None))
     profile_key = getattr(config, 'compatibility_profile', None) if config else None
-    profile = get_profile(key, profile_key)
+    endpoint_product = (
+        getattr(config, 'endpoint_product', None)
+        if key == 'prometheus' and config
+        else key
+    ) or key
+    profile = get_profile(endpoint_product, profile_key)
     return {
         'key': key,
         'name': name,
@@ -133,6 +138,7 @@ def _row(key: str, name: str, cluster: Cluster, config: object | None) -> dict[s
         'environment_label': get_environment_label(cluster.environment),
         'configured': configured,
         'endpoint': safe_endpoint(getattr(config, 'endpoint', None) if config else None),
+        'endpoint_product': endpoint_product,
         'version': getattr(config, 'detected_version', None) if config else None,
         'compatibility': (getattr(config, 'compatibility_status', None) if config else None) or ('validation_required' if configured else 'not_configured'),
         'readiness': (getattr(config, 'readiness_status', None) if config else None) or ('validation_required' if configured else 'not_configured'),
@@ -142,7 +148,7 @@ def _row(key: str, name: str, cluster: Cluster, config: object | None) -> dict[s
         'message': getattr(config, 'validation_message', None) if config else None,
         'query_profile': getattr(config, 'query_profile', None) if key == 'prometheus' and config else None,
         'version_detection_mode': getattr(config, 'version_detection_mode', 'automatic') if key == 'prometheus' and config else None,
-        'manual_compatibility_profile': getattr(config, 'manual_compatibility_profile', None) if key == 'prometheus' and config else None,
+        'source_prometheus_profile': getattr(config, 'source_prometheus_profile', None) if key == 'prometheus' and config else None,
         'query_status': getattr(config, 'query_validation_status', None) if key == 'prometheus' and config else None,
         'retention': getattr(config, 'retention_validation_summary', None) if key == 'prometheus' and config else None,
     }

@@ -30,4 +30,4 @@ Do not infer feature readiness from version alone. Each inventory, governance, a
 
 ## Integration boundary
 
-Cluster Management must not own Prometheus or Alertmanager configuration forms. It may show a concise, non-sensitive integration summary and link to `/integrations`. Kubernetes connectivity and compatibility are evaluated independently from observability integration readiness.
+Cluster Management must not own Prometheus or Alertmanager configuration forms. It may show a concise, non-sensitive integration summary and link to `/integrations`. Kubernetes compatibility exists for Kubernetes API consumers: Inventory, Operations, and Governance. Prometheus and Alertmanager compatibility are evaluated independently for Kubernetes Analytics consumers.

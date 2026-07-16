@@ -5,7 +5,7 @@ The Integrations domain owns cross-platform integration discovery, compatibility
 ## Page structure
 
 - `Overview` presents ecosystem posture, category coverage, the supported/planned catalog, and configured targets.
-- `Prometheus` presents Prometheus-specific runtime, query profile, metric schema, and readiness information.
+- `Prometheus` presents endpoint identity, Prometheus source profile, PromQL profile, metric schema, retention, and Kubernetes Analytics readiness.
 - `Alertmanager` presents Alertmanager API v2 and capability readiness.
 
 Planned catalog entries are presentation-only and must not expose routes or configuration actions until their driver, model, validation contract, and permissions exist.
@@ -41,10 +41,18 @@ The Overview hero follows the same structural pattern as Kubernetes Inventory: i
 The Prometheus list follows the shared Inventory interaction pattern:
 
 - filters submit through HTMX without a separate Run button;
-- supported filters are readiness status, cluster environment, and matched compatibility profile;
+- supported filters are endpoint compatibility, cluster environment, and analytics readiness;
 - pagination defaults to 5 rows and supports 5, 10, 25, and 50 rows;
 - filter and pagination responses render only the inventory content partial;
 - the full page owns the single table loading indicator;
 - endpoint presentation must continue to use `safe_endpoint()` and must never render credentials or URL query parameters.
 
 Filtering and pagination are presentation concerns in `app.integrations.service`. Prometheus connectivity, compatibility, PromQL validation, and credential handling remain owned by `app.prometheus`.
+
+## Compatibility domain ownership
+
+- Kubernetes compatibility validates Kubernetes version, API resources, and RBAC for Inventory, Operations, and Governance.
+- Prometheus compatibility validates direct Prometheus or Thanos Query endpoint identity plus the Prometheus source/PromQL contract for Kubernetes Analytics.
+- Alertmanager compatibility validates the direct Alertmanager runtime and API v2 capabilities for alert analytics and alert-management workflows.
+
+Do not reuse a runtime-version field across products. In particular, a Thanos Query version is endpoint evidence for Thanos and never a detected Prometheus version.

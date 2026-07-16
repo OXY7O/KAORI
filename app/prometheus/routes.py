@@ -87,7 +87,7 @@ def configuration(
                     'timeout_seconds': saved_config.timeout,
                     'verify_ssl': saved_config.verify_ssl,
                     'version_detection_mode': saved_config.version_detection_mode,
-                    'manual_compatibility_profile': saved_config.manual_compatibility_profile,
+                    'source_prometheus_profile': saved_config.source_prometheus_profile,
                 },
                 queue_feedback=True,
             )
@@ -162,7 +162,7 @@ def configuration(
     elif config:
         form.endpoint.data = config.endpoint
         form.version_detection_mode.data = config.version_detection_mode or 'automatic'
-        form.manual_compatibility_profile.data = config.manual_compatibility_profile or ''
+        form.source_prometheus_profile.data = config.source_prometheus_profile or ''
         form.auth_type.data = config.auth_type
         form.username.data = config.username
         form.password.data = config.password
@@ -205,14 +205,16 @@ def test_connection(
             status='success',
             title='Prometheus connection verified',
             message=f'KAORI connected to Prometheus for {cluster.name}.',
-            detail=f'Prometheus version {result.get("version", "unknown")} responded in {response_time}s.',
+            detail=f'{(result.get("endpoint_product") or "endpoint").title()} {result.get("endpoint_version", "unknown")} responded in {response_time}s.',
             action_url=url_for('prometheus.configuration', cluster_id=cluster.id),
             action_label='View Prometheus settings',
             action_icon='activity',
             metadata={
                 'cluster_id': cluster.id,
                 'cluster_name': cluster.name,
-                'version': result.get('version', 'unknown'),
+                'endpoint_product': result.get('endpoint_product'),
+                'endpoint_version': result.get('endpoint_version', 'unknown'),
+                'source_prometheus_profile': result.get('source_prometheus_profile'),
                 'response_time_seconds': response_time,
             },
         )
@@ -346,7 +348,9 @@ def validate_integration(
             metadata={
                 'cluster_id': cluster.id,
                 'cluster_name': cluster.name,
-                'version': result.get('version', 'unknown'),
+                'endpoint_product': result.get('endpoint_product'),
+                'endpoint_version': result.get('endpoint_version', 'unknown'),
+                'source_prometheus_profile': result.get('source_prometheus_profile'),
                 'compatibility_profile': result.get('compatibility_profile'),
                 'readiness_status': result.get('readiness_status'),
                 'query_validation_status': result.get('query_validation_status'),

@@ -1,42 +1,47 @@
 # Prometheus and Thanos query integration
 
-Prometheus is managed under the top-level Integrations domain. For the current Kubernetes topology, each cluster has one local Prometheus and Alertmanager, while Thanos supplies long-retention query capability. The future Server topology may use shared centralized instances, so code must use integration bindings rather than assume one endpoint per asset forever.
+Prometheus compatibility exists to protect **Kubernetes Analytics**, dashboard live metrics, Prometheus-backed reports, and Prometheus-backed intelligence. It is separate from Kubernetes API compatibility and Alertmanager API compatibility.
 
-Runtime Prometheus version is detected from `/api/v1/status/buildinfo`. The kube-prometheus-stack chart version and chart app version are stored only as deployment metadata and must never be evaluated as the Prometheus binary version.
+## Compatibility modes
+
+### Automatic: direct Prometheus
+
+`KAORI -> Prometheus`
+
+KAORI reads `/api/v1/status/buildinfo`, stores the Prometheus endpoint runtime, matches the Prometheus compatibility profile, and selects the corresponding PromQL profile. The current profiles are:
+
+- `prometheus-v2-kubernetes-v1` -> `promql-kubernetes-v2`
+- `prometheus-v3-kubernetes-v1` -> `promql-kubernetes-v3`
+
+### Manual: Thanos Query intermediary
+
+`KAORI -> Thanos Query -> Prometheus`
+
+KAORI stores two distinct identities:
+
+- the Thanos Query endpoint runtime and Thanos compatibility profile;
+- the administrator-selected Prometheus source profile used to select the PromQL contract.
+
+A Thanos version must never be displayed or persisted as a Prometheus version. The manual source selection does not make the integration ready by itself. Full validation must still verify required metrics, label schemas, versioned PromQL, and historical coverage.
+
+## Validation lifecycle
+
+1. Save configuration -> `validation_required`.
+2. Test Connection -> query endpoint, detect endpoint identity, match endpoint profile, resolve Prometheus source profile, select PromQL profile.
+3. Run Full Validation -> metric discovery, label-schema checks, PromQL audit, and retention probes.
+4. Consumers may use the integration only when analytics readiness permits it.
+
+`Test Connection` remains intentionally fast. `Run Full Validation` is the explicit long-running operation and must provide operational toast feedback.
+
+## Field ownership
+
+- `endpoint_product`: `prometheus` or `thanos`.
+- `detected_version`: runtime version of the endpoint KAORI contacts.
+- `compatibility_profile`: compatibility profile of that endpoint product.
+- `source_prometheus_profile`: Prometheus source contract used for PromQL selection.
+- `query_profile`: versioned PromQL contract.
+- `readiness_status`: final Kubernetes Analytics readiness.
 
 All PromQL is owned by `app/prometheus/query_profiles`. Legacy domain `queries.py` modules are compatibility exports only. See `docs/PROMQL_QUERY_PROFILES.md` for metadata, validation, retention, deprecation, and replacement rules.
 
-`PromQLProfileAuditor` checks metric availability, label schema, optional execution of all registered queries, and historical coverage at 24h, 7d, 30d, and 60d. Prometheus engine compatibility and query readiness are persisted separately.
-
-Thanos `0.39.2` is evaluated with `thanos-query-prometheus-api-v1`; it is not a Prometheus version. The endpoint used for historical validation must be the actual Thanos Query or Query Frontend endpoint when long retention is expected.
-
-## Navigation and compatibility profiles
-
-The canonical inventory route is `/integrations/prometheus`; per-cluster configuration is `/integrations/prometheus/cluster/<cluster_id>`. Runtime versions are normalized before matching: for example `prometheus/Prometheus/v3.13.0-distroless` becomes `3.13.0`, while the build variant remains metadata. Supported runtime profiles are Prometheus `2.40–2.x` and `3.x`; every saved configuration returns to `validation_required` until API, query profile, metric, and label checks pass.
-
-
-## Runtime version detection modes
-
-Prometheus integrations use one of two explicit compatibility modes:
-
-- `automatic`: for a direct Prometheus endpoint. KAORI reads `/api/v1/status/buildinfo` and selects the matching versioned compatibility and PromQL profile.
-- `manual`: for a Prometheus-compatible intermediary such as Thanos Query where build information describes the intermediary rather than the underlying Prometheus runtime. An administrator must select the supported Prometheus major profile (`2.x` or `3.x`). KAORI still validates API capability, required metrics, labels, query execution, and retention before runtime use.
-
-Changing the detection mode or manual profile invalidates prior validation evidence and returns the integration to `validation_required`. Manual selection is never treated as proof of readiness by itself.
-
-## Connection test versus full validation
-
-The configuration page exposes two distinct operations:
-
-- **Test Connection** performs only a fast `vector(1)` probe and compatibility-profile resolution. In automatic mode it also reads `/api/v1/status/buildinfo`; in manual intermediary mode it uses the selected Prometheus major profile and does not treat the intermediary build version as Prometheus evidence.
-- **Run Full Validation** performs the slower metric inventory, label-schema, PromQL profile, and retention checks.
-
-Do not add metric-series discovery or retention probes back into the connection-test path. Those calls can be expensive through Thanos Query and may exceed the short interactive timeout. Saving connection or detection settings clears stale detected-version evidence and returns the integration to `validation_required`.
-
-
-### Full-validation progress feedback
-
-The configuration page must display a persistent inline progress notice while **Run Full Validation** is active. The notice explains that metric discovery, label-schema checks, PromQL validation, and retention probes can take several minutes through Thanos-backed endpoints. It is driven by HTMX lifecycle events and must always clear on completion, HTTP failure, network send failure, or timeout. Do not rely only on a spinning button icon for long-running operations.
-
-
-Long-running validation must not rely only on a button spinner. The configuration page uses KAORI's shared operational progress toast while the HTMX request is active. The transient toast explains that metric, label, PromQL, and retention checks are running and is dismissed on success, HTTP failure, network failure, or timeout. The final success or failure response is rendered through the standard operational toast and is persisted through the existing operational activity record; the transient progress state itself is not stored as an activity event.
+Runtime versions must come from endpoint APIs. Helm chart versions and chart app metadata are deployment metadata only and must never be used as binary compatibility evidence.

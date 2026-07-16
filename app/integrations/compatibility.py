@@ -52,9 +52,9 @@ PROFILES: dict[str, tuple[CompatibilityProfile, ...]] = {
         CompatibilityProfile('alertmanager-v2-current', 'alertmanager', '>=0.27,<0.34', 'current', ('status_v2', 'alerts_v2', 'silences_v2'), 'Current Alertmanager API v2 profile.'),
     ),
     'thanos': (
-        CompatibilityProfile('thanos-query-v0-39', 'thanos', '>=0.39,<0.40', 'supported', ('prometheus_api_v1', 'instant_query', 'range_query', 'long_term_history'), 'Supported Thanos Query 0.39 profile.'),
-        CompatibilityProfile('thanos-query-v0-40', 'thanos', '>=0.40,<0.41', 'supported', ('prometheus_api_v1', 'instant_query', 'range_query', 'long_term_history'), 'Supported Thanos Query 0.40 profile.'),
-        CompatibilityProfile('thanos-query-v0-41', 'thanos', '>=0.41,<0.42', 'current', ('prometheus_api_v1', 'instant_query', 'range_query', 'long_term_history'), 'Current Thanos Query profile.'),
+        CompatibilityProfile('thanos-query-v0-39', 'thanos', '>=0.39,<0.40', 'supported', ('prometheus_api_v1', 'instant_query', 'range_query'), 'Supported Thanos Query 0.39 profile.'),
+        CompatibilityProfile('thanos-query-v0-40', 'thanos', '>=0.40,<0.41', 'supported', ('prometheus_api_v1', 'instant_query', 'range_query'), 'Supported Thanos Query 0.40 profile.'),
+        CompatibilityProfile('thanos-query-v0-41', 'thanos', '>=0.41,<0.42', 'current', ('prometheus_api_v1', 'instant_query', 'range_query'), 'Current Thanos Query profile.'),
     ),
 }
 

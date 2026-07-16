@@ -41,8 +41,8 @@ class PrometheusConfigForm(FlaskForm):
         validators=[DataRequired()],
     )
 
-    manual_compatibility_profile = SelectField(
-        'Prometheus Major Version',
+    source_prometheus_profile = SelectField(
+        'Prometheus Source Version',
         choices=[
             ('', 'Select a supported major version'),
             ('prometheus-v2-kubernetes-v1', 'Prometheus 2.x'),
@@ -153,7 +153,7 @@ class PrometheusConfigForm(FlaskForm):
             )
 
 
-    def validate_manual_compatibility_profile(self, field: SelectField) -> None:
+    def validate_source_prometheus_profile(self, field: SelectField) -> None:
         if self.version_detection_mode.data == 'manual' and not field.data:
             raise ValidationError(
                 'Select the Prometheus major version used behind the intermediary endpoint.',
