@@ -76,3 +76,32 @@ The endpoint profile answers whether the runtime/API line is supported. The capa
 7. Store validation evidence and timestamp.
 
 Unknown or unsupported endpoint versions fail closed. Missing optional capability may degrade only the affected feature; missing required capability blocks that consumer.
+
+## Kubernetes API lifecycle and fallback policy
+
+`kubernetes-api-v1` is the KAORI API contract, not a promise that every Kubernetes minor exposes the same resource versions. Cluster validation must combine the runtime version with live API discovery and feature-level capability checks.
+
+KAORI uses the stable API selected by each feature whenever it is served. A legacy adapter may be used only when all of the following are true:
+
+- the stable resource version required by the primary adapter is not served;
+- a documented legacy resource version is still served by the target cluster;
+- KAORI has an explicit parser/adapter and test coverage for that legacy schema;
+- the feature result is marked `compatible_with_warnings` or `degraded`; and
+- the fallback does not weaken a security or mutation guardrail.
+
+Fallback is selected from live discovery evidence, not from the lifecycle label alone. `legacy` is a warning and adapter hint; it is not an instruction to silently retry every request with a beta API.
+
+Core resources such as `Secret`, `ConfigMap`, `Namespace`, `Pod`, and `Service` use `core/v1` across the currently supported KAORI cluster range. A Secret inventory failure therefore must be diagnosed as connectivity, RBAC, timeout, response-size, or collector behavior; it must not be treated as a missing beta/legacy Secret API. Version-aware adapters are primarily relevant to resources that moved between API groups or versions, such as Ingress, CronJob, and PodDisruptionBudget.
+
+The expected feature evaluation is:
+
+```text
+Kubernetes runtime version
++ live API discovery
++ selected stable or explicit legacy adapter
++ RBAC verb validation
+= feature readiness
+```
+
+A missing stable API with no tested legacy adapter blocks only the affected feature, not the whole cluster.
+
