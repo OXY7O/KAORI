@@ -118,16 +118,21 @@
                 {{ detail_row('Ingresses', namespace.object_counts.ingresses) }}
                 {{ detail_row('PVCs', namespace.object_counts.persistent_volume_claims) }}
                 <div class="pt-2">
-                    {% call namespace_object_card('Workload composition', namespace.object_counts.workloads ~ ' workloads', 'layout-grid') %}
-                        {% if namespace.workload_breakdown.deployments %}{{ namespace_object_row('Deployments', namespace.workload_breakdown.deployments) }}{% endif %}
-                        {% if namespace.workload_breakdown.statefulsets %}{{ namespace_object_row('StatefulSets', namespace.workload_breakdown.statefulsets) }}{% endif %}
-                        {% if namespace.workload_breakdown.daemonsets %}{{ namespace_object_row('DaemonSets', namespace.workload_breakdown.daemonsets) }}{% endif %}
-                        {% if namespace.workload_breakdown.jobs %}{{ namespace_object_row('Jobs', namespace.workload_breakdown.jobs) }}{% endif %}
-                        {% if namespace.workload_breakdown.cronjobs %}{{ namespace_object_row('CronJobs', namespace.workload_breakdown.cronjobs) }}{% endif %}
-                        {% if namespace.object_counts.workloads == 0 %}
-                            <p class="text-xs leading-5 text-content-muted">No workload objects were collected for this namespace.</p>
-                        {% endif %}
-                    {% endcall %}
+                    {% if namespace.object_counts.workloads > 0 %}
+                        {% call namespace_object_card('Workload composition', namespace.object_counts.workloads ~ ' workloads', 'layout-grid') %}
+                            {% if namespace.workload_breakdown.deployments %}{{ namespace_object_row('Deployments', namespace.workload_breakdown.deployments) }}{% endif %}
+                            {% if namespace.workload_breakdown.statefulsets %}{{ namespace_object_row('StatefulSets', namespace.workload_breakdown.statefulsets) }}{% endif %}
+                            {% if namespace.workload_breakdown.daemonsets %}{{ namespace_object_row('DaemonSets', namespace.workload_breakdown.daemonsets) }}{% endif %}
+                            {% if namespace.workload_breakdown.jobs %}{{ namespace_object_row('Jobs', namespace.workload_breakdown.jobs) }}{% endif %}
+                            {% if namespace.workload_breakdown.cronjobs %}{{ namespace_object_row('CronJobs', namespace.workload_breakdown.cronjobs) }}{% endif %}
+                        {% endcall %}
+                    {% else %}
+                        <div class="rounded-lg border border-dashed border-outline-strong bg-kaori-soft p-3 text-center">
+                            <i data-lucide="layout-grid" class="mx-auto h-5 w-5 text-kaori-primary"></i>
+                            <p class="mt-2 text-xs font-semibold text-kaori-primary">No workload objects collected</p>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">No Deployment, StatefulSet, DaemonSet, Job, or CronJob was present in the latest namespace snapshot.</p>
+                        </div>
+                    {% endif %}
                 </div>
                 {{ detail_tip('Only workload kinds with a non-zero count are shown. Utilization and workload risk remain in Analytics and Intelligence.', 'boxes') }}
             {% endcall %}
@@ -177,11 +182,19 @@
                 {{ detail_row('Secrets', namespace.object_counts.secrets) }}
                 {{ detail_row('ConfigMaps', namespace.object_counts.config_maps) }}
                 <div class="pt-2">
-                    {% call namespace_object_card('Pod Security Admission', psa_configured_count ~ '/3 configured', 'shield-check') %}
-                        {{ metadata_row('Enforce', psa_enforce_display, 'shield') }}
-                        {{ metadata_row('Audit', psa_audit_display, 'file-search') }}
-                        {{ metadata_row('Warn', psa_warn_display, 'triangle-alert') }}
-                    {% endcall %}
+                    {% if psa_configured_count > 0 %}
+                        {% call namespace_object_card('Pod Security Admission', psa_configured_count ~ '/3 configured', 'shield-check') %}
+                            {{ metadata_row('Enforce', psa_enforce_display, 'shield') }}
+                            {{ metadata_row('Audit', psa_audit_display, 'file-search') }}
+                            {{ metadata_row('Warn', psa_warn_display, 'triangle-alert') }}
+                        {% endcall %}
+                    {% else %}
+                        <div class="rounded-lg border border-dashed border-outline-strong bg-kaori-soft p-3 text-center">
+                            <i data-lucide="shield-check" class="mx-auto h-5 w-5 text-kaori-primary"></i>
+                            <p class="mt-2 text-xs font-semibold text-kaori-primary">No Pod Security Admission labels configured</p>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Enforce, audit, and warn behavior currently inherit the cluster admission configuration because no namespace-level PSA labels were collected.</p>
+                        </div>
+                    {% endif %}
                 </div>
                 {{ detail_tip('Pod Security Admission labels define enforcement, audit, and warning behavior for pods created in this namespace.', 'shield-check') }}
             {% endcall %}

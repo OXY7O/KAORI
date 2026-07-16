@@ -397,3 +397,10 @@ The Namespace Inventory page follows the same hero geometry, operational table d
 - Expandable namespace details use 12 px cards, 8 px icon surfaces, consistent sans-serif 12 px key/value typography, and the shared compact label component. UID values may wrap with `break-all` but must not switch to monospace.
 - ResourceQuota, LimitRange, Default ServiceAccount, and namespace lifecycle are dynamic states and use semantic labels. Workload composition, PSA policy values, object counts, labels, and annotations are metadata and use violet or neutral styling.
 - Namespace labels are descriptive metadata and use rectangular violet labels. Empty labels, annotations, or quota collections use the shared violet empty-state treatment rather than warning colors.
+
+
+### Nested detail empty states
+
+- Empty nested sections inside inventory detail cards use a compact dashed information box, not an otherwise empty solid object card.
+- Use the KAORI soft surface, violet icon/title, and one short explanatory sentence describing what was not collected or configured.
+- Render the normal solid object card only when the nested section contains actual records or configuration values.
