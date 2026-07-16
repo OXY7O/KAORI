@@ -58,7 +58,7 @@ def block_clusterless_operations():
         return render_template('components/cluster/_onboarding_banner.html')
 
     flash('Add a Kubernetes cluster before running Kubernetes operations.', 'warning')
-    return redirect(url_for('cluster.index'))
+    return redirect(url_for('cluster.list_clusters'))
 
 
 
