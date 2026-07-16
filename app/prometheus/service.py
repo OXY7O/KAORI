@@ -112,7 +112,10 @@ class PrometheusService:
             query_audit = PromQLProfileAuditor(self.client).audit(execute_queries=False)
             query_status = 'ready' if query_audit['blocked_count'] == 0 else 'degraded'
             readiness = resolution.endpoint_compatibility.readiness
-            if readiness == 'ready' and query_status == 'degraded':
+            # Overall Analytics readiness is blocked/degraded only when core dashboard,
+            # capacity, or utilization contracts fail. Optional analytics domains remain
+            # visible in domain_summary without making a healthy endpoint globally degraded.
+            if readiness == 'ready' and query_audit.get('critical_blocked_count', 0) > 0:
                 readiness = 'degraded'
 
         config.readiness_status = readiness
@@ -214,8 +217,8 @@ class PrometheusService:
                 'schemas, PromQL, and retention checks passed.'
             )
         return (
-            'The endpoint is compatible, but one or more PromQL, metric-schema, or '
-            'retention checks need attention.'
+            'Core Kubernetes Analytics is available. Some optional analytics domains '
+            'have missing metrics or label schemas; review the validation coverage details.'
         )
 
     @staticmethod

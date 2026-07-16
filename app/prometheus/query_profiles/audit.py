@@ -4,6 +4,8 @@ from dataclasses import asdict, dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any, Iterable
 
+from app.prometheus.exceptions import PrometheusError
+
 from app.prometheus.query_profiles import PROFILE_KEY, list_queries
 
 
@@ -29,7 +31,13 @@ class PromQLProfileAuditor:
         available_metrics = self._available_metric_names()
         namespaces = self.client.label_values('namespace').get('data') or []
         sample_namespace = namespaces[0] if namespaces else 'default'
-        metric_label_cache: dict[str, set[str]] = {}
+        label_requirements = {
+            metric
+            for definition in definitions
+            for metric, _labels in definition.required_labels
+            if metric in available_metrics
+        }
+        metric_label_cache = self._labels_for_metrics(label_requirements)
         results: list[QueryCheckResult] = []
 
         for definition in definitions:
@@ -39,7 +47,7 @@ class PromQLProfileAuditor:
             missing_labels: list[str] = []
             if not missing_metrics and definition.required_labels:
                 for metric, required_labels in definition.required_labels:
-                    labels = metric_label_cache.setdefault(metric, self._labels_for_metric(metric))
+                    labels = metric_label_cache.get(metric, set())
                     missing_labels.extend(
                         f'{metric}.{label}' for label in required_labels if label not in labels
                     )
@@ -75,13 +83,20 @@ class PromQLProfileAuditor:
         retention = self.validate_retention(('24h', '7d', '30d', '60d'))
         blocked = sum(item.status == 'blocked' for item in results)
         deprecated = sum(item.status == 'deprecated' for item in results)
+        domain_summary = self._domain_summary(definitions, results)
+        core_domains = {'app.prometheus', 'app.analytics.capacity', 'app.analytics.utilization'}
+        critical_blocked = sum(
+            item['blocked_count'] for domain, item in domain_summary.items() if domain in core_domains
+        )
         return {
             'profile': PROFILE_KEY,
             'checked_at': datetime.now(UTC).isoformat(),
             'query_count': len(results),
             'ready_count': len(results) - blocked - deprecated,
             'blocked_count': blocked,
+            'critical_blocked_count': critical_blocked,
             'deprecated_count': deprecated,
+            'domain_summary': domain_summary,
             'retention': retention,
             'results': [asdict(item) for item in results],
         }
@@ -105,13 +120,44 @@ class PromQLProfileAuditor:
         response = self.client.label_values('__name__')
         return set(response.get('data') or []) if response.get('status') == 'success' else set()
 
-    def _labels_for_metric(self, metric: str) -> set[str]:
-        response = self.client.series([metric], limit=20)
-        rows = response.get('data') or [] if response.get('status') == 'success' else []
-        labels: set[str] = set()
-        for row in rows:
-            labels.update(row.keys())
-        return labels
+    def _labels_for_metrics(self, metrics: set[str]) -> dict[str, set[str]]:
+        """Fetch recent label schemas in bounded batches instead of one request per query.
+
+        Thanos Query can make unbounded /series calls expensive. Restricting discovery to
+        the last 15 minutes and batching metric selectors keeps full validation finite.
+        A failed batch is recorded as an empty schema and degrades only affected queries.
+        """
+        output = {metric: set() for metric in metrics}
+        metric_list = sorted(metrics)
+        now = datetime.now(UTC)
+        start = (now - timedelta(minutes=15)).timestamp()
+        end = now.timestamp()
+        for offset in range(0, len(metric_list), 12):
+            batch = metric_list[offset:offset + 12]
+            try:
+                response = self.client.series(batch, limit=500, start=start, end=end)
+            except PrometheusError:
+                continue
+            rows = response.get('data') or [] if response.get('status') == 'success' else []
+            for row in rows:
+                metric = row.get('__name__')
+                if metric in output:
+                    output[metric].update(row.keys())
+        return output
+
+    @staticmethod
+    def _domain_summary(definitions: list[Any], results: list[QueryCheckResult]) -> dict[str, dict[str, int]]:
+        output: dict[str, dict[str, int]] = {}
+        for definition, result in zip(definitions, results, strict=True):
+            item = output.setdefault(definition.domain, {'query_count': 0, 'ready_count': 0, 'blocked_count': 0, 'deprecated_count': 0})
+            item['query_count'] += 1
+            if result.status == 'ready':
+                item['ready_count'] += 1
+            elif result.status == 'blocked':
+                item['blocked_count'] += 1
+            elif result.status == 'deprecated':
+                item['deprecated_count'] += 1
+        return output
 
 
 def _parse_duration(value: str) -> timedelta:

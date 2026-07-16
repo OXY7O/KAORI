@@ -1,0 +1,36 @@
+{% set compatibility_status = config.compatibility_status or 'validation_required' %}
+{% set readiness_status = config.readiness_status or 'validation_required' %}
+{% set query_status = config.query_validation_status or 'validation_required' %}
+{% set summary = config.query_validation_summary or {} %}
+<section id="prometheus-analytics-readiness" class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950" {% if oob|default(false) %}hx-swap-oob="outerHTML"{% endif %}>
+  <div class="relative overflow-hidden bg-gradient-to-r from-slate-950 via-blue-950 to-blue-900 px-6 py-5 text-white">
+    <div class="pointer-events-none absolute -right-10 -top-14 h-40 w-40 rounded-full bg-cyan-400/10 blur-2xl"></div>
+    <div class="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div class="flex items-start gap-3">
+        <span class="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/15"><i data-lucide="chart-no-axes-combined" class="h-5 w-5"></i></span>
+        <div><p class="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-200">Kubernetes Analytics</p><h2 class="mt-1 text-xl font-bold">Analytics readiness</h2><p class="mt-1 max-w-2xl text-sm text-blue-100/80">Endpoint compatibility, PromQL contracts, metric schemas, and historical coverage.</p></div>
+      </div>
+      <div class="flex items-center gap-3 rounded-2xl bg-white/10 px-4 py-3 ring-1 ring-white/15 backdrop-blur">
+        <span class="h-2.5 w-2.5 rounded-full {% if readiness_status == 'ready' %}bg-emerald-400{% elif readiness_status in ['degraded','validation_required'] %}bg-amber-400{% else %}bg-red-400{% endif %}"></span>
+        <div><p class="text-[10px] uppercase tracking-wider text-blue-100/70">Overall status</p><p class="text-sm font-bold">{{ readiness_status|replace('_',' ')|title }}</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
+    {% set cards = [
+      ('Endpoint','route' if (config.endpoint_product or 'prometheus') == 'thanos' else 'activity', 'Thanos Query' if (config.endpoint_product or 'prometheus') == 'thanos' else 'Direct Prometheus', config.detected_version or 'Not detected'),
+      ('Compatibility','shield-check', compatibility_status|replace('_',' ')|title, config.compatibility_profile or 'Profile pending'),
+      ('PromQL coverage','braces', query_status|replace('_',' ')|title, (summary.get('ready_count',0)|string) ~ ' of ' ~ (summary.get('query_count',0)|string) ~ ' checks ready' if summary else 'Full validation pending'),
+      ('History','history', 'Validated' if config.retention_validation_summary else 'Pending', '24h / 7d / 30d / 60d coverage')
+    ] %}
+    {% for label, icon, value, detail in cards %}
+      <div class="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-900/60">
+        <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500"><i data-lucide="{{ icon }}" class="h-4 w-4 text-blue-500"></i>{{ label }}</div>
+        <p class="mt-3 break-words text-sm font-bold text-slate-950 dark:text-white">{{ value }}</p><p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">{{ detail }}</p>
+      </div>
+    {% endfor %}
+  </div>
+  <div class="mx-5 mb-5 flex items-start gap-3 rounded-2xl border {% if readiness_status == 'ready' %}border-emerald-200 bg-emerald-50/70 text-emerald-900 dark:border-emerald-500/20 dark:bg-emerald-500/5 dark:text-emerald-100{% elif readiness_status in ['degraded','validation_required'] %}border-amber-200 bg-amber-50/70 text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/5 dark:text-amber-100{% else %}border-red-200 bg-red-50/70 text-red-900 dark:border-red-500/20 dark:bg-red-500/5 dark:text-red-100{% endif %} px-4 py-3">
+    <i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0"></i><div class="min-w-0"><p class="text-sm font-semibold">{{ config.validation_message or 'Test the endpoint and run full validation before KAORI uses it for Kubernetes Analytics.' }}</p>{% if config.last_validated_at %}<p class="mt-1 text-xs opacity-70">Last checked {{ config.last_validated_at.strftime('%d %b %Y, %H:%M') }}</p>{% endif %}</div>
+  </div>
+</section>

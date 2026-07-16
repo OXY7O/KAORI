@@ -84,10 +84,21 @@ class PrometheusClient:
     def label_values(self, label: str) -> dict[str, Any]:
         return self._get(f'/api/v1/label/{label}/values')
 
-    def series(self, metrics: list[str], limit: int | None = None) -> dict[str, Any]:
+    def series(
+        self,
+        metrics: list[str],
+        limit: int | None = None,
+        *,
+        start: float | None = None,
+        end: float | None = None,
+    ) -> dict[str, Any]:
         params: list[tuple[str, Any]] = [('match[]', metric) for metric in metrics]
         if limit is not None:
             params.append(('limit', limit))
+        if start is not None:
+            params.append(('start', start))
+        if end is not None:
+            params.append(('end', end))
         return self._get('/api/v1/series', params)
 
     def query_range(

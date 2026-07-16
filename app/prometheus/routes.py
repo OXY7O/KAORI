@@ -221,8 +221,9 @@ def test_connection(
 
         if request.headers.get('HX-Request') == 'true':
             return render_template(
-                'components/navigation/_quick_sync_result.html',
+                'prometheus/partials/_validation_response.html',
                 **feedback,
+                config=cluster.prometheus_config,
                 notification_context=get_navigation_notification_context(
                     user_id=current_user.id,
                 ),
@@ -268,8 +269,9 @@ def test_connection(
 
         if request.headers.get('HX-Request') == 'true':
             return render_template(
-                'components/navigation/_quick_sync_result.html',
+                'prometheus/partials/_validation_response.html',
                 **feedback,
+                config=cluster.prometheus_config,
                 notification_context=get_navigation_notification_context(
                     user_id=current_user.id,
                 ),
@@ -307,8 +309,9 @@ def test_connection(
 
         if request.headers.get('HX-Request') == 'true':
             return render_template(
-                'components/navigation/_quick_sync_result.html',
+                'prometheus/partials/_validation_response.html',
                 **feedback,
+                config=cluster.prometheus_config,
                 notification_context=get_navigation_notification_context(
                     user_id=current_user.id,
                 ),
@@ -360,8 +363,9 @@ def validate_integration(
 
         if request.headers.get('HX-Request') == 'true':
             return render_template(
-                'components/navigation/_quick_sync_result.html',
+                'prometheus/partials/_validation_response.html',
                 **feedback,
+                config=cluster.prometheus_config,
                 notification_context=get_navigation_notification_context(
                     user_id=current_user.id,
                 ),
@@ -411,8 +415,9 @@ def validate_integration(
 
         if request.headers.get('HX-Request') == 'true':
             return render_template(
-                'components/navigation/_quick_sync_result.html',
+                'prometheus/partials/_validation_response.html',
                 **feedback,
+                config=cluster.prometheus_config,
                 notification_context=get_navigation_notification_context(
                     user_id=current_user.id,
                 ),

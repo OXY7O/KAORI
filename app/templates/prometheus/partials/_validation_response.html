@@ -1,0 +1,2 @@
+{% set toast_oob = false %}{% include 'components/navigation/_quick_sync_result.html' %}
+{% if config and config.endpoint %}{% set oob = true %}{% include 'prometheus/partials/_analytics_readiness.html' %}{% endif %}

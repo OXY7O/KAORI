@@ -45,3 +45,8 @@ A Thanos version must never be displayed or persisted as a Prometheus version. T
 All PromQL is owned by `app/prometheus/query_profiles`. Legacy domain `queries.py` modules are compatibility exports only. See `docs/PROMQL_QUERY_PROFILES.md` for metadata, validation, retention, deprecation, and replacement rules.
 
 Runtime versions must come from endpoint APIs. Helm chart versions and chart app metadata are deployment metadata only and must never be used as binary compatibility evidence.
+
+
+## Full validation performance and readiness
+
+Full validation is intentionally broader than a connectivity check, but it must remain bounded. KAORI performs one metric-name discovery, batched recent-series schema checks, and four historical probes. It no longer sends one `/api/v1/series` request per query. Optional analytics domains may report partial coverage without forcing the global Kubernetes Analytics readiness to `Degraded`; only core dashboard, capacity, and utilization contract failures affect the global readiness. The configuration page refreshes readiness through an HTMX out-of-band swap after test or validation completion.
