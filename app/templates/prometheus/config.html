@@ -216,28 +216,7 @@
                     </label>
                 </div>
                 <!-- Footer -->
-                <div x-data="{ fullValidationRunning: false }"
-                     @htmx:before-request="if ($event.detail.elt === $refs.fullValidationButton) fullValidationRunning = true"
-                     @htmx:after-request="if ($event.detail.elt === $refs.fullValidationButton) fullValidationRunning = false"
-                     @htmx:send-error="fullValidationRunning = false"
-                     @htmx:timeout="fullValidationRunning = false"
-                     class="border-t border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/40">
-                    <div x-cloak
-                         x-show="fullValidationRunning"
-                         x-transition.opacity.duration.150ms
-                         role="status"
-                         aria-live="polite"
-                         class="mx-6 mt-4 flex items-start gap-3 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-blue-900 shadow-sm dark:border-blue-500/25 dark:bg-blue-500/10 dark:text-blue-100">
-                        <div class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-300">
-                            <i data-lucide="loader-circle" class="h-4 w-4 animate-spin"></i>
-                        </div>
-                        <div>
-                            <p class="text-sm font-semibold">Full validation is running</p>
-                            <p class="mt-1 text-xs leading-5 text-blue-700 dark:text-blue-200">
-                                KAORI is checking metric availability, label schemas, versioned PromQL, and retention coverage. Thanos-backed endpoints may take several minutes; keep this page open until the result appears.
-                            </p>
-                        </div>
-                    </div>
+                <div class="border-t border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/40">
                     <div class="flex flex-col gap-3 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
                         <p class="text-xs text-slate-500 dark:text-slate-400">
                             Test Connection is a fast endpoint check. Run Full Validation after the connection succeeds to audit metrics, labels, PromQL, and retention.
@@ -254,16 +233,15 @@
                             Test Connection
                         </button>
                         <button type="button"
-                                x-ref="fullValidationButton"
-                                :aria-busy="fullValidationRunning.toString()"
+                                data-operational-progress-title="Prometheus full validation is running"
+                                data-operational-progress-message="KAORI is checking metric availability, label schemas, versioned PromQL, and retention coverage. Thanos-backed endpoints may take several minutes."
                                 hx-post="{{ url_for('prometheus.validate_integration', cluster_id=cluster.id) }}"
                                 hx-target="#operational-action-feedback"
                                 hx-swap="innerHTML"
                                 hx-disabled-elt="this"
                                 class="group inline-flex items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-semibold text-blue-700 transition hover:bg-blue-100 disabled:cursor-wait disabled:opacity-70 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300 dark:hover:bg-blue-500/20">
                             <i data-lucide="scan-search" class="h-4 w-4 group-[.htmx-request]:animate-pulse"></i>
-                            <span x-show="!fullValidationRunning">Run Full Validation</span>
-                            <span x-cloak x-show="fullValidationRunning">Validation in progress...</span>
+                            Run Full Validation
                         </button>
                         <button type="submit"
                                 data-operation-submit

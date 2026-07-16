@@ -37,3 +37,6 @@ Do not add metric-series discovery or retention probes back into the connection-
 ### Full-validation progress feedback
 
 The configuration page must display a persistent inline progress notice while **Run Full Validation** is active. The notice explains that metric discovery, label-schema checks, PromQL validation, and retention probes can take several minutes through Thanos-backed endpoints. It is driven by HTMX lifecycle events and must always clear on completion, HTTP failure, network send failure, or timeout. Do not rely only on a spinning button icon for long-running operations.
+
+
+Long-running validation must not rely only on a button spinner. The configuration page uses KAORI's shared operational progress toast while the HTMX request is active. The transient toast explains that metric, label, PromQL, and retention checks are running and is dismissed on success, HTTP failure, network failure, or timeout. The final success or failure response is rendered through the standard operational toast and is persisted through the existing operational activity record; the transient progress state itself is not stored as an activity event.
