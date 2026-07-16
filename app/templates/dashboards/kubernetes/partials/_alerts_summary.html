@@ -107,9 +107,9 @@
                     </div>
                 </div>
                 <div class="mt-3 flex flex-wrap gap-2 text-[11px]">
-                    <span class="rounded-full border border-outline-default bg-surface-card px-3 py-1 text-content-secondary">{{ dashboard.alerts_snapshot.message }}</span>
+                    <span class="rounded-md border border-outline-default bg-surface-card px-3 py-1 text-content-secondary">{{ dashboard.alerts_snapshot.message }}</span>
                     {% if dashboard.alerts_snapshot.items %}
-                        <span class="rounded-full border border-outline-default bg-surface-card px-3 py-1 text-content-secondary">Showing top {{ dashboard.alerts_snapshot.items|length }} signals</span>
+                        <span class="rounded-md border border-outline-default bg-surface-card px-3 py-1 text-content-secondary">Showing top {{ dashboard.alerts_snapshot.items|length }} signals</span>
                     {% endif %}
                 </div>
             </div>

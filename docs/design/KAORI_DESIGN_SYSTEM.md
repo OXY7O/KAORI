@@ -283,3 +283,12 @@ The Kubernetes Operations Dashboard is the reference implementation for authenti
 - Do not use `rounded-full` for role, workspace count, capability count, source, scope, or other non-status hero metadata.
 - `rounded-full` remains reserved for true status badges, avatars, toggles, and compact state indicators.
 - Supporting informational strips below the description use `page_hero.supporting_strip()` with the same 6 px radius.
+
+### Kubernetes Dashboard standard alignment
+
+- Kubernetes Dashboard must consume the shared hero component and solid-violet hero treatment.
+- Non-status metadata labels use `rounded-md`; they must not use pill styling.
+- `rounded-full` is reserved for dynamic status, state dots, avatar, toggle controls, and progress tracks.
+- Decorative and navigation icons use KAORI violet. Semantic colors are reserved for values that communicate health, severity, readiness, or process state.
+- Empty and unavailable placeholders use violet surfaces unless they communicate a true semantic failure or warning.
+- Dashboard loading indicators use a solid brand color and must not use gradients.
