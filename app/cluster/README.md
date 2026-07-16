@@ -1,33 +1,12 @@
-# Cluster domain
+# Kubernetes Cluster Compatibility
 
-Cluster owns Kubernetes cluster registration, onboarding, configuration lifecycle,
-connection validation, and inventory-sync orchestration.
+Cluster Management owns Kubernetes API connectivity, runtime identity, lifecycle posture, and inventory synchronization.
 
-## Boundaries
+- API compatibility profile: `kubernetes-api-v1`
+- Kubernetes runtime version: stored separately
+- Lifecycle status: `current`, `legacy`, or `unknown`
+- Feature readiness: validated from live API discovery and RBAC
 
-- `service.py`: cluster lifecycle use cases.
-- `onboarding.py`: onboarding-specific validation and preparation.
-- `sync_state.py`: user-visible sync state and progress.
-- `tasks.py`: Celery entrypoints for background sync.
-- `routes.py`: forms, access control, and HTMX responses only.
+KAORI intentionally does not create one profile per Kubernetes minor release. The API contract stays readable and stable, while lifecycle and removed/deprecated API checks are maintained separately.
 
-Cluster actions that affect configuration or execution must emit centralized
-notifications through `app.notifications.service`. Connection failures must be
-translated into user-friendly messages while raw exceptions stay in application
-logs. Background sync must continue across page navigation and remain idempotent.
-
-## Protected Secret Reveal ownership
-
-Cluster registration stores only the cluster identity, kubeconfig, and Kubernetes API TLS controls. Protected Secret Reveal readiness and namespace authorization are managed under **Settings > Secret Reveal** by users with `kubernetes_secrets.manage_reveal`.
-
-The primary cluster kubeconfig remains the Kubernetes identity used by Reveal. Kubernetes administrators must scope that identity with least-privilege Role/RoleBinding grants. Do not add Reveal policy fields back to the Add/Edit Cluster form; cluster registration and sensitive-access governance are separate maintenance domains.
-
-## Kubernetes version and API compatibility
-
-Cluster connection validation also detects the Kubernetes server version and matches a KAORI compatibility profile. Connectivity and compatibility are separate states. Kubernetes `1.20` uses a legacy warning profile; `1.24` through `1.29` use the initial standard profile.
-
-Do not infer feature readiness from version alone. Each inventory, governance, and operations workflow must continue to validate the required API group, resource, and RBAC verbs. Unsupported or removed APIs block only the affected capability rather than the entire cluster whenever safe isolation is possible.
-
-## Integration boundary
-
-Cluster Management must not own Prometheus or Alertmanager configuration forms. It may show a concise, non-sensitive integration summary and link to `/integrations`. Kubernetes compatibility exists for Kubernetes API consumers: Inventory, Operations, and Governance. Prometheus and Alertmanager compatibility are evaluated independently for Kubernetes Analytics consumers.
+Kubernetes compatibility is consumed by Inventory, Operations, and Governance. Prometheus and Alertmanager compatibility remain in the Integrations domain.

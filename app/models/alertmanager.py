@@ -70,6 +70,7 @@ class AlertmanagerConfig(db.Model):
     detected_version: Mapped[str | None] = mapped_column(String(64), nullable=True)
     compatibility_status: Mapped[str | None] = mapped_column(String(40), nullable=True)
     compatibility_profile: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    capability_profile: Mapped[str | None] = mapped_column(String(100), nullable=True)
     readiness_status: Mapped[str | None] = mapped_column(String(40), nullable=True)
     validation_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     last_validated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

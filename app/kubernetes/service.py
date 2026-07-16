@@ -8,7 +8,7 @@ from kubernetes.client.rest import ApiException
 
 from app.common.integration_errors import describe_integration_failure
 from app.kubernetes.client import KubernetesClient
-from app.integrations.compatibility import evaluate_compatibility
+from app.integrations.compatibility import evaluate_compatibility, get_kubernetes_lifecycle
 from app.kubernetes.tls import legacy_tls_context
 
 logger = logging.getLogger(__name__)
@@ -40,16 +40,25 @@ def test_cluster_connection(
             git_version,
             capabilities=('core_v1', 'apps_v1', 'networking_v1', 'storage_v1'),
         )
+        lifecycle = get_kubernetes_lifecycle(git_version)
+        compatibility_status = compatibility.status
+        readiness_status = compatibility.readiness
+        validation_message = compatibility.message
+        if compatibility.readiness != 'blocked' and lifecycle.status == 'legacy':
+            compatibility_status = 'compatible_with_warnings'
+            readiness_status = 'degraded'
+            validation_message = f'{compatibility.message} {lifecycle.message}'
 
         return {
             'success': True,
             'node_count': len(nodes.items or []),
             'version': git_version,
             'platform': platform,
-            'compatibility_status': compatibility.status,
-            'readiness_status': compatibility.readiness,
+            'compatibility_status': compatibility_status,
+            'readiness_status': readiness_status,
             'compatibility_profile': compatibility.profile_key,
-            'validation_message': compatibility.message,
+            'lifecycle_status': lifecycle.status,
+            'validation_message': validation_message,
             'error': None,
             'reason': None,
             'failure_code': None,

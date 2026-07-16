@@ -8,6 +8,11 @@ from packaging.specifiers import SpecifierSet
 from packaging.version import InvalidVersion, Version
 
 
+PROMQL_KUBERNETES_PROFILE = 'promql-kubernetes-v1'
+ALERT_MANAGEMENT_PROFILE = 'alert-management-v1'
+KUBERNETES_API_PROFILE = 'kubernetes-api-v1'
+
+
 @dataclass(frozen=True)
 class CompatibilityProfile:
     key: str
@@ -16,7 +21,6 @@ class CompatibilityProfile:
     support_level: str
     required_capabilities: tuple[str, ...]
     notes: str
-    query_profile: str | None = None
 
     def matches(self, version: str) -> bool:
         try:
@@ -36,25 +40,63 @@ class CompatibilityResult:
     missing_capabilities: tuple[str, ...] = ()
 
 
+@dataclass(frozen=True)
+class KubernetesLifecycleResult:
+    status: str
+    message: str
+
+
 PROFILES: dict[str, tuple[CompatibilityProfile, ...]] = {
     'kubernetes': (
-        CompatibilityProfile('kubernetes-legacy-1-20-1-23', 'kubernetes', '>=1.20,<1.24', 'legacy', ('core_v1', 'apps_v1', 'networking_v1'), 'Legacy Kubernetes profile. Feature readiness must be validated from live API discovery and RBAC.'),
-        CompatibilityProfile('kubernetes-standard-1-24-1-29', 'kubernetes', '>=1.24,<1.30', 'supported', ('core_v1', 'apps_v1', 'networking_v1', 'storage_v1'), 'Supported Kubernetes profile. Feature readiness remains capability-specific.'),
-        CompatibilityProfile('kubernetes-modern-1-30-1-33', 'kubernetes', '>=1.30,<1.34', 'supported', ('core_v1', 'apps_v1', 'networking_v1', 'storage_v1'), 'Modern Kubernetes profile. Validate removed APIs and feature permissions before activation.'),
-        CompatibilityProfile('kubernetes-current-1-34-1-36', 'kubernetes', '>=1.34,<1.37', 'current', ('core_v1', 'apps_v1', 'networking_v1', 'storage_v1'), 'Current Kubernetes profile. Live API discovery is required before KAORI enables each feature.'),
+        CompatibilityProfile(
+            KUBERNETES_API_PROFILE,
+            'kubernetes',
+            '>=1.20,<1.37',
+            'supported',
+            ('core_v1', 'apps_v1', 'networking_v1', 'storage_v1'),
+            'Kubernetes API contract v1. Feature readiness is determined from live API discovery and RBAC, not the version string alone.',
+        ),
     ),
     'prometheus': (
-        CompatibilityProfile('prometheus-v2-kubernetes-v1', 'prometheus', '>=2.40,<3.0', 'legacy_supported', ('instant_query', 'range_query'), 'Prometheus 2.x profile using HTTP API v1 and the versioned Kubernetes PromQL pack.', 'promql-kubernetes-v2'),
-        CompatibilityProfile('prometheus-v3-kubernetes-v1', 'prometheus', '>=3.0,<4.0', 'current', ('instant_query', 'range_query'), 'Prometheus 3.x profile. Query, metric, and label-schema validation is required before runtime use.', 'promql-kubernetes-v3'),
+        CompatibilityProfile(
+            'prometheus-http-v2',
+            'prometheus',
+            '>=2.40,<3.0',
+            'legacy_supported',
+            ('instant_query', 'range_query'),
+            'Prometheus HTTP compatibility profile for runtime major 2.',
+        ),
+        CompatibilityProfile(
+            'prometheus-http-v3',
+            'prometheus',
+            '>=3.0,<4.0',
+            'current',
+            ('instant_query', 'range_query'),
+            'Prometheus HTTP compatibility profile for runtime major 3.',
+        ),
     ),
     'alertmanager': (
-        CompatibilityProfile('alertmanager-v2-legacy', 'alertmanager', '>=0.25,<0.27', 'legacy', ('status_v2', 'alerts_v2', 'silences_v2'), 'Legacy Alertmanager profile. KAORI uses API v2 only; API v1 is never used.'),
-        CompatibilityProfile('alertmanager-v2-current', 'alertmanager', '>=0.27,<0.34', 'current', ('status_v2', 'alerts_v2', 'silences_v2'), 'Current Alertmanager API v2 profile.'),
+        CompatibilityProfile(
+            'alertmanager-api-v2-legacy',
+            'alertmanager',
+            '>=0.25,<0.27',
+            'legacy',
+            ('status_v2', 'alerts_v2', 'silences_v2'),
+            'Legacy Alertmanager runtime using the API v2 contract. API v1 is never used.',
+        ),
+        CompatibilityProfile(
+            'alertmanager-api-v2-current',
+            'alertmanager',
+            '>=0.27,<0.34',
+            'current',
+            ('status_v2', 'alerts_v2', 'silences_v2'),
+            'Current Alertmanager runtime using the API v2 contract.',
+        ),
     ),
     'thanos': (
-        CompatibilityProfile('thanos-query-v0-39', 'thanos', '>=0.39,<0.40', 'supported', ('prometheus_api_v1', 'instant_query', 'range_query'), 'Supported Thanos Query 0.39 profile.'),
-        CompatibilityProfile('thanos-query-v0-40', 'thanos', '>=0.40,<0.41', 'supported', ('prometheus_api_v1', 'instant_query', 'range_query'), 'Supported Thanos Query 0.40 profile.'),
-        CompatibilityProfile('thanos-query-v0-41', 'thanos', '>=0.41,<0.42', 'current', ('prometheus_api_v1', 'instant_query', 'range_query'), 'Current Thanos Query profile.'),
+        CompatibilityProfile('thanos-query-v0-39', 'thanos', '>=0.39,<0.40', 'supported', ('prometheus_api_v1', 'instant_query', 'range_query'), 'Supported Thanos Query 0.39 endpoint profile.'),
+        CompatibilityProfile('thanos-query-v0-40', 'thanos', '>=0.40,<0.41', 'supported', ('prometheus_api_v1', 'instant_query', 'range_query'), 'Supported Thanos Query 0.40 endpoint profile.'),
+        CompatibilityProfile('thanos-query-v0-41', 'thanos', '>=0.41,<0.42', 'current', ('prometheus_api_v1', 'instant_query', 'range_query'), 'Current Thanos Query endpoint profile.'),
     ),
 }
 
@@ -74,6 +116,39 @@ def evaluate_compatibility(product: str, version: str | None, capabilities: Iter
         return CompatibilityResult('capability_mismatch', 'blocked', profile.key, profile.support_level, 'Required API capabilities are missing: ' + ', '.join(missing), detected, missing)
     warning = profile.support_level in {'legacy', 'deprecated', 'legacy_supported'}
     return CompatibilityResult('compatible_with_warnings' if warning else 'compatible', 'degraded' if warning else 'ready', profile.key, profile.support_level, profile.notes, detected)
+
+
+def get_kubernetes_lifecycle(version: str | None) -> KubernetesLifecycleResult:
+    """Return release-lifecycle posture separately from API compatibility.
+
+    The supported release window is intentionally centralized here so updating the
+    lifecycle policy does not require creating a new API compatibility profile.
+    """
+    normalized = normalize_runtime_version(version or '')
+    try:
+        parsed = Version(normalized)
+    except InvalidVersion:
+        return KubernetesLifecycleResult('unknown', 'KAORI could not determine the Kubernetes release lifecycle.')
+    if parsed in SpecifierSet('>=1.34,<1.37'):
+        return KubernetesLifecycleResult('current', 'The Kubernetes minor release is within the current KAORI lifecycle window.')
+    if parsed in SpecifierSet('>=1.20,<1.34'):
+        return KubernetesLifecycleResult('legacy', 'The Kubernetes API contract is supported, but this minor release is outside the current lifecycle window.')
+    return KubernetesLifecycleResult('unknown', 'This Kubernetes minor release is outside the lifecycle matrix currently maintained by KAORI.')
+
+
+def prometheus_major_for_profile(profile_key: str | None) -> str | None:
+    return {
+        'prometheus-http-v2': '2',
+        'prometheus-http-v3': '3',
+    }.get(profile_key or '')
+
+
+def prometheus_profile_for_major(major: str | int | None) -> CompatibilityProfile | None:
+    key = {
+        '2': 'prometheus-http-v2',
+        '3': 'prometheus-http-v3',
+    }.get(str(major or '').strip())
+    return get_profile('prometheus', key)
 
 
 def normalize_runtime_version(value: str) -> str:

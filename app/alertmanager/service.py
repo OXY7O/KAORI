@@ -14,7 +14,7 @@ from app.common.integration_errors import describe_integration_failure
 from app.extensions import db
 from app.models.alertmanager import AlertmanagerConfig
 from app.models.cluster import Cluster
-from app.integrations.compatibility import evaluate_compatibility
+from app.integrations.compatibility import ALERT_MANAGEMENT_PROFILE, evaluate_compatibility
 
 logger = logging.getLogger(__name__)
 
@@ -86,6 +86,7 @@ def save_alertmanager_config(
     config.compatibility_status = 'validation_required'
     config.readiness_status = 'validation_required'
     config.compatibility_profile = None
+    config.capability_profile = ALERT_MANAGEMENT_PROFILE
     config.validation_message = 'Configuration changed. Run validation before KAORI uses this integration.'
     config.last_validated_at = None
 
@@ -215,6 +216,7 @@ def test_alertmanager_connection(
     config.detected_version = version
     config.compatibility_status = compatibility.status
     config.compatibility_profile = compatibility.profile_key
+    config.capability_profile = ALERT_MANAGEMENT_PROFILE
     config.readiness_status = compatibility.readiness
     config.validation_message = compatibility.message
     config.last_validated_at = datetime.now(UTC)
@@ -240,6 +242,7 @@ def test_alertmanager_connection(
         'compatibility_status': compatibility.status,
         'readiness_status': compatibility.readiness,
         'compatibility_profile': compatibility.profile_key,
+        'capability_profile': config.capability_profile,
         'error': None if compatibility.readiness != 'blocked' else compatibility.message,
         'reason': compatibility.message,
         'failure_code': None if compatibility.readiness != 'blocked' else compatibility.status,

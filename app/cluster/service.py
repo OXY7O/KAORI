@@ -474,6 +474,7 @@ def run_test_cluster(cluster: Cluster) -> dict[str, Any]:
         cluster.kubernetes_platform = result.get('platform')
         cluster.kubernetes_compatibility_status = result.get('compatibility_status')
         cluster.kubernetes_compatibility_profile = result.get('compatibility_profile')
+        cluster.kubernetes_lifecycle_status = result.get('lifecycle_status')
         cluster.kubernetes_readiness_status = result.get('readiness_status')
         cluster.kubernetes_validation_message = result.get('validation_message')
         cluster.kubernetes_last_validated_at = datetime.now(UTC)

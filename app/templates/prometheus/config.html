@@ -53,7 +53,7 @@
                         </div>
                         <div>
                             <h2 class="text-base font-semibold text-slate-950 dark:text-white">Kubernetes Analytics readiness</h2>
-                            <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">Endpoint identity, Prometheus source contract, PromQL validation, and historical coverage.</p>
+                            <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">Endpoint identity, Prometheus source major contract, PromQL validation, and historical coverage.</p>
                         </div>
                     </div>
                     {% if config.last_validated_at %}
@@ -83,8 +83,8 @@
                         </span>
                     </div>
                     <div class="bg-white px-5 py-4 dark:bg-slate-950">
-                        <div class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Prometheus source</div>
-                        <div class="mt-2 break-words text-sm font-semibold text-slate-900 dark:text-white">{{ config.source_prometheus_profile or 'Not selected' }}</div>
+                        <div class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Prometheus source major</div>
+                        <div class="mt-2 break-words text-sm font-semibold text-slate-900 dark:text-white">{% if config.source_prometheus_major %}Prometheus {{ config.source_prometheus_major }}.x{% else %}Not selected{% endif %}</div>
                         <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ 'Selected manually behind Thanos' if (config.version_detection_mode or 'automatic') == 'manual' else 'Detected from the direct endpoint' }}</div>
                     </div>
                     <div class="bg-white px-5 py-4 dark:bg-slate-950">
@@ -158,12 +158,12 @@
                         <div>
                             {{ form.version_detection_mode.label(class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200") }}
                             {{ form.version_detection_mode(class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-white", **{"x-on:change": "detectionMode = $event.target.value"}) }}
-                            <p class="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">Automatic reads the runtime version from a direct Prometheus endpoint. Manual identifies a Thanos Query endpoint and requires the Prometheus source major version used for the PromQL contract.</p>
+                            <p class="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">Automatic reads the runtime version from a direct Prometheus endpoint. Manual identifies a Thanos Query endpoint and requires the Prometheus source major major version used for the PromQL contract.</p>
                         </div>
                         <div x-show="detectionMode === 'manual'" x-cloak x-transition>
-                            {{ form.source_prometheus_profile.label(class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200") }}
-                            {{ form.source_prometheus_profile(class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-white") }}
-                            <p class="mt-2 text-xs leading-5 text-amber-700 dark:text-amber-300">Select the Prometheus source major version used behind Thanos. KAORI validates Thanos and PromQL readiness separately.</p>
+                            {{ form.source_prometheus_major.label(class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200") }}
+                            {{ form.source_prometheus_major(class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-white") }}
+                            <p class="mt-2 text-xs leading-5 text-amber-700 dark:text-amber-300">Select the Prometheus source major major version used behind Thanos. KAORI validates Thanos and PromQL readiness separately.</p>
                         </div>
                     </div>
                     <!-- Authentication -->

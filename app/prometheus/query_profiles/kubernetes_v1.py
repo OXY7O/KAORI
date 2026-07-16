@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from app.prometheus.query_profiles.types import QueryDefinition
 
-PROFILE_KEY = 'prometheus-kubernetes-v1'
+PROFILE_KEY = 'promql-kubernetes-v1'
 PROFILE_VERSION = 1
 
 QUERIES: dict[str, QueryDefinition] = {

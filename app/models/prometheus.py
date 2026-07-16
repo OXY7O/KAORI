@@ -66,7 +66,7 @@ class PrometheusConfig(db.Model):
 
     version_detection_mode: Mapped[str] = mapped_column(String(20), nullable=False, default='automatic')
     endpoint_product: Mapped[str | None] = mapped_column(String(32), nullable=True)
-    source_prometheus_profile: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    source_prometheus_major: Mapped[str | None] = mapped_column(String(8), nullable=True)
 
     # Endpoint identity. In automatic mode this is Prometheus; in manual mode
     # it is the intermediary runtime (currently Thanos Query).

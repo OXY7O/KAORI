@@ -81,3 +81,7 @@ Technical references:
 Dashboard navigation is grouped under a reusable **Dashboards** submenu. Kubernetes is the first dashboard; future Server and HCI dashboards should be added to the same submenu rather than creating new top-level sidebar links.
 
 The Integrations Overview is an ecosystem landing page rather than only a combined Prometheus/Alertmanager table. It presents category coverage, a supported/planned catalog, and configured target posture. Planned catalog entries must remain non-actionable until a complete driver and compatibility contract exist. See `app/integrations/README.md`.
+
+## Compatibility profile convention
+
+KAORI separates endpoint/API profiles from query/data and capability profiles. Current canonical identifiers are `kubernetes-api-v1`, `prometheus-http-v2`, `prometheus-http-v3`, `promql-kubernetes-v1`, `alertmanager-api-v2-legacy`, `alertmanager-api-v2-current`, and `alert-management-v1`. See `docs/INTEGRATION_COMPATIBILITY.md`.
