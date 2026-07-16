@@ -421,3 +421,17 @@ The Workload Inventory page follows the same resource-inventory baseline as Inve
 - Expandable workload details use 12 px cards, 8 px violet icon surfaces, consistent sans-serif 12 px key/value typography, and compact shared labels. Kubernetes UID and long image or annotation values may wrap but must not switch to a different typography scale.
 - Container kind, pull policy, workload labels, placement constraints, node selectors, and tolerations are descriptive metadata and use rectangular violet labels. Workload, Pod, and rollout state use semantic status labels.
 - Empty nested sections use compact dashed information boxes. Informational boundaries use violet; missing required collection data may use Warning when operator action is required.
+
+## Kubernetes Pod inventory reference
+
+The Pod Inventory page follows the Inventory Overview hero geometry and the resource-inventory interaction standard used by Nodes, Namespaces, and Workloads.
+
+- Use the Inventory Overview hero geometry: `p-5 lg:p-6`, a 7/5 split, `gap-5`, a right panel with `min-h-[13rem]`, compact two-column metrics, and the footer action `Manage Clusters`.
+- Pod count, Running count, and unique image count are contextual hero metadata and use rectangular brand labels. The aggregate Pod posture is the only semantic label in the hero panel.
+- Runtime summary cards use neutral surfaces with violet labels and icons. The primary Running coverage card may use a solid dark-violet surface with a runtime progress width; gradients are prohibited.
+- Pod table columns are left aligned except the final Details column, which is right aligned. Cluster, namespace, and owner type are metadata labels. Phase and readiness are compact semantic status labels.
+- Filters use sentence case, 44 px controls, 8 px radius, shared surface tokens, and violet focus states. Loading bars use a solid violet fill.
+- Expandable Pod details use 12 px cards, 8 px violet icon surfaces, consistent sans-serif 12 px key/value typography, and compact shared labels. Kubernetes UID, Pod IP, Host IP, image references, volume sources, and annotation values may wrap but must not switch typography scale.
+- The primary detail cards are Pod identity, Placement & network, Pod conditions, and Pod configuration. Their information tips use the same height and bottom alignment.
+- Container kind, image pull policy, owner type, volume type, mount targets, Pod labels, node selectors, and tolerations are descriptive metadata and use rectangular violet labels. Pod phase, readiness, container state, and collection warnings use semantic status labels.
+- Empty nested sections use compact dashed information boxes. Missing runtime detail that requires a worker restart or resync uses Warning; ordinary unconfigured or empty metadata uses the violet empty-state treatment.

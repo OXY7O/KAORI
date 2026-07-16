@@ -1,365 +1,294 @@
-{% from 'inventory/components/_detail_macros.html' import detail_shell, detail_card, detail_row, detail_status_row, detail_tip %}
-{% set phase_classes = {
-    "Running": "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/25",
-    "Pending": "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/25",
-    "Succeeded": "bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-400/25",
-    "Failed": "bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-400/25"
-} %}
-{% call detail_shell(
-    pod.name,
-    'Pod identity, ownership, placement, configuration, and runtime state from the latest Kubernetes inventory snapshot.',
-    'package',
-    'bg-cyan-50 text-cyan-600 dark:bg-cyan-950/40 dark:text-cyan-300',
-    pod.namespace,
-    'bg-indigo-50 text-indigo-700 ring-1 ring-inset ring-indigo-200 dark:bg-indigo-500/10 dark:text-indigo-300 dark:ring-indigo-400/25',
-    pod.status,
-    phase_classes.get(pod.status, 'bg-slate-100 text-slate-700 ring-1 ring-inset ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-600')
-    ) %}
-    <div class="space-y-4 lg:col-span-3">
-        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {% call detail_card(
-                'Pod identity',
-                'badge-info',
-                'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300',
-                pod.owner_type,
-                'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-400/25'
-                ) %}
-                {{ detail_row('Cluster', pod.cluster_name, false, 'blue') }}
-                {{ detail_row('Namespace', pod.namespace, false, 'blue') }}
-                {{ detail_row('Owner', (pod.owner_type ~ ' · ' ~ pod.owner_name) if pod.owner_type != 'Standalone' else 'Standalone', false, 'blue') }}
-                {{ detail_row('Age', pod.age, false, 'blue') }}
-                {{ detail_row('Kubernetes UID', pod.uid, true, 'blue') }}
-                {{ detail_row('Created', pod.created_at|user_datetime('%Y-%m-%d %H:%M %Z') , false, 'blue') }}
-                {{ detail_row('Collected', pod.collected_at|user_datetime('%Y-%m-%d %H:%M %Z') , false, 'blue') }}
-                <div class="pt-1">
-                    <div class="mb-2 text-[11px] font-normal text-blue-700 dark:text-blue-300">Ownership chain</div>
-                    <div class="space-y-0">
-                        {% for owner in pod.owner_chain %}
-                            <div class="relative flex min-w-0 items-start gap-2 pb-3 last:pb-0">
-                                {% if not loop.last %}
-                                    <span class="absolute top-3 left-[5px] h-full w-px bg-blue-200 dark:bg-blue-500/30"></span>
-                                {% endif %}
-                                <span class="relative mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-blue-500 ring-4 ring-blue-50 dark:ring-blue-500/10"></span>
-                                <div class="min-w-0">
-                                    <div class="text-[10px] font-normal text-blue-600 dark:text-blue-300">{{ owner.kind }}</div>
-                                    <div class="truncate text-xs font-medium text-slate-700 dark:text-slate-200"
-                                         title="{{ owner.name }}">{{ owner.name }}</div>
-                                </div>
-                            </div>
-                        {% endfor %}
+{% import "components/table_label.html" as table_label %}
+{% macro detail_row(label, value='-', break_all=false) -%}
+    {% set display_value = value if value not in [None, ''] else '-' %}
+    <div class="flex items-start justify-between gap-3">
+        <span class="shrink-0 text-xs font-normal leading-5 text-content-muted">{{ label }}</span>
+        <span class="max-w-[68%] {{ 'break-all' if break_all else 'break-words' }} text-right text-xs font-medium leading-5 text-content-secondary" title="{{ display_value }}">{{ display_value }}</span>
+    </div>
+{%- endmacro %}
+{% macro status_row(label, value, tone='unknown', icon='circle-help') -%}
+    <div class="flex items-start justify-between gap-3">
+        <span class="shrink-0 text-xs font-normal leading-5 text-content-muted">{{ label }}</span>
+        {{ table_label.status_label(value, tone, icon) }}
+    </div>
+{%- endmacro %}
+{% macro info_box(title, message, icon='info', tone='brand', equal_height=false) -%}
+    {% if tone == 'warning' %}
+        {% set panel_class = 'border-status-warning-border bg-status-warning-soft' %}
+        {% set icon_class = 'border-status-warning-border bg-status-warning-soft text-status-warning-text' %}
+        {% set title_class = 'text-status-warning-text' %}
+    {% else %}
+        {% set panel_class = 'border-kaori-primary/25 bg-kaori-soft' %}
+        {% set icon_class = 'border-kaori-primary/20 bg-surface-card text-kaori-primary' %}
+        {% set title_class = 'text-kaori-primary' %}
+    {% endif %}
+    <div class="flex {{ 'h-28' if equal_height else '' }} rounded-lg border border-dashed {{ panel_class }} p-3">
+        <div class="flex w-full items-start gap-2.5">
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border {{ icon_class }}"><i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i></span>
+            <div class="min-w-0">
+                <p class="text-xs font-semibold {{ title_class }}">{{ title }}</p>
+                <p class="mt-1 text-[11px] leading-5 text-content-muted">{{ message }}</p>
+            </div>
+        </div>
+    </div>
+{%- endmacro %}
+{% macro detail_card(title, icon, badge=None) -%}
+    <section class="flex h-full flex-col rounded-xl border border-outline-default bg-surface-card p-4">
+        <div class="mb-4 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2 text-sm font-semibold text-content-primary">
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
+                {{ title }}
+            </div>
+            {% if badge %}{{ table_label.metadata_label(badge) }}{% endif %}
+        </div>
+        <div class="flex min-h-0 flex-1 flex-col gap-2.5">{{ caller() }}</div>
+    </section>
+{%- endmacro %}
+
+{% if pod.status == 'Running' %}
+    {% set phase_tone = 'normal' %}{% set phase_icon = 'circle-check' %}
+{% elif pod.status == 'Pending' %}
+    {% set phase_tone = 'pending' %}{% set phase_icon = 'loader-circle' %}
+{% elif pod.status == 'Succeeded' %}
+    {% set phase_tone = 'normal' %}{% set phase_icon = 'badge-check' %}
+{% elif pod.status == 'Failed' %}
+    {% set phase_tone = 'critical' %}{% set phase_icon = 'circle-x' %}
+{% else %}
+    {% set phase_tone = 'unknown' %}{% set phase_icon = 'circle-help' %}
+{% endif %}
+{% if pod.ready_total > 0 and pod.ready_count == pod.ready_total %}
+    {% set ready_tone = 'normal' %}{% set ready_icon = 'circle-check' %}
+{% elif pod.ready_count > 0 %}
+    {% set ready_tone = 'warning' %}{% set ready_icon = 'triangle-alert' %}
+{% elif pod.ready_total > 0 %}
+    {% set ready_tone = 'critical' %}{% set ready_icon = 'circle-x' %}
+{% else %}
+    {% set ready_tone = 'unknown' %}{% set ready_icon = 'circle-help' %}
+{% endif %}
+
+<div class="bg-surface-hover px-4 py-4">
+    <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-elevated shadow-sm">
+        <header class="flex flex-col gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="package" class="h-4 w-4"></i></span>
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h3 class="truncate text-sm font-semibold text-content-primary">{{ pod.name }}</h3>
+                        {{ table_label.metadata_label(pod.cluster_name, 'server') }}
+                        {{ table_label.metadata_label(pod.namespace, 'folder-tree') }}
                     </div>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Pod identity, placement, conditions, images, configuration, and runtime data from the latest inventory snapshot.</p>
                 </div>
-                {{ detail_tip('Pod age uses the Kubernetes creation timestamp. Collected shows when KAORI refreshed this snapshot.', 'blue', 'clock-3', false, true, 'min-h-28') }}
+            </div>
+            <div class="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+                {{ table_label.metadata_label(pod.owner_type or 'Standalone', 'git-branch') }}
+                {{ table_label.status_label(pod.status or 'Unknown', phase_tone, phase_icon) }}
+            </div>
+        </header>
+
+        <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
+            {% call detail_card('Pod identity', 'badge-info', pod.age) %}
+                {{ detail_row('Cluster', pod.cluster_name) }}
+                {{ detail_row('Namespace', pod.namespace) }}
+                {{ detail_row('Owner', (pod.owner_type ~ ' · ' ~ pod.owner_name) if pod.owner_type != 'Standalone' else 'Standalone') }}
+                {{ detail_row('Age', pod.age) }}
+                {{ detail_row('Kubernetes UID', pod.uid, true) }}
+                {{ detail_row('Created', pod.created_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
+                {{ detail_row('Collected', pod.collected_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
+                <div class="mt-auto pt-3">{{ info_box('Inventory identity', 'Identifies the Pod object, owner relationship, and latest snapshot collected by KAORI.', 'lightbulb', 'brand', true) }}</div>
             {% endcall %}
-            {% call detail_card(
-                'Runtime state',
-                'activity',
-                'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300',
-                pod.ready,
-                'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/25'
-                ) %}
-                {{ detail_status_row('Phase', pod.status, 'success' if pod.status in ['Running', 'Succeeded'] else ('warning' if pod.status == 'Pending' else ('danger' if pod.status == 'Failed' else 'neutral') )) }}
-                {{ detail_row('Ready containers', pod.ready, false, 'emerald') }}
-                {{ detail_row('Regular containers', pod.configuration.container_count, false, 'emerald') }}
-                {{ detail_row('Init containers', pod.configuration.init_container_count, false, 'emerald') }}
-                {{ detail_row('Restarts', pod.restarts, false, 'emerald') }}
-                {{ detail_row('QoS class', pod.qos_class, false, 'emerald') }}
-                {{ detail_row('Reason', pod.reason or '-', false, 'emerald') }}
-                {% if pod.conditions %}
-                    <div class="rounded-xl bg-emerald-50 px-3 py-3 text-emerald-900 ring-1 ring-inset ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-100 dark:ring-emerald-500/20">
-                        <div class="flex items-start gap-2.5">
-                            <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300">
-                                <i data-lucide="list-checks" class="h-3.5 w-3.5"></i>
-                            </span>
-                            <div class="min-w-0 flex-1">
-                                <div class="flex items-center justify-between gap-3">
-                                    <span class="truncate text-xs font-normal text-emerald-950 dark:text-emerald-100">Pod conditions</span>
-                                    <span class="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-normal text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-200">{{ pod.conditions|length }} conditions</span>
+
+            {% call detail_card('Placement & network', 'map-pin', pod.node or 'Not scheduled') %}
+                {{ detail_row('Node', pod.node or 'Not scheduled') }}
+                {{ detail_row('Pod IP', pod.ip or '-', true) }}
+                {{ detail_row('Host IP', pod.host_ip or '-', true) }}
+                {{ detail_row('Scheduler', pod.placement.scheduler) }}
+                {{ detail_row('Priority class', pod.placement.priority_class) }}
+                {{ detail_row('Topology spread', pod.placement.topology_spread_count) }}
+                {{ status_row('Affinity', 'Configured' if pod.placement.affinity_configured else 'Not configured', 'info' if pod.placement.affinity_configured else 'unknown', 'route' if pod.placement.affinity_configured else 'circle-minus') }}
+                {{ status_row('Host network', 'Enabled' if pod.placement.host_network else 'Disabled', 'warning' if pod.placement.host_network else 'disabled', 'network' if pod.placement.host_network else 'circle-minus') }}
+                <div class="mt-auto space-y-3 pt-3">
+                    {% if pod.placement.node_selector or pod.placement.tolerations %}
+                        <div class="rounded-lg border border-outline-default bg-surface-hover p-3">
+                            <p class="text-xs font-semibold text-content-primary">Placement constraints</p>
+                            {% if pod.placement.node_selector %}
+                                <div class="mt-2 flex flex-wrap gap-1.5">
+                                    {% for key, value in pod.placement.node_selector.items() %}{{ table_label.metadata_label(key ~ '=' ~ value, 'scan-search') }}{% endfor %}
                                 </div>
-                                <div class="mt-2 space-y-1.5">
-                                    {% for condition in pod.conditions %}
-                                        <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-3 text-xs font-normal leading-5">
-                                            <span class="truncate text-emerald-700/80 dark:text-emerald-200/80"
-                                                  title="{{ condition.type }}">{{ condition.type }}</span>
-                                            {% if condition.status == 'True' %}
-                                                <span class="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-normal text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:ring-emerald-400/25">True</span>
-                                            {% elif condition.status == 'False' %}
-                                                <span class="shrink-0 rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-normal text-rose-700 ring-1 ring-inset ring-rose-200 dark:bg-rose-500/15 dark:text-rose-300 dark:ring-rose-400/25">False</span>
-                                            {% else %}
-                                                <span class="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-normal text-slate-600 ring-1 ring-inset ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-600">{{ condition.status }}</span>
-                                            {% endif %}
-                                        </div>
-                                    {% endfor %}
-                                </div>
+                            {% endif %}
+                            {% if pod.placement.tolerations %}
+                                <p class="mt-2 text-[11px] leading-5 text-content-muted">{{ pod.placement.tolerations|length }} toleration(s) reported.</p>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                    {{ info_box('Network identity', 'Pod IP is assigned to the Pod instance. Host IP identifies the node network address currently hosting it.', 'network', 'brand', true) }}
+                </div>
+            {% endcall %}
+
+            {% call detail_card('Pod conditions', 'activity', pod.ready) %}
+                {{ status_row('Phase', pod.status or 'Unknown', phase_tone, phase_icon) }}
+                {{ status_row('Ready containers', pod.ready, ready_tone, ready_icon) }}
+                {{ detail_row('Regular containers', pod.configuration.container_count) }}
+                {{ detail_row('Init containers', pod.configuration.init_container_count) }}
+                {{ detail_row('Restarts', pod.restarts) }}
+                {{ detail_row('QoS class', pod.qos_class) }}
+                {{ detail_row('Reason', pod.reason or '-') }}
+                <div class="mt-auto space-y-3 pt-3">
+                    {% if pod.conditions %}
+                        <div class="rounded-lg border border-outline-default bg-surface-hover p-3">
+                            <div class="flex items-center justify-between gap-3">
+                                <p class="text-xs font-semibold text-content-primary">Reported conditions</p>
+                                {{ table_label.metadata_label(pod.conditions|length ~ ' conditions', 'list-checks') }}
+                            </div>
+                            <div class="mt-2 space-y-1.5">
+                                {% for condition in pod.conditions %}
+                                    <div class="flex items-center justify-between gap-3">
+                                        <span class="truncate text-[11px] text-content-muted" title="{{ condition.type }}">{{ condition.type }}</span>
+                                        {% if condition.status == 'True' %}{{ table_label.status_label('True', 'normal', 'check') }}
+                                        {% elif condition.status == 'False' %}{{ table_label.status_label('False', 'critical', 'x') }}
+                                        {% else %}{{ table_label.status_label(condition.status, 'unknown', 'circle-help') }}{% endif %}
+                                    </div>
+                                {% endfor %}
                             </div>
                         </div>
-                    </div>
-                {% endif %}
-                {% if pod.message %}
-                    <div class="rounded-xl bg-amber-50 px-3 py-2.5 text-xs leading-5 text-amber-800 dark:bg-amber-500/10 dark:text-amber-200">
-                        {{ pod.message }}
-                    </div>
-                {% endif %}
-                {{ detail_tip('Runtime state is a point-in-time snapshot. Historical failures and restart anomalies remain in Analytics.', 'emerald', 'info', false, true, 'min-h-28') }}
+                    {% endif %}
+                    {% if pod.message %}<div class="rounded-lg border border-status-warning-border bg-status-warning-soft p-3 text-[11px] leading-5 text-status-warning-text">{{ pod.message }}</div>{% endif %}
+                    {{ info_box('Snapshot boundary', 'Pod conditions are point-in-time data. Historical failures and restart anomalies remain in Analytics.', 'info', 'brand', true) }}
+                </div>
             {% endcall %}
-            {% call detail_card(
-                'Placement & network',
-                'map-pin',
-                'bg-cyan-50 text-cyan-600 dark:bg-cyan-950/40 dark:text-cyan-300',
-                pod.host_ip or 'Not reported',
-                'bg-cyan-50 text-cyan-700 ring-1 ring-inset ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-400/25'
-                ) %}
-                {{ detail_row('Node', pod.node or 'Not scheduled', false, 'cyan') }}
-                {{ detail_row('Pod IP', pod.ip or '-', false, 'cyan') }}
-                {{ detail_row('Host IP', pod.host_ip or '-', false, 'cyan') }}
-                {{ detail_row('Scheduler', pod.placement.scheduler, false, 'cyan') }}
-                {{ detail_row('Priority class', pod.placement.priority_class, false, 'cyan') }}
-                {{ detail_row('Node selectors', pod.placement.node_selector|length, false, 'cyan') }}
-                {{ detail_row('Tolerations', pod.placement.tolerations|length, false, 'cyan') }}
-                {{ detail_status_row('Affinity', 'Configured' if pod.placement.affinity_configured else 'Not configured', 'info' if pod.placement.affinity_configured else 'neutral') }}
-                {{ detail_row('Topology spread', pod.placement.topology_spread_count, false, 'cyan') }}
-                {{ detail_status_row('Host network', 'True' if pod.placement.host_network else 'False', 'warning' if pod.placement.host_network else 'neutral') }}
-                {% if pod.placement.node_selector %}
-                    <div class="flex flex-wrap gap-1.5 pt-1">
-                        {% for key, value in pod.placement.node_selector.items() %}
-                            <span class="inline-flex max-w-full rounded-full bg-cyan-50 px-2 py-0.5 text-[10px] font-normal text-cyan-700 ring-1 ring-inset ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-400/25"
-                                  title="{{ key }}={{ value }}">
-                                <span class="truncate">{{ key }}={{ value }}</span>
-                            </span>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-                {{ detail_tip('Host IP identifies the node network address currently hosting this Pod. Pod IP remains the address assigned to the Pod instance.', 'teal', 'network', false, true, 'min-h-28') }}
-            {% endcall %}
-            {% call detail_card(
-                'Pod configuration',
-                'settings-2',
-                'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300',
-                pod.configuration.container_count ~ ' container(s)',
-                'bg-violet-50 text-violet-700 ring-1 ring-inset ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-400/25'
-                ) %}
-                {{ detail_row('Service account', pod.configuration.service_account, false, 'violet') }}
-                {{ detail_row('Restart policy', pod.configuration.restart_policy, false, 'violet') }}
-                {{ detail_row('DNS policy', pod.configuration.dns_policy, false, 'violet') }}
-                {{ detail_row('Runtime class', pod.configuration.runtime_class, false, 'violet') }}
-                {{ detail_status_row('Security context', 'Configured' if pod.configuration.security_context_configured else 'Not configured', 'info' if pod.configuration.security_context_configured else 'neutral') }}
-                {{ detail_row('Image pull secrets', pod.configuration.image_pull_secret_count, false, 'violet') }}
-                {{ detail_row('Volumes', pod.configuration.volume_count, false, 'violet') }}
-                {{ detail_row('Regular containers', pod.configuration.container_count, false, 'violet') }}
-                {{ detail_row('Init containers', pod.configuration.init_container_count, false, 'violet') }}
-                {{ detail_row('Ephemeral containers', pod.configuration.ephemeral_container_count, false, 'violet') }}
-                {{ detail_tip('Configuration comes from the Pod specification. Secret values and mounted file content are never displayed.', 'violet', 'shield-check', false, true, 'min-h-28') }}
+
+            {% call detail_card('Pod configuration', 'settings-2', pod.configuration.container_count ~ ' containers') %}
+                {{ detail_row('Service account', pod.configuration.service_account) }}
+                {{ detail_row('Restart policy', pod.configuration.restart_policy) }}
+                {{ detail_row('DNS policy', pod.configuration.dns_policy) }}
+                {{ detail_row('Runtime class', pod.configuration.runtime_class) }}
+                {{ status_row('Security context', 'Configured' if pod.configuration.security_context_configured else 'Not configured', 'info' if pod.configuration.security_context_configured else 'unknown', 'shield-check' if pod.configuration.security_context_configured else 'circle-minus') }}
+                {{ detail_row('Image pull secrets', pod.configuration.image_pull_secret_count) }}
+                {{ detail_row('Volumes', pod.configuration.volume_count) }}
+                {{ detail_row('Regular containers', pod.configuration.container_count) }}
+                {{ detail_row('Init containers', pod.configuration.init_container_count) }}
+                {{ detail_row('Ephemeral containers', pod.configuration.ephemeral_container_count) }}
+                <div class="mt-auto pt-3">{{ info_box('Specification boundary', 'Configuration comes from the Pod specification. Secret values and mounted file content are never displayed.', 'shield-check', 'brand', true) }}</div>
             {% endcall %}
         </div>
-        <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-950/40">
-            <div class="flex flex-col gap-3 border-b border-slate-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700">
-                <div class="flex items-center gap-3">
-                    <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-fuchsia-50 text-fuchsia-600 dark:bg-fuchsia-950/40 dark:text-fuchsia-300">
-                        <i data-lucide="boxes" class="h-4 w-4"></i>
-                    </span>
-                    <div>
-                        <h4 class="text-sm font-semibold text-slate-900 dark:text-white">Container runtime status</h4>
-                        <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Current state, readiness, images, and restart counters for regular and init containers.</p>
-                    </div>
-                </div>
-                <span class="self-start rounded-full bg-fuchsia-50 px-2.5 py-1 text-xs font-semibold text-fuchsia-700 ring-1 ring-inset ring-fuchsia-200 sm:self-auto dark:bg-fuchsia-500/10 dark:text-fuchsia-300 dark:ring-fuchsia-400/25">{{ pod.container_statuses|length }} entries</span>
-            </div>
-            {% if pod.container_statuses %}
-                <div class="overflow-x-auto">
-                    <table class="min-w-full text-left text-xs">
-                        <thead class="bg-slate-50 text-[10px] uppercase tracking-wide text-slate-500 dark:bg-slate-800/60 dark:text-slate-400">
-                            <tr>
-                                <th class="px-4 py-2.5">Container</th>
-                                <th class="px-4 py-2.5">Kind</th>
-                                <th class="px-4 py-2.5">Image</th>
-                                <th class="px-4 py-2.5">Ready</th>
-                                <th class="px-4 py-2.5">State</th>
-                                <th class="px-4 py-2.5">Restarts</th>
-                                <th class="px-4 py-2.5">Started / Finished</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
-                            {% for container in pod.container_statuses %}
-                                <tr class="align-top">
-                                    <td class="px-4 py-3 font-semibold text-slate-800 dark:text-slate-100">{{ container.name }}</td>
-                                    <td class="px-4 py-3">
-                                        {% if container.kind == 'Regular' %}
-                                            <span class="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-normal text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-400/25">Regular</span>
-                                        {% elif container.kind == 'Init' %}
-                                            <span class="rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-normal text-violet-700 ring-1 ring-inset ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-400/25">Init</span>
-                                        {% else %}
-                                            <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-normal text-slate-600 ring-1 ring-inset ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-600">{{ container.kind }}</span>
-                                        {% endif %}
-                                    </td>
-                                    <td class="max-w-[360px] px-4 py-3">
-                                        <div class="break-all font-medium text-slate-700 dark:text-slate-200"
-                                             title="{{ container.image }}">{{ container.image }}</div>
-                                        <div class="mt-1 text-[10px] text-slate-400">Pull policy: {{ container.pull_policy }}</div>
-                                    </td>
-                                    <td class="px-4 py-3">
-                                        {% if container.ready %}
-                                            <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-normal text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/25">True</span>
-                                        {% else %}
-                                            <span class="rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-normal text-rose-700 ring-1 ring-inset ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-400/25">False</span>
-                                        {% endif %}
-                                    </td>
-                                    <td class="px-4 py-3">
-                                        {% if container.state == 'Running' %}
-                                            <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-normal text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/25">Running</span>
-                                        {% elif container.state == 'Waiting' %}
-                                            <span class="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-normal text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/25">Waiting</span>
-                                        {% elif container.state == 'Terminated' %}
-                                            <span class="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-normal text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-400/25">Terminated</span>
-                                        {% else %}
-                                            <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-normal text-slate-600 ring-1 ring-inset ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-600">{{ container.state }}</span>
-                                        {% endif %}
-                                        {% if container.reason %}
-                                            <div class="mt-1 max-w-[180px] break-words text-[10px] font-medium text-slate-500 dark:text-slate-400">{{ container.reason }}</div>
-                                        {% endif %}
-                                        {% if container.exit_code is not none %}
-                                            <div class="mt-1 text-[10px] text-slate-400">Exit code {{ container.exit_code }}</div>
-                                        {% endif %}
-                                    </td>
-                                    <td class="px-4 py-3 font-semibold {{ 'text-amber-700 dark:text-amber-300' if container.restart_count > 0 else 'text-slate-700 dark:text-slate-300' }}">{{ container.restart_count }}</td>
-                                    <td class="px-4 py-3 text-[10px] leading-5 text-slate-500 dark:text-slate-400">
-                                        {% if container.started_at_value %}
-                                            <div>Started {{ container.started_at_value|user_datetime("%Y-%m-%d %H:%M %Z") }}</div>
-                                        {% endif %}
-                                        {% if container.finished_at_value %}
-                                            <div>Finished {{ container.finished_at_value|user_datetime("%Y-%m-%d %H:%M %Z") }}</div>
-                                        {% endif %}
-                                        {% if not container.started_at_value and not container.finished_at_value %}-{% endif %}
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            {% else %}
-                <div class="px-4 py-5">{{ detail_tip('Container runtime status is not reported in this snapshot. Restart the worker and sync the cluster again.', 'amber', 'triangle-alert') }}</div>
-            {% endif %}
-        </section>
-        <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-950/40">
-            <div class="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-4 dark:border-slate-700">
-                <div class="flex items-center gap-3">
-                    <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-300">
-                        <i data-lucide="database" class="h-4 w-4"></i>
-                    </span>
-                    <div>
-                        <h4 class="text-sm font-semibold text-slate-900 dark:text-white">Volumes</h4>
-                        <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Volume type, source reference, and containers using each mount.</p>
-                    </div>
-                </div>
-                <span class="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/25">{{ pod.volumes|length }}</span>
-            </div>
-            {% if pod.volumes %}
-                <div class="overflow-x-auto">
-                    <table class="min-w-full text-left text-xs">
-                        <thead class="bg-slate-50 text-[10px] uppercase tracking-wide text-slate-500 dark:bg-slate-800/60 dark:text-slate-400">
-                            <tr>
-                                <th class="px-4 py-2.5">Volume</th>
-                                <th class="px-4 py-2.5">Type</th>
-                                <th class="px-4 py-2.5">Source</th>
-                                <th class="px-4 py-2.5">Mounted by</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
-                            {% for volume in pod.volumes %}
-                                <tr>
-                                    <td class="px-4 py-3 font-semibold text-slate-800 dark:text-slate-100">{{ volume.name }}</td>
-                                    <td class="px-4 py-3">
-                                        <span class="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-normal text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/25">{{ volume.type }}</span>
-                                    </td>
-                                    <td class="max-w-[360px] break-all px-4 py-3 font-medium text-slate-700 dark:text-slate-200">{{ volume.source }}</td>
-                                    <td class="px-4 py-3">
-                                        {% if volume.mounted_by %}
-                                            <div class="flex flex-wrap gap-1.5">
-                                                {% for container_name in volume.mounted_by %}
-                                                    <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-normal text-slate-600 ring-1 ring-inset ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-600">{{ container_name }}</span>
-                                                {% endfor %}
-                                            </div>
-                                        {% else %}
-                                            <span class="text-slate-400">Not mounted</span>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            {% else %}
-                <div class="px-4 py-5">{{ detail_tip('No volumes are configured for this Pod.', 'slate', 'info') }}</div>
-            {% endif %}
-        </section>
-        <section class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-950/40">
-            <div class="mb-4 flex items-center justify-between gap-3">
-                <div class="flex items-center gap-3">
-                    <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-teal-50 text-teal-600 dark:bg-teal-950/40 dark:text-teal-300">
-                        <i data-lucide="tags" class="h-4 w-4"></i>
-                    </span>
-                    <div>
-                        <h4 class="text-sm font-semibold text-slate-900 dark:text-white">Pod labels</h4>
-                        <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Kubernetes labels captured with the Pod snapshot.</p>
-                    </div>
-                </div>
-                <span class="rounded-full bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-700 ring-1 ring-inset ring-teal-200 dark:bg-teal-500/10 dark:text-teal-300 dark:ring-teal-400/25">{{ pod.labels|length }} labels</span>
-            </div>
-            {% if pod.labels %}
-                <div class="flex max-h-44 flex-wrap gap-2 overflow-y-auto pr-1">
-                    {% for key, value in pod.labels.items() %}
-                        {% if key.startswith('app.kubernetes.io/') %}
-                            {% set label_classes = "bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-400/25" %}
-                        {% elif key in ['pod-template-hash', 'controller-revision-hash'] %}
-                            {% set label_classes = "bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-600" %}
-                        {% elif key in ['environment', 'env'] or 'environment' in key %}
-                            {% set label_classes = "bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/25" %}
-                        {% elif key in ['team', 'owner'] or 'team' in key or 'owner' in key %}
-                            {% set label_classes = "bg-cyan-50 text-cyan-700 ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-400/25" %}
-                        {% else %}
-                            {% set label_classes = "bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/25" %}
-                        {% endif %}
-                        <span class="inline-flex max-w-full rounded-full px-2.5 py-1 text-[10px] font-normal ring-1 ring-inset {{ label_classes }}"
-                              title="{{ key }}={{ value }}">
-                            <span class="break-all">{{ key }}
-                                {% if value not in [None, ''] %}={{ value }}{% endif %}
-                            </span>
-                        </span>
-                    {% endfor %}
-                </div>
-            {% else %}
-                {{ detail_tip('No labels are recorded for this Pod.', 'slate', 'info') }}
-            {% endif %}
-        </section>
-        <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-950/40">
-            <div class="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-4 dark:border-slate-700">
-                <div class="flex items-center gap-3">
-                    <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                        <i data-lucide="braces" class="h-4 w-4"></i>
-                    </span>
-                    <div>
-                        <h4 class="text-sm font-semibold text-slate-900 dark:text-white">Pod annotations</h4>
-                        <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Annotation metadata is displayed as key-value rows for long values.</p>
-                    </div>
-                </div>
-                <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 ring-1 ring-inset ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-600">{{ pod.annotations|length }}</span>
-            </div>
-            {% if pod.annotations %}
-                <div class="max-h-64 overflow-y-auto">
-                    {% for key, value in pod.annotations.items() %}
-                        <div class="grid gap-2 border-b border-slate-100 px-4 py-3 last:border-b-0 md:grid-cols-[minmax(15rem,0.8fr)_minmax(0,1.2fr)] dark:border-slate-800">
-                            <div class="break-all text-[11px] font-semibold text-slate-700 dark:text-slate-200">{{ key }}</div>
-                            <div class="break-all text-[11px] leading-5 text-slate-500 dark:text-slate-400">{{ value }}</div>
+
+        <div class="space-y-4 border-t border-outline-subtle p-5">
+            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
+                <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex items-center gap-3">
+                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="images" class="h-4 w-4"></i></span>
+                        <div>
+                            <h4 class="text-sm font-semibold text-content-primary">Images & container runtime</h4>
+                            <p class="mt-0.5 text-xs text-content-muted">Image references, readiness, runtime state, and restart counters for regular and init containers.</p>
                         </div>
-                    {% endfor %}
-                </div>
+                    </div>
+                    {{ table_label.metadata_label(pod.container_statuses|length ~ ' entries', 'boxes') }}
+                </header>
+                {% if pod.container_statuses %}
+                    <div class="overflow-x-auto">
+                        <table class="min-w-[980px] w-full text-left text-xs text-content-secondary">
+                            <thead class="border-b border-outline-subtle bg-surface-hover text-[10px] font-semibold uppercase tracking-[0.08em] text-kaori-primary">
+                                <tr><th class="px-4 py-2.5">Container</th><th class="px-4 py-2.5">Kind</th><th class="px-4 py-2.5">Image</th><th class="px-4 py-2.5">Ready</th><th class="px-4 py-2.5">State</th><th class="px-4 py-2.5">Restarts</th><th class="px-4 py-2.5">Started / Finished</th></tr>
+                            </thead>
+                            <tbody class="divide-y divide-outline-subtle">
+                                {% for container in pod.container_statuses %}
+                                    {% if container.state == 'Running' %}{% set container_tone = 'normal' %}{% set container_icon = 'circle-check' %}
+                                    {% elif container.state == 'Waiting' %}{% set container_tone = 'pending' %}{% set container_icon = 'loader-circle' %}
+                                    {% elif container.state == 'Terminated' %}{% set container_tone = 'info' %}{% set container_icon = 'circle-stop' %}
+                                    {% else %}{% set container_tone = 'unknown' %}{% set container_icon = 'circle-help' %}{% endif %}
+                                    <tr class="align-top hover:bg-surface-hover">
+                                        <td class="px-4 py-3 font-semibold text-content-primary">{{ container.name }}</td>
+                                        <td class="px-4 py-3">{{ table_label.metadata_label(container.kind, 'box') }}</td>
+                                        <td class="max-w-[380px] px-4 py-3">
+                                            <p class="break-all font-medium leading-5 text-content-secondary" title="{{ container.image }}">{{ container.image }}</p>
+                                            <div class="mt-1">{{ table_label.metadata_label('Pull ' ~ container.pull_policy, 'download') }}</div>
+                                        </td>
+                                        <td class="px-4 py-3">{{ table_label.status_label('Ready' if container.ready else 'Not ready', 'normal' if container.ready else 'critical', 'check' if container.ready else 'x') }}</td>
+                                        <td class="px-4 py-3">
+                                            {{ table_label.status_label(container.state, container_tone, container_icon) }}
+                                            {% if container.reason %}<p class="mt-1 max-w-[190px] break-words text-[10px] leading-4 text-content-muted">{{ container.reason }}</p>{% endif %}
+                                            {% if container.exit_code is not none %}<p class="mt-1 text-[10px] text-content-muted">Exit code {{ container.exit_code }}</p>{% endif %}
+                                        </td>
+                                        <td class="px-4 py-3 font-semibold tabular-nums {{ 'text-status-warning-text' if container.restart_count > 0 else 'text-content-primary' }}">{{ container.restart_count }}</td>
+                                        <td class="px-4 py-3 text-[10px] leading-5 text-content-muted">
+                                            {% if container.started_at_value %}<div>Started {{ container.started_at_value|user_datetime('%Y-%m-%d %H:%M %Z') }}</div>{% endif %}
+                                            {% if container.finished_at_value %}<div>Finished {{ container.finished_at_value|user_datetime('%Y-%m-%d %H:%M %Z') }}</div>{% endif %}
+                                            {% if not container.started_at_value and not container.finished_at_value %}-{% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="p-4">{{ info_box('Runtime status unavailable', 'Container runtime status is not reported in this snapshot. Restart the worker and sync the cluster again.', 'triangle-alert', 'warning') }}</div>
+                {% endif %}
+            </section>
+
+            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
+                <header class="flex items-center justify-between gap-3 border-b border-outline-subtle px-4 py-4">
+                    <div class="flex items-center gap-3">
+                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="database" class="h-4 w-4"></i></span>
+                        <div><h4 class="text-sm font-semibold text-content-primary">Volumes</h4><p class="mt-0.5 text-xs text-content-muted">Volume type, source reference, and containers using each mount.</p></div>
+                    </div>
+                    {{ table_label.metadata_label(pod.volumes|length ~ ' volumes', 'database') }}
+                </header>
+                {% if pod.volumes %}
+                    <div class="overflow-x-auto">
+                        <table class="min-w-[760px] w-full text-left text-xs text-content-secondary">
+                            <thead class="border-b border-outline-subtle bg-surface-hover text-[10px] font-semibold uppercase tracking-[0.08em] text-kaori-primary"><tr><th class="px-4 py-2.5">Volume</th><th class="px-4 py-2.5">Type</th><th class="px-4 py-2.5">Source</th><th class="px-4 py-2.5">Mounted by</th></tr></thead>
+                            <tbody class="divide-y divide-outline-subtle">
+                                {% for volume in pod.volumes %}
+                                    <tr class="hover:bg-surface-hover">
+                                        <td class="px-4 py-3 font-semibold text-content-primary">{{ volume.name }}</td>
+                                        <td class="px-4 py-3">{{ table_label.metadata_label(volume.type, 'database') }}</td>
+                                        <td class="max-w-[380px] break-all px-4 py-3 font-medium leading-5 text-content-secondary">{{ volume.source }}</td>
+                                        <td class="px-4 py-3">
+                                            {% if volume.mounted_by %}<div class="flex flex-wrap gap-1.5">{% for container_name in volume.mounted_by %}{{ table_label.metadata_label(container_name, 'box') }}{% endfor %}</div>{% else %}<span class="text-content-muted">Not mounted</span>{% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="p-4">{{ info_box('No volumes configured', 'No volume definitions are recorded for this Pod specification.', 'database') }}</div>
+                {% endif %}
+            </section>
+
+            <div class="grid gap-4 xl:grid-cols-2">
+                <section class="rounded-xl border border-outline-default bg-surface-card p-4">
+                    <div class="mb-4 flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-3"><span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="tags" class="h-4 w-4"></i></span><div><h4 class="text-sm font-semibold text-content-primary">Pod labels</h4><p class="mt-0.5 text-xs text-content-muted">Descriptive Kubernetes labels from the Pod snapshot.</p></div></div>
+                        {{ table_label.metadata_label(pod.labels|length ~ ' labels', 'tags') }}
+                    </div>
+                    {% if pod.labels %}
+                        <div class="flex max-h-44 flex-wrap gap-1.5 overflow-y-auto pr-1">{% for key, value in pod.labels.items() %}{{ table_label.metadata_label(key ~ (('=' ~ value) if value not in [None, ''] else ''), 'tag') }}{% endfor %}</div>
+                    {% else %}
+                        {{ info_box('No labels recorded', 'No Kubernetes labels are recorded for this Pod.', 'tags') }}
+                    {% endif %}
+                </section>
+
+                <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
+                    <header class="flex items-center justify-between gap-3 border-b border-outline-subtle px-4 py-4">
+                        <div class="flex items-center gap-3"><span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="braces" class="h-4 w-4"></i></span><div><h4 class="text-sm font-semibold text-content-primary">Pod annotations</h4><p class="mt-0.5 text-xs text-content-muted">Annotation metadata displayed as readable key-value rows.</p></div></div>
+                        {{ table_label.metadata_label(pod.annotations|length ~ ' annotations', 'braces') }}
+                    </header>
+                    {% if pod.annotations %}
+                        <div class="max-h-64 overflow-y-auto">
+                            {% for key, value in pod.annotations.items() %}<div class="grid gap-2 border-b border-outline-subtle px-4 py-3 last:border-b-0 md:grid-cols-[minmax(12rem,0.8fr)_minmax(0,1.2fr)]"><div class="break-all text-xs font-semibold leading-5 text-content-secondary">{{ key }}</div><div class="break-all text-xs leading-5 text-content-muted">{{ value }}</div></div>{% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="p-4">{{ info_box('No annotations recorded', 'No Kubernetes annotations are recorded for this Pod.', 'braces') }}</div>
+                    {% endif %}
+                </section>
+            </div>
+
+            {% if not pod.details_reported %}
+                {{ info_box('Collection update required', 'This Pod uses a legacy snapshot. Restart the Celery worker and sync the cluster again to populate complete runtime, placement, volume, and annotation metadata.', 'triangle-alert', 'warning') }}
             {% else %}
-                <div class="px-4 py-5">{{ detail_tip('No annotations are recorded for this Pod.', 'slate', 'info') }}</div>
+                {{ info_box('Inventory boundary', 'This section contains point-in-time inventory data. CPU, memory, network utilization, historical trends, anomalies, and recommendations remain in Analytics and Intelligence.', 'info') }}
             {% endif %}
-        </section>
-        {% if not pod.details_reported %}
-            {{ detail_tip('This Pod still uses a legacy snapshot. Restart the Celery worker and sync the cluster again to populate complete runtime, placement, volume, and annotation metadata.', 'amber', 'triangle-alert', true) }}
-        {% else %}
-            {{ detail_tip('This section contains point-in-time inventory data. CPU, memory, network utilization, historical trends, anomalies, and recommendations remain in Analytics and Intelligence.', 'blue', 'info', true) }}
-        {% endif %}
+        </div>
     </div>
-{% endcall %}
+</div>
