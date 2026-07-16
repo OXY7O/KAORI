@@ -41,7 +41,7 @@
             </div>
 
         </div>
-        <div class="grid gap-6 {% if config and config.endpoint %}xl:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] xl:items-start{% endif %}">
+        <div class="grid gap-6 {% if config and config.endpoint %}lg:grid-cols-[minmax(360px,0.92fr)_minmax(0,1.08fr)] lg:items-start{% endif %}">
             {% if config and config.endpoint %}
                 <div class="min-w-0">
                     {% include 'prometheus/partials/_analytics_readiness.html' %}
