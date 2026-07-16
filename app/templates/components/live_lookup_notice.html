@@ -1,11 +1,11 @@
-{% macro notice(title, message) -%}
-<div class="flex items-start gap-3 rounded-lg border border-status-warning-border bg-status-warning-soft px-4 py-3 text-status-warning-text" role="alert" aria-live="polite">
-    <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-50/70">
-        <i data-lucide="triangle-alert" class="h-4 w-4" aria-hidden="true"></i>
-    </span>
-    <div class="min-w-0">
-        <p class="text-xs font-semibold">{{ title }}</p>
-        <p class="mt-1 text-xs leading-5">{{ message }}</p>
+{% macro warning(title, message, extra_class='mt-4') -%}
+    <div class="{{ extra_class }} flex items-start gap-3 rounded-lg border border-status-warning-border bg-status-warning-soft p-4 text-status-warning-text" role="alert" aria-live="polite">
+        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-card/50" aria-hidden="true">
+            <i data-lucide="triangle-alert" class="h-4 w-4"></i>
+        </span>
+        <span class="min-w-0">
+            <strong class="block text-xs font-semibold">{{ title }}</strong>
+            <span class="mt-1 block text-xs leading-5">{{ message }}</span>
+        </span>
     </div>
-</div>
 {%- endmacro %}

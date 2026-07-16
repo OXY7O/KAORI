@@ -568,5 +568,5 @@ Secret Management follows the same authenticated operations geometry as ConfigMa
 - ConfigMap and Secret selectors use one shared warning notification for live Kubernetes lookup failures.
 - Use `components/live_lookup_notice.html`; do not render inline red error text or a separate page-specific alert style.
 - The standard uses an 8 px radius, Warning border and soft surface, a 28 px icon container, a 12 px semibold title, a 12 px body with 20 px line-height, and 16 px container padding.
-- The notification spans the selector workspace below Cluster, Namespace, and object controls when the workspace uses a multi-column grid.
+- The notification spans the selector workspace below Cluster, Namespace, and object controls when the workspace uses a multi-column grid. It must be a dedicated full-width row (`col-span-full`) after every filter; never place it beside a filter or inside only the Namespace column.
 - Lookup connectivity, authentication, kubeconfig, RBAC, namespace-list, object-list, and object-read failures use this Warning treatment. Destructive operation failures remain governed by their operation-result component.

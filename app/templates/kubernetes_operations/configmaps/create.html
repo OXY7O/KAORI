@@ -45,15 +45,15 @@
                 <section class="h-full overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm xl:col-start-1 xl:row-start-1">
                     {{ configmap_ui.section_header('map-pin', 'Target location', 'Select the live cluster and namespace where the new ConfigMap will be created.') }}
                     <div class="grid gap-5 p-5 sm:p-6 lg:grid-cols-3">
-                        <label class="block min-w-0">
+                        <label class="order-1 block min-w-0">
                             <span class="text-sm font-semibold text-content-primary">Cluster</span>
                             <select name="cluster_id" required hx-get="{{ url_for('kubernetes_operations.configmap_namespace_options') }}" hx-target="#configmap-namespace-field" hx-include="this" class="mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                                 <option value="">Select cluster</option>
                                 {% for cluster in clusters %}<option value="{{ cluster.id }}">{{ cluster.name }}</option>{% endfor %}
                             </select>
                         </label>
-                        {% include 'kubernetes_operations/configmaps/_namespace_options.html' %}
-                        <label class="block min-w-0">
+                        <div id="configmap-namespace-field" class="contents">{% include 'kubernetes_operations/configmaps/_namespace_options.html' %}</div>
+                        <label class="order-3 block min-w-0">
                             <span class="text-sm font-semibold text-content-primary">ConfigMap name</span>
                             <input name="configmap_name" required placeholder="application-config" class="mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                         </label>

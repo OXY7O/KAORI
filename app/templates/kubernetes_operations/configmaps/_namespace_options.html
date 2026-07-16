@@ -1,18 +1,18 @@
 {% import "components/live_lookup_notice.html" as live_lookup %}
-<div id="configmap-namespace-field" class="contents">
-    <label class="block min-w-0">
-        <span class="text-sm font-semibold text-content-primary">Namespace</span>
-        <select id="namespace" name="namespace" required class="mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20" {% if not namespaces %}disabled{% endif %}>
-            <option value="">{% if namespaces %}Select namespace{% else %}No live namespaces available{% endif %}</option>
-            {% for namespace in namespaces %}
-                <option value="{{ namespace }}" {{ 'selected' if namespace == selected_namespace else '' }}>{{ namespace }}</option>
-            {% endfor %}
-        </select>
-        {% if not namespace_error %}
-            <span class="mt-2 block text-xs leading-5 text-content-muted">{% if namespaces %}Loaded directly from the selected Kubernetes API.{% else %}Select a cluster to load live namespaces.{% endif %}</span>
-        {% endif %}
-    </label>
-    {% if namespace_error %}
-        <div class="lg:col-span-3">{{ live_lookup.notice('Live namespace lookup failed', namespace_error) }}</div>
+<label class="order-2 block min-w-0" for="namespace">
+    <span class="text-sm font-semibold text-content-primary">Namespace</span>
+    <select id="namespace" name="namespace" required class="mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20" {% if not namespaces %}disabled{% endif %}>
+        <option value="">{% if namespaces %}Select namespace{% else %}No live namespaces available{% endif %}</option>
+        {% for namespace in namespaces %}
+            <option value="{{ namespace }}" {{ 'selected' if namespace == selected_namespace else '' }}>{{ namespace }}</option>
+        {% endfor %}
+    </select>
+    {% if cluster_selected and not namespace_error and not namespaces %}
+        <span class="mt-2 block text-xs leading-5 text-content-muted">No live namespace is available for the selected cluster.</span>
+    {% elif namespaces %}
+        <span class="mt-2 block text-xs leading-5 text-content-muted">Loaded directly from the selected Kubernetes API.</span>
     {% endif %}
-</div>
+</label>
+{% if namespace_error %}
+    {{ live_lookup.warning('Live namespace lookup failed', namespace_error, 'order-4 col-span-full') }}
+{% endif %}
