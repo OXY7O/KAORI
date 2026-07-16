@@ -346,3 +346,18 @@ The Kubernetes Inventory Overview follows the authenticated operational overview
 - Standard table label geometry is 24 px minimum height, 8 px horizontal padding, 2 px vertical padding, 10 px semibold text, 16 px line height, 4 px internal gap, and a 12 px icon.
 - Do not create page-specific table badge sizes. Cluster health, inventory state, sync state, integration readiness, TLS exceptions, and risk hints must consume the shared compact size.
 - Timestamp text is not a badge; render the timestamp separately at 11 px and place the compact state label below it when needed.
+
+## Kubernetes topology reference
+
+The Kubernetes Topology workspace follows the same Inventory hero and operational workspace rules while allowing distinct graph colors for data visualization.
+
+- Use the shared `page_hero.intro()` structure with a solid `kaori-primary` hero, aligned eyebrow/title/description, and rectangular metadata labels for cluster, namespace, and resource counts.
+- Topology summary metrics and last-collected context use translucent brand surfaces. They are inventory context, not health statuses.
+- Workspace headers, toolbar icons, filter focus states, resource visibility icons, search results, empty states, and drawer navigation use KAORI violet.
+- Relationship line colors and resource node colors may remain distinct only inside the graph or legend where color is necessary to differentiate data categories. Those colors must not leak into generic buttons, filters, labels, or navigation controls.
+- Health and collection states use semantic status tokens. Loading uses Pending, graph truncation uses Warning, startup failure uses Critical, and unknown resource state uses Unknown.
+- Topology filter labels use sentence case, `text-sm font-semibold`, 44 px controls, 8 px radius, and shared surface/outline tokens.
+- The graph workspace uses 12 px outer radius and 8 px internal control radius. Detail cards use 12 px radius; icon surfaces and buttons use 8 px radius.
+- Non-status resource and relationship labels in the detail drawer use rectangular metadata labels. Only dynamic health/status labels remain pill-shaped.
+- Empty graph and unselected-detail states use violet surfaces. Do not render missing inventory as Healthy.
+- The graph viewport height is controlled by Tailwind layout utilities rather than page-level inline CSS. JavaScript may update runtime dimensions only when required by the visualization library.

@@ -47,6 +47,10 @@
     let collapsedHiddenIds = new Set()
     let childrenByNode = new Map()
 
+    const cssToken = (name, fallback = '') => (
+        window.getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback
+    )
+
     const typeVisuals = {
         cluster: { fill: '#2563eb', border: '#1d4ed8', text: '#ffffff' },
         namespace: { fill: '#4f46e5', border: '#4338ca', text: '#ffffff' },
@@ -62,17 +66,17 @@
     }
 
     const typeUi = {
-        cluster: { icon: 'server-cog', value: 'text-blue-700 dark:text-blue-300', badge: 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300', iconClass: 'bg-blue-100 text-blue-700 ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20' },
-        namespace: { icon: 'layers-3', value: 'text-indigo-700 dark:text-indigo-300', badge: 'border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-500/20 dark:bg-indigo-500/10 dark:text-indigo-300', iconClass: 'bg-indigo-100 text-indigo-700 ring-indigo-200 dark:bg-indigo-500/10 dark:text-indigo-300 dark:ring-indigo-500/20' },
-        node: { icon: 'server', value: 'text-slate-700 dark:text-slate-300', badge: 'border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-600 dark:bg-slate-700/40 dark:text-slate-300', iconClass: 'bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-700/60 dark:text-slate-300 dark:ring-slate-600' },
-        workload: { icon: 'boxes', value: 'text-violet-700 dark:text-violet-300', badge: 'border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-300', iconClass: 'bg-violet-100 text-violet-700 ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-500/20' },
-        pod: { icon: 'circle-dot', value: 'text-cyan-700 dark:text-cyan-300', badge: 'border-cyan-200 bg-cyan-50 text-cyan-700 dark:border-cyan-500/20 dark:bg-cyan-500/10 dark:text-cyan-300', iconClass: 'bg-cyan-100 text-cyan-700 ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-500/20' },
-        service: { icon: 'network', value: 'text-emerald-700 dark:text-emerald-300', badge: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300', iconClass: 'bg-emerald-100 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20' },
-        ingress: { icon: 'route', value: 'text-teal-700 dark:text-teal-300', badge: 'border-teal-200 bg-teal-50 text-teal-700 dark:border-teal-500/20 dark:bg-teal-500/10 dark:text-teal-300', iconClass: 'bg-teal-100 text-teal-700 ring-teal-200 dark:bg-teal-500/10 dark:text-teal-300 dark:ring-teal-500/20' },
-        configmap: { icon: 'file-cog', value: 'text-sky-700 dark:text-sky-300', badge: 'border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-300', iconClass: 'bg-sky-100 text-sky-700 ring-sky-200 dark:bg-sky-500/10 dark:text-sky-300 dark:ring-sky-500/20' },
-        secret: { icon: 'key-round', value: 'text-amber-700 dark:text-amber-300', badge: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300', iconClass: 'bg-amber-100 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20' },
-        pvc: { icon: 'database', value: 'text-orange-700 dark:text-orange-300', badge: 'border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-500/20 dark:bg-orange-500/10 dark:text-orange-300', iconClass: 'bg-orange-100 text-orange-700 ring-orange-200 dark:bg-orange-500/10 dark:text-orange-300 dark:ring-orange-500/20' },
-        pv: { icon: 'hard-drive', value: 'text-lime-700 dark:text-lime-300', badge: 'border-lime-200 bg-lime-50 text-lime-700 dark:border-lime-500/20 dark:bg-lime-500/10 dark:text-lime-300', iconClass: 'bg-lime-100 text-lime-700 ring-lime-200 dark:bg-lime-500/10 dark:text-lime-300 dark:ring-lime-500/20' },
+        cluster: { icon: 'server-cog', value: 'text-kaori-primary', badge: 'border-outline-default bg-kaori-soft text-kaori-primary', iconClass: 'bg-kaori-soft text-kaori-primary ring-outline-default' },
+        namespace: { icon: 'layers-3', value: 'text-kaori-primary', badge: 'border-outline-default bg-kaori-soft text-kaori-primary', iconClass: 'bg-kaori-soft text-kaori-primary ring-outline-default' },
+        node: { icon: 'server', value: 'text-kaori-primary', badge: 'border-outline-default bg-kaori-soft text-kaori-primary', iconClass: 'bg-kaori-soft text-kaori-primary ring-outline-default' },
+        workload: { icon: 'boxes', value: 'text-kaori-primary', badge: 'border-outline-default bg-kaori-soft text-kaori-primary', iconClass: 'bg-kaori-soft text-kaori-primary ring-outline-default' },
+        pod: { icon: 'circle-dot', value: 'text-kaori-primary', badge: 'border-outline-default bg-kaori-soft text-kaori-primary', iconClass: 'bg-kaori-soft text-kaori-primary ring-outline-default' },
+        service: { icon: 'network', value: 'text-kaori-primary', badge: 'border-outline-default bg-kaori-soft text-kaori-primary', iconClass: 'bg-kaori-soft text-kaori-primary ring-outline-default' },
+        ingress: { icon: 'route', value: 'text-kaori-primary', badge: 'border-outline-default bg-kaori-soft text-kaori-primary', iconClass: 'bg-kaori-soft text-kaori-primary ring-outline-default' },
+        configmap: { icon: 'file-cog', value: 'text-kaori-primary', badge: 'border-outline-default bg-kaori-soft text-kaori-primary', iconClass: 'bg-kaori-soft text-kaori-primary ring-outline-default' },
+        secret: { icon: 'key-round', value: 'text-kaori-primary', badge: 'border-outline-default bg-kaori-soft text-kaori-primary', iconClass: 'bg-kaori-soft text-kaori-primary ring-outline-default' },
+        pvc: { icon: 'database', value: 'text-kaori-primary', badge: 'border-outline-default bg-kaori-soft text-kaori-primary', iconClass: 'bg-kaori-soft text-kaori-primary ring-outline-default' },
+        pv: { icon: 'hard-drive', value: 'text-kaori-primary', badge: 'border-outline-default bg-kaori-soft text-kaori-primary', iconClass: 'bg-kaori-soft text-kaori-primary ring-outline-default' },
     }
 
     const edgeColors = {
@@ -92,14 +96,20 @@
     }
 
     const statusClasses = {
-        healthy: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300',
-        warning: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300',
-        critical: 'border-red-200 bg-red-50 text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300',
-        info: 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300',
-        unknown: 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-300',
+        healthy: 'border-status-normal-border bg-status-normal-soft text-status-normal-text',
+        warning: 'border-status-warning-border bg-status-warning-soft text-status-warning-text',
+        critical: 'border-status-critical-border bg-status-critical-soft text-status-critical-text',
+        info: 'border-status-info-border bg-status-info-soft text-status-info-text',
+        unknown: 'border-status-unknown-border bg-status-unknown-soft text-status-unknown-text',
     }
 
-    const statusDotColors = { healthy: '#10b981', warning: '#f59e0b', critical: '#ef4444', info: '#3b82f6', unknown: '#94a3b8' }
+    const statusDotColor = (tone) => ({
+        healthy: cssToken('--kaori-status-normal', '#16a34a'),
+        warning: cssToken('--kaori-status-warning', '#d97706'),
+        critical: cssToken('--kaori-status-critical', '#dc2626'),
+        info: cssToken('--kaori-status-info', '#2563eb'),
+        unknown: cssToken('--kaori-status-unknown', '#64748b'),
+    }[tone] || cssToken('--kaori-status-unknown', '#64748b'))
     const statusDotCache = new Map()
 
     const escapeHtml = (value) => String(value ?? '')
@@ -112,12 +122,13 @@
     }[value] || value)
 
     const statusDotSvg = (tone) => {
-        const normalized = statusDotColors[tone] ? tone : 'unknown'
-        if (statusDotCache.has(normalized)) return statusDotCache.get(normalized)
-        const color = statusDotColors[normalized]
+        const normalized = ['healthy', 'warning', 'critical', 'info'].includes(tone) ? tone : 'unknown'
+        const color = statusDotColor(normalized)
+        const cacheKey = `${normalized}:${color}`
+        if (statusDotCache.has(cacheKey)) return statusDotCache.get(cacheKey)
         const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="5" fill="${color}" stroke="white" stroke-width="2"/></svg>`
         const uri = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`
-        statusDotCache.set(normalized, uri)
+        statusDotCache.set(cacheKey, uri)
         return uri
     }
 
@@ -169,8 +180,9 @@
     }
 
     const graphStyle = () => {
-        const darkMode = document.documentElement.classList.contains('dark')
-        const labelBackground = darkMode ? '#0f172a' : '#ffffff'
+        const labelBackground = cssToken('--kaori-surface-card', '#ffffff')
+        const brandPrimary = cssToken('--kaori-brand-primary', '#7c3aed')
+        const brandAccent = cssToken('--kaori-brand-accent', '#a78bfa')
         return [
             {
                 selector: 'node',
@@ -238,8 +250,8 @@
             { selector: '.focused', style: { 'opacity': 1, 'text-opacity': 1, 'z-index': 999 } },
             { selector: '.path-active', style: { 'opacity': 1, 'text-opacity': 1, 'z-index': 1100, 'line-opacity': 1, 'width': 3, 'label': 'data(label)' } },
             { selector: 'node.path-active', style: { 'border-width': 3, 'shadow-opacity': 0.24 } },
-            { selector: '.search-match', style: { 'border-color': '#eab308', 'border-width': 3, 'opacity': 1, 'z-index': 1150 } },
-            { selector: ':selected', style: { 'border-color': '#1d4ed8', 'border-width': 3, 'line-color': '#1d4ed8', 'target-arrow-color': '#1d4ed8', 'z-index': 1200 } },
+            { selector: '.search-match', style: { 'border-color': brandAccent, 'border-width': 3, 'opacity': 1, 'z-index': 1150 } },
+            { selector: ':selected', style: { 'border-color': brandPrimary, 'border-width': 3, 'line-color': brandPrimary, 'target-arrow-color': brandPrimary, 'z-index': 1200 } },
         ]
     }
 
@@ -294,8 +306,6 @@
 
     const ensureCanvasDimensions = () => {
         if (!canvas || !canvasShell) return { width: 0, height: 0 }
-        canvasShell.style.height = '840px'
-        canvasShell.style.minHeight = '840px'
         canvas.style.position = 'absolute'
         canvas.style.inset = '0'
         canvas.style.width = '100%'
@@ -331,7 +341,7 @@
             return
         }
         runtimeStatus.classList.remove('hidden')
-        runtimeStatus.innerHTML = `<span class="inline-flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-blue-500"></span>${escapeHtml(message)}</span>`
+        runtimeStatus.innerHTML = `<span class="inline-flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-status-pending"></span>${escapeHtml(message)}</span>`
     }
 
     const showError = (message = '') => {
@@ -558,25 +568,25 @@
     }
 
     const emptyDetailHtml = () => `
-        <div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center dark:border-slate-600 dark:bg-slate-900/40">
-            <i data-lucide="mouse-pointer-click" class="mx-auto h-7 w-7 text-slate-400"></i>
-            <p class="mt-3 text-sm font-medium text-slate-700 dark:text-slate-200">Nothing selected</p>
-            <p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">Select a resource or relationship to inspect its inventory context.</p>
+        <div class="rounded-xl border border-dashed border-outline-strong bg-kaori-soft px-4 py-8 text-center">
+            <i data-lucide="mouse-pointer-click" class="mx-auto h-7 w-7 text-kaori-primary"></i>
+            <p class="mt-3 text-sm font-semibold text-kaori-primary">Nothing selected</p>
+            <p class="mt-1 text-xs leading-5 text-content-secondary">Select a resource or relationship to inspect its inventory context.</p>
         </div>`
 
     const renderValueRows = (fields, type) => {
         const ui = getTypeUi(type)
         return fields.map((field) => `
-            <div class="flex items-start justify-between gap-3 border-b border-slate-100 py-2.5 last:border-b-0 dark:border-slate-700/70">
-                <dt class="text-xs font-normal text-slate-500 dark:text-slate-400">${escapeHtml(field.label)}</dt>
-                <dd class="max-w-[12rem] break-words text-right text-xs font-normal ${ui.value}">${escapeHtml(field.value)}</dd>
+            <div class="flex items-start justify-between gap-3 border-b border-outline-subtle py-2.5 last:border-b-0">
+                <dt class="text-xs font-normal text-content-muted">${escapeHtml(field.label)}</dt>
+                <dd class="max-w-[12rem] break-words text-right text-xs font-medium ${ui.value}">${escapeHtml(field.value)}</dd>
             </div>`).join('')
     }
 
     const renderRelationshipRows = (node) => {
         const edges = node.connectedEdges(':visible')
         if (!edges.length) {
-            return `<div class="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-xs text-slate-500 dark:border-slate-600 dark:bg-slate-900/40 dark:text-slate-400">No visible relationships.</div>`
+            return `<div class="rounded-xl border border-dashed border-outline-strong bg-kaori-soft px-4 py-6 text-center text-xs font-medium text-kaori-primary">No visible relationships.</div>`
         }
         return edges.map((edge) => {
             const sourceSelected = edge.source().id() === node.id()
@@ -584,14 +594,14 @@
             const edgeData = edge.data()
             const ui = getRelationshipUi(edgeData.relationship)
             return `
-                <button type="button" data-topology-related-node="${escapeHtml(peer.id())}" class="flex w-full items-start gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 text-left transition hover:border-blue-200 hover:bg-blue-50/50 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-blue-500/30 dark:hover:bg-blue-500/10">
-                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border ${ui.badge}"><i data-lucide="${ui.icon}" class="h-4 w-4"></i></span>
+                <button type="button" data-topology-related-node="${escapeHtml(peer.id())}" class="flex w-full items-start gap-3 rounded-lg border border-outline-subtle bg-surface-card px-3 py-3 text-left transition hover:border-outline-focus hover:bg-kaori-soft">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${ui.badge}"><i data-lucide="${ui.icon}" class="h-4 w-4"></i></span>
                     <span class="min-w-0 flex-1">
-                        <span class="flex flex-wrap items-center gap-2"><span class="text-[10px] font-medium uppercase tracking-wide text-slate-400">${sourceSelected ? 'Outbound' : 'Inbound'}</span><span class="rounded-full border px-2 py-0.5 text-[9px] font-medium ${ui.badge}">${escapeHtml(edgeData.label || edgeData.relationship)}</span></span>
-                        <span class="mt-1 block break-words text-xs font-medium text-slate-900 dark:text-white">${escapeHtml(peer.data('label') || peer.id())}</span>
-                        <span class="mt-1 block text-[10px] text-slate-500 dark:text-slate-400">${escapeHtml(humanizeType(peer.data('type')))}</span>
+                        <span class="flex flex-wrap items-center gap-2"><span class="text-[10px] font-medium uppercase tracking-wide text-content-muted">${sourceSelected ? 'Outbound' : 'Inbound'}</span><span class="rounded-md border px-2 py-0.5 text-[9px] font-medium ${ui.badge}">${escapeHtml(edgeData.label || edgeData.relationship)}</span></span>
+                        <span class="mt-1 block break-words text-xs font-medium text-content-primary">${escapeHtml(peer.data('label') || peer.id())}</span>
+                        <span class="mt-1 block text-[10px] text-content-muted">${escapeHtml(humanizeType(peer.data('type')))}</span>
                     </span>
-                    <i data-lucide="chevron-right" class="mt-2 h-3.5 w-3.5 shrink-0 text-slate-400"></i>
+                    <i data-lucide="chevron-right" class="mt-2 h-3.5 w-3.5 shrink-0 text-kaori-primary"></i>
                 </button>`
         }).join('')
     }
@@ -631,8 +641,7 @@
         ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
         ctx.clearRect(0, 0, logicalWidth, logicalHeight)
 
-        const darkMode = document.documentElement.classList.contains('dark')
-        ctx.fillStyle = darkMode ? '#0f172a' : '#ffffff'
+        ctx.fillStyle = cssToken('--kaori-surface-card', '#ffffff')
         ctx.fillRect(0, 0, logicalWidth, logicalHeight)
 
         const positions = clusterNodes.map((item) => item.position())
@@ -659,7 +668,7 @@
         })
 
         ctx.lineWidth = 1
-        ctx.strokeStyle = darkMode ? '#475569' : '#cbd5e1'
+        ctx.strokeStyle = cssToken('--kaori-outline-strong', '#cfc7da')
         clusterEdges.forEach((edge) => {
             const source = mapPoint(edge.source().position())
             const target = mapPoint(edge.target().position())
@@ -678,7 +687,7 @@
             ctx.fillStyle = visual.fill
             ctx.fill()
             ctx.lineWidth = selected ? 2 : 1
-            ctx.strokeStyle = selected ? '#2563eb' : visual.border
+            ctx.strokeStyle = selected ? cssToken('--kaori-brand-primary', '#7c3aed') : visual.border
             ctx.stroke()
         })
 
@@ -744,47 +753,57 @@
         const fields = Array.isArray(data.fields) ? data.fields : []
 
         const detailsHtml = `
-            <div class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
-                <div class="flex items-center justify-between gap-3"><h5 class="text-xs font-semibold text-slate-900 dark:text-white">Resource context</h5><span class="rounded-full border px-2.5 py-1 text-[10px] font-medium ${ui.badge}">${connectedCount} relationships</span></div>
+            <div class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                <div class="flex items-center justify-between gap-3">
+                    <h5 class="text-xs font-semibold text-content-primary">Resource context</h5>
+                    <span class="rounded-md border px-2 py-0.5 text-[10px] font-semibold ${ui.badge}">${connectedCount} relationships</span>
+                </div>
                 <dl class="mt-3">
-                    <div class="flex items-start justify-between gap-3 border-b border-slate-100 py-2.5 dark:border-slate-700/70"><dt class="text-xs text-slate-500 dark:text-slate-400">Cluster</dt><dd class="max-w-[12rem] break-words text-right text-xs ${ui.value}">${escapeHtml(data.cluster_name || 'Not reported')}</dd></div>
-                    ${data.namespace ? `<div class="flex items-start justify-between gap-3 border-b border-slate-100 py-2.5 dark:border-slate-700/70"><dt class="text-xs text-slate-500 dark:text-slate-400">Namespace</dt><dd class="max-w-[12rem] break-words text-right text-xs ${ui.value}">${escapeHtml(data.namespace)}</dd></div>` : ''}
+                    <div class="flex items-start justify-between gap-3 border-b border-outline-subtle py-2.5"><dt class="text-xs text-content-muted">Cluster</dt><dd class="max-w-[12rem] break-words text-right text-xs font-medium ${ui.value}">${escapeHtml(data.cluster_name || 'Not reported')}</dd></div>
+                    ${data.namespace ? `<div class="flex items-start justify-between gap-3 border-b border-outline-subtle py-2.5"><dt class="text-xs text-content-muted">Namespace</dt><dd class="max-w-[12rem] break-words text-right text-xs font-medium ${ui.value}">${escapeHtml(data.namespace)}</dd></div>` : ''}
                     ${renderValueRows(fields, data.type)}
-                    <div class="flex items-start justify-between gap-3 py-2.5"><dt class="text-xs text-slate-500 dark:text-slate-400">Collected</dt><dd class="max-w-[12rem] break-words text-right text-xs ${ui.value}">${escapeHtml(formatDateTime(data.collected_at))}</dd></div>
+                    <div class="flex items-start justify-between gap-3 py-2.5"><dt class="text-xs text-content-muted">Collected</dt><dd class="max-w-[12rem] break-words text-right text-xs font-medium ${ui.value}">${escapeHtml(formatDateTime(data.collected_at))}</dd></div>
                 </dl>
             </div>
-            ${data.action_url ? `<a href="${escapeHtml(data.action_url)}" class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">Open ${escapeHtml(humanizeType(data.type))} Inventory<i data-lucide="arrow-up-right" class="h-4 w-4"></i></a>` : ''}
+            ${data.action_url ? `<a href="${escapeHtml(data.action_url)}" class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">Open ${escapeHtml(humanizeType(data.type))} Inventory<i data-lucide="arrow-up-right" class="h-4 w-4"></i></a>` : ''}
             ${data.type === 'cluster' ? `
-                <div class="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-900/40">
+                <div class="mt-4 rounded-xl border border-outline-subtle bg-surface-elevated p-3">
                     <div class="flex items-center justify-between gap-3">
                         <div>
-                            <h6 class="text-xs font-semibold text-slate-900 dark:text-white">Cluster topology overview</h6>
-                            <p class="mt-0.5 text-[10px] text-slate-500 dark:text-slate-400">Click the mini-map to center the graph.</p>
+                            <h6 class="text-xs font-semibold text-content-primary">Cluster topology overview</h6>
+                            <p class="mt-0.5 text-[10px] text-content-muted">Click the mini-map to center the graph.</p>
                         </div>
-                        <span class="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[9px] font-medium text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">Overview</span>
+                        <span class="rounded-md border border-outline-default bg-kaori-soft px-2 py-0.5 text-[9px] font-semibold text-kaori-primary">Overview</span>
                     </div>
-                    <canvas id="topology-drawer-minimap" class="mt-3 block h-36 w-full cursor-crosshair rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-950/40" aria-label="Cluster topology mini-map"></canvas>
+                    <canvas id="topology-drawer-minimap" class="mt-3 block h-36 w-full cursor-crosshair rounded-lg border border-outline-default bg-surface-card" aria-label="Cluster topology mini-map"></canvas>
                 </div>
             ` : ''}`
 
         detailContent.innerHTML = `
             <div class="space-y-4">
-                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/40">
+                <div class="rounded-xl border border-outline-subtle bg-surface-elevated p-4">
                     <div class="flex items-start gap-3">
-                        <span class="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ring-1 ${ui.iconClass}"><i data-lucide="${ui.icon}" class="h-5 w-5"></i></span>
-                        <div class="min-w-0 flex-1"><h4 class="break-words text-sm font-semibold text-slate-950 dark:text-white">${escapeHtml(data.label)}</h4><p class="mt-1 text-xs text-slate-500 dark:text-slate-400">${escapeHtml(data.kind || humanizeType(data.type))}</p><div class="mt-2 flex flex-wrap gap-2"><span class="rounded-full border px-2.5 py-1 text-[10px] font-medium ${ui.badge}">${escapeHtml(humanizeType(data.type))}</span><span class="rounded-full border px-2.5 py-1 text-[10px] font-medium ${statusClass}">${escapeHtml(data.status || 'Unknown')}</span></div></div>
+                        <span class="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ring-1 ${ui.iconClass}"><i data-lucide="${ui.icon}" class="h-5 w-5"></i></span>
+                        <div class="min-w-0 flex-1">
+                            <h4 class="break-words text-sm font-semibold text-content-primary">${escapeHtml(data.label)}</h4>
+                            <p class="mt-1 text-xs text-content-muted">${escapeHtml(data.kind || humanizeType(data.type))}</p>
+                            <div class="mt-2 flex flex-wrap gap-2">
+                                <span class="rounded-md border px-2 py-0.5 text-[10px] font-semibold ${ui.badge}">${escapeHtml(humanizeType(data.type))}</span>
+                                <span class="rounded-full border px-2 py-0.5 text-[10px] font-semibold ${statusClass}">${escapeHtml(data.status || 'Unknown')}</span>
+                            </div>
+                        </div>
                     </div>
-                    ${data.description ? `<p class="mt-3 text-xs leading-5 text-slate-600 dark:text-slate-300">${escapeHtml(data.description)}</p>` : ''}
+                    ${data.description ? `<p class="mt-3 text-xs leading-5 text-content-secondary">${escapeHtml(data.description)}</p>` : ''}
                 </div>
 
                 <div class="grid grid-cols-2 gap-2">
-                    <button type="button" id="topology-highlight-path-button" class="inline-flex items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-medium text-blue-700 transition hover:bg-blue-100 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300 dark:hover:bg-blue-500/20"><i data-lucide="route" class="h-3.5 w-3.5"></i>${pathHighlightActive ? 'Clear path' : 'Highlight path'}</button>
-                    <button type="button" id="topology-collapse-button" ${childCount ? '' : 'disabled'} class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-45 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"><i data-lucide="${isCollapsed ? 'unfold-vertical' : 'fold-vertical'}" class="h-3.5 w-3.5"></i>${childCount ? (isCollapsed ? `Expand ${childCount}` : `Collapse ${childCount}`) : 'No loaded children'}</button>
+                    <button type="button" id="topology-highlight-path-button" class="inline-flex items-center justify-center gap-2 rounded-lg border border-outline-default bg-kaori-soft px-3 py-2 text-xs font-semibold text-kaori-primary transition hover:border-outline-focus hover:bg-surface-selected"><i data-lucide="route" class="h-3.5 w-3.5"></i>${pathHighlightActive ? 'Clear path' : 'Highlight path'}</button>
+                    <button type="button" id="topology-collapse-button" ${childCount ? '' : 'disabled'} class="inline-flex items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-xs font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-surface-hover hover:text-kaori-primary disabled:cursor-not-allowed disabled:opacity-45"><i data-lucide="${isCollapsed ? 'unfold-vertical' : 'fold-vertical'}" class="h-3.5 w-3.5"></i>${childCount ? (isCollapsed ? `Expand ${childCount}` : `Collapse ${childCount}`) : 'No loaded children'}</button>
                 </div>
 
-                <div class="grid grid-cols-2 rounded-xl border border-slate-200 bg-slate-100 p-1 dark:border-slate-700 dark:bg-slate-900/60">
-                    <button type="button" data-topology-node-tab="details" class="rounded-lg px-3 py-2 text-xs font-medium">Details</button>
-                    <button type="button" data-topology-node-tab="relationships" class="rounded-lg px-3 py-2 text-xs font-medium">Relationships <span class="ml-1 text-[10px] opacity-70">${connectedCount}</span></button>
+                <div class="grid grid-cols-2 rounded-lg border border-outline-subtle bg-surface-hover p-1">
+                    <button type="button" data-topology-node-tab="details" class="rounded-md px-3 py-2 text-xs font-medium">Details</button>
+                    <button type="button" data-topology-node-tab="relationships" class="rounded-md px-3 py-2 text-xs font-medium">Relationships <span class="ml-1 text-[10px] opacity-70">${connectedCount}</span></button>
                 </div>
                 <div id="topology-node-tab-panel"></div>
             </div>`
@@ -797,8 +816,8 @@
             tabButtons.forEach((button) => {
                 const active = button.dataset.topologyNodeTab === activeDrawerTab
                 button.className = active
-                    ? 'rounded-lg bg-white px-3 py-2 text-xs font-semibold text-blue-700 shadow-sm dark:bg-slate-800 dark:text-blue-300'
-                    : 'rounded-lg px-3 py-2 text-xs font-medium text-slate-500 transition hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                    ? 'rounded-md bg-surface-card px-3 py-2 text-xs font-semibold text-kaori-primary shadow-sm'
+                    : 'rounded-md px-3 py-2 text-xs font-medium text-content-muted transition hover:text-content-primary'
             })
             panel.querySelectorAll('[data-topology-related-node]').forEach((button) => button.addEventListener('click', () => selectNodeById(button.dataset.topologyRelatedNode, 'relationships')))
             window.lucide?.createIcons()
@@ -828,14 +847,30 @@
         pathHighlightActive = false
         const data = edge.data()
         const ui = getRelationshipUi(data.relationship)
-        const color = edgeColors[data.relationship] || '#64748b'
+        const color = edgeColors[data.relationship] || cssToken('--kaori-status-unknown', '#64748b')
         detailContent.innerHTML = `
             <div class="space-y-4">
-                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/40">
-                    <div class="flex items-start gap-3"><span class="flex h-11 w-11 items-center justify-center rounded-2xl border ${ui.badge}"><i data-lucide="${ui.icon}" class="h-5 w-5"></i></span><div class="min-w-0 flex-1"><h4 class="break-words text-sm font-semibold text-slate-950 dark:text-white">${escapeHtml(data.label || 'Relationship')}</h4><p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Topology relationship</p><span class="mt-2 inline-flex rounded-full border px-2.5 py-1 text-[10px] font-medium ${ui.badge}">${escapeHtml(data.relationship)}</span></div></div>
-                    ${data.description ? `<p class="mt-3 text-xs leading-5 text-slate-600 dark:text-slate-300">${escapeHtml(data.description)}</p>` : ''}
+                <div class="rounded-xl border border-outline-subtle bg-surface-elevated p-4">
+                    <div class="flex items-start gap-3">
+                        <span class="flex h-11 w-11 items-center justify-center rounded-lg border ${ui.badge}"><i data-lucide="${ui.icon}" class="h-5 w-5"></i></span>
+                        <div class="min-w-0 flex-1">
+                            <h4 class="break-words text-sm font-semibold text-content-primary">${escapeHtml(data.label || 'Relationship')}</h4>
+                            <p class="mt-1 text-xs text-content-muted">Topology relationship</p>
+                            <span class="mt-2 inline-flex rounded-md border px-2 py-0.5 text-[10px] font-semibold ${ui.badge}">${escapeHtml(data.relationship)}</span>
+                        </div>
+                    </div>
+                    ${data.description ? `<p class="mt-3 text-xs leading-5 text-content-secondary">${escapeHtml(data.description)}</p>` : ''}
                 </div>
-                <div class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800"><div class="flex items-center gap-3 rounded-xl bg-slate-50 px-3 py-3 dark:bg-slate-900/40"><span class="h-3 w-3 rounded-full" style="background:${color}"></span><div class="min-w-0 flex-1 space-y-1"><p class="break-words text-xs font-medium text-slate-900 dark:text-white">${escapeHtml(data.source_label)}</p><p class="text-[10px] uppercase tracking-wide text-slate-400">${escapeHtml(data.label)}</p><p class="break-words text-xs font-medium text-slate-900 dark:text-white">${escapeHtml(data.target_label)}</p></div></div></div>
+                <div class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                    <div class="flex items-center gap-3 rounded-lg bg-surface-hover px-3 py-3">
+                        <span class="h-3 w-3 rounded-full" style="background:${color}"></span>
+                        <div class="min-w-0 flex-1 space-y-1">
+                            <p class="break-words text-xs font-medium text-content-primary">${escapeHtml(data.source_label)}</p>
+                            <p class="text-[10px] uppercase tracking-wide text-content-muted">${escapeHtml(data.label)}</p>
+                            <p class="break-words text-xs font-medium text-content-primary">${escapeHtml(data.target_label)}</p>
+                        </div>
+                    </div>
+                </div>
             </div>`
         window.lucide?.createIcons()
     }
@@ -934,12 +969,12 @@
         matches.addClass('search-match')
         const limited = matches.slice(0, 8)
         if (!limited.length) {
-            searchResults.innerHTML = '<div class="px-3 py-3 text-xs text-slate-500 dark:text-slate-400">No matching resource in the current graph.</div>'
+            searchResults.innerHTML = '<div class="px-3 py-3 text-xs text-content-muted">No matching resource in the current graph.</div>'
         } else {
             searchResults.innerHTML = limited.map((node) => {
                 const data = node.data()
                 const ui = getTypeUi(data.type)
-                return `<button type="button" data-topology-search-node="${escapeHtml(node.id())}" class="flex w-full items-start gap-3 border-b border-slate-100 px-3 py-2.5 text-left last:border-b-0 hover:bg-blue-50 dark:border-slate-700 dark:hover:bg-blue-500/10"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ring-1 ${ui.iconClass}"><i data-lucide="${ui.icon}" class="h-4 w-4"></i></span><span class="min-w-0 flex-1"><span class="block truncate text-xs font-medium text-slate-900 dark:text-white">${escapeHtml(data.label)}</span><span class="mt-1 block truncate text-[10px] text-slate-500 dark:text-slate-400">${escapeHtml(humanizeType(data.type))}${data.namespace ? ` · ${escapeHtml(data.namespace)}` : ''} · ${escapeHtml(data.cluster_name || 'Unknown cluster')}</span></span></button>`
+                return `<button type="button" data-topology-search-node="${escapeHtml(node.id())}" class="flex w-full items-start gap-3 border-b border-outline-subtle px-3 py-2.5 text-left last:border-b-0 hover:bg-kaori-soft"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ring-1 ${ui.iconClass}"><i data-lucide="${ui.icon}" class="h-4 w-4"></i></span><span class="min-w-0 flex-1"><span class="block truncate text-xs font-medium text-content-primary">${escapeHtml(data.label)}</span><span class="mt-1 block truncate text-[10px] text-content-muted">${escapeHtml(humanizeType(data.type))}${data.namespace ? ` · ${escapeHtml(data.namespace)}` : ''} · ${escapeHtml(data.cluster_name || 'Unknown cluster')}</span></span></button>`
             }).join('')
         }
         searchResults.classList.remove('hidden')
@@ -973,12 +1008,12 @@
             const box = nodes.renderedBoundingBox({ includeLabels: true, includeOverlays: false })
             const padding = 20
             const boundary = document.createElement('div')
-            boundary.className = 'absolute rounded-2xl border border-dashed border-indigo-300 bg-indigo-50/25 dark:border-indigo-500/30 dark:bg-indigo-500/5'
+            boundary.className = 'absolute rounded-xl border border-dashed border-outline-focus bg-kaori-soft/40'
             boundary.style.left = `${box.x1 - padding}px`
             boundary.style.top = `${box.y1 - padding}px`
             boundary.style.width = `${box.w + padding * 2}px`
             boundary.style.height = `${box.h + padding * 2}px`
-            boundary.innerHTML = `<span class="absolute -top-3 left-3 rounded-full border border-indigo-200 bg-white px-2 py-0.5 text-[9px] font-medium text-indigo-700 shadow-sm dark:border-indigo-500/30 dark:bg-slate-900 dark:text-indigo-300">${escapeHtml(namespace)}</span>`
+            boundary.innerHTML = `<span class="absolute -top-3 left-3 rounded-md border border-outline-default bg-surface-card px-2 py-0.5 text-[9px] font-semibold text-kaori-primary shadow-sm">${escapeHtml(namespace)}</span>`
             boundaryLayer.appendChild(boundary)
         })
     }
