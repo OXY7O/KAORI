@@ -143,8 +143,6 @@ The login page is the first implemented reference for the design system.
 - White or neutral form surface using semantic surface tokens.
 - Use comfortable-compact density and keep the complete desktop card usable at 100% browser zoom on a 1366×768 laptop viewport.
 - Prefer `max-w-5xl`, compact vertical padding, 44 px controls, and restrained illustration height for authentication layouts.
-- Login brand-panel artwork should be text-free, infrastructure-oriented, and treated as a decorative responsive asset; product messaging remains in semantic HTML outside the image.
-- When a large infrastructure illustration is present, keep brand-panel copy minimal: one eyebrow, one short headline, and at most one supporting line. Avoid feature cards, embedded dashboard labels, and repeated marketing copy.
 - Local database authentication remains the only actionable provider until additional providers are implemented.
 - Theme switching must work before authentication.
 - Authentication errors use the critical semantic family; successful notices use the normal family.

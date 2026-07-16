@@ -1,11 +1,20 @@
-<figure class="relative mx-auto flex w-full max-w-sm items-center justify-center" aria-hidden="true">
-    <div class="pointer-events-none absolute inset-x-12 bottom-4 h-12 rounded-full bg-violet-950/35 blur-2xl"></div>
-    <div class="pointer-events-none absolute h-64 w-64 rounded-full bg-white/10 blur-3xl"></div>
-    <img src="{{ url_for('static', filename='images/auth/kaori-infrastructure-visual.webp') }}"
-         alt=""
-         width="620"
-         height="605"
-         decoding="async"
-         fetchpriority="high"
-         class="relative block max-h-96 w-full object-contain drop-shadow-2xl" />
-</figure>
+<div class="grid grid-cols-2 gap-2.5 text-xs">
+    <div class="flex items-center gap-2.5 rounded-xl border border-white/15 bg-white/10 px-3 py-2.5 backdrop-blur-sm">
+        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/10">
+            <i data-lucide="eye" class="h-4 w-4"></i>
+        </span>
+        <span>
+            <span class="block font-semibold">Visibility</span>
+            <span class="block text-xs text-violet-200">See what matters</span>
+        </span>
+    </div>
+    <div class="flex items-center gap-2.5 rounded-xl border border-white/15 bg-white/10 px-3 py-2.5 backdrop-blur-sm">
+        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/10">
+            <i data-lucide="badge-check" class="h-4 w-4"></i>
+        </span>
+        <span>
+            <span class="block font-semibold">Assurance</span>
+            <span class="block text-xs text-violet-200">Operate with trust</span>
+        </span>
+    </div>
+</div>
