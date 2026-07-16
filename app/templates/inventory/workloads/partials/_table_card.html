@@ -1,28 +1,27 @@
-<div id="workloads-table-card"
-     class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
-    <div class="border-b border-slate-200 px-6 py-5 dark:border-slate-700">
+<section id="workloads-table-card" class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <header class="border-b border-outline-subtle px-5 py-4">
         <div class="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
-            <div class="flex items-center gap-3">
-                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+            <div class="flex items-start gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                     <i data-lucide="layout-grid" class="h-5 w-5"></i>
-                </div>
+                </span>
                 <div>
-                    <h2 class="text-lg font-semibold text-slate-950 dark:text-white">Workload Inventory</h2>
-                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Kubernetes workloads collected from connected clusters.</p>
+                    <h2 class="text-lg font-semibold text-content-primary">Workload Inventory</h2>
+                    <p class="mt-1 text-sm leading-6 text-content-muted">Kubernetes workload resources collected from connected clusters.</p>
                 </div>
             </div>
             <a href="{{ url_for('cluster.list_clusters') }}"
-               class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
+               class="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-kaori-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                 <i data-lucide="external-link" class="h-4 w-4"></i>
                 Open Cluster List
             </a>
         </div>
-        <div id="workloads-table-loading"
-             class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-blue-100 dark:bg-blue-950/60">
-            <div class="h-full w-1/3 animate-pulse rounded-full bg-blue-600 dark:bg-blue-400"></div>
+        <div id="workloads-table-loading" class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-kaori-soft">
+            <div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div>
         </div>
-    </div>
-    <div class="border-b border-slate-200 px-6 py-4 dark:border-slate-700">
+    </header>
+
+    <div class="border-b border-outline-subtle px-5 py-4">
         <form hx-get="{{ url_for('inventory.workloads') }}"
               hx-target="#workloads-table-card"
               hx-swap="outerHTML"
@@ -32,63 +31,57 @@
             <input type="hidden" name="page" value="1" />
             <input type="hidden" name="per_page" value="{{ pagination.per_page }}" />
             <input type="hidden" name="partial_mode" value="table_card" />
+
+            {% set select_class = 'h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20' %}
             <div class="xl:col-span-2">
-                <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Cluster</label>
-                <select name="cluster_id"
-                        class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
+                <label class="mb-2 block text-sm font-semibold text-content-secondary">Cluster</label>
+                <select name="cluster_id" class="{{ select_class }}">
                     <option value="">All Clusters</option>
                     {% for cluster in clusters %}
-                        <option value="{{ cluster.id }}"
-                                {% if selected_cluster_id == cluster.id|string or selected_cluster_id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>
+                        <option value="{{ cluster.id }}" {% if selected_cluster_id == cluster.id|string or selected_cluster_id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div class="xl:col-span-2">
-                <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Namespace</label>
-                <select name="namespace"
-                        class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
+                <label class="mb-2 block text-sm font-semibold text-content-secondary">Namespace</label>
+                <select name="namespace" class="{{ select_class }}">
                     <option value="" {% if not selected_namespace %}selected{% endif %}>All Namespaces</option>
                     {% for namespace_name in inventory.namespaces %}
-                        <option value="{{ namespace_name }}"
-                                {% if selected_namespace == namespace_name %}selected{% endif %}>{{ namespace_name }}</option>
+                        <option value="{{ namespace_name }}" {% if selected_namespace == namespace_name %}selected{% endif %}>{{ namespace_name }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div class="xl:col-span-2">
-                <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Type</label>
-                <select name="type"
-                        class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
+                <label class="mb-2 block text-sm font-semibold text-content-secondary">Type</label>
+                <select name="type" class="{{ select_class }}">
                     <option value="" {% if not selected_type %}selected{% endif %}>All Types</option>
                     {% for type_name in inventory.workload_types %}
-                        <option value="{{ type_name }}"
-                                {% if selected_type == type_name %}selected{% endif %}>{{ type_name }}</option>
+                        <option value="{{ type_name }}" {% if selected_type == type_name %}selected{% endif %}>{{ type_name }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div class="xl:col-span-2">
-                <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Status</label>
-                <select name="status"
-                        class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
-                    <option value="" {% if not selected_status %}selected{% endif %}>All Status</option>
+                <label class="mb-2 block text-sm font-semibold text-content-secondary">Status</label>
+                <select name="status" class="{{ select_class }}">
+                    <option value="" {% if not selected_status %}selected{% endif %}>All Statuses</option>
                     {% for status_name in inventory.workload_statuses %}
-                        <option value="{{ status_name }}"
-                                {% if selected_status == status_name %}selected{% endif %}>{{ status_name }}</option>
+                        <option value="{{ status_name }}" {% if selected_status == status_name %}selected{% endif %}>{{ status_name }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div class="xl:col-span-4">
-                <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Search Workload</label>
+                <label class="mb-2 block text-sm font-semibold text-content-secondary">Search workload</label>
                 <div class="relative">
-                    <i data-lucide="search"
-                       class="absolute top-3 left-3 h-4 w-4 text-slate-400 dark:text-slate-500"></i>
+                    <i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"></i>
                     <input type="text"
                            name="search"
                            value="{{ search }}"
-                           placeholder="Search workload..."
-                           class="w-full rounded-xl border border-slate-300 bg-white py-2 pr-3 pl-10 text-sm text-slate-900 transition outline-none placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-blue-400 dark:focus:ring-blue-400/10" />
+                           placeholder="Search workload"
+                           class="h-11 w-full rounded-lg border border-outline-default bg-surface-card pl-10 pr-3 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20" />
                 </div>
             </div>
         </form>
     </div>
+
     <div id="workloads-table-content">{% include "inventory/workloads/partials/_table_content.html" %}</div>
-</div>
+</section>

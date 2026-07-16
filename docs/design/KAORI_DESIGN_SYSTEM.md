@@ -408,3 +408,16 @@ The Namespace Inventory page follows the same hero geometry, operational table d
 ### Inventory detail card bottom stack
 
 In expandable Inventory detail cards, secondary object summaries such as Workload Composition, ResourceQuota details, and Pod Security Admission must be anchored in the lower card region immediately above the informational tip. Primary key/value rows remain at the top. Use one `mt-auto` bottom stack containing the secondary object block followed by the tip so sibling cards keep a consistent visual rhythm.
+
+## Kubernetes workload inventory reference
+
+The Workload Inventory page follows the same resource-inventory baseline as Inventory Overview, Nodes, and Namespaces.
+
+- Use the Inventory Overview hero geometry: `p-5 lg:p-6`, a 7/5 split, `gap-5`, a right panel with `min-h-[13rem]`, compact two-column metrics, and the footer action `Manage Clusters`.
+- Workload count, Deployment count, and Running count are contextual hero metadata and use rectangular brand labels. The aggregate lifecycle result is the only semantic label in the hero panel.
+- Coverage cards use neutral surfaces with violet labels and icons. The primary running-coverage card may use a solid dark-violet surface and runtime progress width; gradients are prohibited.
+- Workload table columns are left aligned except the final Details column, which is right aligned. Cluster, namespace, workload type, and update strategy are metadata; lifecycle state is a compact semantic label.
+- Filters use sentence case, 44 px controls, 8 px radius, shared surface tokens, and violet focus states. Loading bars use a solid violet fill.
+- Expandable workload details use 12 px cards, 8 px violet icon surfaces, consistent sans-serif 12 px key/value typography, and compact shared labels. Kubernetes UID and long image or annotation values may wrap but must not switch to a different typography scale.
+- Container kind, pull policy, workload labels, placement constraints, node selectors, and tolerations are descriptive metadata and use rectangular violet labels. Workload, Pod, and rollout state use semantic status labels.
+- Empty nested sections use compact dashed information boxes. Informational boundaries use violet; missing required collection data may use Warning when operator action is required.

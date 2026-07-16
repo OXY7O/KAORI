@@ -1,324 +1,236 @@
-{% from 'inventory/components/_detail_macros.html' import detail_card, detail_row, detail_status_row, detail_tip %}
-<div class="bg-slate-50/80 px-4 py-4 dark:bg-slate-950/40">
-    <div class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-        <div class="flex flex-col gap-3 border-b border-slate-200 bg-gradient-to-r from-slate-50 via-white to-violet-50/60 px-5 py-4 dark:border-slate-700 dark:from-slate-900 dark:via-slate-900 dark:to-violet-950/20 sm:flex-row sm:items-center sm:justify-between">
+{% import "components/table_label.html" as table_label %}
+{% macro detail_row(label, value='-', break_all=false) -%}
+    {% set display_value = value if value not in [None, ''] else '-' %}
+    <div class="flex items-start justify-between gap-3">
+        <span class="shrink-0 text-xs font-normal leading-5 text-content-muted">{{ label }}</span>
+        <span class="max-w-[68%] {{ 'break-all' if break_all else 'break-words' }} text-right text-xs font-medium leading-5 text-content-secondary" title="{{ display_value }}">{{ display_value }}</span>
+    </div>
+{%- endmacro %}
+{% macro info_box(title, message, icon='info', tone='brand') -%}
+    {% if tone == 'warning' %}
+        {% set panel_class = 'border-status-warning-border bg-status-warning-soft' %}
+        {% set icon_class = 'border-status-warning-border bg-status-warning-soft text-status-warning-text' %}
+        {% set title_class = 'text-status-warning-text' %}
+    {% else %}
+        {% set panel_class = 'border-kaori-primary/25 bg-kaori-soft' %}
+        {% set icon_class = 'border-kaori-primary/20 bg-surface-card text-kaori-primary' %}
+        {% set title_class = 'text-kaori-primary' %}
+    {% endif %}
+    <div class="rounded-lg border border-dashed {{ panel_class }} p-3">
+        <div class="flex items-start gap-2.5">
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border {{ icon_class }}"><i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i></span>
+            <div class="min-w-0">
+                <p class="text-xs font-semibold {{ title_class }}">{{ title }}</p>
+                <p class="mt-1 text-[11px] leading-5 text-content-muted">{{ message }}</p>
+            </div>
+        </div>
+    </div>
+{%- endmacro %}
+{% macro detail_card(title, icon, badge=None) -%}
+    <section class="flex h-full flex-col rounded-xl border border-outline-default bg-surface-card p-4">
+        <div class="mb-4 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2 text-sm font-semibold text-content-primary">
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
+                {{ title }}
+            </div>
+            {% if badge %}{{ table_label.metadata_label(badge) }}{% endif %}
+        </div>
+        <div class="flex min-h-0 flex-1 flex-col gap-2.5">{{ caller() }}</div>
+    </section>
+{%- endmacro %}
+
+{% if workload.status == 'Running' %}
+    {% set status_tone = 'normal' %}{% set status_icon = 'circle-check' %}
+{% elif workload.status == 'Progressing' %}
+    {% set status_tone = 'pending' %}{% set status_icon = 'loader-circle' %}
+{% elif workload.status == 'Failed' %}
+    {% set status_tone = 'critical' %}{% set status_icon = 'circle-x' %}
+{% elif workload.status == 'Suspended' %}
+    {% set status_tone = 'disabled' %}{% set status_icon = 'pause-circle' %}
+{% else %}
+    {% set status_tone = 'warning' %}{% set status_icon = 'triangle-alert' %}
+{% endif %}
+
+<div class="bg-surface-hover px-4 py-4">
+    <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-elevated shadow-sm">
+        <header class="flex flex-col gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex min-w-0 items-start gap-3">
-                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300">
-                    <i data-lucide="boxes" class="h-4 w-4"></i>
-                </span>
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="boxes" class="h-4 w-4"></i></span>
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
-                        <h3 class="truncate text-sm font-semibold text-slate-900 dark:text-white">{{ workload.name }}</h3>
-                        <span class="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-400/20">
-                            <i data-lucide="building-2" class="h-3.5 w-3.5"></i>
-                            {{ workload.cluster_name }}
-                        </span>
-                        <span class="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 ring-1 ring-inset ring-indigo-200 dark:bg-indigo-500/10 dark:text-indigo-300 dark:ring-indigo-400/20">
-                            <i data-lucide="folder-tree" class="h-3.5 w-3.5"></i>
-                            {{ workload.namespace }}
-                        </span>
+                        <h3 class="truncate text-sm font-semibold text-content-primary">{{ workload.name }}</h3>
+                        {{ table_label.metadata_label(workload.cluster_name, 'server') }}
+                        {{ table_label.metadata_label(workload.namespace, 'folder-tree') }}
                     </div>
-                    <p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">{{ workload.type_description }}</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ workload.type_description }}</p>
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2 self-start sm:self-auto">
-                {% if workload.type == 'Deployment' %}
-                    <span class="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-400/20">Deployment</span>
-                {% elif workload.type == 'StatefulSet' %}
-                    <span class="rounded-full bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700 ring-1 ring-inset ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-400/20">StatefulSet</span>
-                {% elif workload.type == 'DaemonSet' %}
-                    <span class="rounded-full bg-cyan-50 px-2.5 py-1 text-xs font-semibold text-cyan-700 ring-1 ring-inset ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-400/20">DaemonSet</span>
-                {% elif workload.type == 'Job' %}
-                    <span class="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/20">Job</span>
-                {% elif workload.type == 'CronJob' %}
-                    <span class="rounded-full bg-orange-50 px-2.5 py-1 text-xs font-semibold text-orange-700 ring-1 ring-inset ring-orange-200 dark:bg-orange-500/10 dark:text-orange-300 dark:ring-orange-400/20">CronJob</span>
-                {% endif %}
-                {% if workload.status == 'Running' %}
-                    <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/20">{{ workload.state_display }}</span>
-                {% elif workload.status == 'Progressing' %}
-                    <span class="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-400/20">{{ workload.state_display }}</span>
-                {% elif workload.status == 'Failed' %}
-                    <span class="rounded-full bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700 ring-1 ring-inset ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-400/20">{{ workload.state_display }}</span>
-                {% else %}
-                    <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 ring-1 ring-inset ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-600">{{ workload.state_display }}</span>
-                {% endif %}
+                {{ table_label.metadata_label(workload.type, 'box') }}
+                {{ table_label.status_label(workload.state_display, status_tone, status_icon) }}
             </div>
-        </div>
+        </header>
+
         <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
-            {% call detail_card(
-                'Object identity',
-                'badge-info',
-                'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300',
-                workload.age,
-                'bg-violet-50 text-violet-700 ring-1 ring-inset ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-400/20'
-                ) %}
-                {{ detail_row('Cluster', workload.cluster_name, false, 'violet') }}
-                {{ detail_row('Namespace', workload.namespace, false, 'violet') }}
-                {{ detail_row('Kind', workload.type, false, 'violet') }}
-                {{ detail_row('Age', workload.age, false, 'violet') }}
-                {{ detail_row('Kubernetes UID', workload.uid, True, 'violet') }}
-                {{ detail_row('Created', workload.created_at|user_datetime('%Y-%m-%d %H:%M %Z') , false, 'violet') }}
-                {{ detail_row('Collected', workload.collected_at|user_datetime('%Y-%m-%d %H:%M %Z') , false, 'violet') }}
-                <div class="mt-auto pt-3">
-                    {{ detail_tip('Identifies the workload object and the latest inventory snapshot collected by KAORI.', 'violet', 'lightbulb', panel_classes='min-h-28') }}
-                </div>
+            {% call detail_card('Object identity', 'badge-info', workload.age) %}
+                {{ detail_row('Cluster', workload.cluster_name) }}
+                {{ detail_row('Namespace', workload.namespace) }}
+                {{ detail_row('Kind', workload.type) }}
+                {{ detail_row('Age', workload.age) }}
+                {{ detail_row('Kubernetes UID', workload.uid, true) }}
+                {{ detail_row('Created', workload.created_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
+                {{ detail_row('Collected', workload.collected_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
+                <div class="mt-auto pt-3">{{ info_box('Inventory identity', 'Identifies the workload object and the latest snapshot collected by KAORI.', 'lightbulb') }}</div>
             {% endcall %}
-            {% call detail_card(
-                'Runtime state',
-                'activity',
-                'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300',
-                workload.state_display,
-                'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-400/20'
-                ) %}
-                {% for row in workload.state_rows %}
-                    {{ detail_row(row.label, row.value, false, 'blue') }}
-                {% endfor %}
-                {{ detail_row('Managed Pods', workload.pod_count, false, 'blue') }}
-                <div class="mt-auto pt-3">
-                    {{ detail_tip('Compares desired and observed controller values at collection time. Historical behavior remains in Analytics.', 'blue', 'info', panel_classes='min-h-28') }}
-                </div>
+
+            {% call detail_card('Runtime state', 'activity', workload.state_display) %}
+                {% for row in workload.state_rows %}{{ detail_row(row.label, row.value) }}{% endfor %}
+                {{ detail_row('Managed Pods', workload.pod_count) }}
+                <div class="mt-auto pt-3">{{ info_box('Snapshot boundary', 'Desired and observed controller values are point-in-time data. Historical behavior remains in Analytics.', 'info') }}</div>
             {% endcall %}
-            {% call detail_card(
-                'Pod configuration',
-                'settings-2',
-                'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300',
-                workload.container_count ~ ' containers',
-                'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/20'
-                ) %}
-                {% for row in workload.pod_configuration_rows %}
-                    {{ detail_row(row.label, row.value, false, 'emerald') }}
-                {% endfor %}
+
+            {% call detail_card('Pod configuration', 'settings-2', workload.container_count ~ ' containers') %}
+                {% for row in workload.pod_configuration_rows %}{{ detail_row(row.label, row.value) }}{% endfor %}
                 <div class="mt-auto pt-3">
                     {% if workload.pod_configuration_reported %}
-                        {{ detail_tip('Pod configuration comes from the workload template. Runtime utilization remains in Analytics.', 'emerald', 'info', panel_classes='min-h-28') }}
+                        {{ info_box('Template configuration', 'Pod configuration comes from the workload template. Runtime utilization remains in Analytics.', 'info') }}
                     {% elif workload.pod_configuration_source == 'associated-pod-fallback' %}
-                        {{ detail_tip('Configuration is inferred from associated Pods. Restart the worker and sync again to collect the workload template.', 'amber', 'triangle-alert', panel_classes='min-h-28') }}
+                        {{ info_box('Fallback source', 'Configuration is inferred from associated Pods. Sync again to collect the workload template.', 'triangle-alert', 'warning') }}
                     {% else %}
-                        {{ detail_tip('Pod template metadata is unavailable. Restart the worker and sync this cluster again.', 'amber', 'triangle-alert', panel_classes='min-h-28') }}
+                        {{ info_box('Configuration unavailable', 'Pod template metadata is unavailable. Restart the worker and sync this cluster again.', 'triangle-alert', 'warning') }}
                     {% endif %}
                 </div>
             {% endcall %}
-            {% call detail_card(
-                'Delivery & placement',
-                'route',
-                'bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-300',
-                workload.type,
-                'bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/20'
-                ) %}
-                {% for row in workload.delivery_rows %}
-                    {{ detail_row(row.label, row.value, false, 'amber') }}
-                {% endfor %}
-                <div class="rounded-xl bg-amber-50 px-3 py-3 text-amber-900 ring-1 ring-inset ring-amber-100 dark:bg-amber-500/10 dark:text-amber-100 dark:ring-amber-500/20">
-                    <div class="flex items-start gap-2.5">
-                        <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300">
-                            <i data-lucide="map-pinned" class="h-3.5 w-3.5"></i>
-                        </span>
-                        <div class="min-w-0 flex-1">
-                            <div class="flex items-center justify-between gap-3">
-                                <span class="truncate text-xs font-normal text-amber-950 dark:text-amber-100">Placement constraints</span>
-                                <span class="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-normal text-amber-700 dark:bg-amber-500/15 dark:text-amber-200">{{ workload.placement_rows|length }} fields</span>
-                            </div>
-                            <div class="mt-2 space-y-1.5">
-                                {% for row in workload.placement_rows %}
-                                    <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-3 text-xs font-normal leading-5">
-                                        <span class="truncate text-amber-700/80 dark:text-amber-200/80"
-                                              title="{{ row.label }}">{{ row.label }}</span>
-                                        <span class="whitespace-nowrap text-amber-950 dark:text-amber-100">{{ row.value }}</span>
-                                    </div>
-                                {% endfor %}
-                            </div>
+
+            {% call detail_card('Delivery & placement', 'route', workload.update_strategy) %}
+                {% for row in workload.delivery_rows %}{{ detail_row(row.label, row.value) }}{% endfor %}
+                <div class="mt-auto space-y-3 pt-3">
+                    <div class="rounded-lg border border-outline-default bg-surface-hover p-3">
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="text-xs font-semibold text-content-primary">Placement constraints</span>
+                            {{ table_label.metadata_label(workload.placement_rows|length ~ ' fields', 'map-pinned') }}
+                        </div>
+                        <div class="mt-2 space-y-1.5">
+                            {% for row in workload.placement_rows %}{{ detail_row(row.label, row.value) }}{% endfor %}
                         </div>
                     </div>
-                </div>
-                <div class="space-y-2 pt-1">
-                    <span class="block text-xs font-normal leading-5 text-slate-500 dark:text-slate-400">Node selector</span>
-                    {% if workload.node_selectors %}
+                    <div>
+                        <p class="mb-2 text-xs font-semibold text-content-muted">Node selector</p>
                         <div class="flex flex-wrap gap-1.5">
-                            {% for selector in workload.node_selectors %}
-                                <span class="inline-flex max-w-full items-center rounded-full bg-amber-50 px-2 py-0.5 text-[9px] font-normal leading-3 tracking-tight text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/25"
-                                      title="{{ selector }}">
-                                    <span class="block max-w-full break-all">{{ selector }}</span>
-                                </span>
-                            {% endfor %}
+                            {% if workload.node_selectors %}
+                                {% for selector in workload.node_selectors %}{{ table_label.metadata_label(selector, 'crosshair') }}{% endfor %}
+                            {% else %}
+                                {{ table_label.metadata_label('Not configured', 'circle-minus') }}
+                            {% endif %}
                         </div>
-                    {% else %}
-                        <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-normal leading-3 text-slate-500 ring-1 ring-inset ring-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:ring-slate-700">Not configured</span>
-                    {% endif %}
-                </div>
-                <div class="space-y-2 pt-1">
-                    <span class="block text-xs font-normal leading-5 text-slate-500 dark:text-slate-400">Tolerations</span>
-                    {% if workload.tolerations %}
+                    </div>
+                    <div>
+                        <p class="mb-2 text-xs font-semibold text-content-muted">Tolerations</p>
                         <div class="flex flex-wrap gap-1.5">
-                            {% for toleration in workload.tolerations %}
-                                <span class="inline-flex max-w-full items-center rounded-full bg-amber-50 px-2 py-0.5 text-[9px] font-normal leading-3 tracking-tight text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/25"
-                                      title="{{ toleration }}">
-                                    <span class="block max-w-full break-all">{{ toleration }}</span>
-                                </span>
-                            {% endfor %}
+                            {% if workload.tolerations %}
+                                {% for toleration in workload.tolerations %}{{ table_label.metadata_label(toleration, 'shield') }}{% endfor %}
+                            {% else %}
+                                {{ table_label.metadata_label('Not configured', 'circle-minus') }}
+                            {% endif %}
                         </div>
-                    {% else %}
-                        <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-normal leading-3 text-slate-500 ring-1 ring-inset ring-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:ring-slate-700">Not configured</span>
-                    {% endif %}
+                    </div>
                 </div>
             {% endcall %}
         </div>
+
         <div class="space-y-4 px-5 pb-5">
-            <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-950/40">
-                <div class="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 dark:border-slate-700">
+            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
+                <header class="flex items-center justify-between gap-3 border-b border-outline-subtle px-4 py-3">
                     <div class="flex items-center gap-2">
-                        <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-cyan-50 text-cyan-600 dark:bg-cyan-950/40 dark:text-cyan-300"><i data-lucide="container" class="h-4 w-4"></i></span>
-                        <div>
-                            <h4 class="text-sm font-semibold text-slate-900 dark:text-white">Container images</h4>
-                            <p class="text-[11px] text-slate-500 dark:text-slate-400">Images declared by regular and init containers.</p>
-                        </div>
+                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="container" class="h-4 w-4"></i></span>
+                        <div><h4 class="text-sm font-semibold text-content-primary">Container images</h4><p class="text-[11px] leading-5 text-content-muted">Images declared by regular and init containers.</p></div>
                     </div>
-                    <span class="rounded-full bg-cyan-50 px-2.5 py-1 text-xs font-semibold text-cyan-700 ring-1 ring-inset ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-400/20">{{ workload.containers|length }} images</span>
-                </div>
+                    {{ table_label.metadata_label(workload.containers|length ~ ' images', 'image') }}
+                </header>
                 {% if workload.containers %}
                     <div class="overflow-x-auto">
                         <table class="min-w-full text-left text-xs">
-                            <thead class="bg-slate-50 text-[10px] uppercase tracking-wide text-slate-500 dark:bg-slate-900/70 dark:text-slate-400">
-                                <tr>
-                                    <th class="px-4 py-2.5">Container</th>
-                                    <th class="px-4 py-2.5">Kind</th>
-                                    <th class="px-4 py-2.5">Image</th>
-                                    <th class="px-4 py-2.5">Pull policy</th>
-                                </tr>
-                            </thead>
-                            <tbody>
+                            <thead class="bg-surface-hover text-[10px] font-bold uppercase tracking-[0.08em] text-kaori-primary"><tr><th class="px-4 py-2.5">Container</th><th class="px-4 py-2.5">Kind</th><th class="px-4 py-2.5">Image</th><th class="px-4 py-2.5">Pull Policy</th></tr></thead>
+                            <tbody class="divide-y divide-outline-subtle">
                                 {% for container in workload.containers %}
-                                    <tr class="border-t border-slate-100 dark:border-slate-800">
-                                        <td class="px-4 py-3 font-semibold text-slate-800 dark:text-slate-100">{{ container.name }}</td>
-                                        <td class="px-4 py-3">
-                                            {% if container.kind == 'Init container' %}
-                                                <span class="rounded-full bg-violet-50 px-2 py-1 text-[10px] font-normal text-violet-700 ring-1 ring-inset ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-400/20">Init container</span>
-                                            {% else %}
-                                                <span class="rounded-full bg-blue-50 px-2 py-1 text-[10px] font-normal text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-400/20">Container</span>
-                                            {% endif %}
-                                        </td>
-                                        <td class="max-w-[680px] break-all px-4 py-3 font-medium text-slate-700 dark:text-slate-200">{{ container.image }}</td>
-                                        <td class="px-4 py-3"><span class="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-normal text-slate-700 ring-1 ring-inset ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-600">{{ container.pull_policy }}</span></td>
+                                    <tr>
+                                        <td class="px-4 py-3 font-semibold text-content-primary">{{ container.name }}</td>
+                                        <td class="px-4 py-3">{{ table_label.metadata_label(container.kind, 'box') }}</td>
+                                        <td class="max-w-[680px] break-all px-4 py-3 font-medium text-content-secondary">{{ container.image }}</td>
+                                        <td class="px-4 py-3">{{ table_label.metadata_label(container.pull_policy, 'download') }}</td>
                                     </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
                     </div>
                 {% else %}
-                    <div class="p-4">{{ detail_tip('Container template metadata has not been collected yet. Sync the cluster to refresh workload details.', 'slate', 'info') }}</div>
+                    <div class="p-4">{{ info_box('Container metadata unavailable', 'Container template metadata has not been collected yet. Sync the cluster to refresh workload details.', 'info') }}</div>
                 {% endif %}
             </section>
-            <section class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-950/40">
+
+            <section class="rounded-xl border border-outline-default bg-surface-card p-4">
                 <div class="mb-4 flex items-center justify-between gap-3">
                     <div class="flex items-center gap-2">
-                        <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300"><i data-lucide="git-branch" class="h-4 w-4"></i></span>
-                        <div>
-                            <h4 class="text-sm font-semibold text-slate-900 dark:text-white">Associated pods</h4>
-                            <p class="text-[11px] text-slate-500 dark:text-slate-400">Pods currently mapped to this workload snapshot.</p>
-                        </div>
+                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="git-branch" class="h-4 w-4"></i></span>
+                        <div><h4 class="text-sm font-semibold text-content-primary">Associated Pods</h4><p class="text-[11px] leading-5 text-content-muted">Pods currently mapped to this workload snapshot.</p></div>
                     </div>
-                    <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/20">{{ workload.pod_count }} pods</span>
+                    {{ table_label.metadata_label(workload.pod_count ~ ' pods', 'boxes') }}
                 </div>
                 {% if workload.pods %}
                     <div>
                         {% for pod in workload.pods %}
+                            {% if pod.status in ['Running', 'Succeeded'] %}{% set pod_tone='normal' %}{% set pod_icon='circle-check' %}
+                            {% elif pod.status == 'Pending' %}{% set pod_tone='pending' %}{% set pod_icon='loader-circle' %}
+                            {% elif pod.status == 'Failed' %}{% set pod_tone='critical' %}{% set pod_icon='circle-x' %}
+                            {% else %}{% set pod_tone='unknown' %}{% set pod_icon='circle-help' %}{% endif %}
                             <div class="relative flex gap-3 pb-5 last:pb-0">
-                                {% if not loop.last %}
-                                    <span class="absolute left-[5px] top-3 h-full w-px bg-slate-200 dark:bg-slate-700"></span>
-                                {% endif %}
-                                <span class="relative mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full {% if pod.status in ['Running', 'Succeeded'] %}bg-emerald-500{% elif pod.status == 'Pending' %}bg-amber-500{% elif pod.status == 'Failed' %}bg-rose-500{% else %}bg-slate-400{% endif %}"></span>
+                                {% if not loop.last %}<span class="absolute left-[5px] top-3 h-full w-px bg-outline-default"></span>{% endif %}
+                                <span class="relative mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full {% if pod_tone == 'normal' %}bg-status-normal-text{% elif pod_tone == 'pending' %}bg-status-pending-text{% elif pod_tone == 'critical' %}bg-status-critical-text{% else %}bg-status-unknown-text{% endif %}"></span>
                                 <div class="min-w-0 flex-1">
                                     <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                                        <span class="truncate text-xs font-semibold text-slate-800 dark:text-slate-100"
-                                              title="{{ pod.name }}">{{ pod.name }}</span>
-                                        {% if pod.status in ['Running', 'Succeeded'] %}
-                                            <span class="self-start rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-normal text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/20">{{ pod.status }}</span>
-                                        {% elif pod.status == 'Pending' %}
-                                            <span class="self-start rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-normal text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/20">Pending</span>
-                                        {% elif pod.status == 'Failed' %}
-                                            <span class="self-start rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-normal text-rose-700 ring-1 ring-inset ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-400/20">Failed</span>
-                                        {% else %}
-                                            <span class="self-start rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-normal text-slate-700 ring-1 ring-inset ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-600">{{ pod.status }}</span>
-                                        {% endif %}
+                                        <span class="truncate text-xs font-semibold text-content-primary" title="{{ pod.name }}">{{ pod.name }}</span>
+                                        {{ table_label.status_label(pod.status, pod_tone, pod_icon) }}
                                     </div>
-                                    <div class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500 dark:text-slate-400">
-                                        <span>Node {{ pod.node }}</span>
-                                        <span>Ready {{ pod.ready }}</span>
-                                        <span>{{ pod.container_count }} containers</span>
-                                        <span>Age {{ pod.age }}</span>
-                                    </div>
+                                    <div class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[11px] leading-5 text-content-muted"><span>Node {{ pod.node }}</span><span>Ready {{ pod.ready }}</span><span>{{ pod.container_count }} containers</span><span>Age {{ pod.age }}</span></div>
                                 </div>
                             </div>
                         {% endfor %}
                     </div>
-                    {% if workload.pods_truncated %}
-                        <p class="mt-3 text-[11px] text-slate-400">Showing the first 8 associated Pods.</p>
-                    {% endif %}
+                    {% if workload.pods_truncated %}<p class="mt-3 text-[11px] text-content-muted">Showing the first 8 associated Pods.</p>{% endif %}
                 {% else %}
-                    {{ detail_tip('No Pods are currently resolved to this workload. Re-sync inventory after rollout or ownership changes.', 'slate', 'info') }}
+                    {{ info_box('No associated Pods', 'No Pods are currently resolved to this workload. Re-sync inventory after rollout or ownership changes.', 'info') }}
                 {% endif %}
             </section>
-            <section class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-950/40">
+
+            <section class="rounded-xl border border-outline-default bg-surface-card p-4">
                 <div class="mb-4 flex items-center justify-between gap-3">
-                    <div class="flex items-center gap-2">
-                        <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300"><i data-lucide="tags" class="h-4 w-4"></i></span>
-                        <div>
-                            <h4 class="text-sm font-semibold text-slate-900 dark:text-white">Workload labels</h4>
-                            <p class="text-[11px] text-slate-500 dark:text-slate-400">Kubernetes labels stored with this workload object.</p>
-                        </div>
-                    </div>
-                    <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 ring-1 ring-inset ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-600">{{ workload.labels|length }} labels</span>
+                    <div class="flex items-center gap-2"><span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="tags" class="h-4 w-4"></i></span><div><h4 class="text-sm font-semibold text-content-primary">Workload labels</h4><p class="text-[11px] leading-5 text-content-muted">Kubernetes labels stored with this workload object.</p></div></div>
+                    {{ table_label.metadata_label(workload.labels|length ~ ' labels', 'tags') }}
                 </div>
                 {% if workload.labels %}
-                    <div class="flex flex-wrap gap-2">
-                        {% for key, value in workload.labels %}
-                            {% if key.startswith('app.kubernetes.io/') %}
-                                {% set label_classes = "bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-400/20" %}
-                            {% elif key.startswith('helm.sh/') or key.startswith('meta.helm.sh/') %}
-                                {% set label_classes = "bg-violet-50 text-violet-700 ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-400/20" %}
-                            {% elif key in ['environment', 'env'] %}
-                                {% set label_classes = "bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/20" %}
-                            {% elif key in ['team', 'owner'] %}
-                                {% set label_classes = "bg-cyan-50 text-cyan-700 ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-400/20" %}
-                            {% else %}
-                                {% set label_classes = "bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/20" %}
-                            {% endif %}
-                            <span class="max-w-full break-all rounded-full px-2.5 py-1 text-[10px] font-normal ring-1 ring-inset {{ label_classes }}">{{ key }}
-                                {% if value %}={{ value }}{% endif %}
-                            </span>
-                        {% endfor %}
-                    </div>
+                    <div class="flex flex-wrap gap-1.5">{% for key, value in workload.labels %}{{ table_label.metadata_label(key ~ ('=' ~ value if value else ''), 'tag') }}{% endfor %}</div>
                 {% else %}
-                    {{ detail_tip('No workload labels were reported in the latest inventory snapshot.', 'slate', 'tag') }}
+                    {{ info_box('No workload labels', 'No workload labels were reported in the latest inventory snapshot.', 'tag') }}
                 {% endif %}
             </section>
-            <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-950/40">
-                <div class="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 dark:border-slate-700">
-                    <div class="flex items-center gap-2">
-                        <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"><i data-lucide="notebook-tabs" class="h-4 w-4"></i></span>
-                        <div>
-                            <h4 class="text-sm font-semibold text-slate-900 dark:text-white">Workload annotations</h4>
-                            <p class="text-[11px] text-slate-500 dark:text-slate-400">Long metadata is shown as rows instead of labels.</p>
-                        </div>
-                    </div>
-                    <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 ring-1 ring-inset ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-600">{{ workload.annotations|length }} annotations</span>
-                </div>
+
+            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
+                <header class="flex items-center justify-between gap-3 border-b border-outline-subtle px-4 py-3">
+                    <div class="flex items-center gap-2"><span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="notebook-tabs" class="h-4 w-4"></i></span><div><h4 class="text-sm font-semibold text-content-primary">Workload annotations</h4><p class="text-[11px] leading-5 text-content-muted">Long metadata is shown as rows instead of labels.</p></div></div>
+                    {{ table_label.metadata_label(workload.annotations|length ~ ' annotations', 'notebook-tabs') }}
+                </header>
                 {% if workload.annotations %}
-                    <div class="max-h-72 overflow-y-auto">
+                    <div class="max-h-72 overflow-y-auto divide-y divide-outline-subtle">
                         {% for key, value in workload.annotations %}
-                            <div class="grid gap-1 border-t border-slate-100 px-4 py-3 first:border-t-0 md:grid-cols-[minmax(14rem,0.7fr)_minmax(0,1.3fr)] dark:border-slate-800">
-                                <span class="break-all text-[11px] font-semibold text-slate-600 dark:text-slate-300">{{ key }}</span>
-                                <span class="break-all text-[11px] text-slate-700 dark:text-slate-200">{{ value or '-' }}</span>
-                            </div>
+                            <div class="grid gap-1 px-4 py-3 md:grid-cols-[minmax(14rem,0.7fr)_minmax(0,1.3fr)]"><span class="break-all text-xs font-semibold leading-5 text-content-muted">{{ key }}</span><span class="break-all text-xs font-medium leading-5 text-content-secondary">{{ value or '-' }}</span></div>
                         {% endfor %}
                     </div>
                 {% else %}
-                    <div class="p-4">{{ detail_tip('No workload annotations were reported in the latest inventory snapshot.', 'slate', 'info') }}</div>
+                    <div class="p-4">{{ info_box('No workload annotations', 'No workload annotations were reported in the latest inventory snapshot.', 'info') }}</div>
                 {% endif %}
             </section>
-            <div class="flex items-start gap-2.5 rounded-xl bg-blue-50 px-3 py-2.5 text-xs leading-5 text-blue-800 ring-1 ring-inset ring-blue-100 dark:bg-blue-500/10 dark:text-blue-200 dark:ring-blue-400/20">
-                <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300"><i data-lucide="info" class="h-3.5 w-3.5"></i></span>
-                <p>This section contains point-in-time workload inventory data. Utilization, performance trends, anomalies, forecasts, and recommendations remain in Analytics and Intelligence.</p>
-            </div>
+
+            {{ info_box('Inventory boundary', 'This section contains point-in-time workload inventory data. Utilization, performance trends, anomalies, forecasts, and recommendations remain in Analytics and Intelligence.', 'info') }}
         </div>
     </div>
 </div>
