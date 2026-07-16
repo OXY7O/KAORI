@@ -4,9 +4,9 @@ import base64
 import json
 import re
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
-from kubernetes.client import V1ObjectMeta, V1Secret
+from kubernetes.client import V1NamespaceList, V1ObjectMeta, V1Secret
 from kubernetes.client.exceptions import ApiException
 from kubernetes.config.config_exception import ConfigException
 from urllib3.exceptions import HTTPError as Urllib3HTTPError
@@ -14,7 +14,7 @@ from urllib3.exceptions import HTTPError as Urllib3HTTPError
 from app.kubernetes.client import KubernetesClient
 from app.kubernetes.secrets.tls import validate_certificate_pair
 from app.kubernetes.tls import legacy_tls_context
-from app.models import Cluster, NamespaceInventory
+from app.models import Cluster
 
 SECRET_TYPE_LABELS = {
     'opaque': 'Generic / Opaque',
@@ -49,38 +49,67 @@ class SecretOperationResult:
 
 
 def get_secret_create_context() -> dict[str, Any]:
-    clusters = Cluster.query.order_by(Cluster.name.asc()).all()
-    namespaces = NamespaceInventory.query.order_by(
-        NamespaceInventory.cluster_id.asc(),
-        NamespaceInventory.namespace.asc(),
-    ).all()
-    namespace_options: dict[str, list[str]] = {}
-    for item in namespaces:
-        cluster_id = str(item.cluster_id)
-        cluster_namespaces = namespace_options.setdefault(cluster_id, [])
-        if item.namespace not in cluster_namespaces:
-            cluster_namespaces.append(item.namespace)
+    """Return stable Create Secret page context.
+
+    Registered clusters come from KAORI's cluster registry. Namespace choices are
+    intentionally loaded on demand from the selected cluster's live Kubernetes
+    API and are therefore not preloaded from inventory snapshots here.
+    """
     return {
-        'clusters': clusters,
-        'namespace_options': namespace_options,
+        'clusters': Cluster.query.order_by(Cluster.name.asc()).all(),
+        'namespace_options': {},
         'secret_types': SECRET_TYPE_LABELS,
     }
 
 
+def _cluster(cluster_id: str) -> Cluster:
+    cluster = Cluster.query.filter_by(id=cluster_id).first()
+    if cluster is None:
+        raise ValueError('The selected Kubernetes cluster is no longer available.')
+    return cluster
+
+
+def _core_api(cluster: Cluster):
+    return KubernetesClient(
+        cluster.kubeconfig,
+        verify_ssl=bool(cluster.kube_verify_ssl),
+    ).core_api()
+
+
 def get_cluster_namespace_options(cluster_id: str | None) -> list[str]:
+    """Return namespaces directly from the selected Kubernetes API server."""
     normalized_cluster_id = (cluster_id or '').strip()
     if not normalized_cluster_id:
         return []
 
-    return [
-        namespace
-        for (namespace,) in (
-            NamespaceInventory.query.with_entities(NamespaceInventory.namespace)
-            .filter(NamespaceInventory.cluster_id == normalized_cluster_id)
-            .order_by(NamespaceInventory.namespace.asc())
-            .all()
-        )
-    ]
+    cluster = _cluster(normalized_cluster_id)
+    try:
+        with legacy_tls_context(enabled=bool(cluster.kube_allow_weak_tls)):
+            response = cast(V1NamespaceList, _core_api(cluster).list_namespace())
+    except ApiException as exc:
+        if exc.status == 403:
+            raise ValueError(
+                'Kubernetes denied the live namespace lookup. Verify namespace list RBAC for this cluster.'
+            ) from exc
+        if exc.status == 401:
+            raise ValueError(
+                'Kubernetes authentication failed while loading live namespaces.'
+            ) from exc
+        raise ValueError(
+            'KAORI could not load live namespaces from the selected Kubernetes cluster.'
+        ) from exc
+    except ConfigException as exc:
+        raise ValueError('The selected cluster kubeconfig is invalid or incomplete.') from exc
+    except (OSError, Urllib3HTTPError) as exc:
+        raise ValueError(
+            'KAORI could not reach the Kubernetes API while loading live namespaces.'
+        ) from exc
+
+    return sorted(
+        item.metadata.name
+        for item in (response.items or [])
+        if getattr(getattr(item, 'metadata', None), 'name', None)
+    )
 
 
 def _required(value: str | None, label: str) -> str:
@@ -109,19 +138,33 @@ def _validate_namespace_name(namespace: str) -> None:
         )
 
 
-def _validate_namespace_target(cluster_id: str, namespace: str) -> None:
-    exists = (
-        NamespaceInventory.query.filter_by(
-            cluster_id=cluster_id,
-            namespace=namespace,
-        ).first()
-        is not None
-    )
-    if not exists:
+def _validate_namespace_target(cluster: Cluster, namespace: str) -> None:
+    """Verify the submitted namespace against the live Kubernetes API."""
+    try:
+        with legacy_tls_context(enabled=bool(cluster.kube_allow_weak_tls)):
+            _core_api(cluster).read_namespace(name=namespace)
+    except ApiException as exc:
+        if exc.status == 404:
+            raise ValueError(
+                'The selected namespace no longer exists in the Kubernetes cluster.'
+            ) from exc
+        if exc.status == 403:
+            raise ValueError(
+                'Kubernetes denied namespace verification. Verify namespace read RBAC for this cluster.'
+            ) from exc
+        if exc.status == 401:
+            raise ValueError(
+                'Kubernetes authentication failed while verifying the namespace.'
+            ) from exc
         raise ValueError(
-            'Selected namespace is not available for this cluster inventory. '
-            'Refresh the inventory and choose a listed namespace.'
-        )
+            'KAORI could not verify the selected namespace against the live Kubernetes cluster.'
+        ) from exc
+    except ConfigException as exc:
+        raise ValueError('The selected cluster kubeconfig is invalid or incomplete.') from exc
+    except (OSError, Urllib3HTTPError) as exc:
+        raise ValueError(
+            'KAORI could not reach the Kubernetes API while verifying the namespace.'
+        ) from exc
 
 
 def _read_upload(upload: Any, label: str) -> bytes:
@@ -267,7 +310,7 @@ def _kubernetes_api_error_message(exc: ApiException) -> str:
     if status == 409:
         return 'A Secret with this name already exists. Existing data was not changed.'
     if status == 404:
-        return 'The selected namespace was not found in the cluster. Refresh inventory and verify the target.'
+        return 'The selected namespace was not found in the cluster. Refresh the live namespace list and verify the target.'
     if status == 403:
         return 'Kubernetes denied this operation. Verify the cluster credential can create Secrets in this namespace.'
     if status == 401:
@@ -296,10 +339,8 @@ def execute_secret_operation(form: Any, files: Any, *, dry_run: bool) -> SecretO
     _validate_secret_name(name)
     _validate_namespace_name(namespace)
 
-    cluster = Cluster.query.filter_by(id=cluster_id).first()
-    if cluster is None:
-        raise ValueError('Selected cluster was not found.')
-    _validate_namespace_target(cluster.id, namespace)
+    cluster = _cluster(cluster_id)
+    _validate_namespace_target(cluster, namespace)
 
     string_data, safe_metadata = _build_string_data(form, files, secret_type)
     body = V1Secret(
@@ -313,10 +354,7 @@ def execute_secret_operation(form: Any, files: Any, *, dry_run: bool) -> SecretO
 
     try:
         with legacy_tls_context(enabled=bool(cluster.kube_allow_weak_tls)):
-            api = KubernetesClient(
-                cluster.kubeconfig,
-                verify_ssl=bool(cluster.kube_verify_ssl),
-            ).core_api()
+            api = _core_api(cluster)
             created = api.create_namespaced_secret(
                 namespace=namespace,
                 body=body,

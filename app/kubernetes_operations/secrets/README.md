@@ -87,8 +87,8 @@ The landing page may use compact snapshot totals in the hero, but must not add d
 The Create Kubernetes Secret page follows these maintenance rules:
 
 - cluster options display only the registered cluster name; environment labels are not part of target selection;
-- namespace is a controlled dropdown loaded from the latest `NamespaceInventory` snapshot for the selected cluster through `kubernetes_operations.secret_namespace_options`;
-- server-side validation rechecks that the submitted namespace belongs to the selected cluster snapshot, so manually altered requests cannot target an unrelated namespace;
+- namespace is a controlled dropdown loaded on demand from the selected cluster's live Kubernetes API through `kubernetes_operations.secret_namespace_options` and `list_namespace()`;
+- server-side validation rechecks the submitted namespace with live `read_namespace()` before dry-run or creation, so stale or manually altered requests cannot target a nonexistent namespace;
 - Secret type cards use the shared KAORI violet interaction state; type identity is communicated by icon, label, and type-specific fields rather than decorative color variants;
 - the Secret content section uses shared surface and outline tokens while retaining type-specific fields and validation;
 - page-specific `<style>` blocks and custom color variables are prohibited; use Tailwind utilities and shared design tokens;
@@ -429,3 +429,14 @@ Protected Reveal permits only one active request for the same requester, cluster
 - Permission, readiness, approval, validation, reveal, expiry, and destructive states use semantic status colors. Secret type, cluster, namespace, key count, and other descriptive values use rectangular violet metadata labels.
 - Create and Replace keep validation secondary and mutation primary. Reveal keeps step-up and approval controls separate from target selection. TLS rotation keeps certificate upload, target selection, preview, and final update as distinct steps.
 - Secret values, passwords, tokens, certificate private keys, SSH private keys, and registry payloads must never appear in hero context, notifications, audit metadata, or operation summaries.
+
+## Create Secret live target source
+
+Create Secret follows the same target-source boundary as ConfigMap creation:
+
+- the cluster selector comes from KAORI's registered Cluster configuration;
+- namespace options are loaded on demand with Kubernetes `list_namespace()`;
+- the submitted namespace is revalidated live with `read_namespace()` before dry-run or creation;
+- NamespaceInventory and ConfigurationInventory are not target gates for Create Secret.
+
+Inventory remains valid for overview metrics and for workflows that explicitly require normalized Secret metadata, such as protected reveal policy context. It must not block creation of a Secret in a live namespace that has not yet appeared in an inventory snapshot.

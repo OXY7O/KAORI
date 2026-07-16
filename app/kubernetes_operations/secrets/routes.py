@@ -235,20 +235,38 @@ def secret_management_index():
 def secret_namespace_options():
     cluster_id = request.args.get('cluster_id', '')
     selected_namespace = request.args.get('namespace', '')
+    namespace_error = None
+    namespaces: list[str] = []
+    if cluster_id.strip():
+        try:
+            namespaces = get_cluster_namespace_options(cluster_id)
+        except ValueError as exc:
+            namespace_error = str(exc)
+
     return render_template(
         'kubernetes_operations/secrets/_namespace_field.html',
-        namespaces=get_cluster_namespace_options(cluster_id),
+        namespaces=namespaces,
         selected_namespace=selected_namespace,
         cluster_selected=bool(cluster_id.strip()),
+        namespace_error=namespace_error,
     )
 
 
 @permission_required('kubernetes_secrets.create')
 def create_secret():
-    context = get_secret_create_context()
     operation_result = None
     operation_feedback = None
     submitted = _safe_secret_submission(request.form) if request.method == 'POST' else {}
+    context = get_secret_create_context()
+    namespace_selection_error = None
+    selected_cluster_id = submitted.get('cluster_id', '')
+    if selected_cluster_id:
+        try:
+            context['namespace_options'][selected_cluster_id] = (
+                get_cluster_namespace_options(selected_cluster_id)
+            )
+        except ValueError as exc:
+            namespace_selection_error = str(exc)
     opaque_entries = (
         _safe_opaque_entries(request.form)
         if request.method == 'POST'
@@ -353,6 +371,7 @@ def create_secret():
         operation_feedback=operation_feedback,
         submitted=submitted,
         opaque_entries=opaque_entries,
+        namespace_selection_error=namespace_selection_error,
         **context,
     )
 
