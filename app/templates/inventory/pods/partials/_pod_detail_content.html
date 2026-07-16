@@ -109,7 +109,7 @@
                 {{ detail_row('Topology spread', pod.placement.topology_spread_count) }}
                 {{ status_row('Affinity', 'Configured' if pod.placement.affinity_configured else 'Not configured', 'info' if pod.placement.affinity_configured else 'unknown', 'route' if pod.placement.affinity_configured else 'circle-minus') }}
                 {{ status_row('Host network', 'Enabled' if pod.placement.host_network else 'Disabled', 'warning' if pod.placement.host_network else 'disabled', 'network' if pod.placement.host_network else 'circle-minus') }}
-                <div class="mt-auto space-y-2.5 pt-3">
+                {% call detail_object.stack() %}
                     {% set placement_constraint_count = (pod.placement.node_selector|length) + (pod.placement.tolerations|length) + (1 if pod.placement.affinity_configured else 0) + pod.placement.topology_spread_count %}
                     {% if placement_constraint_count > 0 %}
                         {% call detail_object.card('Placement constraints', placement_constraint_count ~ ' configured', 'map-pinned') %}
@@ -127,7 +127,7 @@
                         {{ detail_object.empty('No placement constraints', 'No selector, toleration, affinity, or topology spread rule is configured.', 'map-pinned') }}
                     {% endif %}
                     {{ info_box('Network identity', 'Pod IP identifies the Pod; Host IP identifies its node.', 'network', 'brand', true) }}
-                </div>
+                {% endcall %}
             {% endcall %}
 
             {% call detail_card('Pod conditions', 'activity', pod.ready, 'min-h-[32rem]') %}
@@ -138,7 +138,7 @@
                 {{ detail_row('Restarts', pod.restarts) }}
                 {{ detail_row('QoS class', pod.qos_class) }}
                 {{ detail_row('Reason', pod.reason or '-') }}
-                <div class="mt-auto space-y-2.5 pt-3">
+                {% call detail_object.stack() %}
                     {% if pod.conditions %}
                         {% call detail_object.card('Reported conditions', pod.conditions|length ~ ' conditions', 'list-checks') %}
                             {% for condition in pod.conditions %}
@@ -155,7 +155,7 @@
                     {% endif %}
                     {% if pod.message %}<div class="rounded-lg border border-status-warning-border bg-status-warning-soft p-3 text-[11px] leading-5 text-status-warning-text">{{ pod.message }}</div>{% endif %}
                     {{ info_box('Snapshot boundary', 'Conditions are snapshot data; history remains in Analytics.', 'info', 'brand', true) }}
-                </div>
+                {% endcall %}
             {% endcall %}
 
             {% call detail_card('Pod configuration', 'settings-2', pod.configuration.container_count ~ ' containers', 'min-h-[30rem]') %}

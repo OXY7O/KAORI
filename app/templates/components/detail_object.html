@@ -31,3 +31,9 @@
         <p class="mt-1 text-xs leading-5 text-content-muted">{{ message }}</p>
     </div>
 {%- endmacro %}
+
+{% macro stack(class_name='') -%}
+    <div class="mt-auto space-y-3 pt-3 {{ class_name }}">
+        {{ caller() }}
+    </div>
+{%- endmacro %}

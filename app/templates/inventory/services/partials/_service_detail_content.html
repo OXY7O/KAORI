@@ -117,7 +117,7 @@
                 {{ detail_row('Not-ready endpoints', service.not_ready_endpoint_count) }}
                 {{ detail_row('Endpoint metadata', 'Reported' if service.endpoints_reported else 'Not reported') }}
                 {{ detail_row('Publish not-ready', 'Enabled' if service.publish_not_ready_addresses else 'Disabled') }}
-                <div class="mt-auto space-y-3 pt-3">
+                {% call detail_object.stack() %}
                     {% if service.selectors %}
                         {% call detail_object.card('Service selectors', service.selectors|length ~ ' labels', 'tags') %}
                             {% for selector in service.selectors %}{{ detail_object.row('Selector ' ~ loop.index, selector) }}{% endfor %}
@@ -126,7 +126,7 @@
                         {{ detail_object.empty('No selector configured', 'This Service does not select Pods directly.', 'tags') }}
                     {% endif %}
                     {{ info_box('Endpoint snapshot', 'Selector and endpoint readiness from the latest inventory snapshot.', 'waypoints', 'brand', true) }}
-                </div>
+                {% endcall %}
             {% endcall %}
         </div>
 

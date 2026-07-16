@@ -106,7 +106,7 @@
 
             {% call detail_card('Delivery & placement', 'route', workload.update_strategy, 'min-h-[28rem]') %}
                 {% for row in workload.delivery_rows %}{{ detail_row(row.label, row.value) }}{% endfor %}
-                <div class="mt-auto pt-3">
+                {% call detail_object.stack() %}
                     {% if workload.placement_configured %}
                         {% call detail_object.card('Placement constraints', workload.placement_summary_rows|length ~ ' fields', 'map-pinned') %}
                             {% for row in workload.placement_summary_rows %}{{ detail_object.row(row.label, row.value) }}{% endfor %}
@@ -120,7 +120,7 @@
                         {{ detail_object.empty('No placement constraints', 'No selector, toleration, affinity, or topology spread rule is configured.', 'map-pinned') }}
                     {% endif %}
                     {{ inventory_tip.tip('Placement rules guide scheduling; actual placement is shown in Pod inventory.', 'map-pin') }}
-                </div>
+                {% endcall %}
             {% endcall %}
         </div>
 

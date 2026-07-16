@@ -481,3 +481,10 @@ The Service Inventory page follows the same resource-inventory baseline as Inven
 - Standard cards use approximately 20–24 rem; cards containing nested objects or condition lists use approximately 28–32 rem.
 - Tips are pinned to the bottom with a dedicated 12 px separation and must never flex-shrink into the content above.
 - Dense cards may grow beyond their minimum height when runtime data contains additional rows. Empty-state boxes replace redundant tips rather than stacking two explanatory boxes.
+
+### Nested object and tip separation
+
+- A nested object summary and its following information tip must never touch.
+- Use the shared `detail_object.stack()` wrapper or an equivalent `space-y-3` layout.
+- The standard separation is 12 px, with 12 px top spacing from the primary key/value area.
+- Increasing card height does not replace this required visual separation.
