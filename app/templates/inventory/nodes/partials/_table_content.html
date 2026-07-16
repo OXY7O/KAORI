@@ -1,56 +1,47 @@
+{% import "components/table_label.html" as table_label %}
 <div class="overflow-x-auto">
-    <table class="min-w-full text-slate-900 dark:text-slate-100">
-        <thead>
-            <tr class="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-600 dark:border-slate-700 dark:bg-slate-700/40 dark:text-slate-300">
-                <th class="px-4 py-3 text-left">Cluster</th>
-                <th class="px-4 py-3 text-left">Node</th>
-                <th class="px-4 py-3 text-left">Internal IP</th>
-                <th class="px-4 py-3 text-left">Status</th>
-                <th class="px-4 py-3 text-left">Role</th>
-                <th class="px-4 py-3 text-left">CPU</th>
-                <th class="px-4 py-3 text-left">Memory</th>
-                <th class="px-4 py-3 text-left">Storage</th>
-                <th class="px-4 py-3 text-right">Details</th>
+    <table class="min-w-full divide-y divide-outline-subtle text-sm">
+        <thead class="bg-surface-hover text-[11px] uppercase tracking-[0.08em] text-kaori-primary">
+            <tr>
+                <th class="px-4 py-3 text-left font-semibold">Cluster</th>
+                <th class="px-4 py-3 text-left font-semibold">Node</th>
+                <th class="px-4 py-3 text-left font-semibold">Internal IP</th>
+                <th class="px-4 py-3 text-left font-semibold">Status</th>
+                <th class="px-4 py-3 text-left font-semibold">Role</th>
+                <th class="px-4 py-3 text-left font-semibold">CPU</th>
+                <th class="px-4 py-3 text-left font-semibold">Memory</th>
+                <th class="px-4 py-3 text-left font-semibold">Storage</th>
+                <th class="px-4 py-3 text-right font-semibold">Details</th>
             </tr>
         </thead>
-        <tbody>
+        <tbody class="divide-y divide-outline-subtle">
             {% for node in inventory.nodes %}
-                {% set status_classes = 'bg-green-50 text-green-700 ring-green-200 dark:bg-green-500/10 dark:text-green-300 dark:ring-green-500/25' if node.status == 'Ready' else ('bg-red-50 text-red-700 ring-red-200 dark:bg-red-500/10 dark:text-red-300 dark:ring-red-500/25' if node.status == 'NotReady' else 'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/25') %}
-                {% set role_classes = 'bg-purple-50 text-purple-700 ring-purple-200 dark:bg-purple-500/10 dark:text-purple-300 dark:ring-purple-500/25' if node.role in ['control-plane', 'master'] else 'bg-cyan-50 text-cyan-700 ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-500/25' %}
-                <tr class="border-t border-slate-200 text-sm transition hover:bg-blue-50/30 dark:border-slate-700 dark:hover:bg-slate-700/30">
-                    <td class="px-4 py-3">
-                        <span class="inline-flex max-w-[220px] items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/25"
-                              title="{{ node.cluster_name }}">
-                            <i data-lucide="building-2" class="h-3.5 w-3.5 shrink-0"></i>
-                            <span class="truncate">{{ node.cluster_name }}</span>
-                        </span>
+                {% set status_tone = 'normal' if node.status == 'Ready' else ('critical' if node.status == 'NotReady' else 'warning') %}
+                {% set status_icon = 'circle-check' if node.status == 'Ready' else ('octagon-alert' if node.status == 'NotReady' else 'triangle-alert') %}
+                <tr class="transition hover:bg-surface-hover">
+                    <td class="px-4 py-3.5 align-top">
+                        {{ table_label.metadata_label(node.cluster_name, 'building-2') }}
                     </td>
-                    <td class="px-4 py-3">
-                        <div class="flex max-w-[260px] items-center gap-2.5">
-                            <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                    <td class="px-4 py-3.5 align-top">
+                        <div class="flex max-w-[260px] items-start gap-2.5">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                                 <i data-lucide="server" class="h-4 w-4"></i>
                             </span>
                             <div class="min-w-0">
-                                <div class="truncate font-semibold text-slate-900 dark:text-white"
-                                     title="{{ node.node_name }}">{{ node.node_name }}</div>
+                                <div class="truncate font-semibold text-content-primary" title="{{ node.node_name }}">{{ node.node_name }}</div>
                                 {% if node.hostname_address and node.hostname_address != node.node_name %}
-                                    <div class="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400"
-                                         title="{{ node.hostname_address }}">{{ node.hostname_address }}</div>
+                                    <div class="mt-0.5 truncate text-xs text-content-muted" title="{{ node.hostname_address }}">{{ node.hostname_address }}</div>
                                 {% endif %}
                             </div>
                         </div>
                     </td>
-                    <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ node.internal_ip or '-' }}</td>
-                    <td class="px-4 py-3 text-left">
-                        <span class="inline-flex rounded-full px-3 py-1 text-xs font-medium ring-1 ring-inset {{ status_classes }}">{{ node.status }}</span>
-                    </td>
-                    <td class="px-4 py-3 text-left">
-                        <span class="inline-flex rounded-full px-3 py-1 text-xs font-medium ring-1 ring-inset {{ role_classes }}">{{ node.role }}</span>
-                    </td>
-                    <td class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-200">{{ node.cpu or '-' }}</td>
-                    <td class="px-4 py-3 text-left text-slate-600 dark:text-slate-300">{{ node.memory_display }}</td>
-                    <td class="px-4 py-3 text-left text-slate-600 dark:text-slate-300">{{ node.ephemeral_storage_display }}</td>
-                    <td class="px-4 py-3 text-right">
+                    <td class="px-4 py-3.5 align-top text-content-secondary">{{ node.internal_ip or '-' }}</td>
+                    <td class="px-4 py-3.5 align-top">{{ table_label.status_label(node.status, status_tone, status_icon) }}</td>
+                    <td class="px-4 py-3.5 align-top">{{ table_label.metadata_label(node.role, 'workflow') }}</td>
+                    <td class="px-4 py-3.5 align-top font-semibold text-content-primary">{{ node.cpu or '-' }}</td>
+                    <td class="px-4 py-3.5 align-top text-content-secondary">{{ node.memory_display }}</td>
+                    <td class="px-4 py-3.5 align-top text-content-secondary">{{ node.ephemeral_storage_display }}</td>
+                    <td class="px-4 py-3.5 text-right align-top">
                         <button type="button"
                                 data-node-toggle="true"
                                 data-node-id="{{ node.id }}"
@@ -58,8 +49,8 @@
                                 hx-target="#node-detail-content-{{ node.id }}"
                                 hx-swap="innerHTML"
                                 hx-on::before-request="const target = document.getElementById('node-detail-content-{{ node.id }}'); const detailRow = document.getElementById('node-detail-row-{{ node.id }}'); const isOpen = target.dataset.open === 'true'; document.querySelectorAll('[id^=&quot;node-detail-content-&quot;]').forEach((item) => { if (item.id !== target.id) { item.innerHTML = ''; item.dataset.open = 'false'; } }); document.querySelectorAll('[id^=&quot;node-detail-row-&quot;]').forEach((row) => { if (row.id !== 'node-detail-row-{{ node.id }}') { row.classList.add('hidden'); } }); document.querySelectorAll('[data-node-toggle=&quot;true&quot;]').forEach((button) => { if (button.dataset.nodeId !== '{{ node.id }}') { const label = button.querySelector('[data-node-toggle-label]'); const icon = button.querySelector('[data-lucide]'); if (label) label.textContent = 'View More'; if (icon) icon.setAttribute('data-lucide', 'chevron-down'); } }); if (isOpen) { target.innerHTML = ''; target.dataset.open = 'false'; if (detailRow) detailRow.classList.add('hidden'); const label = this.querySelector('[data-node-toggle-label]'); const icon = this.querySelector('[data-lucide]'); if (label) label.textContent = 'View More'; if (icon) icon.setAttribute('data-lucide', 'chevron-down'); if (window.lucide) window.lucide.createIcons(); event.preventDefault(); } else { if (detailRow) detailRow.classList.remove('hidden'); target.dataset.open = 'true'; const label = this.querySelector('[data-node-toggle-label]'); const icon = this.querySelector('[data-lucide]'); if (label) label.textContent = 'Hide Details'; if (icon) icon.setAttribute('data-lucide', 'chevron-up'); }"
-                                class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-blue-500/50 dark:hover:bg-blue-500/10 dark:hover:text-blue-300">
-                            <i data-lucide="chevron-down" class="h-4 w-4"></i>
+                                class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-2.5 text-[11px] font-semibold text-content-secondary shadow-sm transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                            <i data-lucide="chevron-down" class="h-3.5 w-3.5"></i>
                             <span data-node-toggle-label>View More</span>
                         </button>
                     </td>
@@ -83,31 +74,22 @@
         </tbody>
     </table>
 </div>
-<div class="flex flex-col gap-4 border-t border-slate-200 bg-slate-50 px-6 py-4 text-sm text-slate-500 lg:flex-row lg:items-center lg:justify-between dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
+
+<footer class="flex flex-col gap-4 border-t border-outline-subtle bg-surface-hover px-5 py-3.5 text-xs text-content-muted lg:flex-row lg:items-center lg:justify-between">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-        <div>
-            Showing <span class="font-semibold text-slate-700 dark:text-slate-200">{{ pagination.start_item }}</span> -
-            <span class="font-semibold text-slate-700 dark:text-slate-200">{{ pagination.end_item }}</span> of
-            <span class="font-semibold text-slate-700 dark:text-slate-200">{{ pagination.total_items }}</span>
-            {{ 'node' if pagination.total_items == 1 else 'nodes' }}
-        </div>
-        <form hx-get="{{ url_for('inventory.nodes') }}"
-              hx-target="#nodes-table-content"
-              hx-swap="innerHTML"
-              hx-indicator="#nodes-table-loading"
-              class="flex items-center">
+        <p>
+            Showing <span class="font-semibold text-content-primary">{{ pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ pagination.end_item }}</span>
+            of <span class="font-semibold text-content-primary">{{ pagination.total_items }}</span> {{ 'node' if pagination.total_items == 1 else 'nodes' }}
+        </p>
+        <form hx-get="{{ url_for('inventory.nodes') }}" hx-target="#nodes-table-content" hx-swap="innerHTML" hx-indicator="#nodes-table-loading" class="flex items-center">
             <input type="hidden" name="page" value="1">
             <input type="hidden" name="cluster_id" value="{{ selected_cluster_id }}">
             <input type="hidden" name="role" value="{{ selected_role }}">
             <input type="hidden" name="status" value="{{ selected_status }}">
             <input type="hidden" name="search" value="{{ search }}">
-            <select name="per_page"
-                    aria-label="Rows per page"
-                    onchange="this.form.requestSubmit()"
-                    class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
+            <select name="per_page" aria-label="Rows per page" onchange="this.form.requestSubmit()" class="h-9 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                 {% for option in pagination.allowed_per_page %}
-                    <option value="{{ option }}"
-                            {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
+                    <option value="{{ option }}" {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
                 {% endfor %}
             </select>
         </form>
@@ -115,34 +97,20 @@
     <div class="flex flex-wrap items-center gap-2">
         {% if pagination.has_prev %}
             {% set prev_url = url_for('inventory.nodes', cluster_id=selected_cluster_id, role=selected_role, status=selected_status, search=search, page=pagination.prev_page, per_page=pagination.per_page) %}
-            <a href="{{ prev_url }}"
-               hx-get="{{ prev_url }}"
-               hx-target="#nodes-table-content"
-               hx-swap="innerHTML"
-               hx-indicator="#nodes-table-loading"
-               class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
+            <a href="{{ prev_url }}" hx-get="{{ prev_url }}" hx-target="#nodes-table-content" hx-swap="innerHTML" hx-indicator="#nodes-table-loading" class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary">
                 <i data-lucide="chevron-left" class="h-4 w-4"></i>Previous
             </a>
         {% else %}
-            <span class="inline-flex cursor-not-allowed items-center gap-2 rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-sm font-medium text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-600">
-                <i data-lucide="chevron-left" class="h-4 w-4"></i>Previous
-            </span>
+            <span class="inline-flex h-9 cursor-not-allowed items-center gap-1.5 rounded-lg border border-outline-subtle bg-surface-hover px-3 font-semibold text-content-disabled"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
         {% endif %}
-        <span class="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">Page {{ pagination.page }} / {{ pagination.total_pages }}</span>
+        <span class="inline-flex h-9 items-center rounded-lg border border-outline-default bg-surface-card px-3 font-semibold text-content-primary">Page {{ pagination.page }} / {{ pagination.total_pages }}</span>
         {% if pagination.has_next %}
             {% set next_url = url_for('inventory.nodes', cluster_id=selected_cluster_id, role=selected_role, status=selected_status, search=search, page=pagination.next_page, per_page=pagination.per_page) %}
-            <a href="{{ next_url }}"
-               hx-get="{{ next_url }}"
-               hx-target="#nodes-table-content"
-               hx-swap="innerHTML"
-               hx-indicator="#nodes-table-loading"
-               class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
+            <a href="{{ next_url }}" hx-get="{{ next_url }}" hx-target="#nodes-table-content" hx-swap="innerHTML" hx-indicator="#nodes-table-loading" class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary">
                 Next<i data-lucide="chevron-right" class="h-4 w-4"></i>
             </a>
         {% else %}
-            <span class="inline-flex cursor-not-allowed items-center gap-2 rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-sm font-medium text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-600">
-                Next<i data-lucide="chevron-right" class="h-4 w-4"></i>
-            </span>
+            <span class="inline-flex h-9 cursor-not-allowed items-center gap-1.5 rounded-lg border border-outline-subtle bg-surface-hover px-3 font-semibold text-content-disabled">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
         {% endif %}
     </div>
-</div>
+</footer>

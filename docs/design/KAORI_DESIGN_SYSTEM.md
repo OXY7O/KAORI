@@ -361,3 +361,16 @@ The Kubernetes Topology workspace follows the same Inventory hero and operationa
 - Non-status resource and relationship labels in the detail drawer use rectangular metadata labels. Only dynamic health/status labels remain pill-shaped.
 - Empty graph and unselected-detail states use violet surfaces. Do not render missing inventory as Healthy.
 - The graph viewport height is controlled by Tailwind layout utilities rather than page-level inline CSS. JavaScript may update runtime dimensions only when required by the visualization library.
+
+## Kubernetes node inventory reference
+
+The Node Inventory page follows the authenticated Inventory standard and is the reference for resource inventory pages with expandable operational details.
+
+- Use a solid `kaori-primary` hero with the shared `page_hero.intro()` alignment. Node count, CPU, and memory are rectangular hero metadata labels, not status pills.
+- The hero posture panel presents Ready and Not Ready counts as compact brand surfaces. Only the aggregated readiness result uses a semantic status label.
+- Capacity cards use neutral surfaces with violet labels and icons. A single solid violet highlight card may be used for the primary readiness ratio; gradients are prohibited.
+- Node table filters use sentence case, 44 px controls, 8 px radius, and shared surface/outline tokens.
+- Table columns are left aligned except the final Details column, which is right aligned. Cluster and Role are metadata labels; node readiness is a semantic status label.
+- Expandable node details use 12 px cards, violet non-status icons, compact shared labels, and semantic colors only for readiness, pressure, scheduling, network availability, and other dynamic states.
+- Node labels are descriptive metadata and use violet rectangular labels. Taints remain visually prominent because they affect scheduling behavior.
+- Node empty, unavailable, and uncollected states use the shared violet empty-state treatment. Missing data must not render as Healthy.

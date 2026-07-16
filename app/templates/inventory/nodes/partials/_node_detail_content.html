@@ -1,169 +1,162 @@
-{% from 'inventory/components/_detail_macros.html' import detail_card, detail_tip %}
-{% set status_classes = 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' if node.status == 'Ready' else ('bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300' if node.status == 'NotReady' else 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300') %}
+{% import "components/table_label.html" as table_label %}
+{% set node_status_tone = 'normal' if node.status == 'Ready' else ('critical' if node.status == 'NotReady' else 'warning') %}
+{% set node_status_icon = 'circle-check' if node.status == 'Ready' else ('octagon-alert' if node.status == 'NotReady' else 'triangle-alert') %}
 {% set has_pressure = node.memory_pressure == 'True' or node.disk_pressure == 'True' or node.pid_pressure == 'True' %}
 {% if node.status == 'NotReady' or node.ready_condition == 'False' %}
-    {% set condition_posture = "Critical" %}
-    {% set condition_posture_classes = "bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300" %}
+    {% set condition_posture = 'Critical' %}
+    {% set condition_tone = 'critical' %}
 {% elif node.status != 'Ready' or node.ready_condition not in ['True', 'False'] %}
-    {% set condition_posture = "Unknown" %}
-    {% set condition_posture_classes = "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300" %}
+    {% set condition_posture = 'Unknown' %}
+    {% set condition_tone = 'unknown' %}
 {% elif has_pressure or node.scheduling_display == 'Cordoned' %}
-    {% set condition_posture = "Warning" %}
-    {% set condition_posture_classes = "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300" %}
+    {% set condition_posture = 'Warning' %}
+    {% set condition_tone = 'warning' %}
 {% else %}
-    {% set condition_posture = "Normal" %}
-    {% set condition_posture_classes = "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300" %}
+    {% set condition_posture = 'Normal' %}
+    {% set condition_tone = 'normal' %}
 {% endif %}
-{% macro node_detail_row(label, value='-', tone='blue', mono=False) -%}
+
+{% macro detail_row(label, value='-', mono=False) -%}
     {% set display_value = value if value not in [None, ''] else '-' %}
     <div class="flex items-start justify-between gap-3">
-        <span class="shrink-0 text-xs font-normal leading-5 text-slate-500 dark:text-slate-400">{{ label }}</span>
-        <span class="max-w-[68%] break-words text-right text-xs font-normal leading-5 {{ 'font-mono' if mono else '' }} {% if tone == 'cyan' %}text-cyan-700 dark:text-cyan-300 {% elif tone == 'violet' %}text-violet-700 dark:text-violet-300 {% elif tone == 'amber' %}text-amber-700 dark:text-amber-300 {% else %}text-blue-700 dark:text-blue-300{% endif %}"
-              title="{{ display_value }}">{{ display_value }}</span>
+        <span class="shrink-0 text-xs leading-5 text-content-muted">{{ label }}</span>
+        <span class="max-w-[68%] {{ 'break-all font-mono' if mono else 'break-words' }} text-right text-xs font-medium leading-5 text-content-primary" title="{{ display_value }}">{{ display_value }}</span>
     </div>
 {%- endmacro %}
-<div class="bg-slate-50/80 px-4 py-4 dark:bg-slate-950/40">
-    <div class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-        <div class="flex flex-col gap-3 border-b border-slate-200 bg-gradient-to-r from-slate-50 via-white to-blue-50/60 px-5 py-4 dark:border-slate-700 dark:from-slate-900 dark:via-slate-900 dark:to-blue-950/20 sm:flex-row sm:items-center sm:justify-between">
+
+{% macro detail_card(title, icon, badge=None, badge_type='metadata', badge_tone='unknown') -%}
+    <section class="flex h-full flex-col rounded-xl border border-outline-subtle bg-surface-card p-4">
+        <div class="mb-4 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2 text-sm font-semibold text-content-primary">
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                    <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+                </span>
+                {{ title }}
+            </div>
+            {% if badge %}
+                {% if badge_type == 'status' %}
+                    {{ table_label.status_label(badge, badge_tone) }}
+                {% else %}
+                    {{ table_label.metadata_label(badge) }}
+                {% endif %}
+            {% endif %}
+        </div>
+        <div class="flex min-h-0 flex-1 flex-col gap-2.5">{{ caller() }}</div>
+    </section>
+{%- endmacro %}
+
+{% macro detail_tip(message, icon='info') -%}
+    <div class="mt-auto flex items-start gap-2.5 rounded-lg border border-outline-default bg-kaori-soft px-3 py-2.5 text-xs leading-5 text-content-secondary">
+        <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-surface-card text-kaori-primary">
+            <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
+        </span>
+        <p>{{ message }}</p>
+    </div>
+{%- endmacro %}
+
+<div class="bg-surface-hover px-4 py-4">
+    <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+        <header class="flex flex-col gap-3 border-b border-outline-subtle bg-surface-elevated px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex min-w-0 items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                     <i data-lucide="server" class="h-5 w-5"></i>
                 </span>
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
-                        <h3 class="truncate text-sm font-semibold text-slate-900 dark:text-white">{{ node.node_name }}</h3>
-                        <span class="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20">{{ node.cluster_name }}</span>
+                        <h3 class="truncate text-sm font-semibold text-content-primary">{{ node.node_name }}</h3>
+                        {{ table_label.metadata_label(node.cluster_name, 'building-2') }}
                     </div>
-                    <p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">{{ node.role_description }}</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ node.role_description }}</p>
                 </div>
             </div>
-            <span class="inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold {{ status_classes }}">
-                <span class="h-1.5 w-1.5 rounded-full {{ 'bg-emerald-500' if node.status == 'Ready' else ('bg-rose-500' if node.status == 'NotReady' else 'bg-amber-500') }}"></span>
-                {{ node.status }}
-            </span>
-        </div>
+            <div class="self-start sm:self-auto">{{ table_label.status_label(node.status, node_status_tone, node_status_icon) }}</div>
+        </header>
+
         <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
-            {% call detail_card(
-                'Node identity',
-                'badge-info',
-                'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300',
-                node.role,
-                'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300'
-                ) %}
-                {{ node_detail_row('System UUID', node.system_uuid, 'blue') }}
-                {{ node_detail_row('Cluster', node.cluster_name, 'blue') }}
-                {{ node_detail_row('Age', node.age, 'blue') }}
-                {{ node_detail_row('Collected', node.collected_at|user_datetime('%Y-%m-%d %H:%M %Z') , 'blue') }}
-                <div class="mt-auto pt-2">
-                    {{ detail_tip('Age is calculated from the Kubernetes node creation timestamp and helps distinguish newly joined nodes from long-lived nodes.', 'blue', 'clock-3') }}
-                </div>
+            {% call detail_card('Node identity', 'badge-info', node.role) %}
+                {{ detail_row('System UUID', node.system_uuid, True) }}
+                {{ detail_row('Cluster', node.cluster_name) }}
+                {{ detail_row('Age', node.age) }}
+                {{ detail_row('Collected', node.collected_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
+                {{ detail_tip('Age is calculated from the Kubernetes node creation timestamp and helps distinguish newly joined nodes from long-lived nodes.', 'clock-3') }}
             {% endcall %}
-            {% call detail_card(
-                'Connectivity',
-                'network',
-                'bg-cyan-50 text-cyan-600 dark:bg-cyan-950/40 dark:text-cyan-300',
-                node.scheduled_pod_count ~ ' Pods',
-                'bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300'
-                ) %}
-                {{ node_detail_row('Internal IP', node.internal_ip or '-', 'cyan') }}
-                {{ node_detail_row('External IP', node.external_ip or '-', 'cyan') }}
-                {{ node_detail_row('Scheduled Pods', node.scheduled_pod_count, 'cyan') }}
+
+            {% set network_tone = 'normal' if node.network_availability == 'Available' else ('critical' if node.network_availability == 'Unavailable' else 'unknown') %}
+            {% call detail_card('Connectivity', 'network', node.scheduled_pod_count ~ ' Pods') %}
+                {{ detail_row('Internal IP', node.internal_ip or '-', True) }}
+                {{ detail_row('External IP', node.external_ip or '-', True) }}
+                {{ detail_row('Scheduled Pods', node.scheduled_pod_count) }}
                 <div class="flex items-start justify-between gap-3">
-                    <span class="shrink-0 text-xs font-normal leading-5 text-slate-500 dark:text-slate-400">Network availability</span>
-                    <span class="rounded-full px-2 py-0.5 text-xs font-normal leading-5 {{ 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' if node.network_availability == 'Available' else ('bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300' if node.network_availability == 'Unavailable' else 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300') }}">{{ node.network_availability }}</span>
+                    <span class="text-xs leading-5 text-content-muted">Network availability</span>
+                    {{ table_label.status_label(node.network_availability, network_tone) }}
                 </div>
-                <div class="mt-auto pt-2">
-                    {{ detail_tip('Internal IP is used for node communication inside the cluster. External IP can be empty for private or on-premises nodes.', 'cyan', 'network') }}
-                </div>
+                {{ detail_tip('Internal IP supports node communication inside the cluster. External IP may be empty for private or on-premises nodes.', 'network') }}
             {% endcall %}
-            {% call detail_card(
-                'Platform & runtime',
-                'cpu',
-                'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300',
-                node.operating_system_display,
-                'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300'
-                ) %}
-                {{ node_detail_row('Operating system', node.os_image or '-', 'violet') }}
-                {{ node_detail_row('Kubelet version', node.kubelet_version, 'violet') }}
-                {{ node_detail_row('Kube-proxy version', node.kube_proxy_version, 'violet') }}
-                {{ node_detail_row('Architecture', node.architecture, 'violet') }}
-                {{ detail_tip('OS image and component versions are reported by the Kubernetes node status. A missing kube-proxy version means the node did not publish that value.', 'violet', 'cpu', False, True) }}
+
+            {% call detail_card('Platform & runtime', 'cpu', node.operating_system_display) %}
+                {{ detail_row('Operating system', node.os_image or '-') }}
+                {{ detail_row('Kubelet version', node.kubelet_version) }}
+                {{ detail_row('Kube-proxy version', node.kube_proxy_version) }}
+                {{ detail_row('Architecture', node.architecture) }}
+                {{ detail_tip('OS image and component versions are reported by Kubernetes node status. A missing kube-proxy version means the node did not publish that value.', 'cpu') }}
             {% endcall %}
-            {% call detail_card(
-                'Scheduling & conditions',
-                'clipboard-check',
-                'bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-300',
-                condition_posture,
-                condition_posture_classes
-                ) %}
+
+            {% call detail_card('Scheduling & conditions', 'clipboard-check', condition_posture, 'status', condition_tone) %}
+                {% set scheduling_tone = 'normal' if node.scheduling_display == 'Schedulable' else ('warning' if node.scheduling_display == 'Cordoned' else 'unknown') %}
                 <div class="flex items-start justify-between gap-3">
-                    <span class="shrink-0 text-xs font-normal leading-5 text-slate-500 dark:text-slate-400">Scheduling</span>
-                    <span class="rounded-full px-2 py-0.5 text-xs font-normal leading-5 {{ 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' if node.scheduling_display == 'Schedulable' else ('bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300' if node.scheduling_display == 'Cordoned' else 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300') }}">{{ node.scheduling_display }}</span>
+                    <span class="text-xs leading-5 text-content-muted">Scheduling</span>
+                    {{ table_label.status_label(node.scheduling_display, scheduling_tone) }}
                 </div>
+                {% set ready_tone = 'normal' if node.ready_condition == 'True' else ('critical' if node.ready_condition == 'False' else 'unknown') %}
                 <div class="flex items-start justify-between gap-3">
-                    <span class="shrink-0 text-xs font-normal leading-5 text-slate-500 dark:text-slate-400">Ready</span>
-                    <span class="rounded-full px-2 py-0.5 text-xs font-normal leading-5 {{ 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' if node.ready_condition == 'True' else ('bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300' if node.ready_condition == 'False' else 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300') }}">{{ node.ready_condition }}</span>
+                    <span class="text-xs leading-5 text-content-muted">Ready</span>
+                    {{ table_label.status_label(node.ready_condition, ready_tone) }}
                 </div>
                 {% for label, value in [('MemoryPressure', node.memory_pressure), ('DiskPressure', node.disk_pressure), ('PIDPressure', node.pid_pressure)] %}
+                    {% set pressure_tone = 'critical' if value == 'True' else ('normal' if value == 'False' else 'unknown') %}
                     <div class="flex items-start justify-between gap-3">
-                        <span class="shrink-0 text-xs font-normal leading-5 text-slate-500 dark:text-slate-400">{{ label }}</span>
-                        <span class="rounded-full px-2 py-0.5 text-xs font-normal leading-5 {{ 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300' if value == 'True' else ('bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' if value == 'False' else 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300') }}">{{ value }}</span>
+                        <span class="text-xs leading-5 text-content-muted">{{ label }}</span>
+                        {{ table_label.status_label(value, pressure_tone) }}
                     </div>
                 {% endfor %}
-                <div class="flex flex-col gap-2 pt-1">
-                    <span class="text-xs font-normal leading-5 text-slate-500 dark:text-slate-400">Taints</span>
+                <div class="pt-1">
+                    <p class="mb-2 text-xs leading-5 text-content-muted">Taints</p>
                     {% if node.taints %}
-                        <div class="flex min-w-0 flex-wrap gap-1.5">
+                        <div class="flex flex-wrap gap-1.5">
                             {% for taint in node.taints %}
-                                <span class="inline-flex max-w-full items-center rounded-full bg-amber-50 px-2 py-1 text-[10px] font-normal leading-4 tracking-tight text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/25"
-                                      title="{{ taint }}">
-                                    <span class="break-all">{{ taint }}</span>
-                                </span>
+                                {{ table_label.status_label(taint, 'warning', 'triangle-alert') }}
                             {% endfor %}
                         </div>
                     {% else %}
-                        <span class="inline-flex w-fit items-center rounded-full bg-slate-100 px-2 py-1 text-[10px] font-normal leading-4 text-slate-500 ring-1 ring-inset ring-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:ring-slate-700">No taints</span>
+                        {{ table_label.metadata_label('No taints') }}
                     {% endif %}
                 </div>
             {% endcall %}
-            <section class="rounded-2xl border border-slate-200 bg-white p-4 md:col-span-2 xl:col-span-4 dark:border-slate-700 dark:bg-slate-950/40">
+
+            <section class="rounded-xl border border-outline-subtle bg-surface-card p-4 md:col-span-2 xl:col-span-4">
                 <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
-                    <div class="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white">
-                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-600 dark:bg-teal-950/40 dark:text-teal-300">
+                    <div class="flex items-center gap-2 text-sm font-semibold text-content-primary">
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                             <i data-lucide="tags" class="h-4 w-4"></i>
                         </span>
                         Node labels
                     </div>
-                    <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">{{ node.labels|length }} {{ 'label' if node.labels|length == 1 else 'labels' }}</span>
+                    {{ table_label.metadata_label(node.labels|length ~ ' ' ~ ('label' if node.labels|length == 1 else 'labels')) }}
                 </div>
                 {% if node.labels %}
                     <div class="max-h-36 overflow-y-auto pr-1">
                         <div class="flex flex-wrap gap-1.5">
                             {% for key, value in node.labels.items() %}
-                                {% if key.startswith('node-role.kubernetes.io/') %}
-                                    {% set node_label_classes = "bg-violet-50 text-violet-700 ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-500/25" %}
-                                {% elif key.startswith('topology.kubernetes.io/') or key.startswith('failure-domain.beta.kubernetes.io/') %}
-                                    {% set node_label_classes = "bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/25" %}
-                                {% elif key.startswith('node.kubernetes.io/') %}
-                                    {% set node_label_classes = "bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/25" %}
-                                {% elif key == 'kubernetes.io/hostname' %}
-                                    {% set node_label_classes = "bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/25" %}
-                                {% elif key.startswith('kubernetes.io/') or key.startswith('beta.kubernetes.io/') %}
-                                    {% set node_label_classes = "bg-cyan-50 text-cyan-700 ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-500/25" %}
-                                {% else %}
-                                    {% set node_label_classes = "bg-teal-50 text-teal-700 ring-teal-200 dark:bg-teal-500/10 dark:text-teal-300 dark:ring-teal-500/25" %}
-                                {% endif %}
-                                <span class="inline-flex max-w-full items-center rounded-full px-2 py-0.5 text-[10px] font-normal leading-4 ring-1 ring-inset {{ node_label_classes }}"
-                                      title="{{ key }}{% if value %}={{ value }}{% endif %}">
-                                    <span class="break-all">{{ key }}
-                                        {% if value %}=<span class="font-normal">{{ value }}</span>{% endif %}
-                                    </span>
-                                </span>
+                                {{ table_label.metadata_label(key ~ ('=' ~ (value|string) if value else '')) }}
                             {% endfor %}
                         </div>
                     </div>
                 {% else %}
-                    <p class="text-xs text-slate-500 dark:text-slate-400">No node labels were collected in the latest inventory snapshot.</p>
+                    <div class="rounded-lg border border-dashed border-outline-strong bg-kaori-soft p-4 text-center">
+                        <i data-lucide="tags" class="mx-auto h-5 w-5 text-kaori-primary"></i>
+                        <p class="mt-2 text-xs font-semibold text-kaori-primary">No node labels collected</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Labels will appear after the next inventory collection when provided by the node.</p>
+                    </div>
                 {% endif %}
             </section>
         </div>
