@@ -1,3 +1,4 @@
+{% from "components/table_label.html" import status_label, metadata_label %}
 <div id="cluster-table-container" class="overflow-hidden">
     <form id="cluster-filter-form"
           class="border-b border-outline-subtle px-5 py-4"
@@ -91,16 +92,10 @@
                                     {% if cluster.kube_allow_weak_tls or not cluster.kube_verify_ssl %}
                                         <div class="mt-2 flex flex-wrap items-center gap-1.5">
                                             {% if cluster.kube_allow_weak_tls %}
-                                                <span class="inline-flex items-center gap-1 rounded-full border border-status-warning-border bg-status-warning-soft px-2.5 py-1 text-[11px] font-semibold text-status-warning-text">
-                                                    <i data-lucide="shield-alert" class="h-3 w-3"></i>
-                                                    Legacy TLS
-                                                </span>
+                                                {{ status_label('Legacy TLS', 'warning', 'shield-alert') }}
                                             {% endif %}
                                             {% if not cluster.kube_verify_ssl %}
-                                                <span class="inline-flex items-center gap-1 rounded-full border border-status-warning-border bg-status-warning-soft px-2.5 py-1 text-[11px] font-semibold text-status-warning-text">
-                                                    <i data-lucide="shield-off" class="h-3 w-3"></i>
-                                                    TLS verification off
-                                                </span>
+                                                {{ status_label('TLS verification off', 'warning', 'shield-off') }}
                                             {% endif %}
                                         </div>
                                     {% endif %}
@@ -124,45 +119,25 @@
                         </td>
 
                         <td class="px-4 py-4 text-left">
-                            <span class="inline-flex min-h-7 items-center rounded-md border border-outline-default bg-kaori-soft px-2.5 py-1 text-xs font-semibold text-kaori-primary">
-                                {% if environment_key == 'prd' %}Production
-                                {% elif environment_key == 'stg' %}Staging
-                                {% elif environment_key == 'dev' %}Development
-                                {% else %}{{ environment_value }}{% endif %}
-                            </span>
+                            {{ metadata_label('Production' if environment_key == 'prd' else 'Staging' if environment_key == 'stg' else 'Development' if environment_key == 'dev' else environment_value) }}
                         </td>
 
                         <td class="px-4 py-4 text-left">
                             {% if cluster_status == 'connected' %}
-                                <span class="inline-flex items-center gap-1.5 rounded-full border border-status-normal-border bg-status-normal-soft px-2.5 py-1 text-xs font-semibold text-status-normal-text">
-                                    <i data-lucide="circle-check" class="h-3.5 w-3.5"></i>
-                                    Connected
-                                </span>
+                                {{ status_label('Connected', 'normal', 'circle-check') }}
                             {% elif cluster_status == 'failed' %}
-                                <span class="inline-flex items-center gap-1.5 rounded-full border border-status-critical-border bg-status-critical-soft px-2.5 py-1 text-xs font-semibold text-status-critical-text">
-                                    <i data-lucide="circle-x" class="h-3.5 w-3.5"></i>
-                                    Failed
-                                </span>
+                                {{ status_label('Failed', 'critical', 'circle-x') }}
                             {% else %}
-                                <span class="inline-flex items-center gap-1.5 rounded-full border border-status-unknown-border bg-status-unknown-soft px-2.5 py-1 text-xs font-semibold text-status-unknown-text">
-                                    <i data-lucide="circle-help" class="h-3.5 w-3.5"></i>
-                                    Unknown
-                                </span>
+                                {{ status_label('Unknown', 'unknown', 'circle-help') }}
                             {% endif %}
                         </td>
 
                         <td class="px-4 py-4 text-left">
                             <div class="flex flex-col items-start gap-1.5">
                                 {% if inventory.synced_at %}
-                                    <span class="inline-flex items-center gap-1.5 rounded-full border border-status-normal-border bg-status-normal-soft px-2.5 py-1 text-xs font-semibold text-status-normal-text">
-                                        <i data-lucide="circle-check" class="h-3.5 w-3.5"></i>
-                                        Synced
-                                    </span>
+                                    {{ status_label('Synced', 'normal', 'circle-check') }}
                                 {% else %}
-                                    <span class="inline-flex items-center gap-1.5 rounded-full border border-status-unknown-border bg-status-unknown-soft px-2.5 py-1 text-xs font-semibold text-status-unknown-text">
-                                        <i data-lucide="clock-3" class="h-3.5 w-3.5"></i>
-                                        Not synced
-                                    </span>
+                                    {{ status_label('Not synced', 'unknown', 'clock-3') }}
                                 {% endif %}
                                 <span class="text-xs text-content-muted">{{ inventory.namespaces or 0 }} namespaces</span>
                             </div>
@@ -171,27 +146,15 @@
                         <td class="px-4 py-4 text-left">
                             <div class="flex flex-col items-start gap-1.5">
                                 {% if prometheus.configured %}
-                                    <span class="inline-flex items-center gap-1.5 rounded-full border border-status-normal-border bg-status-normal-soft px-2.5 py-1 text-xs font-semibold text-status-normal-text">
-                                        <i data-lucide="activity" class="h-3.5 w-3.5"></i>
-                                        Prometheus configured
-                                    </span>
+                                    {{ status_label('Prometheus configured', 'normal', 'activity') }}
                                 {% else %}
-                                    <span class="inline-flex items-center gap-1.5 rounded-full border border-status-disabled-border bg-status-disabled-soft px-2.5 py-1 text-xs font-semibold text-status-disabled-text">
-                                        <i data-lucide="activity" class="h-3.5 w-3.5"></i>
-                                        Prometheus not configured
-                                    </span>
+                                    {{ status_label('Prometheus not configured', 'disabled', 'activity') }}
                                 {% endif %}
 
                                 {% if alertmanager.configured %}
-                                    <span class="inline-flex items-center gap-1.5 rounded-full border border-status-normal-border bg-status-normal-soft px-2.5 py-1 text-xs font-semibold text-status-normal-text">
-                                        <i data-lucide="siren" class="h-3.5 w-3.5"></i>
-                                        Alertmanager {{ alertmanager.label or 'configured' }}
-                                    </span>
+                                    {{ status_label('Alertmanager ' ~ (alertmanager.label or 'configured'), 'normal', 'siren') }}
                                 {% else %}
-                                    <span class="inline-flex items-center gap-1.5 rounded-full border border-status-disabled-border bg-status-disabled-soft px-2.5 py-1 text-xs font-semibold text-status-disabled-text">
-                                        <i data-lucide="siren" class="h-3.5 w-3.5"></i>
-                                        Alertmanager not configured
-                                    </span>
+                                    {{ status_label('Alertmanager not configured', 'disabled', 'siren') }}
                                 {% endif %}
                             </div>
                         </td>

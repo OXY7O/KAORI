@@ -1,3 +1,4 @@
+{% from "components/table_label.html" import status_label %}
 <div class="overflow-x-auto">
     <table class="min-w-full divide-y divide-outline-subtle text-sm">
         <thead class="bg-surface-hover text-[11px] uppercase tracking-[0.08em] text-kaori-primary">
@@ -51,15 +52,9 @@
                     </td>
                     <td class="px-4 py-3.5">
                         {% if cluster.status == 'connected' %}
-                            <span class="inline-flex items-center gap-1.5 rounded-full border border-status-normal-border bg-status-normal-soft px-2.5 py-1 text-[11px] font-semibold text-status-normal-text">
-                                <i data-lucide="circle-check" class="h-3 w-3"></i>
-                                Connected
-                            </span>
+                            {{ status_label('Connected', 'normal', 'circle-check') }}
                         {% else %}
-                            <span class="inline-flex items-center gap-1.5 rounded-full border border-status-critical-border bg-status-critical-soft px-2.5 py-1 text-[11px] font-semibold text-status-critical-text">
-                                <i data-lucide="circle-x" class="h-3 w-3"></i>
-                                Disconnected
-                            </span>
+                            {{ status_label('Disconnected', 'critical', 'circle-x') }}
                         {% endif %}
                     </td>
                     <td class="px-4 py-3.5 font-semibold text-content-primary">{{ cluster.node_count or 0 }}</td>
@@ -77,11 +72,11 @@
                                 <span class="text-[11px] font-medium text-content-disabled">Not collected</span>
                             {% endif %}
                             {% if cluster.sync_status_tone == 'green' %}
-                                <span class="inline-flex rounded-full border border-status-normal-border bg-status-normal-soft px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-status-normal-text">{{ cluster.sync_status_label }}</span>
+                                {{ status_label(cluster.sync_status_label, 'normal') }}
                             {% elif cluster.sync_status_tone == 'amber' %}
-                                <span class="inline-flex rounded-full border border-status-warning-border bg-status-warning-soft px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-status-warning-text">{{ cluster.sync_status_label }}</span>
+                                {{ status_label(cluster.sync_status_label, 'warning') }}
                             {% else %}
-                                <span class="inline-flex rounded-full border border-status-unknown-border bg-status-unknown-soft px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-status-unknown-text">{{ cluster.sync_status_label }}</span>
+                                {{ status_label(cluster.sync_status_label, 'unknown') }}
                             {% endif %}
                         </div>
                     </td>
@@ -89,20 +84,16 @@
                         <div class="ml-auto flex min-w-[10rem] flex-wrap justify-end gap-1.5">
                             {% for hint in cluster.risk_hints %}
                                 {% if hint.tone == 'green' %}
-                                    {% set hint_class = 'border-status-normal-border bg-status-normal-soft text-status-normal-text' %}
+                                    {{ status_label(hint.label, 'normal', hint.icon) }}
                                 {% elif hint.tone == 'amber' %}
-                                    {% set hint_class = 'border-status-warning-border bg-status-warning-soft text-status-warning-text' %}
+                                    {{ status_label(hint.label, 'warning', hint.icon) }}
                                 {% elif hint.tone == 'red' %}
-                                    {% set hint_class = 'border-status-critical-border bg-status-critical-soft text-status-critical-text' %}
+                                    {{ status_label(hint.label, 'critical', hint.icon) }}
                                 {% elif hint.tone == 'blue' %}
-                                    {% set hint_class = 'border-status-info-border bg-status-info-soft text-status-info-text' %}
+                                    {{ status_label(hint.label, 'info', hint.icon) }}
                                 {% else %}
-                                    {% set hint_class = 'border-status-unknown-border bg-status-unknown-soft text-status-unknown-text' %}
+                                    {{ status_label(hint.label, 'unknown', hint.icon) }}
                                 {% endif %}
-                                <span class="inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-semibold {{ hint_class }}">
-                                    <i data-lucide="{{ hint.icon }}" class="h-3 w-3"></i>
-                                    {{ hint.label }}
-                                </span>
                             {% else %}
                                 <span class="text-[11px] text-content-muted">No risk hints</span>
                             {% endfor %}

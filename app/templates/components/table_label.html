@@ -1,0 +1,22 @@
+{% macro status_label(label, tone='unknown', icon=None) -%}
+    {% set tone_class = {
+        'normal': 'border-status-normal-border bg-status-normal-soft text-status-normal-text',
+        'warning': 'border-status-warning-border bg-status-warning-soft text-status-warning-text',
+        'critical': 'border-status-critical-border bg-status-critical-soft text-status-critical-text',
+        'info': 'border-status-info-border bg-status-info-soft text-status-info-text',
+        'pending': 'border-status-pending-border bg-status-pending-soft text-status-pending-text',
+        'disabled': 'border-status-disabled-border bg-status-disabled-soft text-status-disabled-text',
+        'unknown': 'border-status-unknown-border bg-status-unknown-soft text-status-unknown-text'
+    }.get(tone, 'border-status-unknown-border bg-status-unknown-soft text-status-unknown-text') %}
+    <span class="inline-flex min-h-6 items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold leading-4 {{ tone_class }}">
+        {% if icon %}<i data-lucide="{{ icon }}" class="h-3 w-3 shrink-0" aria-hidden="true"></i>{% endif %}
+        <span>{{ label }}</span>
+    </span>
+{%- endmacro %}
+
+{% macro metadata_label(label, icon=None) -%}
+    <span class="inline-flex min-h-6 items-center gap-1 rounded-md border border-outline-default bg-kaori-soft px-2 py-0.5 text-[10px] font-semibold leading-4 text-kaori-primary">
+        {% if icon %}<i data-lucide="{{ icon }}" class="h-3 w-3 shrink-0" aria-hidden="true"></i>{% endif %}
+        <span>{{ label }}</span>
+    </span>
+{%- endmacro %}

@@ -336,3 +336,13 @@ The Kubernetes Inventory Overview follows the authenticated operational overview
 - Table headers use the brand violet content color. Cluster identity icons and empty-state icons use violet because they are non-status visual elements.
 - Loading bars use a solid violet fill; gradients are prohibited.
 - Pagination, per-page selectors, and secondary actions use the standard 8 px control radius and semantic surface tokens.
+
+## Table label sizing
+
+`app/templates/components/table_label.html` is the authoritative implementation for compact labels inside operational tables.
+
+- Status labels use `table_label.status_label()` and remain pill-shaped because they communicate dynamic state.
+- Metadata labels use `table_label.metadata_label()` and use a 6 px rectangular radius.
+- Standard table label geometry is 24 px minimum height, 8 px horizontal padding, 2 px vertical padding, 10 px semibold text, 16 px line height, 4 px internal gap, and a 12 px icon.
+- Do not create page-specific table badge sizes. Cluster health, inventory state, sync state, integration readiness, TLS exceptions, and risk hints must consume the shared compact size.
+- Timestamp text is not a badge; render the timestamp separately at 11 px and place the compact state label below it when needed.
