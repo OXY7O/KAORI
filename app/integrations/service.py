@@ -30,7 +30,13 @@ def build_rows() -> list[dict[str, Any]]:
 
 def build_integrations_overview() -> dict[str, Any]:
     rows = build_rows()
-    return {'rows': rows, 'stats': _stats(rows)}
+    stats = _stats(rows)
+    return {
+        'rows': rows,
+        'stats': stats,
+        'catalog': _catalog(rows),
+        'coverage': _coverage(rows),
+    }
 
 
 def build_prometheus_page() -> dict[str, Any]:

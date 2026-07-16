@@ -48,7 +48,7 @@
             </span>
             <span class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 dark:bg-slate-800">
                 <i data-lucide="activity" class="h-3.5 w-3.5"></i>
-                Test, sync, Prometheus, and Alertmanager actions refresh this table.
+                Connection tests and inventory synchronization refresh this table; integration configuration is managed from Integrations.
             </span>
         </div>
         {% include "cluster/partials/_loading_bar.html" %}
@@ -64,7 +64,7 @@
                     <th class="px-6 py-4 text-left">Inventory</th>
                     <th class="px-6 py-4 text-left">Observability</th>
                     <th class="px-6 py-4 text-left">Last Activity</th>
-                    <th class="w-72 px-6 py-4 text-left">Actions</th>
+                    <th class="w-72 px-6 py-4 text-right">Actions</th>
                 </tr>
             </thead>
             <tbody id="cluster-table-body">
@@ -217,8 +217,8 @@
                             </div>
                         </td>
                         <!-- Actions -->
-                        <td class="px-6 py-4">
-                            <div class="flex items-center justify-start gap-1.5 whitespace-nowrap">
+                        <td class="px-6 py-4 text-right">
+                            <div class="flex items-center justify-end gap-1.5 whitespace-nowrap">
                                 {% set table_query = {
                                                                     'page': pagination.page,
                                                                     'per_page': pagination.per_page,
