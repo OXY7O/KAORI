@@ -367,10 +367,10 @@ The Kubernetes Topology workspace follows the same Inventory hero and operationa
 The Node Inventory page follows the authenticated Inventory standard and is the reference for resource inventory pages with expandable operational details.
 
 - Use a solid `kaori-primary` hero with the shared `page_hero.intro()` alignment. Node count, CPU, and memory are rectangular hero metadata labels, not status pills.
-- The hero posture panel presents Ready and Not Ready counts as compact brand surfaces. Only the aggregated readiness result uses a semantic status label.
+- The hero posture panel presents Ready and Not Ready counts as compact brand surfaces. The aggregated readiness result is shown as a semantic label in the panel header, while the panel footer uses the standard Cluster Management action used across Inventory heroes.
 - Capacity cards use neutral surfaces with violet labels and icons. A single solid violet highlight card may be used for the primary readiness ratio; gradients are prohibited.
 - Node table filters use sentence case, 44 px controls, 8 px radius, and shared surface/outline tokens.
 - Table columns are left aligned except the final Details column, which is right aligned. Cluster and Role are metadata labels; node readiness is a semantic status label.
-- Expandable node details use 12 px cards, violet non-status icons, compact shared labels, and semantic colors only for readiness, pressure, scheduling, network availability, and other dynamic states.
+- Expandable node details use 12 px cards, violet non-status icons, compact shared labels, and semantic colors only for readiness, pressure, scheduling, network availability, and other dynamic states. All key/value rows use the same sans-serif 12 px typography and 20 px line height; UUIDs, IP addresses, and runtime identifiers may use break-all wrapping but must not switch to a monospace font.
 - Node labels are descriptive metadata and use violet rectangular labels. Taints remain visually prominent because they affect scheduling behavior.
 - Node empty, unavailable, and uncollected states use the shared violet empty-state treatment. Missing data must not render as Healthy.
