@@ -47,14 +47,7 @@
 {%- endmacro %}
 
 {% macro detail_tip(message, icon='info') -%}
-    <div class="mt-auto pt-3">
-        <div class="flex shrink-0 items-start gap-2.5 rounded-lg border border-outline-default bg-kaori-soft px-3 py-2.5 text-xs leading-5 text-content-secondary">
-            <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-surface-card text-kaori-primary">
-                <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
-            </span>
-            <p class="min-w-0 flex-1">{{ message }}</p>
-        </div>
-    </div>
+    {{ inventory_tip.tip(message, icon, true) }}
 {%- endmacro %}
 
 <div class="bg-surface-hover px-4 py-4">

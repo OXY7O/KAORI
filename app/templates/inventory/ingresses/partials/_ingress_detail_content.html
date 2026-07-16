@@ -11,24 +11,7 @@
 {%- endmacro %}
 
 {% macro info_box(title, message, icon='info', tone='brand', equal_height=false) -%}
-    {% if tone == 'warning' %}
-        {% set panel_class = 'border-status-warning-border bg-status-warning-soft' %}
-        {% set icon_class = 'border-status-warning-border bg-status-warning-soft text-status-warning-text' %}
-        {% set title_class = 'text-status-warning-text' %}
-    {% else %}
-        {% set panel_class = 'border-kaori-primary/25 bg-kaori-soft' %}
-        {% set icon_class = 'border-kaori-primary/20 bg-surface-card text-kaori-primary' %}
-        {% set title_class = 'text-kaori-primary' %}
-    {% endif %}
-    <div class="flex {{ 'min-h-24' if equal_height else '' }} rounded-lg border border-dashed {{ panel_class }} p-3">
-        <div class="flex w-full items-start gap-2.5">
-            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border {{ icon_class }}"><i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i></span>
-            <div class="min-w-0">
-                <p class="text-xs font-semibold {{ title_class }}">{{ title }}</p>
-                <p class="mt-1 text-[11px] leading-5 text-content-muted">{{ message }}</p>
-            </div>
-        </div>
-    </div>
+    {{ inventory_tip.info_box(title, message, icon, tone, equal_height) }}
 {%- endmacro %}
 
 {% macro detail_card(title, icon, badge=None, class_name='') -%}

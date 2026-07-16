@@ -472,6 +472,8 @@ The Service Inventory page follows the same resource-inventory baseline as Inven
 - Every populated card or section inside an Inventory View More panel must end with one concise informational tip. Existing tips remain unchanged; add the shared `components/inventory_detail_tip.html` treatment only where a card has no guidance.
 - Place the tip at the bottom of the card after primary values and nested object summaries. Header, content, nested summary, then tip is the required visual order.
 - Use the KAORI soft violet surface, 8 px radius, violet icon, 12 px body text, and one short operational sentence. Avoid repeating the section description or filling the card with explanatory prose.
+- Nodes Inventory View More is the typography baseline: tip title and body both use 12 px text with 20 px line-height; titles may use semibold weight while body copy remains regular. Use a 24 px icon surface with a 14 px icon, 12 px horizontal padding, and 10 px vertical padding. Do not use 11 px body copy inside Inventory tips.
+- All Inventory tip variants, including titled information boxes and warning guidance, must render through `components/inventory_detail_tip.html`. Page-local macros may only delegate to the shared component and must not redefine typography.
 - A dashed empty-state box may replace the separate tip when the section has no records because it already explains the missing or unconfigured state. When records are present, the persistent bottom tip is required.
 - Tips describe data meaning or snapshot boundaries. They must not introduce warning colors unless operator action is required.
 
