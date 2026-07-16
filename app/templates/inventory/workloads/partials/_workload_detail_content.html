@@ -1,5 +1,6 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/detail_object.html" as detail_object %}
+{% import "components/inventory_detail_tip.html" as inventory_tip %}
 {% macro detail_row(label, value='-', break_all=false) -%}
     {% set display_value = value if value not in [None, ''] else '-' %}
     <div class="flex items-start justify-between gap-3">
@@ -118,6 +119,7 @@
                     {% else %}
                         {{ detail_object.empty('No placement constraints', 'No selector, toleration, affinity, or topology spread rule is configured.', 'map-pinned') }}
                     {% endif %}
+                    {{ inventory_tip.tip('Placement rules guide scheduling; actual placement is shown in Pod inventory.', 'map-pin') }}
                 </div>
             {% endcall %}
         </div>
@@ -150,6 +152,7 @@
                 {% else %}
                     <div class="p-4">{{ info_box('Container metadata unavailable', 'Container template metadata has not been collected yet. Sync the cluster to refresh workload details.', 'info') }}</div>
                 {% endif %}
+                {% if workload.containers %}{{ inventory_tip.footer('Image references come from the workload template; runtime health remains in Pod inventory.', 'images') }}{% endif %}
             </section>
 
             <section class="rounded-xl border border-outline-default bg-surface-card p-4">
@@ -184,6 +187,7 @@
                 {% else %}
                     {{ info_box('No associated Pods', 'No Pods are currently resolved to this workload. Re-sync inventory after rollout or ownership changes.', 'info') }}
                 {% endif %}
+                {% if workload.pods %}<div class="mt-4">{{ inventory_tip.tip('Pod mapping reflects current controller ownership in the latest snapshot.', 'git-branch') }}</div>{% endif %}
             </section>
 
             <section class="rounded-xl border border-outline-default bg-surface-card p-4">
@@ -196,6 +200,7 @@
                 {% else %}
                     {{ info_box('No workload labels', 'No workload labels were reported in the latest inventory snapshot.', 'tag') }}
                 {% endif %}
+                {% if workload.labels %}<div class="mt-4">{{ inventory_tip.tip('Labels support workload organization and selection.', 'tags') }}</div>{% endif %}
             </section>
 
             <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
@@ -212,6 +217,7 @@
                 {% else %}
                     <div class="p-4">{{ info_box('No workload annotations', 'No workload annotations were reported in the latest inventory snapshot.', 'info') }}</div>
                 {% endif %}
+                {% if workload.annotations %}{{ inventory_tip.footer('Annotations may be managed by workload controllers and integrations.', 'notebook-tabs') }}{% endif %}
             </section>
 
             {{ info_box('Inventory boundary', 'This section contains point-in-time workload inventory data. Utilization, performance trends, anomalies, forecasts, and recommendations remain in Analytics and Intelligence.', 'info') }}

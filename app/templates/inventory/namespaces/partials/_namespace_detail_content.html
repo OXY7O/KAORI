@@ -1,4 +1,5 @@
 {% import "components/table_label.html" as table_label %}
+{% import "components/inventory_detail_tip.html" as inventory_tip %}
 {% set namespace_status_tone = 'normal' if namespace.status == 'Active' else ('warning' if namespace.status == 'Terminating' else 'unknown') %}
 {% set namespace_status_icon = 'circle-check' if namespace.status == 'Active' else ('triangle-alert' if namespace.status == 'Terminating' else 'circle-help') %}
 {% set psa_enforce_display = 'No namespace policy' if namespace.pod_security_enforce in [None, '', 'Not configured'] else namespace.pod_security_enforce %}
@@ -224,6 +225,7 @@
                         <p class="mt-1 text-xs leading-5 text-content-muted">Labels will appear after the next inventory collection when provided by Kubernetes.</p>
                     </div>
                 {% endif %}
+                {% if namespace.labels %}<div class="mt-4">{{ inventory_tip.tip('Labels support namespace organization and policy selection.', 'tags') }}</div>{% endif %}
             </section>
 
             <section class="rounded-xl border border-outline-subtle bg-surface-card p-4 md:col-span-2 xl:col-span-4">
@@ -252,6 +254,7 @@
                         <p class="mt-1 text-xs leading-5 text-content-muted">Annotations will appear after collection when they are present on the namespace.</p>
                     </div>
                 {% endif %}
+                {% if namespace.annotations %}<div class="mt-4">{{ inventory_tip.tip('Annotations may be managed by platform controllers and integrations.', 'notebook-text') }}</div>{% endif %}
             </section>
         </div>
 

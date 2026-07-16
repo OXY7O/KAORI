@@ -465,3 +465,12 @@ The Service Inventory page follows the same resource-inventory baseline as Inven
 - Expandable Service details use 12 px cards, 8 px violet icon surfaces, consistent sans-serif 12 px key/value typography, compact shared labels, and the shared nested-object pattern for selectors and empty collections.
 - Service type, protocol, application protocol, selectors, labels, and other descriptive values are metadata and use rectangular violet labels. Endpoint and selected-Pod runtime state use semantic status labels.
 - Endpoint addresses, selected Pods, labels, annotations, and port mappings use neutral containers with violet non-status iconography. Empty or unconfigured nested sections use the shared dashed violet information state. Missing required collection metadata may use Warning.
+
+
+## Inventory expandable-card tips
+
+- Every populated card or section inside an Inventory View More panel must end with one concise informational tip. Existing tips remain unchanged; add the shared `components/inventory_detail_tip.html` treatment only where a card has no guidance.
+- Place the tip at the bottom of the card after primary values and nested object summaries. Header, content, nested summary, then tip is the required visual order.
+- Use the KAORI soft violet surface, 8 px radius, violet icon, 12 px body text, and one short operational sentence. Avoid repeating the section description or filling the card with explanatory prose.
+- A dashed empty-state box may replace the separate tip when the section has no records because it already explains the missing or unconfigured state. When records are present, the persistent bottom tip is required.
+- Tips describe data meaning or snapshot boundaries. They must not introduce warning colors unless operator action is required.

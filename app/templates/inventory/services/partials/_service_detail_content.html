@@ -1,5 +1,6 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/detail_object.html" as detail_object %}
+{% import "components/inventory_detail_tip.html" as inventory_tip %}
 {% macro detail_row(label, value='-', break_all=false) -%}
     {% set display_value = value if value not in [None, ''] else '-' %}
     <div class="flex items-start justify-between gap-3">
@@ -161,6 +162,7 @@
                 {% else %}
                     <div class="p-4">{{ detail_object.empty('No ports configured', 'No Service port mapping is recorded.', 'plug-zap') }}</div>
                 {% endif %}
+                {% if service.ports %}{{ inventory_tip.footer('Port rows describe declared forwarding; traffic volume remains in Analytics.', 'plug-zap') }}{% endif %}
             </section>
 
             <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
@@ -200,6 +202,7 @@
                         {{ info_box('Endpoint metadata unavailable', 'Restart the worker and sync the cluster again.', 'triangle-alert', 'warning') }}
                     {% endif %}
                 </div>
+                {% if service.endpoints or service.not_ready_endpoints %}{{ inventory_tip.footer('Endpoints reflect current backend registration and readiness.', 'waypoints') }}{% endif %}
             </section>
 
             <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
@@ -234,6 +237,7 @@
                         {{ detail_object.empty('No direct Pod selector', 'This Service uses an external or manually managed endpoint pattern.', 'package-search') }}
                     {% endif %}
                 </div>
+                {% if service.pods %}{{ inventory_tip.footer('Pod matches are resolved from the current Service selector.', 'package-check') }}{% endif %}
             </section>
 
             <div class="grid gap-4 xl:grid-cols-2">
@@ -247,6 +251,7 @@
                     {% else %}
                         {{ info_box('No labels recorded', 'This Service has no recorded labels.', 'tags') }}
                     {% endif %}
+                    {% if service.labels %}<div class="mt-4">{{ inventory_tip.tip('Labels describe the Service and support selection.', 'tags') }}</div>{% endif %}
                 </section>
 
                 <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
@@ -261,6 +266,7 @@
                     {% else %}
                         <div class="p-4">{{ info_box('No annotations recorded', 'This Service has no recorded annotations.', 'braces') }}</div>
                     {% endif %}
+                    {% if service.annotations %}{{ inventory_tip.footer('Annotations may influence integrations or load balancer behavior.', 'braces') }}{% endif %}
                 </section>
             </div>
 

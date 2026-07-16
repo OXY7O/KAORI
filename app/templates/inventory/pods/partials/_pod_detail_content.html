@@ -1,5 +1,6 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/detail_object.html" as detail_object %}
+{% import "components/inventory_detail_tip.html" as inventory_tip %}
 {% macro detail_row(label, value='-', break_all=false) -%}
     {% set display_value = value if value not in [None, ''] else '-' %}
     <div class="flex items-start justify-between gap-3">
@@ -223,6 +224,7 @@
                 {% else %}
                     <div class="p-4">{{ info_box('Runtime status unavailable', 'Runtime status is missing. Restart the worker and sync again.', 'triangle-alert', 'warning') }}</div>
                 {% endif %}
+                {% if pod.container_statuses %}{{ inventory_tip.footer('Runtime rows show current container state; history remains in Analytics.', 'activity') }}{% endif %}
             </section>
 
             <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
@@ -254,6 +256,7 @@
                 {% else %}
                     <div class="p-4">{{ info_box('No volumes configured', 'No volumes are recorded for this Pod.', 'database') }}</div>
                 {% endif %}
+                {% if pod.volumes %}{{ inventory_tip.footer('Volume sources are metadata references; Secret content is never shown.', 'database') }}{% endif %}
             </section>
 
             <div class="grid gap-4 xl:grid-cols-2">
@@ -267,6 +270,7 @@
                     {% else %}
                         {{ info_box('No labels recorded', 'This Pod has no recorded labels.', 'tags') }}
                     {% endif %}
+                    {% if pod.labels %}<div class="mt-4">{{ inventory_tip.tip('Labels describe Pod identity and selection metadata.', 'tags') }}</div>{% endif %}
                 </section>
 
                 <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
@@ -281,6 +285,7 @@
                     {% else %}
                         <div class="p-4">{{ info_box('No annotations recorded', 'This Pod has no recorded annotations.', 'braces') }}</div>
                     {% endif %}
+                    {% if pod.annotations %}{{ inventory_tip.footer('Annotations may be managed by controllers and integrations.', 'braces') }}{% endif %}
                 </section>
             </div>
 

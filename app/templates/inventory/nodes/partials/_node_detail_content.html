@@ -1,4 +1,5 @@
 {% import "components/table_label.html" as table_label %}
+{% import "components/inventory_detail_tip.html" as inventory_tip %}
 {% set node_status_tone = 'normal' if node.status == 'Ready' else ('critical' if node.status == 'NotReady' else 'warning') %}
 {% set node_status_icon = 'circle-check' if node.status == 'Ready' else ('octagon-alert' if node.status == 'NotReady' else 'triangle-alert') %}
 {% set has_pressure = node.memory_pressure == 'True' or node.disk_pressure == 'True' or node.pid_pressure == 'True' %}
@@ -131,6 +132,7 @@
                         {{ table_label.metadata_label('No taints') }}
                     {% endif %}
                 </div>
+                {{ inventory_tip.tip('Conditions show current readiness, pressure, and scheduling state.', 'activity', true) }}
             {% endcall %}
 
             <section class="rounded-xl border border-outline-subtle bg-surface-card p-4 md:col-span-2 xl:col-span-4">
@@ -158,6 +160,7 @@
                         <p class="mt-1 text-xs leading-5 text-content-muted">Labels will appear after the next inventory collection when provided by the node.</p>
                     </div>
                 {% endif %}
+                {% if node.labels %}<div class="mt-4">{{ inventory_tip.tip('Labels describe node identity and scheduling attributes.', 'tags') }}</div>{% endif %}
             </section>
         </div>
     </div>

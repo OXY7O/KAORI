@@ -1,0 +1,14 @@
+{% macro tip(message, icon='info', pinned=false, class_name='') -%}
+    <div class="{{ 'mt-auto ' if pinned else '' }}flex items-start gap-2.5 rounded-lg border border-outline-default bg-kaori-soft px-3 py-2.5 text-xs leading-5 text-content-secondary {{ class_name }}">
+        <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-surface-card text-kaori-primary" aria-hidden="true">
+            <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
+        </span>
+        <p>{{ message }}</p>
+    </div>
+{%- endmacro %}
+
+{% macro footer(message, icon='info', class_name='') -%}
+    <div class="border-t border-outline-subtle p-4 {{ class_name }}">
+        {{ tip(message, icon) }}
+    </div>
+{%- endmacro %}
