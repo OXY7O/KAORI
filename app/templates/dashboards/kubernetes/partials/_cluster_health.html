@@ -1,96 +1,109 @@
-<section id="dashboard-cluster-health-section"
-         class="rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-    <div class="flex flex-col gap-4 border-b border-slate-100 px-6 py-5 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
-        <div class="flex items-center gap-3">
-            <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300">
+<section id="dashboard-cluster-health-section" class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <div class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex min-w-0 items-center gap-3">
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                 <i data-lucide="heart-pulse" class="h-5 w-5"></i>
             </div>
-            <div>
-                <h2 class="font-semibold text-slate-950 dark:text-white">Cluster Health Summary</h2>
-                <p class="text-xs text-slate-500 dark:text-slate-400">
-                    Showing {{ dashboard.cluster_health_pagination.start_item }}-{{ dashboard.cluster_health_pagination.end_item }} of {{ dashboard.cluster_health_pagination.total_items }} clusters. Node, CPU, and memory signals prefer live Prometheus data.
+            <div class="min-w-0">
+                <h2 class="text-sm font-semibold text-content-primary">Cluster Health Summary</h2>
+                <p class="mt-0.5 text-xs leading-5 text-content-muted">
+                    Showing {{ dashboard.cluster_health_pagination.start_item }}-{{ dashboard.cluster_health_pagination.end_item }} of {{ dashboard.cluster_health_pagination.total_items }} clusters. Live Prometheus signals are preferred when available.
                 </p>
             </div>
         </div>
         <a href="/clusters"
-           class="text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-300">View clusters</a>
+           class="inline-flex shrink-0 items-center gap-1.5 text-xs font-semibold text-kaori-primary transition hover:text-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card">
+            View clusters
+            <i data-lucide="arrow-up-right" class="h-3.5 w-3.5"></i>
+        </a>
     </div>
+
     <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-slate-100 text-sm dark:divide-slate-800">
-            <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-950/40 dark:text-slate-400">
+        <table class="min-w-full divide-y divide-outline-subtle text-sm">
+            <thead class="bg-surface-hover text-[11px] uppercase tracking-[0.08em] text-kaori-primary">
                 <tr>
-                    <th class="px-6 py-3 text-left font-semibold">Cluster</th>
-                    <th class="px-4 py-3 text-left font-semibold">Status</th>
+                    <th class="px-5 py-3 text-left font-semibold">Cluster</th>
+                    <th class="px-4 py-3 text-left font-semibold">Overall</th>
                     <th class="px-4 py-3 text-left font-semibold">Nodes</th>
                     <th class="px-4 py-3 text-left font-semibold">CPU</th>
                     <th class="px-4 py-3 text-left font-semibold">Memory</th>
                     <th class="px-4 py-3 text-left font-semibold">Alerts</th>
-                    <th class="px-6 py-3 text-left font-semibold">Sources</th>
+                    <th class="px-5 py-3 text-left font-semibold">Live sources</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+            <tbody class="divide-y divide-outline-subtle">
                 {% if dashboard.cluster_health_snapshot %}
                     {% for row in dashboard.cluster_health_snapshot %}
-                        <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
-                            <td class="px-6 py-4">
-                                <div class="font-medium text-slate-900 dark:text-white">{{ row.cluster_name }}</div>
-                                <div class="mt-0.5 max-w-[280px] truncate text-xs text-slate-400"
-                                     title="{{ row.cluster_endpoint }}">{{ row.cluster_endpoint }}</div>
-                            </td>
-                            <td class="px-4 py-4">
-                                <div class="space-y-1">
-                                    <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {% if row.status == 'Healthy' %}bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 {% elif row.status == 'Warning' %}bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 {% elif row.status == 'Critical' %}bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300 {% else %}bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300{% endif %}">
-                                        {{ row.status }}
-                                    </span>
-                                    <p class="max-w-[180px] text-xs leading-4 text-slate-500 dark:text-slate-400"
-                                       title="{{ row.status_reason }}">{{ row.status_reason }}</p>
+                        <tr class="transition hover:bg-surface-hover">
+                            <td class="px-5 py-3.5">
+                                <div class="flex items-start gap-2.5">
+                                    <div class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                                        <i data-lucide="boxes" class="h-4 w-4"></i>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <div class="font-semibold text-content-primary">{{ row.cluster_name }}</div>
+                                        <div class="mt-0.5 max-w-[260px] truncate text-xs text-content-muted" title="{{ row.cluster_endpoint }}">{{ row.cluster_endpoint }}</div>
+                                    </div>
                                 </div>
                             </td>
-                            <td class="px-4 py-4">
+                            <td class="px-4 py-3.5 align-top">
+                                <div class="space-y-1.5">
+                                    <span class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold
+                                                {% if row.status == 'Healthy' %}border-status-normal-border bg-status-normal-soft text-status-normal-text
+                                                {% elif row.status == 'Warning' %}border-status-warning-border bg-status-warning-soft text-status-warning-text
+                                                {% elif row.status == 'Critical' %}border-status-critical-border bg-status-critical-soft text-status-critical-text
+                                                {% else %}border-status-unknown-border bg-status-unknown-soft text-status-unknown-text{% endif %}">
+                                        <i data-lucide="{% if row.status == 'Healthy' %}circle-check{% elif row.status == 'Warning' %}triangle-alert{% elif row.status == 'Critical' %}octagon-alert{% else %}circle-help{% endif %}" class="h-3 w-3"></i>
+                                        {{ row.status }}
+                                    </span>
+                                    <p class="max-w-[190px] text-[11px] leading-4 text-content-muted" title="{{ row.status_reason }}">{{ row.status_reason }}</p>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3.5 align-top">
                                 {% if row.nodes_ready is not none and row.nodes_total is not none %}
-                                    <div class="font-semibold text-slate-800 dark:text-slate-100">{{ row.nodes_ready }}/{{ row.nodes_total }} Ready</div>
-                                    <div class="text-xs text-emerald-600 dark:text-emerald-400">{{ row.nodes_status }}</div>
+                                    <div class="font-semibold text-content-primary">{{ row.nodes_ready }}/{{ row.nodes_total }}</div>
+                                    <div class="mt-1 text-[11px] {% if row.nodes_ready == row.nodes_total %}text-status-normal-text{% else %}text-status-warning-text{% endif %}">Ready nodes</div>
                                 {% else %}
-                                    <div class="font-semibold text-slate-400">N/A</div>
-                                    <div class="text-xs text-slate-400">{{ row.nodes_status }}</div>
+                                    <div class="font-semibold text-content-disabled">N/A</div>
+                                    <div class="mt-1 text-[11px] text-status-unknown-text">{{ row.nodes_status }}</div>
                                 {% endif %}
                             </td>
-                            <td class="px-4 py-4">
+                            <td class="px-4 py-3.5 align-top">
                                 {% if row.cpu_percent is not none %}
-                                    <div class="font-semibold text-slate-800 dark:text-slate-100">{{ row.cpu_percent|round(0) }}%</div>
-                                    <div class="text-xs text-emerald-600 dark:text-emerald-400">{{ row.cpu_status }}</div>
+                                    <div class="font-semibold text-content-primary">{{ row.cpu_percent|round(0) }}%</div>
+                                    <div class="mt-1 text-[11px] text-content-muted">Utilized</div>
                                 {% else %}
-                                    <div class="font-semibold text-slate-400">N/A</div>
-                                    <div class="text-xs text-slate-400">{{ row.cpu_status }}</div>
+                                    <div class="font-semibold text-content-disabled">N/A</div>
+                                    <div class="mt-1 text-[11px] text-status-unknown-text">{{ row.cpu_status }}</div>
                                 {% endif %}
                             </td>
-                            <td class="px-4 py-4">
+                            <td class="px-4 py-3.5 align-top">
                                 {% if row.memory_percent is not none %}
-                                    <div class="font-semibold text-slate-800 dark:text-slate-100">{{ row.memory_percent|round(0) }}%</div>
-                                    <div class="text-xs text-emerald-600 dark:text-emerald-400">{{ row.memory_status }}</div>
+                                    <div class="font-semibold text-content-primary">{{ row.memory_percent|round(0) }}%</div>
+                                    <div class="mt-1 text-[11px] text-content-muted">Utilized</div>
                                 {% else %}
-                                    <div class="font-semibold text-slate-400">N/A</div>
-                                    <div class="text-xs text-slate-400">{{ row.memory_status }}</div>
+                                    <div class="font-semibold text-content-disabled">N/A</div>
+                                    <div class="mt-1 text-[11px] text-status-unknown-text">{{ row.memory_status }}</div>
                                 {% endif %}
                             </td>
-                            <td class="px-4 py-4">
+                            <td class="px-4 py-3.5 align-top">
                                 {% if row.active_alerts is not none %}
-                                    <div class="font-semibold {% if row.active_alerts > 0 %}text-red-600 dark:text-red-300{% else %}text-emerald-600 dark:text-emerald-300{% endif %}">{{ row.active_alerts }}</div>
-                                    <div class="text-xs text-emerald-600 dark:text-emerald-400">{{ row.alerts_status }}</div>
+                                    <div class="font-semibold {% if row.active_alerts > 0 %}text-status-critical-text{% else %}text-status-normal-text{% endif %}">{{ row.active_alerts }}</div>
+                                    <div class="mt-1 text-[11px] text-content-muted">Active alerts</div>
                                 {% else %}
-                                    <div class="font-semibold text-slate-400">N/A</div>
-                                    <div class="text-xs text-slate-400">{{ row.alerts_status }}</div>
+                                    <div class="font-semibold text-content-disabled">N/A</div>
+                                    <div class="mt-1 text-[11px] text-status-unknown-text">{{ row.alerts_status }}</div>
                                 {% endif %}
                             </td>
-                            <td class="px-6 py-4">
-                                <div class="space-y-1 text-xs">
-                                    <div class="flex items-center gap-1.5">
-                                        <span class="h-1.5 w-1.5 rounded-full {% if row.cpu_status == 'Live' or row.memory_status == 'Live' or row.nodes_status == 'Live' %}bg-emerald-500{% else %}bg-slate-300 dark:bg-slate-600{% endif %}"></span>
-                                        <span class="text-slate-500 dark:text-slate-400">Prometheus</span>
+                            <td class="px-5 py-3.5 align-top">
+                                <div class="space-y-1.5 text-[11px]">
+                                    <div class="flex items-center gap-2">
+                                        <span class="h-2 w-2 rounded-full {% if row.cpu_status == 'Live' or row.memory_status == 'Live' or row.nodes_status == 'Live' %}bg-status-normal{% else %}bg-status-unknown{% endif %}"></span>
+                                        <span class="text-content-muted">Prometheus</span>
                                     </div>
-                                    <div class="flex items-center gap-1.5">
-                                        <span class="h-1.5 w-1.5 rounded-full {% if row.alerts_status == 'Live' %}bg-emerald-500{% else %}bg-slate-300 dark:bg-slate-600{% endif %}"></span>
-                                        <span class="text-slate-500 dark:text-slate-400">AlertManager</span>
+                                    <div class="flex items-center gap-2">
+                                        <span class="h-2 w-2 rounded-full {% if row.alerts_status == 'Live' %}bg-status-normal{% else %}bg-status-unknown{% endif %}"></span>
+                                        <span class="text-content-muted">AlertManager</span>
                                     </div>
                                 </div>
                             </td>
@@ -98,32 +111,38 @@
                     {% endfor %}
                 {% else %}
                     <tr>
-                        <td colspan="7"
-                            class="px-6 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
-                            No cluster inventory data yet. Add a cluster and run inventory sync to populate this section.
+                        <td colspan="7" class="px-5 py-10 text-center">
+                            <div class="mx-auto flex max-w-md flex-col items-center">
+                                <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                                    <i data-lucide="database" class="h-5 w-5"></i>
+                                </div>
+                                <p class="mt-3 text-sm font-semibold text-kaori-primary">No cluster inventory data</p>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">Add a cluster and run inventory sync to populate the health summary.</p>
+                            </div>
                         </td>
                     </tr>
                 {% endif %}
             </tbody>
         </table>
     </div>
+
     {% if dashboard.cluster_health_pagination.total_pages > 1 %}
-        <div class="flex flex-col gap-3 border-t border-slate-100 px-6 py-4 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
-            <p class="text-xs text-slate-500 dark:text-slate-400">
+        <div class="flex flex-col gap-3 border-t border-outline-subtle px-5 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+            <p class="text-xs text-content-muted">
                 Page {{ dashboard.cluster_health_pagination.page }} of {{ dashboard.cluster_health_pagination.total_pages }} · {{ dashboard.cluster_health_pagination.per_page }} clusters per page
             </p>
             <div class="flex items-center gap-2">
                 {% set prev_url = url_for('kubernetes_dashboard.section', section='cluster_health', cluster_id=dashboard.selected_cluster_id or '', cluster_health_page=dashboard.cluster_health_pagination.prev_page) %}
                 {% set next_url = url_for('kubernetes_dashboard.section', section='cluster_health', cluster_id=dashboard.selected_cluster_id or '', cluster_health_page=dashboard.cluster_health_pagination.next_page) %}
                 <button type="button"
-                        {% if dashboard.cluster_health_pagination.has_prev %} hx-get="{{ prev_url }}" hx-target="#dashboard-cluster-health-section" hx-swap="outerHTML" hx-indicator="#dashboard-loading-bar" {% else %}disabled{% endif %}
-                        class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold transition dark:border-slate-700 {% if dashboard.cluster_health_pagination.has_prev %}text-slate-700 hover:border-blue-200 hover:text-blue-700 dark:text-slate-200 dark:hover:border-blue-800 dark:hover:text-blue-300{% else %}cursor-not-allowed text-slate-300 dark:text-slate-600{% endif %}">
+                        {% if dashboard.cluster_health_pagination.has_prev %}hx-get="{{ prev_url }}" hx-target="#dashboard-cluster-health-section" hx-swap="outerHTML" hx-indicator="#dashboard-loading-bar"{% else %}disabled{% endif %}
+                        class="inline-flex items-center gap-1.5 rounded-lg border border-outline-default px-3 py-2 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card {% if dashboard.cluster_health_pagination.has_prev %}bg-surface-card text-content-secondary hover:border-outline-focus hover:text-kaori-primary{% else %}cursor-not-allowed bg-surface-hover text-content-disabled{% endif %}">
                     <i data-lucide="chevron-left" class="h-4 w-4"></i>
                     Previous
                 </button>
                 <button type="button"
-                        {% if dashboard.cluster_health_pagination.has_next %} hx-get="{{ next_url }}" hx-target="#dashboard-cluster-health-section" hx-swap="outerHTML" hx-indicator="#dashboard-loading-bar" {% else %}disabled{% endif %}
-                        class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold transition dark:border-slate-700 {% if dashboard.cluster_health_pagination.has_next %}text-slate-700 hover:border-blue-200 hover:text-blue-700 dark:text-slate-200 dark:hover:border-blue-800 dark:hover:text-blue-300{% else %}cursor-not-allowed text-slate-300 dark:text-slate-600{% endif %}">
+                        {% if dashboard.cluster_health_pagination.has_next %}hx-get="{{ next_url }}" hx-target="#dashboard-cluster-health-section" hx-swap="outerHTML" hx-indicator="#dashboard-loading-bar"{% else %}disabled{% endif %}
+                        class="inline-flex items-center gap-1.5 rounded-lg border border-outline-default px-3 py-2 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card {% if dashboard.cluster_health_pagination.has_next %}bg-surface-card text-content-secondary hover:border-outline-focus hover:text-kaori-primary{% else %}cursor-not-allowed bg-surface-hover text-content-disabled{% endif %}">
                     Next
                     <i data-lucide="chevron-right" class="h-4 w-4"></i>
                 </button>
