@@ -452,3 +452,16 @@ The Pod Inventory page follows the Inventory Overview hero geometry and the reso
 - When no records or constraints exist, replace the solid object summary with the shared centered dashed empty state containing a violet icon, a short title, and one concise sentence.
 - Apply this pattern to Pod Placement constraints, Pod Reported conditions, Workload Delivery & placement constraints, and future equivalent nested summaries.
 - Workload Runtime state should show a compact controller summary rather than every collector field. Keep the most operationally useful four state values plus Managed Pods; detailed historical behavior remains in Analytics.
+
+## Kubernetes Service inventory reference
+
+The Service Inventory page follows the same resource-inventory baseline as Inventory Overview, Nodes, Namespaces, Workloads, and Pods.
+
+- Use the Inventory Overview hero geometry: `p-5 lg:p-6`, a 7/5 split, `gap-5`, a right panel with `min-h-[13rem]`, compact two-column metrics, and the footer action `Manage Clusters`.
+- Service count, internal Service count, and external exposure count are contextual hero metadata and use rectangular brand labels. The aggregate exposure posture is the only semantic label in the hero panel.
+- Networking summary cards use neutral surfaces with violet labels and icons. The primary internal-coverage card may use a solid dark-violet surface and runtime progress width; gradients are prohibited.
+- Service table columns are left aligned except the final Details column, which is right aligned. Cluster, namespace, Service type, and port summary are metadata labels. Endpoint readiness is a compact semantic status label.
+- Filters use sentence case, 44 px controls, 8 px radius, shared surface tokens, and violet focus states. Loading bars use a solid violet fill.
+- Expandable Service details use 12 px cards, 8 px violet icon surfaces, consistent sans-serif 12 px key/value typography, compact shared labels, and the shared nested-object pattern for selectors and empty collections.
+- Service type, protocol, application protocol, selectors, labels, and other descriptive values are metadata and use rectangular violet labels. Endpoint and selected-Pod runtime state use semantic status labels.
+- Endpoint addresses, selected Pods, labels, annotations, and port mappings use neutral containers with violet non-status iconography. Empty or unconfigured nested sections use the shared dashed violet information state. Missing required collection metadata may use Warning.
