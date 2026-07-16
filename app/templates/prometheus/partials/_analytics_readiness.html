@@ -3,16 +3,27 @@
 {% set query_status = config.query_validation_status or 'validation_required' %}
 {% set summary = config.query_validation_summary or {} %}
 <section id="prometheus-analytics-readiness" class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950" {% if oob|default(false) %}hx-swap-oob="outerHTML"{% endif %}>
-  <div class="relative overflow-hidden bg-gradient-to-r from-slate-950 via-blue-950 to-blue-900 px-6 py-5 text-white">
-    <div class="pointer-events-none absolute -right-10 -top-14 h-40 w-40 rounded-full bg-cyan-400/10 blur-2xl"></div>
-    <div class="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+  <div class="px-6 py-5">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
       <div class="flex items-start gap-3">
-        <span class="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/15"><i data-lucide="chart-no-axes-combined" class="h-5 w-5"></i></span>
-        <div><p class="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-200">Kubernetes Analytics</p><h2 class="mt-1 text-xl font-bold">Analytics readiness</h2><p class="mt-1 max-w-2xl text-sm text-blue-100/80">Endpoint compatibility, PromQL contracts, metric schemas, and historical coverage.</p></div>
+        <span class="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-700 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-400/20"><i data-lucide="chart-no-axes-combined" class="h-5 w-5"></i></span>
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-300">Kubernetes Analytics</p>
+          <h2 class="mt-1 text-xl font-bold text-slate-950 dark:text-white">Analytics readiness</h2>
+          <p class="mt-1 max-w-2xl text-sm text-slate-500 dark:text-slate-400">Endpoint compatibility, PromQL contracts, metric schemas, and historical coverage.</p>
+        </div>
       </div>
-      <div class="flex items-center gap-3 rounded-2xl bg-white/10 px-4 py-3 ring-1 ring-white/15 backdrop-blur">
-        <span class="h-2.5 w-2.5 rounded-full {% if readiness_status == 'ready' %}bg-emerald-400{% elif readiness_status in ['degraded','validation_required'] %}bg-amber-400{% else %}bg-red-400{% endif %}"></span>
-        <div><p class="text-[10px] uppercase tracking-wider text-blue-100/70">Overall status</p><p class="text-sm font-bold">{{ readiness_status|replace('_',' ')|title }}</p></div>
+      <div class="relative min-w-[14rem] overflow-hidden rounded-2xl bg-gradient-to-br from-blue-700 via-blue-600 to-cyan-500 px-4 py-3 text-white shadow-lg shadow-blue-500/20">
+        <div class="pointer-events-none absolute -right-5 -top-7 h-20 w-20 rounded-full bg-white/10"></div>
+        <div class="relative flex items-center gap-3">
+          <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 ring-1 ring-white/20">
+            <span class="h-2.5 w-2.5 rounded-full {% if readiness_status == 'ready' %}bg-emerald-300{% elif readiness_status in ['degraded','validation_required'] %}bg-amber-300{% else %}bg-red-300{% endif %}"></span>
+          </span>
+          <div>
+            <p class="text-[10px] font-semibold uppercase tracking-wider text-blue-100">Overall status</p>
+            <p class="mt-0.5 text-sm font-bold">{{ readiness_status|replace('_',' ')|title }}</p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
