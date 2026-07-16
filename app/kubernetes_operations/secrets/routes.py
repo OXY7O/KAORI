@@ -573,7 +573,6 @@ def replace_secret():
         "kubernetes_operations/secrets/replace.html",
         operation_result=operation_result,
         operation_feedback=operation_feedback,
-        selected_secret_name=selected_secret_name,
         **target_context,
         **workspace_context,
         **get_secret_replace_context(),
