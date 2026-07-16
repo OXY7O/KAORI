@@ -73,3 +73,14 @@ Integration list pages never render passwords, bearer tokens, embedded URL crede
 - Thanos Query: `0.39`, `0.40`, and `0.41` profiles.
 
 A matching version profile does not itself make an integration ready. Required API endpoints, capabilities, metrics, labels, and query probes must also pass.
+
+
+## Route ownership and legacy compatibility
+
+Canonical integration routes are owned by the integration-specific blueprints under
+`/integrations/prometheus` and `/integrations/alertmanager`. The same blueprints are
+registered once more with unique legacy registration names for `/prometheus` and
+`/alertmanager`; this preserves old deep links without maintaining redirect-only
+wrapper blueprints. Settings shortcuts use explicit `308` redirects to the canonical
+integration list pages. New code and generated links must always use canonical
+`integrations.*`, `prometheus.*`, and `alertmanager.*` endpoints.
