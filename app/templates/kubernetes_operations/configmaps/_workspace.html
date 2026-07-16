@@ -1,74 +1,46 @@
-<input type="hidden"
-       name="workspace_mode"
-       value="{{ workspace_mode|default('update') }}">
+{% import "components/table_label.html" as table_label %}
+<input type="hidden" name="workspace_mode" value="{{ workspace_mode|default('update') }}">
 <div class="grid gap-4 md:grid-cols-3">
-    <div>
-        <label class="text-sm font-medium" for="configmap-cluster">Cluster</label>
-        <select id="configmap-cluster"
-                name="cluster_id"
-                hx-get="{{ url_for('kubernetes_operations.configmap_workspace') }}"
-                hx-target="#configmap-workspace"
-                hx-include="closest #configmap-workspace"
-                class="mt-2 min-h-11 w-full rounded-xl border border-slate-200 px-3 dark:border-slate-700 dark:bg-slate-900">
+    <label class="block min-w-0" for="configmap-cluster">
+        <span class="text-sm font-semibold text-content-primary">Cluster</span>
+        <select id="configmap-cluster" name="cluster_id" hx-get="{{ url_for('kubernetes_operations.configmap_workspace') }}" hx-target="#configmap-workspace" hx-include="closest #configmap-workspace" class="mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
             <option value="">Select cluster</option>
             {% for cluster in clusters|default([]) %}
-                <option value="{{ cluster.id }}"
-                        {{ 'selected' if cluster.id|string == selected_cluster_id|string else '' }}>{{ cluster.name }}
-                </option>
+                <option value="{{ cluster.id }}" {{ 'selected' if cluster.id|string == selected_cluster_id|string else '' }}>{{ cluster.name }}</option>
             {% endfor %}
         </select>
-    </div>
-    <div>
-        <label class="text-sm font-medium" for="configmap-namespace">Namespace</label>
-        <select id="configmap-namespace"
-                name="namespace"
-                hx-get="{{ url_for('kubernetes_operations.configmap_workspace') }}"
-                hx-target="#configmap-workspace"
-                hx-include="closest #configmap-workspace"
-                class="mt-2 min-h-11 w-full rounded-xl border border-slate-200 px-3 dark:border-slate-700 dark:bg-slate-900"
-                {{ 'disabled' if not selected_cluster_id else '' }}>
+    </label>
+    <label class="block min-w-0" for="configmap-namespace">
+        <span class="text-sm font-semibold text-content-primary">Namespace</span>
+        <select id="configmap-namespace" name="namespace" hx-get="{{ url_for('kubernetes_operations.configmap_workspace') }}" hx-target="#configmap-workspace" hx-include="closest #configmap-workspace" class="mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition disabled:cursor-not-allowed disabled:bg-surface-hover disabled:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20" {{ 'disabled' if not selected_cluster_id else '' }}>
             <option value="">Select namespace</option>
             {% for namespace in namespaces|default([]) %}
-                <option value="{{ namespace }}"
-                        {{ 'selected' if namespace == selected_namespace else '' }}>{{ namespace }}
-                </option>
+                <option value="{{ namespace }}" {{ 'selected' if namespace == selected_namespace else '' }}>{{ namespace }}</option>
             {% endfor %}
         </select>
-    </div>
-    <div>
-        <div class="flex items-center justify-between gap-2">
-            <label class="text-sm font-medium" for="configmap-name">ConfigMap</label>
-            <span class="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-300">
-                <i data-lucide="radio" class="h-3 w-3"></i>
-                Live
-            </span>
-        </div>
-        <select id="configmap-name"
-                name="configmap_name"
-                hx-get="{{ delete_target_url if workspace_mode == 'delete' else url_for('kubernetes_operations.configmap_editor') }}"
-                hx-target="{{ '#configmap-delete-target' if workspace_mode == 'delete' else '#configmap-editor' }}"
-                hx-include="closest #configmap-workspace"
-                class="mt-2 min-h-11 w-full rounded-xl border border-slate-200 px-3 dark:border-slate-700 dark:bg-slate-900"
-                {{ 'disabled' if not selected_namespace else '' }}>
+    </label>
+    <label class="block min-w-0" for="configmap-name">
+        <span class="flex items-center justify-between gap-2">
+            <span class="text-sm font-semibold text-content-primary">ConfigMap</span>
+            {{ table_label.status_label('Live', 'normal', 'radio') }}
+        </span>
+        <select id="configmap-name" name="configmap_name" hx-get="{{ delete_target_url if workspace_mode == 'delete' else url_for('kubernetes_operations.configmap_editor') }}" hx-target="{{ '#configmap-delete-target' if workspace_mode == 'delete' else '#configmap-editor' }}" hx-include="closest #configmap-workspace" class="mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition disabled:cursor-not-allowed disabled:bg-surface-hover disabled:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20" {{ 'disabled' if not selected_namespace else '' }}>
             <option value="">Select ConfigMap</option>
             {% for item in configmaps|default([]) %}
-                <option value="{{ item.name }}"
-                        {{ 'selected' if item.name == selected_configmap_name else '' }}>
-                    {{ item.name }}{{ ' · immutable' if item.immutable else '' }}
-                </option>
+                <option value="{{ item.name }}" {{ 'selected' if item.name == selected_configmap_name else '' }}>{{ item.name }}{{ ' · immutable' if item.immutable else '' }}</option>
             {% endfor %}
         </select>
         {% if selected_namespace and not configmaps and not selection_error %}
-            <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">No ConfigMap currently exists in this live Kubernetes namespace.</p>
+            <span class="mt-2 block text-xs leading-5 text-content-muted">No ConfigMap currently exists in this live namespace.</span>
         {% endif %}
-    </div>
+    </label>
 </div>
 {% if selection_error %}
-    <div class="mt-4 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100">
-        <i data-lucide="triangle-alert" class="mt-0.5 h-4 w-4 shrink-0"></i>
+    <div class="mt-4 flex items-start gap-3 rounded-lg border border-status-warning-border bg-status-warning-soft p-4 text-status-warning-text">
+        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-card/50"><i data-lucide="triangle-alert" class="h-4 w-4"></i></span>
         <div>
-            <p class="font-semibold">Live ConfigMap lookup failed</p>
-            <p class="mt-1 leading-5 opacity-85">{{ selection_error }}</p>
+            <p class="text-xs font-semibold">Live ConfigMap lookup failed</p>
+            <p class="mt-1 text-xs leading-5">{{ selection_error }}</p>
         </div>
     </div>
 {% endif %}

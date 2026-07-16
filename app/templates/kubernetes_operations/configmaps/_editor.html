@@ -1,76 +1,65 @@
+{% import "components/table_label.html" as table_label %}
+{% import "kubernetes_operations/configmaps/_components.html" as configmap_ui %}
 {% if target %}
     <div class="space-y-5">
-        <div class="grid gap-4 lg:grid-cols-3">
-            <div class="rounded-xl border border-blue-100 bg-blue-50 p-4 dark:border-blue-500/20 dark:bg-blue-500/10">
-                <p class="text-xs uppercase tracking-wide text-blue-700 dark:text-blue-300">Live target</p>
-                <p class="mt-2 font-semibold">{{ target.name }}</p>
-                <p class="text-sm text-slate-500 dark:text-slate-400">{{ target.cluster.name }} / {{ target.namespace }}</p>
-            </div>
-            <div class="rounded-xl border border-violet-100 bg-violet-50 p-4 dark:border-violet-500/20 dark:bg-violet-500/10">
-                <p class="text-xs uppercase tracking-wide text-violet-700 dark:text-violet-300">Current data</p>
-                <p class="mt-2 font-semibold">{{ live.data|length + live.binary_data|length }} keys</p>
-                <p class="text-sm text-slate-500 dark:text-slate-400">Read directly from Kubernetes</p>
-            </div>
-            <div class="rounded-xl border border-amber-100 bg-amber-50 p-4 dark:border-amber-500/20 dark:bg-amber-500/10">
-                <p class="text-xs uppercase tracking-wide text-amber-700 dark:text-amber-300">Impact context</p>
-                <p class="mt-2 font-semibold">{{ impacts|length }} workload references</p>
-                <p class="text-sm text-slate-500 dark:text-slate-400">Best effort from inventory snapshot</p>
-            </div>
+        <div class="grid gap-3 lg:grid-cols-3">
+            {{ configmap_ui.neutral_metric('file-cog', 'Live target', target.name, target.cluster.name ~ ' / ' ~ target.namespace) }}
+            {{ configmap_ui.neutral_metric('key-round', 'Current data', (live.data|length + live.binary_data|length) ~ ' keys', 'Read directly from Kubernetes') }}
+            {{ configmap_ui.neutral_metric('network', 'Impact context', impacts|length ~ ' workload references', 'Best effort from inventory snapshot') }}
         </div>
-        <input type="hidden"
-               name="target_cluster_id"
-               value="{{ target.cluster.id }}">
+        <input type="hidden" name="target_cluster_id" value="{{ target.cluster.id }}">
         <input type="hidden" name="target_namespace" value="{{ target.namespace }}">
         <input type="hidden" name="target_configmap_name" value="{{ target.name }}">
+
         {% if live.immutable %}
-            <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100">
-                <i data-lucide="lock" class="mr-2 inline h-4 w-4"></i>
-                This ConfigMap is immutable. Create a new ConfigMap with another name.
+            <div class="flex items-start gap-3 rounded-lg border border-status-warning-border bg-status-warning-soft p-4 text-status-warning-text">
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card/50"><i data-lucide="lock" class="h-4 w-4"></i></span>
+                <div>
+                    <p class="text-sm font-semibold">Immutable ConfigMap</p>
+                    <p class="mt-1 text-xs leading-5">This object cannot be updated. Create a new ConfigMap with a different name.</p>
+                </div>
             </div>
         {% else %}
-            <div class="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
-                <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="rounded-lg border border-outline-default bg-surface-hover p-4">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <h3 class="font-semibold">Update mode</h3>
-                        <p class="text-sm text-slate-500 dark:text-slate-400">Merge preserves unsubmitted keys. Replace removes keys that are not included.</p>
+                        <h3 class="text-sm font-semibold text-content-primary">Update mode</h3>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Merge preserves unsubmitted keys. Replace removes keys omitted from this form.</p>
                     </div>
-                    <select name="update_mode"
-                            class="min-h-10 rounded-xl border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-900">
+                    <select name="update_mode" class="h-10 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                         <option value="merge">Merge selected keys</option>
                         <option value="replace">Replace all data</option>
                     </select>
                 </div>
             </div>
             {% set entries = [] %}
-            {% for key,value in live.data.items() %}
-                {% set _ = entries.append((key, {'kind':'text','value':value})) %}
-            {% endfor %}
-            {% for key,value in live.binary_data.items() %}
-                {% set _ = entries.append((key, {'kind':'binary','value':value})) %}
-            {% endfor %}
+            {% for key,value in live.data.items() %}{% set _ = entries.append((key, {'kind':'text','value':value})) %}{% endfor %}
+            {% for key,value in live.binary_data.items() %}{% set _ = entries.append((key, {'kind':'binary','value':value})) %}{% endfor %}
             {% include 'kubernetes_operations/configmaps/_entries_editor.html' %}
-            <label class="flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-100">
-                <input type="checkbox"
-                       name="confirm_replace"
-                       value="yes"
-                       class="mt-0.5 rounded border-rose-300">
-                <span><b>Confirm full replacement when Replace all data is selected.</b>
-                    <br>
-                Keys omitted from the submitted configuration will be deleted.</span>
+            <label class="flex items-start gap-3 rounded-lg border border-status-critical-border bg-status-critical-soft p-4 text-status-critical-text">
+                <input type="checkbox" name="confirm_replace" value="yes" class="mt-0.5 rounded border-status-critical-border text-status-critical focus:ring-status-critical">
+                <span class="text-xs leading-5"><strong class="block text-sm">Confirm full replacement</strong>Required only when <strong>Replace all data</strong> is selected. Omitted keys will be deleted.</span>
             </label>
         {% endif %}
-        {% if impacts %}
-            <div class="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
-                <h3 class="font-semibold">Used by workloads</h3>
-                <div class="mt-3 flex flex-wrap gap-2">
-                    {% for item in impacts %}<span class="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">{{ item.kind }} / {{ item.name }}</span>{% endfor %}
+
+        <div class="rounded-lg border border-outline-default bg-surface-card p-4">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                    <h3 class="text-sm font-semibold text-content-primary">Known workload consumers</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Inventory-backed context for operational impact review.</p>
                 </div>
-                <p class="mt-3 text-xs text-slate-500 dark:text-slate-400">Environment variables require Pod recreation. Mounted files may update eventually, but applications may not reload automatically.</p>
+                {{ table_label.metadata_label(impacts|length ~ ' references', 'network') }}
             </div>
-        {% endif %}
+            {% if impacts %}
+                <div class="mt-4 flex flex-wrap gap-2">
+                    {% for item in impacts %}{{ table_label.metadata_label(item.kind ~ ' / ' ~ item.name, 'box') }}{% endfor %}
+                </div>
+                <p class="mt-4 text-xs leading-5 text-content-muted">Environment variable consumers require Pod recreation. Mounted files may update later, but applications may not reload automatically.</p>
+            {% else %}
+                <div class="mt-4 rounded-lg border border-dashed border-outline-strong bg-surface-hover px-4 py-3 text-xs leading-5 text-content-muted">No workload reference is present in the latest inventory snapshot. External consumers may still exist.</div>
+            {% endif %}
+        </div>
     </div>
 {% else %}
-    <div class="rounded-xl border {{ 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100' if target_error else 'border-dashed border-slate-300 text-slate-500 dark:border-slate-600 dark:text-slate-400' }} p-8 text-center text-sm">
-        {{ target_error or 'Select a ConfigMap to load its live values and impact context.' }}
-    </div>
+    {% if target_error %}{{ configmap_ui.empty_state('triangle-alert', 'Live ConfigMap could not be loaded', target_error, 'warning') }}{% else %}{{ configmap_ui.empty_state('file-search', 'Select a ConfigMap', 'Live values and impact context will appear here.') }}{% endif %}
 {% endif %}

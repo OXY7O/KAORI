@@ -527,3 +527,18 @@ The Configuration Inventory page follows the same Inventory Overview baseline wh
 - Do not show payload values or Secret values. Inventory may show object identity, immutable state, key names, and current Pod references only.
 - Expandable details use three proportional cards: Object identity, Key metadata, and Used by Pods. Each populated card ends with one concise bottom tip; empty collections use the shared dashed violet state.
 - Configuration Inventory remains read-only snapshot context. ConfigMap create, update, and delete workflows remain in Kubernetes Operations, and Secret reveal remains protected by its separate governance controls.
+
+## Kubernetes ConfigMap operations reference
+
+ConfigMap Management follows the KAORI authenticated operations standard while preserving the live Kubernetes API boundary.
+
+- The landing, create, update, and delete heroes use a solid `kaori-primary` surface with `page_hero.intro()`, aligned title/description, rectangular metadata labels, 16 px outer radius, and a right-side boundary panel. Do not use gradients.
+- The landing page uses three neutral workflow cards. Create and Update use violet brand actions; Delete uses Critical only for destructive controls. Permission availability is a compact semantic state.
+- Create places Target location and Create guardrails side by side with equal height. Update and Delete use the same mirrored structure for Select ConfigMap and their guardrails.
+- Main operational sections use 12 px outer card radius, 8 px icon surfaces, neutral surfaces, shared outlines, and violet non-status iconography.
+- Form controls use sentence case, 44 px height, 8 px radius, `text-sm`, shared surface/outline tokens, and violet focus rings.
+- Live target, key count, and impact context are contextual metrics, not health statuses. Use neutral metric cards. Immutable objects use Warning; destructive consequences and exact-name confirmation use Critical.
+- ConfigMap selectors and current values remain live Kubernetes data. Inventory is used only for best-effort consumer context and management counters.
+- Entry rows use neutral containers and monospace value fields because users are editing configuration payloads. Add is a violet secondary action; remove is Critical.
+- Workflow side panels use a solid dark-violet surface with compact numbered steps. Final action strips keep validation secondary and mutation primary.
+- Workload references, diff counts, object types, and other descriptive values use compact rectangular metadata labels rather than pills.

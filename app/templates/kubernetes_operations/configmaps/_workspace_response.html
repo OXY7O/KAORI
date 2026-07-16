@@ -1,22 +1,11 @@
+{% import "kubernetes_operations/configmaps/_components.html" as configmap_ui %}
 {% include 'kubernetes_operations/configmaps/_workspace.html' %}
 {% if workspace_mode == 'delete' %}
     <div id="configmap-delete-target" hx-swap-oob="innerHTML">
-        <div class="rounded-xl border border-dashed border-slate-300 px-6 py-10 text-center dark:border-slate-600">
-            <div class="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-400 dark:bg-slate-700">
-                <i data-lucide="file-warning" class="h-5 w-5"></i>
-            </div>
-            <p class="mt-3 text-sm font-medium text-slate-700 dark:text-slate-200">Select a live ConfigMap to review deletion impact</p>
-            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">The previous target was cleared because the cluster or namespace selection changed.</p>
-        </div>
+        {{ configmap_ui.empty_state('file-warning', 'Select a live ConfigMap to review deletion impact', 'The previous target was cleared because the cluster or namespace changed.') }}
     </div>
 {% else %}
     <div id="configmap-editor" hx-swap-oob="innerHTML">
-        <div class="rounded-xl border border-dashed border-slate-300 px-6 py-10 text-center dark:border-slate-600">
-            <div class="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-400 dark:bg-slate-700">
-                <i data-lucide="file-search" class="h-5 w-5"></i>
-            </div>
-            <p class="mt-3 text-sm font-medium text-slate-700 dark:text-slate-200">Select a live ConfigMap to begin</p>
-            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">The previous editor was cleared because the cluster or namespace selection changed.</p>
-        </div>
+        {{ configmap_ui.empty_state('file-search', 'Select a live ConfigMap to begin', 'The previous editor was cleared because the cluster or namespace changed.') }}
     </div>
 {% endif %}
