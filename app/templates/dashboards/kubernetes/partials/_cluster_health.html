@@ -1,3 +1,4 @@
+{% import "components/table_label.html" as table_label %}
 <section id="dashboard-cluster-health-section" class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
     <div class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div class="flex min-w-0 items-center gap-3">
@@ -48,14 +49,9 @@
                             </td>
                             <td class="px-4 py-3.5 align-top">
                                 <div class="space-y-1.5">
-                                    <span class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold
-                                                {% if row.status == 'Healthy' %}border-status-normal-border bg-status-normal-soft text-status-normal-text
-                                                {% elif row.status == 'Warning' %}border-status-warning-border bg-status-warning-soft text-status-warning-text
-                                                {% elif row.status == 'Critical' %}border-status-critical-border bg-status-critical-soft text-status-critical-text
-                                                {% else %}border-status-unknown-border bg-status-unknown-soft text-status-unknown-text{% endif %}">
-                                        <i data-lucide="{% if row.status == 'Healthy' %}circle-check{% elif row.status == 'Warning' %}triangle-alert{% elif row.status == 'Critical' %}octagon-alert{% else %}circle-help{% endif %}" class="h-3 w-3"></i>
-                                        {{ row.status }}
-                                    </span>
+                                    {% set overall_tone = 'normal' if row.status == 'Healthy' else 'warning' if row.status == 'Warning' else 'critical' if row.status == 'Critical' else 'unknown' %}
+                                    {% set overall_icon = 'circle-check' if row.status == 'Healthy' else 'triangle-alert' if row.status == 'Warning' else 'octagon-alert' if row.status == 'Critical' else 'circle-help' %}
+                                    {{ table_label.status_label(row.status, overall_tone, overall_icon) }}
                                     <p class="max-w-[190px] text-[11px] leading-4 text-content-muted" title="{{ row.status_reason }}">{{ row.status_reason }}</p>
                                 </div>
                             </td>
