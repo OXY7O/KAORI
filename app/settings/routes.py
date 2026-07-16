@@ -627,15 +627,3 @@ def reports():
 @permission_required('system.view')
 def system_info():
     return render_template('settings/system_info/index.html')
-
-
-@bp.get('/prometheus')
-@permission_required('settings.manage_integrations')
-def prometheus_integration_redirect():
-    return redirect(url_for('integrations.prometheus'), code=308)
-
-
-@bp.get('/alertmanager')
-@permission_required('settings.manage_integrations')
-def alertmanager_integration_redirect():
-    return redirect(url_for('integrations.alertmanager'), code=308)

@@ -59,7 +59,7 @@ Integration inventory and configuration are owned by the top-level `Integrations
 - `/integrations/prometheus/cluster/<cluster_id>` — Prometheus configuration and validation.
 - `/integrations/alertmanager/cluster/<cluster_id>` — Alertmanager configuration and validation.
 
-Legacy `/settings/prometheus`, `/settings/alertmanager`, `/prometheus/...`, and `/alertmanager/...` URLs redirect to canonical routes. Remove the redirect layer only after external bookmarks and activity records have aged out.
+Prometheus and Alertmanager configuration is owned exclusively by the Integrations domain. Settings does not expose aliases, placeholders, or redirect routes for these integrations. Legacy `/prometheus/...` and `/alertmanager/...` deep links remain temporary blueprint aliases and must not be referenced by new code.
 
 ## Safe presentation boundary
 
