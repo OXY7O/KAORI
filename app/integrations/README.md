@@ -35,3 +35,16 @@ Integration-specific configuration pages return to their canonical list pages (`
 The Integrations Overview is a domain landing page, not a duplicate target inventory. It contains the shared hero posture, category coverage, and integration catalog only. Per-target runtime version, compatibility, readiness, and configuration details remain on the dedicated Prometheus and Alertmanager pages. This prevents the overview from becoming a second operational table as additional integrations are introduced.
 
 The Overview hero follows the same structural pattern as Kubernetes Inventory: icon and context badge, title and description, posture pills, and a right-side posture card. New integration landing pages should reuse this hierarchy instead of introducing a separate hero style.
+
+## Prometheus Inventory presentation
+
+The Prometheus list follows the shared Inventory interaction pattern:
+
+- filters submit through HTMX without a separate Run button;
+- supported filters are readiness status, cluster environment, and matched compatibility profile;
+- pagination defaults to 5 rows and supports 5, 10, 25, and 50 rows;
+- filter and pagination responses render only the inventory content partial;
+- the full page owns the single table loading indicator;
+- endpoint presentation must continue to use `safe_endpoint()` and must never render credentials or URL query parameters.
+
+Filtering and pagination are presentation concerns in `app.integrations.service`. Prometheus connectivity, compatibility, PromQL validation, and credential handling remain owned by `app.prometheus`.

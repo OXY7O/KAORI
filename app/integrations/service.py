@@ -39,9 +39,33 @@ def build_integrations_overview() -> dict[str, Any]:
     }
 
 
-def build_prometheus_page() -> dict[str, Any]:
-    rows = [row for row in build_rows() if row['key'] == 'prometheus']
-    return {'rows': rows, 'stats': _stats(rows)}
+def build_prometheus_page(
+    *,
+    status: str = "",
+    environment: str = "",
+    profile: str = "",
+    page: int = 1,
+    per_page: int = 5,
+) -> dict[str, Any]:
+    all_rows = [row for row in build_rows() if row['key'] == 'prometheus']
+    rows = _filter_prometheus_rows(
+        all_rows,
+        status=status,
+        environment=environment,
+        profile=profile,
+    )
+    page_rows, pagination = _paginate(rows, page=page, per_page=per_page)
+    return {
+        'rows': page_rows,
+        'stats': _stats(all_rows),
+        'pagination': pagination,
+        'selected_status': status,
+        'selected_environment': environment,
+        'selected_profile': profile,
+        'status_options': _prometheus_status_options(all_rows),
+        'environment_options': sorted({row['environment'] for row in all_rows if row['environment']}),
+        'profile_options': sorted({row['profile'] for row in all_rows if row['profile']}),
+    }
 
 
 def build_alertmanager_page() -> dict[str, Any]:
@@ -101,6 +125,7 @@ def _row(key: str, name: str, cluster: Cluster, config: object | None) -> dict[s
         'name': name,
         'category': 'Observability',
         'cluster': cluster,
+        'environment': cluster.environment,
         'configured': configured,
         'endpoint': safe_endpoint(getattr(config, 'endpoint', None) if config else None),
         'version': getattr(config, 'detected_version', None) if config else None,
@@ -113,4 +138,57 @@ def _row(key: str, name: str, cluster: Cluster, config: object | None) -> dict[s
         'query_profile': getattr(config, 'query_profile', None) if key == 'prometheus' and config else None,
         'query_status': getattr(config, 'query_validation_status', None) if key == 'prometheus' and config else None,
         'retention': getattr(config, 'retention_validation_summary', None) if key == 'prometheus' and config else None,
+    }
+
+
+def _filter_prometheus_rows(
+    rows: list[dict[str, Any]],
+    *,
+    status: str,
+    environment: str,
+    profile: str,
+) -> list[dict[str, Any]]:
+    filtered = rows
+    if status:
+        filtered = [row for row in filtered if row['readiness'] == status]
+    if environment:
+        filtered = [row for row in filtered if row['environment'] == environment]
+    if profile:
+        filtered = [row for row in filtered if row['profile'] == profile]
+    return filtered
+
+
+def _prometheus_status_options(rows: list[dict[str, Any]]) -> list[str]:
+    order = ['ready', 'degraded', 'blocked', 'validation_required', 'not_configured']
+    values = {row['readiness'] for row in rows if row['readiness']}
+    return [value for value in order if value in values] + sorted(values - set(order))
+
+
+def _paginate(
+    rows: list[dict[str, Any]],
+    *,
+    page: int,
+    per_page: int,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    allowed_per_page = [5, 10, 25, 50]
+    if per_page not in allowed_per_page:
+        per_page = allowed_per_page[0]
+    page = max(page, 1)
+    total_items = len(rows)
+    total_pages = max((total_items + per_page - 1) // per_page, 1)
+    page = min(page, total_pages)
+    start_index = (page - 1) * per_page
+    end_index = start_index + per_page
+    return rows[start_index:end_index], {
+        'page': page,
+        'per_page': per_page,
+        'total_items': total_items,
+        'total_pages': total_pages,
+        'start_item': start_index + 1 if total_items else 0,
+        'end_item': min(end_index, total_items),
+        'has_prev': page > 1,
+        'has_next': page < total_pages,
+        'prev_page': page - 1,
+        'next_page': page + 1,
+        'allowed_per_page': allowed_per_page,
     }

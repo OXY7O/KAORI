@@ -2,7 +2,10 @@
 {% block title %}Prometheus Integrations · KAORI{% endblock %}
 {% block dashboard_content %}
 <div class="space-y-6">
-{% set badge='Observability integration' %}{% set title='Prometheus Integrations' %}{% set description='Validate Prometheus runtime versions, HTTP API capability, versioned PromQL profiles, metric schemas, and query readiness for each Kubernetes cluster.' %}{% include 'integrations/partials/_hero.html' %}
-{% set table_title='Prometheus Inventory' %}{% set table_description='Each Kubernetes cluster keeps its own Prometheus binding; future server assets may use shared centralized instances.' %}{% include 'integrations/partials/_table.html' %}
+  {% set badge='Observability integration' %}
+  {% set title='Prometheus Integrations' %}
+  {% set description='Validate Prometheus runtime compatibility, versioned PromQL profiles, metric schemas, and query readiness across connected Kubernetes environments.' %}
+  {% include 'integrations/partials/_hero.html' %}
+  {% include 'integrations/prometheus/partials/_inventory_card.html' %}
 </div>
 {% endblock %}
