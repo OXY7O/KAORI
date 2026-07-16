@@ -36,7 +36,7 @@
                 {% endcall %}
             {% endcall %}
 
-            {% call detail_card('Binding & lifecycle', 'link-2', item.binding_reference, 'min-h-[34rem]') %}
+            {% call detail_card('Binding & lifecycle', 'link-2', item.reclaim_policy, 'min-h-[34rem]') %}
                 {{ detail_row('Binding', item.binding_reference) }}{{ detail_row('Reclaim policy', item.reclaim_policy) }}{{ detail_row('Binding mode', item.binding_mode) }}{{ detail_row('Expansion', 'Allowed' if item.allow_expansion else 'Not enabled') }}{{ detail_row('Default class', 'Yes' if item.is_default else 'No') }}{{ detail_row('Node affinity', 'Configured' if item.node_affinity_configured else 'Not configured') }}{{ detail_row('Finalizers', item.finalizers|length) }}
                 {% call detail_object.stack() %}
                     {% if item.conditions %}{% call detail_object.card('Reported conditions', item.conditions|length ~ ' conditions', 'activity') %}{% for condition in item.conditions %}<div class="flex items-center justify-between gap-3 text-xs leading-5"><span class="truncate text-content-muted">{{ condition.type }}</span>{{ table_label.status_label(condition.status, 'normal' if condition.status in ['True','Bound','Available'] else 'warning' if condition.status in ['False','Pending'] else 'unknown') }}</div>{% endfor %}{% endcall %}{% else %}{{ detail_object.empty('No conditions reported', 'The current snapshot does not contain storage condition records.', 'activity') }}{% endif %}
