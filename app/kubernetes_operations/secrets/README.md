@@ -89,9 +89,9 @@ The Create Kubernetes Secret page follows these maintenance rules:
 - cluster options display only the registered cluster name; environment labels are not part of target selection;
 - namespace is a controlled dropdown loaded from the latest `NamespaceInventory` snapshot for the selected cluster through `kubernetes_operations.secret_namespace_options`;
 - server-side validation rechecks that the submitted namespace belongs to the selected cluster snapshot, so manually altered requests cannot target an unrelated namespace;
-- Secret type cards use stable type-specific tones: blue for Opaque, violet for Basic Auth, emerald for TLS, cyan for Registry, and amber for SSH;
-- the Secret content section inherits the selected type tone while retaining type-specific fields and validation;
-- page-specific Secret type styling is isolated through the `page_styles` layout block rather than being mixed into global dashboard CSS;
+- Secret type cards use the shared KAORI violet interaction state; type identity is communicated by icon, label, and type-specific fields rather than decorative color variants;
+- the Secret content section uses shared surface and outline tokens while retaining type-specific fields and validation;
+- page-specific `<style>` blocks and custom color variables are prohibited; use Tailwind utilities and shared design tokens;
 - Validate and Create use HTMX multipart submissions so passwords, key-value entries, and selected files remain in the browser while the result area and operational toast are updated;
 - every Validate/Create attempt reaches server-side validation and every success or failure creates a toast, operational activity entry, and notification using only safe metadata;
 - plaintext values, passwords, tokens, certificate private keys, SSH private keys, Docker auth payloads, and upload contents must never be copied into activity metadata or notification text.
@@ -418,3 +418,14 @@ replaces itself in place. Keep these two polling boundaries independent.
 ## Active-request deduplication
 
 Protected Reveal permits only one active request for the same requester, cluster, namespace, Secret, and key. `pending` and `approved` are active states; `revealed`, `denied`, and `expired` are terminal and permit a new request. Different keys and different requesters remain independent. PostgreSQL advisory transaction locking serializes near-simultaneous submissions so duplicate rows and duplicate approver notifications are not created. A blocked duplicate produces a warning toast and `kubernetes_secret_reveal_duplicate_request_blocked` activity event, then links the requester to the existing request.
+
+## Secret Management design standard
+
+- Secret Management, Create, Replace, Protected Reveal, single TLS rotation, and bulk TLS rotation use the Inventory Overview hero geometry: `p-5 lg:p-6`, a 7/5 split, `gap-5`, and a right panel with `min-h-[13rem]`.
+- The right hero panel contains one compact semantic status, two equal context cards, and one footer action. Landing uses `Manage Clusters`; child workflows return to `Secret Management` or the relevant Governance posture page.
+- Heroes use solid `kaori-primary`; gradients, radial decorations, and page-local CSS are prohibited.
+- Main workflow sections use 12 px card radius, 8 px icon surfaces, shared surface/outline tokens, and violet non-status iconography.
+- Form controls use sentence case, 44 px height where applicable, 8 px radius, `text-sm`, shared surface/outline tokens, and violet focus rings. Payload textareas may use the elevated neutral surface and monospace typography.
+- Permission, readiness, approval, validation, reveal, expiry, and destructive states use semantic status colors. Secret type, cluster, namespace, key count, and other descriptive values use rectangular violet metadata labels.
+- Create and Replace keep validation secondary and mutation primary. Reveal keeps step-up and approval controls separate from target selection. TLS rotation keeps certificate upload, target selection, preview, and final update as distinct steps.
+- Secret values, passwords, tokens, certificate private keys, SSH private keys, and registry payloads must never appear in hero context, notifications, audit metadata, or operation summaries.

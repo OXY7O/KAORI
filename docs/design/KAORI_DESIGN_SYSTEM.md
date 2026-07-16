@@ -549,3 +549,16 @@ ConfigMap Management follows the KAORI authenticated operations standard while p
 - ConfigMap Management, Create, View & Update, and Delete use the Inventory Overview hero geometry as the size baseline: `p-5 lg:p-6`, a 7/5 split, `gap-5`, and a right context panel with `min-h-[13rem]`.
 - The right panel uses one compact semantic status, two equal metric/context cards, and one footer action. Do not stack three context cards or free-form paragraphs that make the hero taller than Inventory Overview.
 - The landing footer action is `Manage Clusters`; child workflows use `ConfigMap Management` as the back action.
+
+## Kubernetes Secret operations reference
+
+Secret Management follows the same authenticated operations geometry as ConfigMap Management while preserving stronger Secret-specific security boundaries.
+
+- Landing, Create, Replace, Protected Reveal, single TLS rotation, and bulk TLS rotation use the Inventory Overview hero baseline: `p-5 lg:p-6`, a 7/5 split, `gap-5`, 16 px hero radius, and a right context panel with `min-h-[13rem]`.
+- Right hero panels use one compact semantic status, two equal context cards, and one footer action. Do not use free-form paragraphs that make one Secret workflow hero taller than another.
+- Use a solid `kaori-primary` hero and a solid dark-violet workflow panel. Gradients and radial decorations are prohibited.
+- Secret workflow cards and forms use 12 px radius, 8 px icon surfaces, neutral cards, shared outlines, and violet non-status iconography.
+- Form controls use 44 px height where applicable, 8 px radius, sentence-case labels, `text-sm`, and violet focus rings. Sensitive payload editors may use the elevated neutral surface with monospace text.
+- Descriptive Secret types and object metadata use rectangular violet labels. Permission, readiness, approval, expiry, reveal, warning, and destructive states use compact semantic labels.
+- Create never overwrites. Replace never reads existing values and patches only entered keys. Protected Reveal preserves step-up, namespace policy, approval, rate-limit, and one-time access boundaries. TLS workflows validate the certificate/private-key pair before mutation.
+- Secret payloads are never persisted or included in notifications, audit metadata, hero summaries, result cards, or background task arguments.
