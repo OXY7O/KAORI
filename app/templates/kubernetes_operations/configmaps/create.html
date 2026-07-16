@@ -52,7 +52,7 @@
                                 {% for cluster in clusters %}<option value="{{ cluster.id }}">{{ cluster.name }}</option>{% endfor %}
                             </select>
                         </label>
-                        <div id="configmap-namespace-field">{% include 'kubernetes_operations/configmaps/_namespace_options.html' %}</div>
+                        {% include 'kubernetes_operations/configmaps/_namespace_options.html' %}
                         <label class="block min-w-0">
                             <span class="text-sm font-semibold text-content-primary">ConfigMap name</span>
                             <input name="configmap_name" required placeholder="application-config" class="mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">

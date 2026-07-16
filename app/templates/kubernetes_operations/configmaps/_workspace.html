@@ -1,5 +1,5 @@
-{% import "components/table_label.html" as table_label %}
 {% import "components/live_lookup_notice.html" as live_lookup %}
+{% import "components/table_label.html" as table_label %}
 <input type="hidden" name="workspace_mode" value="{{ workspace_mode|default('update') }}">
 <div class="grid gap-4 md:grid-cols-3">
     <label class="block min-w-0" for="configmap-cluster">
@@ -35,7 +35,7 @@
             <span class="mt-2 block text-xs leading-5 text-content-muted">No ConfigMap currently exists in this live namespace.</span>
         {% endif %}
     </label>
+    {% if selection_error %}
+        <div class="md:col-span-3">{{ live_lookup.notice('Live ConfigMap lookup failed', selection_error) }}</div>
+    {% endif %}
 </div>
-{% if selection_error %}
-    {{ live_lookup.warning('Live ConfigMap lookup failed', selection_error) }}
-{% endif %}
