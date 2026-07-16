@@ -49,6 +49,39 @@ def build_alertmanager_page() -> dict[str, Any]:
     return {'rows': rows, 'stats': _stats(rows)}
 
 
+
+def _coverage(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    observability = [row for row in rows if row['category'] == 'Observability']
+    return [
+        {'key': 'observability', 'label': 'Observability', 'icon': 'activity',
+         'configured': sum(1 for row in observability if row['configured']),
+         'ready': sum(1 for row in observability if row['readiness'] == 'ready'),
+         'total': len(observability)},
+        {'key': 'storage', 'label': 'Storage', 'icon': 'database', 'configured': 0, 'ready': 0, 'total': 0},
+        {'key': 'security', 'label': 'Security', 'icon': 'shield-check', 'configured': 0, 'ready': 0, 'total': 0},
+    ]
+
+
+def _catalog(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    configured_by_key = {
+        key: sum(1 for row in rows if row['key'] == key and row['configured'])
+        for key in ('prometheus', 'alertmanager')
+    }
+    return [
+        {'key': 'prometheus', 'name': 'Prometheus', 'category': 'Observability', 'icon': 'activity',
+         'availability': 'available', 'configured': configured_by_key['prometheus'],
+         'description': 'Metrics collection and versioned PromQL validation for connected infrastructure assets.'},
+        {'key': 'alertmanager', 'name': 'Alertmanager', 'category': 'Observability', 'icon': 'siren',
+         'availability': 'available', 'configured': configured_by_key['alertmanager'],
+         'description': 'Alert retrieval, silence capability, routing posture, and API compatibility validation.'},
+        {'key': 's3', 'name': 'S3-compatible Storage', 'category': 'Storage', 'icon': 'database',
+         'availability': 'planned', 'configured': 0,
+         'description': 'Reusable object storage for reports, archives, and long-term operational evidence.'},
+        {'key': 'vault', 'name': 'Vault', 'category': 'Security', 'icon': 'key-round',
+         'availability': 'planned', 'configured': 0,
+         'description': 'External secret and credential management with controlled access and auditability.'},
+    ]
+
 def _stats(rows: list[dict[str, Any]]) -> dict[str, int]:
     return {
         'total': len(rows),

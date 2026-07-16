@@ -23,3 +23,9 @@ Kubernetes Cluster Management displays only a compact integration summary and li
 - Keep safe presentation aggregation in `service.py`.
 - Keep route handlers thin in `routes.py`.
 - Never render credentials, bearer tokens, URL query strings, or raw validation payloads.
+
+## Overview presentation builders
+
+`service.py` owns the safe, read-only presentation context used by the Integrations landing page. The `_coverage()` and `_catalog()` helpers aggregate sanitized integration rows only; driver validation and persistence remain in the integration-specific domains. Planned catalog entries must not expose actions until their driver, model, permission, route, and compatibility contract exist.
+
+Integration-specific configuration pages return to their canonical list pages (`integrations.prometheus` or `integrations.alertmanager`), not to Kubernetes Cluster Management.
