@@ -12,7 +12,6 @@ from app.cluster.individual_sync_state import (
 )
 from app.cluster.onboarding import has_registered_clusters
 from app.cluster.service import build_cluster_context
-from app.inventory.topology import build_topology_graph, build_topology_page_context
 from app.inventory.service import (
     get_cluster_by_id,
     get_configuration_detail,
@@ -48,6 +47,7 @@ from app.inventory.service import (
     get_workload_filter_types,
     get_workload_inventory,
 )
+from app.inventory.topology import build_topology_graph, build_topology_page_context
 from app.notifications.service import (
     get_navigation_notification_context,
     queue_quick_action_feedback,
@@ -144,7 +144,13 @@ def sync(cluster_id: str):
     if request.headers.get('HX-Request') == 'true':
         return render_template(
             'components/navigation/_individual_sync_status.html',
-            sync={**metadata, 'task_id': task_id, 'celery_state': 'PENDING', 'state_label': 'pending', 'elapsed_seconds': 0},
+            sync={
+                **metadata,
+                'task_id': task_id,
+                'celery_state': 'PENDING',
+                'state_label': 'pending',
+                'elapsed_seconds': 0,
+            },
         ), 202
 
     return redirect(request.referrer or url_for('cluster.list_clusters'))
@@ -1178,6 +1184,7 @@ def storage_details(storage_id: int):
         'inventory/storage/partials/_storage_detail_content.html',
         item=storage_item,
     )
+
 
 def _build_cluster_context_from_request() -> dict:
     return build_cluster_context(

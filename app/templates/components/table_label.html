@@ -10,3 +10,10 @@
         {{ text }}
     </span>
 {%- endmacro %}
+
+{% macro metadata_label(text, icon=None) -%}
+    <span class="inline-flex min-h-6 items-center gap-1 rounded-md border border-outline-default bg-kaori-soft px-2 py-0.5 text-[10px] font-semibold leading-4 text-kaori-primary">
+        {% if icon %}<i data-lucide="{{ icon }}" class="h-3 w-3 shrink-0" aria-hidden="true"></i>{% endif %}
+        <span>{{ text }}</span>
+    </span>
+{%- endmacro %}

@@ -1,4 +1,5 @@
 {% import "components/table_label.html" as table_label %}
+{% import "components/live_lookup_notice.html" as live_lookup %}
 {% import "kubernetes_operations/configmaps/_components.html" as configmap_ui %}
 {% if target %}
     <div class="space-y-5">
@@ -61,5 +62,5 @@
         </div>
     </div>
 {% else %}
-    {% if target_error %}{{ configmap_ui.empty_state('triangle-alert', 'Live ConfigMap could not be loaded', target_error, 'warning') }}{% else %}{{ configmap_ui.empty_state('file-search', 'Select a ConfigMap', 'Live values and impact context will appear here.') }}{% endif %}
+    {% if target_error %}{{ live_lookup.warning('Live ConfigMap lookup failed', target_error, '') }}{% else %}{{ configmap_ui.empty_state('file-search', 'Select a ConfigMap', 'Live values and impact context will appear here.') }}{% endif %}
 {% endif %}

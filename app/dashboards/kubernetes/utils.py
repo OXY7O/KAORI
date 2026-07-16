@@ -16,11 +16,13 @@ def get_attr(obj: Any, *names: str, default: Any = None) -> Any:
                 return value
     return default
 
+
 def normalize_selected_cluster(selected_cluster_id: str | None, clusters: list[DashboardClusterOption]) -> str | None:
     if not selected_cluster_id:
         return None
     valid_ids = {cluster.id for cluster in clusters}
     return selected_cluster_id if selected_cluster_id in valid_ids else None
+
 
 def get_live_cluster(*, clusters_raw: list[Any], selected_cluster_id: str | None) -> Any | None:
     if not selected_cluster_id:
@@ -32,16 +34,20 @@ def get_live_cluster(*, clusters_raw: list[Any], selected_cluster_id: str | None
 
     return None
 
+
 def normalize_status(value: Any) -> str:
     return str(value or '').strip().lower()
+
 
 def is_ready_node(node: Any) -> bool:
     status = normalize_status(get_attr(node, 'status', 'condition', 'ready', default=''))
     return status in {'ready', 'true', 'active', 'healthy'}
 
+
 def is_unhealthy_pod(pod: Any) -> bool:
     status = normalize_status(get_attr(pod, 'status', 'phase', default=''))
     return status in {'pending', 'failed', 'unknown', 'crashloopbackoff', 'imagepullbackoff', 'error'}
+
 
 def recommendation_icon(card: dict[str, Any]) -> str:
     return {
@@ -54,14 +60,17 @@ def recommendation_icon(card: dict[str, Any]) -> str:
         'cluster': 'gauge',
     }.get(str(card.get('source_kind') or ''), 'sparkles')
 
+
 def recommendation_href(card: dict[str, Any]) -> str:
     rule_key = str(card.get('rule_key') or '').strip()
     if not rule_key:
         return '/intelligence/recommendations'
     return f'/intelligence/recommendations?q={quote(rule_key, safe="")}'
 
+
 def plural_suffix(value: int) -> str:
     return '' if value == 1 else 's'
+
 
 def count_cluster_status(clusters_raw: list[Any], expected: str) -> int:
     count = 0
@@ -73,27 +82,32 @@ def count_cluster_status(clusters_raw: list[Any], expected: str) -> int:
             count += 1
     return count
 
+
 def capacity_percent(snapshot: CapacitySnapshot, label: str) -> float | None:
     for item in snapshot.items:
         if item.label.lower() == label.lower():
             return item.used_percent
     return None
 
+
 def percent_label(value: float | None) -> str:
     if value is None:
         return '—'
     return f'{value:.0f}%'
+
 
 def headroom(value: float | None) -> float | None:
     if value is None:
         return None
     return max(0.0, round(100.0 - value, 2))
 
+
 def safe_float(value: Any) -> float:
     try:
         return float(value or 0)
     except (TypeError, ValueError):
         return 0.0
+
 
 def safe_optional_float(value: Any) -> float | None:
     try:
@@ -103,6 +117,7 @@ def safe_optional_float(value: Any) -> float | None:
     except (TypeError, ValueError):
         return None
 
+
 def safe_optional_int(value: Any) -> int | None:
     try:
         if value is None:
@@ -110,6 +125,7 @@ def safe_optional_int(value: Any) -> int | None:
         return int(float(value))
     except (TypeError, ValueError):
         return None
+
 
 def risk_from_percent(value: float) -> str:
     if value >= 90:
@@ -120,11 +136,13 @@ def risk_from_percent(value: float) -> str:
         return 'Medium'
     return 'Low'
 
+
 def capacity_insight(risk: str, items: list[CapacityItem]) -> str:
     highest = max(items, key=lambda item: safe_float(item.used_percent), default=None)
     if highest is None or highest.used_percent is None:
         return 'Capacity metrics are not available yet.'
     return f'{highest.label} is the highest utilization signal at {highest.used_percent:.0f}%. Overall risk: {risk}.'
+
 
 def forecast_insight(payload: dict[str, Any]) -> str:
     summary = payload.get('summary')
@@ -137,10 +155,12 @@ def forecast_insight(payload: dict[str, Any]) -> str:
     except (TypeError, ValueError):
         return 'Forecast snapshot loaded from analytics forecast service.'
 
+
 def kpi_metric_description(live_cluster: Any | None, fallback: str) -> str:
     if live_cluster is None:
         return 'Select a cluster for live metric'
     return fallback
+
 
 def format_gib(value: Any) -> str:
     number = safe_float(value)
@@ -148,6 +168,7 @@ def format_gib(value: Any) -> str:
     if gib >= 1024:
         return f'{gib / 1024:.2f} TiB'
     return f'{gib:.2f} GiB'
+
 
 def latest_timestamp(items: Iterable[Any]) -> datetime | None:
     latest: datetime | None = None
@@ -158,6 +179,7 @@ def latest_timestamp(items: Iterable[Any]) -> datetime | None:
         if latest is None or value > latest:
             latest = value
     return latest
+
 
 def coerce_datetime(value: Any) -> datetime | None:
     if value is None:
@@ -175,6 +197,7 @@ def coerce_datetime(value: Any) -> datetime | None:
         except ValueError:
             return None
     return None
+
 
 def human_time(value: datetime | None) -> str:
     if value is None:

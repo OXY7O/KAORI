@@ -18,8 +18,8 @@ from app.dashboards.kubernetes.routes import kubernetes_dashboard_bp
 from app.extensions import db, init_celery, limiter, login_manager, migrate, register_rate_limit_handlers
 from app.governance.routes import governance_bp
 from app.health import health_bp
-from app.intelligence.routes import intelligence_bp
 from app.integrations.routes import integrations_bp
+from app.intelligence.routes import intelligence_bp
 from app.inventory.routes import inventory_bp
 from app.kubernetes_operations.routes import kubernetes_operations_bp
 from app.notifications.routes import notifications_bp

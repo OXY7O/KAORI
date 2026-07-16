@@ -37,6 +37,7 @@ def build_hero_integration_meta(
         'alertmanager_status_tone': 'green' if alertmanager_available else 'slate',
     }
 
+
 def build_data_freshness(
     *,
     latest_inventory_sync: datetime | None,

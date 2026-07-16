@@ -63,6 +63,7 @@ def build_forecast_snapshot(*, live_cluster: Any | None) -> ForecastSnapshot:
         source_status='Available' if has_data else 'Unavailable',
     )
 
+
 def default_forecast_items(risk: str, projection: str) -> list[ForecastItem]:
     return [
         ForecastItem(label='CPU Growth', risk=risk, projection=projection, icon='cpu'),

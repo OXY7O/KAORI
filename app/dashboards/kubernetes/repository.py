@@ -38,6 +38,7 @@ def load_models() -> dict[str, Any]:
                 continue
     return loaded
 
+
 def query_all(model: Any, cluster_id: str | None = None, limit: int | None = None) -> list[Any]:
     if model is None:
         return []
@@ -61,6 +62,7 @@ def query_all(model: Any, cluster_id: str | None = None, limit: int | None = Non
     except Exception:
         return []
 
+
 def count_records(model: Any, cluster_id: str | None = None) -> int:
     if model is None:
         return 0
@@ -71,6 +73,7 @@ def count_records(model: Any, cluster_id: str | None = None) -> int:
         return int(query.count())
     except Exception:
         return 0
+
 
 def _first_model_column(model: Any, names: list[str]) -> Any | None:
     for name in names:

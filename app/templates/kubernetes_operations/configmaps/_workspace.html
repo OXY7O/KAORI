@@ -1,4 +1,5 @@
 {% import "components/table_label.html" as table_label %}
+{% import "components/live_lookup_notice.html" as live_lookup %}
 <input type="hidden" name="workspace_mode" value="{{ workspace_mode|default('update') }}">
 <div class="grid gap-4 md:grid-cols-3">
     <label class="block min-w-0" for="configmap-cluster">
@@ -36,11 +37,5 @@
     </label>
 </div>
 {% if selection_error %}
-    <div class="mt-4 flex items-start gap-3 rounded-lg border border-status-warning-border bg-status-warning-soft p-4 text-status-warning-text">
-        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-card/50"><i data-lucide="triangle-alert" class="h-4 w-4"></i></span>
-        <div>
-            <p class="text-xs font-semibold">Live ConfigMap lookup failed</p>
-            <p class="mt-1 text-xs leading-5">{{ selection_error }}</p>
-        </div>
-    </div>
+    {{ live_lookup.warning('Live ConfigMap lookup failed', selection_error) }}
 {% endif %}

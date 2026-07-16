@@ -12,9 +12,9 @@ from app.alertmanager.forms import AlertmanagerConfigForm
 from app.alertmanager.metrics import normalize_alertmanager_alerts
 from app.common.integration_errors import describe_integration_failure
 from app.extensions import db
+from app.integrations.compatibility import evaluate_compatibility
 from app.models.alertmanager import AlertmanagerConfig
 from app.models.cluster import Cluster
-from app.integrations.compatibility import evaluate_compatibility
 
 logger = logging.getLogger(__name__)
 

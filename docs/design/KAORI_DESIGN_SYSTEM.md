@@ -562,3 +562,11 @@ Secret Management follows the same authenticated operations geometry as ConfigMa
 - Descriptive Secret types and object metadata use rectangular violet labels. Permission, readiness, approval, expiry, reveal, warning, and destructive states use compact semantic labels.
 - Create never overwrites. Replace never reads existing values and patches only entered keys. Protected Reveal preserves step-up, namespace policy, approval, rate-limit, and one-time access boundaries. TLS workflows validate the certificate/private-key pair before mutation.
 - Secret payloads are never persisted or included in notifications, audit metadata, hero summaries, result cards, or background task arguments.
+
+### Live Kubernetes lookup notification
+
+- ConfigMap and Secret selectors use one shared warning notification for live Kubernetes lookup failures.
+- Use `components/live_lookup_notice.html`; do not render inline red error text or a separate page-specific alert style.
+- The standard uses an 8 px radius, Warning border and soft surface, a 28 px icon container, a 12 px semibold title, a 12 px body with 20 px line-height, and 16 px container padding.
+- The notification spans the selector workspace below Cluster, Namespace, and object controls when the workspace uses a multi-column grid.
+- Lookup connectivity, authentication, kubeconfig, RBAC, namespace-list, object-list, and object-read failures use this Warning treatment. Destructive operation failures remain governed by their operation-result component.

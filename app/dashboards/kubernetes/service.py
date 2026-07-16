@@ -115,9 +115,7 @@ def get_dashboard_overview(
     nodes_total = len(nodes)
     nodes_ready = sum(1 for node in nodes if is_ready_node(node))
     not_ready_nodes = max(nodes_total - nodes_ready, 0)
-    running_pods = sum(
-        1 for pod in pods if normalize_status(get_attr(pod, 'status', 'phase', default='')) == 'running'
-    )
+    running_pods = sum(1 for pod in pods if normalize_status(get_attr(pod, 'status', 'phase', default='')) == 'running')
     unhealthy_pods = sum(1 for pod in pods if is_unhealthy_pod(pod))
 
     active_alerts = alerts_snapshot.critical + alerts_snapshot.warning + alerts_snapshot.info
@@ -193,9 +191,7 @@ def get_dashboard_overview(
         live_cluster=live_cluster,
     )
     recommendations = (
-        build_recommendations(selected_cluster_id=selected_cluster_id)
-        if should_hydrate('recommended_actions')
-        else []
+        build_recommendations(selected_cluster_id=selected_cluster_id) if should_hydrate('recommended_actions') else []
     )
     hero_integration_meta = build_hero_integration_meta(
         live_cluster=live_cluster,

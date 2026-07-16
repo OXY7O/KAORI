@@ -65,6 +65,7 @@ def build_capacity_snapshot(*, live_cluster: Any | None, selected_cluster_id: st
         source_status='Available',
     )
 
+
 def _worker_capacity_item(
     *,
     label: str,
@@ -89,10 +90,13 @@ def _worker_capacity_item(
         description=description,
     )
 
+
 def empty_capacity_snapshot(*, insight: str) -> CapacitySnapshot:
     return CapacitySnapshot(
         items=[
-            CapacityItem(label='CPU', used_percent=None, headroom_percent=None, description='Worker metric unavailable'),
+            CapacityItem(
+                label='CPU', used_percent=None, headroom_percent=None, description='Worker metric unavailable'
+            ),
             CapacityItem(
                 label='Memory', used_percent=None, headroom_percent=None, description='Worker metric unavailable'
             ),
@@ -106,6 +110,7 @@ def empty_capacity_snapshot(*, insight: str) -> CapacitySnapshot:
         recommended_action='Verify the selected cluster Prometheus connection and kube-state-metrics node-role labels, then reload the snapshot.',
         source_status='Unavailable',
     )
+
 
 def _capacity_risk_guidance(
     risk: str,

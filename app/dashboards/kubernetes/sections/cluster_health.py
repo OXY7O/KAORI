@@ -27,6 +27,7 @@ def _normalize_page_number(value: str | int | None) -> int:
 
     return max(page, 1)
 
+
 def paginate_sequence(
     *,
     items: list[Any],
@@ -63,6 +64,7 @@ def paginate_sequence(
     )
 
     return visible_items, pagination
+
 
 def build_cluster_health(
     *,
@@ -160,6 +162,7 @@ def build_cluster_health(
 
     return rows
 
+
 def _get_cluster_live_signal_snapshot(cluster: Any) -> dict[str, float | int | None] | None:
     try:
         from app.analytics.utilization.service import UtilizationService
@@ -174,6 +177,7 @@ def _get_cluster_live_signal_snapshot(cluster: Any) -> dict[str, float | int | N
         }
     except Exception:
         return None
+
 
 def _get_cluster_alert_summary(cluster: Any) -> dict[str, int] | None:
     try:
@@ -194,6 +198,7 @@ def _get_cluster_alert_summary(cluster: Any) -> dict[str, int] | None:
         }
     except Exception:
         return None
+
 
 def _derive_cluster_status(
     cluster: Any,
@@ -234,6 +239,7 @@ def _derive_cluster_status(
     if raw_status in {'warning', 'degraded'}:
         return 'Warning'
     return 'Healthy'
+
 
 def _derive_cluster_status_reason(
     cluster: Any,

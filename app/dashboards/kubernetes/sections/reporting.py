@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from app.dashboards.kubernetes.repository import count_records, load_models, query_all
-from app.dashboards.kubernetes.schema import ReportItem, ReportingSnapshot
+from app.dashboards.kubernetes.schema import ReportingSnapshot, ReportItem
 from app.dashboards.kubernetes.utils import coerce_datetime, get_attr, human_time
 
 

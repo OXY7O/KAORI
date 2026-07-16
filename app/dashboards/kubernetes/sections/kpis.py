@@ -37,8 +37,8 @@ def build_kpis(
             label='Clusters',
             value=str(len(clusters)),
             description=(
-                f"{count_cluster_status(clusters_raw, 'healthy')} healthy • "
-                f"{count_cluster_status(clusters_raw, 'warning')} warning"
+                f'{count_cluster_status(clusters_raw, "healthy")} healthy • '
+                f'{count_cluster_status(clusters_raw, "warning")} warning'
             ),
             icon='network',
             tone='blue',

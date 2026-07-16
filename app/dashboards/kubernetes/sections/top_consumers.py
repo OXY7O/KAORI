@@ -16,6 +16,7 @@ def top_consumers_snapshot_with_message(
     snapshot.message = message
     return snapshot
 
+
 def build_top_consumers_snapshot(*, live_cluster: Any | None) -> TopConsumersSnapshot:
     if live_cluster is None:
         return top_consumers_snapshot_with_message('Select a specific cluster to load top consumer snapshots.')
@@ -53,9 +54,7 @@ def build_top_consumers_snapshot(*, live_cluster: Any | None) -> TopConsumersSna
     snapshot.memory = _consumer_items(memory_rows[:3])
     snapshot.source_status = 'Available' if rows else 'Unavailable'
     snapshot.message = (
-        'Top consumers loaded from Prometheus.'
-        if rows
-        else 'No top consumer rows returned by Prometheus.'
+        'Top consumers loaded from Prometheus.' if rows else 'No top consumer rows returned by Prometheus.'
     )
     snapshot.insight_title = str(insight['title'])
     snapshot.insight_description = str(insight['description'])
@@ -63,6 +62,7 @@ def build_top_consumers_snapshot(*, live_cluster: Any | None) -> TopConsumersSna
     snapshot.missing_request_limit_count = int(insight['missing_request_limit_count'])
     snapshot.high_usage_count = int(insight['high_usage_count'])
     return snapshot
+
 
 def _consumer_items(rows: list[dict[str, Any]]) -> list[ConsumerItem]:
     items: list[ConsumerItem] = []
@@ -96,6 +96,7 @@ def _consumer_items(rows: list[dict[str, Any]]) -> list[ConsumerItem]:
         )
     return items
 
+
 def _consumer_signal_state(*, row: dict[str, Any], percent: float | None, has_denominator: bool) -> str:
     if not has_denominator or percent is None:
         return 'unknown'
@@ -111,6 +112,7 @@ def _consumer_signal_state(*, row: dict[str, Any], percent: float | None, has_de
     if percent >= 75:
         return 'warning'
     return 'normal'
+
 
 def _consumer_signal_label(
     *,
@@ -132,6 +134,7 @@ def _consumer_signal_label(
     if signal_state == 'warning':
         return 'Warning usage'
     return 'Within range'
+
 
 def _build_top_consumers_insight(
     *,
@@ -175,9 +178,9 @@ def _build_top_consumers_insight(
 
     insight_items: list[str] = []
     if top_cpu:
-        insight_items.append(f"Highest CPU: {top_cpu.get('workload') or top_cpu.get('pod') or '-'}")
+        insight_items.append(f'Highest CPU: {top_cpu.get("workload") or top_cpu.get("pod") or "-"}')
     if top_memory:
-        insight_items.append(f"Highest Memory: {top_memory.get('workload') or top_memory.get('pod') or '-'}")
+        insight_items.append(f'Highest Memory: {top_memory.get("workload") or top_memory.get("pod") or "-"}')
     if dominant_namespace != '-':
         insight_items.append(f'Dominant namespace: {dominant_namespace}')
     if missing_request_limit:
