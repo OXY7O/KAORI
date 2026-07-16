@@ -189,3 +189,30 @@ Validate each redesign in:
 - loading, empty, error, disabled, and permission states where applicable
 - keyboard focus and visible focus rings
 - collapsed and expanded navigation when the page uses the application shell
+
+## Application shell reference
+
+The authenticated application shell uses a floating, rounded navigation model rather than a full-bleed rectangular sidebar.
+
+- Place the application shell on `surface-page` with a compact outer gutter.
+- Use a 250 px expanded sidebar and a 78 px collapsed sidebar at the standard desktop density.
+- The sidebar uses `surface-sidebar` as its foundation. Violet is reserved for the active item, focus state, brand icon, and restrained ambient highlights.
+- Use a 28 px outer radius for both the sidebar and main application frame.
+- Keep navigation groups visually separated by compact uppercase labels; do not add decorative dividers between every item.
+- Active navigation uses a filled violet state with white label and icon. Inactive items use muted on-brand content with a subtle translucent hover surface.
+- Nested navigation remains inside the sidebar and uses a low-contrast vertical guide, compact rows, and a violet accent for the selected child.
+- The collapse control belongs in the sidebar footer so the topbar remains focused on page context, search, operational actions, notifications, theme, and account controls.
+- The main application frame uses semantic surface and outline tokens in both light and dark mode. Avoid raw white, slate, blue, or violet utilities when a KAORI token exists.
+
+## Welcome workspace reference
+
+The Welcome page is the reference implementation for the authenticated landing experience.
+
+- Use the approved violet hero gradient: `kaori-primary-dark → kaori-primary → kaori-accent`.
+- The hero contains one primary welcome message and one role-aware access card. Do not add redundant status cards around it.
+- Use translucent on-brand surfaces for hero badges and access statistics.
+- Keep the access card darker than the main hero so it reads as a secondary operational summary.
+- Workspace groups use a two-part desktop composition: a violet group overview card and a neutral grid of actionable workspace cards.
+- Workspace cards remain neutral by default; violet appears on the icon, eyebrow, focus state, and hover action.
+- Search, result count, permission filtering, and empty-state behavior must remain functional after visual changes.
+- The Welcome page must use Tailwind utilities and shared tokens only. A page-specific `welcome.css` stylesheet is not part of the design contract.

@@ -28,38 +28,28 @@
 {% endif %}
 {% set current_page_label = nav_workspace %}
 {% set current_user_role = current_user.role|default('admin', true)|replace('_', ' ')|title %}
-<header class="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur-xl transition-colors duration-300 dark:border-slate-800 dark:bg-slate-900/90"
+<header class="sticky top-0 z-30 border-b border-outline-subtle bg-surface-card/90 backdrop-blur-xl transition-colors duration-300"
         x-data="{ quickOpen: false, notificationOpen: false, userOpen: false }">
     <div class="flex h-16 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-        <!-- Left: collapse + current page context -->
+        <!-- Left: current page context -->
         <div class="flex min-w-0 items-center gap-3">
-            <button @click="$dispatch('toggle-sidebar')"
-                    type="button"
-                    class="group inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-blue-500/30 dark:hover:bg-blue-500/10 dark:hover:text-blue-300"
-                    :title="sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'"
-                    aria-label="Toggle sidebar">
-                <i data-lucide="chevrons-left"
-                   class="sidebar-toggle-expanded-icon h-5 w-5"></i>
-                <i data-lucide="chevrons-right"
-                   class="sidebar-toggle-collapsed-icon h-5 w-5"></i>
-            </button>
-            <div class="inline-flex h-10 min-w-0 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 shadow-sm transition dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
+            <div class="inline-flex h-10 min-w-0 items-center gap-2 rounded-2xl border border-outline-default bg-surface-card px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-content-muted shadow-sm transition">
                 <span class="truncate">KAORI</span>
                 <i data-lucide="chevron-right"
-                   class="h-3.5 w-3.5 flex-shrink-0 text-slate-400"></i>
-                <span class="truncate text-blue-600 dark:text-blue-400">{{ current_page_label }}</span>
+                   class="h-3.5 w-3.5 flex-shrink-0 text-content-muted"></i>
+                <span class="truncate text-kaori-primary">{{ current_page_label }}</span>
             </div>
         </div>
         <!-- Center: future global search placeholder -->
         <div class="hidden min-w-0 flex-1 justify-center xl:flex">
             <button type="button"
-                    class="flex h-10 w-full max-w-md items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-3 text-left text-xs text-slate-400 transition hover:border-slate-300 hover:bg-white dark:border-slate-700 dark:bg-slate-950/70 dark:text-slate-500 dark:hover:border-slate-600 dark:hover:bg-slate-900"
+                    class="flex h-10 w-full max-w-md items-center justify-between rounded-2xl border border-outline-default bg-surface-page px-3 text-left text-xs text-content-disabled transition hover:border-kaori-primary/25 hover:bg-surface-card"
                     title="Global search placeholder for a future sprint">
                 <span class="flex items-center gap-2">
                     <i data-lucide="search" class="h-4 w-4"></i>
                     <span>Search Kubernetes clusters, namespaces, reports...</span>
                 </span>
-                <span class="rounded-lg border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-slate-400 dark:border-slate-700 dark:bg-slate-900">
+                <span class="rounded-lg border border-outline-default bg-surface-card px-1.5 py-0.5 text-[10px] font-semibold text-content-muted">
                     Soon
                 </span>
             </button>
@@ -70,18 +60,18 @@
             <div class="relative">
                 <button @click="quickOpen = !quickOpen; notificationOpen = false; userOpen = false"
                         type="button"
-                        class="hidden h-10 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-blue-500/30 dark:hover:bg-blue-500/10 dark:hover:text-blue-300 md:inline-flex"
+                        class="hidden h-10 items-center gap-2 rounded-2xl border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary shadow-sm transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary md:inline-flex"
                         aria-label="Open quick actions"
                         :aria-expanded="quickOpen.toString()">
-                    <span class="flex h-7 w-7 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+                    <span class="flex h-7 w-7 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
                         <i data-lucide="zap" class="h-3.5 w-3.5"></i>
                     </span>
                     <span>Quick Actions</span>
-                    <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400"></i>
+                    <i data-lucide="chevron-down" class="h-4 w-4 text-content-muted"></i>
                 </button>
                 <button @click="quickOpen = !quickOpen; notificationOpen = false; userOpen = false"
                         type="button"
-                        class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-blue-500/30 dark:hover:bg-blue-500/10 dark:hover:text-blue-300 md:hidden"
+                        class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-outline-default bg-surface-card text-content-secondary shadow-sm transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary md:hidden"
                         aria-label="Open quick actions"
                         :aria-expanded="quickOpen.toString()">
                     <i data-lucide="zap" class="h-5 w-5"></i>
@@ -90,16 +80,15 @@
                      x-show="quickOpen"
                      @click.outside="quickOpen = false"
                      x-transition.origin.top.right
-                     style="width:min(23rem, calc(100vw - 2rem))"
-                     class="absolute right-0 mt-3 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/15 dark:border-slate-700 dark:bg-slate-900 dark:shadow-slate-950/50">
-                    <div class="border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+                     class="absolute right-0 mt-3 w-[min(23rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-outline-default bg-surface-elevated shadow-2xl shadow-black/15">
+                    <div class="border-b border-outline-subtle px-4 py-3 ">
                         <div class="flex items-center gap-3">
-                            <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+                            <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
                                 <i data-lucide="zap" class="h-4 w-4"></i>
                             </span>
                             <div>
-                                <p class="text-sm font-bold text-slate-950 dark:text-white">Quick Actions</p>
-                                <p class="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">Run common operational workflows.</p>
+                                <p class="text-sm font-bold text-content-primary">Quick Actions</p>
+                                <p class="mt-0.5 text-[11px] text-content-muted">Run common operational workflows.</p>
                             </div>
                         </div>
                     </div>
@@ -120,20 +109,20 @@
                                             hx-include="#quick-sync-form"
                                             hx-disabled-elt="this"
                                             @click="quickOpen = false; document.getElementById('quick-sync-feedback')?.replaceChildren()"
-                                            class="group relative flex w-full items-start gap-3 overflow-hidden rounded-2xl border border-blue-100 bg-blue-50/70 p-3 text-left transition hover:border-blue-200 hover:bg-blue-50 disabled:cursor-wait disabled:opacity-75 dark:border-blue-500/20 dark:bg-blue-500/5 dark:hover:border-blue-500/30 dark:hover:bg-blue-500/10">
-                                        <span class="relative z-10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm shadow-blue-600/20">
+                                            class="group relative flex w-full items-start gap-3 overflow-hidden rounded-2xl border border-kaori-primary/15 bg-kaori-soft p-3 text-left transition hover:border-kaori-primary/30 hover:bg-kaori-soft disabled:cursor-wait disabled:opacity-75 ">
+                                        <span class="relative z-10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-kaori-primary text-white shadow-sm shadow-kaori-primary/20">
                                             <i data-lucide="refresh-cw"
                                                class="h-4 w-4 group-[.htmx-request]:animate-spin"></i>
                                         </span>
                                         <span class="relative z-10 min-w-0 flex-1">
                                             <span class="flex items-center justify-between gap-2">
-                                                <span class="text-xs font-bold text-slate-900 dark:text-white">Sync all clusters</span>
-                                                <span class="rounded-lg bg-white px-2 py-1 text-[9px] font-bold uppercase tracking-wide text-blue-600 shadow-sm dark:bg-slate-900 dark:text-blue-300">Inventory</span>
+                                                <span class="text-xs font-bold text-content-primary">Sync all clusters</span>
+                                                <span class="rounded-lg bg-white px-2 py-1 text-[9px] font-bold uppercase tracking-wide text-kaori-primary shadow-sm">Inventory</span>
                                             </span>
-                                            <span class="mt-1 block text-[11px] leading-4 text-slate-600 dark:text-slate-300">
+                                            <span class="mt-1 block text-[11px] leading-4 text-content-secondary">
                                                 Queue a persistent inventory refresh for every registered cluster.
                                             </span>
-                                            <span class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] font-medium text-slate-500 dark:text-slate-400">
+                                            <span class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] font-medium text-content-muted">
                                                 <span class="inline-flex items-center gap-1"><i data-lucide="box" class="h-3 w-3"></i> Workloads</span>
                                                 <span class="inline-flex items-center gap-1"><i data-lucide="network" class="h-3 w-3"></i> Network</span>
                                                 <span class="inline-flex items-center gap-1"><i data-lucide="database" class="h-3 w-3"></i> Storage</span>
@@ -143,44 +132,44 @@
                                 </form>
                             {% elif cluster_onboarding.can_manage_clusters %}
                                 <a href="{{ url_for('cluster.add_cluster') }}"
-                                   class="group relative flex w-full items-start gap-3 overflow-hidden rounded-2xl border border-amber-200 bg-amber-50/80 p-3 text-left transition hover:border-amber-300 hover:bg-amber-50 dark:border-amber-900/60 dark:bg-amber-950/20 dark:hover:bg-amber-950/30">
-                                    <span class="relative z-10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white shadow-sm shadow-amber-500/20">
+                                   class="group relative flex w-full items-start gap-3 overflow-hidden rounded-2xl border border-status-warning-border bg-status-warning-soft p-3 text-left transition hover:border-status-warning hover:bg-status-warning-soft ">
+                                    <span class="relative z-10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-status-warning text-white shadow-sm shadow-status-warning/20">
                                         <i data-lucide="server-cog" class="h-4 w-4"></i>
                                     </span>
                                     <span class="relative z-10 min-w-0 flex-1">
                                         <span class="flex items-center justify-between gap-2">
-                                            <span class="text-xs font-bold text-slate-900 dark:text-white">Add a cluster first</span>
-                                            <span class="rounded-lg bg-white px-2 py-1 text-[9px] font-bold uppercase tracking-wide text-amber-700 shadow-sm dark:bg-slate-900 dark:text-amber-300">Required</span>
+                                            <span class="text-xs font-bold text-content-primary">Add a cluster first</span>
+                                            <span class="rounded-lg bg-white px-2 py-1 text-[9px] font-bold uppercase tracking-wide text-status-warning-text shadow-sm">Required</span>
                                         </span>
-                                        <span class="mt-1 block text-[11px] leading-4 text-slate-600 dark:text-slate-300">
+                                        <span class="mt-1 block text-[11px] leading-4 text-content-secondary">
                                             At least one Kubernetes cluster is required before global inventory sync can run.
                                         </span>
                                     </span>
                                 </a>
                             {% endif %}
                         {% endif %}
-                        <div class="my-2 border-t border-slate-100 dark:border-slate-800"></div>
+                        <div class="my-2 border-t border-outline-subtle "></div>
                         <a href="{{ url_for('reports.generate_report') }}"
-                           class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-xs text-slate-600 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800">
-                            <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-300">
+                           class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-xs text-content-secondary transition hover:bg-surface-hover">
+                            <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
                                 <i data-lucide="file-plus-2" class="h-4 w-4"></i>
                             </span>
                             <span class="min-w-0 flex-1">
-                                <span class="block font-semibold text-slate-800 dark:text-slate-100">Generate Report</span>
-                                <span class="mt-0.5 block text-[11px] text-slate-400">Create a new operational PDF report.</span>
+                                <span class="block font-semibold text-content-primary">Generate Report</span>
+                                <span class="mt-0.5 block text-[11px] text-content-muted">Create a new operational PDF report.</span>
                             </span>
-                            <i data-lucide="chevron-right" class="h-4 w-4 text-slate-300"></i>
+                            <i data-lucide="chevron-right" class="h-4 w-4 text-content-disabled"></i>
                         </a>
                         <a href="{{ url_for('analytics.alerts') }}"
-                           class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-xs text-slate-600 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800">
-                            <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-300">
+                           class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-xs text-content-secondary transition hover:bg-surface-hover">
+                            <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-status-warning-soft text-status-warning-text">
                                 <i data-lucide="bell-ring" class="h-4 w-4"></i>
                             </span>
                             <span class="min-w-0 flex-1">
-                                <span class="block font-semibold text-slate-800 dark:text-slate-100">Alert Center</span>
-                                <span class="mt-0.5 block text-[11px] text-slate-400">Review active alert and anomaly signals.</span>
+                                <span class="block font-semibold text-content-primary">Alert Center</span>
+                                <span class="mt-0.5 block text-[11px] text-content-muted">Review active alert and anomaly signals.</span>
                             </span>
-                            <i data-lucide="chevron-right" class="h-4 w-4 text-slate-300"></i>
+                            <i data-lucide="chevron-right" class="h-4 w-4 text-content-disabled"></i>
                         </a>
                     </div>
                 </div>
@@ -192,7 +181,7 @@
             <!-- Theme -->
             <button id="theme-toggle"
                     type="button"
-                    class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-blue-500/30 dark:hover:bg-blue-500/10 dark:hover:text-blue-300"
+                    class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-outline-default bg-surface-card text-content-secondary shadow-sm transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary"
                     title="Toggle theme">
                 <i id="theme-icon" data-lucide="moon" class="h-5 w-5"></i>
             </button>
@@ -200,39 +189,39 @@
             <div class="relative">
                 <button @click="userOpen = !userOpen; quickOpen = false; notificationOpen = false"
                         type="button"
-                        class="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white p-1.5 pr-2 text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-blue-500/30 dark:hover:bg-blue-500/10"
+                        class="inline-flex items-center gap-2 rounded-2xl border border-outline-default bg-surface-card p-1.5 pr-2 text-content-secondary shadow-sm transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary"
                         aria-label="Open user menu">
-                    <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600 text-white">
+                    <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-kaori-primary text-white">
                         <i data-lucide="user" class="h-4 w-4"></i>
                     </span>
                     <span class="hidden max-w-28 truncate text-xs font-semibold lg:inline">{{ current_user.username }}</span>
                     <i data-lucide="chevron-down"
-                       class="hidden h-4 w-4 text-slate-400 lg:block"></i>
+                       class="hidden h-4 w-4 text-content-muted lg:block"></i>
                 </button>
                 <div x-cloak
                      x-show="userOpen"
                      @click.outside="userOpen = false"
                      x-transition.origin.top.right
-                     class="absolute right-0 mt-3 w-64 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-900/10 dark:border-slate-700 dark:bg-slate-900 dark:shadow-slate-950/40">
-                    <div class="border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+                     class="absolute right-0 mt-3 w-64 overflow-hidden rounded-2xl border border-outline-default bg-surface-elevated shadow-xl shadow-black/10">
+                    <div class="border-b border-outline-subtle px-4 py-3 ">
                         <div class="flex items-start gap-3">
-                            <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white">
+                            <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-kaori-primary text-white">
                                 <i data-lucide="user" class="h-5 w-5"></i>
                             </span>
                             <div class="min-w-0 flex-1">
-                                <p class="truncate text-xs font-bold text-slate-950 dark:text-white">{{ current_user.username }}</p>
-                                <p class="text-[11px] font-medium text-slate-500 dark:text-slate-400">{{ current_user_role }}</p>
+                                <p class="truncate text-xs font-bold text-content-primary">{{ current_user.username }}</p>
+                                <p class="text-[11px] font-medium text-content-muted">{{ current_user_role }}</p>
                             </div>
                         </div>
                     </div>
                     <div class="p-2">
                         <a href="{{ url_for('settings.account') }}"
-                           class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-xs text-slate-600 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800">
+                           class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-xs text-content-secondary transition hover:bg-surface-hover">
                             <i data-lucide="user-cog" class="h-4 w-4"></i>
                             <span class="flex-1">Account Settings</span>
                         </a>
                         <a href="{{ url_for('auth.logout') }}"
-                           class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40">
+                           class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-status-critical transition hover:bg-status-critical-soft hover:text-status-critical-text">
                             <i data-lucide="log-out" class="h-4 w-4"></i>
                             <span>Logout</span>
                         </a>

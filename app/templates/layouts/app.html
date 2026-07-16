@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full overflow-hidden">
+<html lang="en" class="h-full overflow-hidden text-[12px] 2xl:text-[13px] min-[1920px]:text-[14px]">
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -21,157 +21,6 @@
                 }
             })()
         </script>
-        <style>
-            html {
-                font-size: 12px;
-            }
-
-            @media (min-width: 1536px) {
-                html {
-                    font-size: 13px;
-                }
-            }
-
-            @media (min-width: 1920px) {
-                html {
-                    font-size: 14px;
-                }
-            }
-
-            [x-cloak] {
-                display: none !important;
-            }
-
-            .kubereport-sidebar {
-                width: 260px;
-            }
-
-            .sidebar-collapsed .kubereport-sidebar {
-                width: 72px;
-            }
-
-            .app-content-shell {
-                padding: 24px;
-            }
-
-            @media (min-width: 1024px) {
-                .app-content-shell {
-                    padding: 28px;
-                }
-            }
-
-            @media (min-width: 1536px) {
-                .app-content-shell {
-                    padding: 32px;
-                }
-            }
-
-            .sidebar-collapsed .sidebar-expanded-only {
-                display: none !important;
-            }
-
-            .sidebar-collapsed .sidebar-nav-section {
-                margin-bottom: 0.5rem;
-            }
-
-            .sidebar-collapsed .sidebar-brand-card {
-                justify-content: center;
-                gap: 0;
-                padding: 0.5rem;
-            }
-
-            .sidebar-collapsed .sidebar-brand-icon {
-                height: 2.5rem;
-                width: 2.5rem;
-                border-radius: 0.75rem;
-            }
-
-            .sidebar-collapsed .sidebar-parent-link {
-                justify-content: center;
-            }
-
-
-            .sidebar-menu > summary {
-                list-style: none;
-            }
-
-            .sidebar-menu > summary::-webkit-details-marker {
-                display: none;
-            }
-
-            .sidebar-menu-chevron {
-                transform: rotate(0deg);
-                transition: transform 150ms ease;
-            }
-
-            .sidebar-menu[open] > summary .sidebar-menu-chevron {
-                transform: rotate(90deg);
-            }
-
-            .sidebar-collapsed .sidebar-menu-chevron,
-            .sidebar-collapsed .sidebar-submenu {
-                display: none !important;
-            }
-
-            .sidebar-toggle-collapsed-icon {
-                display: none;
-            }
-
-            .sidebar-collapsed .sidebar-toggle-expanded-icon {
-                display: none;
-            }
-
-            .sidebar-collapsed .sidebar-toggle-collapsed-icon {
-                display: block;
-            }
-
-            .htmx-indicator {
-                opacity: 0;
-                pointer-events: none;
-                transition: opacity 150ms ease-in;
-                visibility: hidden;
-            }
-
-            .htmx-request .htmx-indicator,
-            .htmx-request.htmx-indicator {
-                opacity: 1;
-                visibility: visible;
-            }
-
-            #operational-action-feedback:empty,
-            #quick-sync-feedback:empty {
-                display: none;
-            }
-
-            @keyframes notification-progress-indeterminate {
-                0% {
-                    transform: translateX(-120%);
-                }
-
-                50% {
-                    transform: translateX(190%);
-                }
-
-                100% {
-                    transform: translateX(420%);
-                }
-            }
-
-            .notification-progress-indeterminate {
-                width: 32%;
-                animation: notification-progress-indeterminate 1.35s ease-in-out infinite;
-                will-change: transform;
-            }
-
-            @media (prefers-reduced-motion: reduce) {
-                .notification-progress-indeterminate {
-                    width: 100%;
-                    animation: none;
-                }
-            }
-
-
-        </style>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
@@ -180,128 +29,17 @@
               href="{{ url_for('static', filename='css/output.css') }}" />
         {% block page_styles %}
         {% endblock page_styles %}
-        <style>
-            /* KAORI sidebar density standard */
-            .kubereport-sidebar nav > :not([hidden]) ~ :not([hidden]) {
-                margin-top: 16px !important;
-            }
-
-            .sidebar-brand-card {
-                gap: 10px !important;
-                padding: 10px !important;
-            }
-
-            .sidebar-brand-icon {
-                width: 40px !important;
-                height: 40px !important;
-                border-radius: 12px !important;
-            }
-
-            .sidebar-brand-icon svg {
-                width: 17px !important;
-                height: 17px !important;
-            }
-
-            .sidebar-brand-card h1 {
-                font-size: 13px !important;
-                line-height: 18px !important;
-            }
-
-            .sidebar-brand-card p {
-                font-size: 10px !important;
-                line-height: 15px !important;
-            }
-
-            .sidebar-nav-section > .sidebar-expanded-only:first-child {
-                margin-bottom: 6px !important;
-                padding-right: 10px !important;
-                padding-left: 10px !important;
-                font-size: 9px !important;
-                line-height: 14px !important;
-                letter-spacing: 0.14em !important;
-            }
-
-            .sidebar-parent-link {
-                min-height: 48px;
-                gap: 10px !important;
-                padding: 8px 10px !important;
-                border-radius: 13px !important;
-                font-size: 12px !important;
-                line-height: 18px !important;
-            }
-
-            summary.sidebar-parent-link > div {
-                gap: 10px !important;
-            }
-
-            .sidebar-parent-link > span:first-child,
-            .sidebar-parent-link > div > span:first-child {
-                width: 32px !important;
-                height: 32px !important;
-                border-radius: 10px !important;
-            }
-
-            .sidebar-parent-link > span:first-child svg,
-            .sidebar-parent-link > div > span:first-child svg {
-                width: 15px !important;
-                height: 15px !important;
-            }
-
-            .sidebar-parent-link .sidebar-expanded-only:not(.sidebar-menu-chevron) {
-                font-size: 12px !important;
-                line-height: 18px !important;
-            }
-
-            .sidebar-menu-chevron {
-                width: 14px !important;
-                height: 14px !important;
-            }
-
-            .sidebar-submenu {
-                margin-left: 24px !important;
-                padding-left: 12px !important;
-            }
-
-            .sidebar-submenu a {
-                gap: 7px !important;
-                padding: 6px 9px !important;
-                border-radius: 10px !important;
-                font-size: 11px !important;
-                line-height: 16px !important;
-            }
-
-            .sidebar-submenu a > span:first-child {
-                width: 5px !important;
-                height: 5px !important;
-            }
-
-            .sidebar-submenu a svg {
-                width: 13px !important;
-                height: 13px !important;
-            }
-
-            .sidebar-collapsed .sidebar-parent-link {
-                min-height: 44px;
-                padding: 6px !important;
-            }
-
-            .sidebar-collapsed .sidebar-parent-link > span:first-child,
-            .sidebar-collapsed .sidebar-parent-link > div > span:first-child {
-                width: 32px !important;
-                height: 32px !important;
-            }
-        </style>
     </head>
-    <body class="h-full overflow-hidden bg-slate-50 font-sans text-slate-900 antialiased transition-colors duration-300 dark:bg-slate-900 dark:text-slate-100">
+    <body class="h-full overflow-hidden bg-surface-page font-sans text-content-primary antialiased transition-colors duration-300">
         <div x-data="{ sidebarOpen: localStorage.getItem('kubereport.sidebarOpen') !== 'false' }"
              x-init="document.documentElement.classList.toggle('sidebar-collapsed', !sidebarOpen); $watch('sidebarOpen', value => { localStorage.setItem('kubereport.sidebarOpen', value ? 'true' : 'false'); document.documentElement.classList.toggle('sidebar-collapsed', !value); })"
              @toggle-sidebar.window="sidebarOpen = !sidebarOpen"
-             class="flex h-full min-h-0 overflow-hidden">
+             class="flex h-full min-h-0 gap-2 overflow-hidden bg-surface-page p-2">
             {% include "components/navigation/sidebar.html" %}
-            <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <div class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-outline-subtle bg-surface-card shadow-sm">
                 {% include "components/navigation/navbar.html" %}
-                <main class="min-h-0 flex-1 overflow-y-auto bg-slate-50 transition-colors duration-300 dark:bg-slate-900">
-                    <div class="app-content-shell">
+                <main class="min-h-0 flex-1 overflow-y-auto bg-surface-page transition-colors duration-300">
+                    <div class="p-5 lg:p-6 2xl:p-7">
                         {% include "components/states/_flash_messages.html" %}
                         {% block dashboard_content %}
                         {% endblock dashboard_content %}
@@ -311,8 +49,7 @@
         </div>
         {% set queued_quick_action_feedback = load_quick_action_feedback() %}
         <div id="quick-action-feedback"
-             style="width:min(28rem, calc(100vw - 2rem))"
-             class="pointer-events-none fixed right-4 top-20 z-50 flex flex-col gap-3 sm:right-6 lg:right-8">
+             class="pointer-events-none w-[min(28rem,calc(100vw-2rem))] fixed right-4 top-20 z-50 flex flex-col gap-3 sm:right-6 lg:right-8">
             <div id="operational-action-feedback" class="flex w-full flex-col gap-3">
                 {% if queued_quick_action_feedback %}
                     {% with
@@ -465,7 +202,7 @@
                 toast.setAttribute('data-operational-progress-toast', '')
                 toast.setAttribute('role', 'status')
                 toast.setAttribute('aria-live', 'polite')
-                toast.className = 'quick-action-toast pointer-events-auto relative isolate w-full overflow-hidden rounded-2xl border border-blue-200 bg-white shadow-2xl shadow-slate-900/15 dark:border-blue-500/30 dark:bg-slate-900 dark:shadow-slate-950/50'
+                toast.className = 'quick-action-toast pointer-events-auto relative isolate w-full overflow-hidden rounded-2xl border border-kaori-primary/25 bg-surface-elevated shadow-2xl shadow-black/15'
 
                 const content = document.createElement('div')
                 content.className = 'p-4 pb-5'
@@ -474,30 +211,30 @@
                 row.className = 'flex items-start gap-3'
 
                 const iconWrap = document.createElement('span')
-                iconWrap.className = 'mt-0.5 flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300'
+                iconWrap.className = 'mt-0.5 flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-kaori-soft text-kaori-primary'
                 iconWrap.innerHTML = '<i data-lucide="loader-circle" class="h-5 w-5 animate-spin"></i>'
 
                 const copy = document.createElement('div')
                 copy.className = 'min-w-0 flex-1 pr-8'
 
                 const heading = document.createElement('p')
-                heading.className = 'text-sm font-bold text-slate-950 dark:text-white'
+                heading.className = 'text-sm font-bold text-content-primary'
                 heading.textContent = title || 'Operation in progress'
 
                 const description = document.createElement('p')
-                description.className = 'mt-1 text-xs font-semibold leading-5 text-slate-600 dark:text-slate-300'
+                description.className = 'mt-1 text-xs font-semibold leading-5 text-content-secondary'
                 description.textContent = message || 'KAORI is processing the requested operation.'
 
                 const closeButton = document.createElement('button')
                 closeButton.type = 'button'
                 closeButton.setAttribute('data-quick-action-toast-close', '')
                 closeButton.setAttribute('aria-label', 'Close operational progress')
-                closeButton.className = 'absolute right-3 top-3 z-20 rounded-xl p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200'
+                closeButton.className = 'absolute right-3 top-3 z-20 rounded-xl p-1 text-content-muted transition hover:bg-surface-hover hover:text-content-primary'
                 closeButton.innerHTML = '<i data-lucide="x" class="h-4 w-4"></i>'
 
                 const progressTrack = document.createElement('div')
-                progressTrack.className = 'absolute inset-x-0 bottom-0 h-1 overflow-hidden bg-blue-100 dark:bg-blue-500/10'
-                progressTrack.innerHTML = '<div class="notification-progress-indeterminate h-full rounded-full bg-blue-600"></div>'
+                progressTrack.className = 'absolute inset-x-0 bottom-0 h-1 overflow-hidden bg-kaori-soft'
+                progressTrack.innerHTML = '<div class="notification-progress-indeterminate h-full rounded-full bg-kaori-primary"></div>'
 
                 copy.append(heading, description)
                 row.append(iconWrap, copy)

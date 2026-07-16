@@ -226,3 +226,93 @@
     --color-status-pending-border: var(--kaori-status-pending-border);
     --color-status-pending-text: var(--kaori-status-pending-text);
 }
+
+/* Global application shell behavior compiled through Tailwind. */
+[x-cloak] {
+    display: none !important;
+}
+
+.sidebar-collapsed .sidebar-expanded-only,
+.sidebar-collapsed .sidebar-menu-chevron,
+.sidebar-collapsed .sidebar-submenu {
+    display: none !important;
+}
+
+.sidebar-collapsed .sidebar-parent-link,
+.sidebar-collapsed .sidebar-brand-card {
+    justify-content: center;
+}
+
+.sidebar-menu > summary {
+    list-style: none;
+}
+
+.sidebar-menu > summary::-webkit-details-marker {
+    display: none;
+}
+
+.sidebar-menu-chevron {
+    transform: rotate(0deg);
+    transition: transform 150ms ease;
+}
+
+.sidebar-menu[open] > summary .sidebar-menu-chevron {
+    transform: rotate(90deg);
+}
+
+.sidebar-toggle-collapsed-icon {
+    display: none;
+}
+
+.sidebar-collapsed .sidebar-toggle-expanded-icon {
+    display: none;
+}
+
+.sidebar-collapsed .sidebar-toggle-collapsed-icon {
+    display: block;
+}
+
+.htmx-indicator {
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 150ms ease-in;
+}
+
+.htmx-request .htmx-indicator,
+.htmx-request.htmx-indicator {
+    visibility: visible;
+    opacity: 1;
+}
+
+#operational-action-feedback:empty,
+#quick-sync-feedback:empty {
+    display: none;
+}
+
+@keyframes notification-progress-indeterminate {
+    0% {
+        transform: translateX(-120%);
+    }
+
+    50% {
+        transform: translateX(190%);
+    }
+
+    100% {
+        transform: translateX(420%);
+    }
+}
+
+.notification-progress-indeterminate {
+    width: 32%;
+    animation: notification-progress-indeterminate 1.35s ease-in-out infinite;
+    will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .notification-progress-indeterminate {
+        width: 100%;
+        animation: none;
+    }
+}
