@@ -22,7 +22,7 @@
         {% set icon_class = 'border-kaori-primary/20 bg-surface-card text-kaori-primary' %}
         {% set title_class = 'text-kaori-primary' %}
     {% endif %}
-    <div class="flex {{ 'h-28' if equal_height else '' }} rounded-lg border border-dashed {{ panel_class }} p-3">
+    <div class="flex {{ 'min-h-24' if equal_height else '' }} rounded-lg border border-dashed {{ panel_class }} p-3">
         <div class="flex w-full items-start gap-2.5">
             <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border {{ icon_class }}"><i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i></span>
             <div class="min-w-0">
@@ -95,7 +95,7 @@
                 {{ detail_row('Kubernetes UID', pod.uid, true) }}
                 {{ detail_row('Created', pod.created_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
                 {{ detail_row('Collected', pod.collected_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
-                <div class="mt-auto pt-3">{{ info_box('Inventory identity', 'Identifies the Pod object, owner relationship, and latest snapshot collected by KAORI.', 'lightbulb', 'brand', true) }}</div>
+                <div class="mt-auto pt-3">{{ info_box('Inventory identity', 'Pod identity and owner from the latest inventory snapshot.', 'lightbulb', 'brand', true) }}</div>
             {% endcall %}
 
             {% call detail_card('Placement & network', 'map-pin', pod.node or 'Not scheduled') %}
@@ -121,7 +121,7 @@
                             {% endif %}
                         </div>
                     {% endif %}
-                    {{ info_box('Network identity', 'Pod IP is assigned to the Pod instance. Host IP identifies the node network address currently hosting it.', 'network', 'brand', true) }}
+                    {{ info_box('Network identity', 'Pod IP identifies the Pod; Host IP identifies its node.', 'network', 'brand', true) }}
                 </div>
             {% endcall %}
 
@@ -135,15 +135,15 @@
                 {{ detail_row('Reason', pod.reason or '-') }}
                 <div class="mt-auto space-y-3 pt-3">
                     {% if pod.conditions %}
-                        <div class="rounded-lg border border-outline-default bg-surface-hover p-3">
+                        <div class="rounded-lg border border-outline-default bg-surface-hover p-2.5">
                             <div class="flex items-center justify-between gap-3">
-                                <p class="text-xs font-semibold text-content-primary">Reported conditions</p>
+                                <p class="text-[11px] font-semibold leading-4 text-content-primary">Reported conditions</p>
                                 {{ table_label.metadata_label(pod.conditions|length ~ ' conditions', 'list-checks') }}
                             </div>
-                            <div class="mt-2 space-y-1.5">
+                            <div class="mt-2 space-y-1">
                                 {% for condition in pod.conditions %}
-                                    <div class="flex items-center justify-between gap-3">
-                                        <span class="truncate text-[11px] text-content-muted" title="{{ condition.type }}">{{ condition.type }}</span>
+                                    <div class="flex min-h-6 items-center justify-between gap-3">
+                                        <span class="truncate text-[10px] font-medium leading-4 text-content-muted" title="{{ condition.type }}">{{ condition.type }}</span>
                                         {% if condition.status == 'True' %}{{ table_label.status_label('True', 'normal', 'check') }}
                                         {% elif condition.status == 'False' %}{{ table_label.status_label('False', 'critical', 'x') }}
                                         {% else %}{{ table_label.status_label(condition.status, 'unknown', 'circle-help') }}{% endif %}
@@ -153,7 +153,7 @@
                         </div>
                     {% endif %}
                     {% if pod.message %}<div class="rounded-lg border border-status-warning-border bg-status-warning-soft p-3 text-[11px] leading-5 text-status-warning-text">{{ pod.message }}</div>{% endif %}
-                    {{ info_box('Snapshot boundary', 'Pod conditions are point-in-time data. Historical failures and restart anomalies remain in Analytics.', 'info', 'brand', true) }}
+                    {{ info_box('Snapshot boundary', 'Conditions are snapshot data; history remains in Analytics.', 'info', 'brand', true) }}
                 </div>
             {% endcall %}
 
@@ -168,7 +168,7 @@
                 {{ detail_row('Regular containers', pod.configuration.container_count) }}
                 {{ detail_row('Init containers', pod.configuration.init_container_count) }}
                 {{ detail_row('Ephemeral containers', pod.configuration.ephemeral_container_count) }}
-                <div class="mt-auto pt-3">{{ info_box('Specification boundary', 'Configuration comes from the Pod specification. Secret values and mounted file content are never displayed.', 'shield-check', 'brand', true) }}</div>
+                <div class="mt-auto pt-3">{{ info_box('Specification boundary', 'Pod specification only; secret values are never shown.', 'shield-check', 'brand', true) }}</div>
             {% endcall %}
         </div>
 
@@ -221,7 +221,7 @@
                         </table>
                     </div>
                 {% else %}
-                    <div class="p-4">{{ info_box('Runtime status unavailable', 'Container runtime status is not reported in this snapshot. Restart the worker and sync the cluster again.', 'triangle-alert', 'warning') }}</div>
+                    <div class="p-4">{{ info_box('Runtime status unavailable', 'Runtime status is missing. Restart the worker and sync again.', 'triangle-alert', 'warning') }}</div>
                 {% endif %}
             </section>
 
@@ -252,7 +252,7 @@
                         </table>
                     </div>
                 {% else %}
-                    <div class="p-4">{{ info_box('No volumes configured', 'No volume definitions are recorded for this Pod specification.', 'database') }}</div>
+                    <div class="p-4">{{ info_box('No volumes configured', 'No volumes are recorded for this Pod.', 'database') }}</div>
                 {% endif %}
             </section>
 
@@ -265,7 +265,7 @@
                     {% if pod.labels %}
                         <div class="flex max-h-44 flex-wrap gap-1.5 overflow-y-auto pr-1">{% for key, value in pod.labels.items() %}{{ table_label.metadata_label(key ~ (('=' ~ value) if value not in [None, ''] else ''), 'tag') }}{% endfor %}</div>
                     {% else %}
-                        {{ info_box('No labels recorded', 'No Kubernetes labels are recorded for this Pod.', 'tags') }}
+                        {{ info_box('No labels recorded', 'This Pod has no recorded labels.', 'tags') }}
                     {% endif %}
                 </section>
 
@@ -279,15 +279,15 @@
                             {% for key, value in pod.annotations.items() %}<div class="grid gap-2 border-b border-outline-subtle px-4 py-3 last:border-b-0 md:grid-cols-[minmax(12rem,0.8fr)_minmax(0,1.2fr)]"><div class="break-all text-xs font-semibold leading-5 text-content-secondary">{{ key }}</div><div class="break-all text-xs leading-5 text-content-muted">{{ value }}</div></div>{% endfor %}
                         </div>
                     {% else %}
-                        <div class="p-4">{{ info_box('No annotations recorded', 'No Kubernetes annotations are recorded for this Pod.', 'braces') }}</div>
+                        <div class="p-4">{{ info_box('No annotations recorded', 'This Pod has no recorded annotations.', 'braces') }}</div>
                     {% endif %}
                 </section>
             </div>
 
             {% if not pod.details_reported %}
-                {{ info_box('Collection update required', 'This Pod uses a legacy snapshot. Restart the Celery worker and sync the cluster again to populate complete runtime, placement, volume, and annotation metadata.', 'triangle-alert', 'warning') }}
+                {{ info_box('Collection update required', 'Legacy snapshot detected. Restart the worker and sync again.', 'triangle-alert', 'warning') }}
             {% else %}
-                {{ info_box('Inventory boundary', 'This section contains point-in-time inventory data. CPU, memory, network utilization, historical trends, anomalies, and recommendations remain in Analytics and Intelligence.', 'info') }}
+                {{ info_box('Inventory boundary', 'This view shows snapshot data. Trends and recommendations remain in Analytics and Intelligence.', 'info') }}
             {% endif %}
         </div>
     </div>

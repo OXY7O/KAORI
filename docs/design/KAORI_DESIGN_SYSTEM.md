@@ -435,3 +435,11 @@ The Pod Inventory page follows the Inventory Overview hero geometry and the reso
 - The primary detail cards are Pod identity, Placement & network, Pod conditions, and Pod configuration. Their information tips use the same height and bottom alignment.
 - Container kind, image pull policy, owner type, volume type, mount targets, Pod labels, node selectors, and tolerations are descriptive metadata and use rectangular violet labels. Pod phase, readiness, container state, and collection warnings use semantic status labels.
 - Empty nested sections use compact dashed information boxes. Missing runtime detail that requires a worker restart or resync uses Warning; ordinary unconfigured or empty metadata uses the violet empty-state treatment.
+
+
+## Pod condition subcards and tips
+
+- Nested condition headings use 11 px semibold text; condition names use 10 px medium text with 16 px line-height.
+- Compact table status labels remain 10 px and should not be enlarged inside nested detail cards.
+- Equal-height primary tips use a compact minimum height and concise operational copy.
+
