@@ -9,8 +9,10 @@
                     Unified operational visibility for cluster health, capacity, alerts, inventory, recommendations, and reporting readiness.
                 </p>
 
-                <div class="mt-5">
-                    {{ page_hero.supporting_strip('database-zap', 'All Clusters uses inventory snapshots. Select one cluster for live Prometheus and AlertManager signals.') }}
+                <div class="mt-5 flex flex-wrap gap-2">
+                    {{ page_hero.meta_label('database-zap', 'All Clusters · inventory snapshots') }}
+                    {{ page_hero.meta_label('activity', 'Selected cluster · live Prometheus') }}
+                    {{ page_hero.meta_label('siren', 'Selected cluster · live AlertManager') }}
                 </div>
             {% endcall %}
         </div>
@@ -54,7 +56,7 @@
                     </div>
 
                     <div class="mt-4">
-                        <label for="cluster_id" class="mb-1.5 block text-[10px] font-semibold uppercase tracking-wide text-brand-foreground-muted">Cluster scope</label>
+                        <label for="cluster_id" class="mb-2 block text-sm font-semibold text-brand-foreground">Cluster scope</label>
                         <div class="relative">
                             <i data-lucide="boxes" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"></i>
                             <select id="cluster_id"
@@ -65,7 +67,7 @@
                                     hx-push-url="true"
                                     hx-indicator="#dashboard-loading-bar"
                                     hx-trigger="change"
-                                    class="h-10 w-full rounded-lg border border-outline-default bg-surface-card pl-10 pr-9 text-xs font-semibold text-content-primary shadow-sm outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                                    class="h-11 w-full rounded-lg border border-outline-default bg-surface-card pl-10 pr-9 text-sm font-medium text-content-primary shadow-sm outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                                 <option value="">All Clusters</option>
                                 {% for cluster in dashboard.clusters %}
                                     <option value="{{ cluster.id }}" {% if dashboard.selected_cluster_id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>
