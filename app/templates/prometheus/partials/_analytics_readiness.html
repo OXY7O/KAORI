@@ -13,9 +13,8 @@
           <p class="mt-1 max-w-2xl text-sm text-slate-500 dark:text-slate-400">Endpoint compatibility, PromQL contracts, metric schemas, and historical coverage.</p>
         </div>
       </div>
-      <div class="relative min-w-[14rem] overflow-hidden rounded-2xl bg-gradient-to-br from-blue-700 via-blue-600 to-cyan-500 px-4 py-3 text-white shadow-lg shadow-blue-500/20">
-        <div class="pointer-events-none absolute -right-5 -top-7 h-20 w-20 rounded-full bg-white/10"></div>
-        <div class="relative flex items-center gap-3">
+      <div class="min-w-[14rem] rounded-2xl bg-gradient-to-br from-blue-700 via-blue-600 to-cyan-500 px-4 py-3 text-white shadow-sm">
+        <div class="flex items-center gap-3">
           <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 ring-1 ring-white/20">
             <span class="h-2.5 w-2.5 rounded-full {% if readiness_status == 'ready' %}bg-emerald-300{% elif readiness_status in ['degraded','validation_required'] %}bg-amber-300{% else %}bg-red-300{% endif %}"></span>
           </span>
