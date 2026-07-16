@@ -1,119 +1,119 @@
+{% import "components/table_label.html" as table_label %}
 {% set active_percentage = ((inventory.active_namespaces / inventory.total_namespaces) * 100) | round(0) if inventory.total_namespaces > 0 else 0 %}
 {% set inactive_namespaces = inventory.total_namespaces - inventory.active_namespaces %}
-{% set status_count = inventory.status_counts|length %}
-<div class="space-y-4">
-    <div class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+<section class="space-y-4">
+    <header class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
-            <h2 class="text-lg font-semibold text-slate-950 dark:text-white">Namespace coverage snapshot</h2>
-            <p class="text-sm text-slate-500 dark:text-slate-400">Namespace count and lifecycle status based on the current filter.</p>
+            <div class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.1em] text-kaori-primary">
+                <i data-lucide="scan-search" class="h-4 w-4"></i>
+                Namespace coverage snapshot
+            </div>
+            <h2 class="mt-2 text-xl font-bold tracking-tight text-content-primary">Lifecycle and control coverage</h2>
+            <p class="mt-1 text-sm leading-6 text-content-muted">Namespace count and lifecycle posture based on the current filter scope.</p>
         </div>
-        <div class="text-sm text-slate-500 dark:text-slate-400">
-            Active ratio <span class="font-semibold text-slate-700 dark:text-slate-200">{{ active_percentage | int }}%</span>
+        <div class="inline-flex min-h-8 items-center gap-2 rounded-md border border-outline-default bg-kaori-soft px-3 py-1.5 text-xs font-semibold text-kaori-primary">
+            <i data-lucide="badge-check" class="h-4 w-4"></i>
+            Active ratio {{ active_percentage | int }}%
         </div>
-    </div>
+    </header>
+
     <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-            <div class="flex items-start justify-between gap-3">
+        <article class="rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm transition hover:border-outline-strong hover:bg-surface-hover">
+            <div class="flex items-start justify-between gap-4">
                 <div>
-                    <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Total Namespaces</p>
-                    <div class="mt-4 text-4xl font-bold tracking-tight text-blue-600 dark:text-blue-400">{{ inventory.total_namespaces }}</div>
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.08em] text-kaori-primary">Total Namespaces</p>
+                    <p class="mt-2 text-2xl font-bold tracking-tight text-content-primary">{{ inventory.total_namespaces }}</p>
                 </div>
-                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+                <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                     <i data-lucide="folder-tree" class="h-5 w-5"></i>
-                </div>
+                </span>
             </div>
-            <p class="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">Namespaces collected from connected clusters.</p>
-        </div>
-        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-            <div class="flex items-start justify-between gap-3">
+            <p class="mt-3 border-t border-outline-subtle pt-3 text-xs leading-5 text-content-muted">Namespaces collected from connected Kubernetes clusters.</p>
+        </article>
+
+        <article class="rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm transition hover:border-outline-strong hover:bg-surface-hover">
+            <div class="flex items-start justify-between gap-4">
                 <div>
-                    <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Clusters</p>
-                    <div class="mt-4 text-4xl font-bold tracking-tight text-blue-600 dark:text-blue-400">{{ inventory.total_clusters }}</div>
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.08em] text-kaori-primary">Clusters</p>
+                    <p class="mt-2 text-2xl font-bold tracking-tight text-content-primary">{{ inventory.total_clusters }}</p>
                 </div>
-                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-50 text-cyan-600 dark:bg-cyan-500/10 dark:text-cyan-300">
+                <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                     <i data-lucide="server" class="h-5 w-5"></i>
-                </div>
+                </span>
             </div>
-            <p class="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">Clusters currently contributing namespace data.</p>
-        </div>
-        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-            <div class="flex items-start justify-between gap-3">
+            <p class="mt-3 border-t border-outline-subtle pt-3 text-xs leading-5 text-content-muted">Clusters currently contributing namespace inventory.</p>
+        </article>
+
+        <article class="rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm">
+            <div class="flex items-start justify-between gap-4">
                 <div>
-                    <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Active</p>
-                    <div class="mt-4 text-4xl font-bold tracking-tight text-blue-600 dark:text-blue-400">{{ inventory.active_namespaces }}</div>
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.08em] text-content-muted">Active</p>
+                    <p class="mt-2 text-2xl font-bold tracking-tight text-content-primary">{{ inventory.active_namespaces }}</p>
                 </div>
-                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300">
-                    <i data-lucide="badge-check" class="h-5 w-5"></i>
-                </div>
+                <span class="flex h-10 w-10 items-center justify-center rounded-lg border border-status-normal-border bg-status-normal-soft text-status-normal-text">
+                    <i data-lucide="circle-check" class="h-5 w-5"></i>
+                </span>
             </div>
-            <p class="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">Namespaces in active lifecycle state.</p>
-        </div>
-        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-            <div class="flex items-start justify-between gap-3">
+            <p class="mt-3 border-t border-outline-subtle pt-3 text-xs leading-5 text-content-muted">Namespaces in the Active lifecycle state.</p>
+        </article>
+
+        <article class="rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm">
+            <div class="flex items-start justify-between gap-4">
                 <div>
-                    <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Other Status</p>
-                    <div class="mt-4 text-4xl font-bold tracking-tight text-blue-600 dark:text-blue-400">{{ inactive_namespaces }}</div>
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.08em] text-content-muted">Other Status</p>
+                    <p class="mt-2 text-2xl font-bold tracking-tight text-content-primary">{{ inactive_namespaces }}</p>
                 </div>
-                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-300">
-                    <i data-lucide="triangle-alert" class="h-5 w-5"></i>
-                </div>
+                <span class="flex h-10 w-10 items-center justify-center rounded-lg border {% if inactive_namespaces > 0 %}border-status-warning-border bg-status-warning-soft text-status-warning-text{% else %}border-status-normal-border bg-status-normal-soft text-status-normal-text{% endif %}">
+                    <i data-lucide="{% if inactive_namespaces > 0 %}triangle-alert{% else %}circle-check{% endif %}" class="h-5 w-5"></i>
+                </span>
             </div>
-            <p class="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">Namespaces outside the Active status.</p>
-        </div>
+            <p class="mt-3 border-t border-outline-subtle pt-3 text-xs leading-5 text-content-muted">Namespaces outside the Active lifecycle state.</p>
+        </article>
     </div>
-    <div class="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
-        <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-700 via-blue-600 to-cyan-500 p-5 text-white shadow-sm shadow-blue-500/20">
-            <div class="absolute -top-10 right-0 h-28 w-28 rounded-full bg-white/20 blur-3xl"></div>
-            <div class="relative flex items-center justify-between gap-4">
+
+    <div class="grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
+        <article class="rounded-xl border border-brand-outline bg-kaori-primary-dark p-5 text-brand-foreground shadow-sm">
+            <div class="flex items-start justify-between gap-4">
                 <div>
-                    <p class="text-xs font-medium uppercase tracking-[0.2em] text-blue-50/80">Active coverage</p>
-                    <div class="mt-3 text-4xl font-bold">{{ active_percentage | int }}%</div>
-                    <p class="mt-2 text-sm text-blue-50/85">{{ inventory.active_namespaces }} active from {{ inventory.total_namespaces }} namespace(s)</p>
+                    <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-brand-foreground-muted">Active coverage</p>
+                    <p class="mt-3 text-3xl font-bold leading-none">{{ active_percentage | int }}%</p>
+                    <p class="mt-2 text-sm leading-6 text-brand-foreground-muted">{{ inventory.active_namespaces }} active from {{ inventory.total_namespaces }} namespace(s)</p>
                 </div>
-                <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15">
-                    <i data-lucide="shield-check" class="h-7 w-7"></i>
-                </div>
+                <span class="flex h-12 w-12 items-center justify-center rounded-lg border border-brand-outline bg-brand-surface text-brand-foreground">
+                    <i data-lucide="shield-check" class="h-6 w-6"></i>
+                </span>
             </div>
-            <div class="relative mt-5 h-2 overflow-hidden rounded-full bg-white/20">
-                <div class="h-full rounded-full bg-white"
-                     style="width: {{ active_percentage }}%"></div>
+            <div class="mt-5 h-2 overflow-hidden rounded-full bg-white/15">
+                <div class="h-full rounded-full bg-white" style="width: {{ active_percentage }}%"></div>
             </div>
-        </div>
-        <div class="rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-blue-50/40 to-slate-50 p-5 shadow-sm dark:border-slate-700 dark:from-slate-800 dark:via-blue-950/20 dark:to-slate-900/40">
-            <div class="flex items-center justify-between">
+        </article>
+
+        <article class="rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm">
+            <div class="flex items-start justify-between gap-4">
                 <div>
-                    <p class="text-sm font-semibold text-slate-900 dark:text-white">Status distribution</p>
-                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Lifecycle status for the current namespace result.</p>
+                    <p class="text-sm font-semibold text-content-primary">Status distribution</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Lifecycle status for the current namespace result.</p>
                 </div>
-                <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300">
+                <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                     <i data-lucide="chart-no-axes-column" class="h-5 w-5"></i>
                 </span>
             </div>
-            <div class="mt-5 grid gap-3 lg:grid-cols-3">
-                <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-                    <div class="text-xs text-slate-500 dark:text-slate-400">Active</div>
-                    <div class="mt-1 text-2xl font-semibold text-slate-950 dark:text-white">{{ inventory.status_counts.get('Active', 0) }}</div>
-                    <p class="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">Active namespaces from the current result set.</p>
-                </div>
-                <div class="rounded-xl border border-emerald-100 bg-white/80 px-4 py-3 dark:border-emerald-500/20 dark:bg-slate-800/80">
-                    <div class="flex items-center gap-2 text-xs font-medium text-emerald-700 dark:text-emerald-300">
-                        <i data-lucide="badge-check" class="h-3.5 w-3.5"></i>
-                        Active coverage
+            <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                <div class="rounded-lg border border-outline-subtle bg-surface-hover p-3">
+                    <div class="flex items-center justify-between gap-3">
+                        <span class="text-xs font-semibold text-content-secondary">Active</span>
+                        {{ table_label.status_label(inventory.status_counts.get('Active', 0), 'normal', 'circle-check') }}
                     </div>
-                    <p class="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
-                        {{ active_percentage | int }}% of matching namespaces are currently active.
-                    </p>
+                    <p class="mt-2 text-xs leading-5 text-content-muted">Namespaces currently available for workload placement.</p>
                 </div>
-                <div class="rounded-xl border border-amber-100 bg-white/80 px-4 py-3 dark:border-amber-500/20 dark:bg-slate-800/80">
-                    <div class="flex items-center gap-2 text-xs font-medium text-amber-700 dark:text-amber-300">
-                        <i data-lucide="triangle-alert" class="h-3.5 w-3.5"></i>
-                        Review needed
+                <div class="rounded-lg border border-outline-subtle bg-surface-hover p-3">
+                    <div class="flex items-center justify-between gap-3">
+                        <span class="text-xs font-semibold text-content-secondary">Review needed</span>
+                        {{ table_label.status_label(inactive_namespaces, 'warning' if inactive_namespaces > 0 else 'normal', 'triangle-alert' if inactive_namespaces > 0 else 'circle-check') }}
                     </div>
-                    <p class="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
-                        {{ inactive_namespaces }} namespace(s) are outside Active status.
-                    </p>
+                    <p class="mt-2 text-xs leading-5 text-content-muted">Namespaces outside Active status in the current scope.</p>
                 </div>
             </div>
-        </div>
+        </article>
     </div>
-</div>
+</section>

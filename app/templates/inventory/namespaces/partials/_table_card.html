@@ -1,70 +1,66 @@
-<div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
-    <div class="border-b border-slate-200 px-6 py-5 dark:border-slate-700">
-        <div class="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+<section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <header class="border-b border-outline-subtle px-5 py-4">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div class="flex items-center gap-3">
-                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+                <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                     <i data-lucide="folders" class="h-5 w-5"></i>
-                </div>
+                </span>
                 <div>
-                    <h2 class="text-lg font-semibold text-slate-950 dark:text-white">Namespace Inventory</h2>
-                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Kubernetes namespaces collected from connected clusters.</p>
+                    <h2 class="text-base font-semibold text-content-primary">Namespace Inventory</h2>
+                    <p class="mt-0.5 text-xs leading-5 text-content-muted">Kubernetes namespaces collected from connected clusters.</p>
                 </div>
             </div>
             <a href="{{ url_for('cluster.list_clusters') }}"
-               class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
+               class="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                 <i data-lucide="external-link" class="h-4 w-4"></i>
                 Open Cluster List
             </a>
         </div>
-        <div id="namespaces-table-loading"
-             class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-blue-100 dark:bg-blue-950/60">
-            <div class="h-full w-1/3 animate-pulse rounded-full bg-blue-600 dark:bg-blue-400"></div>
+        <div id="namespaces-table-loading" class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-kaori-soft">
+            <div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div>
         </div>
-    </div>
-    <div class="border-b border-slate-200 px-6 py-4 dark:border-slate-700">
+    </header>
+
+    <div class="border-b border-outline-subtle bg-surface-hover px-5 py-4">
         <form hx-get="{{ url_for('inventory.namespaces') }}"
               hx-target="#namespaces-table-content"
               hx-swap="innerHTML"
               hx-trigger="change from:select, keyup changed delay:500ms from:input[name='search']"
               hx-indicator="#namespaces-table-loading"
-              class="grid gap-4 xl:grid-cols-[1fr_1fr_1.5fr]">
+              class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)_minmax(18rem,1.4fr)] lg:items-end">
             <input type="hidden" name="page" value="1" />
             <input type="hidden" name="per_page" value="{{ pagination.per_page }}" />
             <div>
-                <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Cluster</label>
-                <select name="cluster_id"
-                        class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
+                <label class="mb-2 block text-sm font-semibold text-content-secondary">Cluster</label>
+                <select name="cluster_id" class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                     <option value="">All Clusters</option>
                     {% for cluster in clusters %}
-                        <option value="{{ cluster.id }}"
-                                {% if selected_cluster_id == cluster.id|string or selected_cluster_id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>
+                        <option value="{{ cluster.id }}" {% if selected_cluster_id == cluster.id|string or selected_cluster_id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div>
-                <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Status</label>
-                <select name="status"
-                        class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
-                    <option value="" {% if not selected_status %}selected{% endif %}>All Status</option>
+                <label class="mb-2 block text-sm font-semibold text-content-secondary">Status</label>
+                <select name="status" class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                    <option value="" {% if not selected_status %}selected{% endif %}>All Statuses</option>
                     {% for status_name in inventory.namespace_statuses %}
-                        <option value="{{ status_name }}"
-                                {% if selected_status == status_name %}selected{% endif %}>{{ status_name }}</option>
+                        <option value="{{ status_name }}" {% if selected_status == status_name %}selected{% endif %}>{{ status_name }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div>
-                <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Search Namespace</label>
+                <label class="mb-2 block text-sm font-semibold text-content-secondary">Search namespace</label>
                 <div class="relative">
-                    <i data-lucide="search"
-                       class="absolute top-3 left-3 h-4 w-4 text-slate-400 dark:text-slate-500"></i>
+                    <i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"></i>
                     <input type="text"
                            name="search"
                            value="{{ search }}"
-                           placeholder="Search namespace..."
-                           class="w-full rounded-xl border border-slate-300 bg-white py-2 pr-3 pl-10 text-sm text-slate-900 transition outline-none placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-blue-400 dark:focus:ring-blue-400/10" />
+                           placeholder="Search namespace"
+                           class="h-11 w-full rounded-lg border border-outline-default bg-surface-card pl-10 pr-3 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20" />
                 </div>
             </div>
         </form>
     </div>
+
     <div id="namespaces-table-content">{% include "inventory/namespaces/partials/_table_content.html" %}</div>
-</div>
+</section>

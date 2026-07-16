@@ -383,3 +383,17 @@ The Node Inventory page follows the authenticated Inventory standard and is the 
 - Expandable node details use 12 px cards, violet non-status icons, compact shared labels, and semantic colors only for readiness, pressure, scheduling, network availability, and other dynamic states. All key/value rows use the same sans-serif 12 px typography and 20 px line height; UUIDs, IP addresses, and runtime identifiers may use break-all wrapping but must not switch to a monospace font.
 - Node labels are descriptive metadata and use violet rectangular labels. Taints remain visually prominent because they affect scheduling behavior.
 - Node empty, unavailable, and uncollected states use the shared violet empty-state treatment. Missing data must not render as Healthy.
+
+## Kubernetes namespace inventory reference
+
+The Namespace Inventory page follows the same hero geometry, operational table density, and expandable-detail standard as Inventory Overview and Node Inventory.
+
+- Use the Inventory Overview hero geometry: `p-5 lg:p-6`, a 7/5 split, `gap-5`, a right panel with `min-h-[13rem]`, compact two-column metrics, and the footer action `Manage Clusters`.
+- Namespace count, contributing clusters, and active namespace count are hero metadata and use rectangular brand labels. The aggregate lifecycle posture is the only semantic label in the hero panel.
+- Coverage cards use neutral surfaces with violet labels and icons. Active and non-active lifecycle counts may use semantic icon treatments because they communicate real status.
+- The primary active-coverage card may use a solid dark-violet surface and a runtime progress width. Gradients are prohibited.
+- Namespace table columns are left aligned except the final Details column, which is right aligned. Cluster identity and additional control counts are metadata labels; namespace lifecycle and collection/control availability use compact semantic labels.
+- Filters use sentence case, 44 px controls, 8 px radius, shared surface tokens, and violet focus states. Loading bars use a solid violet fill.
+- Expandable namespace details use 12 px cards, 8 px icon surfaces, consistent sans-serif 12 px key/value typography, and the shared compact label component. UID values may wrap with `break-all` but must not switch to monospace.
+- ResourceQuota, LimitRange, Default ServiceAccount, and namespace lifecycle are dynamic states and use semantic labels. Workload composition, PSA policy values, object counts, labels, and annotations are metadata and use violet or neutral styling.
+- Namespace labels are descriptive metadata and use rectangular violet labels. Empty labels, annotations, or quota collections use the shared violet empty-state treatment rather than warning colors.
