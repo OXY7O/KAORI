@@ -1,20 +1,77 @@
-<div class="grid grid-cols-2 gap-2.5 text-xs">
-    <div class="flex items-center gap-2.5 rounded-xl border border-white/15 bg-white/10 px-3 py-2.5 backdrop-blur-sm">
-        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/10">
-            <i data-lucide="eye" class="h-4 w-4"></i>
-        </span>
-        <span>
-            <span class="block font-semibold">Visibility</span>
-            <span class="block text-xs text-violet-200">See what matters</span>
-        </span>
+<figure class="relative mx-auto h-80 w-full max-w-md" aria-hidden="true">
+    <div class="pointer-events-none absolute inset-x-8 bottom-2 h-12 rounded-full bg-surface-overlay blur-2xl" aria-hidden="true"></div>
+
+    <div class="absolute inset-0 overflow-hidden rounded-3xl border border-brand-outline bg-brand-surface shadow-2xl shadow-black/25 backdrop-blur-sm">
+        <div class="flex h-11 items-center justify-between border-b border-brand-outline px-4">
+            <div class="flex items-center gap-2" aria-hidden="true">
+                <span class="h-2 w-2 rounded-full bg-brand-foreground-muted"></span>
+                <span class="h-2 w-2 rounded-full bg-kaori-accent"></span>
+                <span class="h-2 w-2 rounded-full bg-brand-foreground"></span>
+            </div>
+            <div class="flex items-center gap-2 rounded-full border border-brand-outline bg-brand-surface px-3 py-1 text-brand-foreground-muted">
+                <span class="h-1.5 w-1.5 rounded-full bg-kaori-accent shadow-sm shadow-kaori-accent"></span>
+                <i data-lucide="activity" class="h-3.5 w-3.5" aria-hidden="true"></i>
+            </div>
+        </div>
+
+        <div class="pointer-events-none absolute inset-x-5 bottom-5 top-14 opacity-35" aria-hidden="true">
+            <div class="grid h-full grid-cols-6">
+                {% for _ in range(6) %}<span class="border-l border-brand-outline first:border-l-0"></span>{% endfor %}
+            </div>
+            <div class="absolute inset-0 grid grid-rows-5">
+                {% for _ in range(5) %}<span class="border-t border-brand-outline first:border-t-0"></span>{% endfor %}
+            </div>
+        </div>
+
+        <div class="absolute left-5 top-16 flex h-12 w-12 items-center justify-center rounded-2xl border border-brand-outline bg-brand-surface-strong text-brand-foreground-muted shadow-lg shadow-black/20 backdrop-blur">
+            <i data-lucide="cloud" class="h-5 w-5" aria-hidden="true"></i>
+        </div>
+        <div class="absolute right-5 top-16 flex h-12 w-12 items-center justify-center rounded-2xl border border-brand-outline bg-brand-surface-strong text-brand-foreground-muted shadow-lg shadow-black/20 backdrop-blur">
+            <i data-lucide="database" class="h-5 w-5" aria-hidden="true"></i>
+        </div>
+        <div class="absolute bottom-5 left-5 flex h-12 w-12 items-center justify-center rounded-2xl border border-brand-outline bg-brand-surface-strong text-brand-foreground-muted shadow-lg shadow-black/20 backdrop-blur">
+            <i data-lucide="network" class="h-5 w-5" aria-hidden="true"></i>
+        </div>
+        <div class="absolute bottom-5 right-5 flex h-12 w-12 items-center justify-center rounded-2xl border border-brand-outline bg-brand-surface-strong text-brand-foreground-muted shadow-lg shadow-black/20 backdrop-blur">
+            <i data-lucide="shield-check" class="h-5 w-5" aria-hidden="true"></i>
+        </div>
+
+        <div class="pointer-events-none absolute left-14 top-24 h-px w-24 rotate-12 bg-gradient-to-r from-brand-surface via-kaori-accent to-brand-surface" aria-hidden="true"></div>
+        <div class="pointer-events-none absolute right-14 top-24 h-px w-24 -rotate-12 bg-gradient-to-r from-brand-surface via-kaori-accent to-brand-surface" aria-hidden="true"></div>
+        <div class="pointer-events-none absolute bottom-20 left-14 h-px w-24 -rotate-12 bg-gradient-to-r from-brand-surface via-kaori-accent to-brand-surface" aria-hidden="true"></div>
+        <div class="pointer-events-none absolute bottom-20 right-14 h-px w-24 rotate-12 bg-gradient-to-r from-brand-surface via-kaori-accent to-brand-surface" aria-hidden="true"></div>
+
+        <div class="absolute left-1/2 top-1/2 w-64 -translate-x-1/2 -translate-y-[42%]">
+            <div class="absolute inset-x-5 -bottom-5 h-12 rounded-full bg-kaori-primary/35 blur-xl" aria-hidden="true"></div>
+            <div class="relative rounded-3xl border border-brand-outline bg-gradient-to-b from-brand-surface-strong to-brand-surface p-4 shadow-2xl shadow-black/30 backdrop-blur">
+                <div class="absolute -inset-px rounded-3xl bg-gradient-to-br from-brand-surface-strong via-transparent to-kaori-accent/20 opacity-70" aria-hidden="true"></div>
+                <div class="relative flex items-end justify-center gap-2.5">
+                    {% for rack in range(3) %}
+                        <div class="w-16 rounded-xl border border-brand-outline bg-surface-sidebar/80 p-2 shadow-xl shadow-black/30 {% if rack == 1 %}h-32{% else %}h-28{% endif %}">
+                            <div class="mb-2 flex items-center justify-between">
+                                <span class="h-1.5 w-1.5 rounded-full bg-kaori-accent"></span>
+                                <span class="h-1 w-7 rounded-full bg-brand-surface-strong"></span>
+                            </div>
+                            <div class="space-y-1.5">
+                                {% for row in range(5) %}
+                                    <div class="flex h-3 items-center gap-1.5 rounded border border-brand-outline bg-brand-surface px-1.5">
+                                        <span class="h-1 w-1 rounded-full {% if row == 3 and rack == 2 %}bg-brand-foreground-muted{% else %}bg-kaori-accent{% endif %}"></span>
+                                        <span class="h-px flex-1 bg-brand-surface-strong"></span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="relative mt-3 flex items-center justify-between rounded-xl border border-brand-outline bg-brand-surface px-3 py-2">
+                    <div class="flex items-center gap-1.5">
+                        {% for _ in range(4) %}<span class="h-1.5 w-1.5 rounded-full bg-kaori-accent"></span>{% endfor %}
+                    </div>
+                    <i data-lucide="workflow" class="h-4 w-4 text-kaori-accent" aria-hidden="true"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="pointer-events-none absolute left-1/2 top-[45%] h-2 w-2 -translate-x-1/2 rounded-full bg-kaori-accent shadow-lg shadow-kaori-accent" aria-hidden="true"></div>
     </div>
-    <div class="flex items-center gap-2.5 rounded-xl border border-white/15 bg-white/10 px-3 py-2.5 backdrop-blur-sm">
-        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/10">
-            <i data-lucide="badge-check" class="h-4 w-4"></i>
-        </span>
-        <span>
-            <span class="block font-semibold">Assurance</span>
-            <span class="block text-xs text-violet-200">Operate with trust</span>
-        </span>
-    </div>
-</div>
+</figure>

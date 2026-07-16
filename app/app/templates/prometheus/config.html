@@ -1,0 +1,400 @@
+{% extends "layouts/app.html" %}
+{% block title %}Prometheus Configuration{% endblock title %}
+{% block page_styles %}
+    <style>
+        .prometheus-workspace {
+            display: grid;
+            gap: 1.5rem;
+            align-items: start;
+        }
+
+        .prometheus-workspace > * {
+            min-width: 0;
+        }
+
+        .prometheus-form-section {
+            border: 1px solid rgb(226 232 240);
+            border-radius: 1.25rem;
+            background: rgb(248 250 252 / 0.72);
+            padding: 1.25rem;
+        }
+
+        .prometheus-section-heading {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.875rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .prometheus-section-number {
+            display: inline-flex;
+            width: 2rem;
+            height: 2rem;
+            flex: 0 0 auto;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.75rem;
+            background: rgb(219 234 254);
+            color: rgb(29 78 216);
+            font-size: 0.75rem;
+            font-weight: 800;
+            line-height: 1;
+        }
+
+        .prometheus-security-toggle {
+            display: flex;
+            min-height: 100%;
+            align-items: flex-start;
+            gap: 0.875rem;
+            border: 1px solid rgb(191 219 254);
+            border-radius: 1rem;
+            background: rgb(239 246 255 / 0.72);
+            padding: 1rem;
+            transition: border-color 150ms ease, background-color 150ms ease, box-shadow 150ms ease;
+        }
+
+        .prometheus-security-toggle:hover {
+            border-color: rgb(147 197 253);
+            background: rgb(239 246 255);
+            box-shadow: 0 8px 20px rgb(15 23 42 / 0.05);
+        }
+
+        .prometheus-action-grid {
+            display: grid;
+            gap: 0.75rem;
+        }
+
+        @media (min-width: 640px) {
+            .prometheus-action-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+
+        @media (min-width: 1180px) {
+            .prometheus-workspace--split {
+                grid-template-columns: minmax(0, 1.18fr) minmax(360px, 0.82fr);
+            }
+        }
+
+        .dark .prometheus-form-section {
+            border-color: rgb(51 65 85);
+            background: rgb(15 23 42 / 0.55);
+        }
+
+        .dark .prometheus-section-number {
+            background: rgb(37 99 235 / 0.18);
+            color: rgb(147 197 253);
+        }
+
+        .dark .prometheus-security-toggle {
+            border-color: rgb(59 130 246 / 0.28);
+            background: rgb(37 99 235 / 0.08);
+        }
+
+        .dark .prometheus-security-toggle:hover {
+            border-color: rgb(59 130 246 / 0.48);
+            background: rgb(37 99 235 / 0.12);
+        }
+    </style>
+{% endblock page_styles %}
+{% block dashboard_content %}
+    {% set current_auth_type = form.auth_type.data or 'none' %}
+    {% set current_detection_mode = form.version_detection_mode.data or 'automatic' %}
+    {% set current_password = form.password.data or (config.password if config and config.password else '') %}
+    {% set current_bearer_token = form.bearer_token.data or (config.bearer_token if config and config.bearer_token else '') %}
+    <div class="space-y-6">
+        <!-- Page Hero -->
+        <section class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 p-6 text-white shadow-lg shadow-blue-500/20 sm:px-7">
+            <div class="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full border border-white/10 bg-white/5"></div>
+            <div class="pointer-events-none absolute -bottom-20 right-24 h-52 w-52 rounded-full border border-white/10 bg-white/5"></div>
+
+            <div class="relative flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+                <div class="flex min-w-0 items-start gap-4">
+                    <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white ring-1 ring-white/25 backdrop-blur">
+                        <i data-lucide="activity" class="h-7 w-7"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-blue-100">Metrics integration</p>
+                        <h1 class="mt-1 text-3xl font-bold tracking-tight text-white">Prometheus Configuration</h1>
+                        <p class="mt-2 max-w-3xl text-sm leading-6 text-blue-50/90 sm:text-base">
+                            Manage the metrics endpoint and validate whether its PromQL contract is ready to serve Kubernetes Analytics for
+                            <span class="font-semibold text-white">{{ cluster.name }}</span>.
+                        </p>
+                    </div>
+                </div>
+
+                <a href="{{ url_for('integrations.prometheus') }}"
+                   class="inline-flex shrink-0 items-center justify-center gap-2 self-start rounded-xl bg-white/15 px-4 py-2.5 text-sm font-semibold text-white shadow-sm ring-1 ring-white/25 backdrop-blur transition hover:bg-white/25">
+                    <i data-lucide="arrow-left" class="h-4 w-4"></i>
+                    Back to Prometheus
+                </a>
+            </div>
+
+            <div class="relative mt-6 grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
+                <div class="rounded-2xl bg-white/15 px-4 py-3 ring-1 ring-white/15 backdrop-blur">
+                    <p class="text-[11px] font-semibold uppercase tracking-wider text-blue-100">Cluster</p>
+                    <p class="mt-1 truncate text-sm font-bold text-white">{{ cluster.name }}</p>
+                </div>
+                <div class="rounded-2xl bg-white/15 px-4 py-3 ring-1 ring-white/15 backdrop-blur">
+                    <p class="text-[11px] font-semibold uppercase tracking-wider text-blue-100">Configuration</p>
+                    <p class="mt-1 text-sm font-bold text-white">{{ 'Configured' if config and config.endpoint else 'Not configured' }}</p>
+                </div>
+                <div class="rounded-2xl bg-white/15 px-4 py-3 ring-1 ring-white/15 backdrop-blur">
+                    <p class="text-[11px] font-semibold uppercase tracking-wider text-blue-100">Endpoint mode</p>
+                    <p class="mt-1 text-sm font-bold text-white">{{ 'Prometheus-compatible intermediary' if current_detection_mode == 'manual' else 'Direct Prometheus' }}</p>
+                </div>
+                <div class="rounded-2xl bg-white/15 px-4 py-3 ring-1 ring-white/15 backdrop-blur">
+                    <p class="text-[11px] font-semibold uppercase tracking-wider text-blue-100">Transport</p>
+                    <p class="mt-1 text-sm font-bold text-white">{{ 'TLS verification enabled' if form.verify_ssl.data else 'TLS verification disabled' }}</p>
+                </div>
+            </div>
+        </section>
+
+        <div class="prometheus-workspace {% if config and config.endpoint %}prometheus-workspace--split{% endif %}">
+            <!-- Connection Settings: primary panel on the left -->
+            <form method="POST"
+                  class="min-w-0"
+                  x-data="{ authType: '{{ current_auth_type }}', detectionMode: '{{ current_detection_mode }}' }">
+                {{ form.hidden_tag() }}
+                <section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
+                    <header class="border-b border-slate-200 bg-white px-6 py-5 dark:border-slate-800 dark:bg-slate-950">
+                        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                            <div class="flex min-w-0 items-start gap-3">
+                                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-md shadow-blue-500/20">
+                                    <i data-lucide="settings-2" class="h-5 w-5"></i>
+                                </span>
+                                <div class="min-w-0">
+                                    <p class="text-xs font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-300">Primary configuration</p>
+                                    <h2 class="mt-1 text-xl font-bold text-slate-950 dark:text-white">Connection Settings</h2>
+                                    <p class="mt-1 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
+                                        Define how KAORI reaches, authenticates to, and validates this metrics source.
+                                    </p>
+                                </div>
+                            </div>
+                            <span class="inline-flex w-fit shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold {% if config and config.endpoint %}border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300{% else %}border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300{% endif %}">
+                                <span class="h-2 w-2 rounded-full {% if config and config.endpoint %}bg-emerald-500{% else %}bg-slate-400{% endif %}"></span>
+                                {{ 'Saved configuration' if config and config.endpoint else 'Setup required' }}
+                            </span>
+                        </div>
+                    </header>
+
+                    {% if form.errors %}
+                        <div class="border-b border-red-200 bg-red-50 px-6 py-4 dark:border-red-900/60 dark:bg-red-950/30">
+                            <div class="flex items-start gap-3">
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white text-red-600 ring-1 ring-red-200 dark:bg-red-950 dark:ring-red-900">
+                                    <i data-lucide="alert-circle" class="h-4 w-4"></i>
+                                </span>
+                                <div>
+                                    <h3 class="text-sm font-bold text-red-700 dark:text-red-200">Review the highlighted configuration</h3>
+                                    <ul class="mt-1.5 list-disc space-y-1 pl-5 text-sm text-red-700 dark:text-red-300">
+                                        {% for field, errors in form.errors.items() %}
+                                            {% for error in errors %}
+                                                <li>{{ error }}</li>
+                                            {% endfor %}
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <div class="space-y-5 p-5 sm:p-6">
+                        <!-- Section 1 -->
+                        <section class="prometheus-form-section">
+                            <div class="prometheus-section-heading">
+                                <span class="prometheus-section-number">01</span>
+                                <div>
+                                    <h3 class="text-sm font-bold text-slate-950 dark:text-white">Endpoint &amp; Compatibility</h3>
+                                    <p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                                        Identify the query endpoint and select how KAORI determines the supported PromQL contract.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="space-y-4">
+                                <div>
+                                    {{ form.endpoint.label(class="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-200") }}
+                                    <div class="relative">
+                                        <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
+                                            <i data-lucide="link-2" class="h-4 w-4"></i>
+                                        </span>
+                                        {{ form.endpoint(class="w-full rounded-xl border border-slate-300 bg-white py-3 pl-10 pr-4 text-sm text-slate-900 transition outline-none placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/70 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-blue-400 dark:focus:ring-blue-400/10") }}
+                                    </div>
+                                    <p class="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                                        Use the base URL reachable from the KAORI application runtime, without a PromQL path suffix.
+                                    </p>
+                                </div>
+
+                                <div class="grid gap-4 md:grid-cols-2">
+                                    <div>
+                                        {{ form.version_detection_mode.label(class="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-200") }}
+                                        {{ form.version_detection_mode(class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/70 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400/10", **{"x-on:change": "detectionMode = $event.target.value"}) }}
+                                        <p class="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                                            Automatic detects a direct Prometheus runtime. Manual is intended for a compatible intermediary such as Thanos Query.
+                                        </p>
+                                    </div>
+
+                                    <div x-show="detectionMode === 'manual'" x-cloak x-transition>
+                                        {{ form.source_prometheus_major.label(class="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-200") }}
+                                        {{ form.source_prometheus_major(class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/70 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400/10") }}
+                                        <p class="mt-2 text-xs leading-5 text-amber-700 dark:text-amber-300">
+                                            Select the Prometheus source major version exposed through the intermediary.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Section 2 -->
+                        <section class="prometheus-form-section">
+                            <div class="prometheus-section-heading">
+                                <span class="prometheus-section-number">02</span>
+                                <div>
+                                    <h3 class="text-sm font-bold text-slate-950 dark:text-white">Authentication</h3>
+                                    <p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                                        Choose the credential method required by the endpoint. Secrets remain masked when the page is revisited.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="space-y-4">
+                                <div>
+                                    {{ form.auth_type.label(class="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-200") }}
+                                    {{ form.auth_type(class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/70 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400/10", **{"x-on:change": "authType = $event.target.value"}) }}
+                                </div>
+
+                                <div x-show="authType === 'basic'" x-cloak x-transition class="grid gap-4 md:grid-cols-2">
+                                    <div>
+                                        {{ form.username.label(class="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-200") }}
+                                        {{ form.username(class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 transition outline-none placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/70 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-blue-400 dark:focus:ring-blue-400/10") }}
+                                    </div>
+                                    <div>
+                                        <label for="password" class="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-200">Password</label>
+                                        <input id="password"
+                                               type="password"
+                                               name="password"
+                                               value="{{ current_password }}"
+                                               placeholder="Password"
+                                               autocomplete="new-password"
+                                               class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 transition outline-none placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/70 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
+                                    </div>
+                                </div>
+
+                                <div x-show="authType === 'bearer'" x-cloak x-transition>
+                                    <label for="bearer_token" class="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-200">Bearer Token</label>
+                                    <input id="bearer_token"
+                                           type="password"
+                                           name="bearer_token"
+                                           value="{{ current_bearer_token }}"
+                                           placeholder="eyJhbGciOi..."
+                                           autocomplete="new-password"
+                                           class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 transition outline-none placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/70 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
+                                </div>
+
+                                <div x-show="authType === 'none'" x-cloak x-transition
+                                     class="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-950/60">
+                                    <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                                        <i data-lucide="shield-off" class="h-4 w-4"></i>
+                                    </span>
+                                    <div>
+                                        <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">No application credential will be sent</p>
+                                        <p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                                            Use this only when network controls or an upstream proxy already protect access to the endpoint.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Section 3 -->
+                        <section class="prometheus-form-section">
+                            <div class="prometheus-section-heading">
+                                <span class="prometheus-section-number">03</span>
+                                <div>
+                                    <h3 class="text-sm font-bold text-slate-950 dark:text-white">Transport Policy</h3>
+                                    <p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                                        Control request timeout and certificate verification for every Prometheus API call.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="grid gap-4 md:grid-cols-2">
+                                <div>
+                                    {{ form.timeout.label(class="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-200") }}
+                                    <div class="relative">
+                                        {{ form.timeout(class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 pr-4 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/70 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400/10") }}
+                                        <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4 text-xs font-semibold text-slate-400">seconds</span>
+                                    </div>
+                                    <p class="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">Allowed range: 1–5 seconds.</p>
+                                </div>
+
+                                <label class="prometheus-security-toggle">
+                                    {{ form.verify_ssl(class="mt-1 h-4 w-4 shrink-0 rounded border-slate-300 text-blue-600 focus:ring-blue-500") }}
+                                    <span>
+                                        <span class="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-white">
+                                            <i data-lucide="shield-check" class="h-4 w-4 text-blue-600 dark:text-blue-300"></i>
+                                            Verify SSL Certificate
+                                        </span>
+                                        <span class="mt-1.5 block text-xs leading-5 text-slate-600 dark:text-slate-400">
+                                            Keep enabled for trusted certificates. Disable only for controlled internal endpoints using a self-signed certificate.
+                                        </span>
+                                    </span>
+                                </label>
+                            </div>
+                        </section>
+                    </div>
+
+                    <footer class="border-t border-slate-200 bg-slate-50/80 px-5 py-5 dark:border-slate-800 dark:bg-slate-900/50 sm:px-6">
+                        <div class="mb-4 flex items-start gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-950/60">
+                            <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300">
+                                <i data-lucide="workflow" class="h-4 w-4"></i>
+                            </span>
+                            <p class="text-xs leading-5 text-slate-600 dark:text-slate-400">
+                                Recommended sequence: save the configuration, test basic connectivity, then run full validation to audit metrics, labels, PromQL contracts, and historical coverage.
+                            </p>
+                        </div>
+
+                        <div class="prometheus-action-grid">
+                            <button type="button"
+                                    hx-post="{{ url_for('prometheus.test_connection', cluster_id=cluster.id) }}"
+                                    hx-target="#operational-action-feedback"
+                                    hx-swap="innerHTML"
+                                    hx-disabled-elt="this"
+                                    class="group inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-wait disabled:opacity-70 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
+                                <i data-lucide="plug-zap" class="h-4 w-4 group-[.htmx-request]:animate-spin"></i>
+                                Test Connection
+                            </button>
+
+                            <button type="button"
+                                    data-operational-progress-title="Prometheus full validation is running"
+                                    data-operational-progress-message="KAORI is checking metric availability, label schemas, versioned PromQL, and retention coverage. Thanos-backed endpoints may take several minutes."
+                                    hx-post="{{ url_for('prometheus.validate_integration', cluster_id=cluster.id) }}"
+                                    hx-target="#operational-action-feedback"
+                                    hx-swap="innerHTML"
+                                    hx-disabled-elt="this"
+                                    class="group inline-flex w-full items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-semibold text-blue-700 transition hover:border-blue-300 hover:bg-blue-100 disabled:cursor-wait disabled:opacity-70 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300 dark:hover:bg-blue-500/20">
+                                <i data-lucide="scan-search" class="h-4 w-4 group-[.htmx-request]:animate-pulse"></i>
+                                Full Validation
+                            </button>
+
+                            <button type="submit"
+                                    data-operation-submit
+                                    data-loading-label="Saving Prometheus..."
+                                    class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-blue-500/20 transition hover:bg-blue-700 dark:hover:bg-blue-500">
+                                <i data-lucide="save" class="h-4 w-4"></i>
+                                <span data-operation-submit-label>Save Configuration</span>
+                            </button>
+                        </div>
+                    </footer>
+                </section>
+            </form>
+
+            <!-- Analytics Readiness: supporting panel on the right -->
+            {% if config and config.endpoint %}
+                <div class="min-w-0">
+                    {% include 'prometheus/partials/_analytics_readiness.html' %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock dashboard_content %}

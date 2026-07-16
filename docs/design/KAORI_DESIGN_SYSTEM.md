@@ -28,6 +28,8 @@ The interface must remain information-first. Violet establishes product identity
 | Primary dark | `#5B21B6` | `#7C3AED` |
 | Accent | `#A78BFA` | `#B9A2FF` |
 | Primary soft | `#EDE9FE` | violet at 14% opacity |
+| On-brand foreground | `#FFFFFF` | `#FFFFFF` |
+| On-brand muted | `#DDD6FE` | `#DDD6FE` |
 
 Recommended light hero gradient: `#5B21B6 → #7C3AED → #8B5CF6`.
 
@@ -143,7 +145,11 @@ The login page is the first implemented reference for the design system.
 - White or neutral form surface using semantic surface tokens.
 - Use comfortable-compact density and keep the complete desktop card usable at 100% browser zoom on a 1366×768 laptop viewport.
 - Prefer `max-w-5xl`, compact vertical padding, 44 px controls, and restrained illustration height for authentication layouts.
-- Local database authentication remains the only actionable provider until additional providers are implemented.
+- The login brand panel uses a CSS-only infrastructure composition built from Tailwind utilities and Lucide icons. Do not depend on raster artwork for the core login layout.
+- Keep brand-panel copy minimal: one eyebrow, one short headline, and at most one supporting line. Avoid embedded dashboard labels, marketing feature cards, and repeated copy.
+- Use the `brand-foreground`, `brand-foreground-muted`, `brand-surface`, `brand-surface-strong`, and `brand-outline` tokens for content rendered on violet or dark brand surfaces.
+- Decorative infrastructure visuals must use brand colors. Semantic status colors are reserved for real health, risk, connectivity, or process values.
+- Local database authentication remains the only actionable provider until additional providers are implemented. Do not expose an SSO action before its authentication flow is available.
 - Theme switching must work before authentication.
 - Authentication errors use the critical semantic family; successful notices use the normal family.
 - Security copy may describe RBAC and audit controls but must not imply unavailable authentication capabilities.

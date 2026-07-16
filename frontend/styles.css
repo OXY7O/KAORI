@@ -13,6 +13,11 @@
     --kaori-brand-primary-dark: #5b21b6;
     --kaori-brand-accent: #a78bfa;
     --kaori-brand-soft: #ede9fe;
+    --kaori-brand-foreground: #ffffff;
+    --kaori-brand-foreground-muted: #ddd6fe;
+    --kaori-brand-surface: rgba(255, 255, 255, 0.08);
+    --kaori-brand-surface-strong: rgba(255, 255, 255, 0.14);
+    --kaori-brand-outline: rgba(255, 255, 255, 0.16);
 
     --kaori-surface-page: #f8f7fc;
     --kaori-surface-sidebar: #1e172d;
@@ -82,6 +87,11 @@
     --kaori-brand-primary-dark: #7c3aed;
     --kaori-brand-accent: #b9a2ff;
     --kaori-brand-soft: rgba(139, 92, 246, 0.14);
+    --kaori-brand-foreground: #ffffff;
+    --kaori-brand-foreground-muted: #ddd6fe;
+    --kaori-brand-surface: rgba(255, 255, 255, 0.08);
+    --kaori-brand-surface-strong: rgba(255, 255, 255, 0.14);
+    --kaori-brand-outline: rgba(255, 255, 255, 0.16);
 
     --kaori-surface-page: #111018;
     --kaori-surface-sidebar: #17131f;
@@ -151,6 +161,11 @@
     --color-kaori-primary-dark: var(--kaori-brand-primary-dark);
     --color-kaori-accent: var(--kaori-brand-accent);
     --color-kaori-soft: var(--kaori-brand-soft);
+    --color-brand-foreground: var(--kaori-brand-foreground);
+    --color-brand-foreground-muted: var(--kaori-brand-foreground-muted);
+    --color-brand-surface: var(--kaori-brand-surface);
+    --color-brand-surface-strong: var(--kaori-brand-surface-strong);
+    --color-brand-outline: var(--kaori-brand-outline);
 
     --color-surface-page: var(--kaori-surface-page);
     --color-surface-sidebar: var(--kaori-surface-sidebar);
