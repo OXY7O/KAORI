@@ -474,3 +474,10 @@ The Service Inventory page follows the same resource-inventory baseline as Inven
 - Use the KAORI soft violet surface, 8 px radius, violet icon, 12 px body text, and one short operational sentence. Avoid repeating the section description or filling the card with explanatory prose.
 - A dashed empty-state box may replace the separate tip when the section has no records because it already explains the missing or unconfigured state. When records are present, the persistent bottom tip is required.
 - Tips describe data meaning or snapshot boundaries. They must not introduce warning colors unless operator action is required.
+
+### Inventory detail card density
+
+- View More cards reserve explicit vertical space according to content density instead of forcing one universal height.
+- Standard cards use approximately 20–24 rem; cards containing nested objects or condition lists use approximately 28–32 rem.
+- Tips are pinned to the bottom with a dedicated 12 px separation and must never flex-shrink into the content above.
+- Dense cards may grow beyond their minimum height when runtime data contains additional rows. Empty-state boxes replace redundant tips rather than stacking two explanatory boxes.

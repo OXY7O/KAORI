@@ -13,7 +13,7 @@
     ) %}
     <div class="space-y-4 lg:col-span-3">
         <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {% call detail_card('Storage identity', 'badge-info', 'bg-lime-50 text-lime-600 dark:bg-lime-950/40 dark:text-lime-300', item.type, 'bg-lime-50 text-lime-700 ring-1 ring-inset ring-lime-200 dark:bg-lime-500/10 dark:text-lime-300 dark:ring-lime-400/25') %}
+            {% call detail_card('Storage identity', 'badge-info', 'bg-lime-50 text-lime-600 dark:bg-lime-950/40 dark:text-lime-300', item.type, 'bg-lime-50 text-lime-700 ring-1 ring-inset ring-lime-200 dark:bg-lime-500/10 dark:text-lime-300 dark:ring-lime-400/25', 'min-h-[30rem]') %}
                 {{ detail_row('Cluster', item.cluster_name, false, 'lime') }}
                 {{ detail_row('Namespace scope', item.namespace, false, 'lime') }}
                 {{ detail_row('Type', item.type, false, 'lime') }}
@@ -22,9 +22,9 @@
                 {{ detail_row('Kubernetes UID', item.uid, true, 'lime') }}
                 {{ detail_row('Created', item.created_at|user_datetime('%Y-%m-%d %H:%M %Z') , false, 'lime') }}
                 {{ detail_row('Collected', item.collected_at|user_datetime('%Y-%m-%d %H:%M %Z') , false, 'lime') }}
-                {{ detail_tip(item.type_description, 'lime', 'lightbulb', false, true, 'min-h-28') }}
+                {{ detail_tip(item.type_description, 'lime', 'lightbulb', false, true, 'min-h-24') }}
             {% endcall %}
-            {% call detail_card('Capacity & mode', 'hard-drive', 'bg-sky-50 text-sky-600 dark:bg-sky-950/40 dark:text-sky-300', item.capacity, 'bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200 dark:bg-sky-500/10 dark:text-sky-300 dark:ring-sky-400/25') %}
+            {% call detail_card('Capacity & mode', 'hard-drive', 'bg-sky-50 text-sky-600 dark:bg-sky-950/40 dark:text-sky-300', item.capacity, 'bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200 dark:bg-sky-500/10 dark:text-sky-300 dark:ring-sky-400/25', 'min-h-[30rem]') %}
                 {{ detail_status_row('Status', item.status, 'success' if item.status in ['Bound', 'Available'] else ('warning' if item.status in ['Pending', 'Released'] else ('danger' if item.status in ['Failed', 'Lost'] else 'neutral') )) }}
                 {{ detail_row('Capacity', item.capacity, false, 'sky') }}
                 {% if item.type == 'PersistentVolumeClaim' %}{{ detail_row('Requested storage', item.requested_storage, false, 'sky') }}{% endif %}
@@ -36,9 +36,9 @@
                         {% for option in item.mount_options %}<span class="rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-normal text-sky-700 ring-1 ring-inset ring-sky-200 dark:bg-sky-500/10 dark:text-sky-300 dark:ring-sky-400/25">{{ option }}</span>{% endfor %}
                     </div>
                 {% endif %}
-                {{ detail_tip('Capacity values are declared Kubernetes storage metadata, not filesystem utilization.', 'sky', 'database', false, true, 'min-h-28') }}
+                {{ detail_tip('Capacity values are declared Kubernetes storage metadata, not filesystem utilization.', 'sky', 'database', false, true, 'min-h-24') }}
             {% endcall %}
-            {% call detail_card('Binding & lifecycle', 'link-2', 'bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-300', item.binding_reference, 'bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/25') %}
+            {% call detail_card('Binding & lifecycle', 'link-2', 'bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-300', item.binding_reference, 'bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/25', 'min-h-[32rem]') %}
                 {{ detail_row('Binding', item.binding_reference, false, 'amber') }}
                 {{ detail_row('Reclaim policy', item.reclaim_policy, false, 'amber') }}
                 {{ detail_row('Binding mode', item.binding_mode, false, 'amber') }}
@@ -53,9 +53,9 @@
                         {% endfor %}
                     </div>
                 {% endif %}
-                {{ detail_tip('Binding metadata shows object relationships and lifecycle controls. Capacity pressure remains in Storage Analysis.', 'amber', 'info', false, true, 'min-h-28') }}
+                {{ detail_tip('Binding metadata shows object relationships and lifecycle controls. Capacity pressure remains in Storage Analysis.', 'amber', 'info', false, true, 'min-h-24') }}
             {% endcall %}
-            {% call detail_card('Provisioning details', 'settings-2', 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300', item.provisioner if item.type == 'StorageClass' else item.source.type if item.source else '-', 'bg-violet-50 text-violet-700 ring-1 ring-inset ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-400/25') %}
+            {% call detail_card('Provisioning details', 'settings-2', 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300', item.provisioner if item.type == 'StorageClass' else item.source.type if item.source else '-', 'bg-violet-50 text-violet-700 ring-1 ring-inset ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-400/25', 'min-h-[32rem]') %}
                 {% if item.type == 'StorageClass' %}
                     {{ detail_row('Provisioner', item.provisioner, false, 'violet') }}
                     {{ detail_row('Parameters', item.parameters|length, false, 'violet') }}
@@ -79,7 +79,7 @@
                         </div>
                     {% endif %}
                 {% endif %}
-                {{ detail_tip('Provisioning fields reflect the configured StorageClass or volume source. Credentials and Secret content are never displayed.', 'violet', 'shield-check', false, true, 'min-h-28') }}
+                {{ detail_tip('Provisioning fields reflect the configured StorageClass or volume source. Credentials and Secret content are never displayed.', 'violet', 'shield-check', false, true, 'min-h-24') }}
             {% endcall %}
         </div>
         {% if item.type == 'StorageClass' and item.parameters %}

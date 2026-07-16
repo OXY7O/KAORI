@@ -25,8 +25,8 @@
     </div>
 {%- endmacro %}
 
-{% macro detail_card(title, icon, badge=None, badge_type='metadata', badge_tone='unknown') -%}
-    <section class="flex h-full flex-col rounded-xl border border-outline-subtle bg-surface-card p-4">
+{% macro detail_card(title, icon, badge=None, badge_type='metadata', badge_tone='unknown', class_name='') -%}
+    <section class="flex h-full flex-col rounded-xl border border-outline-subtle bg-surface-card p-4 {{ class_name }}">
         <div class="mb-4 flex items-center justify-between gap-3">
             <div class="flex items-center gap-2 text-sm font-semibold text-content-primary">
                 <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
@@ -47,11 +47,13 @@
 {%- endmacro %}
 
 {% macro detail_tip(message, icon='info') -%}
-    <div class="mt-auto flex items-start gap-2.5 rounded-lg border border-outline-default bg-kaori-soft px-3 py-2.5 text-xs leading-5 text-content-secondary">
-        <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-surface-card text-kaori-primary">
-            <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
-        </span>
-        <p>{{ message }}</p>
+    <div class="mt-auto pt-3">
+        <div class="flex shrink-0 items-start gap-2.5 rounded-lg border border-outline-default bg-kaori-soft px-3 py-2.5 text-xs leading-5 text-content-secondary">
+            <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-surface-card text-kaori-primary">
+                <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
+            </span>
+            <p class="min-w-0 flex-1">{{ message }}</p>
+        </div>
     </div>
 {%- endmacro %}
 
@@ -74,16 +76,16 @@
         </header>
 
         <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
-            {% call detail_card('Node identity', 'badge-info', node.role) %}
+            {% call detail_card('Node identity', 'badge-info', node.role, 'metadata', 'unknown', 'min-h-80') %}
                 {{ detail_row('System UUID', node.system_uuid, True) }}
                 {{ detail_row('Cluster', node.cluster_name) }}
                 {{ detail_row('Age', node.age) }}
                 {{ detail_row('Collected', node.collected_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
-                {{ detail_tip('Age is calculated from the Kubernetes node creation timestamp and helps distinguish newly joined nodes from long-lived nodes.', 'clock-3') }}
+                {{ detail_tip('Age comes from node creation time; Collected is the latest KAORI snapshot.', 'clock-3') }}
             {% endcall %}
 
             {% set network_tone = 'normal' if node.network_availability == 'Available' else ('critical' if node.network_availability == 'Unavailable' else 'unknown') %}
-            {% call detail_card('Connectivity', 'network', node.scheduled_pod_count ~ ' Pods') %}
+            {% call detail_card('Connectivity', 'network', node.scheduled_pod_count ~ ' Pods', 'metadata', 'unknown', 'min-h-80') %}
                 {{ detail_row('Internal IP', node.internal_ip or '-', True) }}
                 {{ detail_row('External IP', node.external_ip or '-', True) }}
                 {{ detail_row('Scheduled Pods', node.scheduled_pod_count) }}
@@ -91,18 +93,18 @@
                     <span class="text-xs leading-5 text-content-muted">Network availability</span>
                     {{ table_label.status_label(node.network_availability, network_tone) }}
                 </div>
-                {{ detail_tip('Internal IP supports node communication inside the cluster. External IP may be empty for private or on-premises nodes.', 'network') }}
+                {{ detail_tip('Internal IP is the cluster address; External IP may be empty on private nodes.', 'network') }}
             {% endcall %}
 
-            {% call detail_card('Platform & runtime', 'cpu', node.operating_system_display) %}
+            {% call detail_card('Platform & runtime', 'cpu', node.operating_system_display, 'metadata', 'unknown', 'min-h-80') %}
                 {{ detail_row('Operating system', node.os_image or '-') }}
                 {{ detail_row('Kubelet version', node.kubelet_version) }}
                 {{ detail_row('Kube-proxy version', node.kube_proxy_version) }}
                 {{ detail_row('Architecture', node.architecture) }}
-                {{ detail_tip('OS image and component versions are reported by Kubernetes node status. A missing kube-proxy version means the node did not publish that value.', 'cpu') }}
+                {{ detail_tip('Versions come from node status; missing values were not reported.', 'cpu') }}
             {% endcall %}
 
-            {% call detail_card('Scheduling & conditions', 'clipboard-check', condition_posture, 'status', condition_tone) %}
+            {% call detail_card('Scheduling & conditions', 'clipboard-check', condition_posture, 'status', condition_tone, 'min-h-96') %}
                 {% set scheduling_tone = 'normal' if node.scheduling_display == 'Schedulable' else ('warning' if node.scheduling_display == 'Cordoned' else 'unknown') %}
                 <div class="flex items-start justify-between gap-3">
                     <span class="text-xs leading-5 text-content-muted">Scheduling</span>

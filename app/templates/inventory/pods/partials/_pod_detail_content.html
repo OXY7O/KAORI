@@ -34,8 +34,8 @@
         </div>
     </div>
 {%- endmacro %}
-{% macro detail_card(title, icon, badge=None) -%}
-    <section class="flex h-full flex-col rounded-xl border border-outline-default bg-surface-card p-4">
+{% macro detail_card(title, icon, badge=None, class_name='') -%}
+    <section class="flex h-full flex-col rounded-xl border border-outline-default bg-surface-card p-4 {{ class_name }}">
         <div class="mb-4 flex items-center justify-between gap-3">
             <div class="flex items-center gap-2 text-sm font-semibold text-content-primary">
                 <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
@@ -89,7 +89,7 @@
         </header>
 
         <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
-            {% call detail_card('Pod identity', 'badge-info', pod.age) %}
+            {% call detail_card('Pod identity', 'badge-info', pod.age, 'min-h-96') %}
                 {{ detail_row('Cluster', pod.cluster_name) }}
                 {{ detail_row('Namespace', pod.namespace) }}
                 {{ detail_row('Owner', (pod.owner_type ~ ' · ' ~ pod.owner_name) if pod.owner_type != 'Standalone' else 'Standalone') }}
@@ -100,7 +100,7 @@
                 <div class="mt-auto pt-3">{{ info_box('Inventory identity', 'Pod identity and owner from the latest inventory snapshot.', 'lightbulb', 'brand', true) }}</div>
             {% endcall %}
 
-            {% call detail_card('Placement & network', 'map-pin', pod.host_ip or 'Host IP unavailable') %}
+            {% call detail_card('Placement & network', 'map-pin', pod.host_ip or 'Host IP unavailable', 'min-h-[32rem]') %}
                 {{ detail_row('Node', pod.node or 'Not scheduled') }}
                 {{ detail_row('Pod IP', pod.ip or '-', true) }}
                 {{ detail_row('Host IP', pod.host_ip or '-', true) }}
@@ -130,7 +130,7 @@
                 </div>
             {% endcall %}
 
-            {% call detail_card('Pod conditions', 'activity', pod.ready) %}
+            {% call detail_card('Pod conditions', 'activity', pod.ready, 'min-h-[32rem]') %}
                 {{ status_row('Phase', pod.status or 'Unknown', phase_tone, phase_icon) }}
                 {{ status_row('Ready containers', pod.ready, ready_tone, ready_icon) }}
                 {{ detail_row('Regular containers', pod.configuration.container_count) }}
@@ -158,7 +158,7 @@
                 </div>
             {% endcall %}
 
-            {% call detail_card('Pod configuration', 'settings-2', pod.configuration.container_count ~ ' containers') %}
+            {% call detail_card('Pod configuration', 'settings-2', pod.configuration.container_count ~ ' containers', 'min-h-[30rem]') %}
                 {{ detail_row('Service account', pod.configuration.service_account) }}
                 {{ detail_row('Restart policy', pod.configuration.restart_policy) }}
                 {{ detail_row('DNS policy', pod.configuration.dns_policy) }}

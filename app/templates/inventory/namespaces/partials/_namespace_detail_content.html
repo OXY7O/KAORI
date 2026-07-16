@@ -31,8 +31,8 @@
     </div>
 {%- endmacro %}
 
-{% macro detail_card(title, icon, badge=None, badge_type='metadata', badge_tone='unknown', badge_icon=None) -%}
-    <section class="flex h-full flex-col rounded-xl border border-outline-subtle bg-surface-card p-4">
+{% macro detail_card(title, icon, badge=None, badge_type='metadata', badge_tone='unknown', badge_icon=None, class_name='') -%}
+    <section class="flex h-full flex-col rounded-xl border border-outline-subtle bg-surface-card p-4 {{ class_name }}">
         <div class="mb-4 flex items-center justify-between gap-3">
             <div class="flex items-center gap-2 text-sm font-semibold text-content-primary">
                 <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
@@ -53,12 +53,14 @@
 {%- endmacro %}
 
 {% macro detail_tip(message, icon='info', push_to_bottom=True) -%}
-    <div class="{{ 'mt-auto ' if push_to_bottom else '' }}flex items-start gap-2.5 rounded-lg border border-outline-default bg-kaori-soft px-3 py-2.5 text-xs leading-5 text-content-secondary">
+    {% if push_to_bottom %}<div class="mt-auto pt-3">{% endif %}
+    <div class="flex shrink-0 items-start gap-2.5 rounded-lg border border-outline-default bg-kaori-soft px-3 py-2.5 text-xs leading-5 text-content-secondary">
         <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-surface-card text-kaori-primary">
             <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
         </span>
-        <p>{{ message }}</p>
+        <p class="min-w-0 flex-1">{{ message }}</p>
     </div>
+    {% if push_to_bottom %}</div>{% endif %}
 {%- endmacro %}
 
 {% macro namespace_object_card(title, badge, icon='boxes') -%}
@@ -104,16 +106,16 @@
         </header>
 
         <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
-            {% call detail_card('Namespace identity', 'badge-info', namespace.age) %}
+            {% call detail_card('Namespace identity', 'badge-info', namespace.age, 'metadata', 'unknown', None, 'min-h-96') %}
                 {{ status_row('Status', namespace.status, namespace_status_tone, namespace_status_icon) }}
                 {{ detail_row('Age', namespace.age) }}
                 {{ detail_row('UID', namespace.uid, True) }}
                 {{ detail_row('Created', namespace.created_at|user_datetime('%Y-%m-%d %H:%M %Z') if namespace.created_at else '-') }}
                 {{ detail_row('Collected', namespace.collected_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
-                {{ detail_tip('Age is calculated from the Kubernetes creation timestamp. Collected shows when KAORI last refreshed this namespace snapshot.', 'clock-3') }}
+                {{ detail_tip('Age comes from creation time; Collected is the latest KAORI snapshot.', 'clock-3') }}
             {% endcall %}
 
-            {% call detail_card('Resource inventory', 'boxes', namespace.object_counts.tracked_total ~ ' tracked') %}
+            {% call detail_card('Resource inventory', 'boxes', namespace.object_counts.tracked_total ~ ' tracked', 'metadata', 'unknown', None, 'min-h-[28rem]') %}
                 {{ detail_row('Pods', namespace.object_counts.pods) }}
                 {{ detail_row('Services', namespace.object_counts.services) }}
                 {{ detail_row('Ingresses', namespace.object_counts.ingresses) }}
@@ -134,13 +136,13 @@
                             <p class="mt-1 text-xs leading-5 text-content-muted">No Deployment, StatefulSet, DaemonSet, Job, or CronJob was present in the latest namespace snapshot.</p>
                         </div>
                     {% endif %}
-                    {{ detail_tip('Only workload kinds with a non-zero count are shown. Utilization and workload risk remain in Analytics and Intelligence.', 'boxes', False) }}
+                    {{ detail_tip('Only non-zero workload kinds are shown; utilization remains in Analytics.', 'boxes', False) }}
                 </div>
             {% endcall %}
 
             {% set quota_badge = 'Configured' if namespace.quota_count > 0 else 'Not configured' %}
             {% set quota_tone = 'normal' if namespace.quota_count > 0 else 'disabled' %}
-            {% call detail_card('Resource controls', 'sliders-horizontal', quota_badge, 'status', quota_tone, 'circle-check' if namespace.quota_count > 0 else 'circle-minus') %}
+            {% call detail_card('Resource controls', 'sliders-horizontal', quota_badge, 'status', quota_tone, 'circle-check' if namespace.quota_count > 0 else 'circle-minus', 'min-h-[28rem]') %}
                 {{ status_row('ResourceQuota', ('Configured · ' ~ namespace.quota_count) if namespace.quota_count > 0 else 'Not configured', 'normal' if namespace.quota_count > 0 else 'disabled', 'circle-check' if namespace.quota_count > 0 else 'circle-minus') }}
                 {% if namespace.limit_range_count is none %}
                     {{ status_row('LimitRange', 'Not reported', 'unknown', 'circle-help') }}
@@ -170,11 +172,11 @@
                             <p class="mt-1 text-xs leading-5 text-content-muted">A missing ResourceQuota is inventory context and does not automatically indicate a policy violation.</p>
                         </div>
                     {% endif %}
-                    {{ detail_tip('ResourceQuota and LimitRange define namespace constraints. Consumption, remaining quota, and usage trends are analyzed separately.', 'info', False) }}
+                    {{ detail_tip('Quota and limit data show configured constraints; usage remains in Analytics.', 'info', False) }}
                 </div>
             {% endcall %}
 
-            {% call detail_card('Security & access', 'shield-check', psa_configured_count ~ '/3 PSA labels') %}
+            {% call detail_card('Security & access', 'shield-check', psa_configured_count ~ '/3 PSA labels', 'metadata', 'unknown', None, 'min-h-[28rem]') %}
                 {{ detail_row('NetworkPolicies', namespace.network_policy_count if namespace.network_policy_count is not none else 'Not reported') }}
                 {{ detail_row('ServiceAccounts', namespace.service_account_count if namespace.service_account_count is not none else 'Not reported') }}
                 {% set default_sa_tone = 'normal' if namespace.default_service_account == 'Present' else ('critical' if namespace.default_service_account == 'Missing' else 'unknown') %}
@@ -196,7 +198,7 @@
                             <p class="mt-1 text-xs leading-5 text-content-muted">Enforce, audit, and warn behavior currently inherit the cluster admission configuration because no namespace-level PSA labels were collected.</p>
                         </div>
                     {% endif %}
-                    {{ detail_tip('Pod Security Admission labels define enforcement, audit, and warning behavior for pods created in this namespace.', 'shield-check', False) }}
+                    {{ detail_tip('PSA labels define namespace-level enforce, audit, and warn behavior.', 'shield-check', False) }}
                 </div>
             {% endcall %}
 

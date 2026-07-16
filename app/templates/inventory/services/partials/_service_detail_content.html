@@ -28,8 +28,8 @@
         </div>
     </div>
 {%- endmacro %}
-{% macro detail_card(title, icon, badge=None) -%}
-    <section class="flex h-full flex-col rounded-xl border border-outline-default bg-surface-card p-4">
+{% macro detail_card(title, icon, badge=None, class_name='') -%}
+    <section class="flex h-full flex-col rounded-xl border border-outline-default bg-surface-card p-4 {{ class_name }}">
         <div class="mb-4 flex items-center justify-between gap-3">
             <div class="flex items-center gap-2 text-sm font-semibold text-content-primary">
                 <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
@@ -73,7 +73,7 @@
         </header>
 
         <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
-            {% call detail_card('Object identity', 'badge-info', service.age) %}
+            {% call detail_card('Object identity', 'badge-info', service.age, 'min-h-96') %}
                 {{ detail_row('Cluster', service.cluster_name) }}
                 {{ detail_row('Namespace', service.namespace) }}
                 {{ detail_row('Type', service.type) }}
@@ -84,7 +84,7 @@
                 <div class="mt-auto pt-3">{{ info_box('Inventory identity', service.type_description, 'lightbulb', 'brand', true) }}</div>
             {% endcall %}
 
-            {% call detail_card('Network configuration', 'globe-2', service.cluster_ip) %}
+            {% call detail_card('Network configuration', 'globe-2', service.cluster_ip, 'min-h-[28rem]') %}
                 {{ detail_row('Cluster IP', service.cluster_ip, true) }}
                 {{ detail_row('External addresses', service.external_ips|join(', ') if service.external_ips else '-', true) }}
                 {{ detail_row('External name', service.external_name, true) }}
@@ -96,7 +96,7 @@
                 <div class="mt-auto pt-3">{{ info_box('Network identity', 'Cluster and external addresses from the current Service specification.', 'network', 'brand', true) }}</div>
             {% endcall %}
 
-            {% call detail_card('Port mapping', 'plug-zap', service.port_count ~ ' ports') %}
+            {% call detail_card('Port mapping', 'plug-zap', service.port_count ~ ' ports', 'min-h-96') %}
                 {{ detail_row('Port definitions', service.port_count) }}
                 {% if service.ports %}
                     {{ detail_row('Primary port', service.ports[0].port ~ '/' ~ service.ports[0].protocol) }}
@@ -110,7 +110,7 @@
                 <div class="mt-auto pt-3">{{ info_box('Forwarding boundary', 'Port mappings show Service-to-target forwarding only.', 'route', 'brand', true) }}</div>
             {% endcall %}
 
-            {% call detail_card('Selection & endpoints', 'scan-search', service.ready_endpoint_count ~ ' ready') %}
+            {% call detail_card('Selection & endpoints', 'scan-search', service.ready_endpoint_count ~ ' ready', 'min-h-[30rem]') %}
                 {{ detail_row('Selector labels', service.selectors|length) }}
                 {{ detail_row('Selected Pods', service.pod_count) }}
                 {{ detail_row('Ready endpoints', service.ready_endpoint_count) }}

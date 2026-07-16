@@ -12,7 +12,7 @@
     ) %}
     <div class="space-y-4 lg:col-span-3">
         <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {% call detail_card('Object identity', 'badge-info', 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300', ingress.class, 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-400/25') %}
+            {% call detail_card('Object identity', 'badge-info', 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300', ingress.class, 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-400/25', 'min-h-[30rem]') %}
                 {{ detail_row('Cluster', ingress.cluster_name, false, 'blue') }}
                 {{ detail_row('Namespace', ingress.namespace, false, 'blue') }}
                 {{ detail_row('Ingress class', ingress.class, false, 'blue') }}
@@ -21,9 +21,9 @@
                 {{ detail_row('Kubernetes UID', ingress.uid, true, 'blue') }}
                 {{ detail_row('Created', ingress.created_at|user_datetime('%Y-%m-%d %H:%M %Z') , false, 'blue') }}
                 {{ detail_row('Collected', ingress.collected_at|user_datetime('%Y-%m-%d %H:%M %Z') , false, 'blue') }}
-                {{ detail_tip('Ingress routes HTTP and HTTPS traffic to Services according to host and path rules.', 'blue', 'lightbulb', false, true, 'min-h-28') }}
+                {{ detail_tip('Ingress routes HTTP and HTTPS traffic to Services according to host and path rules.', 'blue', 'lightbulb', false, true, 'min-h-24') }}
             {% endcall %}
-            {% call detail_card('Exposure', 'globe-2', 'bg-teal-50 text-teal-600 dark:bg-teal-950/40 dark:text-teal-300', ingress.host_count ~ ' host(s)', 'bg-teal-50 text-teal-700 ring-1 ring-inset ring-teal-200 dark:bg-teal-500/10 dark:text-teal-300 dark:ring-teal-400/25') %}
+            {% call detail_card('Exposure', 'globe-2', 'bg-teal-50 text-teal-600 dark:bg-teal-950/40 dark:text-teal-300', ingress.host_count ~ ' host(s)', 'bg-teal-50 text-teal-700 ring-1 ring-inset ring-teal-200 dark:bg-teal-500/10 dark:text-teal-300 dark:ring-teal-400/25', 'min-h-[30rem]') %}
                 {{ detail_row('Load balancer address', ingress.address, false, 'teal') }}
                 {{ detail_row('Hosts', ingress.host_count, false, 'teal') }}
                 {{ detail_row('Routing rules', ingress.rule_count, false, 'teal') }}
@@ -40,9 +40,9 @@
                         {% endfor %}
                     </div>
                 {% endif %}
-                {{ detail_tip('Addresses come from Ingress status and may remain empty until the controller publishes a load balancer endpoint.', 'teal', 'network', false, true, 'min-h-28') }}
+                {{ detail_tip('Addresses come from Ingress status and may remain empty until the controller publishes a load balancer endpoint.', 'teal', 'network', false, true, 'min-h-24') }}
             {% endcall %}
-            {% call detail_card('TLS configuration', 'shield-check', 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300', 'Enabled' if ingress.tls else 'Not configured', 'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/25' if ingress.tls else 'bg-slate-100 text-slate-700 ring-1 ring-inset ring-slate-200') %}
+            {% call detail_card('TLS configuration', 'shield-check', 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300', 'Enabled' if ingress.tls else 'Not configured', 'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/25' if ingress.tls else 'bg-slate-100 text-slate-700 ring-1 ring-inset ring-slate-200', 'min-h-[34rem]') %}
                 {{ detail_status_row('TLS enabled', 'Yes' if ingress.tls else 'No', 'success' if ingress.tls else 'neutral') }}
                 {{ detail_row('TLS entries', ingress.tls_entries|length, false, 'emerald') }}
                 {{ detail_row('Secret references', ingress.tls_secrets|length, false, 'emerald') }}
@@ -71,9 +71,9 @@
                         </div>
                     </div>
                 </div>
-                {{ detail_tip('TLS entries show Secret references only. Certificate validity and expiry remain in Kubernetes TLS Secret Governance.', 'emerald', 'lock-keyhole', false, true, 'min-h-28') }}
+                {{ detail_tip('TLS entries show Secret references only. Certificate validity and expiry remain in Kubernetes TLS Secret Governance.', 'emerald', 'lock-keyhole', false, true, 'min-h-24') }}
             {% endcall %}
-            {% call detail_card('Routing summary', 'git-branch', 'bg-sky-50 text-sky-600 dark:bg-sky-950/40 dark:text-sky-300', ingress.backend_count ~ ' path(s)', 'bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200 dark:bg-sky-500/10 dark:text-sky-300 dark:ring-sky-400/25') %}
+            {% call detail_card('Routing summary', 'git-branch', 'bg-sky-50 text-sky-600 dark:bg-sky-950/40 dark:text-sky-300', ingress.backend_count ~ ' path(s)', 'bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200 dark:bg-sky-500/10 dark:text-sky-300 dark:ring-sky-400/25', 'min-h-[30rem]') %}
                 {{ detail_row('Rules', ingress.rule_count, false, 'sky') }}
                 {{ detail_row('Hosts', ingress.host_count, false, 'sky') }}
                 {{ detail_row('Paths', ingress.backend_count, false, 'sky') }}
@@ -85,7 +85,7 @@
       title="{{ finalizer }}"><span class="truncate">{{ finalizer }}</span></span>{% endfor %}
                     </div>
                 {% endif %}
-                {{ detail_tip('Routing metadata shows configured host and path mappings, not request volume or backend latency.', 'blue', 'route', false, true, 'min-h-28') }}
+                {{ detail_tip('Routing metadata shows configured host and path mappings, not request volume or backend latency.', 'blue', 'route', false, true, 'min-h-24') }}
             {% endcall %}
         </div>
         <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-950/40">
