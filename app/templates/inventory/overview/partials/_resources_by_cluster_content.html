@@ -1,150 +1,159 @@
-<div class="overflow-x-auto px-6 pt-5">
-    <table class="min-w-full text-sm text-slate-900 dark:text-slate-100">
-        <thead>
-            <tr class="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:border-slate-700 dark:bg-slate-700/40 dark:text-slate-300">
-                <th class="px-4 py-3 text-left">Cluster</th>
-                <th class="px-4 py-3 text-center">Status</th>
-                <th class="px-4 py-3 text-left">Version</th>
-                <th class="px-4 py-3 text-center">Nodes</th>
-                <th class="px-4 py-3 text-center">Namespaces</th>
-                <th class="px-4 py-3 text-center">Workloads</th>
-                <th class="px-4 py-3 text-center">Pods</th>
-                <th class="px-4 py-3 text-center">Services</th>
-                <th class="px-4 py-3 text-center">Ingresses</th>
-                <th class="px-4 py-3 text-center">Storage</th>
-                <th class="px-4 py-3 text-left">Last Sync</th>
-                <th class="px-4 py-3 text-left">Risk Hints</th>
+<div class="overflow-x-auto">
+    <table class="min-w-full divide-y divide-outline-subtle text-sm">
+        <thead class="bg-surface-hover text-[11px] uppercase tracking-[0.08em] text-kaori-primary">
+            <tr>
+                <th class="px-5 py-3 text-left font-semibold">Cluster</th>
+                <th class="px-4 py-3 text-left font-semibold">Status</th>
+                <th class="px-4 py-3 text-left font-semibold">Version</th>
+                <th class="px-4 py-3 text-left font-semibold">Nodes</th>
+                <th class="px-4 py-3 text-left font-semibold">Namespaces</th>
+                <th class="px-4 py-3 text-left font-semibold">Workloads</th>
+                <th class="px-4 py-3 text-left font-semibold">Pods</th>
+                <th class="px-4 py-3 text-left font-semibold">Services</th>
+                <th class="px-4 py-3 text-left font-semibold">Ingresses</th>
+                <th class="px-4 py-3 text-left font-semibold">Storage</th>
+                <th class="px-4 py-3 text-left font-semibold">Last Sync</th>
+                <th class="px-5 py-3 text-right font-semibold">Risk Hints</th>
             </tr>
         </thead>
-        <tbody>
+        <tbody class="divide-y divide-outline-subtle">
             {% for cluster in overview.clusters %}
                 {% set env_value = (cluster.environment or '') | lower %}
                 {% if env_value in ['dev', 'development'] %}
-                    {% set environment_label = "Development" %}
+                    {% set environment_label = 'Development' %}
                 {% elif env_value in ['stg', 'stage', 'staging'] %}
-                    {% set environment_label = "Staging" %}
+                    {% set environment_label = 'Staging' %}
                 {% elif env_value in ['prd', 'prod', 'production'] %}
-                    {% set environment_label = "Production" %}
+                    {% set environment_label = 'Production' %}
                 {% elif env_value in ['dr', 'drc', 'disaster-recovery'] %}
-                    {% set environment_label = "Disaster Recovery" %}
-                {% elif env_value in ['uat'] %}
-                    {% set environment_label = "UAT" %}
-                {% elif env_value in ['qa'] %}
-                    {% set environment_label = "QA" %}
+                    {% set environment_label = 'Disaster Recovery' %}
+                {% elif env_value == 'uat' %}
+                    {% set environment_label = 'UAT' %}
+                {% elif env_value == 'qa' %}
+                    {% set environment_label = 'QA' %}
                 {% elif env_value %}
                     {% set environment_label = cluster.environment %}
                 {% else %}
-                    {% set environment_label = "Environment n/a" %}
+                    {% set environment_label = 'Environment n/a' %}
                 {% endif %}
                 {% set summary = overview.inventory_summary.get(cluster.id, {}) %}
                 {% set synced_at = summary.get('synced_at') %}
-                <tr class="border-b border-slate-200 transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-700/20">
-                    <td class="px-4 py-4">
-                        <div class="flex items-start gap-2">
-                            <span class="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
-                                <i data-lucide="server" class="h-3.5 w-3.5"></i>
+                <tr class="transition hover:bg-surface-hover">
+                    <td class="px-5 py-3.5">
+                        <div class="flex min-w-[12rem] items-start gap-2.5">
+                            <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                                <i data-lucide="server" class="h-4 w-4"></i>
                             </span>
                             <div class="min-w-0">
-                                <div class="truncate font-semibold text-slate-900 dark:text-white"
-                                     title="{{ cluster.name }}">{{ cluster.name }}</div>
-                                <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ environment_label }}</div>
+                                <p class="truncate font-semibold text-content-primary" title="{{ cluster.name }}">{{ cluster.name }}</p>
+                                <p class="mt-0.5 text-xs text-content-muted">{{ environment_label }}</p>
                             </div>
                         </div>
                     </td>
-                    <td class="px-4 py-4 text-center">
+                    <td class="px-4 py-3.5">
                         {% if cluster.status == 'connected' %}
-                            <span class="inline-flex rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">Connected</span>
+                            <span class="inline-flex items-center gap-1.5 rounded-full border border-status-normal-border bg-status-normal-soft px-2.5 py-1 text-[11px] font-semibold text-status-normal-text">
+                                <i data-lucide="circle-check" class="h-3 w-3"></i>
+                                Connected
+                            </span>
                         {% else %}
-                            <span class="inline-flex rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-red-700 dark:bg-red-500/10 dark:text-red-300">Disconnected</span>
+                            <span class="inline-flex items-center gap-1.5 rounded-full border border-status-critical-border bg-status-critical-soft px-2.5 py-1 text-[11px] font-semibold text-status-critical-text">
+                                <i data-lucide="circle-x" class="h-3 w-3"></i>
+                                Disconnected
+                            </span>
                         {% endif %}
                     </td>
-                    <td class="px-4 py-4">{{ summary.get('version', '-') }}</td>
-                    <td class="px-4 py-4 text-center">{{ cluster.node_count or 0 }}</td>
-                    <td class="px-4 py-4 text-center">{{ summary.get('namespaces', 0) }}</td>
-                    <td class="px-4 py-4 text-center">{{ cluster.workload_count or 0 }}</td>
-                    <td class="px-4 py-4 text-center">{{ cluster.pod_count or 0 }}</td>
-                    <td class="px-4 py-4 text-center">{{ cluster.service_count or 0 }}</td>
-                    <td class="px-4 py-4 text-center">{{ cluster.ingress_count or 0 }}</td>
-                    <td class="px-4 py-4 text-center">{{ cluster.storage_count or 0 }}</td>
-                    <td class="px-4 py-4 text-slate-500 dark:text-slate-400">
-                        <div class="flex min-w-[10.5rem] items-center gap-1.5 whitespace-nowrap">
+                    <td class="px-4 py-3.5 font-medium text-content-secondary">{{ summary.get('version', '-') }}</td>
+                    <td class="px-4 py-3.5 font-semibold text-content-primary">{{ cluster.node_count or 0 }}</td>
+                    <td class="px-4 py-3.5 font-semibold text-content-primary">{{ summary.get('namespaces', 0) }}</td>
+                    <td class="px-4 py-3.5 font-semibold text-content-primary">{{ cluster.workload_count or 0 }}</td>
+                    <td class="px-4 py-3.5 font-semibold text-content-primary">{{ cluster.pod_count or 0 }}</td>
+                    <td class="px-4 py-3.5 font-semibold text-content-primary">{{ cluster.service_count or 0 }}</td>
+                    <td class="px-4 py-3.5 font-semibold text-content-primary">{{ cluster.ingress_count or 0 }}</td>
+                    <td class="px-4 py-3.5 font-semibold text-content-primary">{{ cluster.storage_count or 0 }}</td>
+                    <td class="px-4 py-3.5">
+                        <div class="flex min-w-[10.5rem] flex-col items-start gap-1">
                             {% if synced_at %}
-                                <span class="text-[11px] font-medium">{{ synced_at|user_datetime("%d %b %Y %H:%M %Z") }}</span>
+                                <span class="whitespace-nowrap text-[11px] font-medium text-content-secondary">{{ synced_at|user_datetime('%d %b %Y %H:%M %Z') }}</span>
+                            {% else %}
+                                <span class="text-[11px] font-medium text-content-disabled">Not collected</span>
                             {% endif %}
                             {% if cluster.sync_status_tone == 'green' %}
-                                <span class="inline-flex rounded-full bg-emerald-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">{{ cluster.sync_status_label }}</span>
+                                <span class="inline-flex rounded-full border border-status-normal-border bg-status-normal-soft px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-status-normal-text">{{ cluster.sync_status_label }}</span>
                             {% elif cluster.sync_status_tone == 'amber' %}
-                                <span class="inline-flex rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">{{ cluster.sync_status_label }}</span>
+                                <span class="inline-flex rounded-full border border-status-warning-border bg-status-warning-soft px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-status-warning-text">{{ cluster.sync_status_label }}</span>
                             {% else %}
-                                <span class="inline-flex rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-slate-600 dark:bg-slate-700 dark:text-slate-300">{{ cluster.sync_status_label }}</span>
+                                <span class="inline-flex rounded-full border border-status-unknown-border bg-status-unknown-soft px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-status-unknown-text">{{ cluster.sync_status_label }}</span>
                             {% endif %}
                         </div>
                     </td>
-                    <td class="px-4 py-4">
-                        <div class="flex min-w-[10rem] flex-wrap items-center gap-1.5">
+                    <td class="px-5 py-3.5 text-right">
+                        <div class="ml-auto flex min-w-[10rem] flex-wrap justify-end gap-1.5">
                             {% for hint in cluster.risk_hints %}
                                 {% if hint.tone == 'green' %}
-                                    {% set hint_class = "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300" %}
+                                    {% set hint_class = 'border-status-normal-border bg-status-normal-soft text-status-normal-text' %}
                                 {% elif hint.tone == 'amber' %}
-                                    {% set hint_class = "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300" %}
+                                    {% set hint_class = 'border-status-warning-border bg-status-warning-soft text-status-warning-text' %}
                                 {% elif hint.tone == 'red' %}
-                                    {% set hint_class = "bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-300" %}
+                                    {% set hint_class = 'border-status-critical-border bg-status-critical-soft text-status-critical-text' %}
                                 {% elif hint.tone == 'blue' %}
-                                    {% set hint_class = "bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300" %}
+                                    {% set hint_class = 'border-status-info-border bg-status-info-soft text-status-info-text' %}
                                 {% else %}
-                                    {% set hint_class = "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300" %}
+                                    {% set hint_class = 'border-status-unknown-border bg-status-unknown-soft text-status-unknown-text' %}
                                 {% endif %}
-                                <span class="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold {{ hint_class }}">
+                                <span class="inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-semibold {{ hint_class }}">
                                     <i data-lucide="{{ hint.icon }}" class="h-3 w-3"></i>
                                     {{ hint.label }}
                                 </span>
+                            {% else %}
+                                <span class="text-[11px] text-content-muted">No risk hints</span>
                             {% endfor %}
                         </div>
                     </td>
                 </tr>
             {% else %}
                 <tr>
-                    <td colspan="12" class="p-0">
-                        {% set empty_state_icon = "database-zap" %}
-                        {% set empty_state_title = "No inventory data found" %}
-                        {% set empty_state_description = "Adjust the active filters or sync cluster inventory to collect Kubernetes resource data." %}
-                        {% set empty_state_min_height = "min-h-[210px]" %}
-                        {% include "components/states/_empty_state.html" %}
+                    <td colspan="12" class="px-5 py-10 text-center">
+                        <div class="mx-auto flex max-w-md flex-col items-center">
+                            <span class="flex h-11 w-11 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                                <i data-lucide="database-zap" class="h-5 w-5"></i>
+                            </span>
+                            <p class="mt-3 text-sm font-semibold text-kaori-primary">No inventory data found</p>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">Sync cluster inventory to collect Kubernetes resource data.</p>
+                        </div>
                     </td>
                 </tr>
             {% endfor %}
         </tbody>
     </table>
 </div>
-<div class="flex flex-col gap-4 border-t border-slate-200 bg-slate-50 px-6 py-4 text-sm text-slate-500 lg:flex-row lg:items-center lg:justify-between dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-        <div>
-            Showing
-            <span class="font-semibold text-slate-700 dark:text-slate-200">{{ overview.resources_pagination.start_item }}</span>
-            -
-            <span class="font-semibold text-slate-700 dark:text-slate-200">{{ overview.resources_pagination.end_item }}</span>
-            of
-            <span class="font-semibold text-slate-700 dark:text-slate-200">{{ overview.resources_pagination.total_items }}</span>
+
+<footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-hover px-5 py-3.5 text-xs text-content-muted sm:flex-row sm:items-center sm:justify-between">
+    <div class="flex flex-wrap items-center gap-3">
+        <p>
+            Showing <span class="font-semibold text-content-primary">{{ overview.resources_pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ overview.resources_pagination.end_item }}</span>
+            of <span class="font-semibold text-content-primary">{{ overview.resources_pagination.total_items }}</span>
             {{ 'cluster' if overview.resources_pagination.total_items == 1 else 'clusters' }}
-        </div>
+        </p>
         <form hx-get="{{ url_for('inventory.overview') }}"
               hx-target="#resources-by-cluster-content"
               hx-swap="innerHTML"
               hx-indicator="#resources-by-cluster-loading"
               class="flex items-center gap-2">
+            <label for="cluster_per_page" class="font-medium text-content-secondary">Rows</label>
             <input type="hidden" name="cluster_page" value="1">
             <select id="cluster_per_page"
                     name="cluster_per_page"
                     onchange="this.form.requestSubmit()"
-                    class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
+                    class="h-9 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                 {% for option in overview.resources_pagination.allowed_per_page %}
-                    <option value="{{ option }}"
-                            {% if overview.resources_pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
+                    <option value="{{ option }}" {% if overview.resources_pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
                 {% endfor %}
             </select>
         </form>
     </div>
-    <div class="flex flex-wrap items-center gap-2">
+
+    <div class="flex items-center justify-end gap-2">
         {% if overview.resources_pagination.has_prev %}
             {% set prev_url = url_for('inventory.overview', cluster_page=overview.resources_pagination.prev_page, cluster_per_page=overview.resources_pagination.per_page) %}
             <a href="{{ prev_url }}"
@@ -152,19 +161,21 @@
                hx-target="#resources-by-cluster-content"
                hx-swap="innerHTML"
                hx-indicator="#resources-by-cluster-loading"
-               class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
+               class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary">
                 <i data-lucide="chevron-left" class="h-4 w-4"></i>
                 Previous
             </a>
         {% else %}
-            <span class="inline-flex cursor-not-allowed items-center gap-2 rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-sm font-medium text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-600">
+            <span class="inline-flex h-9 cursor-not-allowed items-center gap-1.5 rounded-lg border border-outline-subtle bg-surface-hover px-3 font-semibold text-content-disabled">
                 <i data-lucide="chevron-left" class="h-4 w-4"></i>
                 Previous
             </span>
         {% endif %}
-        <span class="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+
+        <span class="inline-flex h-9 items-center rounded-lg border border-outline-default bg-surface-card px-3 font-semibold text-content-secondary">
             Page {{ overview.resources_pagination.page }} / {{ overview.resources_pagination.total_pages }}
         </span>
+
         {% if overview.resources_pagination.has_next %}
             {% set next_url = url_for('inventory.overview', cluster_page=overview.resources_pagination.next_page, cluster_per_page=overview.resources_pagination.per_page) %}
             <a href="{{ next_url }}"
@@ -172,15 +183,15 @@
                hx-target="#resources-by-cluster-content"
                hx-swap="innerHTML"
                hx-indicator="#resources-by-cluster-loading"
-               class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
+               class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary">
                 Next
                 <i data-lucide="chevron-right" class="h-4 w-4"></i>
             </a>
         {% else %}
-            <span class="inline-flex cursor-not-allowed items-center gap-2 rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-sm font-medium text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-600">
+            <span class="inline-flex h-9 cursor-not-allowed items-center gap-1.5 rounded-lg border border-outline-subtle bg-surface-hover px-3 font-semibold text-content-disabled">
                 Next
                 <i data-lucide="chevron-right" class="h-4 w-4"></i>
             </span>
         {% endif %}
     </div>
-</div>
+</footer>

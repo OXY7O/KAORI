@@ -323,3 +323,16 @@ The Kubernetes Cluster module follows the same authenticated hero, table, semant
 - Filters use sentence case, `text-sm`, 44 px control height, and readable labels. Supporting filter context uses violet rectangular metadata labels rather than pills.
 - Empty cluster inventory, upload zones, and non-error placeholders use violet surfaces. Validation and deletion remain Critical; legacy TLS exceptions remain Warning.
 - Cluster loading indicators use a solid KAORI brand color without page-level style blocks or gradients.
+
+## Kubernetes inventory overview reference
+
+The Kubernetes Inventory Overview follows the authenticated operational overview standard.
+
+- Use the shared `page_hero.intro()` structure with a solid `kaori-primary` hero, one aligned text column, and non-pill metadata labels below the description.
+- Inventory metadata labels describe connected cluster count, collected object count, and collection timestamp. They use violet brand styling because they are context values, not health statuses.
+- Resource KPI cards remain neutral. Labels and icons use KAORI violet; values use the primary content color. Non-status markers such as `Tracked` use compact rectangular metadata labels.
+- Collection health, freshness, connectivity, sync state, and risk hints use semantic status colors only when they communicate a real dynamic infrastructure state.
+- Tables follow the global alignment rule: every column is left aligned except the final column, which is right aligned. On Resources by Cluster, `Risk Hints` is the final right-aligned column.
+- Table headers use the brand violet content color. Cluster identity icons and empty-state icons use violet because they are non-status visual elements.
+- Loading bars use a solid violet fill; gradients are prohibited.
+- Pagination, per-page selectors, and secondary actions use the standard 8 px control radius and semantic surface tokens.
