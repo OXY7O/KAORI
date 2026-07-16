@@ -98,7 +98,7 @@
                 <div class="mt-auto pt-3">{{ info_box('Inventory identity', 'Pod identity and owner from the latest inventory snapshot.', 'lightbulb', 'brand', true) }}</div>
             {% endcall %}
 
-            {% call detail_card('Placement & network', 'map-pin', pod.node or 'Not scheduled') %}
+            {% call detail_card('Placement & network', 'map-pin', pod.host_ip or 'Host IP unavailable') %}
                 {{ detail_row('Node', pod.node or 'Not scheduled') }}
                 {{ detail_row('Pod IP', pod.ip or '-', true) }}
                 {{ detail_row('Host IP', pod.host_ip or '-', true) }}
