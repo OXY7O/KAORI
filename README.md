@@ -33,6 +33,8 @@ Start here:
 
 Detailed instructions: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)
 
+Visual standards and Tailwind design tokens: [docs/design/KAORI_DESIGN_SYSTEM.md](docs/design/KAORI_DESIGN_SYSTEM.md)
+
 ## Production
 
 Production uses the immutable `production` Docker target, Gunicorn, and a separate

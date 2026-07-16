@@ -33,7 +33,7 @@
     <div class="flex h-16 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <!-- Left: current page context -->
         <div class="flex min-w-0 items-center gap-3">
-            <div class="inline-flex h-10 min-w-0 items-center gap-2 rounded-2xl border border-outline-default bg-surface-card px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-content-muted shadow-sm transition">
+            <div class="inline-flex h-10 min-w-0 items-center gap-2 rounded-xl border border-outline-default bg-surface-card px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-content-muted shadow-sm transition">
                 <span class="truncate">KAORI</span>
                 <i data-lucide="chevron-right"
                    class="h-3.5 w-3.5 flex-shrink-0 text-content-muted"></i>
@@ -43,7 +43,7 @@
         <!-- Center: future global search placeholder -->
         <div class="hidden min-w-0 flex-1 justify-center xl:flex">
             <button type="button"
-                    class="flex h-10 w-full max-w-md items-center justify-between rounded-2xl border border-outline-default bg-surface-page px-3 text-left text-xs text-content-disabled transition hover:border-kaori-primary/25 hover:bg-surface-card"
+                    class="flex h-10 w-full max-w-md items-center justify-between rounded-xl border border-outline-default bg-surface-page px-3 text-left text-xs text-content-disabled transition hover:border-kaori-primary/25 hover:bg-surface-card"
                     title="Global search placeholder for a future sprint">
                 <span class="flex items-center gap-2">
                     <i data-lucide="search" class="h-4 w-4"></i>
@@ -60,10 +60,10 @@
             <div class="relative">
                 <button @click="quickOpen = !quickOpen; notificationOpen = false; userOpen = false"
                         type="button"
-                        class="hidden h-10 items-center gap-2 rounded-2xl border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary shadow-sm transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary md:inline-flex"
+                        class="hidden h-10 items-center gap-2 rounded-xl border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary shadow-sm transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary md:inline-flex"
                         aria-label="Open quick actions"
                         :aria-expanded="quickOpen.toString()">
-                    <span class="flex h-7 w-7 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
+                    <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                         <i data-lucide="zap" class="h-3.5 w-3.5"></i>
                     </span>
                     <span>Quick Actions</span>
@@ -71,7 +71,7 @@
                 </button>
                 <button @click="quickOpen = !quickOpen; notificationOpen = false; userOpen = false"
                         type="button"
-                        class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-outline-default bg-surface-card text-content-secondary shadow-sm transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary md:hidden"
+                        class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-outline-default bg-surface-card text-content-secondary shadow-sm transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary md:hidden"
                         aria-label="Open quick actions"
                         :aria-expanded="quickOpen.toString()">
                     <i data-lucide="zap" class="h-5 w-5"></i>
@@ -80,10 +80,10 @@
                      x-show="quickOpen"
                      @click.outside="quickOpen = false"
                      x-transition.origin.top.right
-                     class="absolute right-0 mt-3 w-[min(23rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-outline-default bg-surface-elevated shadow-2xl shadow-black/15">
+                     class="absolute right-0 mt-3 w-[min(23rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-outline-default bg-surface-elevated shadow-2xl shadow-black/15">
                     <div class="border-b border-outline-subtle px-4 py-3 ">
                         <div class="flex items-center gap-3">
-                            <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
+                            <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                                 <i data-lucide="zap" class="h-4 w-4"></i>
                             </span>
                             <div>
@@ -109,8 +109,8 @@
                                             hx-include="#quick-sync-form"
                                             hx-disabled-elt="this"
                                             @click="quickOpen = false; document.getElementById('quick-sync-feedback')?.replaceChildren()"
-                                            class="group relative flex w-full items-start gap-3 overflow-hidden rounded-2xl border border-kaori-primary/15 bg-kaori-soft p-3 text-left transition hover:border-kaori-primary/30 hover:bg-kaori-soft disabled:cursor-wait disabled:opacity-75 ">
-                                        <span class="relative z-10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-kaori-primary text-white shadow-sm shadow-kaori-primary/20">
+                                            class="group relative flex w-full items-start gap-3 overflow-hidden rounded-xl border border-kaori-primary/15 bg-kaori-soft p-3 text-left transition hover:border-kaori-primary/30 hover:bg-kaori-soft disabled:cursor-wait disabled:opacity-75 ">
+                                        <span class="relative z-10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-kaori-primary text-white shadow-sm shadow-kaori-primary/20">
                                             <i data-lucide="refresh-cw"
                                                class="h-4 w-4 group-[.htmx-request]:animate-spin"></i>
                                         </span>
@@ -132,8 +132,8 @@
                                 </form>
                             {% elif cluster_onboarding.can_manage_clusters %}
                                 <a href="{{ url_for('cluster.add_cluster') }}"
-                                   class="group relative flex w-full items-start gap-3 overflow-hidden rounded-2xl border border-status-warning-border bg-status-warning-soft p-3 text-left transition hover:border-status-warning hover:bg-status-warning-soft ">
-                                    <span class="relative z-10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-status-warning text-white shadow-sm shadow-status-warning/20">
+                                   class="group relative flex w-full items-start gap-3 overflow-hidden rounded-xl border border-status-warning-border bg-status-warning-soft p-3 text-left transition hover:border-status-warning hover:bg-status-warning-soft ">
+                                    <span class="relative z-10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-status-warning text-white shadow-sm shadow-status-warning/20">
                                         <i data-lucide="server-cog" class="h-4 w-4"></i>
                                     </span>
                                     <span class="relative z-10 min-w-0 flex-1">
@@ -150,8 +150,8 @@
                         {% endif %}
                         <div class="my-2 border-t border-outline-subtle "></div>
                         <a href="{{ url_for('reports.generate_report') }}"
-                           class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-xs text-content-secondary transition hover:bg-surface-hover">
-                            <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
+                           class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-xs text-content-secondary transition hover:bg-surface-hover">
+                            <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                                 <i data-lucide="file-plus-2" class="h-4 w-4"></i>
                             </span>
                             <span class="min-w-0 flex-1">
@@ -161,8 +161,8 @@
                             <i data-lucide="chevron-right" class="h-4 w-4 text-content-disabled"></i>
                         </a>
                         <a href="{{ url_for('analytics.alerts') }}"
-                           class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-xs text-content-secondary transition hover:bg-surface-hover">
-                            <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-status-warning-soft text-status-warning-text">
+                           class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-xs text-content-secondary transition hover:bg-surface-hover">
+                            <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-status-warning-soft text-status-warning-text">
                                 <i data-lucide="bell-ring" class="h-4 w-4"></i>
                             </span>
                             <span class="min-w-0 flex-1">
@@ -181,7 +181,7 @@
             <!-- Theme -->
             <button id="theme-toggle"
                     type="button"
-                    class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-outline-default bg-surface-card text-content-secondary shadow-sm transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary"
+                    class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-outline-default bg-surface-card text-content-secondary shadow-sm transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary"
                     title="Toggle theme">
                 <i id="theme-icon" data-lucide="moon" class="h-5 w-5"></i>
             </button>
@@ -189,9 +189,9 @@
             <div class="relative">
                 <button @click="userOpen = !userOpen; quickOpen = false; notificationOpen = false"
                         type="button"
-                        class="inline-flex items-center gap-2 rounded-2xl border border-outline-default bg-surface-card p-1.5 pr-2 text-content-secondary shadow-sm transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary"
+                        class="inline-flex items-center gap-2 rounded-xl border border-outline-default bg-surface-card p-1.5 pr-2 text-content-secondary shadow-sm transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary"
                         aria-label="Open user menu">
-                    <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-kaori-primary text-white">
+                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-primary text-white">
                         <i data-lucide="user" class="h-4 w-4"></i>
                     </span>
                     <span class="hidden max-w-28 truncate text-xs font-semibold lg:inline">{{ current_user.username }}</span>
@@ -202,10 +202,10 @@
                      x-show="userOpen"
                      @click.outside="userOpen = false"
                      x-transition.origin.top.right
-                     class="absolute right-0 mt-3 w-64 overflow-hidden rounded-2xl border border-outline-default bg-surface-elevated shadow-xl shadow-black/10">
+                     class="absolute right-0 mt-3 w-64 overflow-hidden rounded-xl border border-outline-default bg-surface-elevated shadow-xl shadow-black/10">
                     <div class="border-b border-outline-subtle px-4 py-3 ">
                         <div class="flex items-start gap-3">
-                            <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-kaori-primary text-white">
+                            <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-kaori-primary text-white">
                                 <i data-lucide="user" class="h-5 w-5"></i>
                             </span>
                             <div class="min-w-0 flex-1">
@@ -216,12 +216,12 @@
                     </div>
                     <div class="p-2">
                         <a href="{{ url_for('settings.account') }}"
-                           class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-xs text-content-secondary transition hover:bg-surface-hover">
+                           class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-xs text-content-secondary transition hover:bg-surface-hover">
                             <i data-lucide="user-cog" class="h-4 w-4"></i>
                             <span class="flex-1">Account Settings</span>
                         </a>
                         <a href="{{ url_for('auth.logout') }}"
-                           class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-status-critical transition hover:bg-status-critical-soft hover:text-status-critical-text">
+                           class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-status-critical transition hover:bg-status-critical-soft hover:text-status-critical-text">
                             <i data-lucide="log-out" class="h-4 w-4"></i>
                             <span>Logout</span>
                         </a>

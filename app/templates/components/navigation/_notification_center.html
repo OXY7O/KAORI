@@ -7,7 +7,7 @@
      hx-history="false">
     <button @click="notificationOpen = !notificationOpen; quickOpen = false; userOpen = false"
             type="button"
-            class="relative inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-outline-default bg-surface-card text-content-secondary shadow-sm transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary"
+            class="relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-outline-default bg-surface-card text-content-secondary shadow-sm transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary"
             aria-label="Open notification center"
             :aria-expanded="notificationOpen.toString()"
             title="Notifications">
@@ -22,7 +22,7 @@
          x-show="notificationOpen"
          @click.outside="notificationOpen = false"
          x-transition.origin.top.right
-         class="absolute right-0 mt-3 w-[min(26rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-outline-default bg-surface-elevated shadow-2xl shadow-black/15">
+         class="absolute right-0 mt-3 w-[min(26rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-outline-default bg-surface-elevated shadow-2xl shadow-black/15">
         <div class="border-b border-outline-subtle px-4 py-3 ">
             <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0">
@@ -47,7 +47,7 @@
                                 hx-post="{{ url_for('notifications.mark_all_read') }}"
                                 hx-target="#notification-center"
                                 hx-swap="outerHTML"
-                                class="whitespace-nowrap rounded-xl px-2.5 py-1.5 text-[10px] font-bold text-kaori-primary transition hover:bg-kaori-soft">
+                                class="whitespace-nowrap rounded-lg px-2.5 py-1.5 text-[10px] font-bold text-kaori-primary transition hover:bg-kaori-soft">
                             Mark all read
                         </button>
                     </form>
@@ -61,7 +61,7 @@
                         {% set is_success = notification.status == 'success' %}
                         {% set is_warning = notification.status == 'warning' %}
                         {% set is_error = notification.status == 'error' %}
-                        <article class="rounded-2xl border p-3 transition {% if not notification.is_read %}border-kaori-primary/15 bg-kaori-soft{% else %}border-transparent bg-surface-hover{% endif %}">
+                        <article class="rounded-xl border p-3 transition {% if not notification.is_read %}border-kaori-primary/15 bg-kaori-soft{% else %}border-transparent bg-surface-hover{% endif %}">
                             <div class="flex items-start gap-3">
                                 <span class="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl {% if is_success %}bg-status-normal-soft text-status-normal-text{% elif is_warning %}bg-status-warning-soft text-status-warning-text{% elif is_error %}bg-status-critical-soft text-status-critical-text{% else %}bg-status-info-soft text-status-info-text{% endif %}">
                                     {% if is_success %}
@@ -135,7 +135,7 @@
                 </div>
             {% else %}
                 <div class="flex min-h-52 flex-col items-center justify-center px-6 text-center">
-                    <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-surface-hover text-content-muted">
+                    <span class="flex h-12 w-12 items-center justify-center rounded-lg bg-surface-hover text-content-muted">
                         <i data-lucide="bell-off" class="h-5 w-5"></i>
                     </span>
                     <p class="mt-3 text-xs font-bold text-content-primary">No notifications yet</p>

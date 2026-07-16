@@ -1,102 +1,42 @@
-<svg xmlns="http://www.w3.org/2000/svg"
-     width="512"
-     height="512"
-     viewBox="0 0 120 120"
-     fill="none"
-     role="img"
-     aria-labelledby="title desc">
-  <title id="title">KAORI logo</title>
-  <desc id="desc">
-    Three evenly spaced operational nodes connected by a symmetrical open orbit
-    around an upward intelligence mark.
-  </desc>
-
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none">
   <defs>
-    <linearGradient id="orbit"
-                    x1="22"
-                    y1="16"
-                    x2="101"
-                    y2="103"
-                    gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#22D3EE"/>
-      <stop offset="0.48" stop-color="#0EA5E9"/>
-      <stop offset="1" stop-color="#2563EB"/>
+    <linearGradient id="g1" x1="180" y1="180" x2="844" y2="844" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#B99BFF"/>
+      <stop offset="1" stop-color="#8E66FF"/>
     </linearGradient>
-
-    <linearGradient id="arrowLeft"
-                    x1="38"
-                    y1="36"
-                    x2="61"
-                    y2="85"
-                    gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#BAE6FD"/>
-      <stop offset="1" stop-color="#38BDF8"/>
+    <linearGradient id="g2" x1="180" y1="180" x2="844" y2="844" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7C3AED"/>
+      <stop offset="1" stop-color="#5B21B6"/>
     </linearGradient>
-
-    <linearGradient id="arrowRight"
-                    x1="60"
-                    y1="34"
-                    x2="83"
-                    y2="85"
-                    gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#60A5FA"/>
-      <stop offset="1" stop-color="#1D4ED8"/>
+    <linearGradient id="g3" x1="180" y1="844" x2="844" y2="180" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6D28D9"/>
+      <stop offset="1" stop-color="#4C1D95"/>
     </linearGradient>
-
-    <linearGradient id="nodes"
-                    x1="31"
-                    y1="17"
-                    x2="99"
-                    y2="92"
-                    gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#67E8F9"/>
-      <stop offset="0.55" stop-color="#0EA5E9"/>
-      <stop offset="1" stop-color="#4F46E5"/>
+    <linearGradient id="g4" x1="844" y1="844" x2="180" y2="180" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5120C9"/>
+      <stop offset="1" stop-color="#7C3AED"/>
     </linearGradient>
+    <linearGradient id="frame" x1="350" y1="350" x2="674" y2="674" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#EEE7FF" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#D9CCFF" stop-opacity="0.95"/>
+    </linearGradient>
+    <linearGradient id="ring" x1="430" y1="430" x2="594" y2="594" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#B696FF"/>
+      <stop offset="1" stop-color="#9D7BFF"/>
+    </linearGradient>
+    <filter id="shadow" x="120" y="120" width="784" height="784" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="18" stdDeviation="28" flood-color="#5B21B6" flood-opacity="0.14"/>
+    </filter>
   </defs>
 
-  <!--
-    Orbit geometry:
-    - center: 60,60
-    - radius: 43
-    - three nodes separated evenly by 120 degrees
-    - equal 24-degree gaps around every node
-  -->
+  <g filter="url(#shadow)">
+    <rect x="180" y="180" width="304" height="304" rx="68" fill="url(#g1)"/>
+    <rect x="540" y="180" width="304" height="304" rx="68" fill="url(#g2)"/>
+    <rect x="180" y="540" width="304" height="304" rx="68" fill="url(#g3)"/>
+    <rect x="540" y="540" width="304" height="304" rx="68" fill="url(#g4)"/>
 
-  <!-- Orbit segment: top node to lower-right node -->
-  <path d="M68.94 17.94
-           A43 43 0 0 1 100.895 73.288"
-        stroke="url(#orbit)"
-        stroke-width="6.5"
-        stroke-linecap="round"/>
-
-  <!-- Orbit segment: lower-right node to lower-left node -->
-  <path d="M91.955 88.773
-           A43 43 0 0 1 28.045 88.773"
-        stroke="url(#orbit)"
-        stroke-width="6.5"
-        stroke-linecap="round"/>
-
-  <!-- Orbit segment: lower-left node to top node -->
-  <path d="M19.105 73.288
-           A43 43 0 0 1 51.06 17.94"
-        stroke="url(#orbit)"
-        stroke-width="6.5"
-        stroke-linecap="round"/>
-
-  <!-- Three equal nodes at -90°, 30°, and 150° -->
-  <circle cx="60" cy="17" r="7.5" fill="url(#nodes)"/>
-  <circle cx="97.239" cy="81.5" r="7.5" fill="url(#nodes)"/>
-  <circle cx="22.761" cy="81.5" r="7.5" fill="url(#nodes)"/>
-
-  <!-- Central upward intelligence mark -->
-  <path d="M60 34L83 84L68 75L60 58L52 75L37 84L60 34Z"
-        fill="url(#arrowRight)"/>
-
-  <path d="M60 34L60 58L52 75L37 84L60 34Z"
-        fill="url(#arrowLeft)"/>
-
-  <!-- Inner correlation core -->
-  <path d="M60 61L67 76L60 83L53 76L60 61Z"
-        fill="#E0F2FE"/>
+    <rect x="340" y="340" width="344" height="344" rx="14" stroke="url(#frame)" stroke-width="38"/>
+    <circle cx="512" cy="512" r="112" fill="url(#ring)"/>
+    <circle cx="512" cy="512" r="74" fill="#F8F7FC"/>
+  </g>
 </svg>
