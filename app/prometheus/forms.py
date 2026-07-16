@@ -30,6 +30,28 @@ class PrometheusConfigForm(FlaskForm):
         },
     )
 
+
+    version_detection_mode = SelectField(
+        'Compatibility Detection',
+        choices=[
+            ('automatic', 'Automatic — direct Prometheus endpoint'),
+            ('manual', 'Manual — Prometheus-compatible intermediary'),
+        ],
+        default='automatic',
+        validators=[DataRequired()],
+    )
+
+    manual_compatibility_profile = SelectField(
+        'Prometheus Major Version',
+        choices=[
+            ('', 'Select a supported major version'),
+            ('prometheus-v2-kubernetes-v1', 'Prometheus 2.x'),
+            ('prometheus-v3-kubernetes-v1', 'Prometheus 3.x'),
+        ],
+        default='',
+        validators=[Optional()],
+    )
+
     auth_type = SelectField(
         'Authentication',
         choices=[
@@ -128,4 +150,11 @@ class PrometheusConfigForm(FlaskForm):
         if self.auth_type.data == 'bearer' and not field.data:
             raise ValidationError(
                 'Bearer token is required',
+            )
+
+
+    def validate_manual_compatibility_profile(self, field: SelectField) -> None:
+        if self.version_detection_mode.data == 'manual' and not field.data:
+            raise ValidationError(
+                'Select the Prometheus major version used behind the intermediary endpoint.',
             )

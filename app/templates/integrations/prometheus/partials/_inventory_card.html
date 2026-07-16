@@ -24,11 +24,11 @@
     <input type="hidden" name="page" value="1">
     <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
     <label class="space-y-2">
-      <span class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Status</span>
-      <select name="status" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm font-medium text-slate-800 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
-        <option value="">All statuses</option>
-        {% for option in status_options %}
-          <option value="{{ option }}" {% if selected_status == option %}selected{% endif %}>{{ option|replace('_', ' ')|title }}</option>
+      <span class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Compatibility</span>
+      <select name="compatibility" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm font-medium text-slate-800 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
+        <option value="">All compatibility states</option>
+        {% for option in compatibility_options %}
+          <option value="{{ option }}" {% if selected_compatibility == option %}selected{% endif %}>{{ option|replace('_', ' ')|title }}</option>
         {% endfor %}
       </select>
     </label>
@@ -42,11 +42,11 @@
       </select>
     </label>
     <label class="space-y-2">
-      <span class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Profile</span>
-      <select name="profile" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm font-medium text-slate-800 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
-        <option value="">All profiles</option>
-        {% for option in profile_options %}
-          <option value="{{ option }}" {% if selected_profile == option %}selected{% endif %}>{{ option }}</option>
+      <span class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Readiness</span>
+      <select name="readiness" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm font-medium text-slate-800 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
+        <option value="">All readiness states</option>
+        {% for option in readiness_options %}
+          <option value="{{ option }}" {% if selected_readiness == option %}selected{% endif %}>{{ option|replace('_', ' ')|title }}</option>
         {% endfor %}
       </select>
     </label>

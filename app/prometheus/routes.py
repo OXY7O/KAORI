@@ -86,6 +86,8 @@ def configuration(
                     'auth_type': saved_config.auth_type,
                     'timeout_seconds': saved_config.timeout,
                     'verify_ssl': saved_config.verify_ssl,
+                    'version_detection_mode': saved_config.version_detection_mode,
+                    'manual_compatibility_profile': saved_config.manual_compatibility_profile,
                 },
                 queue_feedback=True,
             )
@@ -159,6 +161,8 @@ def configuration(
 
     elif config:
         form.endpoint.data = config.endpoint
+        form.version_detection_mode.data = config.version_detection_mode or 'automatic'
+        form.manual_compatibility_profile.data = config.manual_compatibility_profile or ''
         form.auth_type.data = config.auth_type
         form.username.data = config.username
         form.password.data = config.password

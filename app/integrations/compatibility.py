@@ -44,8 +44,8 @@ PROFILES: dict[str, tuple[CompatibilityProfile, ...]] = {
         CompatibilityProfile('kubernetes-current-1-34-1-36', 'kubernetes', '>=1.34,<1.37', 'current', ('core_v1', 'apps_v1', 'networking_v1', 'storage_v1'), 'Current Kubernetes profile. Live API discovery is required before KAORI enables each feature.'),
     ),
     'prometheus': (
-        CompatibilityProfile('prometheus-v2-kubernetes-v1', 'prometheus', '>=2.40,<3.0', 'legacy_supported', ('build_info', 'instant_query', 'range_query'), 'Prometheus 2.x profile using HTTP API v1 and the versioned Kubernetes PromQL pack.', 'promql-kubernetes-v2'),
-        CompatibilityProfile('prometheus-v3-kubernetes-v1', 'prometheus', '>=3.0,<4.0', 'current', ('build_info', 'instant_query', 'range_query'), 'Prometheus 3.x profile. Query, metric, and label-schema validation is required before runtime use.', 'promql-kubernetes-v3'),
+        CompatibilityProfile('prometheus-v2-kubernetes-v1', 'prometheus', '>=2.40,<3.0', 'legacy_supported', ('instant_query', 'range_query'), 'Prometheus 2.x profile using HTTP API v1 and the versioned Kubernetes PromQL pack.', 'promql-kubernetes-v2'),
+        CompatibilityProfile('prometheus-v3-kubernetes-v1', 'prometheus', '>=3.0,<4.0', 'current', ('instant_query', 'range_query'), 'Prometheus 3.x profile. Query, metric, and label-schema validation is required before runtime use.', 'promql-kubernetes-v3'),
     ),
     'alertmanager': (
         CompatibilityProfile('alertmanager-v2-legacy', 'alertmanager', '>=0.25,<0.27', 'legacy', ('status_v2', 'alerts_v2', 'silences_v2'), 'Legacy Alertmanager profile. KAORI uses API v2 only; API v1 is never used.'),

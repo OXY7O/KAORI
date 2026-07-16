@@ -64,6 +64,9 @@ class PrometheusConfig(db.Model):
     )
 
 
+    version_detection_mode: Mapped[str] = mapped_column(String(20), nullable=False, default='automatic')
+    manual_compatibility_profile: Mapped[str | None] = mapped_column(String(100), nullable=True)
+
     detected_version: Mapped[str | None] = mapped_column(String(64), nullable=True)
     compatibility_status: Mapped[str | None] = mapped_column(String(40), nullable=True)
     compatibility_profile: Mapped[str | None] = mapped_column(String(100), nullable=True)

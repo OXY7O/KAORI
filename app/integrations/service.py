@@ -42,33 +42,33 @@ def build_integrations_overview() -> dict[str, Any]:
 
 def build_prometheus_page(
     *,
-    status: str = "",
+    compatibility: str = "",
     environment: str = "",
-    profile: str = "",
+    readiness: str = "",
     page: int = 1,
     per_page: int = 5,
 ) -> dict[str, Any]:
     all_rows = [row for row in build_rows() if row['key'] == 'prometheus']
     rows = _filter_prometheus_rows(
         all_rows,
-        status=status,
+        compatibility=compatibility,
         environment=environment,
-        profile=profile,
+        readiness=readiness,
     )
     page_rows, pagination = _paginate(rows, page=page, per_page=per_page)
     return {
         'rows': page_rows,
         'stats': _stats(all_rows),
         'pagination': pagination,
-        'selected_status': status,
+        'selected_compatibility': compatibility,
         'selected_environment': environment,
-        'selected_profile': profile,
-        'status_options': _prometheus_status_options(all_rows),
+        'selected_readiness': readiness,
+        'compatibility_options': _ordered_status_options(all_rows, 'compatibility', ['compatible', 'compatible_with_warnings', 'capability_mismatch', 'unsupported_version', 'version_unknown', 'validation_required', 'not_configured']),
         'environment_options': [
             {'value': value, 'label': get_environment_label(value)}
             for value in sorted({row['environment'] for row in all_rows if row['environment']}, key=lambda item: get_environment_label(item).lower())
         ],
-        'profile_options': sorted({row['profile'] for row in all_rows if row['profile']}),
+        'readiness_options': _ordered_status_options(all_rows, 'readiness', ['ready', 'degraded', 'blocked', 'validation_required', 'not_configured']),
     }
 
 
@@ -141,6 +141,8 @@ def _row(key: str, name: str, cluster: Cluster, config: object | None) -> dict[s
         'validated_at': getattr(config, 'last_validated_at', None) if config else None,
         'message': getattr(config, 'validation_message', None) if config else None,
         'query_profile': getattr(config, 'query_profile', None) if key == 'prometheus' and config else None,
+        'version_detection_mode': getattr(config, 'version_detection_mode', 'automatic') if key == 'prometheus' and config else None,
+        'manual_compatibility_profile': getattr(config, 'manual_compatibility_profile', None) if key == 'prometheus' and config else None,
         'query_status': getattr(config, 'query_validation_status', None) if key == 'prometheus' and config else None,
         'retention': getattr(config, 'retention_validation_summary', None) if key == 'prometheus' and config else None,
     }
@@ -149,25 +151,23 @@ def _row(key: str, name: str, cluster: Cluster, config: object | None) -> dict[s
 def _filter_prometheus_rows(
     rows: list[dict[str, Any]],
     *,
-    status: str,
+    compatibility: str,
     environment: str,
-    profile: str,
+    readiness: str,
 ) -> list[dict[str, Any]]:
     filtered = rows
-    if status:
-        filtered = [row for row in filtered if row['readiness'] == status]
+    if compatibility:
+        filtered = [row for row in filtered if row['compatibility'] == compatibility]
     if environment:
         filtered = [row for row in filtered if row['environment'] == environment]
-    if profile:
-        filtered = [row for row in filtered if row['profile'] == profile]
+    if readiness:
+        filtered = [row for row in filtered if row['readiness'] == readiness]
     return filtered
 
 
-def _prometheus_status_options(rows: list[dict[str, Any]]) -> list[str]:
-    order = ['ready', 'degraded', 'blocked', 'validation_required', 'not_configured']
-    values = {row['readiness'] for row in rows if row['readiness']}
+def _ordered_status_options(rows: list[dict[str, Any]], field: str, order: list[str]) -> list[str]:
+    values = {row[field] for row in rows if row.get(field)}
     return [value for value in order if value in values] + sorted(values - set(order))
-
 
 def _paginate(
     rows: list[dict[str, Any]],

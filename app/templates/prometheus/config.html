@@ -42,19 +42,21 @@
 
         </div>
         {% if config and config.endpoint %}
-            <section class="grid gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950 md:grid-cols-4">
+            <section class="grid gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950 md:grid-cols-5">
+                <div><div class="text-xs font-bold uppercase tracking-wide text-slate-500">Detection mode</div><div class="mt-2 font-semibold text-slate-900 dark:text-white">{{ (config.version_detection_mode or 'automatic')|title }}</div></div>
                 <div><div class="text-xs font-bold uppercase tracking-wide text-slate-500">Detected version</div><div class="mt-2 font-semibold text-slate-900 dark:text-white">{{ config.detected_version or 'Validation required' }}</div></div>
                 <div><div class="text-xs font-bold uppercase tracking-wide text-slate-500">Compatibility</div><div class="mt-2 font-semibold text-slate-900 dark:text-white">{{ (config.compatibility_status or 'validation_required')|replace('_', ' ')|title }}</div></div>
                 <div><div class="text-xs font-bold uppercase tracking-wide text-slate-500">Readiness</div><div class="mt-2 font-semibold text-slate-900 dark:text-white">{{ (config.readiness_status or 'validation_required')|replace('_', ' ')|title }}</div></div>
                 <div><div class="text-xs font-bold uppercase tracking-wide text-slate-500">Compatibility profile</div><div class="mt-2 font-semibold text-slate-900 dark:text-white">{{ config.compatibility_profile or 'Not selected' }}</div></div>
-                {% if config.validation_message %}<div class="md:col-span-4 rounded-2xl bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:bg-blue-950/40 dark:text-blue-100">{{ config.validation_message }}</div>{% endif %}
+                {% if config.validation_message %}<div class="md:col-span-5 rounded-2xl bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:bg-blue-950/40 dark:text-blue-100">{{ config.validation_message }}</div>{% endif %}
             </section>
         {% endif %}
         <!-- Form Card -->
         {% set current_auth_type = form.auth_type.data or 'none' %}
+        {% set current_detection_mode = form.version_detection_mode.data or 'automatic' %}
         {% set current_password = form.password.data or (config.password if config and config.password else '') %}
         {% set current_bearer_token = form.bearer_token.data or (config.bearer_token if config and config.bearer_token else '') %}
-        <form method="POST" x-data="{ authType: '{{ current_auth_type }}' }">
+        <form method="POST" x-data="{ authType: '{{ current_auth_type }}', detectionMode: '{{ current_detection_mode }}' }">
             {{ form.hidden_tag() }}
             <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
                 <!-- Header -->
@@ -93,6 +95,19 @@
                     <div>
                         {{ form.endpoint.label(class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200") }}
                         {{ form.endpoint(class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 transition outline-none placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-blue-400 dark:focus:ring-blue-400/10") }}
+                    </div>
+                    <!-- Compatibility Detection -->
+                    <div class="grid gap-4 lg:grid-cols-2">
+                        <div>
+                            {{ form.version_detection_mode.label(class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200") }}
+                            {{ form.version_detection_mode(class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-white", **{"x-on:change": "detectionMode = $event.target.value"}) }}
+                            <p class="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">Automatic reads the runtime version from a direct Prometheus endpoint. Manual is required for Prometheus-compatible intermediaries such as Thanos Query.</p>
+                        </div>
+                        <div x-show="detectionMode === 'manual'" x-cloak x-transition>
+                            {{ form.manual_compatibility_profile.label(class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200") }}
+                            {{ form.manual_compatibility_profile(class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-white") }}
+                            <p class="mt-2 text-xs leading-5 text-amber-700 dark:text-amber-300">Select the Prometheus major version whose PromQL behavior and metric profile must be validated behind the intermediary.</p>
+                        </div>
                     </div>
                     <!-- Authentication -->
                     <div>

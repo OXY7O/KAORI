@@ -64,17 +64,32 @@ class PrometheusService:
         if result.get('status') != 'success':
             raise PrometheusError('Prometheus query failed')
 
-        build_info = self.client.get_build_info()
-
+        detection_mode = self.client.config.version_detection_mode or 'automatic'
         elapsed = time.perf_counter() - started
 
-        version = build_info.get('data', {}).get('version', 'unknown')
-        compatibility = evaluate_compatibility(
-            'prometheus',
-            version,
-            capabilities=('build_info', 'instant_query', 'range_query'),
-        )
-        matched_profile = get_profile('prometheus', compatibility.profile_key)
+        if detection_mode == 'manual':
+            selected_profile_key = self.client.config.manual_compatibility_profile
+            matched_profile = get_profile('prometheus', selected_profile_key)
+            if matched_profile is None:
+                raise PrometheusError(
+                    'Manual compatibility mode requires a supported Prometheus major-version profile.'
+                )
+            representative_version = '2.40.0' if selected_profile_key == 'prometheus-v2-kubernetes-v1' else '3.0.0'
+            compatibility = evaluate_compatibility(
+                'prometheus',
+                representative_version,
+                capabilities=('instant_query', 'range_query'),
+            )
+            version = f"Manual: {'2.x' if representative_version.startswith('2.') else '3.x'}"
+        else:
+            build_info = self.client.get_build_info()
+            version = build_info.get('data', {}).get('version', 'unknown')
+            compatibility = evaluate_compatibility(
+                'prometheus',
+                version,
+                capabilities=('build_info', 'instant_query', 'range_query'),
+            )
+            matched_profile = get_profile('prometheus', compatibility.profile_key)
         selected_query_profile = matched_profile.query_profile if matched_profile and matched_profile.query_profile else PROFILE_KEY
         query_audit = PromQLProfileAuditor(self.client).audit(execute_queries=False)
         query_status = 'ready' if query_audit['blocked_count'] == 0 else 'degraded'
@@ -192,6 +207,9 @@ class PrometheusService:
             config.username = None
             config.password = None
             config.bearer_token = form.bearer_token.data
+
+        config.version_detection_mode = form.version_detection_mode.data or 'automatic'
+        config.manual_compatibility_profile = (form.manual_compatibility_profile.data or None) if config.version_detection_mode == 'manual' else None
 
         config.compatibility_status = 'validation_required'
         config.readiness_status = 'validation_required'

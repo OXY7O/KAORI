@@ -59,7 +59,7 @@ Integration inventory and configuration are owned by the top-level `Integrations
 - `/integrations/prometheus/cluster/<cluster_id>` — Prometheus configuration and validation.
 - `/integrations/alertmanager/cluster/<cluster_id>` — Alertmanager configuration and validation.
 
-Prometheus and Alertmanager configuration is owned exclusively by the Integrations domain. Settings does not expose aliases, placeholders, or redirect routes for these integrations. Legacy `/prometheus/...` and `/alertmanager/...` deep links remain temporary blueprint aliases and must not be referenced by new code.
+Legacy `/settings/prometheus`, `/settings/alertmanager`, `/prometheus/...`, and `/alertmanager/...` URLs redirect to canonical routes. Remove the redirect layer only after external bookmarks and activity records have aged out.
 
 ## Safe presentation boundary
 
@@ -84,3 +84,8 @@ registered once more with unique legacy registration names for `/prometheus` and
 wrapper blueprints. Settings shortcuts use explicit `308` redirects to the canonical
 integration list pages. New code and generated links must always use canonical
 `integrations.*`, `prometheus.*`, and `alertmanager.*` endpoints.
+
+
+## Direct Prometheus and intermediary endpoints
+
+A direct Prometheus endpoint uses automatic runtime discovery. A Prometheus-compatible intermediary, including Thanos Query, must use manual compatibility selection because its build endpoint identifies the intermediary rather than the source Prometheus servers. Manual mode stores only a supported major compatibility profile and remains fail-closed until API, PromQL, metric, label-schema, and retention checks pass.
