@@ -1,120 +1,94 @@
-{% set tls_percentage = ((inventory.tls_enabled / inventory.total_ingresses) * 100) | round(0) if inventory.total_ingresses > 0 else 0 %}
-{% set no_tls = inventory.total_ingresses - inventory.tls_enabled %}
-{% set no_tls_percentage = ((no_tls / inventory.total_ingresses) * 100) | round(0) if inventory.total_ingresses > 0 else 0 %}
-<div class="space-y-4">
-    <div class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+{% import "components/table_label.html" as table_label %}
+{% set total_ingresses = inventory.total_ingresses or 0 %}
+{% set tls_enabled = inventory.tls_enabled or 0 %}
+{% set no_tls = total_ingresses - tls_enabled %}
+{% set tls_percentage = ((tls_enabled / total_ingresses) * 100) | round(0) if total_ingresses > 0 else 0 %}
+{% set no_tls_percentage = ((no_tls / total_ingresses) * 100) | round(0) if total_ingresses > 0 else 0 %}
+<section class="space-y-4">
+    <header class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
-            <h2 class="text-lg font-semibold text-slate-950 dark:text-white">Ingress exposure snapshot</h2>
-            <p class="text-sm text-slate-500 dark:text-slate-400">Published routes, TLS coverage, and hostname distribution based on the current filter.</p>
+            <div class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.1em] text-kaori-primary">
+                <i data-lucide="scan-search" class="h-4 w-4"></i>
+                Ingress exposure snapshot
+            </div>
+            <h2 class="mt-2 text-xl font-bold tracking-tight text-content-primary">Published route and TLS coverage</h2>
+            <p class="mt-1 text-sm leading-6 text-content-muted">Ingress distribution, host publication, and TLS configuration based on the current filter scope.</p>
         </div>
-        <div class="text-sm text-slate-500 dark:text-slate-400">
-            TLS ratio <span class="font-semibold text-slate-700 dark:text-slate-200">{{ tls_percentage | int }}%</span>
+        <div class="inline-flex min-h-8 items-center gap-2 rounded-md border border-outline-default bg-kaori-soft px-3 py-1.5 text-xs font-semibold text-kaori-primary">
+            <i data-lucide="shield-check" class="h-4 w-4"></i>
+            TLS ratio {{ tls_percentage | int }}%
         </div>
-    </div>
+    </header>
+
     <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-            <div class="flex items-start justify-between gap-3">
-                <div>
-                    <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Total Ingresses</p>
-                    <div class="mt-4 text-4xl font-bold tracking-tight text-blue-600 dark:text-blue-400">{{ inventory.total_ingresses }}</div>
+        {% set cards = [
+            ('Total Ingresses', total_ingresses, 'route', 'Ingress resources collected from the active cluster and namespace scope.'),
+            ('TLS Enabled', tls_enabled, 'shield-check', 'Ingress resources with at least one TLS configuration entry.'),
+            ('Published Hosts', inventory.total_hosts, 'globe-2', 'Unique hostnames declared by matching Ingress rules.'),
+            ('Namespaces', inventory.total_namespaces, 'folder-tree', 'Namespaces currently publishing Ingress resources.')
+        ] %}
+        {% for label, value, icon, description in cards %}
+            <article class="rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm transition hover:border-outline-strong hover:bg-surface-hover">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <p class="text-[11px] font-semibold uppercase tracking-[0.08em] text-kaori-primary">{{ label }}</p>
+                        <p class="mt-2 text-2xl font-bold tracking-tight text-content-primary">{{ value }}</p>
+                    </div>
+                    <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                        <i data-lucide="{{ icon }}" class="h-5 w-5"></i>
+                    </span>
                 </div>
-                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
-                    <i data-lucide="route" class="h-5 w-5"></i>
-                </div>
-            </div>
-            <p class="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">Ingress resources collected from matching filters.</p>
-        </div>
-        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-            <div class="flex items-start justify-between gap-3">
-                <div>
-                    <p class="text-sm font-medium text-slate-500 dark:text-slate-400">TLS Enabled</p>
-                    <div class="mt-4 text-4xl font-bold tracking-tight text-blue-600 dark:text-blue-400">{{ inventory.tls_enabled }}</div>
-                </div>
-                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300">
-                    <i data-lucide="shield-check" class="h-5 w-5"></i>
-                </div>
-            </div>
-            <p class="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">Ingresses with TLS configuration detected.</p>
-        </div>
-        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-            <div class="flex items-start justify-between gap-3">
-                <div>
-                    <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Hosts</p>
-                    <div class="mt-4 text-4xl font-bold tracking-tight text-blue-600 dark:text-blue-400">{{ inventory.total_hosts }}</div>
-                </div>
-                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-orange-600 dark:bg-orange-500/10 dark:text-orange-300">
-                    <i data-lucide="globe" class="h-5 w-5"></i>
-                </div>
-            </div>
-            <p class="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">Published hostnames found in ingress rules.</p>
-        </div>
-        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-            <div class="flex items-start justify-between gap-3">
-                <div>
-                    <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Namespaces</p>
-                    <div class="mt-4 text-4xl font-bold tracking-tight text-blue-600 dark:text-blue-400">{{ inventory.total_namespaces }}</div>
-                </div>
-                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-300">
-                    <i data-lucide="folder-tree" class="h-5 w-5"></i>
-                </div>
-            </div>
-            <p class="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">Namespaces currently publishing ingress data.</p>
-        </div>
+                <p class="mt-3 border-t border-outline-subtle pt-3 text-xs leading-5 text-content-muted">{{ description }}</p>
+            </article>
+        {% endfor %}
     </div>
-    <div class="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
-        <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-700 via-blue-600 to-cyan-500 p-5 text-white shadow-sm shadow-blue-500/20">
-            <div class="absolute -top-10 right-0 h-28 w-28 rounded-full bg-white/20 blur-3xl"></div>
-            <div class="relative flex items-center justify-between gap-4">
+
+    <div class="grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
+        <article class="rounded-xl bg-kaori-primary-dark p-5 text-white shadow-sm">
+            <div class="flex items-center justify-between gap-4">
                 <div>
-                    <p class="text-xs font-medium uppercase tracking-[0.2em] text-blue-50/80">TLS coverage</p>
-                    <div class="mt-3 text-4xl font-bold">{{ tls_percentage | int }}%</div>
-                    <p class="mt-2 text-sm text-blue-50/85">{{ inventory.tls_enabled }} TLS-enabled from {{ inventory.total_ingresses }} ingress(es)</p>
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-white/75">TLS coverage</p>
+                    <p class="mt-2 text-3xl font-bold">{{ tls_percentage | int }}%</p>
+                    <p class="mt-2 text-xs leading-5 text-white/75">{{ tls_enabled }} TLS-enabled from {{ total_ingresses }} tracked Ingresses.</p>
                 </div>
-                <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15">
-                    <i data-lucide="shield-check" class="h-7 w-7"></i>
-                </div>
+                <span class="flex h-12 w-12 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-white">
+                    <i data-lucide="shield-check" class="h-6 w-6"></i>
+                </span>
             </div>
-            <div class="relative mt-5 h-2 overflow-hidden rounded-full bg-white/20">
-                <div class="h-full rounded-full bg-white"
-                     style="width: {{ tls_percentage }}%"></div>
+            <div class="mt-5 h-2 overflow-hidden rounded-full bg-white/20">
+                <div class="h-full rounded-full bg-white" style="width: {{ tls_percentage }}%"></div>
             </div>
-        </div>
-        <div class="rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-blue-50/40 to-slate-50 p-5 shadow-sm dark:border-slate-700 dark:from-slate-800 dark:via-blue-950/20 dark:to-slate-900/40">
-            <div class="flex items-center justify-between">
+        </article>
+
+        <article class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
+            <div class="flex items-center justify-between gap-4">
                 <div>
-                    <p class="text-sm font-semibold text-slate-900 dark:text-white">Exposure signals</p>
-                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Ingress routing and TLS indicators from the current result.</p>
+                    <p class="text-sm font-semibold text-content-primary">Exposure signals</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">TLS, host, and review indicators in the current result.</p>
                 </div>
-                <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300">
+                <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                     <i data-lucide="chart-no-axes-column" class="h-5 w-5"></i>
                 </span>
             </div>
-            <div class="mt-5 grid gap-3 lg:grid-cols-3">
-                <div class="rounded-xl border border-emerald-100 bg-white/80 px-4 py-3 dark:border-emerald-500/20 dark:bg-slate-800/80">
-                    <div class="flex items-center gap-2 text-xs font-medium text-emerald-700 dark:text-emerald-300">
-                        <i data-lucide="shield-check" class="h-3.5 w-3.5"></i>
-                        TLS enabled
-                    </div>
-                    <div class="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">{{ inventory.tls_enabled }}</div>
-                    <p class="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">Secured ingress routes.</p>
+            <div class="mt-4 grid gap-2 sm:grid-cols-3">
+                <div class="rounded-lg border border-outline-default bg-surface-hover px-3 py-3">
+                    <div class="flex items-center gap-2">{{ table_label.status_label('TLS enabled', 'normal', 'shield-check') }}</div>
+                    <p class="mt-2 text-xl font-bold text-content-primary">{{ tls_enabled }}</p>
+                    <p class="mt-1 text-[10px] leading-4 text-content-muted">Configured for encrypted traffic.</p>
                 </div>
-                <div class="rounded-xl border border-orange-100 bg-white/80 px-4 py-3 dark:border-orange-500/20 dark:bg-slate-800/80">
-                    <div class="flex items-center gap-2 text-xs font-medium text-orange-700 dark:text-orange-300">
-                        <i data-lucide="globe" class="h-3.5 w-3.5"></i>
-                        Hosts
-                    </div>
-                    <div class="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">{{ inventory.total_hosts }}</div>
-                    <p class="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">Published hostnames.</p>
+                <div class="rounded-lg border border-outline-default bg-surface-hover px-3 py-3">
+                    <div class="flex items-center gap-2">{{ table_label.metadata_label('Published hosts', 'globe-2') }}</div>
+                    <p class="mt-2 text-xl font-bold text-content-primary">{{ inventory.total_hosts }}</p>
+                    <p class="mt-1 text-[10px] leading-4 text-content-muted">Unique declared hostnames.</p>
                 </div>
-                <div class="rounded-xl border border-amber-100 bg-white/80 px-4 py-3 dark:border-amber-500/20 dark:bg-slate-800/80">
-                    <div class="flex items-center gap-2 text-xs font-medium text-amber-700 dark:text-amber-300">
-                        <i data-lucide="triangle-alert" class="h-3.5 w-3.5"></i>
-                        Review needed
+                <div class="rounded-lg border border-outline-default bg-surface-hover px-3 py-3">
+                    <div class="flex items-center gap-2">
+                        {% if no_tls > 0 %}{{ table_label.status_label('Review needed', 'warning', 'triangle-alert') }}{% else %}{{ table_label.status_label('No review', 'normal', 'circle-check') }}{% endif %}
                     </div>
-                    <div class="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">{{ no_tls }}</div>
-                    <p class="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">{{ no_tls_percentage | int }}% without TLS.</p>
+                    <p class="mt-2 text-xl font-bold text-content-primary">{{ no_tls }}</p>
+                    <p class="mt-1 text-[10px] leading-4 text-content-muted">{{ no_tls_percentage|int }}% without TLS.</p>
                 </div>
             </div>
-        </div>
+        </article>
     </div>
-</div>
+</section>

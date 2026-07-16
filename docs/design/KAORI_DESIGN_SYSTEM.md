@@ -488,3 +488,17 @@ The Service Inventory page follows the same resource-inventory baseline as Inven
 - Use the shared `detail_object.stack()` wrapper or an equivalent `space-y-3` layout.
 - The standard separation is 12 px, with 12 px top spacing from the primary key/value area.
 - Increasing card height does not replace this required visual separation.
+
+## Kubernetes Ingress inventory reference
+
+The Ingress Inventory page follows the same resource-inventory baseline as Inventory Overview, Nodes, Namespaces, Workloads, Pods, and Services.
+
+- Use the Inventory Overview hero geometry: `p-5 lg:p-6`, a 7/5 split, `gap-5`, a right panel with `min-h-[13rem]`, compact two-column metrics, and the footer action `Manage Clusters`.
+- Ingress count, TLS-enabled count, and published-host count are contextual hero metadata and use rectangular brand labels. The aggregate TLS posture is the only semantic label in the hero panel.
+- Exposure summary cards use neutral surfaces with violet labels and icons. The primary TLS-coverage card may use a solid dark-violet surface and runtime progress width; gradients are prohibited.
+- Ingress table columns are left aligned except the final Details column, which is right aligned. Cluster, namespace, and Ingress class are metadata labels. TLS configuration is a compact semantic status label.
+- Filters use sentence case, 44 px controls, 8 px radius, shared surface tokens, and violet focus states. Loading bars use a solid violet fill.
+- Expandable Ingress details use 12 px cards, 8 px violet icon surfaces, consistent sans-serif 12 px key/value typography, compact shared labels, and the shared nested-object pattern for hosts, TLS references, finalizers, and empty collections.
+- Ingress class, path type, labels, annotations, host declarations, and finalizers are descriptive metadata. TLS presence may use Normal or Warning because it communicates an operational exposure state.
+- Backend routes use a left-aligned table with a compact rectangular path-type label. Empty routes, hosts, TLS entries, labels, annotations, and finalizers use the shared dashed violet information state.
+- TLS details show Secret references only. Certificate validity, expiry, and governance state remain in Kubernetes TLS Secret Governance; request rate, latency, and error behavior remain in Analytics.
