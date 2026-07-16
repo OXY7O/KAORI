@@ -4,7 +4,6 @@
             <tr>
                 <th class="px-5 py-3 text-left font-semibold">Cluster</th>
                 <th class="px-4 py-3 text-left font-semibold">Status</th>
-                <th class="px-4 py-3 text-left font-semibold">Version</th>
                 <th class="px-4 py-3 text-left font-semibold">Nodes</th>
                 <th class="px-4 py-3 text-left font-semibold">Namespaces</th>
                 <th class="px-4 py-3 text-left font-semibold">Workloads</th>
@@ -63,7 +62,6 @@
                             </span>
                         {% endif %}
                     </td>
-                    <td class="px-4 py-3.5 font-medium text-content-secondary">{{ summary.get('version', '-') }}</td>
                     <td class="px-4 py-3.5 font-semibold text-content-primary">{{ cluster.node_count or 0 }}</td>
                     <td class="px-4 py-3.5 font-semibold text-content-primary">{{ summary.get('namespaces', 0) }}</td>
                     <td class="px-4 py-3.5 font-semibold text-content-primary">{{ cluster.workload_count or 0 }}</td>
@@ -113,7 +111,7 @@
                 </tr>
             {% else %}
                 <tr>
-                    <td colspan="12" class="px-5 py-10 text-center">
+                    <td colspan="11" class="px-5 py-10 text-center">
                         <div class="mx-auto flex max-w-md flex-col items-center">
                             <span class="flex h-11 w-11 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
                                 <i data-lucide="database-zap" class="h-5 w-5"></i>
