@@ -558,10 +558,10 @@ def _reveal_status_context() -> dict[str, Any]:
         **get_reveal_page_context(
             user_id=current_user.id,
             can_approve=can_approve,
-            my_page=request.args.get('my_page', 1),
-            my_per_page=request.args.get('my_per_page', 5),
-            pending_page=request.args.get('pending_page', 1),
-            pending_per_page=request.args.get('pending_per_page', 3),
+            my_page=request.args.get('my_page', 1, type=int) or 1,
+            my_per_page=request.args.get('my_per_page', 5, type=int) or 5,
+            pending_page=request.args.get('pending_page', 1, type=int) or 1,
+            pending_per_page=request.args.get('pending_per_page', 3, type=int) or 3,
         ),
         'step_up_active': _secret_reveal_step_up_active(),
         'can_reveal': current_user.has_permission('kubernetes_secrets.reveal'),
@@ -645,8 +645,6 @@ def reveal_secret_page():
         getattr(selected_target, 'namespace', request.args.get('namespace')),
         getattr(selected_target, 'id', selected_inventory_id),
     )
-    can_reveal = current_user.has_permission('kubernetes_secrets.reveal')
-    can_approve = current_user.has_permission('kubernetes_secrets.approve_reveal')
     selected_cluster = target_context.get('selected_cluster') or workspace_context.get('selected_cluster')
     selected_namespace_policy = (
         target_context.get('selected_namespace_policy')
@@ -827,7 +825,7 @@ def reauthenticate_secret_reveal():
 
     password = request.form.get('password') or ''
     if current_user.is_external:
-        feedback = _record_secret_activity(
+        _record_secret_activity(
             event_type='kubernetes_secret_reveal_reauthentication_failed',
             status='error',
             title='Reauthentication unavailable',
@@ -838,7 +836,7 @@ def reauthenticate_secret_reveal():
             queue_feedback=True,
         )
     elif not current_user.check_password(password):
-        feedback = _record_secret_activity(
+        _record_secret_activity(
             event_type='kubernetes_secret_reveal_reauthentication_failed',
             status='error',
             title='Reauthentication failed',
@@ -850,7 +848,7 @@ def reauthenticate_secret_reveal():
         )
     else:
         _mark_secret_reveal_step_up()
-        feedback = _record_secret_activity(
+        _record_secret_activity(
             event_type='kubernetes_secret_reveal_reauthenticated',
             status='success',
             title='Protected reveal session verified',

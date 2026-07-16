@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from flask import url_for
+from sqlalchemy import false
 
 from app.cluster.constants import get_environment_label
 from app.models import (
@@ -415,7 +416,7 @@ def build_topology_graph(
         if referenced_nodes:
             node_query = node_query.filter(NodeInventory.node_name.in_(referenced_nodes))
         else:
-            node_query = node_query.filter(False)
+            node_query = node_query.filter(false())
     nodes_inventory = node_query.order_by(
         NodeInventory.cluster_id.asc(),
         NodeInventory.node_name.asc(),
@@ -1074,10 +1075,12 @@ def build_topology_graph(
     for node in graph_nodes:
         type_counts[node['data']['type']] += 1
 
-    latest_collected = max(
-        (_normalize_datetime(value) for value in collected_values if value is not None),
-        default=None,
-    )
+    normalized_collected_values = [
+        normalized
+        for value in collected_values
+        if (normalized := _normalize_datetime(value)) is not None
+    ]
+    latest_collected = max(normalized_collected_values, default=None)
 
     cluster_count = type_counts.get('cluster', 0)
     namespace_count = type_counts.get('namespace', 0)

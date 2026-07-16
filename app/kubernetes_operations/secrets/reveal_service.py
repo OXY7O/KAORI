@@ -264,7 +264,7 @@ def get_reveal_target_context(inventory_id: str | int | None) -> dict[str, Any]:
         }
     return {
         'target': target,
-        'type_config': SUPPORTED_REVEAL_TYPES[target.secret_type],
+        'type_config': SUPPORTED_REVEAL_TYPES.get(target.secret_type or ''),
         'key_names': _allowed_keys(target),
         'selected_cluster': cluster,
         'selected_namespace_policy': namespace_policy,
@@ -467,22 +467,21 @@ def create_reveal_request(
     else:
         raise ValueError('Protected Secret Reveal is disabled for the selected namespace.')
 
-    record = SecretRevealRequest(
-        configuration_inventory_id=target.id,
-        cluster_id=cluster.id,
-        namespace=target.namespace,
-        secret_name=target.name,
-        secret_type=target.secret_type or 'Opaque',
-        key_name=key_name,
-        policy=namespace_policy,
-        reason=reason,
-        ticket_reference=ticket_reference,
-        status=status,
-        requester_user_id=requester_user_id,
-        requester_ip=requester_ip,
-        requested_at=now,
-        expires_at=expires_at,
-    )
+    record = SecretRevealRequest()
+    record.configuration_inventory_id = target.id
+    record.cluster_id = cluster.id
+    record.namespace = target.namespace
+    record.secret_name = target.name
+    record.secret_type = target.secret_type or 'Opaque'
+    record.key_name = key_name
+    record.policy = namespace_policy
+    record.reason = reason
+    record.ticket_reference = ticket_reference
+    record.status = status
+    record.requester_user_id = requester_user_id
+    record.requester_ip = requester_ip
+    record.requested_at = now
+    record.expires_at = expires_at
     db.session.add(record)
     db.session.commit()
 

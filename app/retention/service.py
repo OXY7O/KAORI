@@ -87,28 +87,27 @@ def run_retention_archive(
                 'message': 'No records matched the retention boundary.',
             }
 
-        artifact = ArchiveArtifact(
-            domain=domain.name,
-            source_model=domain.source_model,
-            trigger_type=_normalize_trigger_type(trigger_type),
-            operation_mode='archive_and_cleanup' if cleanup else 'archive_only',
-            status=ARCHIVE_STATUS_PENDING,
-            schema_version=domain.schema_version,
-            archive_format='jsonl',
-            compression='gzip',
-            cutoff_at=boundary.cutoff_at,
-            range_start=boundary.range_start,
-            range_end=boundary.range_end,
-            boundary_record_id=boundary.maximum_record_id,
-            record_count=boundary.record_count,
-            triggered_by_user_id=triggered_by_user_id,
-            celery_task_id=celery_task_id,
-            metadata_json={
-                'policy': _serialize_policy(policy),
-                'protected_record_count': boundary.protected_record_count,
-                'protected_cutoff_at': _isoformat(boundary.protected_cutoff_at),
-            },
-        )
+        artifact = ArchiveArtifact()
+        artifact.domain = domain.name
+        artifact.source_model = domain.source_model
+        artifact.trigger_type = _normalize_trigger_type(trigger_type)
+        artifact.operation_mode = 'archive_and_cleanup' if cleanup else 'archive_only'
+        artifact.status = ARCHIVE_STATUS_PENDING
+        artifact.schema_version = domain.schema_version
+        artifact.archive_format = 'jsonl'
+        artifact.compression = 'gzip'
+        artifact.cutoff_at = boundary.cutoff_at
+        artifact.range_start = boundary.range_start
+        artifact.range_end = boundary.range_end
+        artifact.boundary_record_id = boundary.maximum_record_id
+        artifact.record_count = boundary.record_count
+        artifact.triggered_by_user_id = triggered_by_user_id
+        artifact.celery_task_id = celery_task_id
+        artifact.metadata_json = {
+            'policy': _serialize_policy(policy),
+            'protected_record_count': boundary.protected_record_count,
+            'protected_cutoff_at': _isoformat(boundary.protected_cutoff_at),
+        }
         db.session.add(artifact)
         db.session.commit()
 

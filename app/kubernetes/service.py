@@ -9,7 +9,7 @@ from kubernetes.client.rest import ApiException
 from app.common.integration_errors import describe_integration_failure
 from app.kubernetes.client import KubernetesClient
 from app.integrations.compatibility import evaluate_compatibility, kubernetes_lifecycle
-from app.kubernetes.compatibility import KubernetesDiscovery
+from .compatibility import KubernetesDiscovery
 from app.kubernetes.tls import legacy_tls_context
 
 logger = logging.getLogger(__name__)

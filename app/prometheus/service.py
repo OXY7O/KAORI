@@ -282,7 +282,8 @@ class PrometheusService:
             raise PrometheusError('Timeout is required')
 
         if not config:
-            config = PrometheusConfig(cluster_id=cluster.id)
+            config = PrometheusConfig()
+            config.cluster_id = cluster.id
             db.session.add(config)
 
         config.endpoint = endpoint

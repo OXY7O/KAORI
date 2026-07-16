@@ -204,7 +204,7 @@ class KubernetesDiscovery:
             payload = self.api_client.call_api(
                 path,
                 'GET',
-                response_type='object',
+                response_types_map={200: 'object'},
                 auth_settings=['BearerToken'],
                 _return_http_data_only=True,
             )
@@ -238,7 +238,7 @@ def list_cluster_resource(api_client: ApiClient, adapter: dict[str, str]) -> lis
     payload = api_client.call_api(
         candidate.collection_path,
         'GET',
-        response_type='object',
+        response_types_map={200: 'object'},
         auth_settings=['BearerToken'],
         _return_http_data_only=True,
     )

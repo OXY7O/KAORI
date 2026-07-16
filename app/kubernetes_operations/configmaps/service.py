@@ -3,10 +3,11 @@ from __future__ import annotations
 import base64
 import re
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 from kubernetes import client
-from kubernetes.client import ApiException
+from kubernetes.client import CoreV1Api, V1ConfigMap, V1ConfigMapList, V1NamespaceList
+from kubernetes.client.exceptions import ApiException
 
 from app.models.cluster import Cluster
 from app.kubernetes.client import KubernetesClient
@@ -66,7 +67,7 @@ def get_namespaces(cluster_id: str) -> list[str]:
         return []
     cluster = _cluster(cluster_id)
     try:
-        response = _api(cluster).list_namespace()
+        response = cast(V1NamespaceList, _api(cluster).list_namespace())
     except ApiException as exc:
         if exc.status == 403:
             raise ValueError(
@@ -93,7 +94,10 @@ def get_configmaps(cluster_id: str, namespace: str) -> list[LiveConfigMapOption]
     cluster = _cluster(cluster_id)
     namespace = _validate_name(namespace, 'Namespace')
     try:
-        response = _api(cluster).list_namespaced_config_map(namespace=namespace)
+        response = cast(
+            V1ConfigMapList,
+            _api(cluster).list_namespaced_config_map(namespace=namespace),
+        )
     except ApiException as exc:
         if exc.status == 404:
             raise ValueError('The selected namespace no longer exists in Kubernetes.') from exc
@@ -212,7 +216,7 @@ def _parse_entries(form: Any) -> tuple[dict[str, str], dict[str, bytes]]:
     return data, binary_data
 
 
-def _api(cluster: Cluster):
+def _api(cluster: Cluster) -> CoreV1Api:
     return KubernetesClient(cluster.kubeconfig).core_api()
 
 
@@ -243,10 +247,13 @@ def create_configmap(form: Any, *, dry_run: bool) -> dict[str, Any]:
         immutable=form.get('immutable') == 'true',
     )
     try:
-        result = _api(cluster).create_namespaced_config_map(
-            namespace=namespace,
-            body=body,
-            dry_run='All' if dry_run else None,
+        result = cast(
+            V1ConfigMap,
+            _api(cluster).create_namespaced_config_map(
+                namespace=namespace,
+                body=body,
+                dry_run='All' if dry_run else None,
+            ),
         )
     except ApiException as exc:
         raise _safe_api_error(exc, 'create operation') from exc
@@ -263,9 +270,12 @@ def create_configmap(form: Any, *, dry_run: bool) -> dict[str, Any]:
 
 def read_configmap(target: ConfigMapTarget) -> dict[str, Any]:
     try:
-        obj = _api(target.cluster).read_namespaced_config_map(
-            name=target.name,
-            namespace=target.namespace,
+        obj = cast(
+            V1ConfigMap,
+            _api(target.cluster).read_namespaced_config_map(
+                name=target.name,
+                namespace=target.namespace,
+            ),
         )
     except ApiException as exc:
         raise _safe_api_error(exc, 'read operation') from exc
@@ -365,11 +375,14 @@ def update_configmap(form: Any, *, dry_run: bool) -> dict[str, Any]:
     if binary_patch:
         body['binaryData'] = binary_patch
     try:
-        result = _api(target.cluster).patch_namespaced_config_map(
-            name=target.name,
-            namespace=target.namespace,
-            body=body,
-            dry_run='All' if dry_run else None,
+        result = cast(
+            V1ConfigMap,
+            _api(target.cluster).patch_namespaced_config_map(
+                name=target.name,
+                namespace=target.namespace,
+                body=body,
+                dry_run='All' if dry_run else None,
+            ),
         )
     except ApiException as exc:
         raise _safe_api_error(exc, 'update operation') from exc

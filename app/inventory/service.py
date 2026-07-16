@@ -3845,21 +3845,25 @@ def get_ingress_detail(
     if not raw_hosts:
         raw_hosts = sorted(
             {
-                item.get('host')
+                str(item.get('host'))
                 for item in backend_paths
                 if isinstance(item, dict) and item.get('host') not in (None, '', '-')
             }
         )
     services = sorted(
         {
-            item.get('service_name')
+            str(item.get('service_name'))
             for item in backend_paths
             if isinstance(item, dict) and item.get('service_name') not in (None, '', '-')
         }
     )
     tls_entries = [item for item in (details.get('tls') or []) if isinstance(item, dict)]
     tls_secrets = sorted(
-        {item.get('secret_name') for item in tls_entries if item.get('secret_name') not in (None, '', '-')}
+        {
+            str(item.get('secret_name'))
+            for item in tls_entries
+            if item.get('secret_name') not in (None, '', '-')
+        }
     )
     labels = details.get('labels') or {}
     annotations = details.get('annotations') or {}

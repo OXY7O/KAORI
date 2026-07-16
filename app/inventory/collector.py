@@ -62,13 +62,13 @@ def get_nodes(
     return result.items
 
 
-def _isoformat_datetime(value) -> str | None:
+def _isoformat_datetime(value: Any) -> str | None:
     if value is None:
         return None
 
     isoformat = getattr(value, 'isoformat', None)
     if callable(isoformat):
-        return isoformat()
+        return str(isoformat())
 
     return str(value)
 
@@ -97,7 +97,7 @@ def _model_value(source, *keys: str, default=None):
     return default
 
 
-def _to_modelish(value):
+def _to_modelish(value: Any) -> Any:
     """Convert raw discovery payloads to attribute objects used by collectors."""
     if isinstance(value, list):
         return [_to_modelish(item) for item in value]
@@ -1605,7 +1605,7 @@ def _pvc_conditions(status) -> list[dict[str, str]]:
                 'message': _string_value(_model_value(condition, 'message')),
                 'last_transition_time': _isoformat_datetime(
                     _model_value(condition, 'last_transition_time', 'lastTransitionTime')
-                ),
+                ) or '-',
             }
         )
     return rows

@@ -27,3 +27,10 @@ Core resources such as Secret, ConfigMap, Pod, Service, Namespace, and Node use 
 ## Maintenance rule
 
 A new legacy fallback must include discovery candidates, a normalized collector adapter, tests against representative payloads, deprecation metadata, and documentation. Do not add version-number conditionals directly inside feature routes or templates.
+
+## Generated client contract
+
+The pinned Kubernetes Python client uses `response_types_map` for low-level
+`ApiClient.call_api()` deserialization. Do not pass the legacy `response_type`
+keyword. Live API services should narrow generated response unions to the expected
+model before reading `items`, `data`, or `metadata`.

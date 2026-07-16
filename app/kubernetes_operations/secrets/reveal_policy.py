@@ -173,13 +173,12 @@ def set_namespace_reveal_policy(
         )
 
     if existing is None:
-        existing = SecretRevealNamespacePolicy(
-            cluster_id=cluster.id,
-            namespace=normalized_namespace,
-            policy=normalized_policy,
-            created_by_user_id=actor_user_id,
-            updated_by_user_id=actor_user_id,
-        )
+        existing = SecretRevealNamespacePolicy()
+        existing.cluster_id = cluster.id
+        existing.namespace = normalized_namespace
+        existing.policy = normalized_policy
+        existing.created_by_user_id = actor_user_id
+        existing.updated_by_user_id = actor_user_id
         db.session.add(existing)
     else:
         existing.policy = normalized_policy
