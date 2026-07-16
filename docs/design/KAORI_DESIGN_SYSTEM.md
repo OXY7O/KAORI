@@ -100,11 +100,13 @@ Use Inter through the global `font-sans` token.
 
 Hero hierarchy:
 
-- Eyebrow/label: 10–11 px, uppercase, high tracking
-- Hero title: 32–48 px depending on viewport and content length
-- Hero secondary identity or role: 20–24 px
-- Hero description: minimum 15 px with 24 px line height
-- When a hero title uses a leading icon, the eyebrow, title, description, and supporting badges must share the same text-column alignment. Offset the eyebrow by the icon width plus its horizontal gap; do not leave it aligned to the outer hero edge.
+- Eyebrow/label: 10 px, uppercase, `tracking-[0.14em]`, 32 px minimum height, 12 px horizontal padding, 6 px vertical padding, and 8 px radius (`rounded-lg`).
+- Every authenticated hero eyebrow must use the shared `components/page_hero.html` macro. Do not recreate the label classes per page.
+- Hero leading icon: 48 px on compact viewports and 56 px from `sm` upward, with a 16 px horizontal gap to the content column.
+- Hero title: 32–48 px depending on viewport and content length.
+- Hero secondary identity or role: 20–24 px.
+- Hero description: minimum 15 px with 24 px line height.
+- Eyebrow, title, secondary identity, description, supporting notice, and capability badges must start on one authoritative text-column edge. Use the shared two-column hero intro grid; do not align elements using manual `ml-*`, `pl-*`, arbitrary pixel offsets, or duplicated margin calculations.
 
 Use a monospace family for endpoints, resource identifiers, IP addresses, namespaces, queries, hashes, and similar technical values.
 
@@ -218,13 +220,24 @@ The authenticated application shell uses a floating, rounded navigation model ra
 - The collapse control belongs in the sidebar footer so the topbar remains focused on page context, search, operational actions, notifications, theme, and account controls.
 - The main application frame uses semantic surface and outline tokens in both light and dark mode. Avoid raw white, slate, blue, or violet utilities when a KAORI token exists.
 
+## Shared hero component
+
+`app/templates/components/page_hero.html` is the authoritative implementation for authenticated hero introductions.
+
+- Use `page_hero.intro(eyebrow_icon, eyebrow_label, leading_icon)` whenever a hero has an eyebrow and a leading icon.
+- The component owns the eyebrow radius, height, padding, icon sizing, column width, and horizontal gap.
+- Page templates own only the title, optional role/subtitle, description, notice, and badges rendered inside the macro caller.
+- Do not apply manual left margin or padding to compensate for the leading icon.
+- Do not use `rounded-full` for hero eyebrows. Pills remain reserved for compact statuses, badges, filters, and metadata chips.
+- Changes to hero eyebrow geometry or alignment must be made in the shared component first, then validated on Welcome and Kubernetes Operations Dashboard as reference pages.
+
 ## Welcome workspace reference
 
 The Welcome page is the reference implementation for the authenticated landing experience.
 
 - Use a solid `kaori-primary` hero surface. Do not use a gradient or decorative color transition.
 - The hero contains one primary welcome message and one role-aware access card. Do not add redundant status cards around it.
-- Hero eyebrow, title, role, description, and capability badges align to one shared text column when the title has a leading icon.
+- Hero eyebrow, title, role, description, and capability badges use the shared `page_hero.intro()` grid and align to one authoritative text column. The eyebrow uses the standard 8 px rounded rectangle, not a pill.
 - Hero description uses at least 15 px text with a 24 px line height so operational purpose remains readable on laptop displays.
 - Use translucent on-brand surfaces for hero badges and access statistics.
 - Keep the access card darker than the main hero so it reads as a secondary operational summary.
@@ -239,7 +252,7 @@ The Kubernetes Operations Dashboard is the reference implementation for authenti
 
 - Use a solid `kaori-primary` hero surface with a 16 px outer radius. Do not use a gradient. Keep the hero compact enough for a 1366×768 laptop viewport.
 - The hero separates the page purpose from the operational context panel. The context panel contains cluster scope, source mode, and freshness time without introducing additional decorative status cards.
-- The hero eyebrow must align with the title and description text column, not the outer hero boundary.
+- The hero eyebrow, title, description, and scope notice use the shared `page_hero.intro()` grid and one authoritative text-column edge. The eyebrow uses the same 8 px rounded rectangle as Welcome.
 - Dashboard hero descriptions use at least 15 px text with a 24 px line height.
 - `All Clusters` represents inventory/database snapshot aggregation. Live Prometheus and AlertManager signals require a selected cluster and must be explained explicitly.
 - KPI cards use neutral surfaces and semantic or brand icon treatments. Do not color an entire KPI card unless the whole card represents a real semantic status.
@@ -257,3 +270,16 @@ The Kubernetes Operations Dashboard is the reference implementation for authenti
 
 - Non-dynamic dashboard iconography and decorative labels should default to KAORI violet rather than mixed semantic colors.
 - Empty, unavailable, or cluster-required placeholder states on dashboard cards should use KAORI violet styling unless the content communicates a true operational status.
+
+## Hero Standard
+
+### Hero metadata labels
+
+- Metadata labels displayed below a hero description are not status pills.
+- Use the shared `page_hero.meta_label()` macro.
+- Radius: 6 px (`rounded-md`).
+- Minimum height: 32 px.
+- Padding: 12 px horizontal and 6 px vertical.
+- Do not use `rounded-full` for role, workspace count, capability count, source, scope, or other non-status hero metadata.
+- `rounded-full` remains reserved for true status badges, avatars, toggles, and compact state indicators.
+- Supporting informational strips below the description use `page_hero.supporting_strip()` with the same 6 px radius.

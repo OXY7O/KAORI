@@ -1,5 +1,6 @@
 {% extends "layouts/app.html" %}
 {% set page_title = "Welcome" %}
+{% import "components/page_hero.html" as page_hero %}
 {% block title %}Welcome · KAORI{% endblock title %}
 {% block dashboard_content %}
     <div class="grid gap-6">
@@ -10,42 +11,23 @@
             <div class="pointer-events-none absolute -bottom-36 right-68 h-80 w-80 rounded-full border border-white/[0.08]" aria-hidden="true"></div>
 
             <div class="relative z-10 flex min-w-0 flex-col justify-center">
-                <div class="inline-flex w-fit items-center gap-2 rounded-full border border-brand-outline bg-brand-surface px-3 py-2 text-[10px] font-extrabold uppercase tracking-[0.12em] text-brand-foreground-muted backdrop-blur-xl sm:ml-[72px]">
-                    <i data-lucide="orbit" class="h-4 w-4" aria-hidden="true"></i>
-                    Infrastructure operations workspace
-                </div>
+                {% call page_hero.intro('orbit', 'Infrastructure operations workspace', 'sparkles') %}
+                    <h1 class="text-[clamp(2rem,3.2vw,3.35rem)] font-extrabold leading-[1.04] tracking-[-0.045em] text-white">
+                        Welcome to KAORI, {{ current_user.role_display_name }}.
+                    </h1>
+                    <p class="mt-2 text-xl font-bold tracking-[-0.02em] text-brand-foreground-muted sm:text-2xl">
+                        {{ current_user.display_label }}
+                    </p>
+                    <p class="mt-3 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">
+                        Operate and govern infrastructure through an extensible workspace for visibility, controlled workflows, analytics, reporting, and administration.
+                    </p>
 
-                <div class="mt-5 flex items-start gap-4">
-                    <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-brand-outline bg-brand-surface-strong text-white shadow-xl shadow-black/10 backdrop-blur-xl" aria-hidden="true">
-                        <i data-lucide="sparkles" class="h-7 w-7"></i>
-                    </span>
-                    <div class="min-w-0">
-                        <h1 class="text-[clamp(2rem,3.2vw,3.35rem)] font-extrabold leading-[1.04] tracking-[-0.045em] text-white">
-                            Welcome to KAORI, {{ current_user.role_display_name }}.
-                        </h1>
-                        <p class="mt-2 text-xl font-bold tracking-[-0.02em] text-brand-foreground-muted sm:text-2xl">
-                            {{ current_user.display_label }}
-                        </p>
-                        <p class="mt-3 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">
-                            Operate and govern infrastructure through an extensible workspace for visibility, controlled workflows, analytics, reporting, and administration.
-                        </p>
+                    <div class="mt-6 flex flex-wrap gap-2">
+                        {{ page_hero.meta_label('shield-user', current_user.role_display_name) }}
+                        {{ page_hero.meta_label('panels-top-left', shortcut_count ~ ' available workspace' ~ ('' if shortcut_count == 1 else 's')) }}
+                        {{ page_hero.meta_label('layers-3', workspace_group_count ~ ' capability area' ~ ('' if workspace_group_count == 1 else 's')) }}
                     </div>
-                </div>
-
-                <div class="mt-6 flex flex-wrap gap-2 pl-0 sm:pl-[72px]">
-                    <span class="inline-flex items-center gap-2 rounded-full border border-brand-outline bg-brand-surface px-3 py-2 text-[11px] font-bold text-white backdrop-blur-xl">
-                        <i data-lucide="shield-user" class="h-4 w-4" aria-hidden="true"></i>
-                        {{ current_user.role_display_name }}
-                    </span>
-                    <span class="inline-flex items-center gap-2 rounded-full border border-brand-outline bg-brand-surface px-3 py-2 text-[11px] font-bold text-white backdrop-blur-xl">
-                        <i data-lucide="panels-top-left" class="h-4 w-4" aria-hidden="true"></i>
-                        {{ shortcut_count }} available workspace{{ '' if shortcut_count == 1 else 's' }}
-                    </span>
-                    <span class="inline-flex items-center gap-2 rounded-full border border-brand-outline bg-brand-surface px-3 py-2 text-[11px] font-bold text-white backdrop-blur-xl">
-                        <i data-lucide="layers-3" class="h-4 w-4" aria-hidden="true"></i>
-                        {{ workspace_group_count }} capability area{{ '' if workspace_group_count == 1 else 's' }}
-                    </span>
-                </div>
+                {% endcall %}
             </div>
 
             <aside class="relative z-10 mt-6 flex min-w-0 flex-col justify-between overflow-hidden rounded-xl border border-brand-outline bg-black/20 p-5 shadow-2xl shadow-black/15 backdrop-blur-xl xl:mt-0" aria-label="Current access scope">

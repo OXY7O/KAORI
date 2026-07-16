@@ -1,29 +1,18 @@
+{% import "components/page_hero.html" as page_hero %}
 <section class="relative overflow-hidden rounded-2xl border border-brand-outline bg-kaori-primary p-5 text-brand-foreground shadow-sm lg:p-6">
 
     <div class="relative grid gap-5 xl:grid-cols-12 xl:items-stretch">
         <div class="flex min-w-0 flex-col justify-between xl:col-span-7">
-            <div>
-                <div class="inline-flex items-center gap-2 rounded-full border border-brand-outline bg-brand-surface px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-brand-foreground backdrop-blur sm:ml-14">
-                    <i data-lucide="layout-dashboard" class="h-3.5 w-3.5"></i>
-                    Kubernetes Operations
-                </div>
-                <div class="mt-4 flex items-start gap-3">
-                    <div class="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-brand-outline bg-brand-surface-strong text-brand-foreground backdrop-blur sm:flex">
-                        <i data-lucide="activity" class="h-5 w-5"></i>
-                    </div>
-                    <div class="min-w-0">
-                        <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">Kubernetes Operations Dashboard</h1>
-                        <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">
-                            Unified operational visibility for cluster health, capacity, alerts, inventory, recommendations, and reporting readiness.
-                        </p>
-                    </div>
-                </div>
-            </div>
+            {% call page_hero.intro('layout-dashboard', 'Kubernetes Operations', 'activity') %}
+                <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">Kubernetes Operations Dashboard</h1>
+                <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">
+                    Unified operational visibility for cluster health, capacity, alerts, inventory, recommendations, and reporting readiness.
+                </p>
 
-            <div class="mt-5 inline-flex w-fit items-start gap-2 rounded-lg border border-brand-outline bg-brand-surface px-3 py-2 text-xs leading-5 text-brand-foreground-muted backdrop-blur">
-                <i data-lucide="database-zap" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-foreground"></i>
-                <span>All Clusters uses inventory snapshots. Select one cluster for live Prometheus and AlertManager signals.</span>
-            </div>
+                <div class="mt-5">
+                    {{ page_hero.supporting_strip('database-zap', 'All Clusters uses inventory snapshots. Select one cluster for live Prometheus and AlertManager signals.') }}
+                </div>
+            {% endcall %}
         </div>
 
         <div class="xl:col-span-5">
