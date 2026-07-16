@@ -57,15 +57,121 @@ class PrometheusService:
     def test_connection(
         self,
     ) -> dict[str, Any]:
+        """Run a fast endpoint and compatibility check.
+
+        This intentionally avoids metric, label, query-pack, and retention audits so
+        the UI connection test completes quickly. Full readiness is handled by
+        ``validate_integration``.
+        """
         started = time.perf_counter()
 
         result = self.client.query('vector(1)')
-
         if result.get('status') != 'success':
             raise PrometheusError('Prometheus query failed')
 
-        detection_mode = self.client.config.version_detection_mode or 'automatic'
+        version, compatibility, matched_profile = self._resolve_compatibility()
         elapsed = time.perf_counter() - started
+        config = self.client.config
+        selected_query_profile = (
+            matched_profile.query_profile
+            if matched_profile and matched_profile.query_profile
+            else PROFILE_KEY
+        )
+
+        config.detected_version = version
+        config.compatibility_status = compatibility.status
+        config.compatibility_profile = compatibility.profile_key
+        config.query_profile = selected_query_profile
+        config.query_validation_status = 'validation_required'
+        config.query_validation_summary = None
+        config.retention_validation_summary = None
+        config.last_validated_at = datetime.now(UTC)
+
+        if compatibility.readiness == 'blocked':
+            config.readiness_status = 'blocked'
+            config.validation_message = compatibility.message
+        else:
+            config.readiness_status = 'degraded'
+            config.validation_message = (
+                'Connection and compatibility profile verified. Run full validation '
+                'to check required metrics, label schemas, PromQL, and retention.'
+            )
+
+        db.session.commit()
+
+        return {
+            'success': compatibility.readiness != 'blocked',
+            'version': version,
+            'compatibility_status': compatibility.status,
+            'readiness_status': config.readiness_status,
+            'query_profile': selected_query_profile,
+            'query_validation_status': config.query_validation_status,
+            'compatibility_profile': compatibility.profile_key,
+            'message': config.validation_message,
+            'response_time': round(elapsed, 3),
+        }
+
+    def validate_integration(
+        self,
+    ) -> dict[str, Any]:
+        """Run the complete compatibility, PromQL, schema, and retention audit."""
+        started = time.perf_counter()
+
+        result = self.client.query('vector(1)')
+        if result.get('status') != 'success':
+            raise PrometheusError('Prometheus query failed')
+
+        version, compatibility, matched_profile = self._resolve_compatibility()
+        selected_query_profile = (
+            matched_profile.query_profile
+            if matched_profile and matched_profile.query_profile
+            else PROFILE_KEY
+        )
+
+        if compatibility.readiness == 'blocked':
+            query_audit = None
+            query_status = 'blocked'
+            readiness = 'blocked'
+        else:
+            query_audit = PromQLProfileAuditor(self.client).audit(execute_queries=False)
+            query_status = 'ready' if query_audit['blocked_count'] == 0 else 'degraded'
+            readiness = compatibility.readiness
+            if readiness == 'ready' and query_status == 'degraded':
+                readiness = 'degraded'
+
+        config = self.client.config
+        config.detected_version = version
+        config.compatibility_status = compatibility.status
+        config.compatibility_profile = compatibility.profile_key
+        config.readiness_status = readiness
+        config.query_profile = selected_query_profile
+        config.query_validation_status = query_status
+        config.query_validation_summary = (
+            {key: value for key, value in query_audit.items() if key not in {'results', 'retention'}}
+            if query_audit
+            else None
+        )
+        config.retention_validation_summary = query_audit['retention'] if query_audit else None
+        config.validation_message = compatibility.message
+        config.last_validated_at = datetime.now(UTC)
+        db.session.commit()
+
+        return {
+            'success': readiness != 'blocked',
+            'version': version,
+            'compatibility_status': compatibility.status,
+            'readiness_status': readiness,
+            'query_profile': selected_query_profile,
+            'query_validation_status': query_status,
+            'query_validation_summary': config.query_validation_summary,
+            'retention_validation_summary': config.retention_validation_summary,
+            'compatibility_profile': compatibility.profile_key,
+            'message': compatibility.message,
+            'response_time': round(time.perf_counter() - started, 3),
+        }
+
+    def _resolve_compatibility(self):
+        detection_mode = self.client.config.version_detection_mode or 'automatic'
 
         if detection_mode == 'manual':
             selected_profile_key = self.client.config.manual_compatibility_profile
@@ -74,56 +180,29 @@ class PrometheusService:
                 raise PrometheusError(
                     'Manual compatibility mode requires a supported Prometheus major-version profile.'
                 )
-            representative_version = '2.40.0' if selected_profile_key == 'prometheus-v2-kubernetes-v1' else '3.0.0'
+
+            representative_version = (
+                '2.40.0'
+                if selected_profile_key == 'prometheus-v2-kubernetes-v1'
+                else '3.0.0'
+            )
             compatibility = evaluate_compatibility(
                 'prometheus',
                 representative_version,
                 capabilities=('instant_query', 'range_query'),
             )
             version = f"Manual: {'2.x' if representative_version.startswith('2.') else '3.x'}"
-        else:
-            build_info = self.client.get_build_info()
-            version = build_info.get('data', {}).get('version', 'unknown')
-            compatibility = evaluate_compatibility(
-                'prometheus',
-                version,
-                capabilities=('build_info', 'instant_query', 'range_query'),
-            )
-            matched_profile = get_profile('prometheus', compatibility.profile_key)
-        selected_query_profile = matched_profile.query_profile if matched_profile and matched_profile.query_profile else PROFILE_KEY
-        query_audit = PromQLProfileAuditor(self.client).audit(execute_queries=False)
-        query_status = 'ready' if query_audit['blocked_count'] == 0 else 'degraded'
-        readiness = compatibility.readiness
-        if readiness == 'ready' and query_status == 'degraded':
-            readiness = 'degraded'
+            return version, compatibility, matched_profile
 
-        self.client.config.detected_version = version
-        self.client.config.compatibility_status = compatibility.status
-        self.client.config.compatibility_profile = compatibility.profile_key
-        self.client.config.readiness_status = readiness
-        self.client.config.query_profile = selected_query_profile
-        self.client.config.query_validation_status = query_status
-        self.client.config.query_validation_summary = {
-            key: value for key, value in query_audit.items() if key not in {'results', 'retention'}
-        }
-        self.client.config.retention_validation_summary = query_audit['retention']
-        self.client.config.validation_message = compatibility.message
-        self.client.config.last_validated_at = datetime.now(UTC)
-        db.session.commit()
-
-        return {
-            'success': compatibility.readiness != 'blocked',
-            'version': version,
-            'compatibility_status': compatibility.status,
-            'readiness_status': readiness,
-            'query_profile': selected_query_profile,
-            'query_validation_status': query_status,
-            'query_validation_summary': self.client.config.query_validation_summary,
-            'retention_validation_summary': query_audit['retention'],
-            'compatibility_profile': compatibility.profile_key,
-            'message': compatibility.message,
-            'response_time': round(elapsed, 3),
-        }
+        build_info = self.client.get_build_info()
+        version = build_info.get('data', {}).get('version', 'unknown')
+        compatibility = evaluate_compatibility(
+            'prometheus',
+            version,
+            capabilities=('build_info', 'instant_query', 'range_query'),
+        )
+        matched_profile = get_profile('prometheus', compatibility.profile_key)
+        return version, compatibility, matched_profile
 
     def audit_query_profile(self, *, execute_queries: bool = True) -> dict[str, Any]:
         audit = PromQLProfileAuditor(self.client).audit(execute_queries=execute_queries)
@@ -211,6 +290,7 @@ class PrometheusService:
         config.version_detection_mode = form.version_detection_mode.data or 'automatic'
         config.manual_compatibility_profile = (form.manual_compatibility_profile.data or None) if config.version_detection_mode == 'manual' else None
 
+        config.detected_version = None
         config.compatibility_status = 'validation_required'
         config.readiness_status = 'validation_required'
         config.compatibility_profile = None

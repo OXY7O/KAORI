@@ -318,3 +318,100 @@ def test_connection(
                 'error': 'Prometheus connection test could not complete.',
             }
         ), 500
+
+@prometheus_bp.post('/cluster/<string:cluster_id>/validate')
+@permission_required('settings.manage_integrations')
+def validate_integration(
+    cluster_id: str,
+) -> ResponseReturnValue:
+    cluster = _get_cluster_or_404(cluster_id)
+
+    try:
+        result = PrometheusService(cluster).validate_integration()
+        response_time = result.get('response_time', 0)
+        feedback = record_operational_activity(
+            user_id=current_user.id,
+            event_type='prometheus_compatibility_validation',
+            status='success' if result.get('success') else 'warning',
+            title='Prometheus validation completed',
+            message=f'Compatibility validation completed for {cluster.name}.',
+            detail=(
+                f"Profile {result.get('compatibility_profile') or 'not matched'}; "
+                f"readiness {result.get('readiness_status', 'unknown')}; "
+                f"completed in {response_time}s."
+            ),
+            action_url=url_for('prometheus.configuration', cluster_id=cluster.id),
+            action_label='View Prometheus settings',
+            action_icon='activity',
+            metadata={
+                'cluster_id': cluster.id,
+                'cluster_name': cluster.name,
+                'version': result.get('version', 'unknown'),
+                'compatibility_profile': result.get('compatibility_profile'),
+                'readiness_status': result.get('readiness_status'),
+                'query_validation_status': result.get('query_validation_status'),
+                'response_time_seconds': response_time,
+            },
+        )
+
+        if request.headers.get('HX-Request') == 'true':
+            return render_template(
+                'components/navigation/_quick_sync_result.html',
+                **feedback,
+                notification_context=get_navigation_notification_context(
+                    user_id=current_user.id,
+                ),
+            )
+
+        return jsonify(result)
+
+    except PrometheusError as exc:
+        config = cluster.prometheus_config
+        failure = describe_integration_failure(
+            exc,
+            service_name='Prometheus',
+            endpoint=config.endpoint if config is not None else None,
+            request_path='/api/v1/series',
+            timeout_seconds=(
+                min(max(int(config.timeout or 5), 1), 5)
+                if config is not None
+                else None
+            ),
+        )
+        logger.warning(
+            'Prometheus compatibility validation failed for cluster %s: %s',
+            cluster.id,
+            exc,
+            exc_info=True,
+        )
+        feedback = record_operational_activity(
+            user_id=current_user.id,
+            event_type='prometheus_compatibility_validation',
+            status='error',
+            title='Prometheus validation failed',
+            message=f'KAORI could not complete Prometheus validation for {cluster.name}.',
+            detail=failure['detail'],
+            action_url=url_for('prometheus.configuration', cluster_id=cluster.id),
+            action_label='Review Prometheus settings',
+            action_icon='activity',
+            metadata={
+                'cluster_id': cluster.id,
+                'cluster_name': cluster.name,
+                'reason': failure['reason'],
+                'failure_code': failure['code'],
+                'endpoint_host': failure['endpoint_host'],
+                'endpoint_port': failure['endpoint_port'],
+                'request_path': failure['request_path'],
+            },
+        )
+
+        if request.headers.get('HX-Request') == 'true':
+            return render_template(
+                'components/navigation/_quick_sync_result.html',
+                **feedback,
+                notification_context=get_navigation_notification_context(
+                    user_id=current_user.id,
+                ),
+            )
+
+        return jsonify({'success': False, 'error': failure['detail']}), 400

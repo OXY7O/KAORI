@@ -23,3 +23,12 @@ Prometheus integrations use one of two explicit compatibility modes:
 - `manual`: for a Prometheus-compatible intermediary such as Thanos Query where build information describes the intermediary rather than the underlying Prometheus runtime. An administrator must select the supported Prometheus major profile (`2.x` or `3.x`). KAORI still validates API capability, required metrics, labels, query execution, and retention before runtime use.
 
 Changing the detection mode or manual profile invalidates prior validation evidence and returns the integration to `validation_required`. Manual selection is never treated as proof of readiness by itself.
+
+## Connection test versus full validation
+
+The configuration page exposes two distinct operations:
+
+- **Test Connection** performs only a fast `vector(1)` probe and compatibility-profile resolution. In automatic mode it also reads `/api/v1/status/buildinfo`; in manual intermediary mode it uses the selected Prometheus major profile and does not treat the intermediary build version as Prometheus evidence.
+- **Run Full Validation** performs the slower metric inventory, label-schema, PromQL profile, and retention checks.
+
+Do not add metric-series discovery or retention probes back into the connection-test path. Those calls can be expensive through Thanos Query and may exceed the short interactive timeout. Saving connection or detection settings clears stale detected-version evidence and returns the integration to `validation_required`.

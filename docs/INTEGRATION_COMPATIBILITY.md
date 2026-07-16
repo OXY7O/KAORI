@@ -89,3 +89,7 @@ integration list pages. New code and generated links must always use canonical
 ## Direct Prometheus and intermediary endpoints
 
 A direct Prometheus endpoint uses automatic runtime discovery. A Prometheus-compatible intermediary, including Thanos Query, must use manual compatibility selection because its build endpoint identifies the intermediary rather than the source Prometheus servers. Manual mode stores only a supported major compatibility profile and remains fail-closed until API, PromQL, metric, label-schema, and retention checks pass.
+
+### Interactive Prometheus validation boundary
+
+Prometheus connection testing is intentionally split from full readiness validation. `Test Connection` is a short endpoint/API/profile check suitable for synchronous HTMX feedback. `Run Full Validation` owns metric discovery, required-label checks, versioned PromQL audit, and retention probes. This separation prevents Thanos-backed endpoints from appearing stuck while a large `/api/v1/series` audit is running and makes the cost of the operation explicit to the administrator.

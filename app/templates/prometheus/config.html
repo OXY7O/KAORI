@@ -3,7 +3,7 @@
 {% block dashboard_content %}
     <div class="space-y-6">
         <!-- Hero Header -->
-        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 px-6 py-6 text-white shadow-lg shadow-blue-500/20 sm:px-7">
+        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 p-6 text-white shadow-lg shadow-blue-500/20 sm:px-7">
             <div class="pointer-events-none absolute -right-14 -top-16 h-48 w-48 rounded-full border border-white/10 bg-white/5"></div>
             <div class="pointer-events-none absolute -bottom-20 right-24 h-44 w-44 rounded-full border border-white/10 bg-white/5"></div>
             <div class="relative flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -22,11 +22,11 @@
                                 <i data-lucide="server" class="h-3.5 w-3.5"></i>
                                 {{ cluster.name }}
                             </span>
-                            <span class="inline-flex items-center gap-1.5 rounded-lg bg-sky-200/20 px-3 py-1 text-xs font-semibold text-white ring-1 ring-sky-100/30 backdrop-blur">
+                            <span class="inline-flex items-center gap-1.5 rounded-lg bg-white/15 px-3 py-1 text-xs font-semibold text-white ring-1 ring-white/20 backdrop-blur">
                                 <i data-lucide="activity" class="h-3.5 w-3.5"></i>
                                 Metrics Source
                             </span>
-                            <span class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-300/20 px-3 py-1 text-xs font-semibold text-white ring-1 ring-emerald-100/30 backdrop-blur">
+                            <span class="inline-flex items-center gap-1.5 rounded-lg bg-white/15 px-3 py-1 text-xs font-semibold text-white ring-1 ring-white/20 backdrop-blur">
                                 <i data-lucide="shield-check" class="h-3.5 w-3.5"></i>
                                 TLS Ready
                             </span>
@@ -34,7 +34,7 @@
                     </div>
                 </div>
                 <a href="{{ url_for('integrations.prometheus') }}"
-                   class="inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/15 px-4 py-2.5 text-sm font-semibold text-white shadow-sm backdrop-blur transition hover:bg-white/25">
+                   class="inline-flex items-center justify-center gap-2 rounded-xl bg-white/15 px-4 py-2.5 text-sm font-semibold text-white shadow-sm ring-1 ring-white/25 backdrop-blur transition hover:bg-white/25">
                     <i data-lucide="arrow-left" class="h-4 w-4"></i>
                     <span>Back to Prometheus</span>
                 </a>
@@ -42,13 +42,66 @@
 
         </div>
         {% if config and config.endpoint %}
-            <section class="grid gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950 md:grid-cols-5">
-                <div><div class="text-xs font-bold uppercase tracking-wide text-slate-500">Detection mode</div><div class="mt-2 font-semibold text-slate-900 dark:text-white">{{ (config.version_detection_mode or 'automatic')|title }}</div></div>
-                <div><div class="text-xs font-bold uppercase tracking-wide text-slate-500">Detected version</div><div class="mt-2 font-semibold text-slate-900 dark:text-white">{{ config.detected_version or 'Validation required' }}</div></div>
-                <div><div class="text-xs font-bold uppercase tracking-wide text-slate-500">Compatibility</div><div class="mt-2 font-semibold text-slate-900 dark:text-white">{{ (config.compatibility_status or 'validation_required')|replace('_', ' ')|title }}</div></div>
-                <div><div class="text-xs font-bold uppercase tracking-wide text-slate-500">Readiness</div><div class="mt-2 font-semibold text-slate-900 dark:text-white">{{ (config.readiness_status or 'validation_required')|replace('_', ' ')|title }}</div></div>
-                <div><div class="text-xs font-bold uppercase tracking-wide text-slate-500">Compatibility profile</div><div class="mt-2 font-semibold text-slate-900 dark:text-white">{{ config.compatibility_profile or 'Not selected' }}</div></div>
-                {% if config.validation_message %}<div class="md:col-span-5 rounded-2xl bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:bg-blue-950/40 dark:text-blue-100">{{ config.validation_message }}</div>{% endif %}
+            {% set compatibility_status = config.compatibility_status or 'validation_required' %}
+            {% set readiness_status = config.readiness_status or 'validation_required' %}
+            {% set query_status = config.query_validation_status or 'validation_required' %}
+            <section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
+                <div class="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800">
+                    <div class="flex items-center gap-3">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+                            <i data-lucide="shield-check" class="h-5 w-5"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-base font-semibold text-slate-950 dark:text-white">Integration readiness</h2>
+                            <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">Connection identity, compatibility contract, and query readiness for this endpoint.</p>
+                        </div>
+                    </div>
+                    {% if config.last_validated_at %}
+                        <span class="text-xs text-slate-500 dark:text-slate-400">Last checked {{ config.last_validated_at.strftime('%d %b %Y, %H:%M') }}</span>
+                    {% endif %}
+                </div>
+                <div class="grid gap-px bg-slate-200 dark:bg-slate-800 sm:grid-cols-2 xl:grid-cols-5">
+                    <div class="bg-white px-5 py-4 dark:bg-slate-950">
+                        <div class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Detection mode</div>
+                        <div class="mt-2 flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white">
+                            <i data-lucide="{{ 'route' if (config.version_detection_mode or 'automatic') == 'manual' else 'scan-search' }}" class="h-4 w-4 text-blue-500"></i>
+                            {{ (config.version_detection_mode or 'automatic')|title }}
+                        </div>
+                    </div>
+                    <div class="bg-white px-5 py-4 dark:bg-slate-950">
+                        <div class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Runtime version</div>
+                        <div class="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{{ config.detected_version or 'Not detected' }}</div>
+                    </div>
+                    <div class="bg-white px-5 py-4 dark:bg-slate-950">
+                        <div class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Compatibility</div>
+                        <span class="mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset
+                            {% if compatibility_status == 'compatible' %}bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/20
+                            {% elif compatibility_status in ['compatible_with_warnings', 'validation_required'] %}bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/20
+                            {% else %}bg-red-50 text-red-700 ring-red-200 dark:bg-red-500/10 dark:text-red-300 dark:ring-red-400/20{% endif %}">
+                            {{ compatibility_status|replace('_', ' ')|title }}
+                        </span>
+                    </div>
+                    <div class="bg-white px-5 py-4 dark:bg-slate-950">
+                        <div class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Readiness</div>
+                        <span class="mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset
+                            {% if readiness_status == 'ready' %}bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/20
+                            {% elif readiness_status in ['degraded', 'validation_required'] %}bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/20
+                            {% else %}bg-red-50 text-red-700 ring-red-200 dark:bg-red-500/10 dark:text-red-300 dark:ring-red-400/20{% endif %}">
+                            {{ readiness_status|replace('_', ' ')|title }}
+                        </span>
+                    </div>
+                    <div class="bg-white px-5 py-4 dark:bg-slate-950">
+                        <div class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Compatibility profile</div>
+                        <div class="mt-2 break-words text-sm font-semibold text-slate-900 dark:text-white">{{ config.compatibility_profile or config.manual_compatibility_profile or 'Not selected' }}</div>
+                    </div>
+                </div>
+                <div class="flex items-start gap-3 bg-blue-50/70 px-5 py-4 text-sm text-blue-900 dark:bg-blue-950/30 dark:text-blue-100">
+                    <i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0 text-blue-600 dark:text-blue-300"></i>
+                    <div>
+                        <p>{{ config.validation_message or 'Run a connection test and full validation before KAORI uses this integration.' }}</p>
+                        <p class="mt-1 text-xs text-blue-700/80 dark:text-blue-200/70">Query profile: {{ config.query_profile or 'Not selected' }} · Query validation: {{ query_status|replace('_', ' ')|title }}</p>
+                    </div>
+                </div>
             </section>
         {% endif %}
         <!-- Form Card -->
@@ -165,7 +218,7 @@
                 <!-- Footer -->
                 <div class="flex flex-col gap-3 border-t border-slate-200 bg-slate-50 px-6 py-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:bg-slate-900/40">
                     <p class="text-xs text-slate-500 dark:text-slate-400">
-                        Test the endpoint before saving when credentials, TLS, or network paths change.
+                        Test Connection is a fast endpoint check. Run Full Validation after the connection succeeds to audit metrics, labels, PromQL, and retention.
                     </p>
                     <div class="flex justify-end gap-3">
                         <button type="button"
@@ -177,6 +230,15 @@
                             <i data-lucide="plug-zap"
                                class="h-4 w-4 group-[.htmx-request]:animate-spin"></i>
                             Test Connection
+                        </button>
+                        <button type="button"
+                                hx-post="{{ url_for('prometheus.validate_integration', cluster_id=cluster.id) }}"
+                                hx-target="#operational-action-feedback"
+                                hx-swap="innerHTML"
+                                hx-disabled-elt="this"
+                                class="group inline-flex items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-semibold text-blue-700 transition hover:bg-blue-100 disabled:cursor-wait disabled:opacity-70 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300 dark:hover:bg-blue-500/20">
+                            <i data-lucide="scan-search" class="h-4 w-4 group-[.htmx-request]:animate-pulse"></i>
+                            Run Full Validation
                         </button>
                         <button type="submit"
                                 data-operation-submit
