@@ -19,7 +19,7 @@ from app.extensions import db, init_celery, limiter, login_manager, migrate, reg
 from app.governance.routes import governance_bp
 from app.health import health_bp
 from app.intelligence.routes import intelligence_bp
-from app.integrations.routes import integrations_bp
+from app.integrations.routes import integrations_bp, legacy_integrations_bp, legacy_integrations_bp
 from app.inventory.routes import inventory_bp
 from app.kubernetes_operations.routes import kubernetes_operations_bp
 from app.notifications.routes import notifications_bp
@@ -132,6 +132,8 @@ def create_app(config_name: str | None = None):
     app.register_blueprint(health_bp)
     app.register_blueprint(intelligence_bp)
     app.register_blueprint(integrations_bp)
+    app.register_blueprint(legacy_integrations_bp)
+    app.register_blueprint(legacy_integrations_bp)
     app.register_blueprint(reports_bp)
     app.register_blueprint(prometheus_bp)
     app.register_blueprint(settings_bp)

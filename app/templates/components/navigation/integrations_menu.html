@@ -9,7 +9,7 @@
     </summary>
     <div class="sidebar-expanded-only sidebar-submenu ml-7 mt-1 space-y-1 border-l border-slate-800 pl-4">
         <a href="{{ url_for('integrations.overview') }}" class="{{ 'bg-slate-900 text-blue-300' if request.endpoint == 'integrations.overview' else 'text-slate-400 hover:bg-slate-900 hover:text-white' }} flex items-center gap-2 rounded-xl px-3 py-2 text-[12px]"><i data-lucide="layout-grid" class="h-3.5 w-3.5"></i><span>Overview</span></a>
-        <a href="{{ url_for('settings.prometheus') }}" class="{{ 'bg-slate-900 text-blue-300' if request.endpoint and ('prometheus' in request.endpoint) else 'text-slate-400 hover:bg-slate-900 hover:text-white' }} flex items-center gap-2 rounded-xl px-3 py-2 text-[12px]"><i data-lucide="activity" class="h-3.5 w-3.5"></i><span>Prometheus</span></a>
-        <a href="{{ url_for('settings.alertmanager') }}" class="{{ 'bg-slate-900 text-blue-300' if request.endpoint and ('alertmanager' in request.endpoint) else 'text-slate-400 hover:bg-slate-900 hover:text-white' }} flex items-center gap-2 rounded-xl px-3 py-2 text-[12px]"><i data-lucide="siren" class="h-3.5 w-3.5"></i><span>Alertmanager</span></a>
+        <a href="{{ url_for('integrations.prometheus') }}" class="{{ 'bg-slate-900 text-blue-300' if request.endpoint and ('prometheus' in request.endpoint) else 'text-slate-400 hover:bg-slate-900 hover:text-white' }} flex items-center gap-2 rounded-xl px-3 py-2 text-[12px]"><i data-lucide="activity" class="h-3.5 w-3.5"></i><span>Prometheus</span></a>
+        <a href="{{ url_for('integrations.alertmanager') }}" class="{{ 'bg-slate-900 text-blue-300' if request.endpoint and ('alertmanager' in request.endpoint) else 'text-slate-400 hover:bg-slate-900 hover:text-white' }} flex items-center gap-2 rounded-xl px-3 py-2 text-[12px]"><i data-lucide="siren" class="h-3.5 w-3.5"></i><span>Alertmanager</span></a>
     </div>
 </details>

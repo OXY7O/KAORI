@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 prometheus_bp = Blueprint(
     'prometheus',
     __name__,
-    url_prefix='/prometheus',
+    url_prefix='/integrations/prometheus',
 )
 
 

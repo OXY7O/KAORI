@@ -18,7 +18,7 @@ WELCOME_WORKSPACE_GROUP_DEFINITIONS: tuple[dict[str, str], ...] = (
     {
         'key': 'operations',
         'eyebrow': 'Act',
-        'title': 'Infrastructure operations',
+        'title': 'Infrastructure Operations',
         'description': (
             'Open controlled workflows for integration management, synchronization, '
             'configuration, and infrastructure-changing activities.'
@@ -28,7 +28,7 @@ WELCOME_WORKSPACE_GROUP_DEFINITIONS: tuple[dict[str, str], ...] = (
     {
         'key': 'assurance',
         'eyebrow': 'Assure',
-        'title': 'Governance & reporting',
+        'title': 'Governance & Reporting',
         'description': (
             'Review lifecycle controls, operational evidence, historical context, and management-ready outputs.'
         ),
@@ -37,7 +37,7 @@ WELCOME_WORKSPACE_GROUP_DEFINITIONS: tuple[dict[str, str], ...] = (
     {
         'key': 'platform',
         'eyebrow': 'Administer',
-        'title': 'Platform administration',
+        'title': 'Platform Administration',
         'description': (
             'Manage personal settings, access control, audit visibility, integrations, '
             'and platform configuration within assigned authority.'
@@ -49,7 +49,7 @@ WELCOME_WORKSPACE_GROUP_DEFINITIONS: tuple[dict[str, str], ...] = (
 WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
     {
         'title': 'Kubernetes Operations Dashboard',
-        'label': 'Operational overview',
+        'label': 'Operational Overview',
         'description': (
             'Review cluster posture, capacity risk, alerts, top consumers, '
             'reporting readiness, and prioritized actions.'

@@ -10,7 +10,7 @@ from app.prometheus.exceptions import (
     PrometheusError,
 )
 from app.prometheus.forms import PrometheusConfigForm
-from app.integrations.compatibility import evaluate_compatibility
+from app.integrations.compatibility import evaluate_compatibility, get_profile
 from app.prometheus.query_profiles import PROFILE_KEY
 from app.prometheus.query_profiles.audit import PromQLProfileAuditor
 from datetime import UTC, datetime
@@ -74,6 +74,8 @@ class PrometheusService:
             version,
             capabilities=('build_info', 'instant_query', 'range_query'),
         )
+        matched_profile = get_profile('prometheus', compatibility.profile_key)
+        selected_query_profile = matched_profile.query_profile if matched_profile and matched_profile.query_profile else PROFILE_KEY
         query_audit = PromQLProfileAuditor(self.client).audit(execute_queries=False)
         query_status = 'ready' if query_audit['blocked_count'] == 0 else 'degraded'
         readiness = compatibility.readiness
@@ -84,7 +86,7 @@ class PrometheusService:
         self.client.config.compatibility_status = compatibility.status
         self.client.config.compatibility_profile = compatibility.profile_key
         self.client.config.readiness_status = readiness
-        self.client.config.query_profile = PROFILE_KEY
+        self.client.config.query_profile = selected_query_profile
         self.client.config.query_validation_status = query_status
         self.client.config.query_validation_summary = {
             key: value for key, value in query_audit.items() if key not in {'results', 'retention'}
@@ -99,7 +101,7 @@ class PrometheusService:
             'version': version,
             'compatibility_status': compatibility.status,
             'readiness_status': readiness,
-            'query_profile': PROFILE_KEY,
+            'query_profile': selected_query_profile,
             'query_validation_status': query_status,
             'query_validation_summary': self.client.config.query_validation_summary,
             'retention_validation_summary': query_audit['retention'],

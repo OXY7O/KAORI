@@ -48,3 +48,28 @@ A future Server domain may bind multiple server assets to one centralized Promet
 - Missing metric or label schema: only dependent capabilities are degraded or blocked.
 
 The deprecation registry is `app/integrations/deprecations.py`. PromQL profile details are documented in `docs/PROMQL_QUERY_PROFILES.md`.
+
+## Canonical navigation and route ownership
+
+Integration inventory and configuration are owned by the top-level `Integrations` domain.
+
+- `/integrations/` — cross-cluster integration overview.
+- `/integrations/prometheus` — Prometheus inventory.
+- `/integrations/alertmanager` — Alertmanager inventory.
+- `/integrations/prometheus/cluster/<cluster_id>` — Prometheus configuration and validation.
+- `/integrations/alertmanager/cluster/<cluster_id>` — Alertmanager configuration and validation.
+
+Legacy `/settings/prometheus`, `/settings/alertmanager`, `/prometheus/...`, and `/alertmanager/...` URLs redirect to canonical routes. Remove the redirect layer only after external bookmarks and activity records have aged out.
+
+## Safe presentation boundary
+
+Integration list pages never render passwords, bearer tokens, embedded URL credentials, query strings, or fragments. Only scheme, hostname, optional port, and endpoint path are displayed. Validation messages must describe failed capability or compatibility checks without echoing credentials or raw response bodies.
+
+## Supported compatibility profiles
+
+- Kubernetes: `1.20–1.23` legacy, `1.24–1.29` standard, `1.30–1.33` modern, and `1.34–1.36` current.
+- Prometheus: `2.40–2.x` legacy-supported and `3.x` current.
+- Alertmanager: `0.25–0.26` legacy API-v2 and `0.27–0.33` current API-v2.
+- Thanos Query: `0.39`, `0.40`, and `0.41` profiles.
+
+A matching version profile does not itself make an integration ready. Required API endpoints, capabilities, metrics, labels, and query probes must also pass.

@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 alertmanager_bp = Blueprint(
     'alertmanager',
     __name__,
-    url_prefix='/alertmanager',
+    url_prefix='/integrations/alertmanager',
 )
 
 

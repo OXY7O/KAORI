@@ -27,3 +27,7 @@ The primary cluster kubeconfig remains the Kubernetes identity used by Reveal. K
 Cluster connection validation also detects the Kubernetes server version and matches a KAORI compatibility profile. Connectivity and compatibility are separate states. Kubernetes `1.20` uses a legacy warning profile; `1.24` through `1.29` use the initial standard profile.
 
 Do not infer feature readiness from version alone. Each inventory, governance, and operations workflow must continue to validate the required API group, resource, and RBAC verbs. Unsupported or removed APIs block only the affected capability rather than the entire cluster whenever safe isolation is possible.
+
+## Integration boundary
+
+Cluster Management must not own Prometheus or Alertmanager configuration forms. It may show a concise, non-sensitive integration summary and link to `/integrations`. Kubernetes connectivity and compatibility are evaluated independently from observability integration readiness.

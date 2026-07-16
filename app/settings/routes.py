@@ -623,19 +623,13 @@ def reports():
     return render_template('settings/reports/index.html')
 
 
-@bp.route('/alertmanager')
-@permission_required('settings.manage_integrations')
-def alertmanager():
-    return render_template('settings/alertmanager/index.html')
-
-
 @bp.route('/system-info')
 @permission_required('system.view')
 def system_info():
     return render_template('settings/system_info/index.html')
 
 
-@bp.route('/prometheus')
+@bp.route('/legacy-prometheus-placeholder')
 @permission_required('settings.manage_integrations')
 def prometheus():
     return render_template('settings/prometheus/index.html')

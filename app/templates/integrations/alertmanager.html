@@ -1,0 +1,8 @@
+{% extends "layouts/app.html" %}
+{% block title %}Alertmanager Integrations · KAORI{% endblock %}
+{% block dashboard_content %}
+<div class="space-y-6">
+{% set badge='Alerting integration' %}{% set title='Alertmanager Integrations' %}{% set description='Validate Alertmanager runtime versions, API v2 capability, alert retrieval, silence access, and routing readiness for each Kubernetes cluster.' %}{% include 'integrations/partials/_hero.html' %}
+{% set table_title='Alertmanager Inventory' %}{% set table_description='Review per-cluster Alertmanager bindings and block unsupported versions or missing required API capabilities before KAORI uses them.' %}{% include 'integrations/partials/_table.html' %}
+</div>
+{% endblock %}

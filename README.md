@@ -63,3 +63,15 @@ Technical references:
 - `app/prometheus/README.md`
 - `app/alertmanager/README.md`
 - `app/cluster/README.md`
+
+## Integration domain
+
+Prometheus and Alertmanager configuration now live under the top-level **Integrations** domain rather than Settings or Cluster Management. Kubernetes Cluster Management remains responsible for cluster identity, Kubernetes API connectivity, version/API posture, lifecycle, and inventory synchronization. It only links to integration posture.
+
+Technical references:
+
+- `docs/INTEGRATION_COMPATIBILITY.md`
+- `docs/PROMQL_QUERY_PROFILES.md`
+- `app/prometheus/README.md`
+- `app/alertmanager/README.md`
+- `app/cluster/README.md`
