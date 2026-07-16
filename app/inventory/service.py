@@ -1716,6 +1716,24 @@ def _workload_detail_rows(
     ]
 
 
+def _compact_runtime_state_rows(
+    workload_type: str,
+    rows: list[dict[str, str]],
+) -> list[dict[str, str]]:
+    preferred_labels = {
+        'Deployment': ('Desired replicas', 'Ready replicas', 'Available replicas', 'Unavailable replicas'),
+        'StatefulSet': ('Desired replicas', 'Ready replicas', 'Available replicas', 'Current revision'),
+        'DaemonSet': ('Desired scheduled', 'Ready', 'Available', 'Unavailable'),
+        'Job': ('Completions', 'Active', 'Succeeded', 'Failed'),
+        'CronJob': ('Schedule', 'Suspended', 'Active Jobs', 'Last schedule'),
+    }
+    preferred = preferred_labels.get(workload_type, ())
+    indexed = {str(row.get('label')): row for row in rows}
+    compact = [indexed[label] for label in preferred if label in indexed]
+    fallback = [row for row in rows if row.get('label') != 'Managed Pods'][:4]
+    return compact or fallback
+
+
 def _fallback_pod_template_from_associated_pods(
     related_pods: list[PodInventory],
 ) -> dict[str, Any]:
@@ -2012,6 +2030,12 @@ def get_workload_detail(workload_id: int) -> dict[str, Any] | None:
         ]
 
     delivery_rows = _workload_detail_rows(details, 'delivery_rows')
+    placement_rows = _placement_rows(pod_template)
+    placement_summary_rows = [
+        row
+        for row in placement_rows
+        if row['value'] not in {'0', '0 rules', 'Not configured', '-'}
+    ]
 
     return {
         'id': workload.id,
@@ -2032,11 +2056,25 @@ def get_workload_detail(workload_id: int) -> dict[str, Any] | None:
         'created_at': workload.created_at,
         'collected_at': workload.collected_at,
         'state_rows': state_rows,
+        'runtime_state_rows': _compact_runtime_state_rows(workload_type, state_rows),
         'pod_configuration_rows': _pod_configuration_rows(pod_template),
         'pod_configuration_reported': pod_configuration_source == 'workload-template',
         'pod_configuration_source': pod_configuration_source,
         'delivery_rows': delivery_rows,
-        'placement_rows': _placement_rows(pod_template),
+        'placement_rows': placement_rows,
+        'placement_summary_rows': placement_summary_rows,
+        'placement_constraint_count': (
+            len(node_selector)
+            + len(tolerations)
+            + (1 if pod_template.get('affinity_configured') else 0)
+            + int(pod_template.get('topology_spread_count') or 0)
+        ),
+        'placement_configured': bool(
+            node_selector
+            or tolerations
+            or pod_template.get('affinity_configured')
+            or pod_template.get('topology_spread_count')
+        ),
         'node_selectors': [f'{key}={value}' for key, value in sorted(node_selector.items())],
         'tolerations': [str(item) for item in tolerations],
         'containers': containers,

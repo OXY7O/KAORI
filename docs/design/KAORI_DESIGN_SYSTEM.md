@@ -443,3 +443,12 @@ The Pod Inventory page follows the Inventory Overview hero geometry and the reso
 - Compact table status labels remain 10 px and should not be enlarged inside nested detail cards.
 - Equal-height primary tips use a compact minimum height and concise operational copy.
 
+
+## Nested inventory object summaries
+
+- Workload Composition is the visual reference for secondary object summaries inside expandable Inventory cards.
+- Use the shared `components/detail_object.html` component: a violet soft surface, 8 px radius, 24 px icon surface, 12 px title and rows, and a compact rectangular metadata badge.
+- Render only configured or meaningful rows in the object summary. Do not fill the block with zero-value or `Not configured` rows.
+- When no records or constraints exist, replace the solid object summary with the shared centered dashed empty state containing a violet icon, a short title, and one concise sentence.
+- Apply this pattern to Pod Placement constraints, Pod Reported conditions, Workload Delivery & placement constraints, and future equivalent nested summaries.
+- Workload Runtime state should show a compact controller summary rather than every collector field. Keep the most operationally useful four state values plus Managed Pods; detailed historical behavior remains in Analytics.
