@@ -324,6 +324,15 @@ The Kubernetes Cluster module follows the same authenticated hero, table, semant
 - Empty cluster inventory, upload zones, and non-error placeholders use violet surfaces. Validation and deletion remain Critical; legacy TLS exceptions remain Warning.
 - Cluster loading indicators use a solid KAORI brand color without page-level style blocks or gradients.
 
+## Kubernetes inventory hero geometry
+
+The Kubernetes Inventory Overview hero is the authoritative size and spacing reference for Inventory Overview, Topology, Nodes, and subsequent resource inventory pages.
+
+- Use the same outer structure: `p-5 lg:p-6`, `gap-5`, a 7/5 column split at `xl`, and `xl:items-stretch`.
+- The right context panel uses `h-full min-h-[13rem]`, `rounded-xl`, `p-4`, and a compact vertical flow.
+- Context metric cards use `mt-3`, two columns, `gap-2`, `px-3 py-2.5`, 11 px labels, 20 px values, and 10 px supporting text.
+- The footer action uses `mt-3`, minimum height 36 px, 12 px semibold text, and the label `Manage Clusters`. Inventory heroes must not introduce a different footer action or taller metric geometry without an explicit workflow requirement.
+
 ## Kubernetes inventory overview reference
 
 The Kubernetes Inventory Overview follows the authenticated operational overview standard.
@@ -367,7 +376,7 @@ The Kubernetes Topology workspace follows the same Inventory hero and operationa
 The Node Inventory page follows the authenticated Inventory standard and is the reference for resource inventory pages with expandable operational details.
 
 - Use a solid `kaori-primary` hero with the shared `page_hero.intro()` alignment. Node count, CPU, and memory are rectangular hero metadata labels, not status pills.
-- The hero posture panel presents Ready and Not Ready counts as compact brand surfaces. The aggregated readiness result is shown as a semantic label in the panel header, while the panel footer uses the standard Cluster Management action used across Inventory heroes.
+- The hero posture panel presents Ready and Not Ready counts using the Inventory Overview metric geometry. The aggregated readiness result is shown as a semantic label in the panel header, while the panel footer uses the standard `Manage Clusters` action used across Inventory heroes.
 - Capacity cards use neutral surfaces with violet labels and icons. A single solid violet highlight card may be used for the primary readiness ratio; gradients are prohibited.
 - Node table filters use sentence case, 44 px controls, 8 px radius, and shared surface/outline tokens.
 - Table columns are left aligned except the final Details column, which is right aligned. Cluster and Role are metadata labels; node readiness is a semantic status label.
