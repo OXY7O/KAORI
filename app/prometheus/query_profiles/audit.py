@@ -84,6 +84,7 @@ class PromQLProfileAuditor:
         blocked = sum(item.status == 'blocked' for item in results)
         deprecated = sum(item.status == 'deprecated' for item in results)
         domain_summary = self._domain_summary(definitions, results)
+        blocked_details = self._blocked_details(definitions, results)
         core_domains = {'app.prometheus', 'app.analytics.capacity', 'app.analytics.utilization'}
         critical_blocked = sum(
             item['blocked_count'] for domain, item in domain_summary.items() if domain in core_domains
@@ -97,6 +98,7 @@ class PromQLProfileAuditor:
             'critical_blocked_count': critical_blocked,
             'deprecated_count': deprecated,
             'domain_summary': domain_summary,
+            'blocked_details': blocked_details,
             'retention': retention,
             'results': [asdict(item) for item in results],
         }
@@ -143,6 +145,22 @@ class PromQLProfileAuditor:
                 metric = row.get('__name__')
                 if metric in output:
                     output[metric].update(row.keys())
+        return output
+
+    @staticmethod
+    def _blocked_details(definitions: list[Any], results: list[QueryCheckResult]) -> list[dict[str, Any]]:
+        """Return compact, user-facing evidence for checks that block profile coverage."""
+        output: list[dict[str, Any]] = []
+        for definition, result in zip(definitions, results, strict=True):
+            if result.status != 'blocked':
+                continue
+            output.append({
+                'key': result.key,
+                'domain': definition.domain,
+                'message': result.message,
+                'missing_metrics': list(result.missing_metrics),
+                'missing_labels': list(result.missing_labels),
+            })
         return output
 
     @staticmethod
