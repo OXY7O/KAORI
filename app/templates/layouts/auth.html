@@ -9,9 +9,9 @@
         <title>{% block title %}KAORI{% endblock title %}</title>
         <script>
             ;(function () {
-                const theme = localStorage.getItem('theme')
+                const storedTheme = localStorage.getItem('theme')
 
-                if (theme === 'dark') {
+                if (storedTheme === 'dark') {
                     document.documentElement.classList.add('dark')
                 }
             })()
@@ -22,18 +22,20 @@
               rel="stylesheet" />
         <link rel="stylesheet"
               href="{{ url_for('static', filename='css/output.css') }}" />
-        <link rel="stylesheet"
-              href="{{ url_for('static', filename='css/auth-login.css') }}" />
     </head>
-    <body class="min-h-full font-sans antialiased">
+    <body class="min-h-full bg-surface-page font-sans text-content-primary antialiased">
         {% block content %}
         {% endblock content %}
         <script src="https://unpkg.com/lucide@latest"></script>
         <script>
             document.addEventListener('DOMContentLoaded', () => {
-                if (window.lucide) {
-                    window.lucide.createIcons()
+                const renderIcons = () => {
+                    if (window.lucide) {
+                        window.lucide.createIcons()
+                    }
                 }
+
+                renderIcons()
 
                 const passwordInput = document.querySelector('[data-password-input]')
                 const passwordToggle = document.querySelector('[data-password-toggle]')
@@ -53,11 +55,32 @@
                                 'data-lucide',
                                 showingPassword ? 'eye' : 'eye-off'
                             )
-
-                            if (window.lucide) {
-                                window.lucide.createIcons()
-                            }
+                            renderIcons()
                         }
+                    })
+                }
+
+                const themeToggle = document.getElementById('auth-theme-toggle')
+                const themeIcon = document.getElementById('auth-theme-icon')
+
+                const updateThemeIcon = () => {
+                    if (!themeIcon) {
+                        return
+                    }
+
+                    const dark = document.documentElement.classList.contains('dark')
+                    themeIcon.setAttribute('data-lucide', dark ? 'sun' : 'moon')
+                    renderIcons()
+                }
+
+                updateThemeIcon()
+
+                if (themeToggle) {
+                    themeToggle.addEventListener('click', () => {
+                        document.documentElement.classList.toggle('dark')
+                        const dark = document.documentElement.classList.contains('dark')
+                        localStorage.setItem('theme', dark ? 'dark' : 'light')
+                        updateThemeIcon()
                     })
                 }
             })

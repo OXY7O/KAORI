@@ -1,26 +1,47 @@
-<section class="kaori-login-panel">
-    <div class="kaori-login-card">
-        <header class="kaori-login-header">
-            <div class="kaori-login-mark" aria-hidden="true">
-                <i data-lucide="fingerprint"></i>
-            </div>
-            <p class="kaori-login-eyebrow">Secure platform access</p>
-            <h1>Welcome back</h1>
-            <p>Sign in to open the KAORI workspaces</p>
+<section class="relative flex min-h-full items-center bg-surface-card px-6 py-10 sm:px-10 lg:col-span-7 lg:px-14 xl:px-20">
+    <button id="auth-theme-toggle"
+            type="button"
+            class="absolute right-5 top-5 inline-flex h-10 w-10 items-center justify-center rounded-xl border border-outline-default bg-surface-elevated text-content-muted shadow-sm transition hover:border-kaori-accent hover:bg-surface-hover hover:text-kaori-primary focus:outline-none focus:ring-2 focus:ring-outline-focus focus:ring-offset-2 focus:ring-offset-surface-card"
+            aria-label="Toggle light and dark mode"
+            title="Toggle theme">
+        <i id="auth-theme-icon" data-lucide="moon" class="h-5 w-5"></i>
+    </button>
+
+    <div class="mx-auto w-full max-w-lg">
+        <div class="mb-9 flex items-center gap-3 lg:hidden">
+            <span class="flex h-11 w-11 items-center justify-center rounded-2xl bg-kaori-primary shadow-lg shadow-violet-500/20">
+                <img src="{{ url_for('static', filename='images/kaori-logo.svg') }}"
+                     alt=""
+                     class="h-7 w-7 brightness-0 invert" />
+            </span>
+            <span class="text-xl font-extrabold tracking-widest text-content-primary">KAORI</span>
+        </div>
+
+        <header>
+            <span class="inline-flex items-center gap-2 rounded-full border border-outline-default bg-surface-hover px-3 py-1.5 text-xs font-semibold text-content-secondary">
+                <i data-lucide="shield-check" class="h-4 w-4 text-kaori-primary"></i>
+                Secure platform access
+            </span>
+            <h2 class="mt-5 text-3xl font-extrabold tracking-tight text-content-primary sm:text-4xl">Welcome back</h2>
+            <p class="mt-3 text-sm leading-6 text-content-muted sm:text-base">
+                Sign in to continue to your KAORI operational workspace.
+            </p>
         </header>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
-                <div class="kaori-flash-stack">
+                <div class="mt-7 space-y-3">
                     {% for category, message in messages %}
                         {% if category == "success" %}
-                            <div class="kaori-flash kaori-flash--success" role="status">
-                                <i data-lucide="circle-check" aria-hidden="true"></i>
+                            <div class="flex items-start gap-3 rounded-2xl border border-status-normal-border bg-status-normal-soft px-4 py-3 text-sm text-status-normal-text"
+                                 role="status">
+                                <i data-lucide="circle-check" class="mt-0.5 h-5 w-5 shrink-0"></i>
                                 <span>{{ message }}</span>
                             </div>
                         {% else %}
-                            <div class="kaori-flash kaori-flash--error" role="alert">
-                                <i data-lucide="triangle-alert" aria-hidden="true"></i>
+                            <div class="flex items-start gap-3 rounded-2xl border border-status-critical-border bg-status-critical-soft px-4 py-3 text-sm text-status-critical-text"
+                                 role="alert">
+                                <i data-lucide="triangle-alert" class="mt-0.5 h-5 w-5 shrink-0"></i>
                                 <span>{{ message }}</span>
                             </div>
                         {% endif %}
@@ -29,57 +50,74 @@
             {% endif %}
         {% endwith %}
 
-        <form class="kaori-login-form" method="POST">
+        <form class="mt-8 space-y-6" method="POST">
             {{ form.hidden_tag() }}
 
-            <div class="kaori-field">
-                <label for="{{ form.username.id }}">Username</label>
-                <div class="kaori-input-wrap">
-                    <i data-lucide="user-round" class="kaori-input-icon" aria-hidden="true"></i>
+            <div>
+                <label for="{{ form.username.id }}"
+                       class="mb-2 block text-sm font-semibold text-content-primary">Username</label>
+                <div class="relative">
+                    <i data-lucide="user-round"
+                       class="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-content-disabled"
+                       aria-hidden="true"></i>
                     {{ form.username(
-                        class="kaori-input",
+                        class="h-12 w-full rounded-xl border border-outline-default bg-surface-card pl-12 pr-4 text-sm text-content-primary shadow-sm outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-kaori-primary focus:ring-4 focus:ring-kaori-soft",
                         placeholder="Enter your username",
                         autocomplete="username",
                         autofocus=true
                     ) }}
                 </div>
                 {% if form.username.errors %}
-                    <p class="kaori-field-error">{{ form.username.errors[0] }}</p>
+                    <p class="mt-2 flex items-center gap-2 text-sm text-status-critical-text">
+                        <i data-lucide="circle-alert" class="h-4 w-4"></i>
+                        {{ form.username.errors[0] }}
+                    </p>
                 {% endif %}
             </div>
 
-            <div class="kaori-field">
-                <label for="{{ form.password.id }}">Password</label>
-                <div class="kaori-input-wrap">
-                    <i data-lucide="key-round" class="kaori-input-icon" aria-hidden="true"></i>
+            <div>
+                <label for="{{ form.password.id }}"
+                       class="mb-2 block text-sm font-semibold text-content-primary">Password</label>
+                <div class="relative">
+                    <i data-lucide="key-round"
+                       class="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-content-disabled"
+                       aria-hidden="true"></i>
                     {{ form.password(
-                        class="kaori-input kaori-input--password",
+                        class="h-12 w-full rounded-xl border border-outline-default bg-surface-card pl-12 pr-12 text-sm text-content-primary shadow-sm outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-kaori-primary focus:ring-4 focus:ring-kaori-soft",
                         placeholder="Enter your password",
                         autocomplete="current-password",
                         data_password_input=""
                     ) }}
                     <button type="button"
-                            class="kaori-password-toggle"
+                            class="absolute right-2 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-content-muted transition hover:bg-surface-hover hover:text-kaori-primary focus:outline-none focus:ring-2 focus:ring-outline-focus"
                             data-password-toggle
                             aria-label="Show password">
                         <i data-lucide="eye"
                            data-password-icon
+                           class="h-5 w-5"
                            aria-hidden="true"></i>
                     </button>
                 </div>
                 {% if form.password.errors %}
-                    <p class="kaori-field-error">{{ form.password.errors[0] }}</p>
+                    <p class="mt-2 flex items-center gap-2 text-sm text-status-critical-text">
+                        <i data-lucide="circle-alert" class="h-4 w-4"></i>
+                        {{ form.password.errors[0] }}
+                    </p>
                 {% endif %}
             </div>
 
-            <div class="kaori-form-options">
-                <label class="kaori-remember">
-                    {{ form.remember(class="kaori-checkbox") }}
+            <div class="flex items-center justify-between gap-4">
+                <label class="inline-flex cursor-pointer items-center gap-3 text-sm text-content-secondary">
+                    {{ form.remember(class="h-4 w-4 rounded border-outline-strong bg-surface-card accent-kaori-primary focus:ring-2 focus:ring-outline-focus focus:ring-offset-2 focus:ring-offset-surface-card") }}
                     <span>Remember me</span>
                 </label>
+                <span class="inline-flex items-center gap-2 rounded-full bg-status-info-soft px-3 py-1.5 text-xs font-semibold text-status-info-text">
+                    <span class="h-2 w-2 rounded-full bg-status-info"></span>
+                    Local account
+                </span>
             </div>
 
-            {{ form.submit(class="kaori-submit") }}
+            {{ form.submit(class="inline-flex h-12 w-full cursor-pointer items-center justify-center rounded-xl bg-kaori-primary px-5 text-sm font-bold text-white shadow-lg shadow-violet-500/20 transition hover:bg-kaori-primary-hover focus:outline-none focus:ring-2 focus:ring-outline-focus focus:ring-offset-2 focus:ring-offset-surface-card disabled:cursor-not-allowed disabled:opacity-60") }}
         </form>
 
         {% include "auth/partials/_footer_meta.html" %}

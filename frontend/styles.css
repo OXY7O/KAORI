@@ -1,0 +1,213 @@
+@import "tailwindcss";
+
+@source "../app/templates";
+@source "../app/static/js";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+    color-scheme: light;
+
+    --kaori-brand-primary: #7c3aed;
+    --kaori-brand-primary-hover: #6d28d9;
+    --kaori-brand-primary-dark: #5b21b6;
+    --kaori-brand-accent: #a78bfa;
+    --kaori-brand-soft: #ede9fe;
+
+    --kaori-surface-page: #f8f7fc;
+    --kaori-surface-sidebar: #1e172d;
+    --kaori-surface-card: #ffffff;
+    --kaori-surface-elevated: #ffffff;
+    --kaori-surface-hover: #f4f1f8;
+    --kaori-surface-selected: #ede9fe;
+    --kaori-surface-overlay: rgba(36, 31, 46, 0.48);
+
+    --kaori-content-primary: #241f2e;
+    --kaori-content-secondary: #514a5d;
+    --kaori-content-muted: #6f687a;
+    --kaori-content-disabled: #a39bab;
+    --kaori-content-inverse: #ffffff;
+
+    --kaori-outline-subtle: #eeeaf4;
+    --kaori-outline-default: #e8e3f0;
+    --kaori-outline-strong: #cfc7da;
+    --kaori-outline-focus: #8b5cf6;
+
+    --kaori-status-normal: #16a34a;
+    --kaori-status-normal-soft: #dcfce7;
+    --kaori-status-normal-border: #86efac;
+    --kaori-status-normal-text: #166534;
+
+    --kaori-status-info: #2563eb;
+    --kaori-status-info-soft: #dbeafe;
+    --kaori-status-info-border: #93c5fd;
+    --kaori-status-info-text: #1e40af;
+
+    --kaori-status-warning: #d97706;
+    --kaori-status-warning-soft: #fef3c7;
+    --kaori-status-warning-border: #fcd34d;
+    --kaori-status-warning-text: #92400e;
+
+    --kaori-status-critical: #dc2626;
+    --kaori-status-critical-soft: #fee2e2;
+    --kaori-status-critical-border: #fca5a5;
+    --kaori-status-critical-text: #991b1b;
+
+    --kaori-status-unknown: #64748b;
+    --kaori-status-unknown-soft: #f1f5f9;
+    --kaori-status-unknown-border: #cbd5e1;
+    --kaori-status-unknown-text: #475569;
+
+    --kaori-status-disabled: #94a3b8;
+    --kaori-status-disabled-soft: #f8fafc;
+    --kaori-status-disabled-border: #e2e8f0;
+    --kaori-status-disabled-text: #64748b;
+
+    --kaori-status-maintenance: #7c3aed;
+    --kaori-status-maintenance-soft: #ede9fe;
+    --kaori-status-maintenance-border: #c4b5fd;
+    --kaori-status-maintenance-text: #5b21b6;
+
+    --kaori-status-pending: #0891b2;
+    --kaori-status-pending-soft: #cffafe;
+    --kaori-status-pending-border: #67e8f9;
+    --kaori-status-pending-text: #155e75;
+}
+
+.dark {
+    color-scheme: dark;
+
+    --kaori-brand-primary: #8b5cf6;
+    --kaori-brand-primary-hover: #9f7aea;
+    --kaori-brand-primary-dark: #7c3aed;
+    --kaori-brand-accent: #b9a2ff;
+    --kaori-brand-soft: rgba(139, 92, 246, 0.14);
+
+    --kaori-surface-page: #111018;
+    --kaori-surface-sidebar: #17131f;
+    --kaori-surface-card: #1c1924;
+    --kaori-surface-elevated: #24202e;
+    --kaori-surface-hover: #2a2535;
+    --kaori-surface-selected: rgba(139, 92, 246, 0.16);
+    --kaori-surface-overlay: rgba(0, 0, 0, 0.7);
+
+    --kaori-content-primary: #f4f1f8;
+    --kaori-content-secondary: #d1cad9;
+    --kaori-content-muted: #b9b2c3;
+    --kaori-content-disabled: #786f83;
+    --kaori-content-inverse: #111018;
+
+    --kaori-outline-subtle: #2b2634;
+    --kaori-outline-default: #35303f;
+    --kaori-outline-strong: #464052;
+    --kaori-outline-focus: #a78bfa;
+
+    --kaori-status-normal: #22c55e;
+    --kaori-status-normal-soft: rgba(34, 197, 94, 0.12);
+    --kaori-status-normal-border: rgba(34, 197, 94, 0.32);
+    --kaori-status-normal-text: #86efac;
+
+    --kaori-status-info: #3b82f6;
+    --kaori-status-info-soft: rgba(59, 130, 246, 0.12);
+    --kaori-status-info-border: rgba(59, 130, 246, 0.32);
+    --kaori-status-info-text: #93c5fd;
+
+    --kaori-status-warning: #f59e0b;
+    --kaori-status-warning-soft: rgba(245, 158, 11, 0.13);
+    --kaori-status-warning-border: rgba(245, 158, 11, 0.35);
+    --kaori-status-warning-text: #fcd34d;
+
+    --kaori-status-critical: #ef4444;
+    --kaori-status-critical-soft: rgba(239, 68, 68, 0.13);
+    --kaori-status-critical-border: rgba(239, 68, 68, 0.35);
+    --kaori-status-critical-text: #fca5a5;
+
+    --kaori-status-unknown: #94a3b8;
+    --kaori-status-unknown-soft: rgba(148, 163, 184, 0.1);
+    --kaori-status-unknown-border: rgba(148, 163, 184, 0.25);
+    --kaori-status-unknown-text: #cbd5e1;
+
+    --kaori-status-disabled: #64748b;
+    --kaori-status-disabled-soft: rgba(100, 116, 139, 0.1);
+    --kaori-status-disabled-border: rgba(100, 116, 139, 0.22);
+    --kaori-status-disabled-text: #94a3b8;
+
+    --kaori-status-maintenance: #a78bfa;
+    --kaori-status-maintenance-soft: rgba(139, 92, 246, 0.14);
+    --kaori-status-maintenance-border: rgba(167, 139, 250, 0.35);
+    --kaori-status-maintenance-text: #c4b5fd;
+
+    --kaori-status-pending: #22d3ee;
+    --kaori-status-pending-soft: rgba(34, 211, 238, 0.11);
+    --kaori-status-pending-border: rgba(34, 211, 238, 0.3);
+    --kaori-status-pending-text: #67e8f9;
+}
+
+@theme inline {
+    --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+    --color-kaori-primary: var(--kaori-brand-primary);
+    --color-kaori-primary-hover: var(--kaori-brand-primary-hover);
+    --color-kaori-primary-dark: var(--kaori-brand-primary-dark);
+    --color-kaori-accent: var(--kaori-brand-accent);
+    --color-kaori-soft: var(--kaori-brand-soft);
+
+    --color-surface-page: var(--kaori-surface-page);
+    --color-surface-sidebar: var(--kaori-surface-sidebar);
+    --color-surface-card: var(--kaori-surface-card);
+    --color-surface-elevated: var(--kaori-surface-elevated);
+    --color-surface-hover: var(--kaori-surface-hover);
+    --color-surface-selected: var(--kaori-surface-selected);
+    --color-surface-overlay: var(--kaori-surface-overlay);
+
+    --color-content-primary: var(--kaori-content-primary);
+    --color-content-secondary: var(--kaori-content-secondary);
+    --color-content-muted: var(--kaori-content-muted);
+    --color-content-disabled: var(--kaori-content-disabled);
+    --color-content-inverse: var(--kaori-content-inverse);
+
+    --color-outline-subtle: var(--kaori-outline-subtle);
+    --color-outline-default: var(--kaori-outline-default);
+    --color-outline-strong: var(--kaori-outline-strong);
+    --color-outline-focus: var(--kaori-outline-focus);
+
+    --color-status-normal: var(--kaori-status-normal);
+    --color-status-normal-soft: var(--kaori-status-normal-soft);
+    --color-status-normal-border: var(--kaori-status-normal-border);
+    --color-status-normal-text: var(--kaori-status-normal-text);
+
+    --color-status-info: var(--kaori-status-info);
+    --color-status-info-soft: var(--kaori-status-info-soft);
+    --color-status-info-border: var(--kaori-status-info-border);
+    --color-status-info-text: var(--kaori-status-info-text);
+
+    --color-status-warning: var(--kaori-status-warning);
+    --color-status-warning-soft: var(--kaori-status-warning-soft);
+    --color-status-warning-border: var(--kaori-status-warning-border);
+    --color-status-warning-text: var(--kaori-status-warning-text);
+
+    --color-status-critical: var(--kaori-status-critical);
+    --color-status-critical-soft: var(--kaori-status-critical-soft);
+    --color-status-critical-border: var(--kaori-status-critical-border);
+    --color-status-critical-text: var(--kaori-status-critical-text);
+
+    --color-status-unknown: var(--kaori-status-unknown);
+    --color-status-unknown-soft: var(--kaori-status-unknown-soft);
+    --color-status-unknown-border: var(--kaori-status-unknown-border);
+    --color-status-unknown-text: var(--kaori-status-unknown-text);
+
+    --color-status-disabled: var(--kaori-status-disabled);
+    --color-status-disabled-soft: var(--kaori-status-disabled-soft);
+    --color-status-disabled-border: var(--kaori-status-disabled-border);
+    --color-status-disabled-text: var(--kaori-status-disabled-text);
+
+    --color-status-maintenance: var(--kaori-status-maintenance);
+    --color-status-maintenance-soft: var(--kaori-status-maintenance-soft);
+    --color-status-maintenance-border: var(--kaori-status-maintenance-border);
+    --color-status-maintenance-text: var(--kaori-status-maintenance-text);
+
+    --color-status-pending: var(--kaori-status-pending);
+    --color-status-pending-soft: var(--kaori-status-pending-soft);
+    --color-status-pending-border: var(--kaori-status-pending-border);
+    --color-status-pending-text: var(--kaori-status-pending-text);
+}

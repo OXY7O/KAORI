@@ -1,8 +1,20 @@
-<footer class="kaori-login-footer">
-    <div class="kaori-footer-rule"></div>
-    <p>© {{ current_year }} KAORI. All rights reserved.</p>
-    <span class="kaori-release-badge">
-        <span class="kaori-status-dot"></span>
-        Platform Release · v{{ app_version }}
-    </span>
+<footer class="mt-9 border-t border-outline-subtle pt-6">
+    <div class="flex items-start gap-3 rounded-2xl border border-outline-subtle bg-surface-hover px-4 py-3">
+        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
+            <i data-lucide="lock-keyhole" class="h-4 w-4"></i>
+        </span>
+        <div>
+            <p class="text-sm font-semibold text-content-primary">Protected operational access</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">
+                Role-based permissions and authentication activity auditing apply after sign-in.
+            </p>
+        </div>
+    </div>
+    <div class="mt-5 flex flex-col gap-2 text-xs text-content-muted sm:flex-row sm:items-center sm:justify-between">
+        <p>© {{ current_year }} KAORI. All rights reserved.</p>
+        <span class="inline-flex items-center gap-2">
+            <span class="h-2 w-2 rounded-full bg-status-normal"></span>
+            Platform Release · v{{ app_version }}
+        </span>
+    </div>
 </footer>
