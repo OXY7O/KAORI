@@ -542,3 +542,10 @@ ConfigMap Management follows the KAORI authenticated operations standard while p
 - Entry rows use neutral containers and monospace value fields because users are editing configuration payloads. Add is a violet secondary action; remove is Critical.
 - Workflow side panels use a solid dark-violet surface with compact numbered steps. Final action strips keep validation secondary and mutation primary.
 - Workload references, diff counts, object types, and other descriptive values use compact rectangular metadata labels rather than pills.
+
+
+### ConfigMap hero geometry
+
+- ConfigMap Management, Create, View & Update, and Delete use the Inventory Overview hero geometry as the size baseline: `p-5 lg:p-6`, a 7/5 split, `gap-5`, and a right context panel with `min-h-[13rem]`.
+- The right panel uses one compact semantic status, two equal metric/context cards, and one footer action. Do not stack three context cards or free-form paragraphs that make the hero taller than Inventory Overview.
+- The landing footer action is `Manage Clusters`; child workflows use `ConfigMap Management` as the back action.
