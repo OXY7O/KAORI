@@ -1,9 +1,11 @@
-# Prometheus integration
+# Prometheus and Thanos query integration
 
-Prometheus is managed under the top-level **Integrations** domain and remains bound one-to-one to a Kubernetes cluster for the current Kubernetes architecture. The generic binding model must still allow a future centralized Prometheus instance for Server assets.
+Prometheus is managed under the top-level Integrations domain. For the current Kubernetes topology, each cluster has one local Prometheus and Alertmanager, while Thanos supplies long-retention query capability. The future Server topology may use shared centralized instances, so code must use integration bindings rather than assume one endpoint per asset forever.
 
-The driver detects the version from `/api/v1/status/buildinfo`, validates an instant query, and matches `prometheus-http-api-v1`. Configuration changes invalidate prior validation.
+Runtime Prometheus version is detected from `/api/v1/status/buildinfo`. The kube-prometheus-stack chart version and chart app version are stored only as deployment metadata and must never be evaluated as the Prometheus binary version.
 
-Do not add unversioned PromQL directly to routes or templates. Queries remain centralized in `queries.py`; the next query-registry increment must add metadata for required metrics, labels, expected result type, deprecation, and replacement profile.
+All PromQL is owned by `app/prometheus/query_profiles`. Legacy domain `queries.py` modules are compatibility exports only. See `docs/PROMQL_QUERY_PROFILES.md` for metadata, validation, retention, deprecation, and replacement rules.
 
-Prometheus `0.39.2` is intentionally unsupported by the initial profile. Do not bypass the block without proving API and query compatibility and adding tests.
+`PromQLProfileAuditor` checks metric availability, label schema, optional execution of all registered queries, and historical coverage at 24h, 7d, 30d, and 60d. Prometheus engine compatibility and query readiness are persisted separately.
+
+Thanos `0.39.2` is evaluated with `thanos-query-prometheus-api-v1`; it is not a Prometheus version. The endpoint used for historical validation must be the actual Thanos Query or Query Frontend endpoint when long retention is expected.

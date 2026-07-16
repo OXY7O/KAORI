@@ -11,6 +11,8 @@ from app.prometheus.exceptions import (
 )
 from app.prometheus.forms import PrometheusConfigForm
 from app.integrations.compatibility import evaluate_compatibility
+from app.prometheus.query_profiles import PROFILE_KEY
+from app.prometheus.query_profiles.audit import PromQLProfileAuditor
 from datetime import UTC, datetime
 
 
@@ -72,10 +74,22 @@ class PrometheusService:
             version,
             capabilities=('build_info', 'instant_query', 'range_query'),
         )
+        query_audit = PromQLProfileAuditor(self.client).audit(execute_queries=False)
+        query_status = 'ready' if query_audit['blocked_count'] == 0 else 'degraded'
+        readiness = compatibility.readiness
+        if readiness == 'ready' and query_status == 'degraded':
+            readiness = 'degraded'
+
         self.client.config.detected_version = version
         self.client.config.compatibility_status = compatibility.status
         self.client.config.compatibility_profile = compatibility.profile_key
-        self.client.config.readiness_status = compatibility.readiness
+        self.client.config.readiness_status = readiness
+        self.client.config.query_profile = PROFILE_KEY
+        self.client.config.query_validation_status = query_status
+        self.client.config.query_validation_summary = {
+            key: value for key, value in query_audit.items() if key not in {'results', 'retention'}
+        }
+        self.client.config.retention_validation_summary = query_audit['retention']
         self.client.config.validation_message = compatibility.message
         self.client.config.last_validated_at = datetime.now(UTC)
         db.session.commit()
@@ -84,11 +98,27 @@ class PrometheusService:
             'success': compatibility.readiness != 'blocked',
             'version': version,
             'compatibility_status': compatibility.status,
-            'readiness_status': compatibility.readiness,
+            'readiness_status': readiness,
+            'query_profile': PROFILE_KEY,
+            'query_validation_status': query_status,
+            'query_validation_summary': self.client.config.query_validation_summary,
+            'retention_validation_summary': query_audit['retention'],
             'compatibility_profile': compatibility.profile_key,
             'message': compatibility.message,
             'response_time': round(elapsed, 3),
         }
+
+    def audit_query_profile(self, *, execute_queries: bool = True) -> dict[str, Any]:
+        audit = PromQLProfileAuditor(self.client).audit(execute_queries=execute_queries)
+        config = self.client.config
+        config.query_profile = PROFILE_KEY
+        config.query_validation_status = 'ready' if audit['blocked_count'] == 0 else 'degraded'
+        config.query_validation_summary = {
+            key: value for key, value in audit.items() if key not in {'results', 'retention'}
+        }
+        config.retention_validation_summary = audit['retention']
+        db.session.commit()
+        return audit
 
     def _require_runtime_readiness(self) -> None:
         config = self.client.config
@@ -164,6 +194,10 @@ class PrometheusService:
         config.compatibility_status = 'validation_required'
         config.readiness_status = 'validation_required'
         config.compatibility_profile = None
+        config.query_profile = None
+        config.query_validation_status = 'validation_required'
+        config.query_validation_summary = None
+        config.retention_validation_summary = None
         config.validation_message = 'Configuration changed. Run validation before KAORI uses this integration.'
         config.last_validated_at = None
         db.session.commit()

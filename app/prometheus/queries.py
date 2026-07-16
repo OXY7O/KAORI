@@ -1,189 +1,22 @@
-# =====================================================
-# Inventory Metrics
-# =====================================================
+"""Compatibility exports backed by the versioned PromQL query catalog."""
 
-CLUSTER_NODE_COUNT = """
-count(kube_node_info)
-"""
+from app.prometheus.query_profiles import get_query_expression
 
-CLUSTER_NAMESPACE_COUNT = """
-count(kube_namespace_labels)
-"""
-
-CLUSTER_POD_COUNT = """
-count(kube_pod_info)
-"""
-
-# =====================================================
-# CPU Metrics
-# =====================================================
-
-CLUSTER_CPU_CAPACITY = """
-sum(
-    kube_node_status_capacity{
-        resource="cpu"
-    }
-)
-"""
-
-CLUSTER_CPU_USAGE = """
-sum(
-    rate(
-        container_cpu_usage_seconds_total{
-            container!="",
-            container!="POD"
-        }[5m]
-    )
-)
-"""
-
-CLUSTER_CPU_UTILIZATION = """
-(
-    sum(
-        rate(
-            container_cpu_usage_seconds_total{
-                container!="",
-                container!="POD"
-            }[5m]
-        )
-    )
-/
-    sum(
-        kube_node_status_capacity{
-            resource="cpu"
-        }
-    )
-) * 100
-"""
-
-# =====================================================
-# Memory Metrics
-# =====================================================
-
-CLUSTER_MEMORY_CAPACITY = """
-sum(
-    kube_node_status_capacity{
-        resource="memory"
-    }
-)
-"""
-
-CLUSTER_MEMORY_USAGE = """
-sum(
-    container_memory_working_set_bytes{
-        container!="",
-        container!="POD"
-    }
-)
-"""
-
-CLUSTER_MEMORY_UTILIZATION = """
-(
-    sum(
-        container_memory_working_set_bytes{
-            container!="",
-            container!="POD"
-        }
-    )
-/
-    sum(
-        kube_node_status_capacity{
-            resource="memory"
-        }
-    )
-) * 100
-"""
-
-# =====================================================
-# Storage Metrics
-# =====================================================
-
-CLUSTER_STORAGE_CAPACITY = """
-sum(
-    kubelet_volume_stats_capacity_bytes
-)
-"""
-
-CLUSTER_STORAGE_USAGE = """
-sum(
-    kubelet_volume_stats_used_bytes
-)
-"""
-
-CLUSTER_STORAGE_AVAILABLE = """
-sum(
-    kubelet_volume_stats_available_bytes
-)
-"""
-
-CLUSTER_STORAGE_UTILIZATION = """
-(
-    sum(
-        kubelet_volume_stats_used_bytes
-    )
-/
-    sum(
-        kubelet_volume_stats_capacity_bytes
-    )
-) * 100
-"""
-
-# =====================================================
-# Top Consumers
-# =====================================================
-
-TOP_CPU_PODS = """
-topk(
-    10,
-    sum by(namespace,pod)(
-        rate(
-            container_cpu_usage_seconds_total{
-                container!="",
-                container!="POD"
-            }[5m]
-        )
-    )
-)
-"""
-
-TOP_MEMORY_PODS = """
-topk(
-    10,
-    sum by(namespace,pod)(
-        container_memory_working_set_bytes{
-            container!="",
-            container!="POD"
-        }
-    )
-)
-"""
-
-# =====================================================
-# Trend Metrics
-# =====================================================
-
-CPU_USAGE_HISTORY = """
-sum(
-    rate(
-        container_cpu_usage_seconds_total{
-            container!="",
-            container!="POD"
-        }[5m]
-    )
-)
-"""
-
-MEMORY_USAGE_HISTORY = """
-sum(
-    container_memory_working_set_bytes{
-        container!="",
-        container!="POD"
-    }
-)
-"""
-
-STORAGE_USAGE_HISTORY = """
-sum(
-    kubelet_volume_stats_used_bytes
-)
-"""
+CLUSTER_NODE_COUNT = get_query_expression('prometheus.queries.CLUSTER_NODE_COUNT')
+CLUSTER_NAMESPACE_COUNT = get_query_expression('prometheus.queries.CLUSTER_NAMESPACE_COUNT')
+CLUSTER_POD_COUNT = get_query_expression('prometheus.queries.CLUSTER_POD_COUNT')
+CLUSTER_CPU_CAPACITY = get_query_expression('prometheus.queries.CLUSTER_CPU_CAPACITY')
+CLUSTER_CPU_USAGE = get_query_expression('prometheus.queries.CLUSTER_CPU_USAGE')
+CLUSTER_CPU_UTILIZATION = get_query_expression('prometheus.queries.CLUSTER_CPU_UTILIZATION')
+CLUSTER_MEMORY_CAPACITY = get_query_expression('prometheus.queries.CLUSTER_MEMORY_CAPACITY')
+CLUSTER_MEMORY_USAGE = get_query_expression('prometheus.queries.CLUSTER_MEMORY_USAGE')
+CLUSTER_MEMORY_UTILIZATION = get_query_expression('prometheus.queries.CLUSTER_MEMORY_UTILIZATION')
+CLUSTER_STORAGE_CAPACITY = get_query_expression('prometheus.queries.CLUSTER_STORAGE_CAPACITY')
+CLUSTER_STORAGE_USAGE = get_query_expression('prometheus.queries.CLUSTER_STORAGE_USAGE')
+CLUSTER_STORAGE_AVAILABLE = get_query_expression('prometheus.queries.CLUSTER_STORAGE_AVAILABLE')
+CLUSTER_STORAGE_UTILIZATION = get_query_expression('prometheus.queries.CLUSTER_STORAGE_UTILIZATION')
+TOP_CPU_PODS = get_query_expression('prometheus.queries.TOP_CPU_PODS')
+TOP_MEMORY_PODS = get_query_expression('prometheus.queries.TOP_MEMORY_PODS')
+CPU_USAGE_HISTORY = get_query_expression('prometheus.queries.CPU_USAGE_HISTORY')
+MEMORY_USAGE_HISTORY = get_query_expression('prometheus.queries.MEMORY_USAGE_HISTORY')
+STORAGE_USAGE_HISTORY = get_query_expression('prometheus.queries.STORAGE_USAGE_HISTORY')

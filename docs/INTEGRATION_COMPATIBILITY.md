@@ -1,53 +1,50 @@
 # Integration compatibility and readiness
 
-KAORI treats reachability, compatibility, and readiness as separate states. A successful TCP/TLS connection does not authorize an integration for runtime use.
+KAORI treats reachability, product identity, runtime version, API compatibility, query compatibility, and feature readiness as separate states. Helm chart versions and chart `appVersion` values are deployment metadata; they do not replace runtime discovery.
 
 ## Validation lifecycle
 
-1. Save configuration.
-2. Mark the integration `validation_required`.
-3. Detect product identity and version.
+1. Save configuration and set `validation_required`.
+2. Validate network, TLS, and authentication.
+3. Detect the responding product and runtime version.
 4. Match a version-controlled compatibility profile.
 5. Validate required APIs and capabilities.
-6. Select the query/API profile.
-7. Persist validation evidence and readiness.
-8. Allow consumers to use only integrations that are not explicitly blocked.
+6. Select the API or PromQL profile.
+7. Validate metrics, labels, query execution, and retention where applicable.
+8. Persist validation evidence.
+9. Allow each KAORI consumer only when its required capability is ready.
 
-Unknown and unsupported versions fail closed. Missing optional capabilities may be represented as degraded; missing required capabilities are blocked.
+## Compatibility matrix
 
-## Initial KAORI profiles
+| Product | Supplied/runtime version | Deployment metadata | KAORI profile | Initial behavior |
+|---|---:|---|---|---|
+| Kubernetes | `1.20.15` | Per-cluster | `kubernetes-legacy-v1` | Degraded; feature/API validation required. |
+| Kubernetes | `1.26.11` | Per-cluster | `kubernetes-standard-v1` | Supported, subject to API and RBAC probes. |
+| Kubernetes | `1.29.4`, `1.29.5` | Per-cluster | `kubernetes-standard-v1` | Supported, subject to API and RBAC probes. |
+| Prometheus | Runtime still must be detected | `kube-prometheus-stack-87.10.1`, chart app `v0.92.1` | `prometheus-http-api-v1` when runtime is `>=2,<3` | Block until `/api/v1/status/buildinfo` confirms the server version. |
+| Thanos | `0.39.2` application family | Helm chart `17.3.1` | `thanos-query-prometheus-api-v1` | Supported initial query-backend profile after API and history probes. |
+| Alertmanager | `0.25.0`, `0.33.1` | Per-cluster | `alertmanager-api-v2` | Supported after status, alerts, and silences probes. |
 
-| Product | Version constraint | Profile | Behavior |
-|---|---:|---|---|
-| Kubernetes | `>=1.20,<1.24` | `kubernetes-legacy-v1` | Compatible with warnings; validate each feature and API resource independently. |
-| Kubernetes | `>=1.24,<1.30` | `kubernetes-standard-v1` | Supported initial cluster profile. |
-| Prometheus | `>=2.0,<3.0` | `prometheus-http-api-v1` | Stable `/api/v1` HTTP API and KAORI PromQL registry. |
-| Alertmanager | `>=0.25,<1.0` | `alertmanager-api-v2` | API v2 only. |
+The previous classification of `0.39.2` as a Prometheus version was incorrect. It belongs to the Thanos chart application version.
 
-These constraints are KAORI support policy, not a claim about upstream maintenance status. Extend them only after automated API and query validation is added for the new range.
+## Prometheus and Thanos topology
 
-## Current supplied estate
+For Kubernetes assets, every cluster currently owns its own Prometheus and Alertmanager. Thanos provides long-retention query capability. KAORI must preserve these identities independently:
 
-- Kubernetes `v1.20.15`: legacy profile, warning state.
-- Kubernetes `v1.26.11`, `v1.29.4`, `v1.29.5`: standard profile.
-- Prometheus `2.43.0`: supported profile.
-- Prometheus `0.39.2`: blocked because it does not match the supported Prometheus 2.x profile.
-- Alertmanager `0.25.0`, `0.33.1`: evaluated against API v2 and must still pass status, alerts, and silences probes.
+- Prometheus runtime/version and local-query readiness;
+- Alertmanager runtime/version and API readiness;
+- Thanos runtime/version and long-range query readiness;
+- Helm chart name/version as deployment evidence only.
 
-## Deprecation handling
+A future Server domain may bind multiple server assets to one centralized Prometheus and Alertmanager instance. Integration bindings must therefore remain asset-aware rather than hard-coded permanently to one cluster.
 
-Compatibility profiles live in `app/integrations/compatibility.py` and are version controlled. Deprecated syntax, removed APIs, changed response schemas, and PromQL/metric-label changes must create a new profile rather than silently changing an existing one.
+## Deprecation behavior
 
-For Kubernetes, readiness is feature-specific. A legacy cluster may remain usable for inventory while a mutation workflow is blocked because a required API resource or verb is unavailable.
+- Unknown or unsupported required API: blocked.
+- Missing optional capability: degraded.
+- Removed API with a registered replacement: replacement required.
+- Removed API without direct replacement: feature blocked with remediation guidance.
+- Deprecated PromQL definition: resolve its registered replacement key.
+- Missing metric or label schema: only dependent capabilities are degraded or blocked.
 
-For Prometheus, future query packs must declare required metrics, labels, result type, and replacement query. For Alertmanager, KAORI never falls back to API v1; upstream API v1 was deprecated and later removed.
-
-## Deployment
-
-Run the database migration before starting the updated application:
-
-```bash
-flask db upgrade
-```
-
-Existing configurations have no validation evidence after migration. Open the integration configuration and run connection validation before treating them as ready.
+The deprecation registry is `app/integrations/deprecations.py`. PromQL profile details are documented in `docs/PROMQL_QUERY_PROFILES.md`.

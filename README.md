@@ -52,6 +52,14 @@ Detailed instructions: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
 - ReportLab PDF generation
 - Local and S3-compatible report storage
 
-## Managed integration compatibility
+## Integration compatibility and PromQL profiles
 
-Prometheus, Alertmanager, and Kubernetes API compatibility are managed through versioned profiles, capability probes, and fail-closed readiness states. See [Integration compatibility and readiness](docs/INTEGRATION_COMPATIBILITY.md) for the supported matrix, validation lifecycle, deprecation policy, and migration guidance.
+KAORI validates Kubernetes, Prometheus, Alertmanager, and Thanos as separate products. Helm chart metadata is not treated as runtime version evidence. All PromQL is maintained in a versioned query profile with metric, label, retention, deprecation, and replacement metadata.
+
+Technical references:
+
+- `docs/INTEGRATION_COMPATIBILITY.md`
+- `docs/PROMQL_QUERY_PROFILES.md`
+- `app/prometheus/README.md`
+- `app/alertmanager/README.md`
+- `app/cluster/README.md`

@@ -1,27 +1,10 @@
-from __future__ import annotations
+"""Compatibility exports backed by the versioned PromQL query catalog."""
 
-PROMETHEUS_ALERTS_QUERY = 'ALERTS'
+from app.prometheus.query_profiles import get_query_expression
 
-PROMETHEUS_FIRING_ALERTS_QUERY = 'ALERTS{alertstate="firing"}'
-
-POD_RESTART_ANOMALY_QUERY = """
-sum by (namespace, pod) (
-  increase(kube_pod_container_status_restarts_total[15m])
-)
-"""
-
-POD_NOT_READY_ANOMALY_QUERY = """
-kube_pod_status_ready{condition="false"}
-"""
-
-CPU_SPIKE_QUERY = """
-sum by (namespace, pod) (
-  rate(container_cpu_usage_seconds_total{container!="", pod!=""}[5m])
-)
-"""
-
-MEMORY_USAGE_QUERY = """
-sum by (namespace, pod) (
-  container_memory_working_set_bytes{container!="", pod!=""}
-)
-"""
+PROMETHEUS_ALERTS_QUERY = get_query_expression('analytics.alerts.queries.PROMETHEUS_ALERTS_QUERY')
+PROMETHEUS_FIRING_ALERTS_QUERY = get_query_expression('analytics.alerts.queries.PROMETHEUS_FIRING_ALERTS_QUERY')
+POD_RESTART_ANOMALY_QUERY = get_query_expression('analytics.alerts.queries.POD_RESTART_ANOMALY_QUERY')
+POD_NOT_READY_ANOMALY_QUERY = get_query_expression('analytics.alerts.queries.POD_NOT_READY_ANOMALY_QUERY')
+CPU_SPIKE_QUERY = get_query_expression('analytics.alerts.queries.CPU_SPIKE_QUERY')
+MEMORY_USAGE_QUERY = get_query_expression('analytics.alerts.queries.MEMORY_USAGE_QUERY')

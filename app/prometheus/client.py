@@ -45,7 +45,7 @@ class PrometheusClient:
     def _get(
         self,
         path: str,
-        params: dict[str, Any] | None = None,
+        params: dict[str, Any] | list[tuple[str, Any]] | None = None,
     ) -> dict[str, Any]:
         url = f'{self.base_url}{path}'
 
@@ -76,12 +76,19 @@ class PrometheusClient:
         self,
         query: str,
     ) -> dict[str, Any]:
-        return self._get(
-            '/api/v1/query',
-            {
-                'query': query,
-            },
-        )
+        return self._get('/api/v1/query', {'query': query})
+
+    def query_at(self, query: str, timestamp: float) -> dict[str, Any]:
+        return self._get('/api/v1/query', {'query': query, 'time': timestamp})
+
+    def label_values(self, label: str) -> dict[str, Any]:
+        return self._get(f'/api/v1/label/{label}/values')
+
+    def series(self, metrics: list[str], limit: int | None = None) -> dict[str, Any]:
+        params: list[tuple[str, Any]] = [('match[]', metric) for metric in metrics]
+        if limit is not None:
+            params.append(('limit', limit))
+        return self._get('/api/v1/series', params)
 
     def query_range(
         self,

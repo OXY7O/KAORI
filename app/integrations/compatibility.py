@@ -63,6 +63,16 @@ PROFILES: dict[str, tuple[CompatibilityProfile, ...]] = {
             notes='Uses the stable Prometheus HTTP API under /api/v1 and the KAORI PromQL query registry.',
         ),
     ),
+    'thanos': (
+        CompatibilityProfile(
+            key='thanos-query-prometheus-api-v1',
+            product='thanos',
+            version_constraint='>=0.39,<1.0',
+            support_level='supported',
+            required_capabilities=('prometheus_api_v1', 'instant_query', 'range_query', 'long_term_history'),
+            notes='Thanos Query profile for Prometheus-compatible long-retention queries.',
+        ),
+    ),
     'alertmanager': (
         CompatibilityProfile(
             key='alertmanager-api-v2',

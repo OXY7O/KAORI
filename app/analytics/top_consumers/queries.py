@@ -1,162 +1,38 @@
-# app/analytics/top_consumers/queries.py
+"""Compatibility exports backed by the versioned PromQL query catalog."""
 
-from __future__ import annotations
+from app.prometheus.query_profiles import get_query_expression
 
-NAMESPACE_ACTIVE_QUERY = 'kube_namespace_status_phase{phase="Active"} == 1'
-
-
-TOP_CPU_CONSUMERS_QUERY = (
-    'topk(50, '
-    'sum by (namespace, pod, container) ('
-    'rate(container_cpu_usage_seconds_total{container!="", image!=""}[5m])'
-    ')'
-    ')'
-)
-
-TOP_CPU_CONSUMERS_BY_NAMESPACE_QUERY = (
-    'topk(50, '
-    'sum by (namespace, pod, container) ('
-    'rate(container_cpu_usage_seconds_total{'
-    'container!="", image!="", namespace="$namespace"'
-    '}[5m])'
-    ')'
-    ')'
-)
-
-CPU_REQUEST_BY_CONTAINER_QUERY = (
-    'sum by (namespace, pod, container) (kube_pod_container_resource_requests{resource="cpu", unit="core"})'
-)
-
-CPU_REQUEST_BY_CONTAINER_NAMESPACE_QUERY = (
-    'sum by (namespace, pod, container) ('
-    'kube_pod_container_resource_requests{'
-    'resource="cpu", unit="core", namespace="$namespace"'
-    '}'
-    ')'
-)
-
-CPU_LIMIT_BY_CONTAINER_QUERY = (
-    'sum by (namespace, pod, container) (kube_pod_container_resource_limits{resource="cpu", unit="core"})'
-)
-
-CPU_LIMIT_BY_CONTAINER_NAMESPACE_QUERY = (
-    'sum by (namespace, pod, container) ('
-    'kube_pod_container_resource_limits{'
-    'resource="cpu", unit="core", namespace="$namespace"'
-    '}'
-    ')'
-)
-
-CPU_ALLOCATABLE_QUERY = (
-    'sum('
-    'kube_node_status_allocatable{resource="cpu", unit="core"} '
-    'unless on(node) kube_node_role{role=~"control-plane|master"}'
-    ')'
-)
-
-TOTAL_CPU_USAGE_QUERY = 'sum(rate(container_cpu_usage_seconds_total{container!="", image!=""}[5m]))'
-
-TOTAL_CPU_USAGE_BY_NAMESPACE_QUERY = (
-    'sum(rate(container_cpu_usage_seconds_total{container!="", image!="", namespace="$namespace"}[5m]))'
-)
-
-
-TOP_MEMORY_CONSUMERS_QUERY = (
-    'topk(50, sum by (namespace, pod, container) (container_memory_working_set_bytes{container!="", image!=""}))'
-)
-
-TOP_MEMORY_CONSUMERS_BY_NAMESPACE_QUERY = (
-    'topk(50, '
-    'sum by (namespace, pod, container) ('
-    'container_memory_working_set_bytes{'
-    'container!="", image!="", namespace="$namespace"'
-    '}'
-    ')'
-    ')'
-)
-
-MEMORY_REQUEST_BY_CONTAINER_QUERY = (
-    'sum by (namespace, pod, container) (kube_pod_container_resource_requests{resource="memory", unit="byte"})'
-)
-
-MEMORY_REQUEST_BY_CONTAINER_NAMESPACE_QUERY = (
-    'sum by (namespace, pod, container) ('
-    'kube_pod_container_resource_requests{'
-    'resource="memory", unit="byte", namespace="$namespace"'
-    '}'
-    ')'
-)
-
-MEMORY_LIMIT_BY_CONTAINER_QUERY = (
-    'sum by (namespace, pod, container) (kube_pod_container_resource_limits{resource="memory", unit="byte"})'
-)
-
-MEMORY_LIMIT_BY_CONTAINER_NAMESPACE_QUERY = (
-    'sum by (namespace, pod, container) ('
-    'kube_pod_container_resource_limits{'
-    'resource="memory", unit="byte", namespace="$namespace"'
-    '}'
-    ')'
-)
-
-MEMORY_ALLOCATABLE_QUERY = (
-    'sum('
-    'kube_node_status_allocatable{resource="memory", unit="byte"} '
-    'unless on(node) kube_node_role{role=~"control-plane|master"}'
-    ')'
-)
-
-TOTAL_MEMORY_USAGE_QUERY = 'sum(container_memory_working_set_bytes{container!="", image!=""})'
-
-TOTAL_MEMORY_USAGE_BY_NAMESPACE_QUERY = (
-    'sum(container_memory_working_set_bytes{container!="", image!="", namespace="$namespace"})'
-)
-
-
-TOP_POD_CONSUMERS_QUERY = 'topk(50, sum by (namespace) (kube_pod_status_phase{phase="Running"} == 1))'
-
-TOP_POD_CONSUMERS_BY_NAMESPACE_QUERY = (
-    'topk(50, sum by (namespace) (kube_pod_status_phase{phase="Running", namespace="$namespace"} == 1))'
-)
-
-POD_CAPACITY_QUERY = (
-    'sum('
-    'kube_node_status_allocatable{resource="pods", unit="integer"} '
-    'unless on(node) kube_node_role{role=~"control-plane|master"}'
-    ')'
-)
-
-TOTAL_RUNNING_PODS_QUERY = 'sum(kube_pod_status_phase{phase="Running"} == 1)'
-
-TOTAL_RUNNING_PODS_BY_NAMESPACE_QUERY = 'sum(kube_pod_status_phase{phase="Running", namespace="$namespace"} == 1)'
-
-
-TOP_PVC_CONSUMERS_QUERY = 'topk(50, kubelet_volume_stats_used_bytes{persistentvolumeclaim!=""})'
-
-TOP_PVC_CONSUMERS_BY_NAMESPACE_QUERY = (
-    'topk(50, kubelet_volume_stats_used_bytes{persistentvolumeclaim!="", namespace="$namespace"})'
-)
-
-PVC_CAPACITY_BY_CLAIM_QUERY = 'kubelet_volume_stats_capacity_bytes{persistentvolumeclaim!=""}'
-
-PVC_CAPACITY_BY_CLAIM_NAMESPACE_QUERY = (
-    'kubelet_volume_stats_capacity_bytes{persistentvolumeclaim!="", namespace="$namespace"}'
-)
-
-PVC_AVAILABLE_BY_CLAIM_QUERY = 'kubelet_volume_stats_available_bytes{persistentvolumeclaim!=""}'
-
-PVC_AVAILABLE_BY_CLAIM_NAMESPACE_QUERY = (
-    'kubelet_volume_stats_available_bytes{persistentvolumeclaim!="", namespace="$namespace"}'
-)
-
-TOTAL_PVC_USED_QUERY = 'sum(kubelet_volume_stats_used_bytes{persistentvolumeclaim!=""})'
-
-TOTAL_PVC_USED_BY_NAMESPACE_QUERY = (
-    'sum(kubelet_volume_stats_used_bytes{persistentvolumeclaim!="", namespace="$namespace"})'
-)
-
-TOTAL_PVC_CAPACITY_QUERY = 'sum(kubelet_volume_stats_capacity_bytes{persistentvolumeclaim!=""})'
-
-TOTAL_PVC_CAPACITY_BY_NAMESPACE_QUERY = (
-    'sum(kubelet_volume_stats_capacity_bytes{persistentvolumeclaim!="", namespace="$namespace"})'
-)
+NAMESPACE_ACTIVE_QUERY = get_query_expression('analytics.top_consumers.queries.NAMESPACE_ACTIVE_QUERY')
+TOP_CPU_CONSUMERS_QUERY = get_query_expression('analytics.top_consumers.queries.TOP_CPU_CONSUMERS_QUERY')
+TOP_CPU_CONSUMERS_BY_NAMESPACE_QUERY = get_query_expression('analytics.top_consumers.queries.TOP_CPU_CONSUMERS_BY_NAMESPACE_QUERY')
+CPU_REQUEST_BY_CONTAINER_QUERY = get_query_expression('analytics.top_consumers.queries.CPU_REQUEST_BY_CONTAINER_QUERY')
+CPU_REQUEST_BY_CONTAINER_NAMESPACE_QUERY = get_query_expression('analytics.top_consumers.queries.CPU_REQUEST_BY_CONTAINER_NAMESPACE_QUERY')
+CPU_LIMIT_BY_CONTAINER_QUERY = get_query_expression('analytics.top_consumers.queries.CPU_LIMIT_BY_CONTAINER_QUERY')
+CPU_LIMIT_BY_CONTAINER_NAMESPACE_QUERY = get_query_expression('analytics.top_consumers.queries.CPU_LIMIT_BY_CONTAINER_NAMESPACE_QUERY')
+CPU_ALLOCATABLE_QUERY = get_query_expression('analytics.top_consumers.queries.CPU_ALLOCATABLE_QUERY')
+TOTAL_CPU_USAGE_QUERY = get_query_expression('analytics.top_consumers.queries.TOTAL_CPU_USAGE_QUERY')
+TOTAL_CPU_USAGE_BY_NAMESPACE_QUERY = get_query_expression('analytics.top_consumers.queries.TOTAL_CPU_USAGE_BY_NAMESPACE_QUERY')
+TOP_MEMORY_CONSUMERS_QUERY = get_query_expression('analytics.top_consumers.queries.TOP_MEMORY_CONSUMERS_QUERY')
+TOP_MEMORY_CONSUMERS_BY_NAMESPACE_QUERY = get_query_expression('analytics.top_consumers.queries.TOP_MEMORY_CONSUMERS_BY_NAMESPACE_QUERY')
+MEMORY_REQUEST_BY_CONTAINER_QUERY = get_query_expression('analytics.top_consumers.queries.MEMORY_REQUEST_BY_CONTAINER_QUERY')
+MEMORY_REQUEST_BY_CONTAINER_NAMESPACE_QUERY = get_query_expression('analytics.top_consumers.queries.MEMORY_REQUEST_BY_CONTAINER_NAMESPACE_QUERY')
+MEMORY_LIMIT_BY_CONTAINER_QUERY = get_query_expression('analytics.top_consumers.queries.MEMORY_LIMIT_BY_CONTAINER_QUERY')
+MEMORY_LIMIT_BY_CONTAINER_NAMESPACE_QUERY = get_query_expression('analytics.top_consumers.queries.MEMORY_LIMIT_BY_CONTAINER_NAMESPACE_QUERY')
+MEMORY_ALLOCATABLE_QUERY = get_query_expression('analytics.top_consumers.queries.MEMORY_ALLOCATABLE_QUERY')
+TOTAL_MEMORY_USAGE_QUERY = get_query_expression('analytics.top_consumers.queries.TOTAL_MEMORY_USAGE_QUERY')
+TOTAL_MEMORY_USAGE_BY_NAMESPACE_QUERY = get_query_expression('analytics.top_consumers.queries.TOTAL_MEMORY_USAGE_BY_NAMESPACE_QUERY')
+TOP_POD_CONSUMERS_QUERY = get_query_expression('analytics.top_consumers.queries.TOP_POD_CONSUMERS_QUERY')
+TOP_POD_CONSUMERS_BY_NAMESPACE_QUERY = get_query_expression('analytics.top_consumers.queries.TOP_POD_CONSUMERS_BY_NAMESPACE_QUERY')
+POD_CAPACITY_QUERY = get_query_expression('analytics.top_consumers.queries.POD_CAPACITY_QUERY')
+TOTAL_RUNNING_PODS_QUERY = get_query_expression('analytics.top_consumers.queries.TOTAL_RUNNING_PODS_QUERY')
+TOTAL_RUNNING_PODS_BY_NAMESPACE_QUERY = get_query_expression('analytics.top_consumers.queries.TOTAL_RUNNING_PODS_BY_NAMESPACE_QUERY')
+TOP_PVC_CONSUMERS_QUERY = get_query_expression('analytics.top_consumers.queries.TOP_PVC_CONSUMERS_QUERY')
+TOP_PVC_CONSUMERS_BY_NAMESPACE_QUERY = get_query_expression('analytics.top_consumers.queries.TOP_PVC_CONSUMERS_BY_NAMESPACE_QUERY')
+PVC_CAPACITY_BY_CLAIM_QUERY = get_query_expression('analytics.top_consumers.queries.PVC_CAPACITY_BY_CLAIM_QUERY')
+PVC_CAPACITY_BY_CLAIM_NAMESPACE_QUERY = get_query_expression('analytics.top_consumers.queries.PVC_CAPACITY_BY_CLAIM_NAMESPACE_QUERY')
+PVC_AVAILABLE_BY_CLAIM_QUERY = get_query_expression('analytics.top_consumers.queries.PVC_AVAILABLE_BY_CLAIM_QUERY')
+PVC_AVAILABLE_BY_CLAIM_NAMESPACE_QUERY = get_query_expression('analytics.top_consumers.queries.PVC_AVAILABLE_BY_CLAIM_NAMESPACE_QUERY')
+TOTAL_PVC_USED_QUERY = get_query_expression('analytics.top_consumers.queries.TOTAL_PVC_USED_QUERY')
+TOTAL_PVC_USED_BY_NAMESPACE_QUERY = get_query_expression('analytics.top_consumers.queries.TOTAL_PVC_USED_BY_NAMESPACE_QUERY')
+TOTAL_PVC_CAPACITY_QUERY = get_query_expression('analytics.top_consumers.queries.TOTAL_PVC_CAPACITY_QUERY')
+TOTAL_PVC_CAPACITY_BY_NAMESPACE_QUERY = get_query_expression('analytics.top_consumers.queries.TOTAL_PVC_CAPACITY_BY_NAMESPACE_QUERY')

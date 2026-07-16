@@ -70,6 +70,10 @@ class PrometheusConfig(db.Model):
     readiness_status: Mapped[str | None] = mapped_column(String(40), nullable=True)
     validation_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     last_validated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    query_profile: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    query_validation_status: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    query_validation_summary: Mapped[dict | None] = mapped_column(db.JSON, nullable=True)
+    retention_validation_summary: Mapped[dict | None] = mapped_column(db.JSON, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
