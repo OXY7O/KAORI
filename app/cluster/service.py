@@ -292,7 +292,9 @@ def get_cluster_summary(
         )
 
         inventory_summary[cluster.id] = {
-            'version': inventory.kubernetes_version if inventory else '-',
+            'version': cluster.kubernetes_version or (inventory.kubernetes_version if inventory else '-'),
+            'compatibility_status': cluster.kubernetes_compatibility_status or 'not_checked',
+            'readiness_status': cluster.kubernetes_readiness_status or 'not_checked',
             'namespaces': namespace_counts.get(
                 cluster.id,
                 0,
@@ -467,10 +469,14 @@ def run_test_cluster(cluster: Cluster) -> dict[str, Any]:
     if result['success']:
         cluster.status = ClusterStatus.CONNECTED.value
 
-        cluster.node_count = result.get(
-            'node_count',
-            0,
-        )
+        cluster.node_count = result.get('node_count', 0)
+        cluster.kubernetes_version = result.get('version')
+        cluster.kubernetes_platform = result.get('platform')
+        cluster.kubernetes_compatibility_status = result.get('compatibility_status')
+        cluster.kubernetes_compatibility_profile = result.get('compatibility_profile')
+        cluster.kubernetes_readiness_status = result.get('readiness_status')
+        cluster.kubernetes_validation_message = result.get('validation_message')
+        cluster.kubernetes_last_validated_at = datetime.now(UTC)
 
     else:
         cluster.status = ClusterStatus.FAILED.value

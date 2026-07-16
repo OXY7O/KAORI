@@ -1,0 +1,15 @@
+{% extends "layouts/app.html" %}
+{% block title %}Integrations · KAORI{% endblock %}
+{% block content %}
+<div class="space-y-6">
+    <section class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-700 via-blue-600 to-cyan-500 p-6 text-white shadow-xl shadow-blue-900/20 lg:p-8">
+        <div class="relative grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-center">
+            <div><div class="mb-3 inline-flex rounded-full bg-white/15 px-3 py-1 text-xs font-semibold ring-1 ring-white/20">Managed integration compatibility</div><h1 class="text-3xl font-bold">Infrastructure Integrations</h1><p class="mt-3 max-w-3xl text-sm leading-6 text-blue-50">Manage version detection, API compatibility, capability validation, and readiness for services connected to KAORI.</p></div>
+            <div class="rounded-3xl bg-blue-800/55 p-5 shadow-lg ring-1 ring-white/10 backdrop-blur"><div class="text-xs font-bold uppercase tracking-widest text-blue-100">Integration posture</div><div class="mt-4 grid grid-cols-3 gap-3 text-center"><div><div class="text-2xl font-bold">{{ stats.configured }}</div><div class="text-xs text-blue-100">Configured</div></div><div><div class="text-2xl font-bold">{{ stats.ready }}</div><div class="text-xs text-blue-100">Ready</div></div><div><div class="text-2xl font-bold">{{ stats.attention }}</div><div class="text-xs text-blue-100">Attention</div></div></div></div>
+        </div>
+    </section>
+    <section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
+        <div class="overflow-x-auto"><table class="min-w-full text-left text-sm"><thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-900"><tr><th class="px-5 py-4">Integration</th><th class="px-5 py-4">Cluster</th><th class="px-5 py-4">Version</th><th class="px-5 py-4">Compatibility</th><th class="px-5 py-4">Readiness</th><th class="px-5 py-4">Profile</th><th class="px-5 py-4 text-right">Configuration</th></tr></thead><tbody class="divide-y divide-slate-100 dark:divide-slate-800">{% for row in rows %}<tr><td class="px-5 py-4 font-semibold">{{ row.name }}</td><td class="px-5 py-4">{{ row.cluster.name }}</td><td class="px-5 py-4">{{ row.version or 'Not detected' }}</td><td class="px-5 py-4">{{ (row.compatibility or ('validation_required' if row.configured else 'not_configured'))|replace('_',' ')|title }}</td><td class="px-5 py-4">{{ (row.readiness or ('validation_required' if row.configured else 'not_configured'))|replace('_',' ')|title }}</td><td class="px-5 py-4 text-xs text-slate-500">{{ row.profile or '—' }}</td><td class="px-5 py-4 text-right"><a class="font-semibold text-blue-600 hover:text-blue-700" href="{{ url_for('prometheus.configuration', cluster_id=row.cluster.id) if row.name == 'Prometheus' else url_for('alertmanager.cluster_alertmanager_config', cluster_id=row.cluster.id) }}">Manage</a></td></tr>{% endfor %}</tbody></table></div>
+    </section>
+</div>
+{% endblock %}

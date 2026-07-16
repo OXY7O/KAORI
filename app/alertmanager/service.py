@@ -14,6 +14,7 @@ from app.common.integration_errors import describe_integration_failure
 from app.extensions import db
 from app.models.alertmanager import AlertmanagerConfig
 from app.models.cluster import Cluster
+from app.integrations.compatibility import evaluate_compatibility
 
 logger = logging.getLogger(__name__)
 
@@ -81,9 +82,12 @@ def save_alertmanager_config(
     config.bearer_token = form.bearer_token if form.auth_type == 'bearer' else None
     config.timeout = form.timeout
     config.verify_ssl = form.verify_ssl
-    config.updated_at = datetime.now(
-        UTC,
-    )
+    config.updated_at = datetime.now(UTC)
+    config.compatibility_status = 'validation_required'
+    config.readiness_status = 'validation_required'
+    config.compatibility_profile = None
+    config.validation_message = 'Configuration changed. Run validation before KAORI uses this integration.'
+    config.last_validated_at = None
 
     db.session.commit()
 
@@ -197,9 +201,27 @@ def test_alertmanager_connection(
             'request_path': failure['request_path'],
         }
 
+    version = result.get('version') or 'unknown'
+    capabilities = {'status_v2'}
+    try:
+        client.get_alerts()
+        capabilities.add('alerts_v2')
+        client.get_silences()
+        capabilities.add('silences_v2')
+    except AlertmanagerError as exc:
+        logger.warning('Alertmanager capability validation failed for cluster %s: %s', cluster_id, exc)
+
+    compatibility = evaluate_compatibility('alertmanager', version, capabilities=capabilities)
+    config.detected_version = version
+    config.compatibility_status = compatibility.status
+    config.compatibility_profile = compatibility.profile_key
+    config.readiness_status = compatibility.readiness
+    config.validation_message = compatibility.message
+    config.last_validated_at = datetime.now(UTC)
+
     mark_alertmanager_status(
         config=config,
-        status='connected',
+        status='connected' if compatibility.readiness != 'blocked' else 'incompatible',
         error=None,
         response_time_ms=int(
             result.get(
@@ -211,17 +233,16 @@ def test_alertmanager_connection(
     )
 
     return {
-        'connected': True,
-        'label': 'Alertmanager Connected',
-        'response_time_ms': result.get(
-            'response_time_ms',
-        ),
-        'version': result.get(
-            'version',
-        ),
-        'error': None,
-        'reason': None,
-        'failure_code': None,
+        'connected': compatibility.readiness != 'blocked',
+        'label': 'Alertmanager Ready' if compatibility.readiness == 'ready' else 'Alertmanager Incompatible',
+        'response_time_ms': result.get('response_time_ms'),
+        'version': version,
+        'compatibility_status': compatibility.status,
+        'readiness_status': compatibility.readiness,
+        'compatibility_profile': compatibility.profile_key,
+        'error': None if compatibility.readiness != 'blocked' else compatibility.message,
+        'reason': compatibility.message,
+        'failure_code': None if compatibility.readiness != 'blocked' else compatibility.status,
     }
 
 
@@ -267,6 +288,14 @@ def get_alertmanager_alerts(
             'connected': False,
             'alerts': [],
             'error': 'Alertmanager endpoint is not configured.',
+        }
+
+    if config.readiness_status in {'blocked', 'validation_required'}:
+        return {
+            'source': 'alertmanager',
+            'connected': False,
+            'alerts': [],
+            'error': config.validation_message or 'Alertmanager integration is not validated for runtime use.',
         }
 
     client = build_alertmanager_client(
@@ -320,6 +349,14 @@ def get_alertmanager_silences(
             'connected': False,
             'silences': [],
             'error': 'Alertmanager endpoint is not configured.',
+        }
+
+    if config.readiness_status in {'blocked', 'validation_required'}:
+        return {
+            'source': 'alertmanager',
+            'connected': False,
+            'silences': [],
+            'error': config.validation_message or 'Alertmanager integration is not validated for runtime use.',
         }
 
     client = build_alertmanager_client(
@@ -386,9 +423,7 @@ def mark_alertmanager_status(
     config.last_checked_at = datetime.now(
         UTC,
     )
-    config.updated_at = datetime.now(
-        UTC,
-    )
+    config.updated_at = datetime.now(UTC)
 
     db.session.commit()
 

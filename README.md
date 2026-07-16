@@ -51,3 +51,7 @@ Detailed instructions: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
 - Prometheus and Alertmanager integration
 - ReportLab PDF generation
 - Local and S3-compatible report storage
+
+## Managed integration compatibility
+
+Prometheus, Alertmanager, and Kubernetes API compatibility are managed through versioned profiles, capability probes, and fail-closed readiness states. See [Integration compatibility and readiness](docs/INTEGRATION_COMPATIBILITY.md) for the supported matrix, validation lifecycle, deprecation policy, and migration guidance.

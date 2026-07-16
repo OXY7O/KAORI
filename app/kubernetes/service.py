@@ -8,6 +8,7 @@ from kubernetes.client.rest import ApiException
 
 from app.common.integration_errors import describe_integration_failure
 from app.kubernetes.client import KubernetesClient
+from app.integrations.compatibility import evaluate_compatibility
 from app.kubernetes.tls import legacy_tls_context
 
 logger = logging.getLogger(__name__)
@@ -24,21 +25,31 @@ def test_cluster_connection(
         with legacy_tls_context(
             enabled=allow_weak_tls,
         ):
-            api = KubernetesClient(
+            client_factory = KubernetesClient(
                 kubeconfig_content=kubeconfig_content,
                 verify_ssl=verify_ssl,
-            ).connect()
-
-            nodes = cast(
-                V1NodeList,
-                api.list_node(),
             )
+            api = client_factory.connect()
+            nodes = cast(V1NodeList, api.list_node())
+            version_info = client_factory.version_api().get_code()
+
+        git_version = getattr(version_info, 'git_version', None) or 'unknown'
+        platform = getattr(version_info, 'platform', None)
+        compatibility = evaluate_compatibility(
+            'kubernetes',
+            git_version,
+            capabilities=('core_v1', 'apps_v1', 'networking_v1', 'storage_v1'),
+        )
 
         return {
             'success': True,
-            'node_count': len(
-                nodes.items or [],
-            ),
+            'node_count': len(nodes.items or []),
+            'version': git_version,
+            'platform': platform,
+            'compatibility_status': compatibility.status,
+            'readiness_status': compatibility.readiness,
+            'compatibility_profile': compatibility.profile_key,
+            'validation_message': compatibility.message,
             'error': None,
             'reason': None,
             'failure_code': None,

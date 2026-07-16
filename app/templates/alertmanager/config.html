@@ -39,7 +39,17 @@
                     <span>Back to Clusters</span>
                 </a>
             </div>
+
         </div>
+        {% if config and config.endpoint %}
+            <section class="grid gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950 md:grid-cols-4">
+                <div><div class="text-xs font-bold uppercase tracking-wide text-slate-500">Detected version</div><div class="mt-2 font-semibold text-slate-900 dark:text-white">{{ config.detected_version or 'Validation required' }}</div></div>
+                <div><div class="text-xs font-bold uppercase tracking-wide text-slate-500">Compatibility</div><div class="mt-2 font-semibold text-slate-900 dark:text-white">{{ (config.compatibility_status or 'validation_required')|replace('_', ' ')|title }}</div></div>
+                <div><div class="text-xs font-bold uppercase tracking-wide text-slate-500">Readiness</div><div class="mt-2 font-semibold text-slate-900 dark:text-white">{{ (config.readiness_status or 'validation_required')|replace('_', ' ')|title }}</div></div>
+                <div><div class="text-xs font-bold uppercase tracking-wide text-slate-500">Compatibility profile</div><div class="mt-2 font-semibold text-slate-900 dark:text-white">{{ config.compatibility_profile or 'Not selected' }}</div></div>
+                {% if config.validation_message %}<div class="md:col-span-4 rounded-2xl bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:bg-blue-950/40 dark:text-blue-100">{{ config.validation_message }}</div>{% endif %}
+            </section>
+        {% endif %}
         <!-- Form Card -->
         {% set current_auth_type = config.auth_type if config else 'none' %}
         <form method="POST" x-data="{ authType: '{{ current_auth_type }}' }">

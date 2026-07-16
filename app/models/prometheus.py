@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.extensions.db import db
@@ -62,6 +62,14 @@ class PrometheusConfig(db.Model):
         nullable=False,
         default=True,
     )
+
+
+    detected_version: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    compatibility_status: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    compatibility_profile: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    readiness_status: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    validation_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    last_validated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

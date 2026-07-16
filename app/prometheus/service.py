@@ -10,6 +10,8 @@ from app.prometheus.exceptions import (
     PrometheusError,
 )
 from app.prometheus.forms import PrometheusConfigForm
+from app.integrations.compatibility import evaluate_compatibility
+from datetime import UTC, datetime
 
 
 class PrometheusService:
@@ -32,6 +34,7 @@ class PrometheusService:
         self,
         query: str,
     ) -> dict[str, Any]:
+        self._require_runtime_readiness()
         return self.client.query(query)
 
     def range_query(
@@ -41,6 +44,7 @@ class PrometheusService:
         end: str,
         step: str,
     ) -> dict[str, Any]:
+        self._require_runtime_readiness()
         return self.client.query_range(
             query=query,
             start=start,
@@ -63,15 +67,36 @@ class PrometheusService:
         elapsed = time.perf_counter() - started
 
         version = build_info.get('data', {}).get('version', 'unknown')
+        compatibility = evaluate_compatibility(
+            'prometheus',
+            version,
+            capabilities=('build_info', 'instant_query', 'range_query'),
+        )
+        self.client.config.detected_version = version
+        self.client.config.compatibility_status = compatibility.status
+        self.client.config.compatibility_profile = compatibility.profile_key
+        self.client.config.readiness_status = compatibility.readiness
+        self.client.config.validation_message = compatibility.message
+        self.client.config.last_validated_at = datetime.now(UTC)
+        db.session.commit()
 
         return {
-            'success': True,
+            'success': compatibility.readiness != 'blocked',
             'version': version,
-            'response_time': round(
-                elapsed,
-                3,
-            ),
+            'compatibility_status': compatibility.status,
+            'readiness_status': compatibility.readiness,
+            'compatibility_profile': compatibility.profile_key,
+            'message': compatibility.message,
+            'response_time': round(elapsed, 3),
         }
+
+    def _require_runtime_readiness(self) -> None:
+        config = self.client.config
+        if config.readiness_status in {'blocked', 'validation_required'}:
+            raise PrometheusError(
+                config.validation_message
+                or 'Prometheus integration is not validated for runtime use.'
+            )
 
     @staticmethod
     def save_config(
@@ -136,6 +161,11 @@ class PrometheusService:
             config.password = None
             config.bearer_token = form.bearer_token.data
 
+        config.compatibility_status = 'validation_required'
+        config.readiness_status = 'validation_required'
+        config.compatibility_profile = None
+        config.validation_message = 'Configuration changed. Run validation before KAORI uses this integration.'
+        config.last_validated_at = None
         db.session.commit()
 
         return config

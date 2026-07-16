@@ -26,6 +26,7 @@
     or current_user.has_permission('reports.manage_schedules')
     or current_user.has_permission('reports.manage_storage')
 ) %}
+{% set can_integrations = current_user.is_authenticated and current_user.has_permission('settings.manage_integrations') %}
 <aside class="kubereport-sidebar flex min-h-0 flex-col border-r border-slate-800/80 bg-slate-950 text-white shadow-xl shadow-slate-950/20">
     <div class="border-b border-slate-800/80 px-2 py-4">
         <div class="sidebar-brand-card flex items-center justify-start gap-3 rounded-2xl border border-slate-800/80 bg-slate-900/80 p-3 shadow-sm">
@@ -107,6 +108,12 @@
                         {% include "components/navigation/reports_menu.html" %}
                     {% endif %}
                 </div>
+            </div>
+        {% endif %}
+        {% if can_integrations %}
+            <div class="sidebar-nav-section">
+                <div class="sidebar-expanded-only mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Platform Extensions</div>
+                <div class="space-y-1">{% include "components/navigation/integrations_menu.html" %}</div>
             </div>
         {% endif %}
         <div class="sidebar-nav-section">
