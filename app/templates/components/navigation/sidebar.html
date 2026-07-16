@@ -7,6 +7,7 @@
     current_user.has_permission('kubernetes_secrets.view')
     or current_user.has_permission('kubernetes_secrets.create')
     or current_user.has_permission('kubernetes_secrets.replace')
+    or current_user.has_permission('kubernetes_secrets.delete')
     or current_user.has_permission('kubernetes_secrets.reveal')
     or current_user.has_permission('kubernetes_secrets.approve_reveal')
     or current_user.has_permission('kubernetes_secrets.rotate_tls')

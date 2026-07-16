@@ -121,6 +121,7 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
             ('kubernetes_secrets.view', 'kubernetes_operations.secret_management'),
             ('kubernetes_secrets.create', 'kubernetes_operations.secret_management'),
             ('kubernetes_secrets.replace', 'kubernetes_operations.secret_management'),
+            ('kubernetes_secrets.delete', 'kubernetes_operations.secret_management'),
             ('kubernetes_secrets.reveal', 'kubernetes_operations.secret_management'),
             ('kubernetes_secrets.approve_reveal', 'kubernetes_operations.secret_management'),
             ('kubernetes_secrets.rotate_tls', 'kubernetes_operations.secret_management'),

@@ -4,9 +4,12 @@ from dataclasses import dataclass
 from typing import Any
 
 from app.extensions import db
+from app.kubernetes_operations.secrets.live_service import (
+    list_live_namespaces,
+    verify_live_namespace,
+)
 from app.models import (
     Cluster,
-    NamespaceInventory,
     SecretRevealNamespacePolicy,
     SecretRevealRequest,
 )
@@ -76,26 +79,24 @@ def get_enabled_namespace_policy_records(
     ).all()
 
 
+def get_configured_enabled_namespace_names(cluster_id: str) -> list[str]:
+    return sorted(
+        {
+            record.namespace
+            for record in get_enabled_namespace_policy_records(cluster_id)
+        }
+    )
+
+
 def get_enabled_namespace_names(cluster_id: str) -> list[str]:
-    configured = {
-        record.namespace
-        for record in get_enabled_namespace_policy_records(cluster_id)
-    }
+    """Return policy-enabled namespaces that still exist in live Kubernetes."""
+    configured = get_configured_enabled_namespace_names(cluster_id)
     if not configured:
         return []
-    inventory_names = {
-        value
-        for (value,) in (
-            NamespaceInventory.query.with_entities(NamespaceInventory.namespace)
-            .filter(
-                NamespaceInventory.cluster_id == cluster_id,
-                NamespaceInventory.namespace.in_(tuple(configured)),
-            )
-            .distinct()
-            .all()
-        )
-    }
-    return sorted(configured.intersection(inventory_names))
+    return list_live_namespaces(
+        cluster_id,
+        allowed_namespaces=configured,
+    )
 
 
 def update_cluster_reveal_readiness(
@@ -129,21 +130,12 @@ def set_namespace_reveal_policy(
     if not normalized_namespace:
         raise ValueError('Namespace is required.')
 
-    namespace_exists = (
-        NamespaceInventory.query.filter_by(
-            cluster_id=cluster.id,
-            namespace=normalized_namespace,
-        ).first()
-        is not None
-    )
     existing = get_namespace_policy_record(cluster.id, normalized_namespace)
-    if not namespace_exists and existing is None:
-        raise ValueError(
-            'The selected namespace is not available in the latest inventory snapshot. Run inventory sync before configuring Reveal access.'
-        )
-
     normalized_policy = normalize_namespace_policy(policy)
     previous_policy = existing.policy if existing is not None else 'disabled'
+
+    if normalized_policy != 'disabled':
+        verify_live_namespace(cluster, normalized_namespace)
 
     if normalized_policy in ENABLED_REVEAL_NAMESPACE_POLICIES and not cluster_reveal_readiness(cluster):
         raise ValueError(
@@ -195,21 +187,18 @@ def set_namespace_reveal_policy(
 
 
 def build_namespace_policy_rows(cluster: Cluster) -> list[dict[str, Any]]:
-    inventory_names = {
-        value
-        for (value,) in (
-            NamespaceInventory.query.with_entities(NamespaceInventory.namespace)
-            .filter(NamespaceInventory.cluster_id == cluster.id)
-            .distinct()
-            .order_by(NamespaceInventory.namespace.asc())
-            .all()
-        )
-    }
     policy_records = {
         record.namespace: record
         for record in SecretRevealNamespacePolicy.query.filter_by(cluster_id=cluster.id).all()
     }
-    names = sorted(inventory_names.union(policy_records))
+    live_lookup_error = None
+    try:
+        live_names = set(list_live_namespaces(cluster.id))
+    except ValueError as exc:
+        live_names = set()
+        live_lookup_error = str(exc)
+
+    names = sorted(live_names.union(policy_records))
     return [
         {
             'namespace': namespace,
@@ -224,7 +213,8 @@ def build_namespace_policy_rows(cluster: Cluster) -> list[dict[str, Any]]:
                 else 'disabled',
                 'Disabled',
             ),
-            'in_inventory': namespace in inventory_names,
+            'in_live_cluster': namespace in live_names,
+            'live_lookup_error': live_lookup_error,
             'record': policy_records.get(namespace),
         }
         for namespace in names

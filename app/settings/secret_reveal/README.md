@@ -15,7 +15,7 @@ Cluster-level fields are limited to security readiness attestations:
 - Kubernetes Secret encryption at rest verified;
 - Kubernetes audit logging at Metadata level verified.
 
-Namespace policy is explicit and default-deny. No policy row means Reveal is disabled. The Add/Edit Cluster form must not contain Reveal controls.
+Namespace policy is explicit and default-deny. No policy row means Reveal is disabled. Namespace choices come from the live Kubernetes API; existing policy records remain visible when a namespace disappears so access can still be disabled. The Add/Edit Cluster form must not contain Reveal controls.
 
 ## Ownership
 
@@ -32,7 +32,7 @@ Every save action emits a toast/notification and Operational Activity record con
 - Permission: `kubernetes_secrets.manage_reveal`.
 - `clusters.manage` does not grant access to this page.
 - A namespace cannot be enabled before both cluster readiness attestations are true.
-- New access cannot be granted to a namespace missing from the latest inventory snapshot.
+- New access cannot be granted to a namespace missing from the live Kubernetes namespace list.
 - Disabling cluster readiness immediately expires pending/approved requests and suspends all namespace policies without deleting them.
 - Changing or disabling a namespace policy expires pending/approved requests for that namespace.
 - The global environment switch remains outside the database and is displayed read-only.
@@ -88,7 +88,7 @@ The namespace filter band must remain a single horizontal row from the medium br
 The table uses an explicit fixed column contract so row controls do not shift between pages or policy labels:
 
 - Namespace: `31%`;
-- Inventory: `15%`;
+- Live Source: `15%`;
 - Current Policy: `20%`;
 - Configure: `34%`.
 

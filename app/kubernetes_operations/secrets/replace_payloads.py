@@ -73,12 +73,12 @@ def _build_opaque_patch(form: Any, target: Any) -> dict[str, str]:
     if len(existing_names) != len(existing_values):
         raise ValueError('Existing Secret key fields are incomplete.')
 
-    inventory_keys = {str(key) for key in (target.key_names or [])}
+    live_keys = {str(key) for key in (target.key_names or [])}
     patch: dict[str, str] = {}
     for name, value in zip(existing_names, existing_values, strict=True):
         normalized_name = name.strip()
-        if normalized_name not in inventory_keys:
-            raise ValueError('The submitted Secret key is not part of the selected inventory snapshot.')
+        if normalized_name not in live_keys:
+            raise ValueError('The submitted Secret key is not part of the currently loaded live Secret.')
         if value == '':
             continue
         patch[normalized_name] = value
@@ -99,7 +99,7 @@ def _build_opaque_patch(form: Any, target: Any) -> dict[str, str]:
                 f'New Secret key {normalized_name} requires a value. Blank existing fields mean keep unchanged.'
             )
         _validate_data_key(normalized_name)
-        if normalized_name in inventory_keys or normalized_name in patch:
+        if normalized_name in live_keys or normalized_name in patch:
             raise ValueError(f'Duplicate Secret data key: {normalized_name}.')
         patch[normalized_name] = value
 

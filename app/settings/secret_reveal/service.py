@@ -19,7 +19,7 @@ _NAMESPACE_POLICY_FILTERS = {
     'disabled': 'Disabled',
     'step_up': 'Step-up authentication',
     'approval_required': 'Approval required',
-    'missing': 'Missing from inventory',
+    'missing': 'Missing from live cluster',
 }
 
 
@@ -66,7 +66,7 @@ def _filter_namespace_rows(
             if row['policy'] in {'step_up', 'approval_required'}
         ]
     if policy_filter == 'missing':
-        return [row for row in filtered_rows if not row['in_inventory']]
+        return [row for row in filtered_rows if not row['in_live_cluster']]
     if policy_filter != 'all':
         return [row for row in filtered_rows if row['policy'] == policy_filter]
     return filtered_rows
@@ -164,7 +164,7 @@ def build_secret_reveal_settings_context(
             'disabled': sum(
                 row['policy'] == 'disabled' for row in all_namespace_rows
             ),
-            'missing': sum(not row['in_inventory'] for row in all_namespace_rows),
+            'missing': sum(not row['in_live_cluster'] for row in all_namespace_rows),
         },
         'reveal_policy_choices': REVEAL_NAMESPACE_POLICIES,
         'global_reveal_enabled': bool(

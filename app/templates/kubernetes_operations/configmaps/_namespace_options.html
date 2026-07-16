@@ -7,6 +7,10 @@
         {% endfor %}
     </select>
 </label>
-{% if not namespaces %}
-    <p class="mt-2 text-xs leading-5 text-status-warning-text">No live namespace is available, or KAORI could not read namespaces from this cluster.</p>
+{% if namespace_error %}
+    <p class="mt-2 text-xs leading-5 text-status-critical-text">{{ namespace_error }}</p>
+{% elif cluster_selected and not namespaces %}
+    <p class="mt-2 text-xs leading-5 text-content-muted">No live namespace is available for the selected cluster.</p>
+{% elif namespaces %}
+    <p class="mt-2 text-xs leading-5 text-content-muted">Loaded directly from the selected Kubernetes API.</p>
 {% endif %}

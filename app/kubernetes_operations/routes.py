@@ -15,6 +15,9 @@ from app.kubernetes_operations.configmaps.routes import (
 )
 from app.kubernetes_operations.secrets.routes import (
     create_secret,
+    delete_secret,
+    delete_secret_target,
+    delete_secret_workspace,
     replace_secret,
     replace_secret_content,
     replace_secret_workspace,
@@ -127,6 +130,28 @@ kubernetes_operations_bp.add_url_rule(
     '/secrets/replace/content',
     endpoint='replace_secret_content',
     view_func=replace_secret_content,
+    methods=['GET'],
+)
+
+
+kubernetes_operations_bp.add_url_rule(
+    '/secrets/delete',
+    endpoint='delete_secret',
+    view_func=delete_secret,
+    methods=['GET', 'POST'],
+)
+
+kubernetes_operations_bp.add_url_rule(
+    '/secrets/delete/workspace',
+    endpoint='delete_secret_workspace',
+    view_func=delete_secret_workspace,
+    methods=['GET'],
+)
+
+kubernetes_operations_bp.add_url_rule(
+    '/secrets/delete/target',
+    endpoint='delete_secret_target',
+    view_func=delete_secret_target,
     methods=['GET'],
 )
 

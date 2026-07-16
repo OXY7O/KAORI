@@ -14,13 +14,20 @@ from kubernetes.config.config_exception import ConfigException
 from urllib3.exceptions import HTTPError as Urllib3HTTPError
 
 from app.extensions import db
-from app.kubernetes.client import KubernetesClient
 from app.kubernetes.tls import legacy_tls_context
-from app.models import Cluster, ConfigurationInventory, SecretRevealRequest
+from app.models import Cluster, SecretRevealRequest
+from app.kubernetes_operations.secrets.live_service import (
+    LiveSecretSnapshot,
+    best_effort_inventory_id,
+    core_api,
+    list_live_namespaces,
+    list_live_secrets,
+    read_live_secret,
+)
 from app.kubernetes_operations.secrets.reveal_policy import (
     REVEAL_NAMESPACE_POLICIES,
     cluster_reveal_readiness,
-    get_enabled_namespace_names,
+    get_configured_enabled_namespace_names,
     get_namespace_policy,
 )
 
@@ -167,92 +174,122 @@ def get_reveal_clusters() -> list[Cluster]:
     return [
         cluster
         for cluster in clusters
-        if _cluster_ready(cluster) and get_enabled_namespace_names(cluster.id)
+        if _cluster_ready(cluster)
+        and get_configured_enabled_namespace_names(cluster.id)
     ]
 
 
 def get_reveal_workspace(
     cluster_id: str | None,
     namespace: str | None = None,
-    inventory_id: str | int | None = None,
+    secret_name: str | None = None,
 ) -> dict[str, Any]:
     normalized_cluster_id = (cluster_id or '').strip()
     normalized_namespace = (namespace or '').strip()
-    selected_target_id = str(inventory_id or '').strip()
+    selected_secret_name = (secret_name or '').strip()
     namespaces: list[str] = []
-    targets: list[ConfigurationInventory] = []
-    cluster = Cluster.query.filter_by(id=normalized_cluster_id).first() if normalized_cluster_id else None
+    targets = []
+    selection_error = None
+    cluster = (
+        Cluster.query.filter_by(id=normalized_cluster_id).first()
+        if normalized_cluster_id
+        else None
+    )
 
-    cluster_available = bool(_global_enabled() and cluster is not None and _cluster_ready(cluster))
+    cluster_available = bool(
+        _global_enabled()
+        and cluster is not None
+        and _cluster_ready(cluster)
+    )
     if cluster_available:
-        namespaces = get_enabled_namespace_names(normalized_cluster_id)
-
-    if cluster_available and normalized_namespace in namespaces:
-        targets = (
-            ConfigurationInventory.query.filter(
-                ConfigurationInventory.cluster_id == normalized_cluster_id,
-                ConfigurationInventory.namespace == normalized_namespace,
-                ConfigurationInventory.object_type == 'Secret',
-                ConfigurationInventory.secret_type.in_(tuple(SUPPORTED_REVEAL_TYPES)),
+        try:
+            configured_names = get_configured_enabled_namespace_names(
+                normalized_cluster_id
             )
-            .order_by(ConfigurationInventory.name.asc())
-            .all()
-        )
+            namespaces = list_live_namespaces(
+                normalized_cluster_id,
+                allowed_namespaces=configured_names,
+            )
+            if normalized_namespace not in namespaces:
+                normalized_namespace = ''
+                selected_secret_name = ''
+            if normalized_namespace:
+                targets = list_live_secrets(
+                    normalized_cluster_id,
+                    normalized_namespace,
+                    supported_types=set(SUPPORTED_REVEAL_TYPES),
+                    blocked_types=BLOCKED_SECRET_TYPES,
+                )
+                live_names = {item.name for item in targets}
+                if selected_secret_name not in live_names:
+                    selected_secret_name = ''
+        except ValueError as exc:
+            selection_error = str(exc)
+            normalized_namespace = ''
+            selected_secret_name = ''
 
     return {
         'cluster_id': normalized_cluster_id if cluster_available else '',
-        'namespace': normalized_namespace if normalized_namespace in namespaces else '',
+        'namespace': normalized_namespace,
         'namespaces': namespaces,
         'targets': targets,
-        'selected_target_id': selected_target_id,
+        'selected_secret_name': selected_secret_name,
         'selected_cluster': cluster if cluster_available else None,
         'selected_namespace_policy': (
             get_namespace_policy(normalized_cluster_id, normalized_namespace)
             if cluster_available and normalized_namespace in namespaces
             else 'disabled'
         ),
+        'selection_error': selection_error,
     }
 
 
-def get_reveal_target(inventory_id: str | int | None) -> ConfigurationInventory | None:
-    normalized_id = str(inventory_id or '').strip()
-    if not normalized_id.isdigit():
-        return None
-    target = ConfigurationInventory.query.filter_by(
-        id=int(normalized_id),
-        object_type='Secret',
-    ).first()
-    if target is None or target.secret_type not in SUPPORTED_REVEAL_TYPES:
-        return None
-    return target
-
-
-def _allowed_keys(target: ConfigurationInventory) -> list[str]:
+def _allowed_keys(target: LiveSecretSnapshot) -> list[str]:
     return sorted(
         {
             str(key).strip()
-            for key in (target.key_names or [])
+            for key in target.key_names
             if str(key).strip() and str(key).strip() not in BLOCKED_KEY_NAMES
         }
     )
 
 
-def get_reveal_target_context(inventory_id: str | int | None) -> dict[str, Any]:
-    target = get_reveal_target(inventory_id)
-    if target is None:
+def get_reveal_target_context(
+    cluster_id: str | None,
+    namespace: str | None,
+    secret_name: str | None,
+) -> dict[str, Any]:
+    if not all(((cluster_id or '').strip(), (namespace or '').strip(), (secret_name or '').strip())):
         return {
             'target': None,
             'type_config': None,
             'key_names': [],
             'selected_cluster': None,
             'selected_namespace_policy': 'disabled',
+            'target_error': None,
         }
-    cluster = Cluster.query.filter_by(id=target.cluster_id).first()
+    try:
+        target = read_live_secret(
+            cluster_id,
+            namespace,
+            secret_name,
+            supported_types=set(SUPPORTED_REVEAL_TYPES),
+            blocked_types=BLOCKED_SECRET_TYPES,
+        )
+    except ValueError as exc:
+        return {
+            'target': None,
+            'type_config': None,
+            'key_names': [],
+            'selected_cluster': None,
+            'selected_namespace_policy': 'disabled',
+            'target_error': str(exc),
+        }
+
     namespace_policy = get_namespace_policy(target.cluster_id, target.namespace)
     if (
-        cluster is None
-        or not _global_enabled()
-        or not _cluster_ready(cluster)
+        not _global_enabled()
+        or not _cluster_ready(target.cluster)
         or namespace_policy not in {'step_up', 'approval_required'}
     ):
         return {
@@ -261,15 +298,16 @@ def get_reveal_target_context(inventory_id: str | int | None) -> dict[str, Any]:
             'key_names': [],
             'selected_cluster': None,
             'selected_namespace_policy': 'disabled',
+            'target_error': 'Protected Secret Reveal is disabled for the selected live target.',
         }
     return {
         'target': target,
-        'type_config': SUPPORTED_REVEAL_TYPES.get(target.secret_type or ''),
+        'type_config': SUPPORTED_REVEAL_TYPES.get(target.secret_type),
         'key_names': _allowed_keys(target),
-        'selected_cluster': cluster,
+        'selected_cluster': target.cluster,
         'selected_namespace_policy': namespace_policy,
+        'target_error': None,
     }
-
 
 def get_reveal_page_context(
     *,
@@ -394,25 +432,23 @@ def create_reveal_request(
     if not _global_enabled():
         raise ValueError('Protected Secret Reveal is disabled globally.')
 
-    inventory_id = _required(form.get('inventory_id'), 'Secret target')
-    target = get_reveal_target(inventory_id)
-    if target is None:
-        raise ValueError('Selected Secret inventory record was not found or is not revealable.')
-    if target.secret_type in BLOCKED_SECRET_TYPES:
-        raise ValueError('This Secret type cannot be revealed. Use the dedicated rotation workflow.')
-
-    cluster = Cluster.query.filter_by(id=target.cluster_id).first()
-    if cluster is None or not _cluster_ready(cluster):
+    cluster_id = _required(form.get('cluster_id'), 'Cluster')
+    namespace = _required(form.get('namespace'), 'Namespace')
+    secret_name = _required(form.get('secret_name'), 'Secret target')
+    target = read_live_secret(
+        cluster_id,
+        namespace,
+        secret_name,
+        supported_types=set(SUPPORTED_REVEAL_TYPES),
+        blocked_types=BLOCKED_SECRET_TYPES,
+    )
+    cluster = target.cluster
+    if not _cluster_ready(cluster):
         raise ValueError('Protected Secret Reveal security readiness is not verified for this cluster.')
 
     namespace_policy = get_namespace_policy(cluster.id, target.namespace)
     if namespace_policy not in {'step_up', 'approval_required'}:
         raise ValueError('Protected Secret Reveal is disabled for the selected namespace.')
-
-    submitted_cluster_id = _required(form.get('cluster_id'), 'Cluster')
-    submitted_namespace = _required(form.get('namespace'), 'Namespace')
-    if submitted_cluster_id != str(target.cluster_id) or submitted_namespace != target.namespace:
-        raise ValueError('The submitted cluster or namespace does not match the selected Secret snapshot.')
 
     key_name = _required(form.get('key_name'), 'Secret key', max_length=255)
     if key_name not in _allowed_keys(target):
@@ -467,8 +503,9 @@ def create_reveal_request(
     else:
         raise ValueError('Protected Secret Reveal is disabled for the selected namespace.')
 
+    inventory_id = best_effort_inventory_id(target)
     record = SecretRevealRequest()
-    record.configuration_inventory_id = target.id
+    record.configuration_inventory_id = inventory_id
     record.cluster_id = cluster.id
     record.namespace = target.namespace
     record.secret_name = target.name
@@ -492,7 +529,7 @@ def create_reveal_request(
         message=message,
         metadata={
             'reveal_request_id': record.id,
-            'configuration_inventory_id': target.id,
+            'configuration_inventory_id': inventory_id,
             'cluster_id': cluster.id,
             'cluster_name': cluster.name,
             'namespace': target.namespace,
@@ -503,10 +540,10 @@ def create_reveal_request(
             'ticket_reference': ticket_reference,
             'reason': reason,
             'request_status': status,
+            'live_target_source': True,
             'secret_value_recorded': False,
         },
     )
-
 
 def decide_reveal_request(
     request_id: str,
@@ -588,7 +625,7 @@ def get_reveal_request_for_user(
 def _api_error_message(exc: ApiException) -> str:
     status = getattr(exc, 'status', None)
     if status == 404:
-        return 'The selected Secret no longer exists in Kubernetes. Refresh inventory before retrying.'
+        return 'The selected Secret no longer exists in Kubernetes. Reload the live target before retrying.'
     if status == 403:
         return 'The cluster kubeconfig identity is not authorized to get this Secret.'
     if status == 401:
@@ -636,29 +673,20 @@ def reveal_secret_value(request_id: str, *, user_id: int) -> RevealedSecretValue
     if current_policy != record.policy:
         raise ValueError('The namespace Reveal policy changed. Submit a new reveal request.')
 
-    target = ConfigurationInventory.query.filter_by(
-        id=record.configuration_inventory_id,
-        cluster_id=record.cluster_id,
-        namespace=record.namespace,
-        name=record.secret_name,
-        object_type='Secret',
-    ).first()
-    if target is None or record.key_name not in _allowed_keys(target):
-        raise ValueError('The Secret snapshot or selected key changed. Submit a new reveal request.')
-
     secret_object = None
     secret_data: dict[str, str] = {}
     try:
         with legacy_tls_context(enabled=bool(cluster.kube_allow_weak_tls)):
-            api = KubernetesClient(
-                cluster.kubeconfig,
-                verify_ssl=bool(cluster.kube_verify_ssl),
-            ).core_api()
-            secret_object = api.read_namespaced_secret(
+            secret_object = core_api(cluster).read_namespaced_secret(
                 name=record.secret_name,
                 namespace=record.namespace,
                 _request_timeout=10,
             )
+        live_secret_type = str(getattr(secret_object, 'type', None) or 'Opaque')
+        if live_secret_type not in SUPPORTED_REVEAL_TYPES or live_secret_type in BLOCKED_SECRET_TYPES:
+            raise ValueError('The live Secret type is no longer revealable. Submit a new request after review.')
+        if record.key_name in BLOCKED_KEY_NAMES:
+            raise ValueError('The selected key is protected from plaintext reveal.')
         secret_data = dict(getattr(secret_object, 'data', None) or {})
         encoded_value = secret_data.get(record.key_name)
         if encoded_value is None:

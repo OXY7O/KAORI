@@ -10,7 +10,6 @@ from __future__ import annotations
 from sqlalchemy import func
 
 from app.extensions import db
-from app.models import ConfigurationInventory
 from app.governance.tls_certificates.service import (
     apply_bulk_update,
     apply_certificate_update,
@@ -18,27 +17,20 @@ from app.governance.tls_certificates.service import (
     get_tls_certificate_page,
     preview_uploaded_pair,
 )
+from app.models import ConfigurationInventory
+
 
 def get_secret_management_overview() -> dict[str, int]:
     """Return snapshot-backed Secret totals for the landing-page hero."""
 
     secret_filter = ConfigurationInventory.object_type == 'Secret'
-    total = (
-        db.session.query(func.count(ConfigurationInventory.id))
-        .filter(secret_filter)
-        .scalar()
-        or 0
-    )
+    total = db.session.query(func.count(ConfigurationInventory.id)).filter(secret_filter).scalar() or 0
     namespace_count = (
-        db.session.query(func.count(func.distinct(ConfigurationInventory.namespace)))
-        .filter(secret_filter)
-        .scalar()
+        db.session.query(func.count(func.distinct(ConfigurationInventory.namespace))).filter(secret_filter).scalar()
         or 0
     )
     cluster_count = (
-        db.session.query(func.count(func.distinct(ConfigurationInventory.cluster_id)))
-        .filter(secret_filter)
-        .scalar()
+        db.session.query(func.count(func.distinct(ConfigurationInventory.cluster_id))).filter(secret_filter).scalar()
         or 0
     )
     tls_count = (

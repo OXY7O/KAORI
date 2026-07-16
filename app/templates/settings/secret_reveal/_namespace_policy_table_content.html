@@ -11,14 +11,14 @@
         <thead>
             <tr class="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-600 dark:border-slate-700 dark:bg-slate-700/40 dark:text-slate-300">
                 <th class="px-5 py-3 text-left">Namespace</th>
-                <th class="px-5 py-3 text-left">Inventory</th>
+                <th class="px-5 py-3 text-left">Live source</th>
                 <th class="px-5 py-3 text-left">Current Policy</th>
                 <th class="px-5 py-3 text-left">Configure</th>
             </tr>
         </thead>
         <tbody>
             {% for row in namespace_rows %}
-                {% set inventory_classes = 'bg-green-50 text-green-700 ring-green-200 dark:bg-green-500/10 dark:text-green-300 dark:ring-green-500/25' if row.in_inventory else 'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/25' %}
+                {% set live_classes = 'bg-green-50 text-green-700 ring-green-200 dark:bg-green-500/10 dark:text-green-300 dark:ring-green-500/25' if row.in_live_cluster else 'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/25' %}
                 {% if row.policy == 'approval_required' %}
                     {% set policy_classes = "bg-purple-50 text-purple-700 ring-purple-200 dark:bg-purple-500/10 dark:text-purple-300 dark:ring-purple-500/25" %}
                     {% set policy_icon = "users" %}
@@ -43,10 +43,10 @@
                         </div>
                     </td>
                     <td class="px-5 py-3 text-left align-middle">
-                        <span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ring-1 ring-inset {{ inventory_classes }}">
-                            <i data-lucide="{{ 'check' if row.in_inventory else 'info' }}"
+                        <span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ring-1 ring-inset {{ live_classes }}">
+                            <i data-lucide="{{ 'check' if row.in_live_cluster else 'info' }}"
                                class="h-3.5 w-3.5"></i>
-                            {{ 'Current' if row.in_inventory else 'Missing' }}
+                            {{ 'Current' if row.in_live_cluster else 'Missing' }}
                         </span>
                     </td>
                     <td class="px-5 py-3 text-left align-middle">
@@ -73,7 +73,7 @@
                                    value="{{ namespace_pagination.per_page }}">
                             <select name="policy"
                                     aria-label="Reveal policy for {{ row.namespace }}"
-                                    {% if not row.in_inventory and row.policy == 'disabled' %}disabled{% endif %}
+                                    {% if not row.in_live_cluster and row.policy == 'disabled' %}disabled{% endif %}
                                     class="h-10 min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10 dark:disabled:bg-slate-900 dark:disabled:text-slate-600">
                                 {% for value, label in reveal_policy_choices.items() %}
                                     <option value="{{ value }}" {% if row.policy == value %}selected{% endif %}>{{ label }}</option>
@@ -81,7 +81,7 @@
                             </select>
                             <button type="submit"
                                     title="Save {{ row.namespace }} policy"
-                                    {% if not row.in_inventory and row.policy == 'disabled' %}disabled{% endif %}
+                                    {% if not row.in_live_cluster and row.policy == 'disabled' %}disabled{% endif %}
                                     class="inline-flex h-10 w-24 shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-600 px-3 text-sm font-semibold text-white shadow-sm outline-none transition hover:bg-blue-700 focus:ring-4 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 disabled:shadow-none dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-400/20 dark:disabled:bg-slate-800 dark:disabled:text-slate-600">
                                 <i data-lucide="save" class="h-4 w-4"></i>
                                 Save
@@ -98,8 +98,8 @@
                             {% set empty_state_description = "Adjust the search or Reveal policy filter to show namespace settings." %}
                         {% else %}
                             {% set empty_state_icon = "box" %}
-                            {% set empty_state_title = "No namespace snapshot available" %}
-                            {% set empty_state_description = "Run Kubernetes inventory sync before enabling namespace-level Secret Reveal." %}
+                            {% set empty_state_title = "No live namespace available" %}
+                            {% set empty_state_description = "Reload the live namespace list and verify Kubernetes connectivity before enabling namespace-level Secret Reveal." %}
                         {% endif %}
                         {% set empty_state_min_height = "min-h-[190px]" %}
                         {% include 'components/states/_empty_state.html' %}
