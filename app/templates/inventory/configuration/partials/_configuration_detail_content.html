@@ -1,119 +1,17 @@
-{% from 'inventory/components/_detail_macros.html' import detail_shell, detail_card, detail_row, detail_status_row, detail_tip %}
-{% call detail_shell(
-    item.name,
-    'Safe metadata only. Secret values are never collected, stored, or rendered by KAORI.',
-    'file-key-2',
-    'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300' if item.type == 'Secret' else 'bg-cyan-50 text-cyan-600 dark:bg-cyan-950/40 dark:text-cyan-300',
-    item.namespace,
-    'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
-    item.type,
-    'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300' if item.type == 'Secret' else 'bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300'
-    ) %}
-    {% call detail_card(
-        'Object identity',
-        'badge-info',
-        'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300',
-        item.type,
-        'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300'
-        ) %}
-        {{ detail_row('Cluster', item.cluster_name, false, 'blue') }}
-        {{ detail_row('Namespace', item.namespace, false, 'blue') }}
-        {{ detail_row('Type', item.type, false, 'blue') }}
-        {% if item.type == 'Secret' %}
-            {{ detail_row('Secret type', item.secret_type, false, 'blue') }}
-        {% endif %}
-        {{ detail_status_row('Immutable', 'Yes' if item.immutable else 'No', 'info' if item.immutable else 'neutral') }}
-        {{ detail_row('Age', item.age, false, 'blue') }}
-        <div class="mt-auto pt-2">
-            {% if item.type == 'Secret' %}
-                {{ detail_tip('KAORI records Secret metadata and key names only. Sensitive values are never collected, stored, or displayed.',
-                                'blue',
-                                'shield-check',
-                                panel_classes='min-h-28') }}
-            {% else %}
-                {{ detail_tip('ConfigMaps provide non-sensitive application configuration. KAORI inventories object metadata and key names without collecting their content.',
-                                'blue',
-                                'file-json-2',
-                                panel_classes='min-h-28') }}
-            {% endif %}
-        </div>
-    {% endcall %}
-    {% call detail_card(
-        'Key metadata',
-        'key-round',
-        'bg-cyan-50 text-cyan-600 dark:bg-cyan-950/40 dark:text-cyan-300',
-        item.key_count ~ ' keys',
-        'bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300'
-        ) %}
-        {{ detail_row('Payload size', item.payload_size, false, 'cyan') }}
-        <div class="flex max-h-52 flex-wrap gap-1.5 overflow-y-auto pr-1">
-            {% for key_name in item.key_names %}
-                <span class="inline-flex max-w-full rounded-full bg-cyan-50 px-2 py-0.5 text-[10px] font-normal leading-4 text-cyan-700 ring-1 ring-inset ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-500/25"
-                      title="{{ key_name }}">
-                    <span class="break-all">{{ key_name }}</span>
-                </span>
-            {% else %}
-                <span class="text-xs font-normal text-cyan-600 dark:text-cyan-300">No keys recorded</span>
-            {% endfor %}
-        </div>
-        <div class="mt-auto pt-2">
-            {{ detail_tip('Key metadata shows key names and aggregate payload size only. Configuration and Secret values are intentionally excluded.',
-                        'cyan',
-                        'key-round',
-                        panel_classes='min-h-28') }}
-        </div>
-    {% endcall %}
-    {% call detail_card(
-        'Used by Pods',
-        'package-check',
-        'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300',
-        item.used_by_count,
-        'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300'
-        ) %}
-        {% if item.used_by %}
-            <div class="max-h-52 overflow-y-auto pr-1">
-                {% for pod in item.used_by %}
-                    <div class="relative flex gap-3 pb-4 last:pb-0">
-                        {% if not loop.last %}
-                            <span class="absolute top-3 bottom-0 left-[5px] w-px bg-emerald-200 dark:bg-emerald-700/60"></span>
-                        {% endif %}
-                        <span class="relative z-10 mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-500 ring-4 ring-emerald-50 dark:bg-emerald-400 dark:ring-emerald-950/60"></span>
-                        <div class="min-w-0 flex-1">
-                            <div class="truncate text-xs font-normal text-emerald-800 dark:text-emerald-200"
-                                 title="{{ pod.name }}">{{ pod.name }}</div>
-                            <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-normal text-emerald-600 dark:text-emerald-300">
-                                <span class="min-w-0 truncate"
-                                      title="{{ pod.workload_type }} {{ pod.workload_name }}">{{ pod.workload_type }} {{ pod.workload_name }}</span>
-                                {% if pod.status in ['Running', 'Succeeded'] %}
-                                    <span class="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-normal text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/25">{{ pod.status }}</span>
-                                {% elif pod.status == 'Pending' %}
-                                    <span class="inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-normal text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/25">{{ pod.status }}</span>
-                                {% elif pod.status == 'Failed' %}
-                                    <span class="inline-flex rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-normal text-rose-700 ring-1 ring-inset ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/25">{{ pod.status }}</span>
-                                {% else %}
-                                    <span class="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-normal text-slate-600 ring-1 ring-inset ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700">{{ pod.status }}</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                {% endfor %}
-            </div>
-            {% if item.used_by_truncated %}
-                <p class="text-[11px] font-normal text-emerald-600 dark:text-emerald-300">Showing the first 8 Pods.</p>
-            {% endif %}
-        {% endif %}
-        <div class="mt-auto pt-2">
-            {% if item.used_by %}
-                {{ detail_tip('Pod references show workloads that consume this object through environment variables or mounted configuration. References reflect the latest inventory snapshot.',
-                                'emerald',
-                                'package-check',
-                                panel_classes='min-h-28') }}
-            {% else %}
-                {{ detail_tip('No Pod reference is recorded for this object in the latest inventory snapshot.',
-                                'emerald',
-                                'info',
-                                panel_classes='min-h-28') }}
-            {% endif %}
-        </div>
-    {% endcall %}
-{% endcall %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/detail_object.html" as detail_object %}
+{% import "components/inventory_detail_tip.html" as inventory_tip %}
+{% macro detail_row(label, value='-', break_all=false) -%}
+    {% set display_value=value if value not in [None,''] else '-' %}<div class="flex items-start justify-between gap-3"><span class="shrink-0 text-xs font-normal leading-5 text-content-muted">{{ label }}</span><span class="max-w-[68%] {{ 'break-all' if break_all else 'break-words' }} text-right text-xs font-medium leading-5 text-content-secondary" title="{{ display_value }}">{{ display_value }}</span></div>
+{%- endmacro %}
+{% macro info_box(title, message, icon='info') -%}<div class="flex min-h-24 rounded-lg border border-dashed border-kaori-primary/25 bg-kaori-soft p-3"><div class="flex w-full items-start gap-2.5"><span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/20 bg-surface-card text-kaori-primary"><i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i></span><div class="min-w-0"><p class="text-xs font-semibold text-kaori-primary">{{ title }}</p><p class="mt-1 text-[11px] leading-5 text-content-muted">{{ message }}</p></div></div></div>{%- endmacro %}
+{% macro detail_card(title, icon, badge=None, class_name='') -%}<section class="flex h-full flex-col rounded-xl border border-outline-default bg-surface-card p-4 {{ class_name }}"><div class="mb-4 flex items-center justify-between gap-3"><div class="flex items-center gap-2 text-sm font-semibold text-content-primary"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>{{ title }}</div>{% if badge %}{{ table_label.metadata_label(badge) }}{% endif %}</div><div class="flex min-h-0 flex-1 flex-col gap-2.5">{{ caller() }}</div></section>{%- endmacro %}
+<div class="bg-surface-hover px-4 py-4"><div class="overflow-hidden rounded-xl border border-outline-default bg-surface-elevated shadow-sm">
+    <header class="flex flex-col gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between"><div class="flex min-w-0 items-start gap-3"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ 'key-round' if item.type == 'Secret' else 'file-json-2' }}" class="h-4 w-4"></i></span><div class="min-w-0"><div class="flex flex-wrap items-center gap-2"><h3 class="truncate text-sm font-semibold text-content-primary">{{ item.name }}</h3>{{ table_label.metadata_label(item.cluster_name,'server') }}{{ table_label.metadata_label(item.namespace,'folder-tree') }}</div><p class="mt-1 text-xs leading-5 text-content-muted">Safe object metadata, key names, immutable state, and current Pod references.</p></div></div><div class="flex flex-wrap items-center gap-2 self-start sm:self-auto">{{ table_label.metadata_label(item.type, 'key-round' if item.type == 'Secret' else 'file-json-2') }}{% if item.immutable %}{{ table_label.status_label('Immutable','info','lock-keyhole') }}{% else %}{{ table_label.status_label('Mutable','unknown','unlock') }}{% endif %}</div></header>
+    <div class="grid gap-4 p-5 lg:grid-cols-3">
+        {% call detail_card('Object identity','badge-info',item.age,'min-h-[26rem]') %}{{ detail_row('Cluster',item.cluster_name) }}{{ detail_row('Namespace',item.namespace) }}{{ detail_row('Type',item.type) }}{% if item.type == 'Secret' %}{{ detail_row('Secret type',item.secret_type) }}{% endif %}{{ detail_row('Immutable','Yes' if item.immutable else 'No') }}{{ detail_row('Age',item.age) }}<div class="mt-auto pt-3">{% if item.type == 'Secret' %}{{ info_box('Secret safety','Metadata and key names only; Secret values are never collected or displayed.','shield-check') }}{% else %}{{ info_box('Inventory identity','ConfigMap metadata and key names from the latest inventory snapshot.','file-json-2') }}{% endif %}</div>{% endcall %}
+        {% call detail_card('Key metadata','key-round',item.key_count ~ ' keys','min-h-[26rem]') %}{{ detail_row('Recorded keys',item.key_count) }}{% call detail_object.stack() %}{% if item.key_names %}{% call detail_object.card('Key names',item.key_count ~ ' keys','key-round') %}<div class="flex max-h-44 flex-wrap gap-1.5 overflow-y-auto pr-1">{% for key_name in item.key_names %}<span class="inline-flex max-w-full rounded-md border border-outline-default bg-surface-card px-2 py-1 text-[10px] font-semibold leading-4 text-kaori-primary" title="{{ key_name }}"><span class="break-all">{{ key_name }}</span></span>{% endfor %}</div>{% endcall %}{% else %}{{ detail_object.empty('No keys recorded','No key name is available in the latest metadata snapshot.','key-round') }}{% endif %}{{ info_box('Metadata boundary','Key names are visible; configuration and Secret values are excluded.','shield-check') }}{% endcall %}{% endcall %}
+        {% call detail_card('Used by Pods','package-check',item.used_by_count ~ ' Pods','min-h-[26rem]') %}{{ detail_row('Pod references',item.used_by_count) }}{% call detail_object.stack() %}{% if item.used_by %}{% call detail_object.card('Current consumers',item.used_by_count ~ ' Pods','package-check') %}{% for pod in item.used_by %}{% if pod.status in ['Running','Succeeded'] %}{% set pod_tone='normal' %}{% elif pod.status == 'Pending' %}{% set pod_tone='pending' %}{% elif pod.status == 'Failed' %}{% set pod_tone='critical' %}{% else %}{% set pod_tone='unknown' %}{% endif %}<div class="flex items-start justify-between gap-3 text-xs leading-5"><div class="min-w-0"><p class="truncate font-medium text-content-primary" title="{{ pod.name }}">{{ pod.name }}</p><p class="truncate text-[11px] text-content-muted" title="{{ pod.workload_type }} {{ pod.workload_name }}">{{ pod.workload_type }} {{ pod.workload_name }}</p></div>{{ table_label.status_label(pod.status,pod_tone) }}</div>{% endfor %}{% endcall %}{% if item.used_by_truncated %}<p class="text-[11px] text-content-muted">Showing the first 8 Pods.</p>{% endif %}{% else %}{{ detail_object.empty('No Pod references','No Pod reference is recorded in the latest inventory snapshot.','package-check') }}{% endif %}{{ info_box('Reference boundary','Consumers reflect environment and mounted configuration references in the current snapshot.','package-check') }}{% endcall %}{% endcall %}
+    </div>
+    <div class="border-t border-outline-subtle p-5">{{ inventory_tip.tip('Configuration Inventory is read-only snapshot context. Create, update, and delete workflows remain in Kubernetes Operations.', 'shield-check') }}</div>
+</div></div>

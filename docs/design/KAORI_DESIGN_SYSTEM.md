@@ -502,3 +502,26 @@ The Ingress Inventory page follows the same resource-inventory baseline as Inven
 - Ingress class, path type, labels, annotations, host declarations, and finalizers are descriptive metadata. TLS presence may use Normal or Warning because it communicates an operational exposure state.
 - Backend routes use a left-aligned table with a compact rectangular path-type label. Empty routes, hosts, TLS entries, labels, annotations, and finalizers use the shared dashed violet information state.
 - TLS details show Secret references only. Certificate validity, expiry, and governance state remain in Kubernetes TLS Secret Governance; request rate, latency, and error behavior remain in Analytics.
+
+## Kubernetes Storage inventory reference
+
+The Storage Inventory page follows the shared Inventory Overview geometry and interaction standard.
+
+- Use the Inventory Overview hero geometry: `p-5 lg:p-6`, a 7/5 split, `gap-5`, a right panel with `min-h-[13rem]`, compact two-column metrics, and the footer action `Manage Clusters`.
+- Storage object count, StorageClass count, and combined PV/PVC count are contextual hero metadata and use rectangular brand labels. Aggregate collection posture is the only semantic label in the hero panel.
+- Summary cards use neutral surfaces with violet labels and icons. The primary PV-coverage card may use a solid dark-violet surface and runtime progress width; gradients are prohibited.
+- Storage table columns are left aligned except the final Details column, which is right aligned. Cluster, namespace scope, object type, and capacity use compact metadata labels. Binding or lifecycle state uses compact semantic labels.
+- Expandable Storage details use the modern Inventory detail surface, 12 px key/value typography, violet non-status iconography, proportional card heights, nested object summaries, and concise bottom tips.
+- StorageClass parameters, claim selectors, conditions, associated claims and Pods, labels, and annotations use shared nested or dashed empty-state treatments. Credential and Secret content must never be rendered.
+- Declared capacity and binding metadata remain inventory context; filesystem usage, pressure, growth, and recommendations remain in Storage Analysis and Intelligence.
+
+## Kubernetes Configuration inventory reference
+
+The Configuration Inventory page follows the same Inventory Overview baseline while preserving the metadata-only safety boundary.
+
+- Use the shared hero geometry and footer action `Manage Clusters`. ConfigMap count, Secret count, and total object count are contextual metadata labels; the safe metadata posture is the only semantic hero label.
+- Summary cards use neutral surfaces and violet iconography. The composition card may use a solid dark-violet surface; gradients are prohibited.
+- Configuration table columns are left aligned except Details. Cluster, namespace, object type, and key count use compact metadata labels. Immutable state uses a compact semantic label.
+- Do not show payload values or Secret values. Inventory may show object identity, immutable state, key names, and current Pod references only.
+- Expandable details use three proportional cards: Object identity, Key metadata, and Used by Pods. Each populated card ends with one concise bottom tip; empty collections use the shared dashed violet state.
+- Configuration Inventory remains read-only snapshot context. ConfigMap create, update, and delete workflows remain in Kubernetes Operations, and Secret reveal remains protected by its separate governance controls.
