@@ -6,7 +6,7 @@
         <span class="max-w-[68%] {{ 'break-all' if break_all else 'break-words' }} text-right text-xs font-medium leading-5 text-content-secondary" title="{{ display_value }}">{{ display_value }}</span>
     </div>
 {%- endmacro %}
-{% macro info_box(title, message, icon='info', tone='brand') -%}
+{% macro info_box(title, message, icon='info', tone='brand', equal_height=false) -%}
     {% if tone == 'warning' %}
         {% set panel_class = 'border-status-warning-border bg-status-warning-soft' %}
         {% set icon_class = 'border-status-warning-border bg-status-warning-soft text-status-warning-text' %}
@@ -16,8 +16,8 @@
         {% set icon_class = 'border-kaori-primary/20 bg-surface-card text-kaori-primary' %}
         {% set title_class = 'text-kaori-primary' %}
     {% endif %}
-    <div class="rounded-lg border border-dashed {{ panel_class }} p-3">
-        <div class="flex items-start gap-2.5">
+    <div class="flex {{ 'h-28' if equal_height else '' }} rounded-lg border border-dashed {{ panel_class }} p-3">
+        <div class="flex w-full items-start gap-2.5">
             <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border {{ icon_class }}"><i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i></span>
             <div class="min-w-0">
                 <p class="text-xs font-semibold {{ title_class }}">{{ title }}</p>
@@ -80,24 +80,24 @@
                 {{ detail_row('Kubernetes UID', workload.uid, true) }}
                 {{ detail_row('Created', workload.created_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
                 {{ detail_row('Collected', workload.collected_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
-                <div class="mt-auto pt-3">{{ info_box('Inventory identity', 'Identifies the workload object and the latest snapshot collected by KAORI.', 'lightbulb') }}</div>
+                <div class="mt-auto pt-3">{{ info_box('Inventory identity', 'Identifies the workload object and the latest snapshot collected by KAORI.', 'lightbulb', 'brand', true) }}</div>
             {% endcall %}
 
             {% call detail_card('Runtime state', 'activity', workload.state_display) %}
                 {% for row in workload.state_rows %}{{ detail_row(row.label, row.value) }}{% endfor %}
                 {{ detail_row('Managed Pods', workload.pod_count) }}
-                <div class="mt-auto pt-3">{{ info_box('Snapshot boundary', 'Desired and observed controller values are point-in-time data. Historical behavior remains in Analytics.', 'info') }}</div>
+                <div class="mt-auto pt-3">{{ info_box('Snapshot boundary', 'Desired and observed controller values are point-in-time data. Historical behavior remains in Analytics.', 'info', 'brand', true) }}</div>
             {% endcall %}
 
             {% call detail_card('Pod configuration', 'settings-2', workload.container_count ~ ' containers') %}
                 {% for row in workload.pod_configuration_rows %}{{ detail_row(row.label, row.value) }}{% endfor %}
                 <div class="mt-auto pt-3">
                     {% if workload.pod_configuration_reported %}
-                        {{ info_box('Template configuration', 'Pod configuration comes from the workload template. Runtime utilization remains in Analytics.', 'info') }}
+                        {{ info_box('Template configuration', 'Pod configuration comes from the workload template. Runtime utilization remains in Analytics.', 'info', 'brand', true) }}
                     {% elif workload.pod_configuration_source == 'associated-pod-fallback' %}
-                        {{ info_box('Fallback source', 'Configuration is inferred from associated Pods. Sync again to collect the workload template.', 'triangle-alert', 'warning') }}
+                        {{ info_box('Fallback source', 'Configuration is inferred from associated Pods. Sync again to collect the workload template.', 'triangle-alert', 'warning', true) }}
                     {% else %}
-                        {{ info_box('Configuration unavailable', 'Pod template metadata is unavailable. Restart the worker and sync this cluster again.', 'triangle-alert', 'warning') }}
+                        {{ info_box('Configuration unavailable', 'Pod template metadata is unavailable. Restart the worker and sync this cluster again.', 'triangle-alert', 'warning', true) }}
                     {% endif %}
                 </div>
             {% endcall %}
