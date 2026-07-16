@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 from urllib.parse import urlsplit
 
+from app.cluster.constants import get_environment_label
 from app.integrations.compatibility import get_profile
 from app.models import AlertmanagerConfig, Cluster, PrometheusConfig
 
@@ -63,7 +64,10 @@ def build_prometheus_page(
         'selected_environment': environment,
         'selected_profile': profile,
         'status_options': _prometheus_status_options(all_rows),
-        'environment_options': sorted({row['environment'] for row in all_rows if row['environment']}),
+        'environment_options': [
+            {'value': value, 'label': get_environment_label(value)}
+            for value in sorted({row['environment'] for row in all_rows if row['environment']}, key=lambda item: get_environment_label(item).lower())
+        ],
         'profile_options': sorted({row['profile'] for row in all_rows if row['profile']}),
     }
 
@@ -126,6 +130,7 @@ def _row(key: str, name: str, cluster: Cluster, config: object | None) -> dict[s
         'category': 'Observability',
         'cluster': cluster,
         'environment': cluster.environment,
+        'environment_label': get_environment_label(cluster.environment),
         'configured': configured,
         'endpoint': safe_endpoint(getattr(config, 'endpoint', None) if config else None),
         'version': getattr(config, 'detected_version', None) if config else None,
