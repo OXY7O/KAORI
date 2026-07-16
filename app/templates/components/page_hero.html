@@ -29,9 +29,14 @@
     </span>
 {%- endmacro %}
 
-{% macro supporting_strip(icon, text) -%}
-    <div class="inline-flex w-fit max-w-full items-start gap-2 rounded-md border border-brand-outline bg-brand-surface px-3 py-2 text-xs leading-5 text-brand-foreground-muted backdrop-blur">
-        <i data-lucide="{{ icon }}" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-foreground" aria-hidden="true"></i>
-        <span>{{ text }}</span>
+{% macro supporting_strip(icon, label, text) -%}
+    <div class="inline-flex w-fit max-w-full items-start gap-3 rounded-md border border-brand-outline bg-brand-surface px-3 py-2.5 text-brand-foreground-muted backdrop-blur">
+        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-brand-outline bg-brand-surface-strong text-brand-foreground" aria-hidden="true">
+            <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
+        </span>
+        <span class="min-w-0">
+            <span class="block text-[10px] font-bold uppercase tracking-[0.12em] text-brand-foreground">{{ label }}</span>
+            <span class="mt-0.5 block text-xs leading-5 text-brand-foreground-muted">{{ text }}</span>
+        </span>
     </div>
 {%- endmacro %}

@@ -1,91 +1,84 @@
 {% extends "layouts/app.html" %}
 {% set page_title = "Kubernetes Cluster" %}
+{% import "components/page_hero.html" as page_hero %}
 {% block title %}Kubernetes Cluster{% endblock title %}
 {% block dashboard_content %}
-    <div x-data="{ deleteModal: false, deleteUrl: '', deleteName: '' }"
-         class="space-y-6">
-        <!-- Hero -->
-        <div class="relative min-h-[13.25rem] overflow-hidden rounded-3xl bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 px-6 py-6 text-white shadow-lg shadow-blue-500/20 sm:px-7 sm:py-7">
-            <div class="absolute inset-y-0 right-0 hidden w-1/3 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.22),transparent_55%)] lg:block">
-            </div>
-            <div class="absolute -top-16 right-10 h-40 w-40 rounded-full bg-white/10 blur-3xl"></div>
-            <div class="absolute -bottom-20 right-32 h-48 w-48 rounded-full bg-cyan-300/20 blur-3xl"></div>
-            <div class="relative flex min-h-[10rem] flex-col gap-6 xl:flex-row xl:items-stretch xl:justify-between">
-                <div class="flex min-w-0 flex-1 flex-col justify-between gap-4 xl:pr-8">
-                    <div class="flex items-start gap-4">
-                        <div class="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-white/15 backdrop-blur">
-                            <i data-lucide="server-cog" class="h-7 w-7"></i>
+    <div x-data="{ deleteModal: false, deleteUrl: '', deleteName: '' }" class="space-y-6">
+        <section class="relative overflow-hidden rounded-2xl border border-brand-outline bg-kaori-primary p-5 text-brand-foreground shadow-sm lg:p-6">
+            <div class="relative grid gap-5 xl:grid-cols-12 xl:items-stretch">
+                <div class="flex min-w-0 flex-col justify-center xl:col-span-7">
+                    {% call page_hero.intro('server-cog', 'Kubernetes Cluster', 'network') %}
+                        <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">
+                            Kubernetes Cluster Management
+                        </h1>
+                        <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">
+                            Manage cluster registration, API connectivity, compatibility, lifecycle, and inventory synchronization across connected Kubernetes environments.
+                        </p>
+                        <div class="mt-5 flex flex-wrap gap-2">
+                            {{ page_hero.meta_label('server', total_clusters ~ ' registered') }}
+                            {{ page_hero.meta_label('circle-check', connected_clusters ~ ' connected') }}
+                            {{ page_hero.meta_label('database', synced_clusters ~ ' inventory synced') }}
                         </div>
-                        <div class="min-w-0">
-                            <div class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-medium tracking-wide text-blue-50">
-                                <i data-lucide="settings-2" class="h-3.5 w-3.5"></i>
-                                Kubernetes cluster administration
-                            </div>
-                            <h1 class="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">Kubernetes Cluster Management</h1>
-                            <p class="mt-2 max-w-4xl text-sm leading-6 text-blue-50/90 sm:text-base">
-                                Manage Kubernetes cluster registration, API connectivity, version compatibility, lifecycle, and inventory synchronization across connected environments.
-                            </p>
-                        </div>
-                    </div>
-                    <div class="flex min-h-10 flex-wrap items-center gap-3 sm:ml-[4.5rem] xl:max-w-4xl">
-                        <div class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-medium">
-                            <i data-lucide="server" class="h-4 w-4"></i>
-                            {{ total_clusters }} clusters registered
-                        </div>
-                        <div class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-medium">
-                            <i data-lucide="check-circle-2" class="h-4 w-4"></i>
-                            {{ connected_clusters }} connected
-                        </div>
-                        <div class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-medium">
-                            <i data-lucide="database" class="h-4 w-4"></i>
-                            {{ synced_clusters }} inventory synced
-                        </div>
-                    </div>
+                    {% endcall %}
                 </div>
-                <div class="flex w-full flex-col gap-3 sm:max-w-[360px] xl:w-[360px] xl:flex-shrink-0">
-                    <div class="flex min-h-[7rem] flex-col justify-center rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
-                        <p class="text-xs font-medium uppercase tracking-[0.2em] text-blue-50/80">Cluster posture</p>
-                        <div class="mt-3 flex min-h-[4.5rem] items-end justify-between gap-4">
-                            <div class="min-w-0">
-                                <div class="text-3xl font-bold leading-none">{{ connected_clusters }}</div>
-                                <p class="mt-2 whitespace-nowrap text-sm leading-5 text-blue-50/80">Connected clusters</p>
+
+                <aside class="xl:col-span-5" aria-label="Cluster posture">
+                    <div class="flex h-full min-h-[12rem] flex-col justify-between rounded-xl border border-brand-outline bg-brand-surface-strong p-4 backdrop-blur-md">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Cluster posture</p>
+                                <h2 class="mt-1 text-lg font-bold text-brand-foreground">Registration and collection state</h2>
                             </div>
-                            <div class="w-[7.5rem] flex-shrink-0 rounded-xl bg-white/10 px-2.5 py-2 text-right">
-                                <div class="whitespace-nowrap text-[9px] font-medium uppercase tracking-[0.05em] text-blue-50/75">Synced</div>
-                                <div class="text-lg font-semibold leading-6">{{ synced_clusters }}</div>
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-brand-surface text-brand-foreground" aria-hidden="true">
+                                <i data-lucide="server-cog" class="h-5 w-5"></i>
+                            </span>
+                        </div>
+
+                        <div class="mt-4 grid grid-cols-2 gap-2">
+                            <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-3">
+                                <p class="text-[10px] font-semibold uppercase tracking-wide text-brand-foreground-muted">Connected</p>
+                                <p class="mt-1 text-2xl font-bold text-brand-foreground">{{ connected_clusters }}</p>
+                            </div>
+                            <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-3">
+                                <p class="text-[10px] font-semibold uppercase tracking-wide text-brand-foreground-muted">Inventory synced</p>
+                                <p class="mt-1 text-2xl font-bold text-brand-foreground">{{ synced_clusters }}</p>
                             </div>
                         </div>
+
+                        {% if not cluster_onboarding.is_blocked and current_user.has_permission('clusters.manage') %}
+                            <a href="{{ url_for('cluster.add_cluster') }}"
+                               class="mt-4 inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-white/20 bg-white px-4 text-sm font-semibold text-kaori-primary-dark shadow-sm transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-kaori-primary">
+                                <i data-lucide="plus" class="h-4 w-4"></i>
+                                Add Kubernetes Cluster
+                            </a>
+                        {% elif cluster_onboarding.is_blocked %}
+                            <div class="mt-4 inline-flex min-h-11 items-center gap-2 rounded-lg border border-status-warning-border bg-status-warning-soft px-3 text-sm font-semibold text-status-warning-text">
+                                <i data-lucide="triangle-alert" class="h-4 w-4"></i>
+                                Cluster setup required
+                            </div>
+                        {% endif %}
                     </div>
-                    {% if not cluster_onboarding.is_blocked and current_user.has_permission('clusters.manage') %}
-                        <a href="{{ url_for('cluster.add_cluster') }}"
-                           class="inline-flex min-h-[3.25rem] items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-blue-700 shadow-sm transition hover:bg-blue-50">
-                            <i data-lucide="plus" class="h-4 w-4"></i>
-                            Add Kubernetes Cluster
-                        </a>
-                    {% endif %}
-                </div>
+                </aside>
             </div>
-        </div>
+        </section>
+
         {% if cluster_onboarding.is_blocked %}
             {% include "components/cluster/_onboarding_banner.html" %}
         {% else %}
-            <!-- Kubernetes Cluster Inventory Card -->
-            <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
-                <div class="flex items-center border-b border-slate-200 px-6 py-5 dark:border-slate-700">
-                    <div class="flex items-center gap-3">
-                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
-                            <i data-lucide="database" class="h-5 w-5"></i>
-                        </div>
-                        <div>
-                            <h2 class="text-lg font-semibold text-slate-950 dark:text-white">Kubernetes Cluster Inventory</h2>
-                            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                                Compact overview of registered Kubernetes clusters and integration readiness.
-                            </p>
-                        </div>
+            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+                <header class="flex items-center gap-3 border-b border-outline-subtle px-5 py-4">
+                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                        <i data-lucide="database" class="h-5 w-5"></i>
                     </div>
-                </div>
+                    <div class="min-w-0">
+                        <h2 class="text-base font-semibold text-content-primary">Kubernetes Cluster Inventory</h2>
+                        <p class="mt-0.5 text-xs leading-5 text-content-muted">
+                            Registered clusters, connection health, collection status, and integration readiness.
+                        </p>
+                    </div>
+                </header>
                 {% include "cluster/partials/_table.html" %}
-            </div>
+            </section>
             {% include "cluster/partials/_delete_modal.html" %}
         {% endif %}
     </div>

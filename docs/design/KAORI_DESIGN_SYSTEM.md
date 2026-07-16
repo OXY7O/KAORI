@@ -220,6 +220,14 @@ The authenticated application shell uses a floating, rounded navigation model ra
 - The collapse control belongs in the sidebar footer so the topbar remains focused on page context, search, operational actions, notifications, theme, and account controls.
 - The main application frame uses semantic surface and outline tokens in both light and dark mode. Avoid raw white, slate, blue, or violet utilities when a KAORI token exists.
 
+
+## Table alignment
+
+- All table headers and body cells are left aligned by default.
+- The final column is right aligned. When it contains actions, action controls must also be grouped and aligned to the right edge.
+- Do not center ordinary operational values, labels, or status descriptions.
+- A table may deviate only when a domain-specific visualization explicitly requires another alignment and that exception is documented.
+
 ## Shared hero component
 
 `app/templates/components/page_hero.html` is the authoritative implementation for authenticated hero introductions.
@@ -273,6 +281,14 @@ The Kubernetes Operations Dashboard is the reference implementation for authenti
 
 ## Hero Standard
 
+
+### Hero supporting context and filters
+
+- Supporting context below a hero description must use `page_hero.supporting_strip(icon, label, text)` with a short semantic label and a concise explanation. Do not place a long unlabeled sentence inside the hero.
+- Recommended labels include `Source scope`, `Data scope`, `Validation context`, and `Operational boundary`.
+- Hero filter labels use sentence case and standard readable typography: `text-sm font-semibold`. Do not use 10 px uppercase eyebrow typography for interactive form labels.
+- Hero select controls use at least `text-sm`, 44 px control height, and normal font weight so options remain readable on laptop displays.
+
 ### Hero metadata labels
 
 - Metadata labels displayed below a hero description are not status pills.
@@ -292,3 +308,18 @@ The Kubernetes Operations Dashboard is the reference implementation for authenti
 - Decorative and navigation icons use KAORI violet. Semantic colors are reserved for values that communicate health, severity, readiness, or process state.
 - Empty and unavailable placeholders use violet surfaces unless they communicate a true semantic failure or warning.
 - Dashboard loading indicators use a solid brand color and must not use gradients.
+
+## Kubernetes cluster management reference
+
+The Kubernetes Cluster module follows the same authenticated hero, table, semantic state, and moderate-radius rules as Welcome and the Kubernetes Operations Dashboard.
+
+- Cluster list, Add Cluster, and Edit Cluster use a solid `kaori-primary` hero and the shared `page_hero.intro()` alignment contract.
+- Hero metadata below the description uses `page_hero.meta_label()` with `rounded-md`; registered, connected, synced, cluster identity, and kubeconfig requirements are metadata rather than status pills.
+- The cluster inventory card uses a 12 px outer radius, an 8 px icon surface, semantic surfaces, and compact operational density.
+- Cluster table headers and body values are left aligned. Only the final Actions column and its controls are right aligned.
+- Environment is descriptive metadata and therefore uses a violet rectangular label. It must not use red, amber, or blue severity colors.
+- Connection health, inventory state, integration configuration, and TLS exceptions are dynamic operational states and must use semantic status tokens.
+- Non-destructive row actions use KAORI violet. Destructive actions use the Critical semantic color.
+- Filters use sentence case, `text-sm`, 44 px control height, and readable labels. Supporting filter context uses violet rectangular metadata labels rather than pills.
+- Empty cluster inventory, upload zones, and non-error placeholders use violet surfaces. Validation and deletion remain Critical; legacy TLS exceptions remain Warning.
+- Cluster loading indicators use a solid KAORI brand color without page-level style blocks or gradients.

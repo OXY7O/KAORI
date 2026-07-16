@@ -3,23 +3,18 @@
 {% block dashboard_content %}
     <div class="space-y-6">
         {% set page_title = "Edit Cluster" %}
-        {% set page_description = "Update cluster metadata, environment, and operational description." %}
+        {% set page_eyebrow = "Kubernetes Cluster" %}
+        {% set page_description = "Update cluster metadata, environment, and Kubernetes API transport policy." %}
         {% set page_icon = "pencil-line" %}
         {% set page_badges = [
-                    {
-                        'label': cluster.name,
-                        'class': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-                    },
-                    {
-                        'label': 'Metadata Update',
-                        'class': 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200',
-                    },
-                ] %}
+            {"label": cluster.name, "icon": "server"},
+            {"label": "Metadata update", "icon": "settings-2"}
+        ] %}
         {% include "cluster/partials/_page_header.html" %}
         {% set form_mode = "edit" %}
         {% set form_icon = "settings-2" %}
         {% set form_title = "Cluster Configuration" %}
-        {% set form_description = "Modify cluster information used by KAORI." %}
+        {% set form_description = "Modify cluster information used by KAORI without changing its operational identity." %}
         {% set submit_label = "Update Cluster" %}
         {% include "cluster/partials/_form.html" %}
     </div>
