@@ -404,3 +404,7 @@ The Namespace Inventory page follows the same hero geometry, operational table d
 - Empty nested sections inside inventory detail cards use a compact dashed information box, not an otherwise empty solid object card.
 - Use the KAORI soft surface, violet icon/title, and one short explanatory sentence describing what was not collected or configured.
 - Render the normal solid object card only when the nested section contains actual records or configuration values.
+
+### Inventory detail card bottom stack
+
+In expandable Inventory detail cards, secondary object summaries such as Workload Composition, ResourceQuota details, and Pod Security Admission must be anchored in the lower card region immediately above the informational tip. Primary key/value rows remain at the top. Use one `mt-auto` bottom stack containing the secondary object block followed by the tip so sibling cards keep a consistent visual rhythm.

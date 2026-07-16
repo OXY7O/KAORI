@@ -51,8 +51,8 @@
     </section>
 {%- endmacro %}
 
-{% macro detail_tip(message, icon='info') -%}
-    <div class="mt-auto flex items-start gap-2.5 rounded-lg border border-outline-default bg-kaori-soft px-3 py-2.5 text-xs leading-5 text-content-secondary">
+{% macro detail_tip(message, icon='info', push_to_bottom=True) -%}
+    <div class="{{ 'mt-auto ' if push_to_bottom else '' }}flex items-start gap-2.5 rounded-lg border border-outline-default bg-kaori-soft px-3 py-2.5 text-xs leading-5 text-content-secondary">
         <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-surface-card text-kaori-primary">
             <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
         </span>
@@ -117,7 +117,7 @@
                 {{ detail_row('Services', namespace.object_counts.services) }}
                 {{ detail_row('Ingresses', namespace.object_counts.ingresses) }}
                 {{ detail_row('PVCs', namespace.object_counts.persistent_volume_claims) }}
-                <div class="pt-2">
+                <div class="mt-auto space-y-2.5 pt-2">
                     {% if namespace.object_counts.workloads > 0 %}
                         {% call namespace_object_card('Workload composition', namespace.object_counts.workloads ~ ' workloads', 'layout-grid') %}
                             {% if namespace.workload_breakdown.deployments %}{{ namespace_object_row('Deployments', namespace.workload_breakdown.deployments) }}{% endif %}
@@ -133,8 +133,8 @@
                             <p class="mt-1 text-xs leading-5 text-content-muted">No Deployment, StatefulSet, DaemonSet, Job, or CronJob was present in the latest namespace snapshot.</p>
                         </div>
                     {% endif %}
+                    {{ detail_tip('Only workload kinds with a non-zero count are shown. Utilization and workload risk remain in Analytics and Intelligence.', 'boxes', False) }}
                 </div>
-                {{ detail_tip('Only workload kinds with a non-zero count are shown. Utilization and workload risk remain in Analytics and Intelligence.', 'boxes') }}
             {% endcall %}
 
             {% set quota_badge = 'Configured' if namespace.quota_count > 0 else 'Not configured' %}
@@ -148,7 +148,7 @@
                 {% else %}
                     {{ status_row('LimitRange', 'Not configured', 'disabled', 'circle-minus') }}
                 {% endif %}
-                <div class="pt-2">
+                <div class="mt-auto space-y-2.5 pt-2">
                     {% if namespace.quotas %}
                         <div class="max-h-56 space-y-2 overflow-y-auto pr-1">
                             {% for quota in namespace.quotas %}
@@ -169,8 +169,8 @@
                             <p class="mt-1 text-xs leading-5 text-content-muted">A missing ResourceQuota is inventory context and does not automatically indicate a policy violation.</p>
                         </div>
                     {% endif %}
+                    {{ detail_tip('ResourceQuota and LimitRange define namespace constraints. Consumption, remaining quota, and usage trends are analyzed separately.', 'info', False) }}
                 </div>
-                {{ detail_tip('ResourceQuota and LimitRange define namespace constraints. Consumption, remaining quota, and usage trends are analyzed separately.', 'info') }}
             {% endcall %}
 
             {% call detail_card('Security & access', 'shield-check', psa_configured_count ~ '/3 PSA labels') %}
@@ -181,7 +181,7 @@
                 {{ status_row('Default ServiceAccount', namespace.default_service_account, default_sa_tone, default_sa_icon) }}
                 {{ detail_row('Secrets', namespace.object_counts.secrets) }}
                 {{ detail_row('ConfigMaps', namespace.object_counts.config_maps) }}
-                <div class="pt-2">
+                <div class="mt-auto space-y-2.5 pt-2">
                     {% if psa_configured_count > 0 %}
                         {% call namespace_object_card('Pod Security Admission', psa_configured_count ~ '/3 configured', 'shield-check') %}
                             {{ metadata_row('Enforce', psa_enforce_display, 'shield') }}
@@ -195,8 +195,8 @@
                             <p class="mt-1 text-xs leading-5 text-content-muted">Enforce, audit, and warn behavior currently inherit the cluster admission configuration because no namespace-level PSA labels were collected.</p>
                         </div>
                     {% endif %}
+                    {{ detail_tip('Pod Security Admission labels define enforcement, audit, and warning behavior for pods created in this namespace.', 'shield-check', False) }}
                 </div>
-                {{ detail_tip('Pod Security Admission labels define enforcement, audit, and warning behavior for pods created in this namespace.', 'shield-check') }}
             {% endcall %}
 
             <section class="rounded-xl border border-outline-subtle bg-surface-card p-4 md:col-span-2 xl:col-span-4">
