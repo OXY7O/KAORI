@@ -41,15 +41,20 @@
             </div>
 
         </div>
-        {% if config and config.endpoint %}
-            {% include 'prometheus/partials/_analytics_readiness.html' %}
-        {% endif %}
-        <!-- Form Card -->
-        {% set current_auth_type = form.auth_type.data or 'none' %}
-        {% set current_detection_mode = form.version_detection_mode.data or 'automatic' %}
-        {% set current_password = form.password.data or (config.password if config and config.password else '') %}
-        {% set current_bearer_token = form.bearer_token.data or (config.bearer_token if config and config.bearer_token else '') %}
-        <form method="POST" x-data="{ authType: '{{ current_auth_type }}', detectionMode: '{{ current_detection_mode }}' }">
+        <div class="grid gap-6 {% if config and config.endpoint %}xl:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] xl:items-start{% endif %}">
+            {% if config and config.endpoint %}
+                <div class="min-w-0">
+                    {% include 'prometheus/partials/_analytics_readiness.html' %}
+                </div>
+            {% endif %}
+
+            <div class="min-w-0">
+                <!-- Form Card -->
+                {% set current_auth_type = form.auth_type.data or 'none' %}
+                {% set current_detection_mode = form.version_detection_mode.data or 'automatic' %}
+                {% set current_password = form.password.data or (config.password if config and config.password else '') %}
+                {% set current_bearer_token = form.bearer_token.data or (config.bearer_token if config and config.bearer_token else '') %}
+                <form method="POST" x-data="{ authType: '{{ current_auth_type }}', detectionMode: '{{ current_detection_mode }}' }">
             {{ form.hidden_tag() }}
             <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
                 <!-- Header -->
@@ -194,6 +199,8 @@
                     </div>
                 </div>
             </div>
-        </form>
+                </form>
+            </div>
+        </div>
     </div>
 {% endblock dashboard_content %}
