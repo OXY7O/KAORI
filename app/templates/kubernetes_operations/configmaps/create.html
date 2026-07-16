@@ -1,5 +1,6 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
+{% import "components/live_lookup_notice.html" as live_lookup %}
 {% import "kubernetes_operations/configmaps/_components.html" as configmap_ui %}
 {% block title %}Create ConfigMap{% endblock title %}
 {% block dashboard_content %}
@@ -44,19 +45,26 @@
             <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
                 <section class="h-full overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm xl:col-start-1 xl:row-start-1">
                     {{ configmap_ui.section_header('map-pin', 'Target location', 'Select the live cluster and namespace where the new ConfigMap will be created.') }}
-                    <div class="grid gap-5 p-5 sm:p-6 lg:grid-cols-3">
-                        <label class="order-1 block min-w-0">
+                    <div class="p-5 sm:p-6">
+                        <div class="grid gap-5 lg:grid-cols-3">
+                        <label class="block min-w-0">
                             <span class="text-sm font-semibold text-content-primary">Cluster</span>
-                            <select name="cluster_id" required hx-get="{{ url_for('kubernetes_operations.configmap_namespace_options') }}" hx-target="#configmap-namespace-field" hx-include="this" class="mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                            <select name="cluster_id" required hx-get="{{ url_for('kubernetes_operations.configmap_namespace_options') }}" hx-target="#configmap-namespace-field" hx-swap="outerHTML" hx-include="this" class="mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                                 <option value="">Select cluster</option>
                                 {% for cluster in clusters %}<option value="{{ cluster.id }}">{{ cluster.name }}</option>{% endfor %}
                             </select>
                         </label>
-                        <div id="configmap-namespace-field" class="contents">{% include 'kubernetes_operations/configmaps/_namespace_options.html' %}</div>
-                        <label class="order-3 block min-w-0">
+                        {% include 'kubernetes_operations/configmaps/_namespace_options.html' %}
+                        <label class="block min-w-0">
                             <span class="text-sm font-semibold text-content-primary">ConfigMap name</span>
                             <input name="configmap_name" required placeholder="application-config" class="mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                         </label>
+                        </div>
+                        <div id="configmap-live-lookup-notice" class="mt-4">
+                            {% if namespace_error %}
+                                {{ live_lookup.warning('Live namespace lookup failed', namespace_error, '') }}
+                            {% endif %}
+                        </div>
                     </div>
                     <div class="grid gap-3 border-t border-outline-default bg-surface-hover px-5 py-3 sm:grid-cols-2 sm:px-6">
                         {{ configmap_ui.guardrail('git-branch', 'Scoped namespace', 'Namespace choices always follow the selected live cluster.') }}
