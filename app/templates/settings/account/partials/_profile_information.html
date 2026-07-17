@@ -60,17 +60,24 @@
     </div>
 </section>
 
-<section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <header class="flex items-center gap-3 border-b border-outline-subtle px-5 py-4">
-        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-            <i data-lucide="sliders-horizontal" class="h-5 w-5"></i>
+<details class="group overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 transition hover:bg-kaori-soft/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-kaori-primary/25 [&::-webkit-details-marker]:hidden">
+        <div class="flex min-w-0 items-center gap-3">
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                <i data-lucide="sliders-horizontal" class="h-5 w-5"></i>
+            </div>
+            <div class="min-w-0">
+                <h2 class="text-base font-semibold text-content-primary">Access Control Boundary</h2>
+                <p class="mt-0.5 text-xs leading-5 text-content-muted">Controls applied by KAORI after identity verification succeeds.</p>
+            </div>
         </div>
-        <div>
-            <h2 class="text-base font-semibold text-content-primary">Access Control Boundary</h2>
-            <p class="mt-0.5 text-xs leading-5 text-content-muted">Controls applied by KAORI after identity verification succeeds.</p>
+        <div class="flex shrink-0 items-center gap-2 text-kaori-primary">
+            <span class="text-[11px] font-semibold uppercase tracking-widest group-open:hidden">Details</span>
+            <span class="hidden text-[11px] font-semibold uppercase tracking-widest group-open:inline">Collapse</span>
+            <i data-lucide="chevron-down" class="h-4 w-4 transition-transform duration-200 group-open:rotate-180"></i>
         </div>
-    </header>
-    <div class="space-y-3 p-5">
+    </summary>
+    <div class="space-y-3 border-t border-outline-subtle p-5">
         <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
             <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-content-muted">
                 <i data-lucide="shield" class="h-3.5 w-3.5 text-kaori-primary"></i>
@@ -96,21 +103,31 @@
             <p class="mt-1 text-xs leading-5 text-content-muted">Super Admin status is independent of the provider and remains protected by administrative safeguards.</p>
         </article>
     </div>
-</section>
+</details>
 
-<section class="rounded-xl border border-brand-outline bg-kaori-soft p-5 shadow-sm">
-    <div class="flex items-start gap-3">
-        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-surface-card text-kaori-primary">
-            <i data-lucide="clock-3" class="h-5 w-5"></i>
+<details class="group overflow-hidden rounded-xl border border-brand-outline bg-kaori-soft shadow-sm">
+    <summary class="flex cursor-pointer list-none items-center justify-between gap-3 p-5 transition hover:bg-kaori-soft/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-kaori-primary/25 [&::-webkit-details-marker]:hidden">
+        <div class="flex min-w-0 items-center gap-3">
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-surface-card text-kaori-primary">
+                <i data-lucide="clock-3" class="h-5 w-5"></i>
+            </div>
+            <div class="min-w-0">
+                <h2 class="text-sm font-semibold text-kaori-strong">Personal Presentation</h2>
+                <p class="mt-1 text-xs leading-5 text-kaori-primary">Time zone and regional-format preferences for this account.</p>
+            </div>
         </div>
-        <div>
-            <h2 class="text-sm font-semibold text-kaori-strong">Personal Presentation</h2>
-            <p class="mt-1 text-xs leading-5 text-kaori-primary">Time zone and regional format are personal settings. They change how KAORI presents timestamps without changing canonical UTC data.</p>
-            <a href="{{ url_for('settings.general', tab='time-locale') }}"
-               class="mt-3 inline-flex h-9 items-center gap-2 rounded-lg border border-brand-outline bg-surface-card px-3 text-xs font-semibold text-kaori-primary transition hover:bg-kaori-soft">
-                <i data-lucide="settings-2" class="h-3.5 w-3.5"></i>
-                Open General Settings
-            </a>
+        <div class="flex shrink-0 items-center gap-2 text-kaori-primary">
+            <span class="text-[11px] font-semibold uppercase tracking-widest group-open:hidden">Details</span>
+            <span class="hidden text-[11px] font-semibold uppercase tracking-widest group-open:inline">Collapse</span>
+            <i data-lucide="chevron-down" class="h-4 w-4 transition-transform duration-200 group-open:rotate-180"></i>
         </div>
+    </summary>
+    <div class="border-t border-brand-outline px-5 py-4">
+        <p class="text-xs leading-5 text-kaori-primary">Time zone and regional format are personal settings. They change how KAORI presents timestamps without changing canonical UTC data.</p>
+        <a href="{{ url_for('settings.general', tab='time-locale') }}"
+           class="mt-3 inline-flex h-9 items-center gap-2 rounded-lg border border-brand-outline bg-surface-card px-3 text-xs font-semibold text-kaori-primary transition hover:bg-kaori-soft">
+            <i data-lucide="settings-2" class="h-3.5 w-3.5"></i>
+            Open General Settings
+        </a>
     </div>
-</section>
+</details>
