@@ -1,92 +1,92 @@
-<div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-    <div class="border-b border-slate-100 px-5 py-4 dark:border-slate-800 sm:px-6">
-        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div class="min-w-0">
-                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">Alert Controls</p>
-                <h2 class="mt-1 text-sm font-bold text-slate-900 dark:text-white">Alert analysis filters</h2>
-                <p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
-                    Select cluster, source, severity, status, namespace, and search context.
-                </p>
-            </div>
-            <div class="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-300">
-                <i data-lucide="sliders-horizontal" class="h-3.5 w-3.5 text-blue-500"></i>
-                Filter scope
-            </div>
-        </div>
-    </div>
-    <div class="px-5 py-4 sm:px-6">
-        <div class="grid gap-3 lg:grid-cols-2 xl:grid-cols-[minmax(170px,1fr)_minmax(130px,.7fr)_minmax(130px,.7fr)_minmax(130px,.7fr)_minmax(180px,1fr)_minmax(240px,1.2fr)] xl:items-end">
-            <label class="block min-w-0">
-                <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Cluster</span>
-                <select id="alerts-cluster-select"
-                        name="cluster_id"
-                        onchange="this.form.querySelector('[name=namespace]').value = ''; this.form.querySelector('[name=search]').value = ''; this.form.querySelector('[name=page]').value = '1';"
-                        hx-on::config-request="event.detail.parameters.namespace = ''; event.detail.parameters.search = ''; event.detail.parameters.page = '1';"
-                        class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 pr-9 text-sm font-semibold text-slate-800 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
-                    {% for cluster in clusters %}
-                        <option value="{{ cluster.id }}"
-                                {% if selected_cluster_id == cluster.id %}selected{% endif %}>
-                            {{ cluster.name }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </label>
-            <label class="block min-w-0">
-                <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Source</span>
-                <select name="source"
-                        class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 pr-9 text-sm font-semibold text-slate-800 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
-                    <option value="auto" {% if selected_source == 'auto' %}selected{% endif %}>Auto</option>
-                    <option value="alertmanager"
-                            {% if selected_source == 'alertmanager' %}selected{% endif %}>Alertmanager</option>
-                    <option value="prometheus"
-                            {% if selected_source == 'prometheus' %}selected{% endif %}>Prometheus</option>
-                </select>
-            </label>
-            <label class="block min-w-0">
-                <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Severity</span>
-                <select name="severity"
-                        class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 pr-9 text-sm font-semibold text-slate-800 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
-                    {% for option in severity_options %}
-                        <option value="{{ option }}"
-                                {% if selected_severity == option %}selected{% endif %}>{{ option | title }}</option>
-                    {% endfor %}
-                </select>
-            </label>
-            <label class="block min-w-0">
-                <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Status</span>
-                <select name="status"
-                        class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 pr-9 text-sm font-semibold text-slate-800 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
-                    {% for option in status_options %}
-                        <option value="{{ option }}"
-                                {% if selected_status == option %}selected{% endif %}>{{ option | title }}</option>
-                    {% endfor %}
-                </select>
-            </label>
-            <label class="block min-w-0">
-                <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Namespace</span>
-                <select name="namespace"
-                        class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 pr-9 text-sm font-semibold text-slate-800 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
-                    <option value="" {% if not selected_namespace %}selected{% endif %}>All Namespaces</option>
-                    {% for namespace in namespace_options %}
-                        <option value="{{ namespace }}"
-                                {% if selected_namespace == namespace %}selected{% endif %}>{{ namespace }}</option>
-                    {% endfor %}
-                </select>
-            </label>
-            <label class="relative block min-w-0">
-                <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Search</span>
-                <i data-lucide="search"
-                   class="pointer-events-none absolute left-3 top-[37px] h-4 w-4 text-slate-400"></i>
-                <input type="text"
-                       name="search"
-                       value="{{ selected_search }}"
-                       placeholder="Search alert, pod, node, namespace..."
-                       class="mt-1 w-full min-w-0 rounded-xl border border-slate-300 bg-white py-2 pl-10 pr-3 text-sm font-semibold text-slate-800 shadow-sm outline-none transition placeholder:font-normal placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
-            </label>
-        </div>
-        <div id="alerts-refresh-indicator"
-             class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-blue-100 dark:bg-blue-950/60">
-            <div class="h-full w-1/3 animate-pulse rounded-full bg-blue-600 dark:bg-blue-400"></div>
-        </div>
-    </div>
+<div class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm ">
+ <div class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+ <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+ <div class="min-w-0">
+ <p class="text-xs font-semibold uppercase tracking-[0.24em] text-content-muted ">Alert Controls</p>
+ <h2 class="mt-1 text-sm font-bold text-content-primary ">Alert analysis filters</h2>
+ <p class="mt-1 text-xs leading-5 text-content-muted ">
+ Select cluster, source, severity, status, namespace, and search context.
+ </p>
+ </div>
+ <div class="inline-flex w-fit items-center gap-2 rounded-full border border-outline-default bg-surface-subtle px-3 py-1.5 text-xs font-semibold text-content-secondary ">
+ <i data-lucide="sliders-horizontal" class="h-3.5 w-3.5 text-kaori-primary"></i>
+ Filter scope
+ </div>
+ </div>
+ </div>
+ <div class="px-5 py-4 sm:px-6">
+ <div class="grid gap-3 lg:grid-cols-2 xl:grid-cols-[minmax(170px,1fr)_minmax(130px,.7fr)_minmax(130px,.7fr)_minmax(130px,.7fr)_minmax(180px,1fr)_minmax(240px,1.2fr)] xl:items-end">
+ <label class="block min-w-0">
+ <span class="text-xs font-medium text-content-muted ">Cluster</span>
+ <select id="alerts-cluster-select"
+ name="cluster_id"
+ onchange="this.form.querySelector('[name=namespace]').value = ''; this.form.querySelector('[name=search]').value = ''; this.form.querySelector('[name=page]').value = '1';"
+ hx-on::config-request="event.detail.parameters.namespace = ''; event.detail.parameters.search = ''; event.detail.parameters.page = '1';"
+ class="mt-1 w-full rounded-xl border border-outline-strong bg-surface-card px-3 py-2 pr-9 text-sm font-semibold text-content-primary shadow-sm outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 ">
+ {% for cluster in clusters %}
+ <option value="{{ cluster.id }}"
+ {% if selected_cluster_id == cluster.id %}selected{% endif %}>
+ {{ cluster.name }}
+ </option>
+ {% endfor %}
+ </select>
+ </label>
+ <label class="block min-w-0">
+ <span class="text-xs font-medium text-content-muted ">Source</span>
+ <select name="source"
+ class="mt-1 w-full rounded-xl border border-outline-strong bg-surface-card px-3 py-2 pr-9 text-sm font-semibold text-content-primary shadow-sm outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 ">
+ <option value="auto" {% if selected_source == 'auto' %}selected{% endif %}>Auto</option>
+ <option value="alertmanager"
+ {% if selected_source == 'alertmanager' %}selected{% endif %}>Alertmanager</option>
+ <option value="prometheus"
+ {% if selected_source == 'prometheus' %}selected{% endif %}>Prometheus</option>
+ </select>
+ </label>
+ <label class="block min-w-0">
+ <span class="text-xs font-medium text-content-muted ">Severity</span>
+ <select name="severity"
+ class="mt-1 w-full rounded-xl border border-outline-strong bg-surface-card px-3 py-2 pr-9 text-sm font-semibold text-content-primary shadow-sm outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 ">
+ {% for option in severity_options %}
+ <option value="{{ option }}"
+ {% if selected_severity == option %}selected{% endif %}>{{ option | title }}</option>
+ {% endfor %}
+ </select>
+ </label>
+ <label class="block min-w-0">
+ <span class="text-xs font-medium text-content-muted ">Status</span>
+ <select name="status"
+ class="mt-1 w-full rounded-xl border border-outline-strong bg-surface-card px-3 py-2 pr-9 text-sm font-semibold text-content-primary shadow-sm outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 ">
+ {% for option in status_options %}
+ <option value="{{ option }}"
+ {% if selected_status == option %}selected{% endif %}>{{ option | title }}</option>
+ {% endfor %}
+ </select>
+ </label>
+ <label class="block min-w-0">
+ <span class="text-xs font-medium text-content-muted ">Namespace</span>
+ <select name="namespace"
+ class="mt-1 w-full rounded-xl border border-outline-strong bg-surface-card px-3 py-2 pr-9 text-sm font-semibold text-content-primary shadow-sm outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 ">
+ <option value="" {% if not selected_namespace %}selected{% endif %}>All Namespaces</option>
+ {% for namespace in namespace_options %}
+ <option value="{{ namespace }}"
+ {% if selected_namespace == namespace %}selected{% endif %}>{{ namespace }}</option>
+ {% endfor %}
+ </select>
+ </label>
+ <label class="relative block min-w-0">
+ <span class="text-xs font-medium text-content-muted ">Search</span>
+ <i data-lucide="search"
+ class="pointer-events-none absolute left-3 top-[37px] h-4 w-4 text-content-muted"></i>
+ <input type="text"
+ name="search"
+ value="{{ selected_search }}"
+ placeholder="Search alert, pod, node, namespace..."
+ class="mt-1 w-full min-w-0 rounded-xl border border-outline-strong bg-surface-card py-2 pl-10 pr-3 text-sm font-semibold text-content-primary shadow-sm outline-none transition placeholder:font-normal placeholder:text-content-muted focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 ">
+ </label>
+ </div>
+ <div id="alerts-refresh-indicator"
+ class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-kaori-soft">
+ <div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div>
+ </div>
+ </div>
 </div>

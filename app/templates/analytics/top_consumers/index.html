@@ -1,374 +1,279 @@
 {% extends "layouts/app.html" %}
 {% block title %}Top Consumers{% endblock title %}
 {% block dashboard_content %}
-    <div id="top-consumers-page"
-         class="space-y-6"
-         data-analytics-page-request-tracking="false">
-        {% set selected_cluster_name = cluster.name if cluster else 'No cluster selected' %}
-        {% set response_time = prometheus_status.response_time_ms %}
-        {% set payload = consumer_payload %}
-        {% set overview = payload.overview %}
-        {% set overview_summary = overview.summary %}
-        {% set recommendation_count = payload.recommendation_count|default(0) %}
-        {% set total_rows = payload.total_rows|default(0) %}
-        {% set high_usage = namespace_options|length %}
-        {% if dependency_blocker %}
-            {% set posture_value = "Blocked" %}
-            {% set posture_desc = dependency_blocker.title %}
-            {% set posture_badge = "bg-slate-500 text-white ring-slate-200/40" %}
-        {% elif payload.recommendation_count|default(0) > 0 %}
-            {% set posture_value = "Review" %}
-            {% set posture_desc = "Consumer hotspots need review." %}
-            {% set posture_badge = "bg-amber-500 text-white ring-amber-200/50" %}
-        {% elif payload.has_data %}
-            {% set posture_value = "Healthy" %}
-            {% set posture_desc = "Consumer signals are normal." %}
-            {% set posture_badge = "bg-emerald-500 text-white ring-emerald-200/40" %}
-        {% else %}
-            {% set posture_value = "No Data" %}
-            {% set posture_desc = "Waiting for metrics." %}
-            {% set posture_badge = "bg-slate-500 text-white ring-slate-200/40" %}
-        {% endif %}
-        <section class="relative overflow-hidden min-h-[16.5rem] min-h-[16.5rem] rounded-3xl bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 px-6 py-6 text-white shadow-lg shadow-blue-500/20 sm:px-7 sm:py-7 sm:px-7 sm:py-7">
-            <div class="absolute inset-y-0 right-0 hidden w-1/3 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.22),transparent_55%)] lg:block">
-            </div>
-            <div class="absolute -top-16 right-10 h-40 w-40 rounded-full bg-white/10 blur-3xl"></div>
-            <div class="absolute -bottom-20 right-32 h-48 w-48 rounded-full bg-cyan-300/20 blur-3xl"></div>
-            <div class="relative grid gap-6 xl:grid-cols-[minmax(0,1fr)_400px] xl:items-start">
-                <div class="space-y-5">
-                    <div class="flex items-start gap-4">
-                        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-white/15 text-white backdrop-blur">
-                            <i data-lucide="users" class="h-6 w-6"></i>
-                        </div>
-                        <div class="min-w-0">
-                            <div class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold tracking-wide text-blue-50">
-                                <i data-lucide="sparkles" class="h-3.5 w-3.5"></i>
-                                Kubernetes resource hotspot analysis
-                            </div>
-                            <h1 class="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">Top Consumers</h1>
-                            <p class="mt-2 max-w-4xl text-sm leading-6 text-blue-50/90 sm:text-base xl:whitespace-nowrap">Identify top CPU, memory, pod, and PVC consumers across namespaces, workloads, and application paths.</p>
-                        </div>
-                    </div>
-                    {% if dependency_blocker %}
-                        <div class="flex flex-wrap items-center gap-2.5 sm:ml-16">
-                            <span class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-2 text-sm font-semibold text-blue-50">
-                                <i data-lucide="server" class="h-4 w-4"></i>
-                                {{ selected_cluster_name }}
-                            </span>
-                            <span class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-2 text-sm font-semibold text-blue-50">
-                                <i data-lucide="lock-keyhole" class="h-4 w-4"></i>
-                                Step {{ dependency_blocker.stage }} · {{ dependency_blocker.badge }}
-                            </span>
-                        </div>
-                    {% else %}
-                        <div class="flex flex-wrap items-center gap-2.5 sm:ml-16">
-                            <span class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-2 text-sm font-semibold text-blue-50">
-                                <i data-lucide="server" class="h-4 w-4"></i>
-                                {{ selected_cluster_name }}
-                            </span>
-                            <span class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-2 text-sm font-semibold text-blue-50">
-                                <i data-lucide="list-filter" class="h-4 w-4"></i>
-                                {{ total_rows }} consumers
-                            </span>
-                            <span class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-2 text-sm font-semibold text-blue-50">
-                                <i data-lucide="list-checks" class="h-4 w-4"></i>
-                                {{ recommendation_count }} actionable
-                            </span>
-                        </div>
-                    {% endif %}
-                </div>
-                {% if dependency_blocker %}
-                    {% set analytics_posture_label = "Consumer posture" %}
-                    {% include "analytics/components/_blocked_posture.html" %}
-                {% else %}
-                    <div class="rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur xl:min-h-[176px]">
-                        <div class="flex h-full flex-col justify-start gap-3">
-                            <div class="flex items-start justify-between gap-4">
-                                <div class="min-w-0">
-                                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-50/80">Consumer posture</p>
-                                    <div class="mt-2 text-4xl font-bold leading-none">{{ posture_value }}</div>
-                                    <p class="mt-1 text-sm leading-5 text-blue-50/85">{{ posture_desc }}</p>
-                                </div>
-                                <span class="inline-flex shrink-0 rounded-md px-3 py-1.5 text-xs font-bold ring-1 ring-inset {{ posture_badge }}">
-                                    {{ posture_value }}
-                                </span>
-                            </div>
-                            <div class="mt-2 grid grid-cols-2 gap-3">
-                                <div class="rounded-xl bg-white/10 px-4 py-3">
-                                    <p class="text-xs text-blue-50/75">CPU Used</p>
-                                    <p class="mt-1 text-2xl font-semibold">{{ overview_summary.total_cpu_percent|default(0) }}%</p>
-                                </div>
-                                <div class="rounded-xl bg-white/10 px-4 py-3">
-                                    <p class="text-xs text-blue-50/75">Memory Used</p>
-                                    <p class="mt-1 text-2xl font-semibold">{{ overview_summary.total_memory_percent|default(0) }}%</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                {% endif %}
-            </div>
-        </section>
-        {% if dependency_blocker %}
-            {% include "components/dependencies/_blocker.html" %}
-        {% endif %}
-        {% if not dependency_blocker %}
-            <form id="top-consumers-filter-form"
-                  method="GET"
-                  hx-get="{{ url_for('analytics.top_consumers') }}"
-                  hx-trigger="change delay:120ms"
-                  hx-target="#top-consumers-page"
-                  hx-select="#top-consumers-page"
-                  hx-swap="outerHTML"
-                  hx-push-url="true"
-                  hx-indicator="#top-consumers-refresh-indicator"
-                  class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                <div class="px-6 py-4">
-                    <div class="mb-4 flex flex-col gap-3 border-b border-slate-100 pb-4 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
-                        <div>
-                            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">Consumer Controls</p>
-                            <h2 class="mt-1 text-sm font-bold text-slate-900 dark:text-white">Top consumer scope</h2>
-                        </div>
-                        <div class="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-300">
-                            {% if prometheus_connected %}
-                                <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
-                            {% else %}
-                                <span class="h-2 w-2 rounded-full bg-rose-500"></span>
-                            {% endif %}
-                            <span class="text-slate-400 dark:text-slate-500">Prometheus</span>
-                            <span class="rounded-md px-2 py-0.5 ring-1 ring-inset {% if prometheus_connected %}bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-900{% else %}bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-950/50 dark:text-rose-300 dark:ring-rose-900{% endif %}">
-                                {{ prometheus_status.label }}
-                            </span>
-                            <span class="text-slate-400 dark:text-slate-500">·</span>
-                            <span>
-                                {% if response_time is not none %}
-                                    {{ response_time }} ms
-                                {% else %}
-                                    No response
-                                {% endif %}
-                            </span>
-                        </div>
-                    </div>
-                    <div class="grid gap-3 lg:grid-cols-2 xl:grid-cols-4 xl:items-end">
-                        <label class="block">
-                            <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Cluster</span>
-                            <select name="cluster_id"
-                                    onchange="this.form.querySelector('[name=namespace]').value = ''; this.form.querySelector('[name=page]').value = '1';"
-                                    class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 pr-9 py-2 text-sm font-semibold text-slate-800 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
-                                {% for item in clusters %}
-                                    <option value="{{ item.id }}"
-                                            {% if cluster and cluster.id == item.id %}selected{% endif %}>
-                                        {{ item.name }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </label>
-                        <label class="block">
-                            <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Namespace</span>
-                            <select name="namespace"
-                                    class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 pr-9 py-2 text-sm font-semibold text-slate-800 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
-                                <option value="">All Namespaces</option>
-                                {% for namespace in namespace_options %}
-                                    <option value="{{ namespace }}"
-                                            {% if selected_namespace == namespace %}selected{% endif %}>
-                                        {{ namespace }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </label>
-                        <label class="block">
-                            <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Resource</span>
-                            <select name="resource"
-                                    class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 pr-9 py-2 text-sm font-semibold text-slate-800 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
-                                {% for item in resource_options %}
-                                    <option value="{{ item.value }}"
-                                            {% if selected_resource == item.value %}selected{% endif %}>
-                                        {{ item.label }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </label>
-                        <label class="block">
-                            <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Time Range</span>
-                            <select name="time_range"
-                                    class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 pr-9 py-2 text-sm font-semibold text-slate-800 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
-                                {% for item in allowed_time_ranges %}
-                                    <option value="{{ item.value }}"
-                                            {% if selected_time_range == item.value %}selected{% endif %}>
-                                        {{ item.label }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </label>
-                    </div>
-                    <input type="hidden" name="search" value="{{ selected_search }}">
-                    <input type="hidden" name="sort" value="{{ selected_sort }}">
-                    <input type="hidden" name="focus" value="{{ selected_focus }}">
-                    <input type="hidden" name="page" value="1">
-                    <input type="hidden"
-                           name="per_page"
-                           value="{{ consumer_payload.pagination.per_page | default(5) }}">
-                    <div id="top-consumers-refresh-indicator"
-                         class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-blue-100 dark:bg-blue-950/60">
-                        <div class="h-full w-1/3 animate-pulse rounded-full bg-blue-600 dark:bg-blue-400"></div>
-                    </div>
-                </div>
-            </form>
-            <div id="top-consumers-section">{% include "analytics/top_consumers/partials/_top_consumers_section.html" %}</div>
-        {% endif %}
-    </div>
+ <div id="top-consumers-page"
+ class="space-y-6"
+ data-analytics-page-request-tracking="false">
+ {% set selected_cluster_name = cluster.name if cluster else 'No cluster selected' %}
+ {% set response_time = prometheus_status.response_time_ms %}
+ {% set payload = consumer_payload %}
+ {% set overview = payload.overview %}
+ {% set overview_summary = overview.summary %}
+ {% set recommendation_count = payload.recommendation_count|default(0) %}
+ {% set total_rows = payload.total_rows|default(0) %}
+ {% set high_usage = namespace_options|length %}
+ {% include "analytics/top_consumers/partials/_hero.html" %}
+ {% if dependency_blocker %}
+ {% include "components/dependencies/_blocker.html" %}
+ {% endif %}
+ {% if not dependency_blocker %}
+ <form id="top-consumers-filter-form"
+ method="GET"
+ hx-get="{{ url_for('analytics.top_consumers') }}"
+ hx-trigger="change delay:120ms"
+ hx-target="#top-consumers-page"
+ hx-select="#top-consumers-page"
+ hx-swap="outerHTML"
+ hx-push-url="true"
+ hx-indicator="#top-consumers-refresh-indicator"
+ class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm ">
+ <div class="px-6 py-4">
+ <div class="mb-4 flex flex-col gap-3 border-b border-outline-subtle pb-4 sm:flex-row sm:items-center sm:justify-between">
+ <div>
+ <p class="text-xs font-semibold uppercase tracking-[0.24em] text-content-muted ">Consumer Controls</p>
+ <h2 class="mt-1 text-sm font-bold text-content-primary ">Top consumer scope</h2>
+ </div>
+ <div class="inline-flex items-center gap-2 rounded-md border border-outline-default bg-surface-subtle px-3 py-1.5 text-xs font-semibold text-content-secondary ">
+ {% if prometheus_connected %}
+ <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+ {% else %}
+ <span class="h-2 w-2 rounded-full bg-rose-500"></span>
+ {% endif %}
+ <span class="text-content-muted ">Prometheus</span>
+ <span class="rounded-md px-2 py-0.5 ring-1 ring-inset {% if prometheus_connected %}bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-900{% else %}bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-950/50 dark:text-rose-300 dark:ring-rose-900{% endif %}">
+ {{ prometheus_status.label }}
+ </span>
+ <span class="text-content-muted ">·</span>
+ <span>
+ {% if response_time is not none %}
+ {{ response_time }} ms
+ {% else %}
+ No response
+ {% endif %}
+ </span>
+ </div>
+ </div>
+ <div class="grid gap-3 lg:grid-cols-2 xl:grid-cols-4 xl:items-end">
+ <label class="block">
+ <span class="text-xs font-medium text-content-muted ">Cluster</span>
+ <select name="cluster_id"
+ onchange="this.form.querySelector('[name=namespace]').value = ''; this.form.querySelector('[name=page]').value = '1';"
+ class="mt-1 w-full rounded-xl border border-outline-strong bg-surface-card px-3 pr-9 py-2 text-sm font-semibold text-content-primary shadow-sm outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 dark:focus:border-kaori-primary dark:focus:ring-kaori-primary/10">
+ {% for item in clusters %}
+ <option value="{{ item.id }}"
+ {% if cluster and cluster.id == item.id %}selected{% endif %}>
+ {{ item.name }}
+ </option>
+ {% endfor %}
+ </select>
+ </label>
+ <label class="block">
+ <span class="text-xs font-medium text-content-muted ">Namespace</span>
+ <select name="namespace"
+ class="mt-1 w-full rounded-xl border border-outline-strong bg-surface-card px-3 pr-9 py-2 text-sm font-semibold text-content-primary shadow-sm outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 dark:focus:border-kaori-primary dark:focus:ring-kaori-primary/10">
+ <option value="">All Namespaces</option>
+ {% for namespace in namespace_options %}
+ <option value="{{ namespace }}"
+ {% if selected_namespace == namespace %}selected{% endif %}>
+ {{ namespace }}
+ </option>
+ {% endfor %}
+ </select>
+ </label>
+ <label class="block">
+ <span class="text-xs font-medium text-content-muted ">Resource</span>
+ <select name="resource"
+ class="mt-1 w-full rounded-xl border border-outline-strong bg-surface-card px-3 pr-9 py-2 text-sm font-semibold text-content-primary shadow-sm outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 dark:focus:border-kaori-primary dark:focus:ring-kaori-primary/10">
+ {% for item in resource_options %}
+ <option value="{{ item.value }}"
+ {% if selected_resource == item.value %}selected{% endif %}>
+ {{ item.label }}
+ </option>
+ {% endfor %}
+ </select>
+ </label>
+ <label class="block">
+ <span class="text-xs font-medium text-content-muted ">Time Range</span>
+ <select name="time_range"
+ class="mt-1 w-full rounded-xl border border-outline-strong bg-surface-card px-3 pr-9 py-2 text-sm font-semibold text-content-primary shadow-sm outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 dark:focus:border-kaori-primary dark:focus:ring-kaori-primary/10">
+ {% for item in allowed_time_ranges %}
+ <option value="{{ item.value }}"
+ {% if selected_time_range == item.value %}selected{% endif %}>
+ {{ item.label }}
+ </option>
+ {% endfor %}
+ </select>
+ </label>
+ </div>
+ <input type="hidden" name="search" value="{{ selected_search }}">
+ <input type="hidden" name="sort" value="{{ selected_sort }}">
+ <input type="hidden" name="focus" value="{{ selected_focus }}">
+ <input type="hidden" name="page" value="1">
+ <input type="hidden"
+ name="per_page"
+ value="{{ consumer_payload.pagination.per_page | default(5) }}">
+ <div id="top-consumers-refresh-indicator"
+ class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-kaori-soft">
+ <div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div>
+ </div>
+ </div>
+ </form>
+ <div id="top-consumers-section">{% include "analytics/top_consumers/partials/_top_consumers_section.html" %}</div>
+ {% endif %}
+ </div>
 {% endblock dashboard_content %}
 {% block scripts %}
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-        ;(function () {
-            function getJsonPayload(id) {
-                const element = document.getElementById(id)
+ <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+ <script>
+ ;(function () {
+ function getJsonPayload(id) {
+ const element = document.getElementById(id)
 
-                if (!element) {
-                    return null
-                }
+ if (!element) {
+ return null
+ }
 
-                try {
-                    return JSON.parse(element.textContent || '{}')
-                } catch (error) {
-                    console.warn(`Invalid chart payload: ${id}`, error)
-                    return null
-                }
-            }
+ try {
+ return JSON.parse(element.textContent || '{}')
+ } catch (error) {
+ console.warn(`Invalid chart payload: ${id}`, error)
+ return null
+ }
+ }
 
-            function truncateLabel(value) {
-                const label = String(value || '')
+ function truncateLabel(value) {
+ const label = String(value || '')
 
-                if (label.length > 36) {
-                    return `${label.substring(0, 33)}...`
-                }
+ if (label.length > 36) {
+ return `${label.substring(0, 33)}...`
+ }
 
-                return label
-            }
+ return label
+ }
 
-            function destroyExistingChart(canvas) {
-                if (!canvas || typeof Chart === 'undefined') {
-                    return
-                }
+ function destroyExistingChart(canvas) {
+ if (!canvas || typeof Chart === 'undefined') {
+ return
+ }
 
-                const existingChart = Chart.getChart(canvas)
+ const existingChart = Chart.getChart(canvas)
 
-                if (existingChart) {
-                    existingChart.destroy()
-                }
-            }
+ if (existingChart) {
+ existingChart.destroy()
+ }
+ }
 
-            function renderHorizontalBarChart(canvasId, payload) {
-                const canvas = document.getElementById(canvasId)
+ function renderHorizontalBarChart(canvasId, payload) {
+ const canvas = document.getElementById(canvasId)
 
-                if (!canvas || !payload || typeof Chart === 'undefined') {
-                    return
-                }
+ if (!canvas || !payload || typeof Chart === 'undefined') {
+ return
+ }
 
-                const labels = Array.isArray(payload.labels) ? payload.labels : []
-                const values = Array.isArray(payload.values) ? payload.values : []
+ const labels = Array.isArray(payload.labels) ? payload.labels : []
+ const values = Array.isArray(payload.values) ? payload.values : []
 
-                destroyExistingChart(canvas)
+ destroyExistingChart(canvas)
 
-                new Chart(canvas, {
-                    type: 'bar',
-                    data: {
-                        labels: labels.map(truncateLabel),
-                        datasets: [
-                            {
-                                label: payload.label || 'Usage',
-                                data: values,
-                                borderWidth: 0,
-                                borderRadius: 6,
-                                barThickness: 8,
-                                maxBarThickness: 10,
-                            },
-                        ],
-                    },
-                    options: {
-                        indexAxis: 'y',
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        animation: false,
-                        layout: {
-                            padding: {
-                                left: 0,
-                                right: 8,
-                                top: 4,
-                                bottom: 0,
-                            },
-                        },
-                        plugins: {
-                            legend: {
-                                display: false,
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    title: function (context) {
-                                        const index = context[0].dataIndex
+ new Chart(canvas, {
+ type: 'bar',
+ data: {
+ labels: labels.map(truncateLabel),
+ datasets: [
+ {
+ label: payload.label || 'Usage',
+ data: values,
+ borderWidth: 0,
+ borderRadius: 6,
+ barThickness: 8,
+ maxBarThickness: 10,
+ },
+ ],
+ },
+ options: {
+ indexAxis: 'y',
+ responsive: true,
+ maintainAspectRatio: false,
+ animation: false,
+ layout: {
+ padding: {
+ left: 0,
+ right: 8,
+ top: 4,
+ bottom: 0,
+ },
+ },
+ plugins: {
+ legend: {
+ display: false,
+ },
+ tooltip: {
+ callbacks: {
+ title: function (context) {
+ const index = context[0].dataIndex
 
-                                        return labels[index] || ''
-                                    },
-                                    label: function (context) {
-                                        return `${context.parsed.x}`
-                                    },
-                                },
-                            },
-                        },
-                        scales: {
-                            x: {
-                                beginAtZero: true,
-                                grid: {
-                                    color: 'rgba(148, 163, 184, 0.18)',
-                                },
-                                ticks: {
-                                    font: {
-                                        size: 10,
-                                    },
-                                },
-                            },
-                            y: {
-                                grid: {
-                                    display: false,
-                                },
-                                ticks: {
-                                    font: {
-                                        size: 10,
-                                    },
-                                },
-                            },
-                        },
-                    },
-                })
-            }
+ return labels[index] || ''
+ },
+ label: function (context) {
+ return `${context.parsed.x}`
+ },
+ },
+ },
+ },
+ scales: {
+ x: {
+ beginAtZero: true,
+ grid: {
+ color: 'rgba(148, 163, 184, 0.18)',
+ },
+ ticks: {
+ font: {
+ size: 10,
+ },
+ },
+ },
+ y: {
+ grid: {
+ display: false,
+ },
+ ticks: {
+ font: {
+ size: 10,
+ },
+ },
+ },
+ },
+ },
+ })
+ }
 
-            function hydrateTopConsumersUi() {
-                if (typeof Chart === 'undefined') {
-                    window.setTimeout(hydrateTopConsumersUi, 100)
+ function hydrateTopConsumersUi() {
+ if (typeof Chart === 'undefined') {
+ window.setTimeout(hydrateTopConsumersUi, 100)
 
-                    return
-                }
+ return
+ }
 
-                const cpuPayload = getJsonPayload('top-consumers-cpu-chart-data')
-                const memoryPayload = getJsonPayload('top-consumers-memory-chart-data')
+ const cpuPayload = getJsonPayload('top-consumers-cpu-chart-data')
+ const memoryPayload = getJsonPayload('top-consumers-memory-chart-data')
 
-                renderHorizontalBarChart('top-consumers-cpu-chart', cpuPayload)
-                renderHorizontalBarChart('top-consumers-memory-chart', memoryPayload)
+ renderHorizontalBarChart('top-consumers-cpu-chart', cpuPayload)
+ renderHorizontalBarChart('top-consumers-memory-chart', memoryPayload)
 
-                if (window.lucide) {
-                    window.lucide.createIcons()
-                }
-            }
+ if (window.lucide) {
+ window.lucide.createIcons()
+ }
+ }
 
-            document.addEventListener('DOMContentLoaded', hydrateTopConsumersUi)
+ document.addEventListener('DOMContentLoaded', hydrateTopConsumersUi)
 
-            document.body.addEventListener('htmx:afterSwap', function () {
-                hydrateTopConsumersUi()
-            })
+ document.body.addEventListener('htmx:afterSwap', function () {
+ hydrateTopConsumersUi()
+ })
 
-            document.body.addEventListener('htmx:afterSettle', function () {
-                hydrateTopConsumersUi()
-            })
-        })()
-    </script>
+ document.body.addEventListener('htmx:afterSettle', function () {
+ hydrateTopConsumersUi()
+ })
+ })()
+ </script>
 {% endblock scripts %}

@@ -3,224 +3,224 @@
 {% set alert_contact = alert.contact|default('') or alert.labels.get('contact') or alert.labels.get('pagerduty') or alert.labels.get('slack') or alert.annotations.get('contact') or alert.annotations.get('pagerduty') or alert.annotations.get('slack') %}
 {% set started_display = alert.starts_at_display if alert.starts_at_display is defined else alert.starts_at %}
 {% set ends_display = alert.ends_at_display if alert.ends_at_display is defined else alert.ends_at %}
-<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-    <td class="px-6 py-4 align-middle">
-        <div class="flex min-w-0 items-center gap-3">
-            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-300">
-                <i data-lucide="bell-ring" class="h-4 w-4"></i>
-            </div>
-            <div class="min-w-0">
-                <div class="truncate text-sm font-semibold leading-5 text-slate-900 dark:text-white"
-                     title="{{ alert.name }}">{{ alert.name }}</div>
-                <div class="mt-1 max-w-[360px] truncate text-sm leading-5 text-slate-500 dark:text-slate-400"
-                     title="{{ alert.summary }}">{{ alert.summary }}</div>
-            </div>
-        </div>
-    </td>
-    <td class="px-4 py-4 align-middle">
-        {% if alert.severity == 'critical' %}
-            <span class="inline-flex items-center gap-1.5 rounded-md bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-700 dark:bg-red-500/10 dark:text-red-300">
-                <i data-lucide="circle-alert" class="h-3.5 w-3.5"></i>Critical
-            </span>
-        {% elif alert.severity == 'warning' %}
-            <span class="inline-flex items-center gap-1.5 rounded-md bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
-                <i data-lucide="alert-triangle" class="h-3.5 w-3.5"></i>Warning
-            </span>
-        {% elif alert.severity == 'info' %}
-            <span class="inline-flex items-center gap-1.5 rounded-md bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-500/10 dark:text-blue-300">
-                <i data-lucide="info" class="h-3.5 w-3.5"></i>Info
-            </span>
-        {% else %}
-            <span class="inline-flex items-center gap-1.5 rounded-md bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
-                <i data-lucide="minus-circle" class="h-3.5 w-3.5"></i>None
-            </span>
-        {% endif %}
-    </td>
-    <td class="px-4 py-4 align-middle">
-        <span class="inline-flex items-center rounded-md bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-            {{ alert.status | title }}
-        </span>
-    </td>
-    <td class="px-4 py-4 align-middle">
-        <span class="inline-flex max-w-[260px] items-center gap-1.5 truncate rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-500/10 dark:text-blue-300"
-              title="{{ alert.namespace }}">
-            <i data-lucide="box" class="h-3.5 w-3.5"></i>
-            {{ alert.namespace }}
-        </span>
-    </td>
-    <td class="px-4 py-4 align-middle">
-        <span class="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-500/10 dark:text-blue-300">{{ alert.source }}</span>
-    </td>
-    <td class="px-4 py-4 align-middle">
-        <div class="whitespace-nowrap text-sm text-slate-500 dark:text-slate-400"
-             title="{{ alert.starts_at }}">{{ started_display }}</div>
-    </td>
-    <td class="px-6 py-4 text-left align-middle">
-        <button type="button"
-                @click="openAlert = openAlert === '{{ row_key }}' ? null : '{{ row_key }}'"
-                class="inline-flex min-w-[116px] items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-blue-800 dark:hover:bg-blue-950/30 dark:hover:text-blue-300">
-            <i data-lucide="chevron-down"
-               class="h-3.5 w-3.5 transition"
-               :class="{ 'rotate-180': openAlert === '{{ row_key }}' }"></i>
-            <span x-text="openAlert === '{{ row_key }}' ? 'Hide Details' : 'View More'">View More</span>
-        </button>
-    </td>
+<tr class="hover:bg-surface-subtle dark:hover:bg-surface-hover/50">
+ <td class="px-6 py-4 align-middle">
+ <div class="flex min-w-0 items-center gap-3">
+ <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-300">
+ <i data-lucide="bell-ring" class="h-4 w-4"></i>
+ </div>
+ <div class="min-w-0">
+ <div class="truncate text-sm font-semibold leading-5 text-content-primary "
+ title="{{ alert.name }}">{{ alert.name }}</div>
+ <div class="mt-1 max-w-[360px] truncate text-sm leading-5 text-content-muted "
+ title="{{ alert.summary }}">{{ alert.summary }}</div>
+ </div>
+ </div>
+ </td>
+ <td class="px-4 py-4 align-middle">
+ {% if alert.severity == 'critical' %}
+ <span class="inline-flex items-center gap-1.5 rounded-md bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-700 dark:bg-red-500/10 dark:text-red-300">
+ <i data-lucide="circle-alert" class="h-3.5 w-3.5"></i>Critical
+ </span>
+ {% elif alert.severity == 'warning' %}
+ <span class="inline-flex items-center gap-1.5 rounded-md bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
+ <i data-lucide="alert-triangle" class="h-3.5 w-3.5"></i>Warning
+ </span>
+ {% elif alert.severity == 'info' %}
+ <span class="inline-flex items-center gap-1.5 rounded-md bg-kaori-soft px-2.5 py-1 text-xs font-semibold text-kaori-primary bg-kaori-soft ">
+ <i data-lucide="info" class="h-3.5 w-3.5"></i>Info
+ </span>
+ {% else %}
+ <span class="inline-flex items-center gap-1.5 rounded-md bg-surface-hover px-2.5 py-1 text-xs font-semibold text-content-secondary bg-kaori-primary-dark ">
+ <i data-lucide="minus-circle" class="h-3.5 w-3.5"></i>None
+ </span>
+ {% endif %}
+ </td>
+ <td class="px-4 py-4 align-middle">
+ <span class="inline-flex items-center rounded-md bg-surface-hover px-2.5 py-1 text-xs font-semibold text-content-secondary ">
+ {{ alert.status | title }}
+ </span>
+ </td>
+ <td class="px-4 py-4 align-middle">
+ <span class="inline-flex max-w-[260px] items-center gap-1.5 truncate rounded-md bg-kaori-soft px-2.5 py-1 text-xs font-semibold text-kaori-primary bg-kaori-soft "
+ title="{{ alert.namespace }}">
+ <i data-lucide="box" class="h-3.5 w-3.5"></i>
+ {{ alert.namespace }}
+ </span>
+ </td>
+ <td class="px-4 py-4 align-middle">
+ <span class="inline-flex items-center rounded-md bg-kaori-soft px-2.5 py-1 text-xs font-semibold text-kaori-primary bg-kaori-soft ">{{ alert.source }}</span>
+ </td>
+ <td class="px-4 py-4 align-middle">
+ <div class="whitespace-nowrap text-sm text-content-muted "
+ title="{{ alert.starts_at }}">{{ started_display }}</div>
+ </td>
+ <td class="px-6 py-4 text-left align-middle">
+ <button type="button"
+ @click="openAlert = openAlert === '{{ row_key }}' ? null : '{{ row_key }}'"
+ class="inline-flex min-w-[116px] items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-outline-default bg-surface-card px-3 py-1.5 text-xs font-semibold text-content-secondary shadow-sm transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary dark:hover:border-brand-outline hover:bg-kaori-soft dark:hover:text-kaori-primary">
+ <i data-lucide="chevron-down"
+ class="h-3.5 w-3.5 transition"
+ :class="{ 'rotate-180': openAlert === '{{ row_key }}' }"></i>
+ <span x-text="openAlert === '{{ row_key }}' ? 'Hide Details' : 'View More'">View More</span>
+ </button>
+ </td>
 </tr>
 <tr x-show="openAlert === '{{ row_key }}'"
-    x-cloak
-    class="bg-slate-50 dark:bg-slate-800/40">
-    <td colspan="7" class="px-6 py-4">
-        <div class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm ring-1 ring-slate-100/70 dark:border-slate-700 dark:bg-slate-900 dark:ring-slate-800/70">
-            <div class="border-b border-slate-200 bg-gradient-to-r from-white via-blue-50/70 to-cyan-50/50 px-5 py-4 dark:border-slate-700 dark:from-slate-900 dark:via-blue-950/20 dark:to-slate-900">
-                <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                    <div class="flex min-w-0 items-start gap-3">
-                        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-sm shadow-blue-600/20">
-                            <i data-lucide="bell-ring" class="h-5 w-5"></i>
-                        </span>
-                        <div class="min-w-0">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <h3 class="break-words text-base font-semibold text-slate-900 dark:text-white">{{ alert.name }}</h3>
-                                <span class="rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-500/10 dark:text-blue-300">{{ alert.namespace }}</span>
-                                <span class="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-300">{{ alert.status|title }}</span>
-                            </div>
-                            <p class="mt-1 max-w-3xl text-sm leading-6 text-slate-600 dark:text-slate-300">{{ alert.description }}</p>
-                        </div>
-                    </div>
-                    <div class="flex flex-wrap gap-2 lg:justify-end">
-                        <span class="inline-flex items-center gap-1.5 rounded-md bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 ring-1 ring-red-100 dark:bg-red-500/10 dark:text-red-300 dark:ring-red-500/20">
-                            <i data-lucide="circle-alert" class="h-3.5 w-3.5"></i>
-                            {{ alert.severity|title }}
-                        </span>
-                        <span class="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20">
-                            <i data-lucide="database" class="h-3.5 w-3.5"></i>
-                            {{ alert.source }}
-                        </span>
-                    </div>
-                </div>
-            </div>
-            <div class="grid gap-4 p-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(360px,0.9fr)]">
-                <div class="space-y-4">
-                    <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                        {% set detail_cards = [
-                                                    ('Started', started_display, 'clock'),
-                                                    ('Target', alert.target, 'crosshair'),
-                                                    ('Owner', alert_owner or '-', 'users'),
-                                                    ('Contact', alert_contact or '-', 'radio-tower')
-                                                ] %}
-                        {% for label, value, icon in detail_cards %}
-                            <div class="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-700 dark:bg-slate-950/40">
-                                <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                                    <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
-                                    {{ label }}
-                                </div>
-                                <div class="mt-2 break-all text-sm font-semibold text-slate-900 dark:text-white">{{ value }}</div>
-                            </div>
-                        {% endfor %}
-                    </div>
-                    <div class="rounded-2xl border border-blue-100 bg-blue-50/70 p-4 dark:border-blue-500/20 dark:bg-blue-950/20">
-                        <div class="flex items-start gap-3">
-                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-blue-600 shadow-sm dark:bg-blue-500/10 dark:text-blue-300">
-                                <i data-lucide="list-checks" class="h-4 w-4"></i>
-                            </span>
-                            <div class="min-w-0">
-                                <h4 class="text-sm font-semibold text-slate-900 dark:text-white">Recommended investigation path</h4>
-                                <p class="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                                    Start from the affected namespace and workload, validate whether the alert is still firing, then compare labels and annotations with the expected owner, routing policy, and runbook coverage.
-                                </p>
-                                <div class="mt-3 grid gap-2 sm:grid-cols-3">
-                                    <div class="rounded-xl bg-white px-3 py-2 text-xs text-slate-600 shadow-sm dark:bg-slate-900 dark:text-slate-300">
-                                        <span class="font-semibold text-slate-900 dark:text-white">Scope:</span> {{ alert.namespace }}
-                                    </div>
-                                    <div class="rounded-xl bg-white px-3 py-2 text-xs text-slate-600 shadow-sm dark:bg-slate-900 dark:text-slate-300">
-                                        <span class="font-semibold text-slate-900 dark:text-white">Owner:</span> {{ alert_owner or 'unassigned' }}
-                                    </div>
-                                    <div class="rounded-xl bg-white px-3 py-2 text-xs text-slate-600 shadow-sm dark:bg-slate-900 dark:text-slate-300">
-                                        <span class="font-semibold text-slate-900 dark:text-white">Runbook:</span> {{ 'available' if runbook_url else 'missing' }}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="flex flex-wrap gap-2">
-                        {% if alert.generator_url %}
-                            <a href="{{ alert.generator_url }}"
-                               target="_blank"
-                               rel="noopener noreferrer"
-                               class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-blue-700">
-                                <i data-lucide="external-link" class="h-3.5 w-3.5"></i>
-                                Open Generator URL
-                            </a>
-                        {% endif %}
-                        {% if runbook_url %}
-                            <a href="{{ runbook_url }}"
-                               target="_blank"
-                               rel="noopener noreferrer"
-                               class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-indigo-700">
-                                <i data-lucide="book-open" class="h-3.5 w-3.5"></i>
-                                Open Runbook
-                            </a>
-                        {% endif %}
-                        <a href="{{ url_for('analytics.workload', cluster_id=selected_cluster_id, namespace=alert.namespace if alert.namespace != '-' else '') }}"
-                           class="inline-flex items-center gap-2 rounded-xl bg-slate-700 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-800 dark:bg-slate-600 dark:hover:bg-slate-500">
-                            <i data-lucide="boxes" class="h-3.5 w-3.5"></i>
-                            Review Workload
-                        </a>
-                    </div>
-                </div>
-                <div class="grid gap-4">
-                    <div class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-950/40">
-                        <div class="flex items-center justify-between gap-3">
-                            <div class="flex items-center gap-2">
-                                <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                                    <i data-lucide="tags" class="h-4 w-4"></i>
-                                </span>
-                                <h4 class="text-sm font-semibold text-slate-900 dark:text-white">Labels</h4>
-                            </div>
-                            <span class="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">routing context</span>
-                        </div>
-                        <div class="mt-3 flex max-h-44 flex-wrap gap-1.5 overflow-auto pr-1">
-                            {% for key, value in alert.labels.items() %}
-                                <span class="rounded-lg bg-slate-100 px-2 py-1 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300">{{ key }}={{ value }}</span>
-                            {% else %}
-                                <span class="text-sm text-slate-500 dark:text-slate-400">No labels available.</span>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    <div class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-950/40">
-                        <div class="flex items-center justify-between gap-3">
-                            <div class="flex items-center gap-2">
-                                <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
-                                    <i data-lucide="message-square" class="h-4 w-4"></i>
-                                </span>
-                                <h4 class="text-sm font-semibold text-slate-900 dark:text-white">Annotations</h4>
-                            </div>
-                            <span class="rounded-full bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">operator notes</span>
-                        </div>
-                        <div class="mt-3 flex max-h-44 flex-wrap gap-1.5 overflow-auto pr-1">
-                            {% set annotation_count = namespace(found=0) %}
-                            {% for key, value in alert.annotations.items() %}
-                                {% if key not in ['description', 'runbook_url', 'runbook', 'runbookURL'] %}
-                                    {% set annotation_count.found = annotation_count.found + 1 %}
-                                    <span class="rounded-lg bg-blue-50 px-2 py-1 text-xs text-blue-700 dark:bg-blue-500/10 dark:text-blue-300">{{ key }}={{ value }}</span>
-                                {% endif %}
-                            {% endfor %}
-                            {% if annotation_count.found == 0 %}
-                                <span class="text-sm text-slate-500 dark:text-slate-400">No additional annotations available.</span>
-                            {% endif %}
-                        </div>
-                    </div>
-                    <div class="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-700 dark:bg-slate-950/40">
-                        <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                            <i data-lucide="fingerprint" class="h-3.5 w-3.5"></i>
-                            Technical identity
-                        </div>
-                        <div class="mt-3 grid gap-2 text-xs text-slate-600 dark:text-slate-300">
-                            <div><span class="font-semibold text-slate-900 dark:text-white">Fingerprint:</span> <span class="break-all">{{ alert.fingerprint or '-' }}</span></div>
-                            <div><span class="font-semibold text-slate-900 dark:text-white">Ends at:</span> {{ ends_display }}</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </td>
+ x-cloak
+ class="bg-surface-subtle /40">
+ <td colspan="7" class="px-6 py-4">
+ <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm ring-1 ring-outline-subtle ring-outline-default/70">
+ <div class="border-b border-outline-default bg-surface-subtle px-5 py-4 ">
+ <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+ <div class="flex min-w-0 items-start gap-3">
+ <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-kaori-primary text-white shadow-sm shadow-black/10">
+ <i data-lucide="bell-ring" class="h-5 w-5"></i>
+ </span>
+ <div class="min-w-0">
+ <div class="flex flex-wrap items-center gap-2">
+ <h3 class="break-words text-base font-semibold text-content-primary ">{{ alert.name }}</h3>
+ <span class="rounded-md bg-kaori-soft px-2.5 py-1 text-xs font-semibold text-kaori-primary bg-kaori-soft ">{{ alert.namespace }}</span>
+ <span class="rounded-md bg-surface-hover px-2.5 py-1 text-xs font-semibold text-content-secondary ">{{ alert.status|title }}</span>
+ </div>
+ <p class="mt-1 max-w-3xl text-sm leading-6 text-content-secondary ">{{ alert.description }}</p>
+ </div>
+ </div>
+ <div class="flex flex-wrap gap-2 lg:justify-end">
+ <span class="inline-flex items-center gap-1.5 rounded-md bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 ring-1 ring-red-100 dark:bg-red-500/10 dark:text-red-300 dark:ring-red-500/20">
+ <i data-lucide="circle-alert" class="h-3.5 w-3.5"></i>
+ {{ alert.severity|title }}
+ </span>
+ <span class="inline-flex items-center gap-1.5 rounded-md bg-kaori-soft px-3 py-1.5 text-xs font-semibold text-kaori-primary ring-1 ring-brand-outline bg-kaori-soft ring-brand-outline">
+ <i data-lucide="database" class="h-3.5 w-3.5"></i>
+ {{ alert.source }}
+ </span>
+ </div>
+ </div>
+ </div>
+ <div class="grid gap-4 p-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(360px,0.9fr)]">
+ <div class="space-y-4">
+ <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+ {% set detail_cards = [
+ ('Started', started_display, 'clock'),
+ ('Target', alert.target, 'crosshair'),
+ ('Owner', alert_owner or '-', 'users'),
+ ('Contact', alert_contact or '-', 'radio-tower')
+ ] %}
+ {% for label, value, icon in detail_cards %}
+ <div class="rounded-xl border border-outline-default bg-surface-subtle p-4 ">
+ <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-content-muted ">
+ <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
+ {{ label }}
+ </div>
+ <div class="mt-2 break-all text-sm font-semibold text-content-primary ">{{ value }}</div>
+ </div>
+ {% endfor %}
+ </div>
+ <div class="rounded-xl border border-brand-outline bg-kaori-soft p-4 border-brand-outline bg-kaori-soft">
+ <div class="flex items-start gap-3">
+ <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface-card text-kaori-primary shadow-sm bg-kaori-soft ">
+ <i data-lucide="list-checks" class="h-4 w-4"></i>
+ </span>
+ <div class="min-w-0">
+ <h4 class="text-sm font-semibold text-content-primary ">Recommended investigation path</h4>
+ <p class="mt-1 text-sm leading-6 text-content-secondary ">
+ Start from the affected namespace and workload, validate whether the alert is still firing, then compare labels and annotations with the expected owner, routing policy, and runbook coverage.
+ </p>
+ <div class="mt-3 grid gap-2 sm:grid-cols-3">
+ <div class="rounded-xl bg-surface-card px-3 py-2 text-xs text-content-secondary shadow-sm ">
+ <span class="font-semibold text-content-primary ">Scope:</span> {{ alert.namespace }}
+ </div>
+ <div class="rounded-xl bg-surface-card px-3 py-2 text-xs text-content-secondary shadow-sm ">
+ <span class="font-semibold text-content-primary ">Owner:</span> {{ alert_owner or 'unassigned' }}
+ </div>
+ <div class="rounded-xl bg-surface-card px-3 py-2 text-xs text-content-secondary shadow-sm ">
+ <span class="font-semibold text-content-primary ">Runbook:</span> {{ 'available' if runbook_url else 'missing' }}
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ <div class="flex flex-wrap gap-2">
+ {% if alert.generator_url %}
+ <a href="{{ alert.generator_url }}"
+ target="_blank"
+ rel="noopener noreferrer"
+ class="inline-flex items-center gap-2 rounded-xl bg-kaori-primary px-3 py-2 text-xs font-semibold text-white transition hover:bg-kaori-primary-dark">
+ <i data-lucide="external-link" class="h-3.5 w-3.5"></i>
+ Open Generator URL
+ </a>
+ {% endif %}
+ {% if runbook_url %}
+ <a href="{{ runbook_url }}"
+ target="_blank"
+ rel="noopener noreferrer"
+ class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-indigo-700">
+ <i data-lucide="book-open" class="h-3.5 w-3.5"></i>
+ Open Runbook
+ </a>
+ {% endif %}
+ <a href="{{ url_for('analytics.workload', cluster_id=selected_cluster_id, namespace=alert.namespace if alert.namespace != '-' else '') }}"
+ class="inline-flex items-center gap-2 rounded-xl bg-kaori-primary-dark px-3 py-2 text-xs font-semibold text-white transition hover:bg-surface-hover bg-kaori-primary dark:hover:bg-surface-hover">
+ <i data-lucide="boxes" class="h-3.5 w-3.5"></i>
+ Review Workload
+ </a>
+ </div>
+ </div>
+ <div class="grid gap-4">
+ <div class="rounded-xl border border-outline-default bg-surface-card p-4 ">
+ <div class="flex items-center justify-between gap-3">
+ <div class="flex items-center gap-2">
+ <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-surface-hover text-content-secondary ">
+ <i data-lucide="tags" class="h-4 w-4"></i>
+ </span>
+ <h4 class="text-sm font-semibold text-content-primary ">Labels</h4>
+ </div>
+ <span class="rounded-md bg-surface-hover px-2 py-1 text-xs font-semibold text-content-muted ">routing context</span>
+ </div>
+ <div class="mt-3 flex max-h-44 flex-wrap gap-1.5 overflow-auto pr-1">
+ {% for key, value in alert.labels.items() %}
+ <span class="rounded-lg bg-surface-hover px-2 py-1 text-xs text-content-secondary ">{{ key }}={{ value }}</span>
+ {% else %}
+ <span class="text-sm text-content-muted ">No labels available.</span>
+ {% endfor %}
+ </div>
+ </div>
+ <div class="rounded-xl border border-outline-default bg-surface-card p-4 ">
+ <div class="flex items-center justify-between gap-3">
+ <div class="flex items-center gap-2">
+ <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft ">
+ <i data-lucide="message-square" class="h-4 w-4"></i>
+ </span>
+ <h4 class="text-sm font-semibold text-content-primary ">Annotations</h4>
+ </div>
+ <span class="rounded-md bg-kaori-soft px-2 py-1 text-xs font-semibold text-kaori-primary bg-kaori-soft ">operator notes</span>
+ </div>
+ <div class="mt-3 flex max-h-44 flex-wrap gap-1.5 overflow-auto pr-1">
+ {% set annotation_count = namespace(found=0) %}
+ {% for key, value in alert.annotations.items() %}
+ {% if key not in ['description', 'runbook_url', 'runbook', 'runbookURL'] %}
+ {% set annotation_count.found = annotation_count.found + 1 %}
+ <span class="rounded-lg bg-kaori-soft px-2 py-1 text-xs text-kaori-primary bg-kaori-soft ">{{ key }}={{ value }}</span>
+ {% endif %}
+ {% endfor %}
+ {% if annotation_count.found == 0 %}
+ <span class="text-sm text-content-muted ">No additional annotations available.</span>
+ {% endif %}
+ </div>
+ </div>
+ <div class="rounded-xl border border-outline-default bg-surface-subtle p-4 ">
+ <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-content-muted ">
+ <i data-lucide="fingerprint" class="h-3.5 w-3.5"></i>
+ Technical identity
+ </div>
+ <div class="mt-3 grid gap-2 text-xs text-content-secondary ">
+ <div><span class="font-semibold text-content-primary ">Fingerprint:</span> <span class="break-all">{{ alert.fingerprint or '-' }}</span></div>
+ <div><span class="font-semibold text-content-primary ">Ends at:</span> {{ ends_display }}</div>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ </td>
 </tr>
