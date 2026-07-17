@@ -55,7 +55,7 @@
                     </div>
                 </section>
 
-                <section class="h-full overflow-hidden rounded-xl border border-status-critical-border bg-surface-card shadow-sm xl:col-start-2 xl:row-start-1">
+                <section class="h-full overflow-hidden rounded-xl border border-kaori-primary/20 bg-surface-card shadow-sm xl:col-start-2 xl:row-start-1">
                     {{ configmap_ui.section_header('shield-alert', 'Deletion guardrails', 'Controls required before a ConfigMap can be removed.', 'critical') }}
                     <div class="grid gap-4 p-5">
                         {{ configmap_ui.guardrail('eye', 'Live object review', 'The selected target is read directly from Kubernetes.') }}
@@ -93,7 +93,7 @@
                     </section>
                 </aside>
 
-                <section class="flex flex-col gap-4 rounded-xl border border-status-critical-border bg-surface-card px-5 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:px-6 xl:col-start-1 xl:row-start-3">
+                <section class="flex flex-col gap-4 rounded-xl border border-kaori-primary/20 bg-surface-card px-5 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:px-6 xl:col-start-1 xl:row-start-3">
                     <div>
                         <p class="text-sm font-semibold text-content-primary">Review the deletion target before applying</p>
                         <p class="mt-1 text-xs leading-5 text-content-muted">Validation is non-destructive. The final delete action is irreversible from this workflow.</p>

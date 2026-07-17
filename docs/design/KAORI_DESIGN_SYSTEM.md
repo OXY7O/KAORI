@@ -586,3 +586,12 @@ ConfigMap and Secret operation selectors use one consistent live-source pattern:
 - Lookup failures use `components/live_lookup_notice.html` and render as one full-width row below every filter in the card.
 - A lookup notice must never occupy a filter column or use page-specific warning markup.
 - Cards with a bottom guidance footer use a flex-column layout so the footer remains flush with the bottom edge at every content height.
+
+
+## Kubernetes operation live selectors
+
+- Place the `Live` status label on the final live object field (`ConfigMap name`, `ConfigMap`, or `Secret`), not on a supporting Namespace field unless the workflow has no object-name field.
+- A dependent object field stays disabled until its required Namespace is selected and shows `Select namespace first` while disabled.
+- Live lookup failures render as one full-width notification below the complete filter row. The filter grid and notification must not share the same column slot.
+- Destructive workflow cards use violet structural borders. Critical red is reserved for the final destructive button, confirmation control, and real consequence messaging.
+- Informational TLS rotation surfaces use KAORI violet. Semantic warning colors are reserved for real certificate or mutation risk states.
