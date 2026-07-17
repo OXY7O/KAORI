@@ -73,6 +73,8 @@ def metadata_items(
     preferred_order = (
         'event_key',
         'preference',
+        'security_action',
+        'credential_owner',
         'timezone_mode',
         'timezone',
         'locale',
@@ -119,6 +121,8 @@ def metadata_items(
     label_overrides = {
         'event_key': 'Event key',
         'preference': 'Preference',
+        'security_action': 'Security action',
+        'credential_owner': 'Credential owner',
         'timezone_mode': 'Timezone source',
         'timezone': 'Timezone',
         'locale': 'Regional locale',

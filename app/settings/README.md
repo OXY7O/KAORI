@@ -44,3 +44,17 @@ The former standalone `/settings/time-locale` and `/settings/system-info` pages 
 3. Store long-lived per-user preferences on the centralized `User` model in `app/models/`.
 4. Add an Alembic migration and normalized validation helpers when persistence changes.
 5. Explain the preference scope and operational boundary in the right-side information panel.
+
+## Account & Authentication contract
+
+`/settings/account` is organized into `profile`, `activity`, and `credentials` tabs. Information panels in the Activity and Credential tabs use native `<details>` elements and remain closed by default so the workspace can grow without creating a permanently long page.
+
+Local Database password changes use HTMX and replace `#account-authentication-page` without a full-page reload. A successful password change:
+
+- creates a personal `account_security` notification for the authenticated user;
+- triggers `kaori:notifications-changed` so the top Notification Center refreshes immediately;
+- returns the shared KAORI Violet operational result toast through an out-of-band HTMX swap;
+- excludes current and new password values from notification and audit metadata;
+- keeps profile, role, lifecycle state, Super Admin tier, and external identity links unchanged.
+
+Normal POST and redirect remain available only as progressive-enhancement fallback when HTMX is unavailable.

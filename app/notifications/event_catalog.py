@@ -117,6 +117,17 @@ def build_event_context(
             source_label='Preference scope',
             source_detail='Authenticated user account',
         )
+    elif event_type == 'account_security':
+        security_action = _string_metadata(metadata, 'security_action')
+        context.update(
+            module_label='Account & Authentication',
+            target_type='Account Security',
+            target_name=(security_action or 'Security action').replace('_', ' ').title(),
+            event_icon='key-round',
+            event_tone='violet',
+            source_label='Credential owner',
+            source_detail=_string_metadata(metadata, 'credential_owner') or 'KAORI account',
+        )
     elif event_type.startswith('operational_activity_'):
         context.update(
             module_label='Activity Retention',

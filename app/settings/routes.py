@@ -204,6 +204,7 @@ def sync_browser_timezone():
 @login_required
 def account():
     user = cast(User, current_user._get_current_object())
+    is_htmx = bool(request.headers.get('HX-Request'))
     active_tab = (request.args.get('tab') or 'profile').strip().lower()
     if active_tab not in {'profile', 'activity', 'credentials'}:
         active_tab = 'profile'
@@ -211,7 +212,9 @@ def account():
     password_form = ChangePasswordForm()
     auth_source = getattr(user, 'auth_source', 'database') or 'database'
     can_change_password = auth_source == 'database'
-    password_feedback = None
+    password_feedback: dict[str, str] | None = None
+    password_toast: dict[str, Any] | None = None
+    notification_changed = False
 
     if password_form.is_submitted():
         active_tab = 'credentials'
@@ -238,27 +241,41 @@ def account():
             else:
                 user.set_password(new_password)
                 db.session.commit()
-                return redirect(
-                    url_for(
-                        'settings.account',
-                        tab='credentials',
-                        password_status='updated',
-                    )
+                password_toast = record_operational_activity(
+                    user_id=user.id,
+                    event_type='account_security',
+                    status='success',
+                    title='Account password updated',
+                    message='Your KAORI Local Database password was changed successfully.',
+                    detail='Use the new password on your next sign-in. The password value was not stored in notification or audit metadata.',
+                    action_url=url_for('settings.account', tab='credentials'),
+                    action_label='Open Credential Management',
+                    action_icon='key-round',
+                    metadata={
+                        'security_action': 'password_change',
+                        'credential_owner': 'KAORI Local Database',
+                        'auth_source': auth_source,
+                        'result': 'success',
+                    },
+                    queue_feedback=not is_htmx,
                 )
+                notification_changed = True
+
+                if not is_htmx:
+                    return redirect(url_for('settings.account', tab='credentials'))
+
+                password_feedback = {
+                    'status': 'success',
+                    'title': 'Password updated successfully',
+                    'message': 'Your local database account password has been changed. Use the new password on your next sign-in.',
+                }
+                password_form = ChangePasswordForm()
         else:
             password_feedback = {
                 'status': 'danger',
                 'title': 'Password update failed',
                 'message': 'Review the password requirements and highlighted fields before trying again.',
             }
-
-    if request.args.get('password_status') == 'updated':
-        active_tab = 'credentials'
-        password_feedback = {
-            'status': 'success',
-            'title': 'Password updated successfully',
-            'message': 'Your local database account password has been changed. Use the new password on your next sign-in.',
-        }
 
     identity_context = build_user_identity_context(user)
 
@@ -288,17 +305,27 @@ def account():
         else:
             activity_summary['failed'] += 1
 
-    return render_template(
-        'settings/account/index.html',
-        active_tab=active_tab,
-        password_form=password_form,
-        can_change_password=can_change_password,
-        password_feedback=password_feedback,
-        identity_context=identity_context,
-        recent_login_events=recent_login_events,
-        activity_summary=activity_summary,
-        page_title='Account & Authentication',
-    )
+    context: dict[str, Any] = {
+        'active_tab': active_tab,
+        'password_form': password_form,
+        'can_change_password': can_change_password,
+        'password_feedback': password_feedback,
+        'password_toast': password_toast,
+        'identity_context': identity_context,
+        'recent_login_events': recent_login_events,
+        'activity_summary': activity_summary,
+        'page_title': 'Account & Authentication',
+    }
+    template_name = 'settings/account/partials/_page_content.html' if is_htmx else 'settings/account/index.html'
+    response = make_response(render_template(template_name, **context))
+    if notification_changed:
+        response.headers['HX-Trigger'] = json.dumps(
+            {
+                'kaori:notifications-changed': True,
+                'kaori:account-password-updated': True,
+            }
+        )
+    return response
 
 
 @bp.route('/roles')
