@@ -120,3 +120,7 @@ LDAP authentication is now an active adapter for administratively projected user
 OIDC configuration fields are reserved but OIDC cannot yet be enabled. JIT provisioning is blocked until RBAC role mapping is implemented.
 
 See `docs/authentication/EXTERNAL_IDENTITY_FLOW.md`.
+
+## Google and GitHub SSO
+
+Browser SSO adapters are implemented in `app/auth/providers/oauth.py`, while projection and admission policy remain in `app/auth/sso.py`. Google uses OIDC and GitHub uses OAuth App semantics. See `docs/authentication/GOOGLE_GITHUB_SSO.md`.

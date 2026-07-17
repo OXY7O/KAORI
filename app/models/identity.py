@@ -11,6 +11,13 @@ def utc_now() -> datetime:
     return datetime.now(UTC)
 
 
+def _split_policy_values(value: str | None) -> list[str]:
+    if not value:
+        return []
+    normalized = value.replace('\n', ',')
+    return [item.strip().lower() for item in normalized.split(',') if item.strip()]
+
+
 class IdentityProvider(db.Model):
     __tablename__ = 'identity_providers'
     __table_args__ = (
@@ -42,6 +49,11 @@ class IdentityProvider(db.Model):
     oidc_issuer: Mapped[str | None] = mapped_column(db.String(500), nullable=True)
     oidc_client_id: Mapped[str | None] = mapped_column(db.String(255), nullable=True)
     oidc_client_secret_env: Mapped[str | None] = mapped_column(db.String(150), nullable=True)
+    default_role_id: Mapped[int | None] = mapped_column(
+        db.ForeignKey('roles.id', ondelete='SET NULL'), nullable=True, index=True
+    )
+    allowed_domains: Mapped[str | None] = mapped_column(db.Text, nullable=True)
+    allowed_subjects: Mapped[str | None] = mapped_column(db.Text, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True), default=utc_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
@@ -49,6 +61,7 @@ class IdentityProvider(db.Model):
     )
 
     identity_links = relationship('ExternalIdentityLink', back_populates='provider', lazy='dynamic')
+    default_role = relationship('Role', lazy='joined')
 
     @property
     def is_ldap(self) -> bool:
@@ -56,7 +69,19 @@ class IdentityProvider(db.Model):
 
     @property
     def is_oidc(self) -> bool:
-        return self.provider_type == 'oidc'
+        return self.provider_type == 'google_oidc'
+
+    @property
+    def is_sso(self) -> bool:
+        return self.provider_type in {'google_oidc', 'github_oauth'}
+
+    @property
+    def allowed_domains_list(self) -> list[str]:
+        return _split_policy_values(self.allowed_domains)
+
+    @property
+    def allowed_subjects_list(self) -> list[str]:
+        return _split_policy_values(self.allowed_subjects)
 
 
 class ExternalIdentityLink(db.Model):

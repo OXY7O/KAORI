@@ -106,3 +106,7 @@ Canonical administration routes:
 ```
 
 OIDC fields are intentionally reserved but disabled. JIT provisioning remains blocked until the RBAC role-mapping phase.
+
+## SSO provider administration
+
+Google and GitHub provider configuration is managed by the Users domain, while browser authentication is owned by Authentication. Controlled SSO JIT requires a non-admin default role and provider-specific allow-list. Persistence remains centralized in `app/models/identity.py`.

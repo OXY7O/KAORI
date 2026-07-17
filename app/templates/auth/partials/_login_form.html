@@ -100,6 +100,27 @@
             {{ form.submit(class="inline-flex h-11 w-full cursor-pointer items-center justify-center rounded-xl bg-kaori-primary px-5 text-sm font-bold text-white shadow-md shadow-kaori-primary/20 transition hover:bg-kaori-primary-hover focus:outline-none focus:ring-2 focus:ring-outline-focus focus:ring-offset-2 focus:ring-offset-surface-card disabled:cursor-not-allowed disabled:opacity-60") }}
         </form>
 
+        {% if sso_providers %}
+        <div class="my-5 flex items-center gap-3" aria-hidden="true">
+            <span class="h-px flex-1 bg-outline-subtle"></span>
+            <span class="text-[11px] font-semibold uppercase tracking-[0.14em] text-content-disabled">Or continue with</span>
+            <span class="h-px flex-1 bg-outline-subtle"></span>
+        </div>
+        <div class="grid gap-2 sm:grid-cols-2">
+            {% for provider in sso_providers %}
+            <a href="{{ url_for('auth.sso_start', provider_key=provider.key) }}"
+               class="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-primary shadow-sm transition hover:border-kaori-accent hover:bg-surface-hover focus:outline-none focus:ring-2 focus:ring-outline-focus">
+                {% if provider.provider_type == 'google_oidc' %}
+                <span class="flex h-5 w-5 items-center justify-center rounded-full border border-outline-subtle bg-white text-[11px] font-extrabold text-content-primary">G</span>
+                {% else %}
+                <i data-lucide="github" class="h-4 w-4"></i>
+                {% endif %}
+                {{ provider.display_name }}
+            </a>
+            {% endfor %}
+        </div>
+        {% endif %}
+
         <div class="mt-4 flex items-center justify-center gap-2 text-xs text-content-muted">
             <i data-lucide="lock-keyhole" class="h-3.5 w-3.5 text-kaori-primary" aria-hidden="true"></i>
             Authentication Activity is Recorded for Audit

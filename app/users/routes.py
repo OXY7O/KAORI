@@ -7,13 +7,15 @@ from flask_login import current_user
 from sqlalchemy.exc import IntegrityError
 
 from app.extensions import db
-from app.models import IdentityProvider, User
+from app.models import IdentityProvider, Role, User
 from app.rbac.decorators import permission_required
 from app.rbac.service import seed_default_rbac
 from app.users.forms import (ExternalIdentityProvisionForm, ExternalIdentitySearchForm, IdentityProviderForm, ResetPasswordForm, UserForm)
 from app.users.notifications import user_management_feedback
 from app.users.external import assign_projection_role_choices, assign_provider_choices, provision_external_identity, IdentityProjectionError
 from app.users.providers import ExternalProviderError, ExternalIdentity, LdapDirectoryProvider
+from app.auth.providers.oauth import SsoProviderError, validate_sso_provider
+from app.auth.sso import SsoAdmissionError, validate_jit_configuration
 from app.users.service import (
     assign_user_form_choices,
     build_users_payload,
@@ -246,6 +248,7 @@ def providers():
 @permission_required('users.manage')
 def create_provider():
     form = IdentityProviderForm()
+    _assign_provider_role_choices(form)
     if form.validate_on_submit():
         provider = IdentityProvider()
         _apply_provider_form(provider, form)
@@ -269,6 +272,7 @@ def create_provider():
 def edit_provider(provider_id: int):
     provider = db.get_or_404(IdentityProvider, provider_id)
     form = IdentityProviderForm(obj=provider)
+    _assign_provider_role_choices(form)
     if form.validate_on_submit():
         _apply_provider_form(provider, form)
         try:
@@ -289,12 +293,15 @@ def edit_provider(provider_id: int):
 @permission_required('users.manage')
 def validate_provider(provider_id: int):
     provider = db.get_or_404(IdentityProvider, provider_id)
-    status, title, message = 'success', 'Provider validation passed', f'{provider.display_name} accepted an LDAP service connection.'
+    status, title = 'success', 'Provider validation passed'
     try:
-        if provider.provider_type != 'ldap':
-            raise ExternalProviderError('OIDC validation will be enabled with the OIDC implementation phase.')
-        LdapDirectoryProvider(provider).validate()
-    except ExternalProviderError as exc:
+        if provider.provider_type == 'ldap':
+            LdapDirectoryProvider(provider).validate()
+            message = f'{provider.display_name} accepted an LDAP service connection.'
+        else:
+            message = validate_sso_provider(provider)
+            validate_jit_configuration(provider)
+    except (ExternalProviderError, SsoProviderError, SsoAdmissionError) as exc:
         status, title, message = 'error', 'Provider validation failed', str(exc)
     user_management_feedback(
         actor=cast(User, current_user), event_type='identity_provider_validated', status=status,
@@ -319,9 +326,23 @@ def _apply_provider_form(provider: IdentityProvider, form: IdentityProviderForm)
     provider.email_attribute = (form.email_attribute.data or '').strip()
     provider.display_name_attribute = (form.display_name_attribute.data or '').strip()
     provider.stable_id_attribute = (form.stable_id_attribute.data or '').strip()
-    provider.oidc_issuer = (form.oidc_issuer.data or '').strip() or None
+    provider.oidc_issuer = 'https://accounts.google.com' if form.provider_type.data == 'google_oidc' else None
     provider.oidc_client_id = (form.oidc_client_id.data or '').strip() or None
     provider.oidc_client_secret_env = (form.oidc_client_secret_env.data or '').strip() or None
+    provider.default_role_id = form.default_role_id.data or None
+    provider.allowed_domains = (form.allowed_domains.data or '').strip() or None
+    provider.allowed_subjects = (form.allowed_subjects.data or '').strip() or None
+
+
+def _assign_provider_role_choices(form: IdentityProviderForm) -> None:
+    roles = (
+        Role.query
+        .filter_by(is_active=True)
+        .filter(Role.name != 'admin')
+        .order_by(Role.display_name.asc())
+        .all()
+    )
+    form.default_role_id.choices = [(0, 'Select role')] + [(role.id, role.display_name) for role in roles]
 
 
 @bp.route('/external-identities', methods=['GET', 'POST'])

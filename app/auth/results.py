@@ -13,6 +13,8 @@ AuthReason = Literal[
     'database_unavailable',
     'user_inactive',
     'provider_unavailable',
+    'identity_not_provisioned',
+    'state_mismatch',
 ]
 
 
