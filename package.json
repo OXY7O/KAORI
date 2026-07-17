@@ -1,4 +1,6 @@
 {
+    "name": "kaori",
+    "private": true,
     "scripts": {
         "watch-css": "tailwindcss -i ./frontend/styles.css -o ./app/static/css/output.css --watch",
         "build-css": "tailwindcss -i ./frontend/styles.css -o ./app/static/css/output.css --minify && node ./scripts/verify_css_build.mjs",

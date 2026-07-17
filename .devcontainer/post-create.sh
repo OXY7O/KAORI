@@ -1,12 +1,11 @@
-#!/bin/bash
-set -euo pipefail
+#!/usr/bin/env bash
+set -Eeuo pipefail
 
 cd /workspace/kaori
 
 git config --global --add safe.directory /workspace/kaori
 
-npm ci --no-audit --no-fund
-npm run build-css
+bash .devcontainer/ensure-frontend.sh --install-always
 
 python --version
 python -m pip --version
