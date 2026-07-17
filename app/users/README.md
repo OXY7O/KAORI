@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`app/settings/users` owns administrative lifecycle management for KAORI user records. It does not authenticate credentials and it does not define permissions. Authentication belongs to `app/auth`; authorization and role mapping belong to `app/rbac`.
+`app/users` owns administrative lifecycle management for KAORI user records. It does not authenticate credentials and it does not define permissions. Authentication belongs to `app/auth`; authorization and role mapping belong to `app/rbac`.
 
 ## Current scope
 
@@ -56,7 +56,7 @@ User Management must not call Flask `flash()`. Every create, update, activate, d
 
 ## Template structure
 
-`settings/users/index.html` is the page shell. Reusable sections live in `settings/users/partials/`. Forms remain dedicated templates because they are independent workflows. Templates contain presentation branching only; business rules remain in Python.
+`users/index.html` is the page shell. Reusable sections live in `users/partials/`. Forms remain dedicated templates because they are independent workflows. Templates contain presentation branching only; business rules remain in Python.
 
 ## External-provider extension boundary
 
@@ -65,3 +65,23 @@ LDAP/SSO implementation must add provider discovery and identity projection serv
 ## Known staged work
 
 Authentication event consolidation into Activity Audit Log is the target. The separate navigation entry is removed in this stage. The legacy `AuthLoginEvent` persistence remains temporarily until a migration can preserve historical records and archive semantics without data loss.
+
+## Persistence boundary
+
+All SQLAlchemy models remain centralized in `app/models/`. The User Management domain may import `User`, `Role`, audit, and future external-identity models from that package, but it must not define domain-local ORM models. This keeps migration discovery, model registration, and database ownership consistent across KAORI.
+
+Future persistence additions such as `ExternalIdentityLink`, provider configuration records, account lock state, or projection-sync metadata must therefore be added under `app/models/` and referenced by `app/users` services.
+
+## Blueprint and URL ownership
+
+User Management is registered as the standalone `users` blueprint with the canonical URL prefix `/users`.
+
+| Workflow | Endpoint | URL |
+|---|---|---|
+| Directory | `users.index` | `/users/` |
+| Create | `users.create` | `/users/new` |
+| Edit | `users.edit` | `/users/<id>/edit` |
+| Reset password | `users.reset_password` | `/users/<id>/reset-password` |
+| Activate/deactivate/restore/delete | `users.*` | `/users/<id>/<action>` |
+
+There are no Settings wrappers, endpoint aliases, compatibility imports, or redirect shims.

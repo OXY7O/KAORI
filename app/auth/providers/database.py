@@ -11,7 +11,6 @@ from app.auth.results import (
 )
 from app.models import User
 
-
 _DUMMY_PASSWORD_HASH = generate_password_hash('kaori-auth-timing-placeholder')
 
 

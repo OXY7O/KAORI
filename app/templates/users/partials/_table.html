@@ -73,7 +73,7 @@
                         <td class="px-6 py-4 align-top">
                             <div class="flex flex-wrap justify-start gap-2">
                                 {% if actions.get('can_edit') %}
-                                    <a href="{{ url_for('settings.edit_user', user_id=user.id) }}"
+                                    <a href="{{ url_for('users.edit', user_id=user.id) }}"
                                        class="inline-flex items-center gap-1.5 rounded-lg border border-outline-default px-2.5 py-1.5 text-xs font-bold text-content-secondary transition hover:bg-surface-subtle"><i data-lucide="pencil" class="h-3.5 w-3.5"></i>Edit</a>
                                 {% else %}
                                     <button type="button"
@@ -82,7 +82,7 @@
                                             class="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-outline-default px-2.5 py-1.5 text-xs font-bold text-content-muted opacity-60"><i data-lucide="pencil" class="h-3.5 w-3.5"></i>Edit</button>
                                 {% endif %}
                                 {% if actions.get('can_reset_password') %}
-                                    <a href="{{ url_for('settings.reset_user_password', user_id=user.id) }}"
+                                    <a href="{{ url_for('users.reset_password', user_id=user.id) }}"
                                        class="inline-flex items-center gap-1.5 rounded-lg border border-outline-default px-2.5 py-1.5 text-xs font-bold text-content-secondary transition hover:bg-surface-subtle"><i data-lucide="key-round" class="h-3.5 w-3.5"></i>Reset</a>
                                 {% elif user.auth_source == 'database' %}
                                     <button type="button"
@@ -93,8 +93,8 @@
                                 {% if user.deleted_at %}
                                     {% if actions.get('can_restore') %}
                                         <form method="post"
-                                              action="{{ url_for('settings.restore_deleted_user', user_id=user.id) }}"
-                                              hx-post="{{ url_for('settings.restore_deleted_user', user_id=user.id) }}"
+                                              action="{{ url_for('users.restore', user_id=user.id) }}"
+                                              hx-post="{{ url_for('users.restore', user_id=user.id) }}"
                                               hx-target="#users-page-content"
                                               hx-swap="outerHTML settle:150ms"
                                               hx-indicator="#users-refresh-indicator"
@@ -115,8 +115,8 @@
                                 {% elif user.is_active %}
                                     {% if actions.get('can_deactivate') %}
                                         <form method="post"
-                                              action="{{ url_for('settings.deactivate_user', user_id=user.id) }}"
-                                              hx-post="{{ url_for('settings.deactivate_user', user_id=user.id) }}"
+                                              action="{{ url_for('users.deactivate', user_id=user.id) }}"
+                                              hx-post="{{ url_for('users.deactivate', user_id=user.id) }}"
                                               hx-target="#users-page-content"
                                               hx-swap="outerHTML settle:150ms"
                                               hx-indicator="#users-refresh-indicator"
@@ -135,8 +135,8 @@
                                 {% else %}
                                     {% if actions.get('can_activate') %}
                                         <form method="post"
-                                              action="{{ url_for('settings.activate_user', user_id=user.id) }}"
-                                              hx-post="{{ url_for('settings.activate_user', user_id=user.id) }}"
+                                              action="{{ url_for('users.activate', user_id=user.id) }}"
+                                              hx-post="{{ url_for('users.activate', user_id=user.id) }}"
                                               hx-target="#users-page-content"
                                               hx-swap="outerHTML settle:150ms"
                                               hx-indicator="#users-refresh-indicator"
@@ -156,7 +156,7 @@
                                         <button type="button"
                                                 title="Delete user"
                                                 data-delete-user-button
-                                                data-delete-url="{{ url_for('settings.delete_user', user_id=user.id) }}"
+                                                data-delete-url="{{ url_for('users.delete', user_id=user.id) }}"
                                                 data-delete-name="{{ user.display_label }}"
                                                 data-delete-meta="{{ user.username }} · {{ user.email }} · {{ user.role_display_name }}"
                                                 class="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-2.5 py-1.5 text-xs font-bold text-red-700 transition hover:bg-red-50 dark:border-red-900/60 dark:text-red-300 dark:hover:bg-red-950/30">
@@ -191,9 +191,9 @@
     <div class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-hover px-5 py-3.5 text-xs sm:flex-row sm:items-center sm:justify-between">
         <form id="users-pagination-form"
               method="get"
-              action="{{ url_for('settings.users') }}"
+              action="{{ url_for('users.index') }}"
               class="flex flex-wrap items-center gap-3 text-content-secondary"
-              hx-get="{{ url_for('settings.users') }}"
+              hx-get="{{ url_for('users.index') }}"
               hx-trigger="change from:select[name='per_page']"
               hx-target="#users-page-content"
               hx-swap="outerHTML settle:150ms"
@@ -215,8 +215,8 @@
             </select>
         </form>
         <div class="flex items-center gap-2">
-            <a href="{{ url_for('settings.users', page=pagination.prev_page, per_page=filters.per_page, search=filters.search, status=filters.status, auth_source=filters.auth_source, role_id=filters.role_id or 'all') }}"
-               hx-get="{{ url_for('settings.users', page=pagination.prev_page, per_page=filters.per_page, search=filters.search, status=filters.status, auth_source=filters.auth_source, role_id=filters.role_id or 'all') }}"
+            <a href="{{ url_for('users.index', page=pagination.prev_page, per_page=filters.per_page, search=filters.search, status=filters.status, auth_source=filters.auth_source, role_id=filters.role_id or 'all') }}"
+               hx-get="{{ url_for('users.index', page=pagination.prev_page, per_page=filters.per_page, search=filters.search, status=filters.status, auth_source=filters.auth_source, role_id=filters.role_id or 'all') }}"
                hx-target="#users-page-content"
                hx-swap="outerHTML settle:150ms"
                hx-push-url="true"
@@ -226,8 +226,8 @@
                 Previous
             </a>
             <span class="inline-flex h-9 items-center rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-extrabold text-kaori-primary ">Page {{ pagination.page }} of {{ pagination.total_pages }}</span>
-            <a href="{{ url_for('settings.users', page=pagination.next_page, per_page=filters.per_page, search=filters.search, status=filters.status, auth_source=filters.auth_source, role_id=filters.role_id or 'all') }}"
-               hx-get="{{ url_for('settings.users', page=pagination.next_page, per_page=filters.per_page, search=filters.search, status=filters.status, auth_source=filters.auth_source, role_id=filters.role_id or 'all') }}"
+            <a href="{{ url_for('users.index', page=pagination.next_page, per_page=filters.per_page, search=filters.search, status=filters.status, auth_source=filters.auth_source, role_id=filters.role_id or 'all') }}"
+               hx-get="{{ url_for('users.index', page=pagination.next_page, per_page=filters.per_page, search=filters.search, status=filters.status, auth_source=filters.auth_source, role_id=filters.role_id or 'all') }}"
                hx-target="#users-page-content"
                hx-swap="outerHTML settle:150ms"
                hx-push-url="true"

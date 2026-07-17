@@ -10,7 +10,6 @@ from app.auth.services import DATABASE_UNAVAILABLE_MESSAGE, INVALID_LOGIN_MESSAG
 from app.auth.session import clear_authenticated_session, establish_authenticated_session
 from app.extensions import db, limiter
 
-
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
 

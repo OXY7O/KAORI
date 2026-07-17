@@ -19,13 +19,8 @@ def establish_authenticated_session(
     break-glass use without changing the normal-user login experience.
     """
 
-    allow_super_admin_remember = bool(
-        current_app.config.get('AUTH_ALLOW_SUPER_ADMIN_REMEMBER_ME', False)
-    )
-    remember = bool(
-        remember_requested
-        and (not user.is_super_admin or allow_super_admin_remember)
-    )
+    allow_super_admin_remember = bool(current_app.config.get('AUTH_ALLOW_SUPER_ADMIN_REMEMBER_ME', False))
+    remember = bool(remember_requested and (not user.is_super_admin or allow_super_admin_remember))
 
     session.clear()
     login_user(user, remember=remember, fresh=True)

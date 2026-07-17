@@ -26,7 +26,7 @@
                     {% endcall %}
                 </div>
                 <aside class="flex items-start justify-end xl:col-span-4">
-                    <a href="{{ url_for('settings.users') }}"
+                    <a href="{{ url_for('users.index') }}"
                        class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-white/70 bg-white px-4 text-sm font-semibold text-kaori-primary transition hover:bg-kaori-soft hover:text-kaori-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70">
                         <i data-lucide="arrow-left" class="h-4 w-4"></i>
                         Back to Users
@@ -147,7 +147,7 @@
                                         </div>
                                     </div>
                                     {% if reset_password_allowed %}
-                                        <a href="{{ url_for('settings.reset_user_password', user_id=user.id) }}"
+                                        <a href="{{ url_for('users.reset_password', user_id=user.id) }}"
                                            class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                                             <i data-lucide="key-round" class="h-4 w-4"></i>
                                             Reset Password
@@ -234,7 +234,7 @@
                 <footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-hover {{ 'px-4 py-3' if mode == 'create' else 'px-5 py-4' }} sm:flex-row sm:items-center sm:justify-between">
                     <p class="max-w-2xl text-xs leading-5 text-content-muted">Changes affect authentication ownership, account lifecycle, and RBAC authorization.</p>
                     <div class="flex justify-end gap-2">
-                        <a href="{{ url_for('settings.users') }}"
+                        <a href="{{ url_for('users.index') }}"
                            class="inline-flex h-10 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                             Cancel
                         </a>

@@ -41,7 +41,7 @@
                     </div>
                 </div>
                 <div class="flex flex-col gap-3 sm:flex-row lg:flex-col xl:flex-row">
-                    <a href="{{ url_for('settings.users') }}"
+                    <a href="{{ url_for('users.index') }}"
                        class="inline-flex items-center justify-center gap-2 rounded-2xl bg-surface-card/10 px-4 py-2.5 text-sm font-bold text-white ring-1 ring-white/25 transition hover:bg-surface-card/15">
                         <i data-lucide="users" class="h-4 w-4"></i>
                         Manage Users
@@ -388,7 +388,7 @@
                             </tbody>
                         </table>
                     </div>
-                    <a href="{{ url_for('settings.users') }}"
+                    <a href="{{ url_for('users.index') }}"
                        class="mt-4 inline-flex items-center gap-2 text-sm font-bold text-kaori-primary hover:text-kaori-primary dark:text-kaori-accent">
                         View user assignments <i data-lucide="arrow-right" class="h-4 w-4"></i>
                     </a>

@@ -43,7 +43,7 @@ def user_management_feedback(
         title=title,
         message=message,
         detail=detail,
-        action_url=url_for('settings.users'),
+        action_url=url_for('users.index'),
         action_label='Open User Management',
         action_icon='users-round',
         metadata=metadata,

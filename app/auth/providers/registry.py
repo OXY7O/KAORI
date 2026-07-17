@@ -26,18 +26,10 @@ class ProviderRegistry:
 
 def build_provider_registry() -> ProviderRegistry:
     raw_value = current_app.config.get('AUTH_ADDITIONAL_PROVIDERS', '')
-    requested = tuple(
-        provider.strip().lower()
-        for provider in str(raw_value or '').split(',')
-        if provider.strip()
-    )
+    requested = tuple(provider.strip().lower() for provider in str(raw_value or '').split(',') if provider.strip())
 
-    unsupported = tuple(
-        provider for provider in requested if provider not in SUPPORTED_ADDITIONAL_PROVIDERS
-    )
-    configured = tuple(
-        provider for provider in requested if provider in SUPPORTED_ADDITIONAL_PROVIDERS
-    )
+    unsupported = tuple(provider for provider in requested if provider not in SUPPORTED_ADDITIONAL_PROVIDERS)
+    configured = tuple(provider for provider in requested if provider in SUPPORTED_ADDITIONAL_PROVIDERS)
 
     return ProviderRegistry(
         local=DatabaseAuthProvider(),

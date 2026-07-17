@@ -25,9 +25,6 @@ bp = Blueprint(
     url_prefix='/settings',
 )
 
-from app.settings.users.routes import register_user_routes
-
-register_user_routes(bp)
 
 @bp.route('/')
 @bp.route('/general')

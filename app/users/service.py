@@ -29,12 +29,12 @@ def normalize_user_filters(args: Mapping[str, str | None]) -> dict[str, Any]:
         page = 1
 
     try:
-        per_page = int(args.get('per_page') or 10)
+        per_page = int(args.get('per_page') or 5)
     except ValueError:
-        per_page = 10
+        per_page = 5
 
     if per_page not in [5, 10, 25, 50]:
-        per_page = 10
+        per_page = 5
 
     return {
         'search': (args.get('search') or '').strip(),

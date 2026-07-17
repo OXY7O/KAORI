@@ -1,15 +1,15 @@
 {% set access_management_active = request.endpoint in [
-    'settings.users',
-    'settings.new_user',
-    'settings.edit_user',
-    'settings.reset_user_password',
+    'users.index',
+    'users.create',
+    'users.edit',
+    'users.reset_password',
     'settings.roles',
     'settings.new_role',
     'settings.edit_role',
     'settings.permission_catalog',
     'notifications.activity_log'
 ] or (request.endpoint and (
-request.endpoint.startswith('settings.users')
+request.endpoint.startswith('users.')
 or request.endpoint.startswith('settings.roles')
 )) %}
 {% set can_access_management = current_user.is_authenticated and (
@@ -32,9 +32,9 @@ or request.endpoint.startswith('settings.roles')
         </summary>
         <div class="sidebar-expanded-only sidebar-submenu ml-6 mt-1 space-y-1 border-l border-white/10 pl-3">
             {% if current_user.has_permission('users.view') %}
-                <a href="{{ url_for('settings.users') }}"
-                   class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint and request.endpoint.startswith('settings.users') or request.endpoint in ['settings.new_user', 'settings.edit_user', 'settings.reset_user_password'] else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] leading-4 transition">
-                    <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint and request.endpoint.startswith('settings.users') or request.endpoint in ['settings.new_user', 'settings.edit_user', 'settings.reset_user_password'] else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span><i data-lucide="users-round" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">User Management</span>
+                <a href="{{ url_for('users.index') }}"
+                   class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint and request.endpoint.startswith('users.') or request.endpoint in ['users.create', 'users.edit', 'users.reset_password'] else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] leading-4 transition">
+                    <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint and request.endpoint.startswith('users.') or request.endpoint in ['users.create', 'users.edit', 'users.reset_password'] else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span><i data-lucide="users-round" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">User Management</span>
                 </a>
             {% endif %}
             {% if current_user.has_permission('roles.view') %}
