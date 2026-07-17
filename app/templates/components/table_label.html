@@ -1,13 +1,16 @@
-{% macro status_label(text, tone='info', icon=None) -%}
-    <span class="inline-flex min-h-6 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold leading-none
+{% macro status_label(text, tone='info', icon=None, shape='pill') -%}
+    {% set is_violet_label = shape == 'label' %}
+    <span class="inline-flex min-h-6 items-center border font-semibold
+        {% if is_violet_label %}gap-1 rounded-md px-2 py-0.5 text-[10px] leading-4
+        {% else %}gap-1.5 rounded-full px-2.5 py-1 text-[11px] leading-none{% endif %}
         {% if tone == 'normal' %}border-status-normal-border bg-status-normal-soft text-status-normal-text
         {% elif tone == 'warning' %}border-status-warning-border bg-status-warning-soft text-status-warning-text
         {% elif tone == 'critical' %}border-status-critical-border bg-status-critical-soft text-status-critical-text
         {% elif tone == 'unknown' %}border-status-unknown-border bg-status-unknown-soft text-status-unknown-text
         {% elif tone == 'disabled' %}border-status-disabled-border bg-status-disabled-soft text-status-disabled-text
         {% else %}border-status-info-border bg-status-info-soft text-status-info-text{% endif %}">
-        {% if icon %}<i data-lucide="{{ icon }}" class="h-3.5 w-3.5" aria-hidden="true"></i>{% endif %}
-        {{ text }}
+        {% if icon %}<i data-lucide="{{ icon }}" class="{{ 'h-3 w-3' if is_violet_label else 'h-3.5 w-3.5' }} shrink-0" aria-hidden="true"></i>{% endif %}
+        <span>{{ text }}</span>
     </span>
 {%- endmacro %}
 

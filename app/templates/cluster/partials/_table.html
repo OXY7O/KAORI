@@ -1,4 +1,7 @@
 {% from "components/table_label.html" import status_label, metadata_label %}
+{% macro cluster_status_label(text, tone='info', icon=None) -%}
+    {{ status_label(text, tone, icon, 'label') }}
+{%- endmacro %}
 <div id="cluster-table-container" class="overflow-hidden">
     <form id="cluster-filter-form"
           class="border-b border-outline-subtle px-5 py-4"
@@ -92,10 +95,10 @@
                                     {% if cluster.kube_allow_weak_tls or not cluster.kube_verify_ssl %}
                                         <div class="mt-2 flex flex-wrap items-center gap-1.5">
                                             {% if cluster.kube_allow_weak_tls %}
-                                                {{ status_label('Legacy TLS', 'warning', 'shield-alert') }}
+                                                {{ cluster_status_label('Legacy TLS', 'warning', 'shield-alert') }}
                                             {% endif %}
                                             {% if not cluster.kube_verify_ssl %}
-                                                {{ status_label('TLS verification off', 'warning', 'shield-off') }}
+                                                {{ cluster_status_label('TLS verification off', 'warning', 'shield-off') }}
                                             {% endif %}
                                         </div>
                                     {% endif %}
@@ -124,20 +127,20 @@
 
                         <td class="px-4 py-4 text-left">
                             {% if cluster_status == 'connected' %}
-                                {{ status_label('Connected', 'normal', 'circle-check') }}
+                                {{ cluster_status_label('Connected', 'normal', 'circle-check') }}
                             {% elif cluster_status == 'failed' %}
-                                {{ status_label('Failed', 'critical', 'circle-x') }}
+                                {{ cluster_status_label('Failed', 'critical', 'circle-x') }}
                             {% else %}
-                                {{ status_label('Unknown', 'unknown', 'circle-help') }}
+                                {{ cluster_status_label('Unknown', 'unknown', 'circle-help') }}
                             {% endif %}
                         </td>
 
                         <td class="px-4 py-4 text-left">
                             <div class="flex flex-col items-start gap-1.5">
                                 {% if inventory.synced_at %}
-                                    {{ status_label('Synced', 'normal', 'circle-check') }}
+                                    {{ cluster_status_label('Synced', 'normal', 'circle-check') }}
                                 {% else %}
-                                    {{ status_label('Not synced', 'unknown', 'clock-3') }}
+                                    {{ cluster_status_label('Not synced', 'unknown', 'clock-3') }}
                                 {% endif %}
                                 <span class="text-xs text-content-muted">{{ inventory.namespaces or 0 }} namespaces</span>
                             </div>
@@ -146,15 +149,15 @@
                         <td class="px-4 py-4 text-left">
                             <div class="flex flex-col items-start gap-1.5">
                                 {% if prometheus.configured %}
-                                    {{ status_label('Prometheus configured', 'normal', 'activity') }}
+                                    {{ cluster_status_label('Prometheus configured', 'normal', 'activity') }}
                                 {% else %}
-                                    {{ status_label('Prometheus not configured', 'disabled', 'activity') }}
+                                    {{ cluster_status_label('Prometheus not configured', 'disabled', 'activity') }}
                                 {% endif %}
 
                                 {% if alertmanager.configured %}
-                                    {{ status_label('Alertmanager ' ~ (alertmanager.label or 'configured'), 'normal', 'siren') }}
+                                    {{ cluster_status_label('Alertmanager ' ~ (alertmanager.label or 'configured'), 'normal', 'siren') }}
                                 {% else %}
-                                    {{ status_label('Alertmanager not configured', 'disabled', 'siren') }}
+                                    {{ cluster_status_label('Alertmanager not configured', 'disabled', 'siren') }}
                                 {% endif %}
                             </div>
                         </td>

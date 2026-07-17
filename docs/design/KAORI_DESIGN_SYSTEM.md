@@ -85,6 +85,15 @@ Aggregated status precedence:
 
 Do not treat missing data as healthy. Disabled, unknown, pending, and degraded are distinct states and must remain distinct in both copy and presentation.
 
+
+### Status label geometry
+
+- The current KAORI standard for operational status labels uses the same compact rectangular geometry as the violet metadata label: `rounded-md`, 24 px minimum height, compact horizontal padding, and a visible border.
+- Status labels must not use `rounded-full`. Full pill geometry is deprecated for status presentation and remains only as a temporary compatibility mode while existing pages are migrated.
+- Geometry stays consistent across normal, informational, warning, critical, unknown, disabled, maintenance, and pending states. Only the semantic border, soft background, text, copy, and icon change with the status.
+- Use the shared `components/table_label.html` macro with `shape='label'` for pages migrated to this standard. Do not recreate status-label classes inside page templates.
+- Kubernetes Cluster Management is the first reference implementation for the staged migration.
+
 ## Typography
 
 Use Inter through the global `font-sans` token.
@@ -96,7 +105,7 @@ Use Inter through the global `font-sans` token.
 - Body: 14 px
 - Supporting text: 12–13 px
 - Table content: 13–14 px
-- Badge: 11–12 px
+- Operational label: 10–11 px
 
 Hero hierarchy:
 
@@ -125,7 +134,8 @@ KAORI uses a restrained three-level radius scale for authenticated operational i
 - Compact controls, navigation rows, and icon surfaces: 8 px (`rounded-lg`)
 - Standard cards, topbar controls, brand cards, and dropdowns: 12 px (`rounded-xl`)
 - Sidebar frame, main application frame, hero, and large grouped surfaces: 16 px (`rounded-2xl`)
-- Pills, badges, avatars, status dots, and toggles: full radius only where the shape has semantic purpose
+- Status and metadata labels: compact rectangular geometry using `rounded-md`; do not use `rounded-full`
+- Avatars, status dots, toggles, and explicitly approved filter chips: full radius only where the shape has semantic purpose
 
 Avoid `rounded-3xl` and arbitrary radii above 16 px in the authenticated application shell. Larger promotional radii may be used only on isolated marketing or authentication compositions when explicitly approved. Do not nest multiple large rounded wrappers around the same content hierarchy.
 
