@@ -17,7 +17,7 @@
     </button>
     <div x-show="recentOpen" x-cloak>
         <div class="flex items-center justify-end border-t border-outline-default px-5 py-3">
-            <a href="{{ url_for('settings.login_activity') }}"
+            <a href="{{ url_for('notifications.activity_log', event_type='authentication') }}"
                class="inline-flex items-center gap-2 rounded-xl bg-kaori-soft px-3 py-2 text-xs font-bold text-kaori-primary transition hover:bg-kaori-soft dark:bg-kaori-soft/10 dark:text-kaori-accent dark:hover:bg-kaori-strong/20">
                 <i data-lucide="external-link" class="h-3.5 w-3.5"></i>
                 View all login activity

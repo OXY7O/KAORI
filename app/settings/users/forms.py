@@ -5,9 +5,9 @@ from wtforms import BooleanField, HiddenField, PasswordField, SelectField, Strin
 from wtforms.validators import DataRequired, EqualTo, Length, Optional
 
 AUTH_SOURCE_CHOICES = [
-    ('database', 'Database'),
-    ('ldap', 'LDAP'),
-    ('sso', 'SSO'),
+    ('database', 'Local Database'),
+    ('ldap', 'LDAP / Active Directory (planned)'),
+    ('sso', 'SSO / Identity Provider (planned)'),
 ]
 
 

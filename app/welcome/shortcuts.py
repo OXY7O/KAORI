@@ -165,7 +165,7 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         'title': 'Access Management',
         'label': 'Identity, access & audit',
         'description': (
-            'Manage users, roles, permissions, login activity, and operational '
+            'Manage users, roles, permissions, authentication events, and operational '
             'audit records according to assigned authority.'
         ),
         'icon': 'users-round',
@@ -174,7 +174,6 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         'targets': (
             ('users.view', 'settings.users'),
             ('roles.view', 'settings.roles'),
-            ('settings.view_login_activity', 'settings.login_activity'),
             ('settings.view_operational_activity', 'notifications.activity_log'),
         ),
     },
