@@ -485,7 +485,7 @@ def _apply_provider_form(provider: IdentityProvider, form: IdentityProviderForm)
 
 def _assign_provider_role_choices(form: IdentityProviderForm) -> None:
     roles = Role.query.filter_by(is_active=True).filter(Role.name != 'admin').order_by(Role.display_name.asc()).all()
-    form.default_role_id.choices = [(0, 'Select role')] + [(role.id, role.display_name) for role in roles]
+    form.default_role_id.choices = [('0', 'Select role')] + [(str(role.id), role.display_name) for role in roles]
 
 
 @bp.route('/external-identities', methods=['GET', 'POST'])
@@ -533,7 +533,28 @@ def provision_identity():
             message='The external identity request was incomplete.',
         )
         return redirect(url_for('users.external_identities'))
-    provider = db.session.get(IdentityProvider, int(form.provider_id.data))
+    provider_id_raw = (form.provider_id.data or '').strip()
+    role_id = form.role_id.data
+    subject = (form.subject.data or '').strip()
+    external_username = (form.external_username.data or '').strip()
+    distinguished_name = (form.distinguished_name.data or '').strip()
+    if (
+        not provider_id_raw.isdigit()
+        or role_id is None
+        or not subject
+        or not external_username
+        or not distinguished_name
+    ):
+        user_management_feedback(
+            actor=cast(User, current_user),
+            event_type='external_identity_provision_failed',
+            status='error',
+            title='Provisioning failed',
+            message='The external identity request was incomplete.',
+        )
+        return redirect(url_for('users.external_identities'))
+
+    provider = db.session.get(IdentityProvider, int(provider_id_raw))
     if provider is None or not provider.enabled or provider.provider_type != 'ldap':
         user_management_feedback(
             actor=cast(User, current_user),
@@ -544,17 +565,17 @@ def provision_identity():
         )
         return redirect(url_for('users.external_identities'))
     identity = ExternalIdentity(
-        subject=form.subject.data,
-        username=form.external_username.data,
-        email=form.email.data or None,
-        display_name=form.display_name.data or None,
-        distinguished_name=form.distinguished_name.data,
+        subject=subject,
+        username=external_username,
+        email=(form.email.data or '').strip() or None,
+        display_name=(form.display_name.data or '').strip() or None,
+        distinguished_name=distinguished_name,
     )
     try:
         user = provision_external_identity(
             provider=provider,
             identity=identity,
-            role_id=form.role_id.data,
+            role_id=role_id,
             is_active=bool(form.is_active.data),
         )
         record_admin_event(

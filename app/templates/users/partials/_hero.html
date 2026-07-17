@@ -8,9 +8,9 @@
                     Manage identity records, lifecycle state, authentication source, and role assignment from one controlled workspace.
                 </p>
                 <div class="mt-5 flex flex-wrap gap-2">
-                    {{ page_hero.meta_label('database', 'Local Database Ready') }}
-                    {{ page_hero.meta_label('shield-check', 'RBAC Enabled') }}
-                    {{ page_hero.meta_label('workflow', 'External Projection Planned') }}
+                    {{ page_hero.meta_label('database', 'Local Database') }}
+                    {{ page_hero.meta_label('building-2', 'LDAP Provisioning') }}
+                    {{ page_hero.meta_label('log-in', 'Google & GitHub SSO') }}
                 </div>
             {% endcall %}
         </div>
@@ -20,11 +20,11 @@
                 <div>
                     <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Administrative action</p>
                     <p class="mt-1 text-sm font-semibold text-brand-foreground">Provision a managed identity</p>
-                    <p class="mt-1 text-xs leading-5 text-brand-foreground-muted">Create local accounts directly or provision controlled LDAP identity projections from an enabled directory.</p>
+                    <p class="mt-1 text-xs leading-5 text-brand-foreground-muted">Create local accounts, provision directory identities, and govern Google or GitHub SSO projections through one provider-neutral access model.</p>
                 </div>
                 <div class="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
                 <a href="{{ url_for('users.create') }}"
-                   class="mt-4 inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-white/80 bg-white px-4 text-sm font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft hover:text-kaori-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80">
+                   class="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-white/80 bg-white px-4 text-sm font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft hover:text-kaori-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80">
                     <i data-lucide="user-plus" class="h-4 w-4"></i>
                     Add Local User
                 </a>

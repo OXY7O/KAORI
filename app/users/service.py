@@ -2,12 +2,15 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from datetime import UTC, datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import or_
+from sqlalchemy import and_, case, func, or_
 
 from app.extensions import db
 from app.models import AuditEvent, Role, User
+
+if TYPE_CHECKING:
+    from app.users.forms import UserForm
 
 USER_STATUS_OPTIONS = ['all', 'active', 'inactive', 'deleted']
 USER_AUTH_SOURCE_OPTIONS = ['all', 'database', 'ldap', 'sso']
@@ -89,18 +92,55 @@ def build_users_payload(filters: dict[str, Any], actor: User | None = None) -> d
     start_item = ((page - 1) * filters['per_page']) + 1 if total_items else 0
     end_item = min(page * filters['per_page'], total_items) if total_items else 0
 
-    active_users = User.query.filter(User.account_is_active.is_(True), User.deleted_at.is_(None)).count()
-    inactive_users = User.query.filter(User.account_is_active.is_(False), User.deleted_at.is_(None)).count()
-    external_users = User.query.filter(User.auth_source != 'database', User.deleted_at.is_(None)).count()
+    population = (
+        db.session.query(
+            func.count(User.id).label('total'),
+            func.sum(case((User.account_is_active.is_(True), 1), else_=0)).label('active'),
+            func.sum(case((User.account_is_active.is_(False), 1), else_=0)).label('inactive'),
+            func.sum(
+                case(
+                    (
+                        and_(
+                            User.is_super_admin.is_(True),
+                            User.account_is_active.is_(True),
+                        ),
+                        1,
+                    ),
+                    else_=0,
+                )
+            ).label('active_super_admins'),
+        )
+        .filter(User.deleted_at.is_(None))
+        .one()
+    )
+    source_count_rows = (
+        db.session.query(User.auth_source, func.count(User.id))
+        .filter(User.deleted_at.is_(None))
+        .group_by(User.auth_source)
+        .all()
+    )
+    source_counts: dict[str, int] = {
+        str(source): int(count or 0) for source, count in source_count_rows if source is not None
+    }
+    local_users = int(source_counts.get('database', 0))
+    ldap_users = int(source_counts.get('ldap', 0))
+    google_users = int(source_counts.get('google_oidc', 0))
+    github_users = int(source_counts.get('github_oauth', 0))
 
     return {
         'users': users,
         'roles': Role.query.filter_by(is_active=True).order_by(Role.display_name.asc()).all(),
         'summary': {
-            'total': User.query.filter(User.deleted_at.is_(None)).count(),
-            'active': active_users,
-            'inactive': inactive_users,
-            'external': external_users,
+            'total': int(population.total or 0),
+            'active': int(population.active or 0),
+            'inactive': int(population.inactive or 0),
+            'local': local_users,
+            'ldap': ldap_users,
+            'google': google_users,
+            'github': github_users,
+            'sso': google_users + github_users,
+            'external': ldap_users + google_users + github_users,
+            'active_super_admins': int(population.active_super_admins or 0),
         },
         'filters': {**filters, 'page': page},
         'pagination': {
@@ -122,13 +162,13 @@ def build_users_payload(filters: dict[str, Any], actor: User | None = None) -> d
     }
 
 
-def assign_user_form_choices(form: Any, *, include_admin_roles: bool = True) -> None:
+def assign_user_form_choices(form: UserForm, *, include_admin_roles: bool = True) -> None:
     query = Role.query.filter_by(is_active=True)
     if not include_admin_roles:
         query = query.filter(Role.name != 'admin')
 
     roles = query.order_by(Role.display_name.asc()).all()
-    form.role_id.choices = [(role.id, role.display_name) for role in roles]
+    form.role_id.choices = [(str(role.id), role.display_name) for role in roles]
 
 
 def build_user_identity_context(user: User) -> dict[str, Any]:
@@ -179,11 +219,14 @@ def build_user_identity_context(user: User) -> dict[str, Any]:
             'credential_detail': 'The external provider owns authentication; KAORI manages lifecycle and authorization.',
         },
     )
-    projection_type = identity_link.projection_type if identity_link is not None else None
-    projection_label = {
+    projection_type = str(identity_link.projection_type) if identity_link is not None else None
+    projection_labels = {
         'administrative': 'Administrative provisioning',
         'jit': 'Controlled JIT provisioning',
-    }.get(projection_type, 'Local account' if user.auth_source == 'database' else 'Linked external identity')
+    }
+    projection_label = (projection_labels.get(projection_type) if projection_type is not None else None) or (
+        'Local account' if user.auth_source == 'database' else 'Linked external identity'
+    )
 
     return {
         **presentation,
@@ -219,19 +262,25 @@ def find_active_user_identity_conflict(*, username: str, email: str, exclude_use
     return query.first()
 
 
-def create_or_update_user(form: Any, user: User | None = None) -> User:
+def create_or_update_user(form: UserForm, user: User | None = None) -> User:
     is_new = user is None
     if user is None:
         user = User()
 
-    user.username = form.username.data.strip()
-    user.email = form.email.data.strip().lower()
+    username = (form.username.data or '').strip()
+    email = (form.email.data or '').strip().lower()
+    role_id = form.role_id.data
+    if not username or not email or role_id is None:
+        raise ValueError('Validated user form is missing required identity or role data.')
+
+    user.username = username
+    user.email = email
     user.display_name = normalize_optional_text(form.display_name.data)
     if is_new:
-        user.auth_source = form.auth_source.data
+        user.auth_source = (form.auth_source.data or 'database').strip() or 'database'
         user.external_id = normalize_optional_text(form.external_id.data)
-    user.role_id = form.role_id.data
-    role = db.session.get(Role, form.role_id.data)
+    user.role_id = role_id
+    role = db.session.get(Role, role_id)
     if role:
         user.role = role.name
     user.account_is_active = bool(form.is_active.data)

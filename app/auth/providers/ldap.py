@@ -25,12 +25,17 @@ class LdapAuthProvider:
             )
             if link is None:
                 return AuthResult(False, 'invalid_credentials', source=self.source)
-            user = link.user
-            if not link.provider.enabled:
+            linked_user = link.user
+            if not isinstance(linked_user, User):
+                return AuthResult(False, 'invalid_credentials', source=self.source)
+            user = linked_user
+
+            provider = link.provider
+            if provider is None or not provider.enabled:
                 return AuthResult(False, 'invalid_credentials', source=self.source, user=user)
             if not user.is_active:
                 return AuthResult(False, 'user_inactive', source=self.source, user=user)
-            authenticated = LdapDirectoryProvider(link.provider).authenticate(link.distinguished_name or '', password)
+            authenticated = LdapDirectoryProvider(provider).authenticate(link.distinguished_name or '', password)
             if not authenticated:
                 return AuthResult(False, 'invalid_credentials', source=self.source, user=user)
             return AuthResult(True, 'success', source=self.source, user=user)

@@ -18,17 +18,15 @@ class SsoAdmissionError(RuntimeError):
 
 def enabled_sso_providers() -> list[IdentityProvider]:
     providers = (
-        IdentityProvider.query
-        .filter(IdentityProvider.enabled.is_(True))
+        IdentityProvider.query.filter(IdentityProvider.enabled.is_(True))
         .filter(IdentityProvider.provider_type.in_(('google_oidc', 'github_oauth')))
         .order_by(IdentityProvider.display_name.asc())
         .all()
     )
     return [
-        provider for provider in providers
-        if provider.oidc_client_id
-        and provider.oidc_client_secret_env
-        and os.getenv(provider.oidc_client_secret_env)
+        provider
+        for provider in providers
+        if provider.oidc_client_id and provider.oidc_client_secret_env and os.getenv(provider.oidc_client_secret_env)
     ]
 
 
@@ -92,30 +90,30 @@ def _jit_project(provider: IdentityProvider, identity: SsoIdentity) -> User:
     if existing_email is not None:
         raise SsoAdmissionError('A KAORI account already uses this external email address.')
 
-    user = User(
-        username=username,
-        email=email.lower(),
-        display_name=identity.display_name,
-        auth_source=provider.provider_type,
-        external_id=identity.subject,
-        role_id=role.id,
-        role=role.name,
-        account_is_active=True,
-        is_super_admin=False,
-        password_hash='',
-    )
+    user = User()
+    user.username = username
+    user.email = email.lower()
+    user.display_name = identity.display_name
+    user.auth_source = provider.provider_type
+    user.external_id = identity.subject
+    user.role_id = role.id
+    user.role = role.name
+    user.account_is_active = True
+    user.is_super_admin = False
+    user.password_hash = ''
     db.session.add(user)
     db.session.flush()
-    db.session.add(ExternalIdentityLink(
-        user_id=user.id,
-        provider_id=provider.id,
-        subject=identity.subject,
-        external_username=identity.username,
-        email=identity.email,
-        display_name=identity.display_name,
-        projection_type='jit',
-        last_synced_at=datetime.now(UTC),
-    ))
+
+    identity_link = ExternalIdentityLink()
+    identity_link.user_id = user.id
+    identity_link.provider_id = provider.id
+    identity_link.subject = identity.subject
+    identity_link.external_username = identity.username
+    identity_link.email = identity.email
+    identity_link.display_name = identity.display_name
+    identity_link.projection_type = 'jit'
+    identity_link.last_synced_at = datetime.now(UTC)
+    db.session.add(identity_link)
     db.session.flush()
     return user
 
@@ -154,5 +152,5 @@ def _unique_username(candidate: str, provider: IdentityProvider) -> str:
     counter = 1
     while User.query.filter(User.deleted_at.is_(None), User.username == username).first() is not None:
         counter += 1
-        username = f'{base[:88-len(str(counter))]}-{counter}'
+        username = f'{base[: 88 - len(str(counter))]}-{counter}'
     return username

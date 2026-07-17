@@ -1,5 +1,6 @@
 from datetime import UTC, datetime
 from secrets import compare_digest
+from typing import cast
 
 from flask import Blueprint, current_app, flash, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_required, logout_user
@@ -24,7 +25,7 @@ from app.auth.services import (
 from app.auth.session import clear_authenticated_session, establish_authenticated_session
 from app.auth.sso import enabled_sso_providers, resolve_sso_identity
 from app.extensions import db, limiter
-from app.models import IdentityProvider
+from app.models import IdentityProvider, User
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
@@ -196,7 +197,7 @@ def sso_callback(provider_key: str):
 @auth_bp.route('/logout', methods=['POST'])
 @login_required
 def logout():
-    user = current_user._get_current_object()
+    user = cast(User, current_user._get_current_object())
     source = str(session.get('auth_source') or user.last_auth_source or user.auth_source or 'database')
     record_authentication_activity(
         action='logout',
