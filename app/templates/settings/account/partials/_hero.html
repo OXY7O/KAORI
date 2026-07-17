@@ -1,13 +1,29 @@
 {% import "components/page_hero.html" as page_hero %}
+{% if active_tab == 'activity' %}
+    {% set section_eyebrow = 'Authentication History' %}
+    {% set section_icon = 'activity' %}
+    {% set section_summary = 'Review recent sign-in, failed sign-in, and sign-out events recorded in the unified Activity Audit Log.' %}
+    {% set section_boundary = 'Authentication events preserve provider, result, IP address, device context, and failure reason without storing passwords, OAuth secrets, or provider tokens.' %}
+{% elif active_tab == 'credentials' %}
+    {% set section_eyebrow = 'Credential Ownership' %}
+    {% set section_icon = 'key-round' %}
+    {% set section_summary = 'Manage the credential owned by KAORI or follow the recovery path of the authoritative external identity provider.' %}
+    {% set section_boundary = identity_context.credential_detail ~ ' Role, lifecycle state, Super Admin tier, and external identity links remain separate from credential changes.' %}
+{% else %}
+    {% set section_eyebrow = 'Identity & Access' %}
+    {% set section_icon = 'id-card' %}
+    {% set section_summary = 'Review your KAORI profile, authoritative identity source, authorization role, lifecycle state, and most recent verified sign-in.' %}
+    {% set section_boundary = 'The provider verifies identity while KAORI applies account lifecycle, RBAC authorization, administrative safeguards, and personal presentation settings.' %}
+{% endif %}
 <section class="relative overflow-hidden rounded-2xl border border-brand-outline bg-kaori-primary p-5 text-brand-foreground shadow-sm lg:p-6">
     <div class="relative grid gap-5 xl:grid-cols-12 xl:items-stretch">
         <div class="flex min-w-0 flex-col justify-center xl:col-span-8">
-            {% call page_hero.intro('shield-check', 'Personal Access', 'user-round-cog') %}
+            {% call page_hero.intro(section_icon, section_eyebrow, 'user-round-cog') %}
                 <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">
                     Account & Authentication
                 </h1>
                 <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">
-                    Review your KAORI identity, authoritative authentication provider, local access controls, credential ownership, and recent authentication activity.
+                    {{ section_summary }}
                 </p>
                 <div class="mt-5 flex flex-wrap gap-2">
                     {{ page_hero.meta_label(identity_context.icon, identity_context.provider_name) }}
@@ -21,23 +37,18 @@
         <aside class="xl:col-span-4">
             <div class="flex h-full flex-col justify-between rounded-xl border border-brand-outline bg-brand-surface p-4 backdrop-blur">
                 <div>
-                    <p class="text-xs font-semibold uppercase tracking-widest text-brand-foreground-muted">Authentication boundary</p>
-                    <p class="mt-2 text-sm font-semibold leading-6 text-brand-foreground">
-                        {{ identity_context.credential_detail }} KAORI continues to enforce account lifecycle, RBAC authorization, and authentication audit records.
-                    </p>
+                    <p class="text-xs font-semibold uppercase tracking-widest text-brand-foreground-muted">Current section boundary</p>
+                    <p class="mt-2 text-sm font-semibold leading-6 text-brand-foreground">{{ section_boundary }}</p>
                 </div>
                 <div class="mt-5 flex flex-wrap gap-2">
+                    <span class="inline-flex h-9 items-center gap-2 rounded-lg border border-brand-outline bg-brand-surface-strong px-3 text-xs font-semibold text-brand-foreground">
+                        <i data-lucide="{{ section_icon }}" class="h-3.5 w-3.5"></i>
+                        {% if active_tab == 'activity' %}Authentication Activity{% elif active_tab == 'credentials' %}Credential Management{% else %}Profile & Access{% endif %}
+                    </span>
                     <span class="inline-flex h-9 items-center gap-2 rounded-lg border border-brand-outline bg-brand-surface-strong px-3 text-xs font-semibold text-brand-foreground">
                         <i data-lucide="link-2" class="h-3.5 w-3.5"></i>
                         {{ identity_context.projection_label }}
                     </span>
-                    {% if current_user.has_permission('settings.view_operational_activity') %}
-                        <a href="{{ url_for('notifications.activity_log', event_type='authentication', user_id=current_user.id) }}"
-                           class="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-brand-outline bg-brand-surface-strong px-3 text-xs font-semibold text-brand-foreground transition hover:bg-brand-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
-                            <i data-lucide="scroll-text" class="h-3.5 w-3.5"></i>
-                            Authentication Audit
-                        </a>
-                    {% endif %}
                 </div>
             </div>
         </aside>

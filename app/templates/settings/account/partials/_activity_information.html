@@ -1,0 +1,77 @@
+<section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <header class="flex items-center gap-3 border-b border-outline-subtle px-5 py-4">
+        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+            <i data-lucide="chart-no-axes-column-increasing" class="h-5 w-5"></i>
+        </div>
+        <div>
+            <h2 class="text-base font-semibold text-content-primary">Recent Activity Snapshot</h2>
+            <p class="mt-0.5 text-xs leading-5 text-content-muted">Summary of the latest five authentication events for this account.</p>
+        </div>
+    </header>
+    <div class="grid gap-3 p-5 sm:grid-cols-2 xl:grid-cols-1">
+        <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
+            <p class="text-[11px] font-semibold uppercase tracking-widest text-content-muted">Successful sign-ins</p>
+            <p class="mt-2 text-2xl font-bold text-content-primary">{{ activity_summary.success }}</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">Identity verified and KAORI access granted.</p>
+        </article>
+        <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
+            <p class="text-[11px] font-semibold uppercase tracking-widest text-content-muted">Failed sign-ins</p>
+            <p class="mt-2 text-2xl font-bold text-content-primary">{{ activity_summary.failed }}</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">Rejected authentication attempts recorded with a reason.</p>
+        </article>
+        <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
+            <p class="text-[11px] font-semibold uppercase tracking-widest text-content-muted">Sign-outs</p>
+            <p class="mt-2 text-2xl font-bold text-content-primary">{{ activity_summary.sign_out }}</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">User sessions explicitly closed through KAORI.</p>
+        </article>
+    </div>
+</section>
+
+<section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <header class="flex items-center gap-3 border-b border-outline-subtle px-5 py-4">
+        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+            <i data-lucide="scan-search" class="h-5 w-5"></i>
+        </div>
+        <div>
+            <h2 class="text-base font-semibold text-content-primary">Recorded Context</h2>
+            <p class="mt-0.5 text-xs leading-5 text-content-muted">Operational evidence retained for authentication review.</p>
+        </div>
+    </header>
+    <div class="space-y-3 p-5">
+        {% for item in [
+            ('fingerprint', 'Identity & provider', 'Username, actor, authentication provider, and result.'),
+            ('network', 'Connection context', 'IP address, browser, operating system, device type, and raw user-agent.'),
+            ('message-square-warning', 'Failure context', 'Normalized failure reason for rejected authentication attempts.'),
+            ('clock-3', 'Event time', 'Canonical audit timestamp rendered with this user\'s General Settings preference.')
+        ] %}
+            <article class="flex gap-3 rounded-lg border border-outline-subtle bg-surface-elevated p-4">
+                <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary">
+                    <i data-lucide="{{ item[0] }}" class="h-4 w-4"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-semibold text-content-primary">{{ item[1] }}</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ item[2] }}</p>
+                </div>
+            </article>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="rounded-xl border border-brand-outline bg-kaori-soft p-5 shadow-sm">
+    <div class="flex items-start gap-3">
+        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-surface-card text-kaori-primary">
+            <i data-lucide="shield-check" class="h-5 w-5"></i>
+        </div>
+        <div>
+            <h2 class="text-sm font-semibold text-kaori-strong">Audit Privacy Boundary</h2>
+            <p class="mt-1 text-xs leading-5 text-kaori-primary">Passwords, LDAP bind secrets, OAuth client secrets, authorization codes, and provider tokens are never stored in authentication audit metadata.</p>
+            {% if current_user.has_permission('settings.view_operational_activity') %}
+                <a href="{{ url_for('notifications.activity_log', event_type='authentication', user_id=current_user.id) }}"
+                   class="mt-3 inline-flex h-9 items-center gap-2 rounded-lg border border-brand-outline bg-surface-card px-3 text-xs font-semibold text-kaori-primary transition hover:bg-kaori-soft">
+                    <i data-lucide="external-link" class="h-3.5 w-3.5"></i>
+                    Open Full Activity Audit
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</section>
