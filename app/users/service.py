@@ -66,7 +66,7 @@ def build_users_payload(filters: dict[str, Any], actor: User | None = None) -> d
         query = query.filter(User.role_id == filters['role_id'])
 
     if filters['search']:
-        search_term = f"%{filters['search']}%"
+        search_term = f'%{filters["search"]}%'
         query = query.filter(
             or_(
                 User.username.ilike(search_term),
@@ -131,6 +131,74 @@ def assign_user_form_choices(form: Any, *, include_admin_roles: bool = True) -> 
     form.role_id.choices = [(role.id, role.display_name) for role in roles]
 
 
+def build_user_identity_context(user: User) -> dict[str, Any]:
+    identity_link = next(
+        (
+            link
+            for link in user.external_identities
+            if link.provider is not None and link.provider.provider_type == user.auth_source
+        ),
+        None,
+    )
+    if identity_link is None and user.external_identities:
+        identity_link = user.external_identities[0]
+    identity_provider = identity_link.provider if identity_link is not None else None
+
+    source_presentations = {
+        'database': {
+            'type_label': 'Local Database',
+            'icon': 'database',
+            'credential_owner': 'KAORI',
+            'credential_detail': 'KAORI stores the password hash and owns the password reset workflow.',
+        },
+        'ldap': {
+            'type_label': 'LDAP / Active Directory',
+            'icon': 'building-2',
+            'credential_owner': 'LDAP directory',
+            'credential_detail': 'The directory validates the password; KAORI stores only the linked identity and access controls.',
+        },
+        'google_oidc': {
+            'type_label': 'Google OpenID Connect',
+            'icon': 'chrome',
+            'credential_owner': 'Google',
+            'credential_detail': 'Google authenticates the user; KAORI enforces the identity link, lifecycle, and RBAC role.',
+        },
+        'github_oauth': {
+            'type_label': 'GitHub OAuth',
+            'icon': 'github',
+            'credential_owner': 'GitHub',
+            'credential_detail': 'GitHub authenticates the user; KAORI enforces the identity link, lifecycle, and RBAC role.',
+        },
+    }
+    presentation = source_presentations.get(
+        user.auth_source,
+        {
+            'type_label': 'External Identity Provider',
+            'icon': 'key-round',
+            'credential_owner': 'External provider',
+            'credential_detail': 'The external provider owns authentication; KAORI manages lifecycle and authorization.',
+        },
+    )
+    projection_type = identity_link.projection_type if identity_link is not None else None
+    projection_label = {
+        'administrative': 'Administrative provisioning',
+        'jit': 'Controlled JIT provisioning',
+    }.get(projection_type, 'Local account' if user.auth_source == 'database' else 'Linked external identity')
+
+    return {
+        **presentation,
+        'provider_name': identity_provider.display_name
+        if identity_provider is not None
+        else presentation['type_label'],
+        'provider_key': identity_provider.key if identity_provider is not None else None,
+        'provider_enabled': identity_provider.enabled
+        if identity_provider is not None
+        else user.auth_source == 'database',
+        'projection_label': projection_label,
+        'external_username': identity_link.external_username if identity_link is not None else None,
+        'subject': identity_link.subject if identity_link is not None else user.external_id,
+        'distinguished_name': identity_link.distinguished_name if identity_link is not None else None,
+    }
 
 
 def find_active_user_identity_conflict(*, username: str, email: str, exclude_user_id: int | None = None) -> User | None:
@@ -149,6 +217,7 @@ def find_active_user_identity_conflict(*, username: str, email: str, exclude_use
         query = query.filter(User.id != exclude_user_id)
 
     return query.first()
+
 
 def create_or_update_user(form: Any, user: User | None = None) -> User:
     is_new = user is None
@@ -233,13 +302,17 @@ def _block_admin_level_management(actor: User, target: User) -> tuple[bool, str 
     return True, None
 
 
-
-
-def can_create_user(actor: User, *, requested_role_id: int | None, requested_is_super_admin: bool) -> tuple[bool, str | None]:
-    if requested_admin_level(role_id=requested_role_id, is_super_admin=requested_is_super_admin) and not actor.is_super_admin:
+def can_create_user(
+    actor: User, *, requested_role_id: int | None, requested_is_super_admin: bool
+) -> tuple[bool, str | None]:
+    if (
+        requested_admin_level(role_id=requested_role_id, is_super_admin=requested_is_super_admin)
+        and not actor.is_super_admin
+    ):
         return False, 'Only a super admin can create administrator-level accounts.'
 
     return True, None
+
 
 def can_activate_user(actor: User, target: User) -> tuple[bool, str | None]:
     allowed, message = _block_deleted_target(target)
@@ -251,8 +324,6 @@ def can_activate_user(actor: User, target: User) -> tuple[bool, str | None]:
         return allowed, message
 
     return _block_admin_level_management(actor, target)
-
-
 
 
 def can_restore_user(actor: User, target: User) -> tuple[bool, str | None]:
@@ -287,6 +358,7 @@ def can_restore_user(actor: User, target: User) -> tuple[bool, str | None]:
         return False, 'An active user already uses this email. Update or remove the active account before restoring.'
 
     return True, None
+
 
 def can_deactivate_user(actor: User, target: User) -> tuple[bool, str | None]:
     allowed, message = _block_deleted_target(target)
@@ -451,15 +523,16 @@ def soft_delete_user(target: User) -> None:
     target.updated_at = now
 
 
-
-
 def restore_user(target: User) -> None:
     now = datetime.now(UTC)
     target.deleted_at = None
     target.account_is_active = True
     target.updated_at = now
 
-def record_admin_event(*, actor: User | None, action: str, target: User | Role, summary: str, metadata: dict[str, Any] | None = None) -> None:
+
+def record_admin_event(
+    *, actor: User | None, action: str, target: User | Role, summary: str, metadata: dict[str, Any] | None = None
+) -> None:
     event = AuditEvent()
     event.actor_user_id = actor.id if actor else None
     event.target_type = target.__class__.__name__.lower()

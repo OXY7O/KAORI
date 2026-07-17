@@ -4,20 +4,14 @@ from flask_wtf import FlaskForm
 from wtforms import BooleanField, HiddenField, PasswordField, SelectField, StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, EqualTo, Length, Optional, ValidationError
 
-AUTH_SOURCE_CHOICES = [
-    ('database', 'Local Database'),
-    ('ldap', 'LDAP / Active Directory (use Directory Provisioning)'),
-    ('sso', 'SSO / Identity Provider'),
-]
-
 
 class UserForm(FlaskForm):
     user_id = HiddenField()
     username = StringField('Username', validators=[DataRequired(), Length(max=100)])
     email = StringField('Email', validators=[DataRequired(), Length(max=255)])
     display_name = StringField('Display Name', validators=[Optional(), Length(max=150)])
-    auth_source = SelectField('Auth Source', choices=AUTH_SOURCE_CHOICES, default='database')
-    external_id = StringField('External ID', validators=[Optional(), Length(max=255)])
+    auth_source = HiddenField(default='database')
+    external_id = HiddenField()
     role_id = SelectField('Role', coerce=int, validators=[DataRequired()])
     is_active = BooleanField('Active')
     is_super_admin = BooleanField('Super Admin')

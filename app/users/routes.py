@@ -29,6 +29,7 @@ from app.users.notifications import user_management_feedback
 from app.users.providers import ExternalIdentity, ExternalProviderError, LdapDirectoryProvider
 from app.users.service import (
     assign_user_form_choices,
+    build_user_identity_context,
     build_users_payload,
     can_activate_user,
     can_create_user,
@@ -165,6 +166,9 @@ def edit(user_id: int):
     if not allowed:
         return reject('User update blocked', message or 'This account cannot be edited.', target=user)
 
+    identity_context = build_user_identity_context(user)
+    reset_password_allowed, reset_password_reason = can_reset_user_password(actor, user)
+
     form = UserForm(obj=user)
     assign_user_form_choices(form, include_admin_roles=actor.is_super_admin)
     if request.method == 'GET':
@@ -206,7 +210,15 @@ def edit(user_id: int):
             form.username.errors = [*form.username.errors, 'Username or email already exists.']
 
     return render_template(
-        'users/form.html', form=form, mode='edit', user=user, can_manage_admin_fields=actor.is_super_admin
+        'users/form.html',
+        form=form,
+        mode='edit',
+        user=user,
+        can_manage_admin_fields=actor.is_super_admin,
+        identity_context=identity_context,
+        reset_password_allowed=reset_password_allowed,
+        reset_password_reason=reset_password_reason,
+        is_self_edit=actor.id == user.id,
     )
 
 
