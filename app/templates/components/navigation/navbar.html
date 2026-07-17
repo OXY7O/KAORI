@@ -39,17 +39,25 @@
                    class="h-3.5 w-3.5 flex-shrink-0 text-content-muted"></i>
                 <span class="truncate text-kaori-primary">{{ current_page_label }}</span>
             </div>
-            <button @click="$dispatch('toggle-sidebar')"
+            <button @click="sidebarOpen = !sidebarOpen"
                     type="button"
                     class="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-outline-default bg-surface-card text-content-secondary shadow-sm transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
                     :title="sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'"
                     :aria-label="sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'"
                     :aria-expanded="sidebarOpen.toString()"
                     aria-controls="app-sidebar">
-                <i data-lucide="panel-left-close"
-                   class="sidebar-toggle-expanded-icon h-4.5 w-4.5"></i>
-                <i data-lucide="panel-left-open"
-                   class="sidebar-toggle-collapsed-icon h-4.5 w-4.5"></i>
+                <span x-cloak
+                      x-show="sidebarOpen"
+                      class="inline-flex h-5 w-5 items-center justify-center"
+                      aria-hidden="true">
+                    <i data-lucide="panel-left-close" class="h-4.5 w-4.5"></i>
+                </span>
+                <span x-cloak
+                      x-show="!sidebarOpen"
+                      class="inline-flex h-5 w-5 items-center justify-center"
+                      aria-hidden="true">
+                    <i data-lucide="panel-left-open" class="h-4.5 w-4.5"></i>
+                </span>
             </button>
         </div>
         <!-- Center: future global search placeholder -->
