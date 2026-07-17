@@ -35,7 +35,8 @@
             </div>
         </section>
 
-        <form method="post" data-user-form>
+        <div class="{{ 'grid gap-5 xl:grid-cols-12 xl:items-start' if mode == 'create' else '' }}">
+        <form method="post" data-user-form class="{{ 'xl:col-span-8' if mode == 'create' else '' }}">
             {{ form.hidden_tag() }}
             <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
                 <header class="flex items-center gap-3 border-b border-outline-subtle px-5 py-4">
@@ -246,6 +247,87 @@
                 </footer>
             </section>
         </form>
+
+        {% if mode == 'create' %}
+            <aside class="space-y-4 xl:col-span-4 xl:sticky xl:top-5">
+                <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+                    <header class="border-b border-outline-subtle bg-surface-hover px-4 py-3.5">
+                        <div class="flex items-start gap-3">
+                            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                                <i data-lucide="waypoints" class="h-4 w-4"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-sm font-semibold text-content-primary">Identity source guide</h2>
+                                <p class="mt-0.5 text-xs leading-5 text-content-muted">Choose where credentials are owned before creating the KAORI account.</p>
+                            </div>
+                        </div>
+                    </header>
+
+                    <div class="space-y-3 p-4">
+                        <article class="rounded-lg border border-brand-outline bg-kaori-soft p-3.5">
+                            <div class="flex items-start gap-3">
+                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
+                                    <i data-lucide="database" class="h-4 w-4"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <h3 class="text-sm font-semibold text-kaori-strong">Local Database</h3>
+                                        <span class="inline-flex rounded-md border border-brand-outline bg-surface-card px-2 py-0.5 text-[11px] font-semibold text-kaori-primary">Available</span>
+                                    </div>
+                                    <p class="mt-1.5 text-xs leading-5 text-kaori-primary">KAORI stores the account and manages its password. An initial password is required.</p>
+                                </div>
+                            </div>
+                        </article>
+
+                        <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-3.5">
+                            <div class="flex items-start gap-3">
+                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-content-secondary shadow-sm">
+                                    <i data-lucide="building-2" class="h-4 w-4"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <h3 class="text-sm font-semibold text-content-primary">LDAP / Active Directory</h3>
+                                        <span class="inline-flex rounded-md border border-outline-default bg-surface-card px-2 py-0.5 text-[11px] font-semibold text-content-secondary">Prepared</span>
+                                    </div>
+                                    <p class="mt-1.5 text-xs leading-5 text-content-muted">The directory owns the password. KAORI stores only an identity projection, lifecycle state, and assigned role.</p>
+                                </div>
+                            </div>
+                        </article>
+
+                        <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-3.5">
+                            <div class="flex items-start gap-3">
+                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-content-secondary shadow-sm">
+                                    <i data-lucide="key-round" class="h-4 w-4"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <h3 class="text-sm font-semibold text-content-primary">SSO / Identity Provider</h3>
+                                        <span class="inline-flex rounded-md border border-outline-default bg-surface-card px-2 py-0.5 text-[11px] font-semibold text-content-secondary">Prepared</span>
+                                    </div>
+                                    <p class="mt-1.5 text-xs leading-5 text-content-muted">The IdP authenticates the user. KAORI links a stable external subject and applies local lifecycle and authorization controls.</p>
+                                </div>
+                            </div>
+                        </article>
+                    </div>
+                </section>
+
+                <section class="rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm">
+                    <div class="flex items-start gap-3">
+                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                            <i data-lucide="route" class="h-4 w-4"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-sm font-semibold text-content-primary">Provisioning flow</h2>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Create or project identity → assign role → set lifecycle state → record the administrative action.</p>
+                        </div>
+                    </div>
+                    <div class="mt-3 rounded-lg border border-outline-subtle bg-surface-hover px-3 py-2.5 text-xs leading-5 text-content-muted">
+                        External-provider passwords are never entered, stored, or reset by KAORI.
+                    </div>
+                </section>
+            </aside>
+        {% endif %}
+        </div>
     </div>
 
     {% if mode == 'create' %}
