@@ -10,7 +10,6 @@ from app.notifications.event_catalog import build_event_context, event_label
 from app.notifications.metadata import changed_fields, metadata_items
 from app.notifications.normalization import standardize_activity_text
 
-
 def _normalize_created_at(created_at: datetime) -> datetime:
     if created_at.tzinfo is None:
         return created_at.replace(tzinfo=UTC)
@@ -38,6 +37,7 @@ def _created_label(created_at: datetime) -> str:
     return f'{days} day ago' if days == 1 else f'{days} days ago'
 
 
+
 def _actor_initials(label: str) -> str:
     normalized = re.sub(r'[^A-Za-z0-9 ]+', ' ', label).strip()
     parts = [part for part in normalized.split() if part]
@@ -55,12 +55,9 @@ def _auth_source_label(value: str | None) -> str:
     labels = {
         'database': 'Local',
         'local': 'Local',
-        'ldap': 'LDAP / Active Directory',
-        'google_oidc': 'Google OIDC',
-        'github_oauth': 'GitHub OAuth',
+        'ldap': 'LDAP',
         'oidc': 'OIDC / SSO',
         'saml': 'SAML / SSO',
-        'sso': 'Single Sign-On',
         'api_token': 'API Token',
         'system': 'System Service',
     }
@@ -70,23 +67,13 @@ def _auth_source_label(value: str | None) -> str:
     )
 
 
-def _user_label(
-    user: User | None,
-    user_id: int | None,
-    metadata: dict[str, Any] | None = None,
-) -> str:
-    metadata = metadata or {}
-    if user is not None:
-        snapshot_label = str(metadata.get('actor_display_name') or '').strip()
-        suffix = ' · Deleted' if user.deleted_at is not None else ''
-        return f'{snapshot_label or user.display_label}{suffix}'
 
-    attempted_username = str(metadata.get('username') or '').strip()
-    if attempted_username:
-        return f'Unauthenticated · {attempted_username}'
-    if user_id is not None:
+def _user_label(user: User | None, user_id: int) -> str:
+    if user is None:
         return f'User #{user_id}'
-    return 'Unauthenticated request'
+
+    suffix = ' · Deleted' if user.deleted_at is not None else ''
+    return f'{user.display_label}{suffix}'
 
 
 def _serialize_notification(
@@ -97,7 +84,12 @@ def _serialize_notification(
 ) -> dict[str, Any]:
     metadata = notification.metadata_json or {}
     created_at = _normalize_created_at(notification.created_at)
-    user_label = _user_label(user, notification.user_id, metadata)
+    default_user_label = _user_label(user, notification.user_id)
+    actor_display_name = str(metadata.get('actor_display_name') or '').strip()
+    user_label = actor_display_name or default_user_label
+    actor_email = str(metadata.get('actor_email') or '').strip() or None
+    actor_role = str(metadata.get('actor_role') or '').strip() or None
+    auth_source_override = str(metadata.get('authentication_provider') or metadata.get('auth_source') or '').strip() or None
     event_context = build_event_context(
         notification.event_type,
         metadata,
@@ -115,15 +107,10 @@ def _serialize_notification(
         'id': notification.id,
         'user_id': notification.user_id,
         'user_label': user_label,
-        'user_email': (str(metadata.get('actor_email') or '').strip() or (user.email if user is not None else None)),
+        'user_email': actor_email if actor_email is not None else (user.email if user is not None else None),
         'user_initials': _actor_initials(user_label),
-        'user_role': (
-            str(metadata.get('actor_role') or '').strip()
-            or (user.role_display_name if user is not None else 'Unauthenticated')
-        ),
-        'user_auth_source': _auth_source_label(
-            str(metadata.get('auth_source') or '').strip() or (user.auth_source if user is not None else None)
-        ),
+        'user_role': actor_role or (user.role_display_name if user is not None else 'Unknown role'),
+        'user_auth_source': _auth_source_label(auth_source_override if auth_source_override is not None else (user.auth_source if user is not None else None)),
         'event_type': notification.event_type,
         'event_label': event_label(notification.event_type),
         'status': notification.status,
@@ -132,14 +119,12 @@ def _serialize_notification(
             notification.title,
             event_type=notification.event_type,
             status=notification.status,
-        )
-        or 'Operational activity',
+        ) or 'Operational activity',
         'message': standardize_activity_text(
             notification.message,
             event_type=notification.event_type,
             status=notification.status,
-        )
-        or 'The operation was recorded by KAORI.',
+        ) or 'The operation was recorded by KAORI.',
         'detail': standardize_activity_text(
             notification.detail,
             event_type=notification.event_type,

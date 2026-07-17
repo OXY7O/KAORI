@@ -250,6 +250,10 @@ def _serialize_archive(artifact: ArchiveArtifact) -> dict[str, Any]:
         'completed_at': artifact.completed_at,
         'verified_at': artifact.verified_at,
         'error_message': artifact.error_message,
+        'error_summary': _archive_error_summary(artifact.error_message),
+        'error_hint': 'Full failure detail is recorded in Activity Audit Log.' if artifact.error_message else None,
+        'duration_seconds': _duration_seconds(artifact.started_at, artifact.completed_at),
+        'duration_label': _duration_label(artifact.started_at, artifact.completed_at),
         'celery_task_id': artifact.celery_task_id,
         'is_downloadable': artifact.is_downloadable,
         'is_verifiable': artifact.is_verifiable,
@@ -522,6 +526,53 @@ def _int_config(key: str, default: int) -> int:
         return int(current_app.config.get(key, default))
     except (TypeError, ValueError):
         return default
+
+
+def _duration_seconds(started_at: datetime | None, completed_at: datetime | None) -> int | None:
+    if started_at is None or completed_at is None:
+        return None
+    start_value = started_at if started_at.tzinfo is not None else started_at.replace(tzinfo=UTC)
+    end_value = completed_at if completed_at.tzinfo is not None else completed_at.replace(tzinfo=UTC)
+    return max(int((end_value - start_value).total_seconds()), 0)
+
+
+def _duration_label(started_at: datetime | None, completed_at: datetime | None) -> str | None:
+    seconds = _duration_seconds(started_at, completed_at)
+    if seconds is None:
+        return None
+    if seconds < 60:
+        return f'{seconds}s'
+    minutes, remainder = divmod(seconds, 60)
+    if minutes < 60:
+        return f'{minutes}m {remainder}s' if remainder else f'{minutes}m'
+    hours, minute_remainder = divmod(minutes, 60)
+    return f'{hours}h {minute_remainder}m'
+
+
+def _archive_error_summary(message: str | None) -> str | None:
+    normalized = str(message or '').strip()
+    if not normalized:
+        return None
+    lowered = normalized.lower()
+    if 'checksum' in lowered:
+        return 'Stored archive verification failed.'
+    if 'size verification failed' in lowered or 'size mismatch' in lowered:
+        return 'Stored archive size did not match the registry record.'
+    if 'connection' in lowered or 'timeout' in lowered or 'refused' in lowered:
+        return 'KAORI could not reach a required service during the lifecycle job.'
+    if 'permission' in lowered or 'access denied' in lowered or 'forbidden' in lowered:
+        return 'The lifecycle job was blocked by a permission or authorization failure.'
+    if 'archive selection changed' in lowered:
+        return 'The eligible record set changed during archive generation.'
+    if 'cleanup removed' in lowered:
+        return 'Archive generation succeeded, but cleanup removed fewer records than expected.'
+    if ':' in normalized:
+        _, right = normalized.split(':', 1)
+        right = right.strip().rstrip('.')
+        if right:
+            return f'{right}.'
+    normalized = normalized.rstrip('.')
+    return f'{normalized}.' if normalized else None
 
 
 def _format_size(value: int | None) -> str:

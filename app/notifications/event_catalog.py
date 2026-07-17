@@ -43,6 +43,8 @@ def build_event_context(
     username = _string_metadata(metadata, 'username')
     browser = _string_metadata(metadata, 'browser')
     operating_system = _string_metadata(metadata, 'operating_system')
+    trigger_type = _string_metadata(metadata, 'trigger_type')
+    operation_mode = _string_metadata(metadata, 'operation_mode')
 
     context: dict[str, Any] = {
         'module_label': 'Operations',
@@ -201,6 +203,25 @@ def build_event_context(
                 'tone': 'indigo',
             }
         )
+
+
+    if event_type.startswith('operational_activity_'):
+        if trigger_type:
+            context_items.append(
+                {
+                    'label': 'Trigger',
+                    'value': trigger_type.replace('_', ' ').title(),
+                    'tone': 'indigo',
+                }
+            )
+        if operation_mode:
+            context_items.append(
+                {
+                    'label': 'Mode',
+                    'value': operation_mode.replace('_', ' ').title(),
+                    'tone': 'amber',
+                }
+            )
 
     context['context_items'] = context_items
     return context
