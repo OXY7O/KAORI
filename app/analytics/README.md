@@ -31,3 +31,6 @@ Capacity Analysis must retain the agreed Cluster -> Node selector hierarchy.
 - Do not run a separate Prometheus health check before every lazy overview section; this creates contradictory status and unnecessary load.
 - A transient failure in one analytics query must be rendered in that section and must not replace unrelated sections with a page-level connection blocker.
 - Overview section endpoints are HTMX partial endpoints. Direct browser navigation must redirect to the full Analytics Overview page.
+- Keep the inline Prometheus status message concise. Low-level connection exceptions must not be rendered inside the status card.
+- A newly observed Prometheus failure emits one operator-facing toast and one Activity Log record per user session and failure fingerprint. Repeated lazy refreshes of the same unresolved failure must not create notification noise.
+- Failure feedback uses normalized endpoint, category, and remediation context. The card only directs the operator to the toast or Activity Log for details.

@@ -301,6 +301,7 @@ def _get_prometheus_status(*, cluster_id: str) -> dict[str, Any]:
         'endpoint': '',
         'response_time_ms': None,
         'message': 'Prometheus is not configured for the selected cluster.',
+        'diagnostic_detail': 'Prometheus is not configured for the selected cluster.',
         'last_checked_at': _utc_now_display(),
     }
 
@@ -358,10 +359,19 @@ def _get_prometheus_status(*, cluster_id: str) -> dict[str, Any]:
         'response_time_ms': prometheus_result.get(
             'response_time_ms',
         ),
-        'message': str(
+        'message': (
+            'Prometheus is reachable and responding normally.'
+            if connected
+            else 'Prometheus is unreachable. Review the toast or Activity Log for details.'
+        ),
+        'diagnostic_detail': str(
             prometheus_result.get(
                 'message',
-                'Prometheus responded to the latest health check.' if connected else 'The latest Prometheus health check failed.',
+                (
+                    'Prometheus responded to the latest health check.'
+                    if connected
+                    else 'The latest Prometheus health check failed.'
+                ),
             )
         ),
         'last_checked_at': _utc_now_display(),

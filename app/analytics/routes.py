@@ -1,4 +1,7 @@
-from flask import Blueprint, redirect, render_template, request, url_for
+from hashlib import sha256
+
+from flask import Blueprint, redirect, render_template, request, session, url_for
+from flask_login import current_user
 
 from app.analytics.alerts.routes import (
     alerts,
@@ -33,6 +36,11 @@ from app.analytics.workload.routes import (
     workload_tenant_quota,
 )
 from app.common.dependencies import render_dependency_blocker
+from app.common.integration_errors import describe_integration_failure
+from app.notifications.service import (
+    get_navigation_notification_context,
+    record_operational_activity,
+)
 from app.rbac.decorators import permission_required
 
 analytics_bp = Blueprint(
@@ -51,6 +59,115 @@ VALID_ANALYTICS_TIME_RANGES = {
     '30d',
     '60d',
 }
+
+
+PROMETHEUS_FAILURE_SESSION_KEY = 'analytics_overview_prometheus_failures'
+PROMETHEUS_FAILURE_SESSION_LIMIT = 32
+
+
+def _render_operational_toast(feedback: dict) -> str:
+    return render_template(
+        'components/navigation/_quick_sync_result.html',
+        **feedback,
+        toast_oob=True,
+        notification_context=get_navigation_notification_context(
+            user_id=current_user.id,
+        ),
+    )
+
+
+def _update_prometheus_failure_state(
+    *,
+    cluster_id: str,
+    fingerprint: str | None,
+) -> bool:
+    state = dict(
+        session.get(
+            PROMETHEUS_FAILURE_SESSION_KEY,
+            {},
+        )
+    )
+
+    if fingerprint is None:
+        if cluster_id in state:
+            state.pop(cluster_id, None)
+            session[PROMETHEUS_FAILURE_SESSION_KEY] = state
+            session.modified = True
+        return False
+
+    if state.get(cluster_id) == fingerprint:
+        return False
+
+    state[cluster_id] = fingerprint
+    if len(state) > PROMETHEUS_FAILURE_SESSION_LIMIT:
+        oldest_cluster_id = next(iter(state))
+        state.pop(oldest_cluster_id, None)
+
+    session[PROMETHEUS_FAILURE_SESSION_KEY] = state
+    session.modified = True
+    return True
+
+
+def _build_prometheus_failure_feedback(payload: dict) -> str:
+    prometheus = payload.get('prometheus') or {}
+    selected_cluster = payload.get('selected_cluster') or {}
+    cluster_id = str(selected_cluster.get('id') or payload.get('selected_cluster_id') or '')
+
+    if not cluster_id:
+        return ''
+
+    if prometheus.get('connected') or not prometheus.get('configured'):
+        _update_prometheus_failure_state(
+            cluster_id=cluster_id,
+            fingerprint=None,
+        )
+        return ''
+
+    endpoint = str(prometheus.get('endpoint') or '').strip()
+    diagnostic_detail = str(
+        prometheus.get('diagnostic_detail')
+        or 'The Prometheus health check did not complete successfully.'
+    ).strip()
+    fingerprint = sha256(
+        f'{endpoint}|{diagnostic_detail}'.encode('utf-8'),
+    ).hexdigest()
+
+    if not _update_prometheus_failure_state(
+        cluster_id=cluster_id,
+        fingerprint=fingerprint,
+    ):
+        return ''
+
+    failure = describe_integration_failure(
+        RuntimeError(diagnostic_detail),
+        service_name='Prometheus',
+        endpoint=endpoint,
+        request_path='/api/v1/query',
+    )
+    cluster_name = str(selected_cluster.get('name') or 'Selected cluster')
+    environment = str(selected_cluster.get('environment') or '')
+
+    feedback = record_operational_activity(
+        user_id=current_user.id,
+        event_type='prometheus_health_check_failed',
+        status='error',
+        title='Prometheus connection failed',
+        message=f'Prometheus is unreachable for {cluster_name}.',
+        detail=str(failure['detail']),
+        metadata={
+            'cluster_id': cluster_id,
+            'cluster_name': cluster_name,
+            'environment': environment,
+            'endpoint': endpoint,
+            'failure_code': failure['code'],
+            'reason': failure['reason'],
+            'endpoint_host': failure['endpoint_host'],
+            'endpoint_port': failure['endpoint_port'],
+            'request_path': failure['request_path'],
+        },
+    )
+
+    return _render_operational_toast(feedback)
 
 
 @analytics_bp.route(
@@ -149,10 +266,15 @@ def overview_section(section: str):
         time_range=selected_time_range,
     )
 
-    return render_template(
+    section_html = render_template(
         template_name,
         payload=payload,
     )
+
+    if section == 'prometheus-status':
+        return f'{section_html}{_build_prometheus_failure_feedback(payload)}'
+
+    return section_html
 
 
 analytics_bp.add_url_rule(
