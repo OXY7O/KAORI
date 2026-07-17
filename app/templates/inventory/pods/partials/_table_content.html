@@ -102,14 +102,14 @@
     </div>
     <div class="flex flex-wrap items-center gap-2">
         {% if pagination.has_prev %}
-            {% set prev_url = url_for('inventory.pods', cluster_id=selected_cluster_id, namespace=selected_namespace, status=selected_status, owner_type=selected_owner_type, node=selected_node, search=search, page=pagination.prev_page, per_page=pagination.per_page) %}
+            {% set prev_url = url_for('inventory.pods', cluster_id=selected_cluster_id, namespace=selected_namespace, status=selected_status, owner_type=selected_owner_type, node=selected_node, search=search, page=pagination.prev_page, per_page=pagination.per_page, partial_mode='table_content') %}
             <a href="{{ prev_url }}" hx-get="{{ prev_url }}" hx-target="#pods-table-content" hx-swap="innerHTML" hx-indicator="#pods-table-loading" class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
         {% else %}
             <span class="inline-flex h-9 cursor-not-allowed items-center gap-1.5 rounded-lg border border-outline-subtle bg-surface-hover px-3 font-semibold text-content-disabled"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
         {% endif %}
         <span class="inline-flex h-9 items-center rounded-lg border border-outline-default bg-surface-card px-3 font-semibold text-content-primary">Page {{ pagination.page }} / {{ pagination.total_pages }}</span>
         {% if pagination.has_next %}
-            {% set next_url = url_for('inventory.pods', cluster_id=selected_cluster_id, namespace=selected_namespace, status=selected_status, owner_type=selected_owner_type, node=selected_node, search=search, page=pagination.next_page, per_page=pagination.per_page) %}
+            {% set next_url = url_for('inventory.pods', cluster_id=selected_cluster_id, namespace=selected_namespace, status=selected_status, owner_type=selected_owner_type, node=selected_node, search=search, page=pagination.next_page, per_page=pagination.per_page, partial_mode='table_content') %}
             <a href="{{ next_url }}" hx-get="{{ next_url }}" hx-target="#pods-table-content" hx-swap="innerHTML" hx-indicator="#pods-table-loading" class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
         {% else %}
             <span class="inline-flex h-9 cursor-not-allowed items-center gap-1.5 rounded-lg border border-outline-subtle bg-surface-hover px-3 font-semibold text-content-disabled">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>

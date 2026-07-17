@@ -1,32 +1,41 @@
 {% extends "layouts/app.html" %}
 {% block title %}Resource Utilization{% endblock title %}
 {% block dashboard_content %}
-    {% macro utilization_status_badge(value) %}
+    {% import "components/table_label.html" as table_label %}
+    {% macro utilization_status(value) %}
         {% if value > 90 %}
-            <span class="rounded-md bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-700 dark:bg-red-500/10 dark:text-red-300">Critical</span>
+            {{ table_label.status_label('Critical', 'critical', 'shield-alert') }}
         {% elif value >= 75 %}
-            <span class="rounded-md bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">Warning</span>
+            {{ table_label.status_label('Warning', 'warning', 'triangle-alert') }}
         {% else %}
-            <span class="rounded-md bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">Normal</span>
+            {{ table_label.status_label('Normal', 'normal', 'circle-check') }}
         {% endif %}
     {% endmacro %}
-    {% macro utilization_fill_bar(value, tone='blue') %}
+    {% macro utilization_fill_bar(value, tone='info') %}
         {% set percentage = value|default(0)|float %}
         {% if percentage < 0 %}
             {% set percentage = 0 %}
         {% elif percentage > 100 %}
             {% set percentage = 100 %}
         {% endif %}
-        <div class="mt-4 h-2.5 overflow-hidden rounded-full bg-slate-200/80 dark:bg-slate-700/70">
-            <div class="h-full rounded-full transition-all duration-500 {% if tone == 'green' %}bg-emerald-500 dark:bg-emerald-400 {% elif tone == 'amber' %}bg-amber-500 dark:bg-amber-400 {% elif tone == 'purple' %}bg-purple-500 dark:bg-purple-400 {% else %}bg-blue-600 dark:bg-blue-400{% endif %}"
-                 style="width: {{ percentage }}%"></div>
+        {% set bar_class = {
+            'normal': 'bg-status-normal',
+            'warning': 'bg-status-warning',
+            'critical': 'bg-status-critical',
+            'maintenance': 'bg-status-maintenance',
+            'info': 'bg-status-info'
+        }.get(tone, 'bg-kaori-primary') %}
+        <div class="mt-4 h-2 overflow-hidden rounded-full bg-surface-hover">
+            <div class="h-full rounded-full transition-all duration-500 {{ bar_class }}" style="width: {{ percentage }}%"></div>
         </div>
     {% endmacro %}
+
     <div id="utilization-page"
          class="space-y-6"
          data-analytics-page-tracker="utilization-load-tracker"
          data-analytics-page-request-tracking="false">
         {% include "analytics/utilization/partials/_hero.html" %}
+
         {% if dependency_blocker %}
             {% if dependency_blocker.kind == 'cluster_required' %}
                 {% include "components/cluster/_onboarding_banner.html" %}
@@ -34,6 +43,7 @@
                 {% include "components/dependencies/_blocker.html" %}
             {% endif %}
         {% endif %}
+
         {% if not dependency_blocker %}
             {% set analytics_tracker_id = "utilization-load-tracker" %}
             {% set analytics_page_id = "utilization-page" %}
@@ -42,247 +52,138 @@
             {% set analytics_load_complete_title = "Resource utilization fully loaded" %}
             {% set analytics_load_complete_description = "All utilization sections have finished loading." %}
             {% include "analytics/partials/_load_tracker.html" %}
-        {% endif %}
-        {% if not dependency_blocker %}
+
             {% if error %}
-                <div class="rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm dark:border-amber-500/20 dark:bg-amber-500/10">
+                <div class="rounded-xl border border-status-warning-border bg-status-warning-soft p-4 shadow-sm">
                     <div class="flex items-start gap-3">
-                        <i data-lucide="triangle-alert"
-                           class="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-300"></i>
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-status-warning">
+                            <i data-lucide="triangle-alert" class="h-4.5 w-4.5"></i>
+                        </span>
                         <div>
-                            <h3 class="font-semibold text-amber-900 dark:text-amber-200">Utilization data unavailable</h3>
-                            <p class="mt-1 text-sm text-amber-700 dark:text-amber-300">{{ error }}</p>
+                            <h3 class="font-semibold text-content-primary">Utilization data unavailable</h3>
+                            <p class="mt-1 text-sm leading-6 text-content-muted">{{ error }}</p>
                         </div>
                     </div>
                 </div>
             {% endif %}
+
             {% set ready_ratio = ((cluster_info.ready_nodes / cluster_info.total_nodes) * 100) if cluster_info.total_nodes else 0 %}
-            {% set not_ready_ratio = 100 - ready_ratio if cluster_info.total_nodes else 0 %}
-            <div class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
-                <div class="relative overflow-hidden bg-gradient-to-r from-slate-50 via-white to-blue-50/80 px-6 py-6 dark:from-slate-900 dark:via-slate-900 dark:to-blue-950/20">
-                    <div class="absolute -right-12 -top-16 h-40 w-40 rounded-full bg-blue-200/30 blur-3xl dark:bg-blue-500/10"></div>
-                    <div class="absolute left-1/3 top-8 h-28 w-28 rounded-full bg-cyan-200/20 blur-2xl dark:bg-cyan-500/10"></div>
-                    <div class="relative grid gap-5 2xl:grid-cols-[minmax(0,1fr)_minmax(680px,760px)] 2xl:items-stretch">
-                        <div class="flex min-w-0 flex-col gap-5">
-                            <div class="flex items-start gap-4">
-                                <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-100 text-blue-600 shadow-sm dark:bg-blue-500/10 dark:text-blue-300">
-                                    <i data-lucide="server-cog" class="h-7 w-7"></i>
+            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+                <div class="p-5">
+                    <div class="mb-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                        <div class="flex items-start gap-3">
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                                <i data-lucide="server-cog" class="h-5 w-5"></i>
+                            </span>
+                            <div>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <h2 class="text-lg font-semibold text-content-primary">{{ cluster.name if cluster else 'No Cluster Selected' }}</h2>
+                                    {{ table_label.metadata_label('Cluster Scope', 'scan-search') }}
                                 </div>
-                                <div class="min-w-0">
-                                    <div class="flex flex-wrap items-center gap-2">
-                                        <h2 class="text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
-                                            {{ cluster.name if cluster else 'No Cluster Selected' }}
-                                        </h2>
-                                        <span class="inline-flex rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-500/10 dark:text-blue-300">
-                                            Cluster Scope
-                                        </span>
-                                    </div>
-                                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                                        Kubernetes {{ cluster_info.kubernetes_version }} · Current cluster capacity and readiness summary.
-                                    </p>
-                                </div>
-                            </div>
-                            <div class="grid gap-3 md:grid-cols-3">
-                                <div class="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/70">
-                                    <div class="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
-                                        <i data-lucide="server" class="h-3.5 w-3.5"></i>
-                                        Worker split
-                                    </div>
-                                    <div class="mt-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
-                                        {{ cluster_info.worker_nodes }} worker · {{ cluster_info.master_nodes }} control-plane
-                                    </div>
-                                </div>
-                                <div class="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/70">
-                                    <div class="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
-                                        <i data-lucide="activity" class="h-3.5 w-3.5"></i>
-                                        Readiness gap
-                                    </div>
-                                    <div class="mt-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
-                                        {{ cluster_info.not_ready_nodes }} nodes need attention
-                                    </div>
-                                </div>
-                                <div class="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/70">
-                                    <div class="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
-                                        <i data-lucide="gauge" class="h-3.5 w-3.5"></i>
-                                        Review focus
-                                    </div>
-                                    <div class="mt-2 text-sm font-semibold text-slate-800 dark:text-slate-100">Capacity, pods, and pressure signals</div>
-                                </div>
+                                <p class="mt-1 text-sm leading-6 text-content-muted">
+                                    Kubernetes {{ cluster_info.kubernetes_version }} · Current capacity and node-readiness context.
+                                </p>
                             </div>
                         </div>
-                        <div class="grid h-full gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                            <div class="relative flex min-h-[196px] overflow-hidden rounded-2xl bg-gradient-to-br from-blue-700 via-blue-600 to-cyan-500 p-4 text-white shadow-sm shadow-blue-500/20">
-                                <div class="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-white/10 blur-2xl"></div>
-                                <div class="relative flex h-full w-full flex-col justify-between">
-                                    <div>
-                                        <div class="flex items-center gap-2 text-xs font-semibold text-blue-50/85">
-                                            <i data-lucide="badge-check" class="h-4 w-4"></i>
-                                            Node Readiness
-                                        </div>
-                                        <div class="mt-3 text-3xl font-bold">{{ "%.0f"|format(ready_ratio) }}%</div>
-                                        <p class="mt-1 text-xs leading-5 text-blue-50/85">{{ cluster_info.ready_nodes }} ready · {{ cluster_info.not_ready_nodes }} NotReady.</p>
-                                    </div>
-                                    <div>
-                                        <div class="mb-3 rounded-xl bg-white/10 px-3 py-2 text-xs font-semibold text-blue-50/90">
-                                            NotReady Nodes: {{ cluster_info.not_ready_nodes }}
-                                        </div>
-                                        <div class="h-1.5 overflow-hidden rounded-full bg-white/20">
-                                            <div class="h-full rounded-full bg-white"
-                                                 style="width: {{ ready_ratio }}%"></div>
-                                        </div>
-                                    </div>
-                                </div>
+                        <div class="grid gap-2 sm:grid-cols-3 lg:min-w-[560px]">
+                            <div class="rounded-lg border border-outline-default bg-surface-hover px-3 py-3">
+                                <p class="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wide text-content-muted"><i data-lucide="server" class="h-3.5 w-3.5"></i>Worker split</p>
+                                <p class="mt-1 text-sm font-semibold text-content-primary">{{ cluster_info.worker_nodes }} worker · {{ cluster_info.master_nodes }} control-plane</p>
                             </div>
-                            <div class="relative flex min-h-[196px] overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-700 via-blue-600 to-sky-500 p-4 text-white shadow-sm shadow-blue-500/20">
-                                <div class="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-white/10 blur-2xl"></div>
-                                <div class="relative flex h-full flex-col justify-between">
-                                    <div>
-                                        <div class="flex items-center gap-2 text-xs font-semibold text-blue-50/85">
-                                            <i data-lucide="cpu" class="h-4 w-4"></i>
-                                            CPU Capacity
-                                        </div>
-                                        <div class="mt-3 text-3xl font-bold">{{ cluster_info.cpu_capacity }}</div>
-                                        <p class="mt-1 text-xs leading-5 text-blue-50/85">Total allocatable cores available for scheduled workloads.</p>
-                                    </div>
-                                    <div class="mt-4 rounded-xl bg-white/10 px-3 py-2 text-xs font-semibold text-blue-50/90">Use with request and limit review.</div>
-                                </div>
+                            <div class="rounded-lg border border-outline-default bg-surface-hover px-3 py-3">
+                                <p class="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wide text-content-muted"><i data-lucide="activity" class="h-3.5 w-3.5"></i>Readiness gap</p>
+                                <p class="mt-1 text-sm font-semibold text-content-primary">{{ cluster_info.not_ready_nodes }} nodes need attention</p>
                             </div>
-                            <div class="relative flex min-h-[196px] overflow-hidden rounded-2xl bg-gradient-to-br from-violet-700 via-purple-600 to-blue-500 p-4 text-white shadow-sm shadow-purple-500/20">
-                                <div class="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-white/10 blur-2xl"></div>
-                                <div class="relative flex h-full flex-col justify-between">
-                                    <div>
-                                        <div class="flex items-center gap-2 text-xs font-semibold text-blue-50/85">
-                                            <i data-lucide="memory-stick" class="h-4 w-4"></i>
-                                            Memory Capacity
-                                        </div>
-                                        <div class="mt-3 text-3xl font-bold">{{ "%.2f"|format(cluster_info.memory_capacity / 1024**3) }} GiB</div>
-                                        <p class="mt-1 text-xs leading-5 text-blue-50/85">Cluster allocatable memory baseline for workload placement.</p>
-                                    </div>
-                                    <div class="mt-4 rounded-xl bg-white/10 px-3 py-2 text-xs font-semibold text-blue-50/90">Compare with memory requests.</div>
-                                </div>
-                            </div>
-                            <div class="relative flex min-h-[196px] overflow-hidden rounded-2xl bg-gradient-to-br from-sky-700 via-cyan-600 to-blue-500 p-4 text-white shadow-sm shadow-blue-500/20">
-                                <div class="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-white/10 blur-2xl"></div>
-                                <div class="relative flex h-full flex-col justify-between">
-                                    <div>
-                                        <div class="flex items-center gap-2 text-xs font-semibold text-blue-50/85">
-                                            <i data-lucide="boxes" class="h-4 w-4"></i>
-                                            Pod Capacity
-                                        </div>
-                                        <div class="mt-3 text-3xl font-bold">{{ cluster_info.pod_capacity }}</div>
-                                        <p class="mt-1 text-xs leading-5 text-blue-50/85">Available pod slots before node-level scheduling pressure increases.</p>
-                                    </div>
-                                    <div class="mt-4 rounded-xl bg-white/10 px-3 py-2 text-xs font-semibold text-blue-50/90">Track with pod density.</div>
-                                </div>
+                            <div class="rounded-lg border border-outline-default bg-surface-hover px-3 py-3">
+                                <p class="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wide text-content-muted"><i data-lucide="gauge" class="h-3.5 w-3.5"></i>Review focus</p>
+                                <p class="mt-1 text-sm font-semibold text-content-primary">Capacity, pods, and pressure</p>
                             </div>
                         </div>
+                    </div>
+
+                    <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                        <article class="flex min-h-[184px] flex-col rounded-xl border border-brand-outline bg-kaori-primary p-4 text-brand-foreground">
+                            <div class="flex items-start justify-between gap-3">
+                                <span class="flex h-9 w-9 items-center justify-center rounded-lg border border-brand-outline bg-brand-surface-strong"><i data-lucide="badge-check" class="h-4.5 w-4.5"></i></span>
+                                {{ table_label.status_label('Ready' if cluster_info.not_ready_nodes == 0 else 'Review', 'normal' if cluster_info.not_ready_nodes == 0 else 'warning', 'circle-check' if cluster_info.not_ready_nodes == 0 else 'triangle-alert') }}
+                            </div>
+                            <p class="mt-4 text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-foreground-muted">Node readiness</p>
+                            <p class="mt-1 text-3xl font-bold">{{ "%.0f"|format(ready_ratio) }}%</p>
+                            <p class="mt-2 text-xs leading-5 text-brand-foreground-muted">{{ cluster_info.ready_nodes }} ready · {{ cluster_info.not_ready_nodes }} NotReady</p>
+                            <div class="mt-auto pt-4">
+                                <div class="h-2 overflow-hidden rounded-full bg-brand-surface">
+                                    <div class="h-full rounded-full bg-brand-foreground" style="width: {{ ready_ratio }}%"></div>
+                                </div>
+                            </div>
+                        </article>
+
+                        {% for metric in [
+                            {'label': 'CPU Capacity', 'value': cluster_info.cpu_capacity, 'description': 'Allocatable cores for scheduled workloads.', 'icon': 'cpu'},
+                            {'label': 'Memory Capacity', 'value': '%.2f GiB'|format(cluster_info.memory_capacity / 1024**3), 'description': 'Allocatable memory baseline for placement.', 'icon': 'memory-stick'},
+                            {'label': 'Pod Capacity', 'value': cluster_info.pod_capacity, 'description': 'Available pod slots before density pressure.', 'icon': 'boxes'}
+                        ] %}
+                            <article class="flex min-h-[184px] flex-col rounded-xl border border-outline-default bg-surface-card p-4 transition hover:bg-surface-hover">
+                                <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ metric.icon }}" class="h-4.5 w-4.5"></i></span>
+                                <p class="mt-4 text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">{{ metric.label }}</p>
+                                <p class="mt-1 text-3xl font-bold text-content-primary">{{ metric.value }}</p>
+                                <p class="mt-2 text-xs leading-5 text-content-muted">{{ metric.description }}</p>
+                                <p class="mt-auto border-t border-outline-subtle pt-3 text-xs font-semibold text-kaori-primary">Review with requests, limits, and workload density.</p>
+                            </article>
+                        {% endfor %}
                     </div>
                 </div>
                 {% if cluster_info.not_ready_nodes and cluster_info.not_ready_nodes > 0 %}
-                    <div class="border-t border-amber-200 bg-amber-50/80 px-6 py-3 text-sm text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300">
-                        Some nodes are NotReady. Review node details in Inventory &gt; Nodes.
+                    <div class="border-t border-status-warning-border bg-status-warning-soft px-5 py-3 text-sm text-content-secondary">
+                        <span class="font-semibold text-status-warning">{{ cluster_info.not_ready_nodes }} NotReady node{{ '' if cluster_info.not_ready_nodes == 1 else 's' }}.</span>
+                        Review the affected nodes in Kubernetes Inventory.
                     </div>
                 {% endif %}
-            </div>
-            <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-                {% set cpu_util = summary.cpu_utilization|default(0) %}
-                <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-800 dark:hover:border-blue-700">
-                    <div class="flex items-start justify-between gap-4">
-                        <div>
-                            <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">CPU Utilization</span>
-                            <div class="mt-3 text-4xl font-bold tracking-tight text-slate-950 dark:text-white">{{ cpu_util }}%</div>
-                        </div>
-                        <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100 text-blue-600 shadow-sm dark:bg-blue-500/10 dark:text-blue-300">
-                            <i data-lucide="cpu" class="h-6 w-6"></i>
-                        </div>
-                    </div>
-                    {{ utilization_fill_bar(cpu_util, 'blue') }}
-                    <div class="mt-4 flex items-center justify-between gap-3">
-                        <div>
-                            <div class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ summary.cpu_usage|default(0) }} / {{ summary.cpu_capacity|default(0) }} Cores</div>
-                            <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">Current usage vs allocatable capacity</div>
-                        </div>
-                        {{ utilization_status_badge(cpu_util) }}
+            </section>
+
+            <section class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
+                <div class="mb-5 flex items-start gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="gauge" class="h-5 w-5"></i></span>
+                    <div>
+                        <h2 class="text-lg font-semibold text-content-primary">Current Resource Utilization</h2>
+                        <p class="mt-1 text-sm leading-6 text-content-muted">Current consumption compared with allocatable capacity for the selected cluster.</p>
                     </div>
                 </div>
-                {% set memory_util = summary.memory_utilization|default(0) %}
-                <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-800 dark:hover:border-emerald-700">
-                    <div class="flex items-start justify-between gap-4">
-                        <div>
-                            <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">Memory Utilization</span>
-                            <div class="mt-3 text-4xl font-bold tracking-tight text-slate-950 dark:text-white">{{ memory_util }}%</div>
-                        </div>
-                        <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600 shadow-sm dark:bg-emerald-500/10 dark:text-emerald-300">
-                            <i data-lucide="memory-stick" class="h-6 w-6"></i>
-                        </div>
-                    </div>
-                    {{ utilization_fill_bar(memory_util, 'green') }}
-                    <div class="mt-4 flex items-center justify-between gap-3">
-                        <div>
-                            <div class="text-sm font-medium text-slate-700 dark:text-slate-200">
-                                {{ "%.2f"|format(summary.memory_usage|default(0) / 1024**3) }} GiB /
-                                {{ "%.2f"|format(summary.memory_capacity|default(0) / 1024**3) }} GiB
+                <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                    {% set utilization_cards = [
+                        {'label': 'CPU Utilization', 'value': summary.cpu_utilization|default(0), 'detail': summary.cpu_usage|default(0) ~ ' / ' ~ summary.cpu_capacity|default(0) ~ ' Cores', 'description': 'Current usage vs allocatable capacity', 'icon': 'cpu', 'tone': 'info'},
+                        {'label': 'Memory Utilization', 'value': summary.memory_utilization|default(0), 'detail': '%.2f GiB / %.2f GiB'|format(summary.memory_usage|default(0) / 1024**3, summary.memory_capacity|default(0) / 1024**3), 'description': 'Cluster memory usage snapshot', 'icon': 'memory-stick', 'tone': 'normal'},
+                        {'label': 'Disk /var or / Utilization', 'value': summary.storage_utilization|default(0), 'detail': summary.storage_usage_gib|default(0) ~ ' GiB / ' ~ summary.storage_capacity_gib|default(0) ~ ' GiB', 'description': 'Mounted storage utilization snapshot', 'icon': 'hard-drive', 'tone': 'warning'},
+                        {'label': 'Pod Utilization', 'value': summary.pod_utilization|default(0), 'detail': summary.pod_count|default(0) ~ ' / ' ~ summary.pod_capacity|default(0) ~ ' Pods', 'description': 'Pod usage across the selected cluster', 'icon': 'boxes', 'tone': 'maintenance'}
+                    ] %}
+                    {% for metric in utilization_cards %}
+                        <article class="rounded-lg border border-outline-default bg-surface-card p-4 transition hover:bg-surface-hover">
+                            <div class="flex items-start justify-between gap-3">
+                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ metric.icon }}" class="h-4.5 w-4.5"></i></span>
+                                {{ utilization_status(metric.value) }}
                             </div>
-                            <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">Cluster memory usage snapshot</div>
-                        </div>
-                        {{ utilization_status_badge(memory_util) }}
-                    </div>
+                            <p class="mt-4 text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">{{ metric.label }}</p>
+                            <p class="mt-1 text-3xl font-bold tracking-tight text-content-primary">{{ metric.value }}%</p>
+                            {{ utilization_fill_bar(metric.value, metric.tone) }}
+                            <p class="mt-4 text-sm font-semibold text-content-primary">{{ metric.detail }}</p>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ metric.description }}</p>
+                        </article>
+                    {% endfor %}
                 </div>
-                {% set storage_util = summary.storage_utilization|default(0) %}
-                <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-amber-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-800 dark:hover:border-amber-700">
-                    <div class="flex items-start justify-between gap-4">
-                        <div>
-                            <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">Disk /var or / Utilization</span>
-                            <div class="mt-3 text-4xl font-bold tracking-tight text-slate-950 dark:text-white">{{ storage_util }}%</div>
-                        </div>
-                        <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-amber-600 shadow-sm dark:bg-amber-500/10 dark:text-amber-300">
-                            <i data-lucide="hard-drive" class="h-6 w-6"></i>
-                        </div>
-                    </div>
-                    {{ utilization_fill_bar(storage_util, 'amber') }}
-                    <div class="mt-4 flex items-center justify-between gap-3">
-                        <div>
-                            <div class="text-sm font-medium text-slate-700 dark:text-slate-200">
-                                {{ summary.storage_usage_gib|default(0) }} GiB /
-                                {{ summary.storage_capacity_gib|default(0) }} GiB
-                            </div>
-                            <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">Mounted storage utilization snapshot</div>
-                        </div>
-                        {{ utilization_status_badge(storage_util) }}
-                    </div>
-                </div>
-                {% set pod_util = summary.pod_utilization|default(0) %}
-                <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-purple-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-800 dark:hover:border-purple-700">
-                    <div class="flex items-start justify-between gap-4">
-                        <div>
-                            <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">Pod Utilization</span>
-                            <div class="mt-3 text-4xl font-bold tracking-tight text-slate-950 dark:text-white">{{ pod_util }}%</div>
-                        </div>
-                        <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-purple-100 text-purple-600 shadow-sm dark:bg-purple-500/10 dark:text-purple-300">
-                            <i data-lucide="boxes" class="h-6 w-6"></i>
-                        </div>
-                    </div>
-                    {{ utilization_fill_bar(pod_util, 'purple') }}
-                    <div class="mt-4 flex items-center justify-between gap-3">
-                        <div>
-                            <div class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ summary.pod_count|default(0) }} / {{ summary.pod_capacity|default(0) }} Pods</div>
-                            <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">Pod usage across the selected cluster</div>
-                        </div>
-                        {{ utilization_status_badge(pod_util) }}
-                    </div>
-                </div>
-            </div>
+            </section>
+
             {% include "analytics/utilization/partials/_recommendations.html" %}
             <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
             {% include "analytics/utilization/partials/_trend.html" %}
-            <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
-                <div class="border-b border-slate-200 px-6 py-5 dark:border-slate-700">
+
+            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+                <div class="border-b border-outline-subtle p-5">
                     <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-                        <div>
-                            <h2 class="text-lg font-semibold text-slate-950 dark:text-white">Node Resource &amp; Pressure Detail</h2>
-                            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                                Drill down CPU, memory, pods, and node pressure signals without reloading the full page.
-                            </p>
+                        <div class="flex items-start gap-3">
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="server-crash" class="h-5 w-5"></i></span>
+                            <div>
+                                <h2 class="text-lg font-semibold text-content-primary">Node Resource &amp; Pressure Detail</h2>
+                                <p class="mt-1 text-sm leading-6 text-content-muted">Drill down CPU, memory, pods, and filesystem pressure without reloading the full page.</p>
+                            </div>
                         </div>
                         <form method="get"
                               action="{{ url_for('analytics.utilization_node_detail') }}"
@@ -292,39 +193,29 @@
                               hx-trigger="change delay:120ms"
                               hx-indicator="#node-detail-refresh-indicator"
                               class="grid gap-3 md:grid-cols-2 xl:w-[640px]">
-                            <input type="hidden"
-                                   name="cluster_id"
-                                   value="{{ cluster.id if cluster else '' }}" />
-                            <div>
-                                <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Compute Instance</label>
-                                <select name="node"
-                                        class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-slate-100">
+                            <input type="hidden" name="cluster_id" value="{{ cluster.id if cluster else '' }}" />
+                            <label class="block">
+                                <span class="text-xs font-semibold text-content-secondary">Compute Instance</span>
+                                <select name="node" class="mt-1.5 h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-primary outline-none transition hover:border-outline-strong focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10">
                                     <option value="">All Nodes</option>
-                                    {% for node in available_nodes %}
-                                        <option value="{{ node }}" {% if selected_node == node %}selected{% endif %}>{{ node }}</option>
-                                    {% endfor %}
+                                    {% for node in available_nodes %}<option value="{{ node }}" {% if selected_node == node %}selected{% endif %}>{{ node }}</option>{% endfor %}
                                 </select>
-                            </div>
-                            <div>
-                                <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Disk /var or / Instance</label>
-                                <select name="filesystem_instance"
-                                        class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-slate-100">
+                            </label>
+                            <label class="block">
+                                <span class="text-xs font-semibold text-content-secondary">Disk /var or / Instance</span>
+                                <select name="filesystem_instance" class="mt-1.5 h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-primary outline-none transition hover:border-outline-strong focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10">
                                     <option value="">All Instances</option>
-                                    {% for instance in available_filesystem_instances %}
-                                        <option value="{{ instance }}"
-                                                {% if selected_filesystem_instance == instance %}selected{% endif %}>{{ instance }}</option>
-                                    {% endfor %}
+                                    {% for instance in available_filesystem_instances %}<option value="{{ instance }}" {% if selected_filesystem_instance == instance %}selected{% endif %}>{{ instance }}</option>{% endfor %}
                                 </select>
-                            </div>
+                            </label>
                         </form>
                     </div>
-                    <div id="node-detail-refresh-indicator"
-                         class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-blue-100 dark:bg-blue-950/60">
-                        <div class="h-full w-1/3 animate-pulse rounded-full bg-blue-600 dark:bg-blue-400"></div>
+                    <div id="node-detail-refresh-indicator" class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-kaori-soft">
+                        <div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div>
                     </div>
                 </div>
                 <div id="node-detail-panel">{% include "analytics/utilization/partials/_node_detail.html" %}</div>
-            </div>
+            </section>
         {% endif %}
     </div>
 {% endblock dashboard_content %}

@@ -5,7 +5,7 @@
 {% set complete_title = analytics_load_complete_title|default('Analytics page fully loaded') %}
 {% set complete_description = analytics_load_complete_description|default('All tracked analytics sections have finished loading.') %}
 <div id="{{ tracker_id }}"
-     class="hidden overflow-hidden rounded-2xl border border-blue-100 bg-white px-5 py-4 shadow-sm dark:border-blue-900/40 dark:bg-slate-900"
+     class="hidden overflow-hidden rounded-xl border border-outline-default bg-surface-card px-5 py-4 shadow-sm"
      data-analytics-load-tracker="true"
      data-analytics-page-id="{{ page_id }}"
      data-analytics-title="{{ title }}"
@@ -14,21 +14,21 @@
      data-analytics-complete-description="{{ complete_description }}">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div class="flex items-center gap-3">
-            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-300">
+            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                 <i data-lucide="loader-2" class="h-5 w-5 animate-spin"></i>
             </div>
             <div>
-                <p class="text-sm font-semibold text-slate-900 dark:text-white"
+                <p class="text-sm font-semibold text-content-primary"
                    data-analytics-load-title>{{ title }}</p>
-                <p class="text-xs text-slate-500 dark:text-slate-400"
+                <p class="text-xs text-content-muted"
                    data-analytics-load-description>{{ description }}</p>
             </div>
         </div>
-        <div class="text-xs font-semibold text-blue-600 dark:text-blue-300"
+        <div class="text-xs font-semibold text-kaori-primary"
              data-analytics-load-counter>0/0 sections</div>
     </div>
-    <div class="mt-4 h-1.5 overflow-hidden rounded-full bg-blue-100 dark:bg-blue-950/60">
-        <div class="h-full w-[4%] rounded-full bg-blue-600 transition-all duration-300 ease-out dark:bg-blue-400"
+    <div class="mt-4 h-1.5 overflow-hidden rounded-full bg-kaori-soft">
+        <div class="h-full w-[4%] rounded-full bg-kaori-primary transition-all duration-300 ease-out"
              data-analytics-load-progress></div>
     </div>
 </div>
