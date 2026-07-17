@@ -1,32 +1,32 @@
-<section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+<section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
     <button type="button"
             @click="recentOpen = !recentOpen"
-            class="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition hover:bg-slate-50 dark:hover:bg-slate-950/40">
+            class="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition hover:bg-surface-subtle dark:hover:bg-surface-card/40">
         <div class="flex items-center gap-3">
-            <span class="flex h-9 w-9 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+            <span class="flex h-9 w-9 items-center justify-center rounded-2xl bg-kaori-soft text-kaori-primary dark:bg-kaori-soft/10 dark:text-kaori-accent">
                 <i data-lucide="activity" class="h-4 w-4"></i>
             </span>
             <div>
-                <h2 class="text-base font-extrabold text-slate-950 dark:text-white">Recent Login Activity</h2>
-                <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Latest 5 sign-in attempts for this account.</p>
+                <h2 class="text-base font-extrabold text-content-primary">Recent Login Activity</h2>
+                <p class="mt-0.5 text-xs text-content-muted">Latest 5 sign-in attempts for this account.</p>
             </div>
         </div>
         <i data-lucide="chevron-down"
-           class="h-5 w-5 text-slate-400 transition"
+           class="h-5 w-5 text-content-muted transition"
            :class="recentOpen ? 'rotate-180' : ''"></i>
     </button>
     <div x-show="recentOpen" x-cloak>
-        <div class="flex items-center justify-end border-t border-slate-100 px-5 py-3 dark:border-slate-800">
+        <div class="flex items-center justify-end border-t border-outline-default px-5 py-3">
             <a href="{{ url_for('settings.login_activity') }}"
-               class="inline-flex items-center gap-2 rounded-xl bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 transition hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:hover:bg-blue-500/20">
+               class="inline-flex items-center gap-2 rounded-xl bg-kaori-soft px-3 py-2 text-xs font-bold text-kaori-primary transition hover:bg-kaori-soft dark:bg-kaori-soft/10 dark:text-kaori-accent dark:hover:bg-kaori-strong/20">
                 <i data-lucide="external-link" class="h-3.5 w-3.5"></i>
                 View all login activity
             </a>
         </div>
         {% if recent_login_events %}
-            <div class="overflow-x-auto border-t border-slate-200 dark:border-slate-800">
-                <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-800">
-                    <thead class="bg-slate-50 text-xs font-bold uppercase tracking-wide text-slate-500 dark:bg-slate-950/50 dark:text-slate-400">
+            <div class="overflow-x-auto border-t border-outline-default">
+                <table class="min-w-full divide-y divide-outline-default text-sm dark:divide-outline-default">
+                    <thead class="bg-surface-subtle text-xs font-bold uppercase tracking-wide text-content-muted/50">
                         <tr>
                             <th class="px-5 py-3 text-left">Time</th>
                             <th class="px-5 py-3 text-left">Source</th>
@@ -35,38 +35,38 @@
                             <th class="px-5 py-3 text-left">Reason</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                    <tbody class="divide-y divide-slate-100 dark:divide-outline-default">
                         {% for event in recent_login_events %}
-                            <tr class="transition hover:bg-slate-50 dark:hover:bg-slate-950/40">
-                                <td class="whitespace-nowrap px-5 py-3 font-semibold text-slate-700 dark:text-slate-200">{{ event.created_at|user_datetime("%Y-%m-%d %H:%M:%S %Z") }}</td>
-                                <td class="whitespace-nowrap px-5 py-3 text-slate-500 dark:text-slate-400">{{ event.source|replace('_', ' ') |title }}</td>
+                            <tr class="transition hover:bg-surface-subtle dark:hover:bg-surface-card/40">
+                                <td class="whitespace-nowrap px-5 py-3 font-semibold text-content-secondary">{{ event.created_at|user_datetime("%Y-%m-%d %H:%M:%S %Z") }}</td>
+                                <td class="whitespace-nowrap px-5 py-3 text-content-muted">{{ event.source|replace('_', ' ') |title }}</td>
                                 <td class="whitespace-nowrap px-5 py-3">
                                     {% if event.success %}
-                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
+                                        <span class="inline-flex items-center gap-1.5 rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
                                             <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
                                             Success
                                         </span>
                                     {% else %}
-                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-2.5 py-1 text-xs font-bold text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">
+                                        <span class="inline-flex items-center gap-1.5 rounded-md bg-rose-50 px-2.5 py-1 text-xs font-bold text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">
                                             <span class="h-1.5 w-1.5 rounded-full bg-rose-500"></span>
                                             Failed
                                         </span>
                                     {% endif %}
                                 </td>
-                                <td class="whitespace-nowrap px-5 py-3 text-slate-500 dark:text-slate-400">{{ event.ip_address|default('-', true) }}</td>
-                                <td class="px-5 py-3 text-slate-500 dark:text-slate-400">{{ event.reason|replace('_', ' ') |title }}</td>
+                                <td class="whitespace-nowrap px-5 py-3 text-content-muted">{{ event.ip_address|default('-', true) }}</td>
+                                <td class="px-5 py-3 text-content-muted">{{ event.reason|replace('_', ' ') |title }}</td>
                             </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
         {% else %}
-            <div class="border-t border-slate-200 px-5 py-8 text-center dark:border-slate-800">
-                <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+            <div class="border-t border-outline-default px-5 py-8 text-center">
+                <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-surface-subtle text-content-muted bg-surface-subtle">
                     <i data-lucide="clipboard-list" class="h-5 w-5"></i>
                 </div>
-                <p class="mt-3 text-sm font-bold text-slate-950 dark:text-white">No recent login activity</p>
-                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Login attempts will appear here after audit events are recorded.</p>
+                <p class="mt-3 text-sm font-bold text-content-primary">No recent login activity</p>
+                <p class="mt-1 text-sm text-content-muted">Login attempts will appear here after audit events are recorded.</p>
             </div>
         {% endif %}
     </div>

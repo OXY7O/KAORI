@@ -1,5 +1,5 @@
 <div class="overflow-x-auto">
-    <table class="w-full text-slate-900 dark:text-slate-100"
+    <table class="w-full text-content-primary text-content-primary"
            style="min-width: 980px;
                   table-layout: fixed">
         <colgroup>
@@ -9,7 +9,7 @@
             <col style="width: 34%;">
         </colgroup>
         <thead>
-            <tr class="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-600 dark:border-slate-700 dark:bg-slate-700/40 dark:text-slate-300">
+            <tr class="border-b border-outline-default bg-surface-subtle text-xs uppercase tracking-wide text-content-secondary border-outline-default bg-surface-subtle/40">
                 <th class="px-5 py-3 text-left">Namespace</th>
                 <th class="px-5 py-3 text-left">Live source</th>
                 <th class="px-5 py-3 text-left">Current Policy</th>
@@ -20,25 +20,25 @@
             {% for row in namespace_rows %}
                 {% set live_classes = 'bg-green-50 text-green-700 ring-green-200 dark:bg-green-500/10 dark:text-green-300 dark:ring-green-500/25' if row.in_live_cluster else 'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/25' %}
                 {% if row.policy == 'approval_required' %}
-                    {% set policy_classes = "bg-purple-50 text-purple-700 ring-purple-200 dark:bg-purple-500/10 dark:text-purple-300 dark:ring-purple-500/25" %}
+                    {% set policy_classes = "bg-kaori-soft text-kaori-primary ring-brand-outline dark:bg-kaori-soft/10 dark:text-kaori-accent dark:ring-kaori-primary/25" %}
                     {% set policy_icon = "users" %}
                 {% elif row.policy == 'step_up' %}
-                    {% set policy_classes = "bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/25" %}
+                    {% set policy_classes = "bg-kaori-soft text-kaori-primary ring-brand-outline dark:bg-kaori-soft/10 dark:text-kaori-accent dark:ring-kaori-primary/25" %}
                     {% set policy_icon = "shield-check" %}
                 {% else %}
-                    {% set policy_classes = "bg-slate-50 text-slate-700 ring-slate-200 dark:bg-slate-700/50 dark:text-slate-300 dark:ring-slate-600" %}
+                    {% set policy_classes = "bg-surface-subtle text-content-secondary ring-outline-default bg-surface-subtle/50 dark:ring-slate-600" %}
                     {% set policy_icon = "lock" %}
                 {% endif %}
-                <tr class="border-t border-slate-200 text-sm transition hover:bg-blue-50/30 dark:border-slate-700 dark:hover:bg-slate-700/30">
+                <tr class="border-t border-outline-default text-sm transition hover:bg-kaori-soft/30 border-outline-default dark:hover:bg-surface-subtle/30">
                     <td class="px-5 py-3 align-middle">
                         <div class="flex max-w-[360px] items-center gap-2.5">
-                            <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                            <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-surface-subtle text-content-secondary bg-surface-subtle">
                                 <i data-lucide="box" class="h-4 w-4"></i>
                             </span>
                             <div class="min-w-0">
-                                <div class="truncate font-semibold text-slate-900 dark:text-white"
+                                <div class="truncate font-semibold text-content-primary"
                                      title="{{ row.namespace }}">{{ row.namespace }}</div>
-                                <div class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Namespace-scoped Secret access</div>
+                                <div class="mt-0.5 text-xs text-content-muted">Namespace-scoped Secret access</div>
                             </div>
                         </div>
                     </td>
@@ -50,7 +50,7 @@
                         </span>
                     </td>
                     <td class="px-5 py-3 text-left align-middle">
-                        <span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ring-1 ring-inset {{ policy_classes }}">
+                        <span class="inline-flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium ring-1 ring-inset {{ policy_classes }}">
                             <i data-lucide="{{ policy_icon }}" class="h-3.5 w-3.5"></i>
                             {{ reveal_policy_choices.get(row.policy, row.policy.replace('_', ' ') |title) }}
                         </span>
@@ -74,7 +74,7 @@
                             <select name="policy"
                                     aria-label="Reveal policy for {{ row.namespace }}"
                                     {% if not row.in_live_cluster and row.policy == 'disabled' %}disabled{% endif %}
-                                    class="h-10 min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10 dark:disabled:bg-slate-900 dark:disabled:text-slate-600">
+                                    class="h-10 min-w-0 flex-1 rounded-xl border border-outline-default bg-surface-card px-3 text-sm text-content-primary outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-content-muted border-outline-default bg-surface-subtle text-content-primary dark:focus:border-kaori-primary dark:focus:ring-kaori-primary/20 dark:disabled:bg-surface-subtle dark:disabled:text-content-secondary">
                                 {% for value, label in reveal_policy_choices.items() %}
                                     <option value="{{ value }}" {% if row.policy == value %}selected{% endif %}>{{ label }}</option>
                                 {% endfor %}
@@ -82,7 +82,7 @@
                             <button type="submit"
                                     title="Save {{ row.namespace }} policy"
                                     {% if not row.in_live_cluster and row.policy == 'disabled' %}disabled{% endif %}
-                                    class="inline-flex h-10 w-24 shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-600 px-3 text-sm font-semibold text-white shadow-sm outline-none transition hover:bg-blue-700 focus:ring-4 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 disabled:shadow-none dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-400/20 dark:disabled:bg-slate-800 dark:disabled:text-slate-600">
+                                    class="inline-flex h-10 w-24 shrink-0 items-center justify-center gap-2 rounded-xl bg-kaori-primary px-3 text-sm font-semibold text-white shadow-sm outline-none transition hover:bg-kaori-strong focus:ring-4 focus:ring-kaori-primary/20 disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-content-muted disabled:shadow-none dark:bg-kaori-primary dark:hover:bg-kaori-primary dark:focus:ring-kaori-primary/20 dark:disabled:bg-surface-subtle dark:disabled:text-content-secondary">
                                 <i data-lucide="save" class="h-4 w-4"></i>
                                 Save
                             </button>
@@ -109,12 +109,12 @@
         </tbody>
     </table>
 </div>
-<div class="flex flex-col gap-4 border-t border-slate-200 bg-slate-50 px-6 py-4 text-sm text-slate-500 lg:flex-row lg:items-center lg:justify-between dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
+<div class="flex flex-col gap-4 border-t border-outline-default bg-surface-subtle px-6 py-4 text-sm text-content-muted lg:flex-row lg:items-center lg:justify-between border-outline-default">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
         <div>
-            Showing <span class="font-semibold text-slate-700 dark:text-slate-200">{{ namespace_pagination.start_item }}</span> -
-            <span class="font-semibold text-slate-700 dark:text-slate-200">{{ namespace_pagination.end_item }}</span> of
-            <span class="font-semibold text-slate-700 dark:text-slate-200">{{ namespace_pagination.total_items }}</span>
+            Showing <span class="font-semibold text-content-secondary">{{ namespace_pagination.start_item }}</span> -
+            <span class="font-semibold text-content-secondary">{{ namespace_pagination.end_item }}</span> of
+            <span class="font-semibold text-content-secondary">{{ namespace_pagination.total_items }}</span>
             {{ 'namespace' if namespace_pagination.total_items == 1 else 'namespaces' }}
         </div>
         <form method="get"
@@ -137,7 +137,7 @@
             <select name="per_page"
                     aria-label="Rows per page"
                     onchange="this.form.requestSubmit()"
-                    class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
+                    class="rounded-xl border border-outline-default bg-surface-card px-3 py-2 text-sm font-medium text-content-primary outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 border-outline-default bg-surface-subtle text-content-primary dark:focus:border-kaori-primary dark:focus:ring-kaori-primary/20">
                 {% for option in namespace_per_page_options %}
                     <option value="{{ option }}"
                             {% if namespace_pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
@@ -155,15 +155,15 @@
                hx-swap="innerHTML"
                hx-push-url="true"
                hx-indicator="#secret-reveal-namespace-loading"
-               class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
+               class="inline-flex items-center gap-2 rounded-xl border border-outline-default bg-surface-card px-3 py-2 text-sm font-medium text-content-secondary transition hover:bg-surface-subtle border-outline-default bg-surface-subtle dark:hover:bg-surface-subtle">
                 <i data-lucide="chevron-left" class="h-4 w-4"></i>Previous
             </a>
         {% else %}
-            <span class="inline-flex cursor-not-allowed items-center gap-2 rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-sm font-medium text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-600">
+            <span class="inline-flex cursor-not-allowed items-center gap-2 rounded-xl border border-outline-default bg-surface-subtle px-3 py-2 text-sm font-medium text-content-muted border-outline-default bg-surface-subtle">
                 <i data-lucide="chevron-left" class="h-4 w-4"></i>Previous
             </span>
         {% endif %}
-        <span class="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">Page {{ namespace_pagination.page }} / {{ namespace_pagination.total_pages }}</span>
+        <span class="inline-flex items-center rounded-xl border border-outline-default bg-surface-card px-3 py-2 text-sm font-semibold text-content-secondary border-outline-default bg-surface-subtle">Page {{ namespace_pagination.page }} / {{ namespace_pagination.total_pages }}</span>
         {% if namespace_pagination.has_next %}
             {% set next_url = url_for('settings.secret_reveal.index', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.next_page, per_page=namespace_pagination.per_page) %}
             <a href="{{ next_url }}"
@@ -173,11 +173,11 @@
                hx-swap="innerHTML"
                hx-push-url="true"
                hx-indicator="#secret-reveal-namespace-loading"
-               class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
+               class="inline-flex items-center gap-2 rounded-xl border border-outline-default bg-surface-card px-3 py-2 text-sm font-medium text-content-secondary transition hover:bg-surface-subtle border-outline-default bg-surface-subtle dark:hover:bg-surface-subtle">
                 Next<i data-lucide="chevron-right" class="h-4 w-4"></i>
             </a>
         {% else %}
-            <span class="inline-flex cursor-not-allowed items-center gap-2 rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-sm font-medium text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-600">
+            <span class="inline-flex cursor-not-allowed items-center gap-2 rounded-xl border border-outline-default bg-surface-subtle px-3 py-2 text-sm font-medium text-content-muted border-outline-default bg-surface-subtle">
                 Next<i data-lucide="chevron-right" class="h-4 w-4"></i>
             </span>
         {% endif %}

@@ -1,37 +1,37 @@
-<div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-blue-500 to-cyan-500 px-6 py-7 text-white shadow-sm shadow-blue-500/20">
+<div class="relative overflow-hidden rounded-2xl bg-kaori-primary px-6 py-7 text-white shadow-sm shadow-blue-500/20">
     <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.28),_transparent_35%)]"></div>
     <div class="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
         <div class="flex items-start gap-4">
-            <span class="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-3xl bg-white/15 text-white ring-1 ring-white/20 backdrop-blur">
+            <span class="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl bg-surface-card/15 text-white ring-1 ring-white/20 backdrop-blur">
                 <i data-lucide="shield-check" class="h-7 w-7"></i>
             </span>
             <div>
-                <p class="text-xs font-bold uppercase tracking-[0.22em] text-blue-100">Authentication Audit</p>
+                <p class="text-xs font-bold uppercase tracking-[0.22em] text-white/80">Authentication Audit</p>
                 <h1 class="mt-1 text-3xl font-extrabold tracking-tight">Login Activity</h1>
-                <p class="mt-2 max-w-3xl text-sm leading-6 text-blue-50 sm:text-base">
+                <p class="mt-2 max-w-3xl text-sm leading-6 text-white/85 sm:text-base">
                     Monitor sign-in attempts, authentication outcomes, client source, and failure reasons for operational security review. Database retention is handled by the cleanup command.
                 </p>
                 <div class="mt-4 flex flex-wrap gap-2">
-                    <span class="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs font-bold text-white ring-1 ring-white/20 backdrop-blur">
+                    <span class="inline-flex items-center gap-1.5 rounded-md bg-surface-card/15 px-3 py-1.5 text-xs font-bold text-white ring-1 ring-white/20 backdrop-blur">
                         <i data-lucide="database" class="h-3.5 w-3.5"></i>
                         Local login audited
                     </span>
-                    <span class="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs font-bold text-white ring-1 ring-white/20 backdrop-blur">
+                    <span class="inline-flex items-center gap-1.5 rounded-md bg-surface-card/15 px-3 py-1.5 text-xs font-bold text-white ring-1 ring-white/20 backdrop-blur">
                         <i data-lucide="list-filter" class="h-3.5 w-3.5"></i>
                         Success / failed filter
                     </span>
-                    <span class="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs font-bold text-white ring-1 ring-white/20 backdrop-blur">
+                    <span class="inline-flex items-center gap-1.5 rounded-md bg-surface-card/15 px-3 py-1.5 text-xs font-bold text-white ring-1 ring-white/20 backdrop-blur">
                         <i data-lucide="rows-3" class="h-3.5 w-3.5"></i>
                         Latest {{ max_login_activity_records }} records
                     </span>
-                    <span class="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs font-bold text-white ring-1 ring-white/20 backdrop-blur">
+                    <span class="inline-flex items-center gap-1.5 rounded-md bg-surface-card/15 px-3 py-1.5 text-xs font-bold text-white ring-1 ring-white/20 backdrop-blur">
                         <i data-lucide="calendar-clock" class="h-3.5 w-3.5"></i>
                         Retention {{ login_audit_retention_days }} days
                     </span>
                 </div>
             </div>
         </div>
-        <div class="w-fit rounded-2xl bg-white/15 px-4 py-3 text-sm font-bold text-white ring-1 ring-white/20 backdrop-blur">
+        <div class="w-fit rounded-2xl bg-surface-card/15 px-4 py-3 text-sm font-bold text-white ring-1 ring-white/20 backdrop-blur">
             <div class="flex items-center gap-2">
                 <i data-lucide="shield" class="h-4 w-4"></i>
                 <span>Current source: {{ current_auth_label }}</span>

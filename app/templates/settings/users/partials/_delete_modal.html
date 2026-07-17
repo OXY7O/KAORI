@@ -1,24 +1,24 @@
 <div id="delete-user-modal"
-     class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/70 px-4 backdrop-blur-sm"
+     class="fixed inset-0 z-50 hidden items-center justify-center bg-surface-subtle/70 px-4 backdrop-blur-sm"
      aria-hidden="true">
     <div class="absolute inset-0" data-delete-modal-close></div>
     <div role="dialog"
          aria-modal="true"
          aria-labelledby="delete-user-modal-title"
-         class="relative w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-800">
+         class="relative w-full max-w-md overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-2xl border-outline-default bg-surface-subtle">
         <div class="p-6">
             <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-red-100 text-red-600 dark:bg-red-500/10 dark:text-red-300">
                 <i data-lucide="trash-2" class="h-6 w-6"></i>
             </div>
             <h3 id="delete-user-modal-title"
-                class="text-lg font-semibold text-slate-950 dark:text-white">Delete user?</h3>
-            <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                class="text-lg font-semibold text-content-primary">Delete user?</h3>
+            <p class="mt-2 text-sm text-content-secondary">
                 Confirm soft delete for
                 <span id="delete-user-name"
-                      class="font-semibold text-slate-900 dark:text-white">this user</span>.
+                      class="font-semibold text-content-primary">this user</span>.
             </p>
             <p id="delete-user-meta"
-               class="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400"></p>
+               class="mt-1 text-xs font-semibold text-content-muted"></p>
             <p class="mt-2 text-sm font-medium text-red-600 dark:text-red-300">
                 Login access will be disabled, but user history remains available for audit review.
             </p>
@@ -32,10 +32,10 @@
             {% if csrf_token is defined %}
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             {% endif %}
-            <div class="flex justify-end gap-3 border-t border-slate-200 bg-slate-50 px-6 py-4 dark:border-slate-700 dark:bg-slate-900/40">
+            <div class="flex justify-end gap-3 border-t border-outline-default bg-surface-subtle px-6 py-4 border-outline-default">
                 <button type="button"
                         data-delete-modal-close
-                        class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
+                        class="rounded-xl border border-outline-default bg-surface-card px-4 py-2 text-sm font-medium text-content-secondary transition hover:bg-surface-subtle border-outline-default bg-surface-subtle dark:hover:bg-surface-subtle">
                     Cancel
                 </button>
                 <button type="submit"

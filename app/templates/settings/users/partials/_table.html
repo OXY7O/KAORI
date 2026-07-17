@@ -1,32 +1,32 @@
 <div id="users-table"
-     class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
-    <div class="border-b border-slate-200 px-6 py-5 dark:border-slate-700">
+     class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm border-outline-default bg-surface-subtle">
+    <div class="border-b border-outline-default px-6 py-5 border-outline-default">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div class="flex items-center gap-3">
-                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary dark:bg-kaori-soft/10 dark:text-kaori-accent">
                     <i data-lucide="database" class="h-5 w-5"></i>
                 </div>
                 <div>
-                    <h2 class="text-lg font-semibold text-slate-950 dark:text-white">User Directory</h2>
-                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    <h2 class="text-lg font-semibold text-content-primary">User Directory</h2>
+                    <p class="mt-1 text-sm text-content-muted">
                         Review user identities, access status, authentication source, and RBAC assignment in one directory.
                     </p>
                 </div>
             </div>
             <a href="{{ url_for('settings.new_user') }}"
-               class="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 hover:shadow-md focus:outline-none focus:ring-4 focus:ring-blue-100 dark:bg-blue-600 dark:hover:bg-blue-500 dark:focus:ring-blue-900/30">
+               class="inline-flex items-center justify-center gap-2 rounded-xl bg-kaori-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-kaori-strong hover:shadow-md focus:outline-none focus:ring-4 focus:ring-kaori-primary/20 dark:bg-kaori-primary dark:hover:bg-kaori-strong dark:focus:ring-kaori-primary/20">
                 <i data-lucide="user-plus" class="h-4 w-4"></i>
                 <span>Add User</span>
             </a>
         </div>
         <div id="users-refresh-indicator"
-             class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-blue-100 dark:bg-blue-950/60">
-            <div class="h-full w-1/3 animate-pulse rounded-full bg-blue-600 dark:bg-blue-400"></div>
+             class="htmx-indicator mt-4 h-1 overflow-hidden rounded-md bg-kaori-soft dark:bg-blue-950/60">
+            <div class="h-full w-1/3 animate-pulse rounded-md bg-kaori-primary dark:bg-blue-400"></div>
         </div>
     </div>
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
-            <div class="space-y-2 border-b border-slate-200 bg-slate-50 px-6 py-4 dark:border-slate-700 dark:bg-slate-900/40">
+            <div class="space-y-2 border-b border-outline-default bg-surface-subtle px-6 py-4 border-outline-default">
                 {% for category, message in messages %}
                     {% set tone = 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-300' if category == 'success' else 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-300' if category == 'warning' else 'border-red-200 bg-red-50 text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-300' %}
                     <div class="flex items-start gap-2 rounded-xl border px-3 py-2 text-sm font-medium {{ tone }}">
@@ -39,8 +39,8 @@
         {% endif %}
     {% endwith %}
     <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-700">
-            <thead class="bg-slate-50 text-left text-xs font-bold uppercase tracking-wider text-slate-500 dark:bg-slate-900/60 dark:text-slate-400">
+        <table class="min-w-full divide-y divide-outline-default text-sm dark:divide-slate-700">
+            <thead class="bg-surface-subtle text-left text-xs font-bold uppercase tracking-wider text-content-muted/60">
                 <tr>
                     <th class="px-6 py-3.5">User</th>
                     <th class="px-6 py-3.5">Role</th>
@@ -53,48 +53,48 @@
             <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
                 {% for user in users %}
                     {% set actions = user_actions.get(user.id, {}) %}
-                    <tr class="transition hover:bg-slate-50 dark:hover:bg-slate-900/50">
+                    <tr class="transition hover:bg-surface-subtle dark:hover:bg-surface-subtle/50">
                         <td class="px-6 py-4 align-top">
                             <div class="flex items-start gap-3">
-                                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 ring-1 ring-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-700">
+                                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-subtle text-content-secondary ring-1 ring-outline-default dark:ring-slate-700">
                                     <i data-lucide="{{ 'shield-check' if user.is_super_admin else 'shield' if user.role_name == 'admin' else 'user' }}"
                                        class="h-5 w-5"></i>
                                 </div>
                                 <div class="min-w-0">
                                     <div class="flex flex-wrap items-center gap-2">
-                                        <span class="font-semibold text-slate-950 dark:text-white">{{ user.display_label }}</span>
+                                        <span class="font-semibold text-content-primary">{{ user.display_label }}</span>
                                         {% if not user.has_display_name %}
                                             <span title="No display name is set. Username is used as the visible account label."
-                                                  class="inline-flex items-center gap-1 rounded-full bg-slate-50 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-slate-500 ring-1 ring-slate-200 dark:bg-slate-950/50 dark:text-slate-400 dark:ring-slate-800">
+                                                  class="inline-flex items-center gap-1 rounded-md bg-surface-subtle px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-content-muted ring-1 ring-outline-default/50 dark:ring-outline-default">
                                                 <i data-lucide="user-round" class="h-3 w-3"></i> Username label
                                             </span>
                                         {% endif %}
                                         {% if user.is_super_admin %}
                                             <span title="Break-glass administrator with elevated control over admin-level accounts."
-                                                  class="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-purple-700 ring-1 ring-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:ring-purple-900/60">
+                                                  class="inline-flex items-center gap-1 rounded-md bg-kaori-soft px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-kaori-primary ring-1 ring-brand-outline dark:bg-purple-950/40 dark:text-kaori-accent dark:ring-purple-900/60">
                                                 <i data-lucide="shield-check" class="h-3 w-3"></i> Super Admin
                                             </span>
                                         {% elif user.role_name == 'admin' %}
                                             <span title="Administrator role without super admin break-glass privileges."
-                                                  class="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-blue-700 ring-1 ring-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:ring-blue-900/60">
+                                                  class="inline-flex items-center gap-1 rounded-md bg-kaori-soft px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-kaori-primary ring-1 ring-brand-outline dark:bg-kaori-soft dark:text-kaori-accent dark:ring-blue-900/60">
                                                 <i data-lucide="shield" class="h-3 w-3"></i> Admin
                                             </span>
                                         {% endif %}
                                     </div>
-                                    <div class="mt-1 truncate text-xs text-slate-500 dark:text-slate-400">{{ user.username }} · {{ user.email }}</div>
+                                    <div class="mt-1 truncate text-xs text-content-muted">{{ user.username }} · {{ user.email }}</div>
                                 </div>
                             </div>
                         </td>
                         <td class="px-6 py-4 align-top">
                             <div class="flex flex-wrap items-center gap-2">
-                                <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700 dark:bg-slate-900 dark:text-slate-200">{{ user.role_display_name }}</span>
+                                <span class="rounded-md bg-surface-subtle px-2.5 py-1 text-xs font-bold text-content-secondary">{{ user.role_display_name }}</span>
                                 {% if user.is_super_admin %}
-                                    <span class="rounded-full bg-purple-100 px-2.5 py-1 text-xs font-bold text-purple-700 dark:bg-purple-950/50 dark:text-purple-300">Break-glass</span>
+                                    <span class="rounded-md bg-kaori-soft px-2.5 py-1 text-xs font-bold text-kaori-primary dark:bg-kaori-soft dark:text-kaori-accent">Break-glass</span>
                                 {% endif %}
                             </div>
                         </td>
                         <td class="px-6 py-4 align-top">
-                            <span class="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700 ring-1 ring-blue-100 dark:bg-blue-950/50 dark:text-blue-300 dark:ring-blue-900/60">
+                            <span class="inline-flex items-center gap-1.5 rounded-md bg-kaori-soft px-2.5 py-1 text-xs font-bold text-kaori-primary ring-1 ring-kaori-primary/20 dark:bg-kaori-soft dark:text-kaori-accent dark:ring-blue-900/60">
                                 <i data-lucide="{{ 'database' if user.auth_source == 'database' else 'network' }}"
                                    class="h-3 w-3"></i>
                                 {{ user.auth_source|upper }}
@@ -102,33 +102,33 @@
                         </td>
                         <td class="px-6 py-4 align-top">
                             {% if user.deleted_at %}
-                                <span class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-500 dark:bg-slate-900 dark:text-slate-400"><i data-lucide="archive" class="h-3 w-3"></i> Deleted</span>
+                                <span class="inline-flex items-center gap-1.5 rounded-md bg-surface-subtle px-2.5 py-1 text-xs font-bold text-content-muted"><i data-lucide="archive" class="h-3 w-3"></i> Deleted</span>
                             {% elif user.is_active %}
                                 <span class="inline-flex items-center gap-1.5 rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:ring-emerald-900/60"><i data-lucide="check-circle-2" class="h-3 w-3"></i> Active</span>
                             {% else %}
                                 <span class="inline-flex items-center gap-1.5 rounded-md bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700 ring-1 ring-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:ring-amber-900/60"><i data-lucide="pause-circle" class="h-3 w-3"></i> Inactive</span>
                             {% endif %}
                         </td>
-                        <td class="px-6 py-4 align-top text-slate-500 dark:text-slate-400">{{ user.last_login_at|user_datetime('%Y-%m-%d %H:%M %Z', 'Never') }}</td>
+                        <td class="px-6 py-4 align-top text-content-muted">{{ user.last_login_at|user_datetime('%Y-%m-%d %H:%M %Z', 'Never') }}</td>
                         <td class="px-6 py-4 align-top">
                             <div class="flex flex-wrap justify-start gap-2">
                                 {% if actions.get('can_edit') %}
                                     <a href="{{ url_for('settings.edit_user', user_id=user.id) }}"
-                                       class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-900"><i data-lucide="pencil" class="h-3.5 w-3.5"></i>Edit</a>
+                                       class="inline-flex items-center gap-1.5 rounded-lg border border-outline-default px-2.5 py-1.5 text-xs font-bold text-content-secondary transition hover:bg-surface-subtle border-outline-default dark:hover:bg-surface-subtle"><i data-lucide="pencil" class="h-3.5 w-3.5"></i>Edit</a>
                                 {% else %}
                                     <button type="button"
                                             title="{{ actions.get('edit_reason', 'Edit is restricted for this account.') }}"
                                             disabled
-                                            class="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-bold text-slate-400 opacity-60 dark:border-slate-700"><i data-lucide="pencil" class="h-3.5 w-3.5"></i>Edit</button>
+                                            class="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-outline-default px-2.5 py-1.5 text-xs font-bold text-content-muted opacity-60 border-outline-default"><i data-lucide="pencil" class="h-3.5 w-3.5"></i>Edit</button>
                                 {% endif %}
                                 {% if actions.get('can_reset_password') %}
                                     <a href="{{ url_for('settings.reset_user_password', user_id=user.id) }}"
-                                       class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-900"><i data-lucide="key-round" class="h-3.5 w-3.5"></i>Reset</a>
+                                       class="inline-flex items-center gap-1.5 rounded-lg border border-outline-default px-2.5 py-1.5 text-xs font-bold text-content-secondary transition hover:bg-surface-subtle border-outline-default dark:hover:bg-surface-subtle"><i data-lucide="key-round" class="h-3.5 w-3.5"></i>Reset</a>
                                 {% elif user.auth_source == 'database' %}
                                     <button type="button"
                                             title="{{ actions.get('reset_reason', 'Password reset is restricted for this account.') }}"
                                             disabled
-                                            class="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-bold text-slate-400 opacity-60 dark:border-slate-700"><i data-lucide="key-round" class="h-3.5 w-3.5"></i>Reset</button>
+                                            class="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-outline-default px-2.5 py-1.5 text-xs font-bold text-content-muted opacity-60 border-outline-default"><i data-lucide="key-round" class="h-3.5 w-3.5"></i>Reset</button>
                                 {% endif %}
                                 {% if user.deleted_at %}
                                     {% if actions.get('can_restore') %}
@@ -216,11 +216,11 @@
                     <tr>
                         <td colspan="6" class="px-6 py-14 text-center">
                             <div class="mx-auto flex max-w-sm flex-col items-center">
-                                <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 dark:bg-slate-900 dark:text-slate-500">
+                                <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-surface-subtle text-content-muted">
                                     <i data-lucide="users" class="h-6 w-6"></i>
                                 </div>
-                                <p class="mt-3 font-semibold text-slate-700 dark:text-slate-200">No users found</p>
-                                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Adjust the filters or add a new local user.</p>
+                                <p class="mt-3 font-semibold text-content-secondary">No users found</p>
+                                <p class="mt-1 text-sm text-content-muted">Adjust the filters or add a new local user.</p>
                             </div>
                         </td>
                     </tr>
@@ -228,11 +228,11 @@
             </tbody>
         </table>
     </div>
-    <div class="flex flex-col gap-3 border-t border-slate-200 bg-white px-6 py-4 text-sm sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:bg-slate-800">
+    <div class="flex flex-col gap-3 border-t border-outline-default bg-surface-card px-6 py-4 text-sm sm:flex-row sm:items-center sm:justify-between border-outline-default bg-surface-subtle">
         <form id="users-pagination-form"
               method="get"
               action="{{ url_for('settings.users') }}"
-              class="flex flex-wrap items-center gap-3 text-slate-600 dark:text-slate-300"
+              class="flex flex-wrap items-center gap-3 text-content-secondary"
               hx-get="{{ url_for('settings.users') }}"
               hx-trigger="change from:select[name='per_page']"
               hx-target="#users-page-content"
@@ -247,7 +247,7 @@
             <span class="font-medium">Viewing {{ pagination.start_item }} - {{ pagination.end_item }} of {{ pagination.total_items }} matching user accounts</span>
             <select name="per_page"
                     aria-label="Rows per page"
-                    class="h-9 rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:focus:ring-blue-900/30">
+                    class="h-9 rounded-xl border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-secondary transition focus:border-kaori-primary focus:outline-none focus:ring-4 focus:ring-kaori-primary/20 border-outline-default text-content-primary dark:focus:ring-kaori-primary/20">
                 {% for option in per_page_options %}
                     <option value="{{ option }}"
                             {% if filters.per_page == option %}selected{% endif %}>{{ option }}</option>
@@ -261,18 +261,18 @@
                hx-swap="outerHTML settle:150ms"
                hx-push-url="true"
                hx-indicator="#users-refresh-indicator"
-               class="inline-flex h-9 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 {{ 'pointer-events-none opacity-50' if not pagination.has_prev else '' }} dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800">
+               class="inline-flex h-9 items-center gap-2 rounded-xl border border-outline-default bg-surface-card px-3 text-xs font-bold text-content-muted transition hover:border-outline-default hover:bg-surface-subtle {{ 'pointer-events-none opacity-50' if not pagination.has_prev else '' }} border-outline-default dark:hover:bg-surface-subtle">
                 <i data-lucide="chevron-left" class="h-4 w-4"></i>
                 Previous
             </a>
-            <span class="inline-flex h-9 items-center rounded-xl bg-blue-50 px-3 text-xs font-extrabold text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">Page {{ pagination.page }} of {{ pagination.total_pages }}</span>
+            <span class="inline-flex h-9 items-center rounded-xl bg-kaori-soft px-3 text-xs font-extrabold text-kaori-primary dark:bg-kaori-soft dark:text-kaori-accent">Page {{ pagination.page }} of {{ pagination.total_pages }}</span>
             <a href="{{ url_for('settings.users', page=pagination.next_page, per_page=filters.per_page, search=filters.search, status=filters.status, auth_source=filters.auth_source, role_id=filters.role_id or 'all') }}"
                hx-get="{{ url_for('settings.users', page=pagination.next_page, per_page=filters.per_page, search=filters.search, status=filters.status, auth_source=filters.auth_source, role_id=filters.role_id or 'all') }}"
                hx-target="#users-page-content"
                hx-swap="outerHTML settle:150ms"
                hx-push-url="true"
                hx-indicator="#users-refresh-indicator"
-               class="inline-flex h-9 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 {{ 'pointer-events-none opacity-50' if not pagination.has_next else '' }} dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800">
+               class="inline-flex h-9 items-center gap-2 rounded-xl border border-outline-default bg-surface-card px-3 text-xs font-bold text-content-secondary transition hover:border-outline-default hover:bg-surface-subtle {{ 'pointer-events-none opacity-50' if not pagination.has_next else '' }} border-outline-default text-content-primary dark:hover:bg-surface-subtle">
                 Next
                 <i data-lucide="chevron-right" class="h-4 w-4"></i>
             </a>
