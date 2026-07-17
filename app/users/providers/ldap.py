@@ -49,14 +49,17 @@ class LdapDirectoryProvider:
         uri = (self.config.server_uri or '').strip()
         if not uri:
             raise ExternalProviderError('LDAP server URI is not configured.')
-        use_ssl = uri.lower().startswith('ldaps://') or self.config.tls_mode == 'ldaps'
+
+        tls_mode = (self.config.tls_mode or 'ldaps').lower()
+        use_ssl = uri.lower().startswith('ldaps://') or tls_mode == 'ldaps'
         host = uri.split('://', 1)[-1]
         port = 636 if use_ssl else 389
         if ':' in host and not host.startswith('['):
             host, raw_port = host.rsplit(':', 1)
             if raw_port.isdigit():
                 port = int(raw_port)
-        tls = Tls(validate=ssl.CERT_REQUIRED) if use_ssl else None
+
+        tls = Tls(validate=ssl.CERT_REQUIRED) if tls_mode in {'ldaps', 'starttls'} or use_ssl else None
         return Server(
             host,
             port=port,
@@ -66,25 +69,36 @@ class LdapDirectoryProvider:
             connect_timeout=self.config.connect_timeout_seconds,
         )
 
+    def _bound_connection(self, *, user: str | None, password: str | None) -> Connection:
+        connection = Connection(
+            self._server(),
+            user=user or None,
+            password=password or None,
+            auto_bind=False,
+            receive_timeout=self.config.connect_timeout_seconds,
+        )
+        try:
+            if not connection.open():
+                raise ExternalProviderError('LDAP connection could not be opened.')
+            if self.config.tls_mode == 'starttls' and not connection.server.ssl:
+                if not connection.start_tls():
+                    raise ExternalProviderError('LDAP StartTLS negotiation failed.')
+            if not connection.bind():
+                raise ExternalProviderError('LDAP bind failed.')
+            return connection
+        except LDAPException as exc:
+            connection.unbind()
+            raise ExternalProviderError('LDAP connection or bind failed.') from exc
+        except ExternalProviderError:
+            connection.unbind()
+            raise
+
     def _service_connection(self) -> Connection:
         secret_name = (self.config.bind_password_env or '').strip()
         password = os.getenv(secret_name, '') if secret_name else ''
         if self.config.bind_dn and not password:
             raise ExternalProviderError(f'LDAP bind secret environment variable {secret_name or "<unset>"} is missing.')
-        try:
-            connection = Connection(
-                self._server(),
-                user=self.config.bind_dn or None,
-                password=password or None,
-                auto_bind=True,
-                receive_timeout=self.config.connect_timeout_seconds,
-            )
-            if self.config.tls_mode == 'starttls' and not connection.server.ssl:
-                if not connection.start_tls():
-                    raise ExternalProviderError('LDAP StartTLS negotiation failed.')
-            return connection
-        except LDAPException as exc:
-            raise ExternalProviderError('LDAP service connection failed.') from exc
+        return self._bound_connection(user=self.config.bind_dn, password=password)
 
     def validate(self) -> None:
         connection = self._service_connection()
@@ -95,19 +109,23 @@ class LdapDirectoryProvider:
         if len(normalized) < 2:
             return []
         escaped = escape_filter_chars(normalized)
-        template = self.config.user_filter or '(|({username_attribute}=*{query}*)({email_attribute}=*{query}*)({display_name_attribute}=*{query}*))'
+        template = self.config.user_filter or (
+            '(|({username_attribute}=*{query}*)({email_attribute}=*{query}*)({display_name_attribute}=*{query}*))'
+        )
         search_filter = template.format(
             query=escaped,
             username_attribute=self.config.username_attribute,
             email_attribute=self.config.email_attribute,
             display_name_attribute=self.config.display_name_attribute,
         )
-        attributes = list({
-            self.config.username_attribute,
-            self.config.email_attribute,
-            self.config.display_name_attribute,
-            self.config.stable_id_attribute,
-        })
+        attributes = list(
+            {
+                self.config.username_attribute,
+                self.config.email_attribute,
+                self.config.display_name_attribute,
+                self.config.stable_id_attribute,
+            }
+        )
         connection = self._service_connection()
         try:
             ok = connection.search(
@@ -124,13 +142,15 @@ class LdapDirectoryProvider:
                 username = _attribute_value(entry, self.config.username_attribute)
                 if not username:
                     continue
-                identities.append(ExternalIdentity(
-                    subject=_stable_subject(_attribute_value(entry, self.config.stable_id_attribute)),
-                    username=str(username),
-                    email=str(_attribute_value(entry, self.config.email_attribute) or '') or None,
-                    display_name=str(_attribute_value(entry, self.config.display_name_attribute) or '') or None,
-                    distinguished_name=str(entry.entry_dn),
-                ))
+                identities.append(
+                    ExternalIdentity(
+                        subject=_stable_subject(_attribute_value(entry, self.config.stable_id_attribute)),
+                        username=str(username),
+                        email=str(_attribute_value(entry, self.config.email_attribute) or '') or None,
+                        display_name=str(_attribute_value(entry, self.config.display_name_attribute) or '') or None,
+                        distinguished_name=str(entry.entry_dn),
+                    )
+                )
             return identities
         finally:
             connection.unbind()
@@ -139,14 +159,8 @@ class LdapDirectoryProvider:
         if not distinguished_name or not password:
             return False
         try:
-            connection = Connection(
-                self._server(),
-                user=distinguished_name,
-                password=password,
-                auto_bind=True,
-                receive_timeout=self.config.connect_timeout_seconds,
-            )
+            connection = self._bound_connection(user=distinguished_name, password=password)
             connection.unbind()
             return True
-        except LDAPException:
+        except ExternalProviderError:
             return False

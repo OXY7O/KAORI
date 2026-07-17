@@ -2,7 +2,13 @@
 
 ## Scope
 
-This phase activates LDAP authentication and prepares the shared provider boundary for OIDC SSO. Local Database authentication remains permanently available for break-glass recovery.
+KAORI supports Local Database, LDAP / Active Directory, Google OpenID Connect, and GitHub OAuth authentication. Local Database remains permanently available for break-glass recovery. External providers verify identity; KAORI remains authoritative for account lifecycle and RBAC authorization.
+
+Detailed provider configuration is documented in:
+
+```text
+docs/authentication/IDENTITY_PROVIDER_CONFIGURATION.md
+```
 
 ## LDAP administrative provisioning
 
@@ -46,12 +52,31 @@ sequenceDiagram
     Auth->>Session: Rotate and establish session
 ```
 
-The external provider verifies identity. KAORI remains authoritative for local lifecycle state and later RBAC evaluation.
+## Google and GitHub SSO login
 
-## OIDC readiness
+```mermaid
+sequenceDiagram
+    actor User
+    participant Auth as KAORI Authentication
+    participant IdP as Google or GitHub
+    participant DB as KAORI Database
+    participant Session as Session Manager
 
-The provider schema reserves issuer, client ID, and client-secret environment references. OIDC cannot be enabled in this phase. The next phase adds redirect, callback, discovery, JWKS validation, state, nonce, issuer/audience verification, and `issuer + sub` identity linking.
+    User->>Auth: Select SSO provider
+    Auth->>Auth: Generate state and optional nonce
+    Auth->>IdP: Authorization-code request
+    IdP-->>Auth: Callback with code and state
+    Auth->>Auth: Validate state and nonce where applicable
+    Auth->>IdP: Exchange code and retrieve identity
+    Auth->>DB: Resolve identity link or controlled JIT admission
+    Auth->>DB: Check KAORI lifecycle state and role
+    Auth->>Session: Rotate and establish session
+```
 
-## JIT policy
+## Projection and admission policy
 
-JIT provisioning is deliberately blocked until RBAC role mapping exists. Current LDAP onboarding is administrative provisioning only.
+- LDAP onboarding is administrative provisioning only.
+- Google and GitHub can use pre-provisioned identity links.
+- Controlled SSO JIT is optional and requires an active non-admin default role plus a provider-specific allow-list.
+- Google JIT requires a verified email in an allowed domain.
+- GitHub JIT requires the immutable numeric user ID or current login in the allow-list.

@@ -18,21 +18,22 @@ Self-registration is not supported.
 
 ## File responsibilities
 
-| File | Responsibility |
-|---|---|
-| `__init__.py` | Package marker and stable public exports only. |
-| `routes.py` | User Management HTTP boundary, permission decorators, form orchestration, redirect/HTMX responses, and toast delivery. |
-| `forms.py` | Administrative form validation and provider-aware fields. It must not query providers or persist users. |
-| `service.py` | User queries, pagination, mutation helpers, administrative guardrails, and audit-event preparation. |
-| `identity.py` | Canonical Local/LDAP/SSO identity-source definitions and credential ownership. |
-| `lifecycle.py` | Canonical active, inactive, deleted, and administrative-tier presentation. |
-| `notifications.py` | Standard User Management toast and Activity Audit payload construction. |
+| File               | Responsibility                                                                                                         |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| `__init__.py`      | Package marker and stable public exports only.                                                                         |
+| `routes.py`        | User Management HTTP boundary, permission decorators, form orchestration, redirect/HTMX responses, and toast delivery. |
+| `forms.py`         | Administrative form validation and provider-aware fields. It must not query providers or persist users.                |
+| `service.py`       | User queries, pagination, mutation helpers, administrative guardrails, and audit-event preparation.                    |
+| `identity.py`      | Canonical Local/LDAP/SSO identity-source definitions and credential ownership.                                         |
+| `lifecycle.py`     | Canonical active, inactive, deleted, and administrative-tier presentation.                                             |
+| `notifications.py` | Standard User Management toast and Activity Audit payload construction.                                                |
 
 ## Identity sources
 
 - `database`: active. KAORI is credential owner and source of truth.
-- `ldap`: planned identity projection. LDAP/Active Directory remains source of truth.
-- `sso`: planned identity projection. The IdP remains source of truth.
+- `ldap`: active administrative identity projection. LDAP/Active Directory remains source of truth for credentials.
+- `google_oidc`: active Google browser SSO projection. Google remains source of truth for the external identity.
+- `github_oauth`: active GitHub browser SSO projection. GitHub remains source of truth for the external identity.
 
 External provider records must never contain a KAORI password. The form may display credential ownership, but password inputs must be disabled and omitted from submission for LDAP/SSO.
 
@@ -60,7 +61,7 @@ User Management must not call Flask `flash()`. Every create, update, activate, d
 
 ## External-provider extension boundary
 
-LDAP/SSO implementation must add provider discovery and identity projection services without adding provider-specific branching to `routes.py`. The next phase will define directory search, JIT provisioning, external subject binding, claim/group mapping, reconciliation, and deprovisioning.
+Provider discovery, external subject binding, LDAP directory search, administrative LDAP provisioning, and controlled Google/GitHub JIT are implemented. Future work must keep protocol behavior in provider adapters and move any growing persistence orchestration out of routes. Generic OIDC, SAML, group/claim mapping, reconciliation, and deprovisioning remain future extensions.
 
 ## Known staged work
 
@@ -76,13 +77,13 @@ Future persistence additions such as `ExternalIdentityLink`, provider configurat
 
 User Management is registered as the standalone `users` blueprint with the canonical URL prefix `/users`.
 
-| Workflow | Endpoint | URL |
-|---|---|---|
-| Directory | `users.index` | `/users/` |
-| Create | `users.create` | `/users/new` |
-| Edit | `users.edit` | `/users/<id>/edit` |
-| Reset password | `users.reset_password` | `/users/<id>/reset-password` |
-| Activate/deactivate/restore/delete | `users.*` | `/users/<id>/<action>` |
+| Workflow                           | Endpoint               | URL                          |
+| ---------------------------------- | ---------------------- | ---------------------------- |
+| Directory                          | `users.index`          | `/users/`                    |
+| Create                             | `users.create`         | `/users/new`                 |
+| Edit                               | `users.edit`           | `/users/<id>/edit`           |
+| Reset password                     | `users.reset_password` | `/users/<id>/reset-password` |
+| Activate/deactivate/restore/delete | `users.*`              | `/users/<id>/<action>`       |
 
 There are no Settings wrappers, endpoint aliases, compatibility imports, or redirect shims.
 
@@ -105,7 +106,22 @@ Canonical administration routes:
 /users/external-identities
 ```
 
-OIDC fields are intentionally reserved but disabled. JIT provisioning remains blocked until the RBAC role-mapping phase.
+Google OIDC and GitHub OAuth fields are active. LDAP remains administrative provisioning only; Google and GitHub may use pre-provisioned links or controlled JIT with a non-admin default role and provider-specific allow-list.
+
+## Identity provider UI structure
+
+The provider form is split so provider-specific UI remains traceable and only active controls are submitted:
+
+| File                                                          | Responsibility                                                                                                                    |
+| ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `templates/users/providers/form.html`                         | Add/Edit page shell, standardized hero, two-column composition, and save actions.                                                 |
+| `templates/users/providers/partials/_provider_selector.html`  | Explicit LDAP, Google, and GitHub provider cards backed by the `provider_type` form field.                                        |
+| `templates/users/providers/partials/_ldap_configuration.html` | LDAP-only connection, TLS, search, and attribute-mapping fields.                                                                  |
+| `templates/users/providers/partials/_sso_configuration.html`  | SSO credentials, JIT role, Google-domain policy, and GitHub-subject policy.                                                       |
+| `templates/users/providers/partials/_provider_guidance.html`  | Provider-specific setup summary, callback display, activation sequence, and runbook location.                                     |
+| `static/js/identity_provider_form.js`                         | Provider selection, panel visibility, inactive-control disabling, JIT policy selection, callback preview, and dynamic SSO labels. |
+
+Full administrator configuration is documented in `docs/authentication/IDENTITY_PROVIDER_CONFIGURATION.md`.
 
 ## SSO provider administration
 

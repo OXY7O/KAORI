@@ -1,0 +1,45 @@
+<section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <header class="flex items-start gap-3 border-b border-outline-default bg-surface-hover px-5 py-4 sm:px-6">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+            <i data-lucide="blocks" class="h-5 w-5"></i>
+        </span>
+        <div>
+            <h2 class="text-sm font-semibold text-content-primary">Choose provider type</h2>
+            <p class="mt-1 text-xs leading-5 text-content-muted">
+                Only the selected provider configuration is enabled, displayed, and submitted.
+            </p>
+        </div>
+    </header>
+    <fieldset class="grid gap-3 p-5 sm:grid-cols-3 sm:p-6">
+        <legend class="sr-only">{{ form.provider_type.label.text }}</legend>
+        {% set provider_options = [('ldap', 'network', 'LDAP / Active Directory', 'Directory bind and controlled provisioning'), ('google_oidc', 'chrome', 'Google OIDC', 'Google account sign-in with domain policy'), ('github_oauth', 'github', 'GitHub OAuth', 'GitHub account sign-in with user allow-list')] %}
+        {% for value, icon, label, description in provider_options %}
+            <div class="relative min-w-0">
+                <input id="provider-type-{{ value }}"
+                       type="radio"
+                       name="{{ form.provider_type.name }}"
+                       value="{{ value }}"
+                       class="peer sr-only"
+                       data-provider-type-option
+                       {% if selected_type == value %}checked{% endif %}>
+                <label for="provider-type-{{ value }}"
+                       class="flex h-full cursor-pointer flex-col rounded-xl border border-outline-default bg-surface-card p-4 transition hover:border-outline-strong hover:bg-surface-hover peer-checked:border-kaori-primary peer-checked:bg-kaori-soft peer-focus-visible:ring-2 peer-focus-visible:ring-outline-focus">
+                    <span class="flex items-start justify-between gap-3">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-hover text-content-secondary peer-checked:text-kaori-primary">
+                            <i data-lucide="{{ icon }}" class="h-5 w-5"></i>
+                        </span>
+                        <span class="inline-flex items-center gap-1 rounded-md border border-outline-default bg-surface-card px-2 py-1 text-xs font-semibold text-content-muted peer-checked:border-kaori-primary/30 peer-checked:text-kaori-primary">
+                            <i data-lucide="check" class="h-3.5 w-3.5"></i>
+                            Select
+                        </span>
+                    </span>
+                    <strong class="mt-4 text-sm font-semibold text-content-primary">{{ label }}</strong>
+                    <span class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</span>
+                </label>
+            </div>
+        {% endfor %}
+    </fieldset>
+    {% for error in form.provider_type.errors %}
+        <p class="px-5 pb-5 text-xs font-medium text-status-critical sm:px-6">{{ error }}</p>
+    {% endfor %}
+</section>

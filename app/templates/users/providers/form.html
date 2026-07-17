@@ -1,10 +1,11 @@
 {% extends "layouts/app.html" %}
-{% block title %}{{ 'Edit' if provider else 'Add' }} Identity Provider{% endblock title %}
+{% block title %}
+    {{ 'Edit' if provider else 'Add' }} Identity Provider
+{% endblock title %}
 {% block dashboard_content %}
     {% import "components/page_hero.html" as page_hero %}
     {% set selected_type = form.provider_type.data or 'ldap' %}
     {% set selected_label = 'LDAP / Active Directory' if selected_type == 'ldap' else ('Google OpenID Connect' if selected_type == 'google_oidc' else 'GitHub OAuth') %}
-
     <div class="space-y-6" data-provider-form-page>
         <section class="relative overflow-hidden rounded-2xl border border-brand-outline bg-kaori-primary p-5 text-brand-foreground shadow-sm lg:p-6">
             <div class="relative grid gap-5 xl:grid-cols-12 xl:items-stretch">
@@ -14,21 +15,22 @@
                             {{ 'Edit' if provider else 'Add' }} Identity Provider
                         </h1>
                         <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">
-                            Configure one provider at a time. KAORI displays only the connection, admission, and operational settings relevant to the selected provider type.
+                            Select one authentication provider, then configure only the connection, admission, and lifecycle controls used by that provider.
                         </p>
                         <div class="mt-5 flex flex-wrap gap-2">
                             {{ page_hero.meta_label('blocks', selected_label, 'provider-type-meta') }}
                             {{ page_hero.meta_label('key-round', 'Secrets Externalized') }}
-                            {{ page_hero.meta_label('shield-check', 'Provider-Neutral Boundary') }}
+                            {{ page_hero.meta_label('shield-check', 'Local Break-glass Retained') }}
                         </div>
                     {% endcall %}
                 </div>
-
                 <div class="xl:col-span-4">
                     <div class="flex h-full flex-col justify-between rounded-xl border border-brand-outline bg-brand-surface p-4 backdrop-blur">
                         <div>
-                            <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-brand-foreground-muted">Configuration workflow</p>
-                            <p class="mt-2 text-sm font-semibold leading-5 text-brand-foreground">Select the provider type first, complete its visible settings, save, then run live validation from the provider list.</p>
+                            <p class="text-xs font-semibold uppercase tracking-widest text-brand-foreground-muted">Configuration sequence</p>
+                            <p class="mt-2 text-sm font-semibold leading-6 text-brand-foreground">
+                                Choose provider, configure its dedicated fields, save while disabled, validate, then enable authentication.
+                            </p>
                         </div>
                         <a href="{{ url_for('users.providers') }}"
                            class="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-brand-outline bg-brand-surface-strong px-4 text-sm font-semibold text-brand-foreground transition hover:bg-brand-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
@@ -39,380 +41,85 @@
                 </div>
             </div>
         </section>
-
-        <form method="post" class="grid gap-6 xl:grid-cols-12 xl:items-start" data-provider-form>
+        <form method="post"
+              class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start"
+              data-provider-form>
             {{ form.hidden_tag() }}
-
-            <main class="min-w-0 space-y-5 xl:col-span-8">
+            <main class="min-w-0 space-y-5">
+                {% include "users/providers/partials/_provider_selector.html" %}
                 <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-                    <header class="flex items-start gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4">
+                    <header class="flex items-start gap-3 border-b border-outline-default bg-surface-hover px-5 py-4 sm:px-6">
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                             <i data-lucide="id-card" class="h-5 w-5"></i>
                         </span>
                         <div>
-                            <h2 class="text-base font-semibold text-content-primary">Provider identity</h2>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Define the stable key, user-facing name, and provider protocol before entering connection details.</p>
+                            <h2 class="text-sm font-semibold text-content-primary">Provider identity and state</h2>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">
+                                Define the stable provider key and display name, then keep authentication disabled until validation succeeds.
+                            </p>
                         </div>
                     </header>
-                    <div class="grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3">
-                        {% for field in [form.key, form.display_name, form.provider_type] %}
-                            <label class="block">
-                                <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ field.label.text }}</span>
-                                {{ field(class_='h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary focus:border-outline-focus focus:outline-none focus:ring-2 focus:ring-kaori-primary/20', data_provider_type='true' if field.name == 'provider_type' else none) }}
-                                {% if field.name == 'key' %}
-                                    <span class="mt-1 block text-[11px] leading-4 text-content-tertiary">Stable URL-safe identifier, for example <code>corp-ldap</code> or <code>google-workspace</code>.</span>
-                                {% elif field.name == 'display_name' %}
-                                    <span class="mt-1 block text-[11px] leading-4 text-content-tertiary">The label administrators and SSO users see in KAORI.</span>
-                                {% else %}
-                                    <span class="mt-1 block text-[11px] leading-4 text-content-tertiary">Changing the type clears incompatible provider configuration when saved.</span>
-                                {% endif %}
-                                {% for error in field.errors %}<span class="mt-1 block text-xs text-status-critical">{{ error }}</span>{% endfor %}
-                            </label>
-                        {% endfor %}
-                    </div>
-                </section>
-
-                <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-                    <header class="flex items-start gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4">
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                            <i data-lucide="power" class="h-5 w-5"></i>
-                        </span>
-                        <div>
-                            <h2 class="text-base font-semibold text-content-primary">Administrative state</h2>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Keep a provider disabled until its secret, callback, policy, and live validation are ready.</p>
-                        </div>
-                    </header>
-                    <div class="p-5">
-                        <label class="flex items-start gap-3 rounded-lg border border-outline-subtle bg-surface-hover p-4">
-                            {{ form.enabled(class_='mt-1 h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary/20') }}
-                            <span>
-                                <strong class="block text-sm text-content-primary">Enable provider authentication</strong>
-                                <span class="mt-1 block text-xs leading-5 text-content-muted" data-enabled-copy>
-                                    {% if selected_type == 'ldap' %}Allow provisioned LDAP identities to authenticate through the standard username and password form.{% else %}Expose this SSO provider on the sign-in page when its client secret is also available at runtime.{% endif %}
+                    <div class="grid gap-5 p-5 sm:grid-cols-2 sm:p-6">
+                        <label class="block min-w-0">
+                            <span class="text-sm font-semibold text-content-primary">{{ form.key.label.text }}</span>
+                            {{ form.key(class_='mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20', placeholder='corp-ldap') }}
+                            <span class="mt-2 block text-xs leading-5 text-content-muted">Stable URL-safe identifier used by audit metadata and SSO callback routes.</span>
+                            {% for error in form.key.errors %}
+                                <span class="mt-1 block text-xs font-medium text-status-critical">{{ error }}</span>
+                            {% endfor %}
+                        </label>
+                        <label class="block min-w-0">
+                            <span class="text-sm font-semibold text-content-primary">{{ form.display_name.label.text }}</span>
+                            {{ form.display_name(class_='mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20', placeholder='Corporate Directory') }}
+                            <span class="mt-2 block text-xs leading-5 text-content-muted">User-facing name shown in provider administration and, for SSO, on the sign-in page.</span>
+                            {% for error in form.display_name.errors %}
+                                <span class="mt-1 block text-xs font-medium text-status-critical">{{ error }}</span>
+                            {% endfor %}
+                        </label>
+                        <div class="sm:col-span-2">
+                            <label class="flex items-start gap-3 rounded-lg border border-outline-default bg-surface-hover p-4">
+                                {{ form.enabled(class_='mt-1 h-4 w-4 rounded border-outline-strong text-kaori-primary focus:ring-outline-focus') }}
+                                <span class="min-w-0">
+                                    <strong class="block text-sm font-semibold text-content-primary">Enable provider authentication</strong>
+                                    <span class="mt-1 block text-xs leading-5 text-content-muted"
+                                          data-enabled-copy>
+                                        {% if selected_type == 'ldap' %}
+                                            Allow provisioned LDAP identities to use the standard username and password form.
+                                        {% else %}
+                                            Expose this SSO provider on the sign-in page when the client secret is available to the KAORI runtime.
+                                        {% endif %}
+                                    </span>
                                 </span>
-                            </span>
-                        </label>
-                        {% for error in form.enabled.errors %}<p class="mt-2 text-xs text-status-critical">{{ error }}</p>{% endfor %}
-                    </div>
-                </section>
-
-                <section data-provider-section="ldap" class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm {{ 'hidden' if selected_type != 'ldap' else '' }}">
-                    <header class="flex items-start gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4">
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                            <i data-lucide="network" class="h-5 w-5"></i>
-                        </span>
-                        <div>
-                            <h2 class="text-base font-semibold text-content-primary">LDAP connection</h2>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Configure the directory endpoint, bind identity, search scope, and encrypted transport behavior.</p>
-                        </div>
-                    </header>
-                    <div class="grid gap-4 p-5 sm:grid-cols-2">
-                        {% for field in [form.server_uri, form.tls_mode, form.base_dn, form.bind_dn, form.bind_password_env, form.user_filter] %}
-                            <label class="block {{ 'sm:col-span-2' if field.name in ['server_uri', 'user_filter'] else '' }}">
-                                <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ field.label.text }}</span>
-                                {{ field(class_='h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary focus:border-outline-focus focus:outline-none focus:ring-2 focus:ring-kaori-primary/20') }}
-                                {% if field.name == 'server_uri' %}<span class="mt-1 block text-[11px] text-content-tertiary">Example: <code>ldaps://directory.example.com:636</code></span>{% endif %}
-                                {% if field.name == 'bind_password_env' %}<span class="mt-1 block text-[11px] text-content-tertiary">Environment-variable name only; the password value is not stored in the database.</span>{% endif %}
-                                {% if field.name == 'user_filter' %}<span class="mt-1 block text-[11px] text-content-tertiary">Use <code>{query}</code> where the administrator search value should be inserted.</span>{% endif %}
-                                {% for error in field.errors %}<span class="mt-1 block text-xs text-status-critical">{{ error }}</span>{% endfor %}
                             </label>
-                        {% endfor %}
-                    </div>
-                </section>
-
-                <section data-provider-section="ldap" class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm {{ 'hidden' if selected_type != 'ldap' else '' }}">
-                    <header class="flex items-start gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4">
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                            <i data-lucide="scan-search" class="h-5 w-5"></i>
-                        </span>
-                        <div>
-                            <h2 class="text-base font-semibold text-content-primary">LDAP attribute mapping</h2>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Map directory attributes into KAORI identity metadata and the immutable external subject link.</p>
-                        </div>
-                    </header>
-                    <div class="grid gap-4 p-5 sm:grid-cols-2">
-                        {% for field in [form.username_attribute, form.email_attribute, form.display_name_attribute, form.stable_id_attribute] %}
-                            <label class="block">
-                                <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ field.label.text }}</span>
-                                {{ field(class_='h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary focus:border-outline-focus focus:outline-none focus:ring-2 focus:ring-kaori-primary/20') }}
-                                {% for error in field.errors %}<span class="mt-1 block text-xs text-status-critical">{{ error }}</span>{% endfor %}
-                            </label>
-                        {% endfor %}
-                    </div>
-                </section>
-
-                <section data-provider-section="sso" class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm {{ 'hidden' if selected_type == 'ldap' else '' }}">
-                    <header class="flex items-start gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4">
-                        <span data-sso-provider-icon="google" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary {{ 'hidden' if selected_type != 'google_oidc' else '' }}">
-                            <i data-lucide="chrome" class="h-5 w-5"></i>
-                        </span>
-                        <span data-sso-provider-icon="github" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary {{ 'hidden' if selected_type != 'github_oauth' else '' }}">
-                            <i data-lucide="github" class="h-5 w-5"></i>
-                        </span>
-                        <div>
-                            <h2 class="text-base font-semibold text-content-primary" data-sso-title>{{ 'Google OpenID Connect application' if selected_type == 'google_oidc' else 'GitHub OAuth application' }}</h2>
-                            <p class="mt-1 text-xs leading-5 text-content-muted" data-sso-description>{{ 'Register the KAORI callback in Google Cloud and reference the client secret through the runtime environment.' if selected_type == 'google_oidc' else 'Register the KAORI callback in the GitHub OAuth App and reference the client secret through the runtime environment.' }}</p>
-                        </div>
-                    </header>
-                    <div class="grid gap-4 p-5 sm:grid-cols-2">
-                        {% for field in [form.oidc_client_id, form.oidc_client_secret_env] %}
-                            <label class="block">
-                                <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ field.label.text }}</span>
-                                {{ field(class_='h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary focus:border-outline-focus focus:outline-none focus:ring-2 focus:ring-kaori-primary/20') }}
-                                {% if field.name == 'oidc_client_secret_env' %}<span class="mt-1 block text-[11px] text-content-tertiary">Environment-variable name only. KAORI never stores the secret value.</span>{% endif %}
-                                {% for error in field.errors %}<span class="mt-1 block text-xs text-status-critical">{{ error }}</span>{% endfor %}
-                            </label>
-                        {% endfor %}
-                    </div>
-                </section>
-
-                <section data-provider-section="sso" class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm {{ 'hidden' if selected_type == 'ldap' else '' }}">
-                    <header class="flex items-start gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4">
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                            <i data-lucide="user-plus" class="h-5 w-5"></i>
-                        </span>
-                        <div>
-                            <h2 class="text-base font-semibold text-content-primary">SSO admission and JIT provisioning</h2>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Choose between pre-provisioned identities and controlled just-in-time account creation.</p>
-                        </div>
-                    </header>
-                    <div class="space-y-4 p-5">
-                        <label class="flex items-start gap-3 rounded-lg border border-outline-subtle bg-surface-hover p-4">
-                            {{ form.jit_enabled(class_='mt-1 h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary/20', data_jit_toggle='true') }}
-                            <span>
-                                <strong class="block text-sm text-content-primary">Enable controlled JIT provisioning</strong>
-                                <span class="mt-1 block text-xs leading-5 text-content-muted">Create a KAORI account after a successful SSO identity validation only when the provider-specific allow-list admits the identity.</span>
-                            </span>
-                        </label>
-                        {% for error in form.jit_enabled.errors %}<p class="text-xs text-status-critical">{{ error }}</p>{% endfor %}
-
-                        <div data-jit-off-note class="rounded-lg border border-status-info-border bg-status-info-soft p-4 {{ 'hidden' if form.jit_enabled.data else '' }}">
-                            <div class="flex items-start gap-3">
-                                <i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0 text-status-info"></i>
-                                <p class="text-xs leading-5 text-status-info-text">JIT is disabled. Only an identity already provisioned and linked in KAORI may use this SSO provider.</p>
-                            </div>
-                        </div>
-
-                        <div data-jit-settings class="space-y-4 {{ '' if form.jit_enabled.data else 'hidden' }}">
-                            <label class="block">
-                                <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.default_role_id.label.text }}</span>
-                                {{ form.default_role_id(class_='h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary focus:border-outline-focus focus:outline-none focus:ring-2 focus:ring-kaori-primary/20') }}
-                                <span class="mt-1 block text-[11px] leading-4 text-content-tertiary">Administrative roles are intentionally excluded from JIT assignment.</span>
-                                {% for error in form.default_role_id.errors %}<span class="mt-1 block text-xs text-status-critical">{{ error }}</span>{% endfor %}
-                            </label>
-
-                            <label data-provider-policy="google" class="block {{ 'hidden' if selected_type != 'google_oidc' else '' }}">
-                                <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.allowed_domains.label.text }}</span>
-                                {{ form.allowed_domains(rows=4, class_='w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary focus:border-outline-focus focus:outline-none focus:ring-2 focus:ring-kaori-primary/20', placeholder='example.com\nsubsidiary.example.com') }}
-                                <span class="mt-1 block text-[11px] leading-4 text-content-tertiary">One domain per line or comma separated. A Google identity outside this list is denied JIT creation.</span>
-                                {% for error in form.allowed_domains.errors %}<span class="mt-1 block text-xs text-status-critical">{{ error }}</span>{% endfor %}
-                            </label>
-
-                            <label data-provider-policy="github" class="block {{ 'hidden' if selected_type != 'github_oauth' else '' }}">
-                                <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.allowed_subjects.label.text }}</span>
-                                {{ form.allowed_subjects(rows=4, class_='w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary focus:border-outline-focus focus:outline-none focus:ring-2 focus:ring-kaori-primary/20', placeholder='octocat\n583231') }}
-                                <span class="mt-1 block text-[11px] leading-4 text-content-tertiary">Use approved GitHub login names or immutable numeric user IDs, one per line or comma separated.</span>
-                                {% for error in form.allowed_subjects.errors %}<span class="mt-1 block text-xs text-status-critical">{{ error }}</span>{% endfor %}
-                            </label>
+                            {% for error in form.enabled.errors %}
+                                <p class="mt-2 text-xs font-medium text-status-critical">{{ error }}</p>
+                            {% endfor %}
                         </div>
                     </div>
                 </section>
-
-                <footer class="flex flex-col-reverse gap-2 rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm sm:flex-row sm:items-center sm:justify-end">
-                    <a href="{{ url_for('users.providers') }}"
-                       class="inline-flex h-10 items-center justify-center rounded-lg border border-outline-default px-4 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kaori-primary/20">
-                        Cancel
-                    </a>
-                    <button type="submit"
-                            class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kaori-primary/20">
-                        <i data-lucide="save" class="h-4 w-4"></i>
-                        Save Provider
-                    </button>
+                {% include "users/providers/partials/_ldap_configuration.html" %}
+                {% include "users/providers/partials/_sso_configuration.html" %}
+                <footer class="flex flex-col-reverse gap-3 rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:px-5">
+                    <p class="text-xs leading-5 text-content-muted">
+                        Save first, then run <strong class="font-semibold text-content-secondary">Validate</strong> from Identity Providers before enabling production access.
+                    </p>
+                    <div class="flex gap-3 sm:shrink-0">
+                        <a href="{{ url_for('users.providers') }}"
+                           class="inline-flex h-10 flex-1 items-center justify-center rounded-lg border border-outline-default px-4 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus sm:flex-none">
+                            Cancel
+                        </a>
+                        <button type="submit"
+                                class="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-5 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus sm:flex-none">
+                            <i data-lucide="save" class="h-4 w-4"></i>
+                            Save Provider
+                        </button>
+                    </div>
                 </footer>
             </main>
-
-            <aside class="space-y-5 xl:sticky xl:top-6 xl:col-span-4">
-                <section data-provider-info="ldap" class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm {{ 'hidden' if selected_type != 'ldap' else '' }}">
-                    <header class="flex items-start gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4">
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="network" class="h-5 w-5"></i></span>
-                        <div>
-                            <h2 class="text-base font-semibold text-content-primary">LDAP usage guide</h2>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Directory-backed authentication with administrator-controlled account provisioning.</p>
-                        </div>
-                    </header>
-                    <div class="divide-y divide-outline-subtle px-5">
-                        {% for title, text in [
-                            ('Connection', 'Use LDAPS or StartTLS in production. The Bind DN requires read access only to the configured search scope and identity attributes.'),
-                            ('Provisioning', 'After validation, use LDAP Directory Provisioning to find one directory identity, assign a KAORI role, and create its local projection.'),
-                            ('Sign-in', 'Provisioned users enter their LDAP username and password in the standard KAORI login form. No separate LDAP button appears.'),
-                            ('Credential ownership', 'The LDAP directory remains authoritative for passwords. KAORI stores only identity metadata, the subject link, role, and lifecycle state.')
-                        ] %}
-                            <div class="py-3.5">
-                                <p class="text-xs font-semibold text-content-primary">{{ title }}</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ text }}</p>
-                            </div>
-                        {% endfor %}
-                    </div>
-                </section>
-
-                <section data-provider-info="google_oidc" class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm {{ 'hidden' if selected_type != 'google_oidc' else '' }}">
-                    <header class="flex items-start gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4">
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="chrome" class="h-5 w-5"></i></span>
-                        <div>
-                            <h2 class="text-base font-semibold text-content-primary">Google OIDC guide</h2>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Google identity validation with optional domain-restricted JIT provisioning.</p>
-                        </div>
-                    </header>
-                    <div class="divide-y divide-outline-subtle px-5">
-                        {% for title, text in [
-                            ('Google application', 'Create a Web application OAuth client and enter its client ID. Store the client secret only in the referenced runtime environment variable.'),
-                            ('Callback', 'Register the exact KAORI callback shown below as an authorized redirect URI in Google Cloud.'),
-                            ('JIT admission', 'When JIT is enabled, only identities whose verified email domain matches the configured allow-list receive the selected default role.'),
-                            ('Sign-in exposure', 'The Google option appears on the login page only when the provider is enabled, credentials are configured, and the client secret exists at runtime.')
-                        ] %}
-                            <div class="py-3.5">
-                                <p class="text-xs font-semibold text-content-primary">{{ title }}</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ text }}</p>
-                            </div>
-                        {% endfor %}
-                    </div>
-                </section>
-
-                <section data-provider-info="github_oauth" class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm {{ 'hidden' if selected_type != 'github_oauth' else '' }}">
-                    <header class="flex items-start gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4">
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="github" class="h-5 w-5"></i></span>
-                        <div>
-                            <h2 class="text-base font-semibold text-content-primary">GitHub OAuth guide</h2>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">GitHub identity validation with an explicit user admission allow-list.</p>
-                        </div>
-                    </header>
-                    <div class="divide-y divide-outline-subtle px-5">
-                        {% for title, text in [
-                            ('GitHub OAuth App', 'Create an OAuth App, enter its client ID, and keep the client secret only in the referenced runtime environment variable.'),
-                            ('Callback', 'Register the exact KAORI callback shown below as the OAuth App authorization callback URL.'),
-                            ('JIT admission', 'When JIT is enabled, admit only configured GitHub login names or immutable numeric user IDs. Numeric IDs are the stronger stable identifier.'),
-                            ('Sign-in exposure', 'The GitHub option appears on the login page only when the provider is enabled, credentials are configured, and the client secret exists at runtime.')
-                        ] %}
-                            <div class="py-3.5">
-                                <p class="text-xs font-semibold text-content-primary">{{ title }}</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ text }}</p>
-                            </div>
-                        {% endfor %}
-                    </div>
-                </section>
-
-                <section data-provider-info="sso-callback" class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm {{ 'hidden' if selected_type == 'ldap' else '' }}">
-                    <header class="flex items-start gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4">
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="route" class="h-5 w-5"></i></span>
-                        <div>
-                            <h2 class="text-sm font-semibold text-content-primary">Callback URL</h2>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">The callback contains the provider key entered in this form.</p>
-                        </div>
-                    </header>
-                    <div class="p-5">
-                        <code class="block break-all rounded-lg border border-outline-subtle bg-surface-hover p-3 text-[11px] leading-5 text-content-primary"><span data-callback-root>{{ request.url_root.rstrip('/') }}/auth/sso/</span><span data-callback-key>{{ form.key.data or '&lt;provider-key&gt;' }}</span>/callback</code>
-                        <p class="mt-2 text-[11px] leading-4 text-content-tertiary">The redirect URI must match exactly, including scheme, host, path, and provider key.</p>
-                    </div>
-                </section>
-
-                <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-                    <header class="flex items-start gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4">
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="list-checks" class="h-5 w-5"></i></span>
-                        <div>
-                            <h2 class="text-sm font-semibold text-content-primary">After saving</h2>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Complete these checks before production use.</p>
-                        </div>
-                    </header>
-                    <div class="divide-y divide-outline-subtle px-5">
-                        {% for text in [
-                            'Provide the referenced secret environment variable to every KAORI application instance.',
-                            'Run Validate from the Identity Providers page and resolve any connection or policy error.',
-                            'Test with a non-administrative identity before enabling broad production access.',
-                            'Keep the Local Database break-glass super administrator available and protected.'
-                        ] %}
-                            <div class="flex items-start gap-3 py-3.5">
-                                <i data-lucide="check" class="mt-0.5 h-4 w-4 shrink-0 text-status-success"></i>
-                                <p class="text-xs leading-5 text-content-secondary">{{ text }}</p>
-                            </div>
-                        {% endfor %}
-                    </div>
-                </section>
-            </aside>
+            {% include "users/providers/partials/_provider_guidance.html" %}
         </form>
     </div>
-
-    <script>
-        (() => {
-            const page = document.querySelector('[data-provider-form-page]');
-            const form = page?.querySelector('[data-provider-form]');
-            if (!form) return;
-
-            const providerType = form.querySelector('[data-provider-type]');
-            const jitToggle = form.querySelector('[data-jit-toggle]');
-            const keyInput = form.querySelector('#key');
-            const typeMeta = page.querySelector('#provider-type-meta');
-            const enabledCopy = form.querySelector('[data-enabled-copy]');
-            const ssoTitle = form.querySelector('[data-sso-title]');
-            const ssoDescription = form.querySelector('[data-sso-description]');
-
-            const providerLabels = {
-                ldap: 'LDAP / Active Directory',
-                google_oidc: 'Google OpenID Connect',
-                github_oauth: 'GitHub OAuth',
-            };
-
-            const updateJit = () => {
-                const enabled = Boolean(jitToggle?.checked);
-                form.querySelectorAll('[data-jit-settings]').forEach((section) => section.classList.toggle('hidden', !enabled));
-                form.querySelectorAll('[data-jit-off-note]').forEach((section) => section.classList.toggle('hidden', enabled));
-            };
-
-            const updateProvider = () => {
-                const type = providerType.value;
-                const isLdap = type === 'ldap';
-                const isGoogle = type === 'google_oidc';
-
-                form.querySelectorAll('[data-provider-section="ldap"]').forEach((section) => section.classList.toggle('hidden', !isLdap));
-                form.querySelectorAll('[data-provider-section="sso"]').forEach((section) => section.classList.toggle('hidden', isLdap));
-                form.querySelectorAll('[data-provider-policy="google"]').forEach((section) => section.classList.toggle('hidden', !isGoogle));
-                form.querySelectorAll('[data-provider-policy="github"]').forEach((section) => section.classList.toggle('hidden', type !== 'github_oauth'));
-                page.querySelectorAll('[data-provider-info]').forEach((section) => {
-                    const target = section.dataset.providerInfo;
-                    const visible = target === type || (target === 'sso-callback' && !isLdap);
-                    section.classList.toggle('hidden', !visible);
-                });
-
-                if (isLdap && jitToggle) jitToggle.checked = false;
-                updateJit();
-
-                if (typeMeta) typeMeta.textContent = providerLabels[type] || 'Identity Provider';
-                if (enabledCopy) {
-                    enabledCopy.textContent = isLdap
-                        ? 'Allow provisioned LDAP identities to authenticate through the standard username and password form.'
-                        : 'Expose this SSO provider on the sign-in page when its client secret is also available at runtime.';
-                }
-                if (ssoTitle) ssoTitle.textContent = isGoogle ? 'Google OpenID Connect application' : 'GitHub OAuth application';
-                if (ssoDescription) {
-                    ssoDescription.textContent = isGoogle
-                        ? 'Register the KAORI callback in Google Cloud and reference the client secret through the runtime environment.'
-                        : 'Register the KAORI callback in the GitHub OAuth App and reference the client secret through the runtime environment.';
-                }
-                form.querySelectorAll('[data-sso-provider-icon]').forEach((icon) => {
-                    const visible = icon.dataset.ssoProviderIcon === (isGoogle ? 'google' : 'github');
-                    icon.classList.toggle('hidden', !visible);
-                });
-            };
-
-            const updateCallback = () => {
-                const callbackKey = page.querySelector('[data-callback-key]');
-                if (callbackKey) callbackKey.textContent = keyInput?.value.trim() || '<provider-key>';
-            };
-
-            providerType.addEventListener('change', updateProvider);
-            jitToggle?.addEventListener('change', updateJit);
-            keyInput?.addEventListener('input', updateCallback);
-            updateProvider();
-            updateCallback();
-        })();
-    </script>
 {% endblock dashboard_content %}
+{% block scripts %}
+    <script src="{{ url_for('static', filename='js/identity_provider_form.js') }}"></script>
+{% endblock scripts %}

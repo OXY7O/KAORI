@@ -36,6 +36,7 @@ class ResetPasswordForm(FlaskForm):
     )
     submit = SubmitField('Reset Password')
 
+
 class IdentityProviderForm(FlaskForm):
     key = StringField('Provider Key', validators=[DataRequired(), Length(max=80)])
     display_name = StringField('Display Name', validators=[DataRequired(), Length(max=150)])
@@ -57,14 +58,38 @@ class IdentityProviderForm(FlaskForm):
     bind_dn = StringField('Bind DN', validators=[Optional(), Length(max=500)])
     bind_password_env = StringField('Bind Password Environment Variable', validators=[Optional(), Length(max=150)])
     user_filter = StringField('User Search Filter', validators=[Optional(), Length(max=500)])
-    tls_mode = SelectField('TLS Mode', choices=[('ldaps', 'LDAPS'), ('starttls', 'StartTLS'), ('plain', 'Plain (development only)')])
-    username_attribute = StringField('Username Attribute', validators=[DataRequired(), Length(max=100)], default='sAMAccountName')
-    email_attribute = StringField('Email Attribute', validators=[DataRequired(), Length(max=100)], default='mail')
-    display_name_attribute = StringField('Display Name Attribute', validators=[DataRequired(), Length(max=100)], default='displayName')
-    stable_id_attribute = StringField('Stable ID Attribute', validators=[DataRequired(), Length(max=100)], default='objectGUID')
+    tls_mode = SelectField(
+        'TLS Mode',
+        choices=[('ldaps', 'LDAPS'), ('starttls', 'StartTLS'), ('plain', 'Plain (development only)')],
+        validate_choice=False,
+    )
+    username_attribute = StringField('Username Attribute', validators=[Length(max=100)], default='sAMAccountName')
+    email_attribute = StringField('Email Attribute', validators=[Length(max=100)], default='mail')
+    display_name_attribute = StringField('Display Name Attribute', validators=[Length(max=100)], default='displayName')
+    stable_id_attribute = StringField('Stable ID Attribute', validators=[Length(max=100)], default='objectGUID')
     oidc_client_id = StringField('OAuth Client ID', validators=[Optional(), Length(max=255)])
     oidc_client_secret_env = StringField('Client Secret Environment Variable', validators=[Optional(), Length(max=150)])
     submit = SubmitField('Save Provider')
+
+    def _require_ldap_attribute(self, field, label: str) -> None:
+        if self.provider_type.data == 'ldap' and not (field.data or '').strip():
+            raise ValidationError(f'{label} is required for LDAP providers.')
+
+    def validate_tls_mode(self, field):
+        if self.provider_type.data == 'ldap' and field.data not in {'ldaps', 'starttls', 'plain'}:
+            raise ValidationError('Select a supported LDAP TLS mode.')
+
+    def validate_username_attribute(self, field):
+        self._require_ldap_attribute(field, 'Username attribute')
+
+    def validate_email_attribute(self, field):
+        self._require_ldap_attribute(field, 'Email attribute')
+
+    def validate_display_name_attribute(self, field):
+        self._require_ldap_attribute(field, 'Display name attribute')
+
+    def validate_stable_id_attribute(self, field):
+        self._require_ldap_attribute(field, 'Stable ID attribute')
 
     def validate_enabled(self, field):
         if not field.data:

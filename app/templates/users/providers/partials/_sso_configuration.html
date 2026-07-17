@@ -1,0 +1,113 @@
+<div class="space-y-5"
+     data-provider-panel="sso"
+     {% if selected_type == 'ldap' %}hidden{% endif %}>
+    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+        <header class="flex items-start gap-3 border-b border-outline-default bg-surface-hover px-5 py-4 sm:px-6">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                <span data-sso-provider-icon="google"
+                      {% if selected_type != 'google_oidc' %}hidden{% endif %}>
+                    <i data-lucide="chrome" class="h-5 w-5"></i>
+                </span>
+                <span data-sso-provider-icon="github"
+                      {% if selected_type != 'github_oauth' %}hidden{% endif %}>
+                    <i data-lucide="github" class="h-5 w-5"></i>
+                </span>
+            </span>
+            <div>
+                <h2 class="text-sm font-semibold text-content-primary" data-sso-title>
+                    {{ 'Google OpenID Connect application' if selected_type == 'google_oidc' else 'GitHub OAuth application' }}
+                </h2>
+                <p class="mt-1 text-xs leading-5 text-content-muted"
+                   data-sso-description>
+                    {{ 'Register a Web application client in Google and use the exact KAORI callback URI.' if selected_type == 'google_oidc' else 'Register a GitHub OAuth App and use the exact KAORI authorization callback URI.' }}
+                </p>
+            </div>
+        </header>
+        <div class="grid gap-5 p-5 sm:grid-cols-2 sm:p-6">
+            <label class="block min-w-0">
+                <span class="text-sm font-semibold text-content-primary"
+                      data-sso-client-label>{{ 'Google Client ID' if selected_type == 'google_oidc' else 'GitHub Client ID' }}</span>
+                {{ form.oidc_client_id(class_='mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20', placeholder='OAuth application client ID', disabled=selected_type == 'ldap') }}
+                <span class="mt-2 block text-xs leading-5 text-content-muted">Copy the client identifier from the provider application registration.</span>
+                {% for error in form.oidc_client_id.errors %}
+                    <span class="mt-1 block text-xs font-medium text-status-critical">{{ error }}</span>
+                {% endfor %}
+            </label>
+            <label class="block min-w-0">
+                <span class="text-sm font-semibold text-content-primary">{{ form.oidc_client_secret_env.label.text }}</span>
+                {{ form.oidc_client_secret_env(class_='mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20', placeholder='KAORI_GOOGLE_CLIENT_SECRET' if selected_type == 'google_oidc' else 'KAORI_GITHUB_CLIENT_SECRET', disabled=selected_type == 'ldap', data_sso_secret_input='true') }}
+                <span class="mt-2 block text-xs leading-5 text-content-muted">Enter the environment-variable name. KAORI resolves the secret at runtime and never stores its value.</span>
+                {% for error in form.oidc_client_secret_env.errors %}
+                    <span class="mt-1 block text-xs font-medium text-status-critical">{{ error }}</span>
+                {% endfor %}
+            </label>
+        </div>
+    </section>
+    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+        <header class="flex items-start gap-3 border-b border-outline-default bg-surface-hover px-5 py-4 sm:px-6">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                <i data-lucide="user-plus" class="h-5 w-5"></i>
+            </span>
+            <div>
+                <h2 class="text-sm font-semibold text-content-primary">SSO admission and JIT provisioning</h2>
+                <p class="mt-1 text-xs leading-5 text-content-muted">
+                    Use pre-provisioned identities by default, or enable controlled just-in-time creation with a non-administrative role.
+                </p>
+            </div>
+        </header>
+        <div class="space-y-4 p-5 sm:p-6">
+            <label class="flex items-start gap-3 rounded-lg border border-outline-default bg-surface-hover p-4">
+                {{ form.jit_enabled(class_='mt-1 h-4 w-4 rounded border-outline-strong text-kaori-primary focus:ring-outline-focus', data_jit_toggle='true', disabled=selected_type == 'ldap') }}
+                <span class="min-w-0">
+                    <strong class="block text-sm font-semibold text-content-primary">Enable controlled JIT provisioning</strong>
+                    <span class="mt-1 block text-xs leading-5 text-content-muted">Create a KAORI account only after provider identity validation and the selected provider admission policy both pass.</span>
+                </span>
+            </label>
+            {% for error in form.jit_enabled.errors %}
+                <p class="text-xs font-medium text-status-critical">{{ error }}</p>
+            {% endfor %}
+            <div data-jit-off-note
+                 class="rounded-lg border border-status-info-border bg-status-info-soft p-4"
+                 {% if form.jit_enabled.data %}hidden{% endif %}>
+                <div class="flex items-start gap-3">
+                    <i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0 text-status-info"></i>
+                    <p class="text-xs leading-5 text-status-info-text">
+                        JIT is disabled. Only an external identity already linked to a KAORI account can use this SSO provider.
+                    </p>
+                </div>
+            </div>
+            <div class="space-y-5"
+                 data-jit-settings
+                 {% if not form.jit_enabled.data %}hidden{% endif %}>
+                <label class="block min-w-0">
+                    <span class="text-sm font-semibold text-content-primary">{{ form.default_role_id.label.text }}</span>
+                    {{ form.default_role_id(class_='mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20', disabled=selected_type == 'ldap' or not form.jit_enabled.data) }}
+                    <span class="mt-2 block text-xs leading-5 text-content-muted">Administrative roles are excluded from JIT assignment.</span>
+                    {% for error in form.default_role_id.errors %}
+                        <span class="mt-1 block text-xs font-medium text-status-critical">{{ error }}</span>
+                    {% endfor %}
+                </label>
+                <label class="block min-w-0"
+                       data-provider-policy="google"
+                       {% if selected_type != 'google_oidc' %}hidden{% endif %}>
+                    <span class="text-sm font-semibold text-content-primary">{{ form.allowed_domains.label.text }}</span>
+                    {{ form.allowed_domains(rows=4, class_='mt-2 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm font-medium text-content-primary shadow-sm outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20', placeholder='example.com\nsubsidiary.example.com', disabled=selected_type != 'google_oidc' or not form.jit_enabled.data) }}
+                    <span class="mt-2 block text-xs leading-5 text-content-muted">One domain per line or comma separated. Google must return a verified email in one of these domains.</span>
+                    {% for error in form.allowed_domains.errors %}
+                        <span class="mt-1 block text-xs font-medium text-status-critical">{{ error }}</span>
+                    {% endfor %}
+                </label>
+                <label class="block min-w-0"
+                       data-provider-policy="github"
+                       {% if selected_type != 'github_oauth' %}hidden{% endif %}>
+                    <span class="text-sm font-semibold text-content-primary">{{ form.allowed_subjects.label.text }}</span>
+                    {{ form.allowed_subjects(rows=4, class_='mt-2 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm font-medium text-content-primary shadow-sm outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20', placeholder='583231\noctocat', disabled=selected_type != 'github_oauth' or not form.jit_enabled.data) }}
+                    <span class="mt-2 block text-xs leading-5 text-content-muted">Prefer immutable numeric GitHub user IDs. Login names are supported but can change.</span>
+                    {% for error in form.allowed_subjects.errors %}
+                        <span class="mt-1 block text-xs font-medium text-status-critical">{{ error }}</span>
+                    {% endfor %}
+                </label>
+            </div>
+        </div>
+    </section>
+</div>
