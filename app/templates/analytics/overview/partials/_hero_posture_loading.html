@@ -1,24 +1,21 @@
-<div class="rounded-2xl border border-white/15 bg-white/10 p-5 text-white shadow-sm backdrop-blur xl:min-h-[176px]">
-    <div class="flex h-full flex-col justify-between gap-4">
-        <div class="flex items-start justify-between gap-4">
-            <div class="min-w-0">
-                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-50/85">Operational posture</p>
-                <div class="mt-3 h-10 w-36 animate-pulse rounded-xl bg-white/20"></div>
-                <div class="mt-3 h-4 w-56 animate-pulse rounded-full bg-white/15"></div>
-            </div>
-            <span class="inline-flex shrink-0 rounded-md bg-white/15 px-3 py-1.5 text-xs font-bold text-white ring-1 ring-inset ring-white/20">
-                Checking
-            </span>
+{% import "components/table_label.html" as table_label %}
+<div class="flex h-full min-h-[12rem] flex-col rounded-xl border border-brand-outline bg-brand-surface-strong p-4 backdrop-blur-md">
+    <div class="flex items-start justify-between gap-4">
+        <div class="min-w-0">
+            <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Operational posture</p>
+            <div class="mt-3 h-8 w-32 animate-pulse rounded-lg bg-brand-surface"></div>
+            <div class="mt-3 h-3 w-52 animate-pulse rounded-md bg-brand-surface"></div>
         </div>
-        <div class="grid grid-cols-2 gap-3">
-            <div class="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 shadow-sm backdrop-blur">
-                <p class="text-xs text-blue-50/75">Actionable</p>
-                <div class="mt-2 h-7 w-10 animate-pulse rounded-lg bg-white/20"></div>
-            </div>
-            <div class="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 shadow-sm backdrop-blur">
-                <p class="text-xs text-blue-50/75">Active Alerts</p>
-                <div class="mt-2 h-7 w-10 animate-pulse rounded-lg bg-white/20"></div>
-            </div>
+        {{ table_label.status_label('Checking', 'pending', 'loader-circle') }}
+    </div>
+    <div class="mt-auto grid grid-cols-2 gap-2 pt-4">
+        <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-3">
+            <p class="text-[10px] font-semibold uppercase tracking-wide text-brand-foreground-muted">Actionable</p>
+            <div class="mt-2 h-6 w-10 animate-pulse rounded-md bg-brand-surface-strong"></div>
+        </div>
+        <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-3">
+            <p class="text-[10px] font-semibold uppercase tracking-wide text-brand-foreground-muted">Active alerts</p>
+            <div class="mt-2 h-6 w-10 animate-pulse rounded-md bg-brand-surface-strong"></div>
         </div>
     </div>
 </div>

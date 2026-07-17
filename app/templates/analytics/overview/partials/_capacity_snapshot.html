@@ -1,39 +1,36 @@
-<section class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 p-6 text-white shadow-lg shadow-blue-500/20">
-    <div class="absolute inset-y-0 right-0 hidden w-1/3 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.22),transparent_55%)] lg:block">
-    </div>
-    <div class="absolute -top-14 right-16 h-36 w-36 rounded-full bg-white/10 blur-3xl"></div>
-    <div class="absolute -bottom-16 right-40 h-44 w-44 rounded-full bg-cyan-300/20 blur-3xl"></div>
-    <div class="relative mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+<section class="overflow-hidden rounded-2xl border border-brand-outline bg-kaori-primary p-5 text-brand-foreground shadow-sm lg:p-6">
+    <div class="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div class="flex items-start gap-3">
-            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-white/15 text-white backdrop-blur">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-brand-surface-strong text-brand-foreground">
                 <i data-lucide="server-cog" class="h-5 w-5"></i>
-            </div>
+            </span>
             <div>
-                <h2 class="text-lg font-semibold text-white">Worker Capacity Snapshot</h2>
-                <p class="mt-1 text-sm text-blue-50/85">Worker-only allocatable capacity and remaining headroom.</p>
+                <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-brand-foreground-muted">Worker-only capacity</p>
+                <h2 class="mt-1 text-base font-semibold text-brand-foreground">Worker Capacity Snapshot</h2>
+                <p class="mt-1 text-sm text-brand-foreground-muted">Allocatable capacity, remaining headroom, and prioritized capacity signals.</p>
             </div>
         </div>
         <a href="/analytics/capacity?cluster_id={{ payload.selected_cluster_id }}&time_range={{ payload.selected_time_range }}"
-           class="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm transition hover:bg-blue-50">
+           class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-white/20 bg-white px-3 text-xs font-semibold text-kaori-primary-dark shadow-sm transition hover:bg-kaori-soft">
             View capacity
             <i data-lucide="arrow-right" class="h-4 w-4"></i>
         </a>
     </div>
-    <div class="relative grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+    <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
         {% for item in [payload.capacity_snapshot.cpu_headroom, payload.capacity_snapshot.memory_headroom, payload.capacity_snapshot.pod_capacity_remaining, payload.capacity_snapshot.recommendations] %}
             <a href="{{ item.href }}?cluster_id={{ payload.selected_cluster_id }}&time_range={{ payload.selected_time_range }}"
-               class="group rounded-2xl border border-white/15 bg-white/10 p-5 shadow-sm backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/15 hover:shadow-md">
-                <div class="flex items-start gap-4">
-                    <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/15 bg-white/15 text-white">
+               class="group rounded-xl border border-brand-outline bg-brand-surface p-4 transition hover:bg-brand-surface-strong">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-brand-surface-strong text-brand-foreground">
                         <i data-lucide="{{ item.icon }}" class="h-5 w-5"></i>
-                    </div>
+                    </span>
                     <div class="min-w-0">
-                        <p class="text-sm font-semibold text-blue-50/85">{{ item.label }}</p>
+                        <p class="text-xs font-semibold text-brand-foreground-muted">{{ item.label }}</p>
                         <div class="mt-2 flex items-baseline gap-2">
-                            <p class="text-3xl font-bold tracking-tight text-white">{{ item.value }}</p>
-                            <p class="text-sm font-semibold text-blue-50/75">{{ item.unit }}</p>
+                            <p class="text-2xl font-bold tracking-tight text-brand-foreground">{{ item.value }}</p>
+                            <p class="text-xs font-semibold text-brand-foreground-muted">{{ item.unit }}</p>
                         </div>
-                        <p class="mt-1 text-xs leading-5 text-blue-50/75">{{ item.description }}</p>
+                        <p class="mt-1 text-xs leading-5 text-brand-foreground-muted">{{ item.description }}</p>
                     </div>
                 </div>
             </a>

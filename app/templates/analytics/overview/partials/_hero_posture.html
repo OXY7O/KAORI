@@ -1,14 +1,22 @@
+{% import "components/table_label.html" as table_label %}
 {% set actionable = payload.actionable_recommendations|default({}) %}
 {% set active_alerts = payload.health_summary.active_alerts.value|default(0) %}
 {% set posture = payload.health_summary.cluster_health %}
 {% set posture_status = posture.status|default('unknown')|lower %}
-{% set posture_badge_class = {
-    'normal': 'bg-emerald-500 text-white ring-emerald-200/40',
-    'healthy': 'bg-emerald-500 text-white ring-emerald-200/40',
-    'warning': 'bg-amber-500 text-white ring-amber-200/50',
-    'critical': 'bg-red-500 text-white ring-red-200/50',
-    'unknown': 'bg-slate-500 text-white ring-white/20'
-}.get(posture_status, 'bg-slate-500 text-white ring-white/20') %}
+{% set posture_tone = {
+    'normal': 'normal',
+    'healthy': 'normal',
+    'warning': 'warning',
+    'critical': 'critical',
+    'unknown': 'unknown'
+}.get(posture_status, 'unknown') %}
+{% set posture_icon = {
+    'normal': 'circle-check',
+    'healthy': 'circle-check',
+    'warning': 'triangle-alert',
+    'critical': 'shield-alert',
+    'unknown': 'circle-help'
+}.get(posture_status, 'circle-help') %}
 {% set posture_short_description = {
     'normal': 'Signals are stable.',
     'healthy': 'Signals are stable.',
@@ -16,27 +24,23 @@
     'critical': 'Immediate attention required.',
     'unknown': 'Signal status unavailable.'
 }.get(posture_status, posture.description) %}
-<div class="rounded-2xl border border-white/15 bg-white/10 p-5 text-white shadow-sm backdrop-blur xl:min-h-[176px]">
-    <div class="flex h-full flex-col justify-between gap-4">
-        <div class="flex items-start justify-between gap-4">
-            <div class="min-w-0">
-                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-50/85">Operational posture</p>
-                <div class="mt-2 text-4xl font-bold leading-none text-white">{{ posture.value }}</div>
-                <p class="mt-1 text-sm leading-5 text-blue-50/75">{{ posture_short_description }}</p>
-            </div>
-            <span class="inline-flex shrink-0 rounded-md px-3 py-1.5 text-xs font-bold capitalize shadow-sm ring-1 ring-inset {{ posture_badge_class }}">
-                {{ posture.status }}
-            </span>
+<div class="flex h-full min-h-[12rem] flex-col rounded-xl border border-brand-outline bg-brand-surface-strong p-4 backdrop-blur-md">
+    <div class="flex items-start justify-between gap-4">
+        <div class="min-w-0">
+            <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Operational posture</p>
+            <p class="mt-1 text-3xl font-bold leading-none text-brand-foreground">{{ posture.value }}</p>
+            <p class="mt-2 text-xs leading-5 text-brand-foreground-muted">{{ posture_short_description }}</p>
         </div>
-        <div class="grid grid-cols-2 gap-3">
-            <div class="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 shadow-sm backdrop-blur">
-                <p class="text-xs font-medium text-blue-50/75">Actionable</p>
-                <p class="mt-1 text-2xl font-bold tracking-tight text-white">{{ actionable.total_count|default(0) }}</p>
-            </div>
-            <div class="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 shadow-sm backdrop-blur">
-                <p class="text-xs font-medium text-blue-50/75">Active Alerts</p>
-                <p class="mt-1 text-2xl font-bold tracking-tight text-white">{{ active_alerts }}</p>
-            </div>
+        {{ table_label.status_label(posture.status, posture_tone, posture_icon) }}
+    </div>
+    <div class="mt-auto grid grid-cols-2 gap-2 pt-4">
+        <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-3">
+            <p class="text-[10px] font-semibold uppercase tracking-wide text-brand-foreground-muted">Actionable</p>
+            <p class="mt-1 text-2xl font-bold text-brand-foreground">{{ actionable.total_count|default(0) }}</p>
+        </div>
+        <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-3">
+            <p class="text-[10px] font-semibold uppercase tracking-wide text-brand-foreground-muted">Active alerts</p>
+            <p class="mt-1 text-2xl font-bold text-brand-foreground">{{ active_alerts }}</p>
         </div>
     </div>
 </div>

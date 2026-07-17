@@ -5,6 +5,8 @@
         {% elif tone == 'critical' %}border-status-critical-border bg-status-critical-soft text-status-critical-text
         {% elif tone == 'unknown' %}border-status-unknown-border bg-status-unknown-soft text-status-unknown-text
         {% elif tone == 'disabled' %}border-status-disabled-border bg-status-disabled-soft text-status-disabled-text
+        {% elif tone == 'maintenance' %}border-status-maintenance-border bg-status-maintenance-soft text-status-maintenance-text
+        {% elif tone == 'pending' %}border-status-pending-border bg-status-pending-soft text-status-pending-text
         {% else %}border-status-info-border bg-status-info-soft text-status-info-text{% endif %}">
         {% if icon %}<i data-lucide="{{ icon }}" class="h-3 w-3 shrink-0" aria-hidden="true"></i>{% endif %}
         <span>{{ text }}</span>

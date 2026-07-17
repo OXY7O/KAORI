@@ -1,35 +1,35 @@
+{% import "components/table_label.html" as table_label %}
 {% set prometheus = payload.prometheus %}
-<section class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-950/60">
+{% if prometheus.connected %}
+    {% set status_tone = 'normal' %}
+    {% set status_icon = 'circle-check' %}
+    {% set dot_class = 'bg-status-normal' %}
+{% elif prometheus.configured %}
+    {% set status_tone = 'critical' %}
+    {% set status_icon = 'circle-x' %}
+    {% set dot_class = 'bg-status-critical' %}
+{% else %}
+    {% set status_tone = 'disabled' %}
+    {% set status_icon = 'circle-minus' %}
+    {% set dot_class = 'bg-status-disabled' %}
+{% endif %}
+<section class="rounded-lg border border-outline-default bg-kaori-soft px-4 py-3">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div class="flex min-w-0 items-center gap-3">
-            {% if prometheus.connected %}
-                <span class="h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-500"></span>
-            {% elif prometheus.configured %}
-                <span class="h-2.5 w-2.5 shrink-0 rounded-full bg-rose-500"></span>
-            {% else %}
-                <span class="h-2.5 w-2.5 shrink-0 rounded-full bg-slate-400"></span>
-            {% endif %}
+            <span class="h-2.5 w-2.5 shrink-0 rounded-full {{ dot_class }}" aria-hidden="true"></span>
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
-                    <h2 class="text-sm font-bold text-slate-900 dark:text-white">Prometheus Status</h2>
-                    <span class="inline-flex items-center rounded-md px-2.5 py-1 text-xs font-semibold ring-1 ring-inset {% if prometheus.connected %}bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-900 {% elif prometheus.configured %}bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-950/50 dark:text-rose-300 dark:ring-rose-900 {% else %}bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700{% endif %}">
-                        {{ prometheus.status_label }}
-                    </span>
+                    <h2 class="text-sm font-semibold text-content-primary">Prometheus Status</h2>
+                    {{ table_label.status_label(prometheus.status_label, status_tone, status_icon) }}
                 </div>
-                <p class="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">{{ prometheus.message }}</p>
+                <p class="mt-1 truncate text-xs text-content-muted" title="{{ prometheus.message }}">{{ prometheus.message }}</p>
             </div>
         </div>
-        <div class="flex flex-wrap items-center gap-2 text-xs font-semibold">
+        <div class="flex flex-wrap items-center gap-2">
             {% if prometheus.response_time_ms %}
-                <span class="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
-                    <i data-lucide="zap" class="h-3.5 w-3.5"></i>
-                    {{ prometheus.response_time_ms }} ms
-                </span>
+                {{ table_label.metadata_label(prometheus.response_time_ms ~ ' ms', 'zap') }}
             {% endif %}
-            <span class="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
-                <i data-lucide="clock-3" class="h-3.5 w-3.5"></i>
-                Checked {{ payload.last_analyzed_at }}
-            </span>
+            {{ table_label.metadata_label('Checked ' ~ payload.last_analyzed_at, 'clock-3') }}
         </div>
     </div>
 </section>

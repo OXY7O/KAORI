@@ -132,13 +132,13 @@
                                         {% call detail_card(
                                             'Validity window',
                                             'calendar-clock',
-                                            'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300',
+                                            'bg-kaori-soft text-kaori-primary',
                                             (record.days_remaining ~ ' days') if record.days_remaining is not none else 'Invalid',
-                                            'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300'
+                                            'bg-kaori-soft text-kaori-primary'
                                             ) %}
-                                            {{ detail_row('Valid From', record.not_before|user_date('%Y-%m-%d') , tone='emerald') }}
-                                            {{ detail_row('Expires At', record.not_after|user_date('%Y-%m-%d') , tone='emerald') }}
-                                            {{ detail_row('Remaining', (record.days_remaining ~ ' days') if record.days_remaining is not none else '-', tone='emerald') }}
+                                            {{ detail_row('Valid From', record.not_before|user_date('%Y-%m-%d') , tone='violet') }}
+                                            {{ detail_row('Expires At', record.not_after|user_date('%Y-%m-%d') , tone='violet') }}
+                                            {{ detail_row('Remaining', (record.days_remaining ~ ' days') if record.days_remaining is not none else '-', tone='violet') }}
                                             {% call detail_object.stack() %}
                                                 <div class="rounded-lg border border-outline-default bg-kaori-soft p-3">
                                                     <div class="flex items-start gap-2.5">
@@ -151,7 +151,7 @@
                                                         </div>
                                                     </div>
                                                 </div>
-                                                {{ detail_tip('Review certificates approaching expiry before rotating the Kubernetes TLS Secret used by workloads or Ingress resources.', 'emerald', 'calendar-clock') }}
+                                                {{ detail_tip('Review certificates approaching expiry before rotating the Kubernetes TLS Secret used by workloads or Ingress resources.', 'violet', 'calendar-clock') }}
                                             {% endcall %}
                                         {% endcall %}
                                         {% call detail_card(

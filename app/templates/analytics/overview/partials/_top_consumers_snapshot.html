@@ -1,76 +1,83 @@
-<section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-    <div class="mb-5 flex items-center justify-between gap-4">
-        <div>
-            <h2 class="text-lg font-semibold text-slate-950 dark:text-white">Top Consumers</h2>
-            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Highest resource consumers by CPU, memory, and storage.</p>
+{% import "components/table_label.html" as table_label %}
+<section class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
+    <div class="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div class="flex items-start gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                <i data-lucide="chart-no-axes-column-increasing" class="h-5 w-5"></i>
+            </span>
+            <div>
+                <h2 class="text-base font-semibold text-content-primary">Top Consumers</h2>
+                <p class="mt-1 text-sm text-content-muted">Highest resource consumers by CPU, memory, and storage.</p>
+            </div>
         </div>
         <a href="{{ payload.top_consumers.href }}?cluster_id={{ payload.selected_cluster_id }}&time_range={{ payload.selected_time_range }}"
-           class="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
+           class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-kaori-primary transition hover:bg-kaori-soft">
             View top consumers
             <i data-lucide="arrow-right" class="h-4 w-4"></i>
         </a>
     </div>
     {% set groups = [
-            {"title": "Top CPU", "description": "Highest CPU usage contributors.", "consumers": payload.top_consumers.cpu, "tone": "blue", "icon": "cpu"},
-            {"title": "Top Memory", "description": "Highest memory working set contributors.", "consumers": payload.top_consumers.memory, "tone": "violet", "icon": "memory-stick"},
-            {"title": "Top Storage", "description": "Highest persistent storage consumers.", "consumers": payload.top_consumers.storage, "tone": "emerald", "icon": "database"}
-        ] %}
-    <div class="space-y-4">
+        {'title': 'Top CPU', 'description': 'Highest CPU usage contributors.', 'consumers': payload.top_consumers.cpu, 'tone': 'info', 'icon': 'cpu'},
+        {'title': 'Top Memory', 'description': 'Highest memory working set contributors.', 'consumers': payload.top_consumers.memory, 'tone': 'maintenance', 'icon': 'memory-stick'},
+        {'title': 'Top Storage', 'description': 'Highest persistent storage consumers.', 'consumers': payload.top_consumers.storage, 'tone': 'normal', 'icon': 'database'}
+    ] %}
+    <div class="space-y-3">
         {% for group in groups %}
             {% set top_item = group.consumers[0] if group.consumers else none %}
-            <details class="group overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/60 dark:border-slate-700 dark:bg-slate-950/30"
-                     {% if loop.first %}open{% endif %}>
-                <summary class="cursor-pointer list-none px-4 py-4 transition hover:bg-white dark:hover:bg-slate-900">
+            {% set icon_class = {
+                'info': 'bg-status-info-soft text-status-info',
+                'maintenance': 'bg-status-maintenance-soft text-status-maintenance',
+                'normal': 'bg-status-normal-soft text-status-normal'
+            }.get(group.tone, 'bg-kaori-soft text-kaori-primary') %}
+            {% set bar_class = {
+                'info': 'bg-status-info',
+                'maintenance': 'bg-kaori-primary',
+                'normal': 'bg-status-normal'
+            }.get(group.tone, 'bg-kaori-primary') %}
+            <details class="group overflow-hidden rounded-lg border border-outline-default bg-surface-card" {% if loop.first %}open{% endif %}>
+                <summary class="cursor-pointer list-none px-4 py-4 transition hover:bg-surface-hover">
                     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                         <div class="flex min-w-0 items-start gap-3">
-                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl {% if group.tone == 'blue' %}bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300 {% elif group.tone == 'violet' %}bg-violet-100 text-violet-600 dark:bg-violet-500/10 dark:text-violet-300 {% else %}bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300{% endif %}">
-                                <i data-lucide="{{ group.icon }}" class="h-5 w-5"></i>
-                            </div>
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {{ icon_class }}">
+                                <i data-lucide="{{ group.icon }}" class="h-4.5 w-4.5"></i>
+                            </span>
                             <div class="min-w-0">
                                 <div class="flex flex-wrap items-center gap-2">
-                                    <h3 class="text-sm font-bold text-slate-900 dark:text-white">{{ group.title }}</h3>
-                                    <span class="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-500 ring-1 ring-slate-200 dark:bg-slate-900 dark:text-slate-400 dark:ring-slate-700">
-                                        {{ group.consumers|length }} items
-                                    </span>
+                                    <h3 class="text-sm font-semibold text-content-primary">{{ group.title }}</h3>
+                                    {{ table_label.metadata_label(group.consumers|length ~ ' items') }}
                                 </div>
-                                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ group.description }}</p>
+                                <p class="mt-1 text-xs text-content-muted">{{ group.description }}</p>
                             </div>
                         </div>
                         <div class="flex min-w-0 items-center justify-between gap-3 sm:min-w-[220px]">
                             {% if top_item %}
                                 <div class="min-w-0 text-right">
-                                    <div class="truncate text-xs font-semibold text-slate-700 dark:text-slate-200"
-                                         title="{{ top_item.name }}">#1 {{ top_item.name }}</div>
-                                    <div class="mt-1 text-xs font-bold text-slate-500 dark:text-slate-400">{{ top_item.display_value }}</div>
+                                    <p class="truncate text-xs font-semibold text-content-secondary" title="{{ top_item.name }}">#1 {{ top_item.name }}</p>
+                                    <p class="mt-1 text-xs font-bold text-content-muted">{{ top_item.display_value }}</p>
                                 </div>
                             {% else %}
-                                <div class="text-xs font-semibold text-slate-400">No data</div>
+                                <p class="text-xs font-semibold text-content-disabled">No data</p>
                             {% endif %}
-                            <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition group-open:bg-blue-50 group-open:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:group-open:bg-blue-950/40 dark:group-open:text-blue-300">
-                                <i data-lucide="chevron-down"
-                                   class="h-4 w-4 transition group-open:rotate-180"></i>
+                            <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-muted transition group-open:border-kaori-primary/20 group-open:bg-kaori-soft group-open:text-kaori-primary">
+                                <i data-lucide="chevron-down" class="h-4 w-4 transition group-open:rotate-180"></i>
                             </span>
                         </div>
                     </div>
                 </summary>
-                <div class="border-t border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+                <div class="border-t border-outline-subtle bg-surface-card p-4">
                     {% if group.consumers %}
                         <div class="space-y-3">
                             {% for item in group.consumers %}
-                                <div class="rounded-2xl border border-slate-200 p-3 dark:border-slate-700">
-                                    <div class="mb-1.5 flex items-center justify-between gap-3 text-xs">
-                                        <span class="truncate font-semibold text-slate-700 dark:text-slate-200"
-                                              title="{{ item.name }}">{{ loop.index }}. {{ item.name }}</span>
-                                        <span class="shrink-0 font-semibold text-slate-500 dark:text-slate-400">{{ item.display_value }}</span>
+                                <div class="rounded-lg border border-outline-default p-3">
+                                    <div class="mb-2 flex items-center justify-between gap-3 text-xs">
+                                        <span class="truncate font-semibold text-content-secondary" title="{{ item.name }}">{{ loop.index }}. {{ item.name }}</span>
+                                        <span class="shrink-0 font-semibold text-content-muted">{{ item.display_value }}</span>
                                     </div>
-                                    <div class="h-2.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                                        <div class="h-full rounded-full {% if group.tone == 'blue' %}bg-blue-600 {% elif group.tone == 'violet' %}bg-violet-600 {% else %}bg-emerald-500{% endif %}"
-                                             style="width: {{ item.percent }}%"></div>
+                                    <div class="h-2 overflow-hidden rounded-full bg-surface-hover">
+                                        <div class="h-full rounded-full {{ bar_class }}" style="width: {{ item.percent }}%"></div>
                                     </div>
                                     {% if item.namespace %}
-                                        <span class="mt-2 inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                                            Namespace: {{ item.namespace }}
-                                        </span>
+                                        <div class="mt-2">{{ table_label.metadata_label('Namespace: ' ~ item.namespace, 'boxes') }}</div>
                                     {% endif %}
                                 </div>
                             {% endfor %}
