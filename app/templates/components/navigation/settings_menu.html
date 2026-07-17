@@ -1,4 +1,12 @@
-{% set settings_active = request.endpoint and request.endpoint.startswith('settings.') %}
+{% set settings_owned_endpoints = [
+    'settings.general',
+    'settings.account',
+    'settings.time_locale',
+    'settings.reports',
+    'settings.system_info'
+] %}
+{% set settings_active = request.endpoint in settings_owned_endpoints
+    or (request.endpoint and request.endpoint.startswith('settings.secret_reveal.')) %}
 <details class="sidebar-menu space-y-1"
          {% if settings_active %}open{% endif %}>
     <summary class="{{ 'bg-kaori-primary text-white shadow-lg shadow-kaori-primary/20 ring-1 ring-white/10' if settings_active else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} sidebar-parent-link group flex cursor-pointer select-none items-center justify-between min-h-11 rounded-lg px-2.5 py-2 text-[12px] font-semibold transition [.sidebar-collapsed_&]:justify-center [.sidebar-collapsed_&]:px-2">

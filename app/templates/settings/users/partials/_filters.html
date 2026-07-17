@@ -1,7 +1,7 @@
 <form id="users-filter-form"
       method="get"
       action="{{ url_for('settings.users') }}"
-      class="grid gap-4 lg:grid-cols-[minmax(16rem,1.5fr)_minmax(0,0.8fr)_minmax(0,0.9fr)_minmax(0,0.9fr)] lg:items-end"
+      class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 xl:items-end"
       hx-get="{{ url_for('settings.users') }}"
       hx-trigger="submit, change delay:120ms from:select, keyup changed delay:450ms from:input[name='search']"
       hx-target="#users-page-content"
@@ -11,7 +11,7 @@
       hx-sync="#users-filter-form:replace">
     <input type="hidden" name="page" value="1">
     <input type="hidden" name="per_page" value="{{ filters.per_page }}">
-    <label>
+    <label class="min-w-0">
         <span class="mb-2 block text-sm font-semibold text-content-secondary">Search user</span>
         <span class="relative block">
             <i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"></i>
@@ -19,19 +19,19 @@
                    class="h-11 w-full rounded-lg border border-outline-default bg-surface-card pl-10 pr-3 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
         </span>
     </label>
-    <label>
+    <label class="min-w-0">
         <span class="mb-2 block text-sm font-semibold text-content-secondary">Status</span>
         <select name="status" class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
             {% for option in status_options %}<option value="{{ option }}" {% if filters.status == option %}selected{% endif %}>{{ option|title }}</option>{% endfor %}
         </select>
     </label>
-    <label>
+    <label class="min-w-0">
         <span class="mb-2 block text-sm font-semibold text-content-secondary">Identity source</span>
         <select name="auth_source" class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
             {% for option in auth_source_options %}<option value="{{ option }}" {% if filters.auth_source == option %}selected{% endif %}>{{ option|upper if option != 'all' else 'All Sources' }}</option>{% endfor %}
         </select>
     </label>
-    <label>
+    <label class="min-w-0">
         <span class="mb-2 block text-sm font-semibold text-content-secondary">Role</span>
         <select name="role_id" class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
             <option value="all">All Roles</option>
