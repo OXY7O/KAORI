@@ -270,8 +270,13 @@
 }
 
 .sidebar-submenu > a {
-    min-height: 2.25rem;
-    padding-block: 0.5625rem;
+    min-height: 2.5rem;
+    padding-inline: 0.875rem;
+    padding-block: 0.625rem;
+}
+
+.sidebar-submenu > a:hover {
+    padding-inline: 1rem;
 }
 
 .htmx-indicator {
