@@ -17,7 +17,7 @@ from app.models import Notification, Permission, Role, User
 from app.rbac.decorators import permission_required
 from app.rbac.service import get_permissions_grouped_by_module, replace_role_permissions, seed_default_rbac
 from app.settings.roles.forms import RoleForm
-from app.users.service import record_admin_event
+from app.users.service import build_user_identity_context, record_admin_event
 
 bp = Blueprint(
     'settings',
@@ -115,11 +115,12 @@ def account():
             'message': 'Your local database account password has been changed. Use the new password on your next sign-in.',
         }
 
+    identity_context = build_user_identity_context(user)
+
     recent_login_events = (
         Notification.query.filter(
             Notification.user_id == user.id,
             Notification.event_type == 'authentication',
-            Notification.title.in_(['User signed in', 'Sign-in attempt failed']),
         )
         .order_by(Notification.created_at.desc(), Notification.id.desc())
         .limit(5)
@@ -131,6 +132,7 @@ def account():
         password_form=password_form,
         can_change_password=can_change_password,
         password_feedback=password_feedback,
+        identity_context=identity_context,
         recent_login_events=recent_login_events,
         page_title='Account & Authentication',
     )

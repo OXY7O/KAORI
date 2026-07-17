@@ -2,22 +2,23 @@
 {% block title %}Account & Authentication{% endblock title %}
 {% block dashboard_content %}
     {% set auth_source = session.get('auth_source') or current_user.auth_source|default('database', true) %}
-    {% set auth_label = auth_source|replace('_', ' ')|title %}
-    {% set user_role = current_user.role|default('admin', true)|replace('_', ' ')|title %}
+    {% set user_role = current_user.role_display_name %}
     {% set last_auth_source = current_user.last_auth_source|default(auth_source, true) %}
     {% set last_auth_label = last_auth_source|replace('_', ' ')|title %}
-    <div class="space-y-5" x-data="{ recentOpen: false, providerOpen: false }">
+
+    <div class="space-y-6">
         {% include "settings/account/partials/_hero.html" %}
-        <section class="grid items-stretch gap-5 xl:grid-cols-12">
-            <div class="xl:col-span-4">{% include "settings/account/partials/_profile_cards.html" %}</div>
-            <div class="xl:col-span-4">{% include "settings/account/partials/_last_login.html" %}</div>
-            <div class="xl:col-span-4">{% include "settings/account/partials/_change_password.html" %}</div>
-        </section>
-        <section class="grid items-stretch gap-5 xl:grid-cols-12">
-            <div class="xl:col-span-6">{% include "settings/account/partials/_auth_sources.html" %}</div>
-            <div class="xl:col-span-6">{% include "settings/account/partials/_security_controls.html" %}</div>
-        </section>
-        {% include "settings/account/partials/_recent_login_activity.html" %}
-        {% include "settings/account/partials/_provider_details.html" %}
+
+        <div class="grid gap-5 xl:grid-cols-12 xl:items-start">
+            <main class="space-y-5 xl:col-span-8">
+                {% include "settings/account/partials/_profile_cards.html" %}
+                {% include "settings/account/partials/_change_password.html" %}
+                {% include "settings/account/partials/_recent_login_activity.html" %}
+            </main>
+
+            <aside class="space-y-5 xl:col-span-4">
+                {% include "settings/account/partials/_account_information.html" %}
+            </aside>
+        </div>
     </div>
 {% endblock dashboard_content %}
