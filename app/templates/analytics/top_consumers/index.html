@@ -109,11 +109,7 @@
             </div>
         </section>
         {% if dependency_blocker %}
-            {% if dependency_blocker.kind == 'cluster_required' %}
-                {% include "components/cluster/_onboarding_banner.html" %}
-            {% else %}
-                {% include "components/dependencies/_blocker.html" %}
-            {% endif %}
+            {% include "components/dependencies/_blocker.html" %}
         {% endif %}
         {% if not dependency_blocker %}
             <form id="top-consumers-filter-form"

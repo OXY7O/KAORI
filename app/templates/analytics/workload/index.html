@@ -7,11 +7,7 @@
          data-analytics-page-request-tracking="false">
         {% include "analytics/workload/partials/_hero.html" %}
         {% if dependency_blocker %}
-            {% if dependency_blocker.kind == 'cluster_required' %}
-                {% include "components/cluster/_onboarding_banner.html" %}
-            {% else %}
-                {% include "components/dependencies/_blocker.html" %}
-            {% endif %}
+            {% include "components/dependencies/_blocker.html" %}
         {% endif %}
         {% if not dependency_blocker %}
             {% set analytics_tracker_id = "workload-load-tracker" %}

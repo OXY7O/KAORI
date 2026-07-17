@@ -34,3 +34,12 @@ Capacity Analysis must retain the agreed Cluster -> Node selector hierarchy.
 - Keep the inline Prometheus status message concise. Low-level connection exceptions must not be rendered inside the status card.
 - A newly observed Prometheus failure emits one operator-facing toast and one Activity Log record per user session and failure fingerprint. Repeated lazy refreshes of the same unresolved failure must not create notification noise.
 - Failure feedback uses normalized endpoint, category, and remediation context. The card only directs the operator to the toast or Activity Log for details.
+
+## Analytics dependency-state presentation
+
+- Cluster, Prometheus, and alert-source blockers use the shared KAORI Violet dependency card in `components/dependencies/_blocker.html`.
+- The inline card must show only the operator-facing title, a concise next-step description, dependency stage, and the permitted configuration action.
+- Never append raw connection exceptions, request URLs, credentials, TLS traces, or client-library errors to the inline blocker.
+- Preserve low-level failure context separately as `diagnostic_detail` so existing toast and Activity Log flows can retain their full diagnostic payload.
+- Setup states use warning semantics; unreachable or failed connection states use critical semantics. The containing surface, icon treatment, metadata labels, and action button remain KAORI Violet.
+- Analytics hero posture cards use the same blocker wording and status semantics so Overview, Resource Utilization, Capacity, Storage, Workload, Forecast, Top Consumers, and Alerts & Anomalies remain visually consistent.

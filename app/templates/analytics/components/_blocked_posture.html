@@ -1,26 +1,22 @@
-<div class="rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur xl:min-h-[176px]">
-    <div class="flex h-full flex-col justify-start gap-3">
-        <div class="flex items-start justify-between gap-4">
-            <div class="min-w-0">
-                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-50/80">
-                    {{ analytics_posture_label|default("Analytics posture") }}
-                </p>
-                <div class="mt-2 text-4xl font-bold leading-none">Blocked</div>
-                <p class="mt-1 text-sm leading-5 text-blue-50/85">{{ dependency_blocker.title }}</p>
-            </div>
-            <span class="inline-flex shrink-0 rounded-md bg-slate-600 px-3 py-1.5 text-xs font-bold text-white ring-1 ring-inset ring-white/20">
-                Blocked
-            </span>
+{% import "components/table_label.html" as table_label %}
+{% set blocker_tone = 'warning' if dependency_blocker.kind in ['cluster_required', 'prometheus_setup', 'alert_source_setup'] else 'critical' %}
+{% set blocker_status = 'Setup required' if blocker_tone == 'warning' else 'Unavailable' %}
+<div class="flex h-full min-h-[12rem] flex-col rounded-xl border border-brand-outline bg-brand-surface-strong p-4 backdrop-blur-md">
+    <div class="flex items-start justify-between gap-4">
+        <div class="min-w-0">
+            <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">
+                {{ analytics_posture_label|default('Analytics posture') }}
+            </p>
+            <p class="mt-1 text-3xl font-bold leading-none text-brand-foreground">Blocked</p>
         </div>
-        <div class="mt-2 grid grid-cols-2 gap-3">
-            <div class="rounded-xl bg-white/10 px-4 py-3">
-                <p class="text-xs text-blue-50/75">Dependency Step</p>
-                <p class="mt-1 text-2xl font-semibold">{{ dependency_blocker.stage }}</p>
-            </div>
-            <div class="rounded-xl bg-white/10 px-4 py-3">
-                <p class="text-xs text-blue-50/75">Required Action</p>
-                <p class="mt-1 truncate text-sm font-semibold">{{ dependency_blocker.badge }}</p>
-            </div>
-        </div>
+        {{ table_label.status_label(blocker_status, blocker_tone, 'triangle-alert' if blocker_tone == 'warning' else 'circle-x') }}
+    </div>
+    <div class="mt-3 rounded-lg border border-brand-outline bg-brand-surface px-3 py-3">
+        <p class="text-sm font-semibold text-brand-foreground">{{ dependency_blocker.title }}</p>
+        <p class="mt-1 text-xs leading-5 text-brand-foreground-muted">{{ dependency_blocker.description }}</p>
+    </div>
+    <div class="mt-auto flex flex-wrap gap-2 pt-3">
+        {{ table_label.metadata_label('Step ' ~ dependency_blocker.stage, 'list-ordered') }}
+        {{ table_label.metadata_label(dependency_blocker.badge, dependency_blocker.icon) }}
     </div>
 </div>

@@ -48,26 +48,8 @@
 
             <aside class="xl:col-span-5" aria-label="Resource utilization posture">
                 {% if dependency_blocker %}
-                    <div class="flex h-full min-h-[12rem] flex-col rounded-xl border border-brand-outline bg-brand-surface-strong p-4 backdrop-blur-md">
-                        <div class="flex items-start justify-between gap-4">
-                            <div class="min-w-0">
-                                <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Utilization posture</p>
-                                <p class="mt-1 text-3xl font-bold leading-none text-brand-foreground">Blocked</p>
-                                <p class="mt-2 text-xs leading-5 text-brand-foreground-muted">{{ dependency_blocker.title }}</p>
-                            </div>
-                            {{ table_label.status_label('Blocked', 'critical', 'lock-keyhole') }}
-                        </div>
-                        <div class="mt-auto grid grid-cols-2 gap-2 pt-4">
-                            <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-3">
-                                <p class="text-[10px] font-semibold uppercase tracking-wide text-brand-foreground-muted">Dependency step</p>
-                                <p class="mt-1 text-2xl font-bold text-brand-foreground">{{ dependency_blocker.stage }}</p>
-                            </div>
-                            <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-3">
-                                <p class="text-[10px] font-semibold uppercase tracking-wide text-brand-foreground-muted">Required action</p>
-                                <p class="mt-1 truncate text-sm font-bold text-brand-foreground">{{ dependency_blocker.badge }}</p>
-                            </div>
-                        </div>
-                    </div>
+                    {% set analytics_posture_label = 'Utilization posture' %}
+                    {% include "analytics/components/_blocked_posture.html" %}
                 {% else %}
                     <div class="flex h-full min-h-[12rem] flex-col rounded-xl border border-brand-outline bg-brand-surface-strong p-4 backdrop-blur-md">
                         <div class="flex items-start justify-between gap-4">
