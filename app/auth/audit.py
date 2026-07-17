@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
-from flask import request
+from flask import current_app, request
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.extensions import db
@@ -23,7 +23,9 @@ def record_login_attempt(
     event.source = source
     event.success = success
     event.reason = reason
-    event.ip_address = request.headers.get('X-Forwarded-For', request.remote_addr)
+    # ProxyFix normalizes remote_addr when trusted proxy hops are configured.
+    # Do not read X-Forwarded-For directly because clients can spoof it.
+    event.ip_address = request.remote_addr
     event.user_agent = request.headers.get('User-Agent')
 
     try:
@@ -31,6 +33,10 @@ def record_login_attempt(
         db.session.commit()
     except SQLAlchemyError:
         db.session.rollback()
+        current_app.logger.warning(
+            'Login Activity could not be persisted.',
+            exc_info=True,
+        )
 
 
 def build_login_audit_cutoff(retention_days: int) -> datetime:

@@ -220,11 +220,14 @@
                             <i data-lucide="user-cog" class="h-4 w-4"></i>
                             <span class="flex-1">Account Settings</span>
                         </a>
-                        <a href="{{ url_for('auth.logout') }}"
-                           class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-status-critical transition hover:bg-status-critical-soft hover:text-status-critical-text">
-                            <i data-lucide="log-out" class="h-4 w-4"></i>
-                            <span>Logout</span>
-                        </a>
+                        <form method="POST" action="{{ url_for('auth.logout') }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                            <button type="submit"
+                                    class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-status-critical transition hover:bg-status-critical-soft hover:text-status-critical-text">
+                                <i data-lucide="log-out" class="h-4 w-4"></i>
+                                <span>Logout</span>
+                            </button>
+                        </form>
                     </div>
                 </div>
             </div>

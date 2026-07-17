@@ -21,7 +21,7 @@
         </div>
 
         <header>
-            <span class="inline-flex items-center gap-2 rounded-full border border-outline-default bg-surface-hover px-3 py-1 text-xs font-semibold text-content-secondary">
+            <span class="inline-flex items-center gap-2 rounded-md border border-outline-default bg-surface-hover px-3 py-1 text-xs font-semibold text-content-secondary">
                 <i data-lucide="shield-check" class="h-3.5 w-3.5 text-kaori-primary"></i>
                 Secure Platform Access
             </span>
@@ -31,27 +31,7 @@
             </p>
         </header>
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <div class="mt-5 space-y-2.5">
-                    {% for category, message in messages %}
-                        {% if category == "success" %}
-                            <div class="flex items-start gap-3 rounded-xl border border-status-normal-border bg-status-normal-soft px-3.5 py-2.5 text-sm text-status-normal-text"
-                                 role="status">
-                                <i data-lucide="circle-check" class="mt-0.5 h-4 w-4 shrink-0"></i>
-                                <span>{{ message }}</span>
-                            </div>
-                        {% else %}
-                            <div class="flex items-start gap-3 rounded-xl border border-status-critical-border bg-status-critical-soft px-3.5 py-2.5 text-sm text-status-critical-text"
-                                 role="alert">
-                                <i data-lucide="triangle-alert" class="mt-0.5 h-4 w-4 shrink-0"></i>
-                                <span>{{ message }}</span>
-                            </div>
-                        {% endif %}
-                    {% endfor %}
-                </div>
-            {% endif %}
-        {% endwith %}
+        {% include "auth/partials/_login_alerts.html" %}
 
         <form class="mt-6 space-y-4" method="POST">
             {{ form.hidden_tag() }}
@@ -114,10 +94,7 @@
                     {{ form.remember(class="h-4 w-4 rounded border-outline-strong bg-surface-card accent-kaori-primary focus:ring-2 focus:ring-outline-focus focus:ring-offset-2 focus:ring-offset-surface-card") }}
                     <span>Remember me</span>
                 </label>
-                <span class="inline-flex items-center gap-2 rounded-md bg-status-info-soft px-2.5 py-1 text-xs font-semibold text-status-info-text">
-                    <span class="h-1.5 w-1.5 rounded-full bg-status-info"></span>
-                    Local account
-                </span>
+                {% include "auth/partials/_provider_status.html" %}
             </div>
 
             {{ form.submit(class="inline-flex h-11 w-full cursor-pointer items-center justify-center rounded-xl bg-kaori-primary px-5 text-sm font-bold text-white shadow-md shadow-kaori-primary/20 transition hover:bg-kaori-primary-hover focus:outline-none focus:ring-2 focus:ring-outline-focus focus:ring-offset-2 focus:ring-offset-surface-card disabled:cursor-not-allowed disabled:opacity-60") }}

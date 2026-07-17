@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from sqlalchemy.exc import SQLAlchemyError
+from werkzeug.security import check_password_hash, generate_password_hash
 
 from app.auth.results import (
     DATABASE_UNAVAILABLE_MESSAGE,
@@ -9,6 +10,9 @@ from app.auth.results import (
     AuthResult,
 )
 from app.models import User
+
+
+_DUMMY_PASSWORD_HASH = generate_password_hash('kaori-auth-timing-placeholder')
 
 
 class DatabaseAuthProvider:
@@ -31,6 +35,9 @@ class DatabaseAuthProvider:
             )
 
         if not user:
+            # Perform one password-hash verification for unknown users so the
+            # public rejection path is less distinguishable by response timing.
+            check_password_hash(_DUMMY_PASSWORD_HASH, password)
             return AuthResult(
                 success=False,
                 reason='invalid_credentials',

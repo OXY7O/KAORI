@@ -317,6 +317,13 @@ class Config:
         'Too many login attempts. Please wait a minute and try again.',
     )
 
+    # Persistent sessions are disabled for local super administrators by default.
+    # Enable only after the break-glass operating procedure explicitly permits it.
+    AUTH_ALLOW_SUPER_ADMIN_REMEMBER_ME = _env_bool(
+        'AUTH_ALLOW_SUPER_ADMIN_REMEMBER_ME',
+        False,
+    )
+
     # Protected Kubernetes Secret reveal. This capability is globally disabled
     # until an operator explicitly enables it and configures per-cluster controls.
     KUBERNETES_SECRET_REVEAL_ENABLED = _env_bool(
