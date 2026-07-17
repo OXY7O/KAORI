@@ -8,7 +8,7 @@
             </span>
             <div>
                 <h2 class="text-base font-extrabold text-content-primary">Recent Login Activity</h2>
-                <p class="mt-0.5 text-xs text-content-muted">Latest 5 sign-in attempts for this account.</p>
+                <p class="mt-0.5 text-xs text-content-muted">Latest 5 sign-in events from the unified Activity Audit Log.</p>
             </div>
         </div>
         <i data-lucide="chevron-down"
@@ -17,11 +17,13 @@
     </button>
     <div x-show="recentOpen" x-cloak>
         <div class="flex items-center justify-end border-t border-outline-default px-5 py-3">
-            <a href="{{ url_for('notifications.activity_log', event_type='authentication') }}"
-               class="inline-flex items-center gap-2 rounded-xl bg-kaori-soft px-3 py-2 text-xs font-bold text-kaori-primary transition hover:bg-kaori-soft dark:bg-kaori-soft/10 dark:text-kaori-accent dark:hover:bg-kaori-strong/20">
-                <i data-lucide="external-link" class="h-3.5 w-3.5"></i>
-                View all login activity
-            </a>
+            {% if current_user.has_permission('settings.view_operational_activity') %}
+                <a href="{{ url_for('notifications.activity_log', event_type='authentication', user_id=current_user.id) }}"
+                   class="inline-flex items-center gap-2 rounded-xl bg-kaori-soft px-3 py-2 text-xs font-bold text-kaori-primary transition hover:bg-kaori-soft dark:bg-kaori-soft/10 dark:text-kaori-accent dark:hover:bg-kaori-strong/20">
+                    <i data-lucide="external-link" class="h-3.5 w-3.5"></i>
+                    View authentication audit
+                </a>
+            {% endif %}
         </div>
         {% if recent_login_events %}
             <div class="overflow-x-auto border-t border-outline-default">
@@ -29,7 +31,7 @@
                     <thead class="bg-surface-subtle text-xs font-bold uppercase tracking-wide text-content-muted/50">
                         <tr>
                             <th class="px-5 py-3 text-left">Time</th>
-                            <th class="px-5 py-3 text-left">Source</th>
+                            <th class="px-5 py-3 text-left">Provider</th>
                             <th class="px-5 py-3 text-left">Status</th>
                             <th class="px-5 py-3 text-left">IP Address</th>
                             <th class="px-5 py-3 text-left">Reason</th>
@@ -37,11 +39,12 @@
                     </thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-outline-default">
                         {% for event in recent_login_events %}
+                            {% set metadata = event.metadata_json or {} %}
                             <tr class="transition hover:bg-surface-subtle dark:hover:bg-surface-card/40">
                                 <td class="whitespace-nowrap px-5 py-3 font-semibold text-content-secondary">{{ event.created_at|user_datetime("%Y-%m-%d %H:%M:%S %Z") }}</td>
-                                <td class="whitespace-nowrap px-5 py-3 text-content-muted">{{ event.source|replace('_', ' ') |title }}</td>
+                                <td class="whitespace-nowrap px-5 py-3 text-content-muted">{{ (metadata.get('authentication_provider') or metadata.get('auth_source'))|default('-', true) }}</td>
                                 <td class="whitespace-nowrap px-5 py-3">
-                                    {% if event.success %}
+                                    {% if event.status == 'success' %}
                                         <span class="inline-flex items-center gap-1.5 rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
                                             <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
                                             Success
@@ -53,8 +56,8 @@
                                         </span>
                                     {% endif %}
                                 </td>
-                                <td class="whitespace-nowrap px-5 py-3 text-content-muted">{{ event.ip_address|default('-', true) }}</td>
-                                <td class="px-5 py-3 text-content-muted">{{ event.reason|replace('_', ' ') |title }}</td>
+                                <td class="whitespace-nowrap px-5 py-3 text-content-muted">{{ metadata.get('ip_address')|default('-', true) }}</td>
+                                <td class="px-5 py-3 text-content-muted">{{ metadata.get('result_reason')|default('-', true) }}</td>
                             </tr>
                         {% endfor %}
                     </tbody>
@@ -62,11 +65,11 @@
             </div>
         {% else %}
             <div class="border-t border-outline-default px-5 py-8 text-center">
-                <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-surface-subtle text-content-muted bg-surface-subtle">
+                <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-surface-subtle text-content-muted">
                     <i data-lucide="clipboard-list" class="h-5 w-5"></i>
                 </div>
                 <p class="mt-3 text-sm font-bold text-content-primary">No recent login activity</p>
-                <p class="mt-1 text-sm text-content-muted">Login attempts will appear here after audit events are recorded.</p>
+                <p class="mt-1 text-sm text-content-muted">Authentication events will appear here after a sign-in attempt is recorded.</p>
             </div>
         {% endif %}
     </div>

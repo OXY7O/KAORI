@@ -64,7 +64,6 @@ DEFAULT_PERMISSIONS = [
         'manage_integrations',
         'Manage Prometheus, Alertmanager, and reporting integrations.',
     ),
-    ('settings.view_login_activity', 'access', 'view_login_activity', 'View login activity and authentication events.'),
     (
         'settings.view_operational_activity',
         'access',
@@ -152,7 +151,7 @@ DEFAULT_ROLE_PERMISSIONS = {
         'welcome.view', 'dashboard.view', 'clusters.view', 'inventory.view',
         'analytics.view', 'governance.view', 'tls_certificates.view',
         'kubernetes_configmaps.view', 'intelligence.view', 'reports.view', 'settings.view',
-        'settings.view_login_activity', 'settings.view_operational_activity',
+        'settings.view_operational_activity',
         'settings.export_operational_activity', 'users.view', 'roles.view',
         'system.view',
     },

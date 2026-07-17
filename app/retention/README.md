@@ -1,6 +1,6 @@
 # KAORI Archive-First Retention Foundation
 
-This package provides the shared lifecycle used by operational activity now and by login activity, reports, and future high-volume domains later.
+This package provides the shared lifecycle used by the unified Activity Audit Log now and by reports and future high-volume domains later.
 
 ## Safety invariants
 
@@ -52,7 +52,7 @@ flask archive-retention purge-archives --domain operational_activity --execute
 4. Add the domain name to `ARCHIVE_SCHEDULED_DOMAINS` when scheduled cleanup is approved.
 5. Add domain-specific RBAC and UI entry points while keeping archive/verify/cleanup logic in the shared service.
 
-Planned adapters: login activity and generated report artifact lifecycle. Restore/import remains an administrative CLI concern and must include duplicate protection.
+Authentication events are already covered by the `operational_activity` adapter because they use the canonical Activity Audit Log. A generated-report artifact adapter remains planned. Restore/import remains an administrative CLI concern and must include duplicate protection.
 
 ## Current operational activity semantics
 

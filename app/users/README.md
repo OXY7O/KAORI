@@ -64,7 +64,7 @@ LDAP/SSO implementation must add provider discovery and identity projection serv
 
 ## Known staged work
 
-Authentication events are consolidated into Activity Audit Log under the `authentication` event type. Login success, login failure, and logout now share the operational audit presentation with provider, IP, browser, operating system, device, user-agent, result, and reason metadata. Legacy `AuthLoginEvent` persistence remains temporarily as a compatibility source, while migration `20260717_auth_activity` backfills its historical rows into the unified audit stream.
+Authentication events are stored only in Activity Audit Log under the `authentication` event type. Login success, login failure, and logout share the same audit presentation with provider, IP, browser, operating system, device, user-agent, result, and reason metadata. User account summaries query this canonical event stream directly.
 
 ## Persistence boundary
 

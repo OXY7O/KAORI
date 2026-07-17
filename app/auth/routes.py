@@ -4,7 +4,7 @@ from secrets import compare_digest
 from flask import Blueprint, current_app, flash, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_required, logout_user
 
-from app.auth.audit import record_login_attempt, record_logout
+from app.auth.audit import record_authentication_activity
 from app.auth.forms import LoginForm
 from app.auth.providers.oauth import (
     SsoProviderError,
@@ -36,12 +36,13 @@ def _client_ip() -> str | None:
 
 
 def _record_result(username: str, result: AuthResult) -> None:
-    record_login_attempt(
+    record_authentication_activity(
+        action='login',
         username=username,
         source=result.source,
-        success=result.success,
+        result='success' if result.success else 'failed',
         reason=result.reason,
-        user_id=result.user.id if result.user else None,
+        user=result.user,
     )
 
 
@@ -122,10 +123,11 @@ def sso_start(provider_key: str):
     except SsoProviderError as exc:
         session.pop(SSO_SESSION_KEY, None)
         current_app.logger.warning('SSO start failed for provider %s: %s', provider.key, exc)
-        record_login_attempt(
+        record_authentication_activity(
+            action='login',
             username=provider.key,
             source=provider.provider_type,
-            success=False,
+            result='failed',
             reason='provider_unavailable',
         )
         flash('The selected SSO provider is not configured correctly.', 'danger')
@@ -196,7 +198,14 @@ def sso_callback(provider_key: str):
 def logout():
     user = current_user._get_current_object()
     source = str(session.get('auth_source') or user.last_auth_source or user.auth_source or 'database')
-    record_logout(user=user, source=source)
+    record_authentication_activity(
+        action='logout',
+        username=user.username,
+        source=source,
+        result='success',
+        reason='user_initiated',
+        user=user,
+    )
     logout_user()
     clear_authenticated_session()
     session.pop(SSO_SESSION_KEY, None)

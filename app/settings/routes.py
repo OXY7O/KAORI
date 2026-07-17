@@ -5,7 +5,6 @@ from typing import cast
 
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
-from sqlalchemy.exc import IntegrityError
 
 from app.auth.forms import ChangePasswordForm
 from app.common.timezone import (
@@ -14,10 +13,11 @@ from app.common.timezone import (
     timezone_choices,
 )
 from app.extensions import db
-from app.models import AuthLoginEvent, Permission, Role, User
+from app.models import Notification, Permission, Role, User
 from app.rbac.decorators import permission_required
 from app.rbac.service import get_permissions_grouped_by_module, replace_role_permissions, seed_default_rbac
 from app.settings.roles.forms import RoleForm
+from app.users.service import record_admin_event
 
 bp = Blueprint(
     'settings',
@@ -116,8 +116,12 @@ def account():
         }
 
     recent_login_events = (
-        AuthLoginEvent.query.filter(AuthLoginEvent.username == user.username)
-        .order_by(AuthLoginEvent.created_at.desc())
+        Notification.query.filter(
+            Notification.user_id == user.id,
+            Notification.event_type == 'authentication',
+            Notification.title.in_(['User signed in', 'Sign-in attempt failed']),
+        )
+        .order_by(Notification.created_at.desc(), Notification.id.desc())
         .limit(5)
         .all()
     )

@@ -1,7 +1,6 @@
 from app.models.alertmanager import AlertmanagerConfig
 from app.models.archive import ArchiveArtifact
 from app.models.audit import AuditEvent
-from app.models.auth import AuthLoginEvent
 from app.models.cluster import Cluster, ClusterStatus
 from app.models.governance import TLSCertificateInventory, TLSCertificateUpdateEvent
 from app.models.identity import ExternalIdentityLink, IdentityProvider
@@ -26,7 +25,6 @@ from app.models.user import User
 
 __all__ = [
     'ArchiveArtifact',
-    'AuthLoginEvent',
     'AuditEvent',
     'IdentityProvider',
     'ExternalIdentityLink',

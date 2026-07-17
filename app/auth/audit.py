@@ -1,16 +1,19 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
+from typing import Literal
 
 from flask import current_app, request
 
+from app.auth.user_agent import parse_user_agent
 from app.extensions import db
-from app.models.auth import AuthLoginEvent, parse_user_agent
 from app.models.notification import Notification
 from app.models.user import User
 
 AUTHENTICATION_EVENT_TYPE = 'authentication'
 AUTHENTICATION_AUDIT_SCHEMA = 'authentication.v1'
+AuthenticationAction = Literal['login', 'logout']
+AuthenticationResult = Literal['success', 'failed']
 
 
 def _provider_label(source: str) -> str:
@@ -45,25 +48,55 @@ def _reason_label(reason: str) -> str:
     return labels.get(normalized, normalized.replace('_', ' ').title() or 'No reason recorded')
 
 
-def _authentication_metadata(
+def record_authentication_activity(
     *,
-    action: str,
+    action: AuthenticationAction,
     username: str,
     source: str,
-    result: str,
+    result: AuthenticationResult,
     reason: str,
-    user: User | None,
-    legacy_login_event_id: int | None = None,
-) -> dict[str, object | None]:
+    user: User | None = None,
+) -> None:
+    """Persist one login or logout event in the unified Activity Audit Log."""
+
+    normalized_username = username.strip()
+    created_at = datetime.now(UTC)
+    provider = _provider_label(source)
+    identity = normalized_username or 'Unknown identity'
     user_agent = request.headers.get('User-Agent')
     user_agent_info = parse_user_agent(user_agent)
+    success = result == 'success'
+    is_logout = action == 'logout'
 
-    metadata: dict[str, object | None] = {
+    activity = Notification()
+    activity.user_id = user.id if user is not None else None
+    activity.event_type = AUTHENTICATION_EVENT_TYPE
+    activity.status = 'success' if success else 'error'
+    activity.title = 'User signed out' if is_logout else ('User signed in' if success else 'Sign-in attempt failed')
+    activity.message = (
+        f'{identity} signed out from the KAORI web session.'
+        if is_logout
+        else (
+            f'{identity} signed in through {provider}.'
+            if success
+            else f'{identity} could not sign in through {provider}.'
+        )
+    )
+    activity.detail = (
+        f'The authenticated session established through {provider} was cleared by the user.'
+        if is_logout
+        else (
+            'KAORI verified the identity and established an authenticated web session.'
+            if success
+            else f'KAORI rejected the sign-in attempt. {_reason_label(reason)}.'
+        )
+    )
+    activity.metadata_json = {
         'audit_schema': AUTHENTICATION_AUDIT_SCHEMA,
         'access_action': action,
-        'username': username or None,
+        'username': normalized_username or None,
         'auth_source': source,
-        'authentication_provider': _provider_label(source),
+        'authentication_provider': provider,
         'result': result,
         'result_reason': _reason_label(reason),
         'reason_code': reason,
@@ -76,122 +109,9 @@ def _authentication_metadata(
         'actor_email': user.email if user is not None else None,
         'actor_role': user.role_display_name if user is not None else None,
     }
-    if legacy_login_event_id is not None:
-        metadata['legacy_login_event_id'] = legacy_login_event_id
-    return metadata
-
-
-def _build_login_activity(
-    *,
-    username: str,
-    source: str,
-    success: bool,
-    reason: str,
-    user: User | None,
-    legacy_login_event_id: int,
-    created_at: datetime,
-) -> Notification:
-    provider = _provider_label(source)
-    identity = username or 'Unknown identity'
-
-    activity = Notification()
-    activity.user_id = user.id if user is not None else None
-    activity.event_type = AUTHENTICATION_EVENT_TYPE
-    activity.status = 'success' if success else 'error'
-    activity.title = 'User signed in' if success else 'Sign-in attempt failed'
-    activity.message = (
-        f'{identity} signed in through {provider}.' if success else f'{identity} could not sign in through {provider}.'
-    )
-    activity.detail = (
-        'KAORI verified the identity and established an authenticated web session.'
-        if success
-        else f'KAORI rejected the sign-in attempt. {_reason_label(reason)}.'
-    )
-    activity.metadata_json = _authentication_metadata(
-        action='login',
-        username=username,
-        source=source,
-        result='success' if success else 'failed',
-        reason=reason,
-        user=user,
-        legacy_login_event_id=legacy_login_event_id,
-    )
     activity.created_at = created_at
-    # Authentication records are audit-only. They must not create unread items
-    # in the personal notification center.
-    activity.read_at = created_at
-    return activity
-
-
-def record_login_attempt(
-    *,
-    username: str,
-    source: str,
-    success: bool,
-    reason: str,
-    user_id: int | None = None,
-) -> None:
-    normalized_username = username.strip()
-    created_at = datetime.now(UTC)
-
-    event = AuthLoginEvent()
-    event.username = normalized_username or None
-    event.user_id = user_id
-    event.source = source
-    event.success = success
-    event.reason = reason
-    # ProxyFix normalizes remote_addr when trusted proxy hops are configured.
-    # Do not read X-Forwarded-For directly because clients can spoof it.
-    ip_address = request.remote_addr
-    user_agent = request.headers.get('User-Agent')
-    event.ip_address = ip_address[:100] if ip_address else None
-    event.user_agent = user_agent[:500] if user_agent else None
-    event.created_at = created_at
-
-    try:
-        user = db.session.get(User, user_id) if user_id is not None else None
-        db.session.add(event)
-        db.session.flush()
-        db.session.add(
-            _build_login_activity(
-                username=normalized_username,
-                source=source,
-                success=success,
-                reason=reason,
-                user=user,
-                legacy_login_event_id=event.id,
-                created_at=created_at,
-            )
-        )
-        db.session.commit()
-    except Exception:
-        db.session.rollback()
-        current_app.logger.warning(
-            'Authentication activity could not be persisted.',
-            exc_info=True,
-        )
-
-
-def record_logout(*, user: User, source: str) -> None:
-    created_at = datetime.now(UTC)
-    provider = _provider_label(source)
-
-    activity = Notification()
-    activity.user_id = user.id
-    activity.event_type = AUTHENTICATION_EVENT_TYPE
-    activity.status = 'success'
-    activity.title = 'User signed out'
-    activity.message = f'{user.display_label} signed out from the KAORI web session.'
-    activity.detail = f'The authenticated session established through {provider} was cleared by the user.'
-    activity.metadata_json = _authentication_metadata(
-        action='logout',
-        username=user.username,
-        source=source,
-        result='success',
-        reason='user_initiated',
-        user=user,
-    )
-    activity.created_at = created_at
+    # Authentication events are audit-only and must not create unread items in
+    # the personal notification center.
     activity.read_at = created_at
 
     try:
@@ -200,33 +120,6 @@ def record_logout(*, user: User, source: str) -> None:
     except Exception:
         db.session.rollback()
         current_app.logger.warning(
-            'Logout activity could not be persisted.',
+            'Authentication activity could not be persisted.',
             exc_info=True,
         )
-
-
-def build_login_audit_cutoff(retention_days: int) -> datetime:
-    """Return the UTC cutoff timestamp for login audit retention cleanup."""
-
-    return datetime.now(UTC) - timedelta(days=retention_days)
-
-
-def count_login_audit_events_older_than(retention_days: int) -> int:
-    cutoff = build_login_audit_cutoff(retention_days)
-
-    return AuthLoginEvent.query.filter(
-        AuthLoginEvent.created_at < cutoff,
-    ).count()
-
-
-def cleanup_login_audit_events(retention_days: int) -> int:
-    cutoff = build_login_audit_cutoff(retention_days)
-
-    deleted_count = AuthLoginEvent.query.filter(
-        AuthLoginEvent.created_at < cutoff,
-    ).delete(
-        synchronize_session=False,
-    )
-    db.session.commit()
-
-    return int(deleted_count or 0)

@@ -21,7 +21,7 @@
     {% for role in roles %}
         {% set assigned_ns.total = assigned_ns.total + (role.users|length) %}
     {% endfor %}
-    {% set matrix_actions = permission_actions|default(['view', 'manage', 'generate', 'sync', 'delete', 'view_login_activity']) %}
+    {% set matrix_actions = permission_actions|default(['view', 'manage', 'generate', 'sync', 'delete', 'view_operational_activity']) %}
     <div class="space-y-6">
         <section class="overflow-hidden rounded-2xl border border-brand-outline bg-kaori-primary p-6 text-white shadow-sm">
             <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">

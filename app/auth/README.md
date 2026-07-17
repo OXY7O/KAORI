@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`app/auth` is the identity-verification boundary for KAORI. It verifies a user through an authentication provider, normalizes the result, establishes or clears the web session, records Login Activity, and sends an authenticated user to the role-aware Welcome workspace.
+`app/auth` is the identity-verification boundary for KAORI. It verifies a user through an authentication provider, normalizes the result, establishes or clears the web session, records authentication events in the unified Activity Audit Log, and sends an authenticated user to the role-aware Welcome workspace.
 
 Authentication answers **who the user is**. It does not decide what the user may do. Route access, menu visibility, workspace availability, and operational actions remain enforced by `app/rbac`, permission decorators, and role/permission resolution.
 
@@ -28,7 +28,8 @@ Local authentication must remain available even after external providers are ena
 | `services.py` | Authentication orchestration. It invokes the active provider chain and returns a normalized `AuthResult`; it must not read Flask request fields or create sessions. |
 | `routes.py` | HTTP boundary: form submission, rate limit binding, success/failure response, login metadata update, safe redirect, and logout endpoint. Route functions should remain thin. |
 | `session.py` | Session rotation, Flask-Login establishment, persistent-session policy, authentication-source state, and auth-owned session cleanup. |
-| `audit.py` | Unified authentication audit boundary. It dual-writes legacy Login Activity and Activity Audit Log records, captures safe provider/IP/client metadata, records logout, and retains legacy cleanup helpers. It must never store credentials, tokens, assertions, or raw exceptions. |
+| `audit.py` | Canonical authentication audit writer. It writes login and logout directly to the Activity Audit Log with safe provider/IP/client metadata. It must never store credentials, tokens, assertions, or raw exceptions. |
+| `user_agent.py` | Stateless parsing of browser, operating-system, and device labels used by authentication audit presentation. It contains no persistence or request logic. |
 
 ### Provider files
 
@@ -60,7 +61,7 @@ Local authentication must remain available even after external providers are ena
 3. `services.authenticate()` resolves the provider registry and invokes the local database provider.
 4. The provider queries a non-deleted user, verifies the password hash, and checks account state.
 5. A normalized `AuthResult` is returned; raw SQL/provider errors are not exposed.
-6. The attempt is written to Login Activity without credentials.
+6. The attempt is written once to Activity Audit Log under the `authentication` event type without credentials.
 7. On success, KAORI records last-login metadata, rotates the session, and authenticates through Flask-Login.
 8. The user is redirected to `welcome.index`; RBAC controls the workspace and all protected actions.
 
@@ -130,4 +131,4 @@ Browser SSO adapters are implemented in `app/auth/providers/oauth.py`, while pro
 
 Every completed login attempt and every user-initiated logout is recorded under the canonical `authentication` event type in Activity Audit Log. The event metadata captures the sign-in/sign-out action, provider, result, reason code, attempted username, IP address, browser, operating system, device class, and raw user-agent. Failed attempts that cannot be mapped to a KAORI user are stored with a nullable actor and presented as unauthenticated requests.
 
-Authentication events are audit-only records and are marked reviewed when written, so routine login/logout activity does not create unread personal notification-center items. Legacy `AuthLoginEvent` persistence remains temporarily for backward compatibility; migration `20260717_auth_activity` backfills existing Login Activity rows into the unified audit stream.
+Authentication events are audit-only records and are marked reviewed when written, so routine login/logout activity does not create unread personal notification-center items. `notifications` is the only runtime persistence source; there is no legacy login-event model, dual-write path, compatibility wrapper, or login-specific retention command.

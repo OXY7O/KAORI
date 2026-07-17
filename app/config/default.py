@@ -371,14 +371,6 @@ class Config:
         168,
     )
 
-    # Login audit retention. The Login Activity UI shows the latest matching
-    # records, while this value controls how long audit rows are kept before
-    # cleanup-login-audit removes old entries.
-    AUTH_LOGIN_AUDIT_RETENTION_DAYS = _env_int(
-        'AUTH_LOGIN_AUDIT_RETENTION_DAYS',
-        90,
-    )
-
     APP_NAME = 'KAORI'
 
     APP_VERSION = _env_str(
@@ -386,9 +378,9 @@ class Config:
         '1.0.0',
     )
 
-    # Reusable archive storage profile. Activity retention uses this profile now;
-    # login activity, reports, and future domains can register adapters without
-    # duplicating Local/S3 lifecycle code.
+    # Reusable archive storage profile. The unified Activity Audit Log uses
+    # this profile now; reports and future domains can reuse the same Local/S3
+    # lifecycle without introducing parallel retention implementations.
     ARCHIVE_STORAGE_BACKEND = _normalize_storage_backend(
         _env_str(
             'ARCHIVE_STORAGE_BACKEND',

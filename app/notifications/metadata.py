@@ -151,7 +151,6 @@ def metadata_items(
         'operating_system': 'Operating system',
         'device_type': 'Device type',
         'user_agent': 'User agent',
-        'legacy_login_event_id': 'Legacy Login Activity ID',
     }
     context_keys = {
         'cluster_name',
@@ -166,7 +165,6 @@ def metadata_items(
         'actor_display_name',
         'actor_email',
         'actor_role',
-        'legacy_login_event_id',
     }
 
     visible_metadata: dict[str, Any] = {'event_key': event_type}
