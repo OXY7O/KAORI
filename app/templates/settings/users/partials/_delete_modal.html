@@ -5,7 +5,7 @@
     <div role="dialog"
          aria-modal="true"
          aria-labelledby="delete-user-modal-title"
-         class="relative w-full max-w-md overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-2xl border-outline-default bg-surface-subtle">
+         class="relative w-full max-w-md overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-2xl">
         <div class="p-6">
             <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-red-100 text-red-600 dark:bg-red-500/10 dark:text-red-300">
                 <i data-lucide="trash-2" class="h-6 w-6"></i>
@@ -32,7 +32,7 @@
             {% if csrf_token is defined %}
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             {% endif %}
-            <div class="flex justify-end gap-3 border-t border-outline-default bg-surface-subtle px-6 py-4 border-outline-default">
+            <div class="flex justify-end gap-3 border-t border-outline-default bg-surface-subtle px-6 py-4">
                 <button type="button"
                         data-delete-modal-close
                         class="rounded-xl border border-outline-default bg-surface-card px-4 py-2 text-sm font-medium text-content-secondary transition hover:bg-surface-subtle border-outline-default bg-surface-subtle dark:hover:bg-surface-subtle">

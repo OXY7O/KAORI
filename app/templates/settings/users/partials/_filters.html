@@ -1,7 +1,7 @@
 <form id="users-filter-form"
       method="get"
       action="{{ url_for('settings.users') }}"
-      class="rounded-2xl border border-outline-default bg-surface-card p-4 shadow-sm border-outline-default bg-surface-subtle"
+      class="rounded-2xl border border-outline-default bg-surface-card p-4 shadow-sm"
       hx-get="{{ url_for('settings.users') }}"
       hx-trigger="submit, change delay:120ms from:select, keyup changed delay:450ms from:input[name='search']"
       hx-target="#users-page-content"
@@ -20,13 +20,13 @@
                            name="search"
                            value="{{ filters.search }}"
                            placeholder="Search username, display name, or email"
-                           class="w-full rounded-xl border border-outline-default bg-surface-card py-2.5 pl-9 pr-3 text-sm text-content-primary transition focus:border-kaori-primary focus:outline-none focus:ring-4 focus:ring-kaori-primary/20 border-outline-default dark:focus:ring-kaori-primary/20">
+                           class="w-full rounded-xl border border-outline-default bg-surface-card py-2.5 pl-9 pr-3 text-sm text-content-primary transition focus:border-kaori-primary focus:outline-none focus:ring-4 focus:ring-kaori-primary/20 dark:focus:ring-kaori-primary/20">
                 </div>
             </label>
             <label class="space-y-1.5">
                 <span class="text-xs font-bold uppercase tracking-wide text-content-muted">Status</span>
                 <select name="status"
-                        class="w-full rounded-xl border border-outline-default bg-surface-card px-3 py-2.5 text-sm text-content-primary transition focus:border-kaori-primary focus:outline-none focus:ring-4 focus:ring-kaori-primary/20 border-outline-default dark:focus:ring-kaori-primary/20">
+                        class="w-full rounded-xl border border-outline-default bg-surface-card px-3 py-2.5 text-sm text-content-primary transition focus:border-kaori-primary focus:outline-none focus:ring-4 focus:ring-kaori-primary/20 dark:focus:ring-kaori-primary/20">
                     {% for option in status_options %}
                         <option value="{{ option }}"
                                 {% if filters.status == option %}selected{% endif %}>{{ option|title }}</option>
@@ -36,7 +36,7 @@
             <label class="space-y-1.5">
                 <span class="text-xs font-bold uppercase tracking-wide text-content-muted">Source</span>
                 <select name="auth_source"
-                        class="w-full rounded-xl border border-outline-default bg-surface-card px-3 py-2.5 text-sm text-content-primary transition focus:border-kaori-primary focus:outline-none focus:ring-4 focus:ring-kaori-primary/20 border-outline-default dark:focus:ring-kaori-primary/20">
+                        class="w-full rounded-xl border border-outline-default bg-surface-card px-3 py-2.5 text-sm text-content-primary transition focus:border-kaori-primary focus:outline-none focus:ring-4 focus:ring-kaori-primary/20 dark:focus:ring-kaori-primary/20">
                     {% for option in auth_source_options %}
                         <option value="{{ option }}"
                                 {% if filters.auth_source == option %}selected{% endif %}>{{ option|upper if option != 'all' else 'All Sources' }}</option>
@@ -46,7 +46,7 @@
             <label class="space-y-1.5">
                 <span class="text-xs font-bold uppercase tracking-wide text-content-muted">Role</span>
                 <select name="role_id"
-                        class="w-full rounded-xl border border-outline-default bg-surface-card px-3 py-2.5 text-sm text-content-primary transition focus:border-kaori-primary focus:outline-none focus:ring-4 focus:ring-kaori-primary/20 border-outline-default dark:focus:ring-kaori-primary/20">
+                        class="w-full rounded-xl border border-outline-default bg-surface-card px-3 py-2.5 text-sm text-content-primary transition focus:border-kaori-primary focus:outline-none focus:ring-4 focus:ring-kaori-primary/20 dark:focus:ring-kaori-primary/20">
                     <option value="all">All Roles</option>
                     {% for role in roles %}
                         <option value="{{ role.id }}"
