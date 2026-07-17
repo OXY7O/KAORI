@@ -54,27 +54,39 @@
             </div>
         </div>
     </header>
-    <div class="grid gap-4 p-5 lg:grid-cols-2">
+    <div class="grid items-start gap-4 p-5 lg:grid-cols-2">
         {% for group in system_information.feature_groups %}
-            <article class="rounded-xl border border-outline-default bg-surface-subtle p-4">
-                <div class="flex items-start gap-3">
+            <details class="group overflow-hidden rounded-xl border border-outline-default bg-surface-subtle transition open:border-kaori-primary/35 open:bg-surface-card open:shadow-sm">
+                <summary class="flex cursor-pointer list-none items-start gap-3 p-4 outline-none transition hover:bg-kaori-soft/45 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-kaori-primary/30 [&::-webkit-details-marker]:hidden">
                     <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                         <i data-lucide="{{ group.icon }}" class="h-4 w-4"></i>
                     </span>
-                    <div>
-                        <h3 class="text-sm font-bold text-content-primary">{{ group.title }}</h3>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ group.description }}</p>
-                    </div>
+                    <span class="min-w-0 flex-1">
+                        <span class="flex flex-wrap items-center gap-2">
+                            <span class="text-sm font-bold text-content-primary">{{ group.title }}</span>
+                            <span class="rounded-full border border-kaori-primary/20 bg-kaori-soft px-2 py-0.5 text-[10px] font-bold text-kaori-primary">
+                                {{ group.features|length }} features
+                            </span>
+                        </span>
+                        <span class="mt-1 block text-xs leading-5 text-content-muted">{{ group.description }}</span>
+                    </span>
+                    <span class="ml-2 flex shrink-0 items-center gap-1.5 pt-0.5 text-[11px] font-semibold text-content-muted transition group-hover:text-kaori-primary">
+                        <span class="group-open:hidden">Details</span>
+                        <span class="hidden group-open:inline">Collapse</span>
+                        <i data-lucide="chevron-down" class="h-4 w-4 transition-transform duration-200 group-open:rotate-180"></i>
+                    </span>
+                </summary>
+                <div class="border-t border-outline-default bg-surface-card px-4 py-4">
+                    <ul class="space-y-2.5">
+                        {% for feature in group.features %}
+                            <li class="flex items-start gap-2.5 text-xs leading-5 text-content-secondary">
+                                <i data-lucide="circle-check" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary"></i>
+                                <span>{{ feature }}</span>
+                            </li>
+                        {% endfor %}
+                    </ul>
                 </div>
-                <ul class="mt-4 space-y-2.5">
-                    {% for feature in group.features %}
-                        <li class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
-                            <i data-lucide="circle-check" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary"></i>
-                            <span>{{ feature }}</span>
-                        </li>
-                    {% endfor %}
-                </ul>
-            </article>
+            </details>
         {% endfor %}
     </div>
 </section>

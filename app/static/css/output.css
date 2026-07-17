@@ -737,6 +737,9 @@
   .m-5 {
     margin: calc(var(--spacing) * 5);
   }
+  .mx-3 {
+    margin-inline: calc(var(--spacing) * 3);
+  }
   .mx-5 {
     margin-inline: calc(var(--spacing) * 5);
   }
@@ -2370,6 +2373,12 @@
       background-color: color-mix(in oklab, var(--kaori-brand-soft) 50%, transparent);
     }
   }
+  .bg-kaori-soft\/55 {
+    background-color: var(--kaori-brand-soft);
+    @supports (color: color-mix(in lab, red, red)) {
+      background-color: color-mix(in oklab, var(--kaori-brand-soft) 55%, transparent);
+    }
+  }
   .bg-kaori-soft\/60 {
     background-color: var(--kaori-brand-soft);
     @supports (color: color-mix(in lab, red, red)) {
@@ -2489,12 +2498,6 @@
   }
   .bg-slate-100 {
     background-color: var(--color-slate-100);
-  }
-  .bg-slate-100\/90 {
-    background-color: color-mix(in srgb, oklch(96.8% 0.007 247.896) 90%, transparent);
-    @supports (color: color-mix(in lab, red, red)) {
-      background-color: color-mix(in oklab, var(--color-slate-100) 90%, transparent);
-    }
   }
   .bg-slate-200 {
     background-color: var(--color-slate-200);
@@ -4245,6 +4248,14 @@
       }
     }
   }
+  .group-open\:border-kaori-primary\/30 {
+    &:is(:where(.group):is([open], :popover-open, :open) *) {
+      border-color: var(--kaori-brand-primary);
+      @supports (color: color-mix(in lab, red, red)) {
+        border-color: color-mix(in oklab, var(--kaori-brand-primary) 30%, transparent);
+      }
+    }
+  }
   .group-open\:bg-blue-50 {
     &:is(:where(.group):is([open], :popover-open, :open) *) {
       background-color: var(--color-blue-50);
@@ -4591,6 +4602,13 @@
       }
     }
   }
+  .hover\:border-kaori-primary-hover {
+    &:hover {
+      @media (hover: hover) {
+        border-color: var(--kaori-brand-primary-hover);
+      }
+    }
+  }
   .hover\:border-kaori-primary\/25 {
     &:hover {
       @media (hover: hover) {
@@ -4835,6 +4853,16 @@
       }
     }
   }
+  .hover\:bg-kaori-soft\/50 {
+    &:hover {
+      @media (hover: hover) {
+        background-color: var(--kaori-brand-soft);
+        @supports (color: color-mix(in lab, red, red)) {
+          background-color: color-mix(in oklab, var(--kaori-brand-soft) 50%, transparent);
+        }
+      }
+    }
+  }
   .hover\:bg-kaori-soft\/60 {
     &:hover {
       @media (hover: hover) {
@@ -5045,13 +5073,6 @@
     &:hover {
       @media (hover: hover) {
         color: var(--color-red-700);
-      }
-    }
-  }
-  .hover\:text-slate-600 {
-    &:hover {
-      @media (hover: hover) {
-        color: var(--color-slate-600);
       }
     }
   }
@@ -5335,6 +5356,21 @@
       outline-style: none;
     }
   }
+  .focus-visible\:ring-inset {
+    &:focus-visible {
+      --tw-ring-inset: inset;
+    }
+  }
+  .active\:border-kaori-primary-dark {
+    &:active {
+      border-color: var(--kaori-brand-primary-dark);
+    }
+  }
+  .active\:bg-kaori-primary-dark {
+    &:active {
+      background-color: var(--kaori-brand-primary-dark);
+    }
+  }
   .disabled\:cursor-not-allowed {
     &:disabled {
       cursor: not-allowed;
@@ -5343,6 +5379,16 @@
   .disabled\:cursor-wait {
     &:disabled {
       cursor: wait;
+    }
+  }
+  .disabled\:border-kaori-primary {
+    &:disabled {
+      border-color: var(--kaori-brand-primary);
+    }
+  }
+  .disabled\:bg-kaori-primary {
+    &:disabled {
+      background-color: var(--kaori-brand-primary);
     }
   }
   .disabled\:bg-surface-hover {
@@ -5358,6 +5404,11 @@
   .disabled\:text-content-muted {
     &:disabled {
       color: var(--kaori-content-muted);
+    }
+  }
+  .disabled\:text-white {
+    &:disabled {
+      color: var(--color-white);
     }
   }
   .disabled\:opacity-40 {
@@ -6548,19 +6599,9 @@
       padding: calc(var(--spacing) * 7);
     }
   }
-  .xl\:px-6 {
-    @media (width >= 80rem) {
-      padding-inline: calc(var(--spacing) * 6);
-    }
-  }
   .xl\:px-12 {
     @media (width >= 80rem) {
       padding-inline: calc(var(--spacing) * 12);
-    }
-  }
-  .xl\:pt-6 {
-    @media (width >= 80rem) {
-      padding-top: calc(var(--spacing) * 6);
     }
   }
   .xl\:pr-8 {
@@ -7164,14 +7205,6 @@
       }
     }
   }
-  .dark\:bg-emerald-900\/60 {
-    &:where(.dark, .dark *) {
-      background-color: color-mix(in srgb, oklch(37.8% 0.077 168.94) 60%, transparent);
-      @supports (color: color-mix(in lab, red, red)) {
-        background-color: color-mix(in oklab, var(--color-emerald-900) 60%, transparent);
-      }
-    }
-  }
   .dark\:bg-emerald-950 {
     &:where(.dark, .dark *) {
       background-color: var(--color-emerald-950);
@@ -7190,14 +7223,6 @@
       background-color: color-mix(in srgb, oklch(26.2% 0.051 172.552) 30%, transparent);
       @supports (color: color-mix(in lab, red, red)) {
         background-color: color-mix(in oklab, var(--color-emerald-950) 30%, transparent);
-      }
-    }
-  }
-  .dark\:bg-emerald-950\/35 {
-    &:where(.dark, .dark *) {
-      background-color: color-mix(in srgb, oklch(26.2% 0.051 172.552) 35%, transparent);
-      @supports (color: color-mix(in lab, red, red)) {
-        background-color: color-mix(in oklab, var(--color-emerald-950) 35%, transparent);
       }
     }
   }
@@ -8943,15 +8968,6 @@
       }
     }
   }
-  .dark\:hover\:bg-slate-800 {
-    &:where(.dark, .dark *) {
-      &:hover {
-        @media (hover: hover) {
-          background-color: var(--color-slate-800);
-        }
-      }
-    }
-  }
   .dark\:hover\:bg-slate-900 {
     &:where(.dark, .dark *) {
       &:hover {
@@ -9051,15 +9067,6 @@
       }
     }
   }
-  .dark\:hover\:text-slate-200 {
-    &:where(.dark, .dark *) {
-      &:hover {
-        @media (hover: hover) {
-          color: var(--color-slate-200);
-        }
-      }
-    }
-  }
   .dark\:focus\:border-blue-400 {
     &:where(.dark, .dark *) {
       &:focus {
@@ -9126,6 +9133,11 @@
       @media (width >= 40rem) {
         border-color: var(--color-slate-700);
       }
+    }
+  }
+  .\[\&\:\:-webkit-details-marker\]\:hidden {
+    &::-webkit-details-marker {
+      display: none;
     }
   }
   .\[\.sidebar-collapsed_\&\]\:w-\[78px\] {

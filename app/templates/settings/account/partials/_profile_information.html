@@ -1,14 +1,21 @@
-<section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <header class="flex items-center gap-3 border-b border-outline-subtle px-5 py-4">
-        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-            <i data-lucide="{{ identity_context.icon }}" class="h-5 w-5"></i>
+<details class="group overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 transition hover:bg-kaori-soft/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-kaori-primary/25 [&::-webkit-details-marker]:hidden">
+        <div class="flex min-w-0 items-center gap-3">
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                <i data-lucide="{{ identity_context.icon }}" class="h-5 w-5"></i>
+            </div>
+            <div class="min-w-0">
+                <h2 class="text-base font-semibold text-content-primary">Current Identity Source</h2>
+                <p class="mt-0.5 text-xs leading-5 text-content-muted">Authoritative provider and linked identity context for this account.</p>
+            </div>
         </div>
-        <div>
-            <h2 class="text-base font-semibold text-content-primary">Current Identity Source</h2>
-            <p class="mt-0.5 text-xs leading-5 text-content-muted">Authoritative provider and linked identity context for this account.</p>
+        <div class="flex shrink-0 items-center gap-2 text-kaori-primary">
+            <span class="text-[11px] font-semibold uppercase tracking-widest group-open:hidden">Details</span>
+            <span class="hidden text-[11px] font-semibold uppercase tracking-widest group-open:inline">Collapse</span>
+            <i data-lucide="chevron-down" class="h-4 w-4 transition-transform duration-200 group-open:rotate-180"></i>
         </div>
-    </header>
-    <div class="space-y-4 p-5">
+    </summary>
+    <div class="space-y-4 border-t border-outline-subtle p-5">
         <article class="rounded-lg border border-brand-outline bg-kaori-soft p-4">
             <div class="flex items-start justify-between gap-3">
                 <div>
@@ -58,7 +65,7 @@
             {% endif %}
         </dl>
     </div>
-</section>
+</details>
 
 <details class="group overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
     <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 transition hover:bg-kaori-soft/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-kaori-primary/25 [&::-webkit-details-marker]:hidden">
