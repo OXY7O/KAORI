@@ -55,3 +55,7 @@ They dispatch the `kaori:notifications-changed` browser event instead. The singl
 canonical `#notification-center` instance in the navbar listens for that event and
 refreshes itself from `notifications.panel` using `outerHTML`. This prevents duplicate
 notification bells from being appended beside or below toast containers.
+## Activity Log visual standard
+
+The Activity Audit Log uses the KAORI Violet Infrastructure presentation standard. The page hero and operational posture use KAORI Violet surfaces, while success, warning, failure, pending, and disabled states retain their semantic colors. Text labels use compact rectangular geometry (`rounded-md`) rather than pill geometry. Activity payloads, audit metadata, filters, HTMX pagination, retention execution, and lifecycle behavior are unchanged by this visual standard.
+
