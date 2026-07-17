@@ -14,3 +14,7 @@ recommendation logic.
 Rules must identify source, domain, impacted assets, evidence, and remediation.
 Imported and internal rules share one catalog contract. Do not embed page-specific
 recommendation rules directly in analytics routes or templates.
+
+## KAORI Violet presentation standard
+
+All Intelligence workspaces use the KAORI Violet Infrastructure design system. Recommendations, Catalog, and Alert Intelligence share a solid violet hero, a right-side posture card, tokenized surfaces and borders, `rounded-xl` sections, `rounded-lg` internal object blocks, violet focus states, and compact rectangular status/metadata labels. Semantic green, amber, red, cyan, and slate remain reserved for operational state, priority, or risk; decorative blue gradients and literal slate surfaces must not be reintroduced.
