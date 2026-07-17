@@ -227,16 +227,21 @@
             </main>
 
             <aside class="space-y-5 xl:sticky xl:top-6 xl:col-span-4">
-                <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-                    <header class="flex items-start gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4">
+                <details class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm group">
+                    <summary class="flex items-start gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4 cursor-pointer list-none select-none transition hover:bg-kaori-soft/40 [&::-webkit-details-marker]:hidden">
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                             <i data-lucide="workflow" class="h-5 w-5"></i>
                         </span>
-                        <div>
+                        <div class="min-w-0">
                             <h2 class="text-base font-semibold text-content-primary">How LDAP provisioning works</h2>
                             <p class="mt-1 text-xs leading-5 text-content-muted">Use this workflow for controlled, administrator-approved directory access.</p>
                         </div>
-                    </header>
+                    
+                        <span class="ml-auto flex shrink-0 items-center gap-2 pl-3 text-xs font-semibold text-content-secondary">
+                            <span class="group-open:hidden">Details</span>
+                            <span class="hidden group-open:inline">Collapse</span>
+                            <i data-lucide="chevron-down" class="h-4 w-4 transition-transform duration-200 group-open:rotate-180"></i>
+                        </span></summary>
                     <div class="grid gap-4 p-5">
                         <div class="flex items-start gap-3">
                             <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-xs font-bold text-kaori-primary">1</span>
@@ -267,7 +272,7 @@
                             </div>
                         </div>
                     </div>
-                </section>
+                </details>
 
                 <section class="overflow-hidden rounded-xl border border-status-info-border bg-status-info-soft shadow-sm">
                     <div class="flex items-start gap-3 p-5">
@@ -283,16 +288,21 @@
                     </div>
                 </section>
 
-                <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-                    <header class="flex items-start gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4">
+                <details class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm group">
+                    <summary class="flex items-start gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4 cursor-pointer list-none select-none transition hover:bg-kaori-soft/40 [&::-webkit-details-marker]:hidden">
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                             <i data-lucide="list-checks" class="h-5 w-5"></i>
                         </span>
-                        <div>
+                        <div class="min-w-0">
                             <h2 class="text-sm font-semibold text-content-primary">Before searching</h2>
                             <p class="mt-1 text-xs leading-5 text-content-muted">Confirm the directory integration is operational.</p>
                         </div>
-                    </header>
+                    
+                        <span class="ml-auto flex shrink-0 items-center gap-2 pl-3 text-xs font-semibold text-content-secondary">
+                            <span class="group-open:hidden">Details</span>
+                            <span class="hidden group-open:inline">Collapse</span>
+                            <i data-lucide="chevron-down" class="h-4 w-4 transition-transform duration-200 group-open:rotate-180"></i>
+                        </span></summary>
                     <div class="divide-y divide-outline-subtle px-5">
                         <div class="flex items-start gap-3 py-3.5">
                             <i data-lucide="check" class="mt-0.5 h-4 w-4 shrink-0 text-status-success"></i>
@@ -311,7 +321,7 @@
                             <p class="text-xs leading-5 text-content-secondary">The directory identity does not conflict with an existing KAORI username or email address.</p>
                         </div>
                     </div>
-                </section>
+                </details>
             </aside>
         </div>
     </div>

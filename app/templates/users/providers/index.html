@@ -161,16 +161,21 @@
             </main>
 
             <aside class="space-y-5 xl:sticky xl:top-6 xl:col-span-4">
-                <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-                    <header class="flex items-start gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4">
+                <details class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm group">
+                    <summary class="flex items-start gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4 cursor-pointer list-none select-none transition hover:bg-kaori-soft/40 [&::-webkit-details-marker]:hidden">
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                             <i data-lucide="workflow" class="h-5 w-5"></i>
                         </span>
-                        <div>
+                        <div class="min-w-0">
                             <h2 class="text-base font-semibold text-content-primary">How each provider is used</h2>
                             <p class="mt-1 text-xs leading-5 text-content-muted">Authentication and provisioning behavior differs by provider type.</p>
                         </div>
-                    </header>
+                    
+                        <span class="ml-auto flex shrink-0 items-center gap-2 pl-3 text-xs font-semibold text-content-secondary">
+                            <span class="group-open:hidden">Details</span>
+                            <span class="hidden group-open:inline">Collapse</span>
+                            <i data-lucide="chevron-down" class="h-4 w-4 transition-transform duration-200 group-open:rotate-180"></i>
+                        </span></summary>
                     <div class="divide-y divide-outline-subtle px-5">
                         <div class="flex items-start gap-3 py-4">
                             <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="network" class="h-4 w-4"></i></span>
@@ -194,18 +199,23 @@
                             </div>
                         </div>
                     </div>
-                </section>
+                </details>
 
-                <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-                    <header class="flex items-start gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4">
+                <details class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm group">
+                    <summary class="flex items-start gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4 cursor-pointer list-none select-none transition hover:bg-kaori-soft/40 [&::-webkit-details-marker]:hidden">
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                             <i data-lucide="list-checks" class="h-5 w-5"></i>
                         </span>
-                        <div>
+                        <div class="min-w-0">
                             <h2 class="text-sm font-semibold text-content-primary">Activation sequence</h2>
                             <p class="mt-1 text-xs leading-5 text-content-muted">Use the same controlled sequence for every provider.</p>
                         </div>
-                    </header>
+                    
+                        <span class="ml-auto flex shrink-0 items-center gap-2 pl-3 text-xs font-semibold text-content-secondary">
+                            <span class="group-open:hidden">Details</span>
+                            <span class="hidden group-open:inline">Collapse</span>
+                            <i data-lucide="chevron-down" class="h-4 w-4 transition-transform duration-200 group-open:rotate-180"></i>
+                        </span></summary>
                     <div class="divide-y divide-outline-subtle px-5">
                         {% for icon, title, text in [
                             ('settings-2', 'Configure', 'Save only the settings required by the selected provider type.'),
@@ -222,7 +232,7 @@
                             </div>
                         {% endfor %}
                     </div>
-                </section>
+                </details>
 
                 <section class="overflow-hidden rounded-xl border border-status-info-border bg-status-info-soft shadow-sm">
                     <div class="flex items-start gap-3 p-5">
