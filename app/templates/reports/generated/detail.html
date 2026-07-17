@@ -3,28 +3,28 @@
 {% block dashboard_content %}
     <div class="space-y-6">
         <!-- Hero -->
-        <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+        <section class="rounded-2xl border border-outline-default bg-white p-6 shadow-sm dark:border-outline-default bg-surface-card">
             <div class="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
                 <div class="flex items-start gap-4">
-                    <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-300">
+                    <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
                         <i data-lucide="file-text" class="h-6 w-6"></i>
                     </div>
                     <div class="min-w-0">
                         <div class="mb-2 flex flex-wrap items-center gap-2">
                             {% set status_class = {
-                                                            'blue': 'bg-blue-50 text-blue-700 ring-blue-600/20 dark:bg-blue-950/50 dark:text-blue-300 dark:ring-blue-400/20',
+                                                            'blue': 'bg-kaori-soft text-kaori-primary ring-brand-outline bg-kaori-soft dark:text-kaori-primary ring-brand-outline',
                                                             'purple': 'bg-violet-50 text-violet-700 ring-violet-600/20 dark:bg-violet-950/50 dark:text-violet-300 dark:ring-violet-400/20',
                                                             'green': 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-400/20',
                                                             'red': 'bg-rose-50 text-rose-700 ring-rose-600/20 dark:bg-rose-950/50 dark:text-rose-300 dark:ring-rose-400/20',
-                                                            'gray': 'bg-slate-100 text-slate-700 ring-slate-600/20 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-400/20'
-                                                        }.get(payload.report.status_meta.tone, 'bg-slate-100 text-slate-700 ring-slate-600/20 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-400/20') %}
+                                                            'gray': 'bg-kaori-soft text-content-secondary ring-slate-600/20 bg-kaori-soft dark:text-content-secondary dark:ring-slate-400/20'
+                                                        }.get(payload.report.status_meta.tone, 'bg-kaori-soft text-content-secondary ring-slate-600/20 bg-kaori-soft dark:text-content-secondary dark:ring-slate-400/20') %}
                             {% set file_state_class = {
                                                             'green': 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-400/20',
-                                                            'blue': 'bg-blue-50 text-blue-700 ring-blue-600/20 dark:bg-blue-950/50 dark:text-blue-300 dark:ring-blue-400/20',
+                                                            'blue': 'bg-kaori-soft text-kaori-primary ring-brand-outline bg-kaori-soft dark:text-kaori-primary ring-brand-outline',
                                                             'purple': 'bg-violet-50 text-violet-700 ring-violet-600/20 dark:bg-violet-950/50 dark:text-violet-300 dark:ring-violet-400/20',
                                                             'amber': 'bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-950/50 dark:text-amber-300 dark:ring-amber-400/20',
                                                             'red': 'bg-rose-50 text-rose-700 ring-rose-600/20 dark:bg-rose-950/50 dark:text-rose-300 dark:ring-rose-400/20'
-                                                        }.get(payload.report.file_state.tone, 'bg-slate-100 text-slate-700 ring-slate-600/20 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-400/20') %}
+                                                        }.get(payload.report.file_state.tone, 'bg-kaori-soft text-content-secondary ring-slate-600/20 bg-kaori-soft dark:text-content-secondary dark:ring-slate-400/20') %}
                             <span class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold ring-1 ring-inset {{ status_class }}">
                                 <i data-lucide="{{ payload.report.status_meta.icon }}"
                                    class="h-3.5 w-3.5"></i>
@@ -36,19 +36,19 @@
                                 {{ payload.report.file_state.label }}
                             </span>
                         </div>
-                        <h1 class="text-3xl font-bold text-slate-900 dark:text-white">{{ payload.report.name }}</h1>
-                        <p class="mt-1 max-w-3xl text-sm leading-6 text-slate-500 sm:text-base dark:text-slate-400">{{ payload.page_subtitle }}</p>
+                        <h1 class="text-3xl font-bold text-content-primary text-content-primary">{{ payload.report.name }}</h1>
+                        <p class="mt-1 max-w-3xl text-sm leading-6 text-content-muted sm:text-base dark:text-content-muted">{{ payload.page_subtitle }}</p>
                     </div>
                 </div>
                 <div id="report-actions" class="flex flex-wrap items-center gap-3">
                     <a href="{{ url_for('reports.generated_reports') }}"
-                       class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-blue-200 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-blue-700 dark:hover:text-blue-300">
+                       class="inline-flex items-center justify-center gap-2 rounded-xl border border-outline-default bg-white px-4 py-2 text-sm font-semibold text-content-secondary shadow-sm transition hover:border-brand-outline hover:text-kaori-primary dark:border-outline-default bg-surface-subtle dark:text-content-secondary hover:border-brand-outline dark:hover:text-kaori-primary">
                         <i data-lucide="arrow-left" class="h-4 w-4"></i>
                         Back
                     </a>
                     {% if payload.report.can_download_pdf %}
                         <a href="{{ url_for('reports.download_report_pdf', report_id=payload.report.id) }}"
-                           class="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-500/20 dark:bg-blue-500 dark:hover:bg-blue-600">
+                           class="inline-flex items-center justify-center gap-2 rounded-xl bg-kaori-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 bg-kaori-primary dark:hover:bg-kaori-primary">
                             <i data-lucide="download" class="h-4 w-4"></i>
                             Download PDF
                         </a>
@@ -63,7 +63,7 @@
                     {% else %}
                         <button type="button"
                                 disabled
-                                class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-400 shadow-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-600">
+                                class="inline-flex items-center justify-center gap-2 rounded-xl border border-outline-default bg-surface-subtle px-4 py-2 text-sm font-semibold text-content-muted shadow-sm dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
                             <i data-lucide="download" class="h-4 w-4"></i>
                             Download PDF
                         </button>
@@ -75,7 +75,7 @@
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             {% endif %}
                             <button type="submit"
-                                    class="inline-flex items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm transition hover:bg-blue-100 focus:outline-none focus:ring-4 focus:ring-blue-500/20 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-300 dark:hover:bg-blue-900/50">
+                                    class="inline-flex items-center justify-center gap-2 rounded-xl border border-brand-outline bg-kaori-soft px-4 py-2 text-sm font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 border-brand-outline bg-kaori-soft dark:text-kaori-primary hover:bg-kaori-soft">
                                 <i data-lucide="file-text" class="h-4 w-4"></i>
                                 {% if payload.report.raw_status == 'ready' %}
                                     Regenerate PDF
@@ -87,7 +87,7 @@
                     {% else %}
                         <button type="button"
                                 disabled
-                                class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-400 shadow-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-600">
+                                class="inline-flex items-center justify-center gap-2 rounded-xl border border-outline-default bg-surface-subtle px-4 py-2 text-sm font-semibold text-content-muted shadow-sm dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
                             <i data-lucide="file-text" class="h-4 w-4"></i>
                             Generate PDF
                         </button>
@@ -99,7 +99,7 @@
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             {% endif %}
                             <button type="submit"
-                                    class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-900">
+                                    class="inline-flex items-center justify-center gap-2 rounded-xl border border-outline-default bg-white px-4 py-2 text-sm font-semibold text-content-secondary shadow-sm transition hover:border-outline-default hover:bg-surface-subtle focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 dark:border-outline-default bg-surface-subtle dark:text-content-secondary hover:bg-kaori-soft">
                                 <i data-lucide="archive" class="h-4 w-4"></i>
                                 Archive Report
                             </button>
@@ -112,7 +112,7 @@
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             {% endif %}
                             <button type="submit"
-                                    class="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 shadow-sm transition hover:bg-emerald-100 focus:outline-none focus:ring-4 focus:ring-emerald-500/20 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-900/50">
+                                    class="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 shadow-sm transition hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-900/50">
                                 <i data-lucide="rotate-ccw" class="h-4 w-4"></i>
                                 Restore Report
                             </button>
@@ -142,81 +142,81 @@
             <div class="space-y-6">
                 <!-- Metadata -->
                 <section id="metadata"
-                         class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                    <div class="border-b border-slate-200 px-5 py-4 dark:border-slate-700">
+                         class="rounded-2xl border border-outline-default bg-white shadow-sm dark:border-outline-default bg-surface-card">
+                    <div class="border-b border-outline-default px-5 py-4 dark:border-outline-default">
                         <div class="flex items-center gap-3">
-                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
                                 <i data-lucide="info" class="h-4 w-4"></i>
                             </div>
                             <div>
-                                <h2 class="text-base font-semibold text-slate-950 dark:text-white">Report Metadata</h2>
-                                <p class="text-xs text-slate-500 dark:text-slate-400">
+                                <h2 class="text-base font-semibold text-content-primary text-content-primary">Report Metadata</h2>
+                                <p class="text-xs text-content-muted dark:text-content-muted">
                                     Stored report request scope, type, owner, and lifecycle metadata.
                                 </p>
                             </div>
                         </div>
                     </div>
                     <div class="grid gap-4 p-5 md:grid-cols-2">
-                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950">
-                            <p class="text-xs font-medium uppercase tracking-wide text-slate-400">Report Type</p>
-                            <p class="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">{{ payload.report.report_type }}</p>
+                        <div class="rounded-xl border border-outline-default bg-surface-subtle p-4 dark:border-outline-default bg-surface-subtle">
+                            <p class="text-xs font-medium uppercase tracking-wide text-content-muted">Report Type</p>
+                            <p class="mt-1 text-sm font-semibold text-content-primary dark:text-content-primary">{{ payload.report.report_type }}</p>
                         </div>
-                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950">
-                            <p class="text-xs font-medium uppercase tracking-wide text-slate-400">Cluster</p>
-                            <p class="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">{{ payload.report.cluster }}</p>
+                        <div class="rounded-xl border border-outline-default bg-surface-subtle p-4 dark:border-outline-default bg-surface-subtle">
+                            <p class="text-xs font-medium uppercase tracking-wide text-content-muted">Cluster</p>
+                            <p class="mt-1 text-sm font-semibold text-content-primary dark:text-content-primary">{{ payload.report.cluster }}</p>
                         </div>
-                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950">
-                            <p class="text-xs font-medium uppercase tracking-wide text-slate-400">Namespace</p>
-                            <p class="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">{{ payload.report.namespace }}</p>
+                        <div class="rounded-xl border border-outline-default bg-surface-subtle p-4 dark:border-outline-default bg-surface-subtle">
+                            <p class="text-xs font-medium uppercase tracking-wide text-content-muted">Namespace</p>
+                            <p class="mt-1 text-sm font-semibold text-content-primary dark:text-content-primary">{{ payload.report.namespace }}</p>
                         </div>
-                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950">
-                            <p class="text-xs font-medium uppercase tracking-wide text-slate-400">Period</p>
-                            <p class="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">{{ payload.report.period }}</p>
+                        <div class="rounded-xl border border-outline-default bg-surface-subtle p-4 dark:border-outline-default bg-surface-subtle">
+                            <p class="text-xs font-medium uppercase tracking-wide text-content-muted">Period</p>
+                            <p class="mt-1 text-sm font-semibold text-content-primary dark:text-content-primary">{{ payload.report.period }}</p>
                         </div>
-                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950">
-                            <p class="text-xs font-medium uppercase tracking-wide text-slate-400">Output Format</p>
-                            <p class="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">{{ payload.report.output_format }}</p>
+                        <div class="rounded-xl border border-outline-default bg-surface-subtle p-4 dark:border-outline-default bg-surface-subtle">
+                            <p class="text-xs font-medium uppercase tracking-wide text-content-muted">Output Format</p>
+                            <p class="mt-1 text-sm font-semibold text-content-primary dark:text-content-primary">{{ payload.report.output_format }}</p>
                         </div>
-                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950">
-                            <p class="text-xs font-medium uppercase tracking-wide text-slate-400">Generated By</p>
+                        <div class="rounded-xl border border-outline-default bg-surface-subtle p-4 dark:border-outline-default bg-surface-subtle">
+                            <p class="text-xs font-medium uppercase tracking-wide text-content-muted">Generated By</p>
                             {% set owner_tone_class = {
                                                             'emerald': 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-400/20',
                                                             'amber': 'bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-950/50 dark:text-amber-300 dark:ring-amber-400/20',
                                                             'rose': 'bg-rose-50 text-rose-700 ring-rose-600/20 dark:bg-rose-950/50 dark:text-rose-300 dark:ring-rose-400/20',
-                                                            'slate': 'bg-slate-100 text-slate-700 ring-slate-600/20 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-400/20'
-                                                        }.get(payload.report.generated_by_meta.status_tone, 'bg-slate-100 text-slate-700 ring-slate-600/20 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-400/20') %}
+                                                            'slate': 'bg-kaori-soft text-content-secondary ring-slate-600/20 bg-kaori-soft dark:text-content-secondary dark:ring-slate-400/20'
+                                                        }.get(payload.report.generated_by_meta.status_tone, 'bg-kaori-soft text-content-secondary ring-slate-600/20 bg-kaori-soft dark:text-content-secondary dark:ring-slate-400/20') %}
                             <div class="mt-1 flex flex-wrap items-center gap-2">
-                                <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ payload.report.generated_by }}</p>
+                                <p class="text-sm font-semibold text-content-primary dark:text-content-primary">{{ payload.report.generated_by }}</p>
                                 <span class="inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset {{ owner_tone_class }}">
                                     <i data-lucide="user-check" class="h-3 w-3"></i>
                                     {{ payload.report.generated_by_meta.status_label }}
                                 </span>
                             </div>
                         </div>
-                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950">
-                            <p class="text-xs font-medium uppercase tracking-wide text-slate-400">Created At</p>
-                            <p class="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">{{ payload.report.created_at }}</p>
+                        <div class="rounded-xl border border-outline-default bg-surface-subtle p-4 dark:border-outline-default bg-surface-subtle">
+                            <p class="text-xs font-medium uppercase tracking-wide text-content-muted">Created At</p>
+                            <p class="mt-1 text-sm font-semibold text-content-primary dark:text-content-primary">{{ payload.report.created_at }}</p>
                         </div>
-                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950">
-                            <p class="text-xs font-medium uppercase tracking-wide text-slate-400">Updated At</p>
-                            <p class="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">{{ payload.report.updated_at }}</p>
+                        <div class="rounded-xl border border-outline-default bg-surface-subtle p-4 dark:border-outline-default bg-surface-subtle">
+                            <p class="text-xs font-medium uppercase tracking-wide text-content-muted">Updated At</p>
+                            <p class="mt-1 text-sm font-semibold text-content-primary dark:text-content-primary">{{ payload.report.updated_at }}</p>
                         </div>
                     </div>
                 </section>
                 <!-- Selected Sections -->
                 <section id="sections"
-                         class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                    <div class="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 dark:border-slate-700 md:flex-row md:items-center md:justify-between">
+                         class="rounded-2xl border border-outline-default bg-white shadow-sm dark:border-outline-default bg-surface-card">
+                    <div class="flex flex-col gap-3 border-b border-outline-default px-5 py-4 dark:border-outline-default md:flex-row md:items-center md:justify-between">
                         <div class="flex items-center gap-3">
-                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
                                 <i data-lucide="layout-list" class="h-4 w-4"></i>
                             </div>
                             <div>
-                                <h2 class="text-base font-semibold text-slate-950 dark:text-white">Selected Sections</h2>
-                                <p class="text-xs text-slate-500 dark:text-slate-400">Sections requested for this generated report record.</p>
+                                <h2 class="text-base font-semibold text-content-primary text-content-primary">Selected Sections</h2>
+                                <p class="text-xs text-content-muted dark:text-content-muted">Sections requested for this generated report record.</p>
                             </div>
                         </div>
-                        <span class="inline-flex w-fit items-center gap-2 rounded-xl bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                        <span class="inline-flex w-fit items-center gap-2 rounded-xl bg-kaori-soft px-3 py-1.5 text-xs font-semibold text-content-secondary bg-kaori-soft dark:text-content-secondary">
                             <i data-lucide="list-checks" class="h-3.5 w-3.5"></i>
                             {{ payload.report.sections_count }} sections
                         </span>
@@ -224,20 +224,20 @@
                     <div class="grid gap-3 p-5 md:grid-cols-2">
                         {% if payload.report.sections %}
                             {% for section in payload.report.sections %}
-                                <div class="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-950">
-                                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                                <div class="flex items-center gap-3 rounded-xl border border-outline-default bg-surface-subtle px-4 py-3 dark:border-outline-default bg-surface-subtle">
+                                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
                                         <i data-lucide="check-circle-2" class="h-4 w-4"></i>
                                     </div>
                                     <div class="min-w-0">
-                                        <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ section.label }}</p>
-                                        <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{{ section.value }}</p>
+                                        <p class="text-sm font-semibold text-content-primary dark:text-content-primary">{{ section.label }}</p>
+                                        <p class="mt-0.5 text-xs text-content-muted dark:text-content-muted">{{ section.value }}</p>
                                     </div>
                                 </div>
                             {% endfor %}
                         {% else %}
-                            <div class="md:col-span-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center dark:border-slate-700 dark:bg-slate-950">
-                                <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">No sections selected</p>
-                                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                            <div class="md:col-span-2 rounded-xl border border-dashed border-outline-default bg-surface-subtle px-4 py-8 text-center dark:border-outline-default bg-surface-subtle">
+                                <p class="text-sm font-semibold text-content-secondary dark:text-content-secondary">No sections selected</p>
+                                <p class="mt-1 text-sm text-content-muted dark:text-content-muted">
                                     This report request does not contain selected report sections.
                                 </p>
                             </div>
@@ -246,25 +246,25 @@
                 </section>
                 <!-- File Output -->
                 <section id="file-output"
-                         class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                    <div class="border-b border-slate-200 px-5 py-4 dark:border-slate-700">
+                         class="rounded-2xl border border-outline-default bg-white shadow-sm dark:border-outline-default bg-surface-card">
+                    <div class="border-b border-outline-default px-5 py-4 dark:border-outline-default">
                         <div class="flex items-center gap-3">
-                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
                                 <i data-lucide="hard-drive" class="h-4 w-4"></i>
                             </div>
                             <div>
-                                <h2 class="text-base font-semibold text-slate-950 dark:text-white">File Output</h2>
-                                <p class="text-xs text-slate-500 dark:text-slate-400">
+                                <h2 class="text-base font-semibold text-content-primary text-content-primary">File Output</h2>
+                                <p class="text-xs text-content-muted dark:text-content-muted">
                                     Generated report artifact metadata and configured storage availability.
                                 </p>
                             </div>
                         </div>
                     </div>
                     <div class="grid gap-4 p-5 md:grid-cols-2">
-                        <div class="md:col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950">
+                        <div class="md:col-span-2 rounded-xl border border-outline-default bg-surface-subtle p-4 dark:border-outline-default bg-surface-subtle">
                             <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                 <div>
-                                    <p class="text-xs font-medium uppercase tracking-wide text-slate-400">File State</p>
+                                    <p class="text-xs font-medium uppercase tracking-wide text-content-muted">File State</p>
                                     <div class="mt-2">
                                         <span class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold ring-1 ring-inset {{ file_state_class }}">
                                             <i data-lucide="{{ payload.report.file_state.icon }}"
@@ -272,7 +272,7 @@
                                             {{ payload.report.file_state.label }}
                                         </span>
                                     </div>
-                                    <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">{{ payload.report.file_state.description }}</p>
+                                    <p class="mt-2 text-sm leading-6 text-content-muted dark:text-content-muted">{{ payload.report.file_state.description }}</p>
                                 </div>
                                 {% if payload.report.raw_status == 'ready' and payload.report.file_path and not payload.report.file_exists %}
                                     <div class="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300">
@@ -281,13 +281,13 @@
                                 {% endif %}
                             </div>
                         </div>
-                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950">
-                            <p class="text-xs font-medium uppercase tracking-wide text-slate-400">File Size</p>
-                            <p class="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">{{ payload.report.file_size }}</p>
+                        <div class="rounded-xl border border-outline-default bg-surface-subtle p-4 dark:border-outline-default bg-surface-subtle">
+                            <p class="text-xs font-medium uppercase tracking-wide text-content-muted">File Size</p>
+                            <p class="mt-1 text-sm font-semibold text-content-primary dark:text-content-primary">{{ payload.report.file_size }}</p>
                         </div>
-                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950">
-                            <p class="text-xs font-medium uppercase tracking-wide text-slate-400">File Exists</p>
-                            <p class="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">
+                        <div class="rounded-xl border border-outline-default bg-surface-subtle p-4 dark:border-outline-default bg-surface-subtle">
+                            <p class="text-xs font-medium uppercase tracking-wide text-content-muted">File Exists</p>
+                            <p class="mt-1 text-sm font-semibold text-content-primary dark:text-content-primary">
                                 {% if payload.report.file_exists %}
                                     Yes
                                 {% else %}
@@ -295,37 +295,37 @@
                                 {% endif %}
                             </p>
                         </div>
-                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950">
-                            <p class="text-xs font-medium uppercase tracking-wide text-slate-400">Storage Backend</p>
-                            <p class="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">{{ payload.report.storage_backend_label }}</p>
+                        <div class="rounded-xl border border-outline-default bg-surface-subtle p-4 dark:border-outline-default bg-surface-subtle">
+                            <p class="text-xs font-medium uppercase tracking-wide text-content-muted">Storage Backend</p>
+                            <p class="mt-1 text-sm font-semibold text-content-primary dark:text-content-primary">{{ payload.report.storage_backend_label }}</p>
                         </div>
-                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950">
-                            <p class="text-xs font-medium uppercase tracking-wide text-slate-400">Storage URI</p>
-                            <p class="mt-1 break-all text-sm font-semibold text-slate-800 dark:text-slate-100">{{ payload.report.storage_uri_display }}</p>
+                        <div class="rounded-xl border border-outline-default bg-surface-subtle p-4 dark:border-outline-default bg-surface-subtle">
+                            <p class="text-xs font-medium uppercase tracking-wide text-content-muted">Storage URI</p>
+                            <p class="mt-1 break-all text-sm font-semibold text-content-primary dark:text-content-primary">{{ payload.report.storage_uri_display }}</p>
                         </div>
-                        <div class="md:col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950">
-                            <p class="text-xs font-medium uppercase tracking-wide text-slate-400">Object Key / Legacy Path</p>
-                            <p class="mt-1 break-all text-sm font-semibold text-slate-800 dark:text-slate-100">{{ payload.report.storage_object_key or 'Not generated yet' }}</p>
+                        <div class="md:col-span-2 rounded-xl border border-outline-default bg-surface-subtle p-4 dark:border-outline-default bg-surface-subtle">
+                            <p class="text-xs font-medium uppercase tracking-wide text-content-muted">Object Key / Legacy Path</p>
+                            <p class="mt-1 break-all text-sm font-semibold text-content-primary dark:text-content-primary">{{ payload.report.storage_object_key or 'Not generated yet' }}</p>
                         </div>
                     </div>
                 </section>
                 <!-- Error Message -->
                 <section id="status"
-                         class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                    <div class="border-b border-slate-200 px-5 py-4 dark:border-slate-700">
+                         class="rounded-2xl border border-outline-default bg-white shadow-sm dark:border-outline-default bg-surface-card">
+                    <div class="border-b border-outline-default px-5 py-4 dark:border-outline-default">
                         <div class="flex items-center gap-3">
-                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
                                 <i data-lucide="bug" class="h-4 w-4"></i>
                             </div>
                             <div>
-                                <h2 class="text-base font-semibold text-slate-950 dark:text-white">Error Message</h2>
-                                <p class="text-xs text-slate-500 dark:text-slate-400">Latest error recorded during report generation.</p>
+                                <h2 class="text-base font-semibold text-content-primary text-content-primary">Error Message</h2>
+                                <p class="text-xs text-content-muted dark:text-content-muted">Latest error recorded during report generation.</p>
                             </div>
                         </div>
                     </div>
                     <div class="p-5">
-                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950">
-                            <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">{{ payload.report.error_message }}</p>
+                        <div class="rounded-xl border border-outline-default bg-surface-subtle p-4 dark:border-outline-default bg-surface-subtle">
+                            <p class="text-sm leading-6 text-content-secondary dark:text-content-secondary">{{ payload.report.error_message }}</p>
                         </div>
                     </div>
                 </section>
@@ -333,127 +333,127 @@
             <!-- Right Panel -->
             <aside class="space-y-6">
                 <!-- Status Context -->
-                <section class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                    <div class="border-b border-slate-200 px-5 py-4 dark:border-slate-700">
+                <section class="rounded-2xl border border-outline-default bg-white shadow-sm dark:border-outline-default bg-surface-card">
+                    <div class="border-b border-outline-default px-5 py-4 dark:border-outline-default">
                         <div class="flex items-center gap-3">
-                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
                                 <i data-lucide="activity" class="h-4 w-4"></i>
                             </div>
                             <div>
-                                <h2 class="text-base font-semibold text-slate-950 dark:text-white">Status Context</h2>
-                                <p class="text-xs text-slate-500 dark:text-slate-400">Current report lifecycle interpretation.</p>
+                                <h2 class="text-base font-semibold text-content-primary text-content-primary">Status Context</h2>
+                                <p class="text-xs text-content-muted dark:text-content-muted">Current report lifecycle interpretation.</p>
                             </div>
                         </div>
                     </div>
-                    <div class="divide-y divide-slate-100 dark:divide-slate-800">
+                    <div class="divide-y divide-outline-default divide-outline-default">
                         {% for item in payload.status_context %}
                             {% set item_class = {
-                                                            'blue': 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300',
+                                                            'blue': 'bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary',
                                                             'purple': 'bg-violet-50 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300',
                                                             'green': 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300',
                                                             'amber': 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300',
                                                             'red': 'bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300',
-                                                            'gray': 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
-                                                        }.get(item.tone, 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300') %}
+                                                            'gray': 'bg-kaori-soft text-content-secondary bg-kaori-soft dark:text-content-secondary'
+                                                        }.get(item.tone, 'bg-kaori-soft text-content-secondary bg-kaori-soft dark:text-content-secondary') %}
                             <div class="px-5 py-4">
                                 <div class="flex items-center justify-between gap-3">
                                     <div class="flex items-center gap-2">
-                                        <i data-lucide="{{ item.icon }}" class="h-4 w-4 text-blue-500"></i>
-                                        <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ item.label }}</p>
+                                        <i data-lucide="{{ item.icon }}" class="h-4 w-4 text-white/900"></i>
+                                        <p class="text-sm font-semibold text-content-primary dark:text-content-primary">{{ item.label }}</p>
                                     </div>
                                     <span class="rounded-lg px-2 py-1 text-xs font-semibold {{ item_class }}">{{ item.status }}</span>
                                 </div>
-                                <p class="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">{{ item.description }}</p>
+                                <p class="mt-2 text-xs leading-5 text-content-muted dark:text-content-muted">{{ item.description }}</p>
                             </div>
                         {% endfor %}
                     </div>
                 </section>
                 <!-- Export Readiness -->
-                <section class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                    <div class="border-b border-slate-200 px-5 py-4 dark:border-slate-700">
+                <section class="rounded-2xl border border-outline-default bg-white shadow-sm dark:border-outline-default bg-surface-card">
+                    <div class="border-b border-outline-default px-5 py-4 dark:border-outline-default">
                         <div class="flex items-center gap-3">
-                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
                                 <i data-lucide="download" class="h-4 w-4"></i>
                             </div>
                             <div>
-                                <h2 class="text-base font-semibold text-slate-950 dark:text-white">Export Readiness</h2>
-                                <p class="text-xs text-slate-500 dark:text-slate-400">PDF renderer, artifact, and download readiness.</p>
+                                <h2 class="text-base font-semibold text-content-primary text-content-primary">Export Readiness</h2>
+                                <p class="text-xs text-content-muted dark:text-content-muted">PDF renderer, artifact, and download readiness.</p>
                             </div>
                         </div>
                     </div>
-                    <div class="divide-y divide-slate-100 dark:divide-slate-800">
+                    <div class="divide-y divide-outline-default divide-outline-default">
                         {% for item in payload.export_readiness %}
                             {% set item_class = {
-                                                            'blue': 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300',
+                                                            'blue': 'bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary',
                                                             'purple': 'bg-violet-50 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300',
                                                             'green': 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300',
                                                             'amber': 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300',
                                                             'red': 'bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300',
-                                                            'gray': 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
-                                                        }.get(item.tone, 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300') %}
+                                                            'gray': 'bg-kaori-soft text-content-secondary bg-kaori-soft dark:text-content-secondary'
+                                                        }.get(item.tone, 'bg-kaori-soft text-content-secondary bg-kaori-soft dark:text-content-secondary') %}
                             <div class="px-5 py-4">
                                 <div class="flex items-center justify-between gap-3">
-                                    <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ item.label }}</p>
+                                    <p class="text-sm font-semibold text-content-primary dark:text-content-primary">{{ item.label }}</p>
                                     <span class="rounded-lg px-2 py-1 text-xs font-semibold {{ item_class }}">{{ item.status }}</span>
                                 </div>
-                                <p class="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">{{ item.description }}</p>
+                                <p class="mt-2 text-xs leading-5 text-content-muted dark:text-content-muted">{{ item.description }}</p>
                             </div>
                         {% endfor %}
                     </div>
                 </section>
                 <!-- Storage Context -->
-                <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                <section class="rounded-2xl border border-outline-default bg-white p-5 shadow-sm dark:border-outline-default bg-surface-card">
                     <div class="flex items-center gap-3">
-                        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
                             <i data-lucide="hard-drive" class="h-4 w-4"></i>
                         </div>
-                        <h2 class="text-base font-semibold text-slate-950 dark:text-white">Storage Context</h2>
+                        <h2 class="text-base font-semibold text-content-primary text-content-primary">Storage Context</h2>
                     </div>
                     <div class="mt-4 space-y-3">
                         {% for item in payload.storage_context %}
                             {% set dot_class = {
-                                                            'gray': 'bg-slate-400',
+                                                            'gray': 'bg-content-muted',
                                                             'amber': 'bg-amber-500',
-                                                            'blue': 'bg-blue-500',
+                                                            'blue': 'bg-kaori-primary',
                                                             'green': 'bg-emerald-500',
                                                             'red': 'bg-rose-500'
-                                                        }.get(item.tone, 'bg-slate-400') %}
-                            <div class="rounded-xl bg-slate-50 px-3 py-3 dark:bg-slate-950">
+                                                        }.get(item.tone, 'bg-content-muted') %}
+                            <div class="rounded-xl bg-surface-subtle px-3 py-3 bg-surface-subtle">
                                 <div class="flex items-center gap-3">
                                     <span class="h-2.5 w-2.5 rounded-full {{ dot_class }}"></span>
-                                    <span class="text-sm font-semibold text-slate-700 dark:text-slate-200">{{ item.label }}</span>
+                                    <span class="text-sm font-semibold text-content-secondary dark:text-content-secondary">{{ item.label }}</span>
                                 </div>
-                                <p class="mt-1 pl-5 text-xs leading-5 text-slate-500 dark:text-slate-400">{{ item.description }}</p>
+                                <p class="mt-1 pl-5 text-xs leading-5 text-content-muted dark:text-content-muted">{{ item.description }}</p>
                             </div>
                         {% endfor %}
                     </div>
                 </section>
                 <!-- Recommended Actions -->
-                <section class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                    <div class="border-b border-slate-200 px-5 py-4 dark:border-slate-700">
+                <section class="rounded-2xl border border-outline-default bg-white shadow-sm dark:border-outline-default bg-surface-card">
+                    <div class="border-b border-outline-default px-5 py-4 dark:border-outline-default">
                         <div class="flex items-center gap-3">
-                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
                                 <i data-lucide="list-checks" class="h-4 w-4"></i>
                             </div>
                             <div>
-                                <h2 class="text-base font-semibold text-slate-950 dark:text-white">Recommended Actions</h2>
-                                <p class="text-xs text-slate-500 dark:text-slate-400">Suggested next actions for this report.</p>
+                                <h2 class="text-base font-semibold text-content-primary text-content-primary">Recommended Actions</h2>
+                                <p class="text-xs text-content-muted dark:text-content-muted">Suggested next actions for this report.</p>
                             </div>
                         </div>
                     </div>
-                    <div class="divide-y divide-slate-100 dark:divide-slate-800">
+                    <div class="divide-y divide-outline-default divide-outline-default">
                         {% for action in payload.recommended_actions %}
                             <a href="{{ action.href }}"
-                               class="flex items-center justify-between gap-4 px-5 py-4 transition hover:bg-slate-50 dark:hover:bg-slate-950">
+                               class="flex items-center justify-between gap-4 px-5 py-4 transition hover:bg-surface-subtle hover:bg-kaori-soft">
                                 <div class="flex min-w-0 items-start gap-3">
-                                    <div class="mt-1 h-4 w-4 shrink-0 rounded border border-slate-300 bg-white dark:border-slate-600 dark:bg-slate-950">
+                                    <div class="mt-1 h-4 w-4 shrink-0 rounded border border-outline-default bg-white border-outline-default bg-surface-subtle">
                                     </div>
                                     <div class="min-w-0">
-                                        <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ action.label }}</p>
-                                        <p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">{{ action.description }}</p>
+                                        <p class="text-sm font-semibold text-content-primary dark:text-content-primary">{{ action.label }}</p>
+                                        <p class="mt-1 text-xs leading-5 text-content-muted dark:text-content-muted">{{ action.description }}</p>
                                     </div>
                                 </div>
-                                <i data-lucide="chevron-right" class="h-4 w-4 shrink-0 text-slate-400"></i>
+                                <i data-lucide="chevron-right" class="h-4 w-4 shrink-0 text-content-muted"></i>
                             </a>
                         {% endfor %}
                     </div>

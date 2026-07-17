@@ -3,11 +3,8 @@
 {% block dashboard_content %}
     <div class="space-y-5">
         <!-- Hero -->
-        <section class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 px-6 py-6 text-white shadow-lg shadow-blue-500/20">
-            <div class="absolute inset-y-0 right-0 hidden w-1/3 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.22),transparent_55%)] lg:block">
+        <section class="relative overflow-hidden rounded-2xl bg-kaori-primary px-6 py-6 text-white shadow-sm">
             </div>
-            <div class="absolute -top-16 right-10 h-40 w-40 rounded-full bg-white/10 blur-3xl"></div>
-            <div class="absolute -bottom-20 right-32 h-48 w-48 rounded-full bg-cyan-300/20 blur-3xl"></div>
             <div class="relative grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px] xl:items-stretch">
                 <div class="space-y-5">
                     <div class="flex items-start gap-4">
@@ -15,24 +12,24 @@
                             <i data-lucide="plus-circle" class="h-6 w-6"></i>
                         </div>
                         <div class="min-w-0">
-                            <div class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold tracking-wide text-blue-50">
+                            <div class="inline-flex items-center gap-2 rounded-md border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold tracking-wide text-white/90">
                                 <i data-lucide="sparkles" class="h-3.5 w-3.5"></i>
                                 Infrastructure report builder
                             </div>
                             <h1 class="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">{{ payload.page_title }}</h1>
-                            <p class="mt-2 max-w-3xl text-sm leading-6 text-blue-50/90 sm:text-base">{{ payload.page_subtitle }}</p>
+                            <p class="mt-2 max-w-3xl text-sm leading-6 text-white/85 sm:text-base">{{ payload.page_subtitle }}</p>
                         </div>
                     </div>
                     <div class="flex flex-wrap items-center gap-2.5 sm:pl-16">
-                        <span class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-2 text-sm font-semibold text-blue-50">
+                        <span class="inline-flex items-center gap-2 rounded-md border border-white/15 bg-white/10 px-3.5 py-2 text-sm font-semibold text-white/90">
                             <i data-lucide="layout-template" class="h-4 w-4"></i>
                             Base and custom templates
                         </span>
-                        <span class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-2 text-sm font-semibold text-blue-50">
+                        <span class="inline-flex items-center gap-2 rounded-md border border-white/15 bg-white/10 px-3.5 py-2 text-sm font-semibold text-white/90">
                             <i data-lucide="file-check-2" class="h-4 w-4"></i>
                             Standalone PDF reports
                         </span>
-                        <span class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-2 text-sm font-semibold text-blue-50">
+                        <span class="inline-flex items-center gap-2 rounded-md border border-white/15 bg-white/10 px-3.5 py-2 text-sm font-semibold text-white/90">
                             <i data-lucide="hard-drive" class="h-4 w-4"></i>
                             {{ payload.storage_context.label }}
                         </span>
@@ -41,9 +38,9 @@
                 <div class="rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur">
                     <div class="flex flex-col gap-4">
                         <div>
-                            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-blue-50/80">Generation contract</p>
+                            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-white/75">Generation contract</p>
                             <div class="mt-2 text-4xl font-bold leading-none">Ready</div>
-                            <p class="mt-2 text-sm leading-5 text-blue-50/85">Create a report request from selected infrastructure scope, report type, period, and report sections.</p>
+                            <p class="mt-2 text-sm leading-5 text-white/80">Create a report request from selected infrastructure scope, report type, period, and report sections.</p>
                         </div>
                         <div class="grid grid-cols-2 gap-3">
                             <a href="{{ url_for('reports.report_templates') }}"
@@ -52,7 +49,7 @@
                                 Templates
                             </a>
                             <a href="{{ url_for('reports.generated_reports') }}"
-                               class="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-blue-700 shadow-sm transition hover:bg-blue-50">
+                               class="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft">
                                 <i data-lucide="files" class="h-4 w-4"></i>
                                 Generated
                             </a>
@@ -62,37 +59,37 @@
             </div>
         </section>
         <section x-data="{ open: false }"
-                 class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                 class="overflow-hidden rounded-2xl border border-outline-default bg-white shadow-sm dark:border-outline-default bg-surface-card">
             <button type="button"
                     @click="open = !open"
-                    class="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition hover:bg-slate-50 dark:hover:bg-slate-950/40">
+                    class="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition hover:bg-surface-subtle hover:bg-kaori-soft">
                 <span class="flex items-center gap-3">
-                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
                         <i data-lucide="layers-3" class="h-[18px] w-[18px]"></i>
                     </span>
                     <span>
-                        <span class="block text-base font-semibold text-slate-950 dark:text-white">Report Architecture</span>
-                        <span class="block text-xs text-slate-500 dark:text-slate-400">How the generator separates KubeReport and future ServerReport domains.</span>
+                        <span class="block text-base font-semibold text-content-primary text-content-primary">Report Architecture</span>
+                        <span class="block text-xs text-content-muted dark:text-content-muted">How the generator separates KubeReport and future ServerReport domains.</span>
                     </span>
                 </span>
-                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-500 dark:border-slate-700 dark:text-slate-300">
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-outline-default text-content-muted dark:border-outline-default dark:text-content-secondary">
                     <i x-show="!open" data-lucide="chevron-down" class="h-4 w-4"></i>
                     <i x-show="open" data-lucide="chevron-up" class="h-4 w-4"></i>
                 </span>
             </button>
             <div x-show="open"
                  x-collapse
-                 class="border-t border-slate-200 px-5 py-5 dark:border-slate-800">
-                <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">{{ payload.report_architecture_context.description }}</p>
+                 class="border-t border-outline-default px-5 py-5 dark:border-outline-default">
+                <p class="text-sm leading-6 text-content-secondary dark:text-content-secondary">{{ payload.report_architecture_context.description }}</p>
                 <div class="mt-4 grid gap-3 lg:grid-cols-3">
                     {% for item in payload.report_architecture_context.capabilities %}
-                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/60">
+                        <div class="rounded-xl border border-outline-default bg-surface-subtle p-4 dark:border-outline-default bg-surface-subtle">
                             <div class="flex items-center gap-2">
                                 <i data-lucide="{{ item.icon }}"
-                                   class="h-4 w-4 text-blue-600 dark:text-blue-300"></i>
-                                <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ item.label }}</p>
+                                   class="h-4 w-4 text-kaori-primary dark:text-kaori-primary"></i>
+                                <p class="text-sm font-semibold text-content-primary text-content-primary">{{ item.label }}</p>
                             </div>
-                            <p class="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">{{ item.description }}</p>
+                            <p class="mt-2 text-xs leading-5 text-content-muted dark:text-content-muted">{{ item.description }}</p>
                         </div>
                     {% endfor %}
                 </div>
@@ -124,30 +121,30 @@
                     {% endif %}
                     <!-- Configuration -->
                     <section id="report-configuration"
-                             class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                             class="rounded-2xl border border-outline-default bg-white p-5 shadow-sm dark:border-outline-default bg-surface-card">
                         <div class="mb-5 flex items-center gap-3">
-                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
                                 <i data-lucide="settings-2" class="h-4 w-4"></i>
                             </div>
                             <div>
-                                <h2 class="text-base font-semibold text-slate-950 dark:text-white">Report Configuration</h2>
-                                <p class="text-xs text-slate-500 dark:text-slate-400">Define report scope, category, period, and output format.</p>
+                                <h2 class="text-base font-semibold text-content-primary text-content-primary">Report Configuration</h2>
+                                <p class="text-xs text-content-muted dark:text-content-muted">Define report scope, category, period, and output format.</p>
                             </div>
                         </div>
                         <div class="grid gap-4 lg:grid-cols-2">
                             <label class="block lg:col-span-2">
-                                <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Report Name</span>
+                                <span class="text-xs font-medium text-content-muted dark:text-content-muted">Report Name</span>
                                 <input type="text"
                                        name="name"
                                        value="{{ payload.form_state.name }}"
                                        placeholder="Auto-generated if left empty"
-                                       class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                                       class="mt-1 w-full rounded-xl border border-outline-default bg-white px-3 py-2 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
                             </label>
                             <label class="block">
-                                <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Cluster</span>
+                                <span class="text-xs font-medium text-content-muted dark:text-content-muted">Cluster</span>
                                 <select name="cluster_id"
                                         id="cluster-select"
-                                        class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                                        class="mt-1 w-full rounded-xl border border-outline-default bg-white px-3 py-2 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
                                     {% for cluster in payload.clusters %}
                                         <option value="{{ cluster.value }}"
                                                 {% if payload.form_state.cluster_id == cluster.value %}selected{% endif %}>
@@ -157,19 +154,19 @@
                                 </select>
                             </label>
                             <label class="block">
-                                <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Namespace</span>
+                                <span class="text-xs font-medium text-content-muted dark:text-content-muted">Namespace</span>
                                 <input type="text"
                                        name="namespace"
                                        id="namespace-input"
                                        value="{{ payload.form_state.namespace }}"
                                        placeholder="All Namespaces"
-                                       class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                                       class="mt-1 w-full rounded-xl border border-outline-default bg-white px-3 py-2 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
                             </label>
                             <label class="block lg:col-span-2">
-                                <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Report Type</span>
+                                <span class="text-xs font-medium text-content-muted dark:text-content-muted">Report Type</span>
                                 <select name="report_type"
                                         id="report-type-select"
-                                        class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                                        class="mt-1 w-full rounded-xl border border-outline-default bg-white px-3 py-2 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
                                     {% for option in payload.report_type_options %}
                                         <option value="{{ option.value }}"
                                                 {% if payload.form_state.report_type == option.value %}selected{% endif %}>
@@ -179,9 +176,9 @@
                                 </select>
                             </label>
                             <div id="selected-template-summary"
-                                 class="lg:col-span-2 rounded-2xl border border-blue-100 bg-blue-50 p-4 dark:border-blue-900/60 dark:bg-blue-950/30">
+                                 class="lg:col-span-2 rounded-2xl border border-brand-outline bg-kaori-soft p-4 border-brand-outline bg-kaori-soft">
                                 <div class="flex items-start gap-3">
-                                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-blue-600 dark:bg-slate-900 dark:text-blue-300">
+                                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-kaori-primary bg-surface-card dark:text-kaori-primary">
                                         <i id="selected-report-icon"
                                            data-lucide="{{ payload.selected_report_type.icon }}"
                                            class="h-5 w-5"></i>
@@ -189,18 +186,18 @@
                                     <div class="min-w-0">
                                         <div class="flex flex-wrap items-center gap-2">
                                             <p id="selected-report-label"
-                                               class="font-semibold text-blue-950 dark:text-blue-100">{{ payload.selected_report_type.label }}</p>
+                                               class="font-semibold text-content-primary dark:text-content-primary">{{ payload.selected_report_type.label }}</p>
                                             <span id="selected-report-scope"
-                                                  class="rounded-full bg-white px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-blue-700 dark:bg-slate-900 dark:text-blue-300">
+                                                  class="rounded-md bg-white px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-kaori-primary bg-surface-card dark:text-kaori-primary">
                                                 {{ payload.selected_report_type.cluster_scope_label }}
                                             </span>
                                             <span id="selected-report-count"
-                                                  class="rounded-full bg-white px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-blue-700 dark:bg-slate-900 dark:text-blue-300">
+                                                  class="rounded-md bg-white px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-kaori-primary bg-surface-card dark:text-kaori-primary">
                                                 {{ payload.selected_report_type.section_count }} sections
                                             </span>
                                         </div>
                                         <p id="selected-report-description"
-                                           class="mt-1 text-sm leading-6 text-blue-800 dark:text-blue-200">
+                                           class="mt-1 text-sm leading-6 text-content-secondary dark:text-content-secondary">
                                             {{ payload.selected_report_type.description }}
                                         </p>
                                     </div>
@@ -219,10 +216,10 @@
                                 </div>
                             </div>
                             <label class="block">
-                                <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Period</span>
+                                <span class="text-xs font-medium text-content-muted dark:text-content-muted">Period</span>
                                 <select name="period"
                                         id="period-select"
-                                        class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                                        class="mt-1 w-full rounded-xl border border-outline-default bg-white px-3 py-2 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
                                     {% for option in payload.period_options %}
                                         <option value="{{ option.value }}"
                                                 {% if payload.form_state.period == option.value %}selected{% endif %}>
@@ -232,10 +229,10 @@
                                 </select>
                             </label>
                             <label class="block">
-                                <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Output Format</span>
+                                <span class="text-xs font-medium text-content-muted dark:text-content-muted">Output Format</span>
                                 <select name="output_format"
                                         id="output-format-select"
-                                        class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                                        class="mt-1 w-full rounded-xl border border-outline-default bg-white px-3 py-2 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
                                     {% for option in payload.output_format_options %}
                                         <option value="{{ option.value }}"
                                                 {% if payload.form_state.output_format == option.value %}selected{% endif %}>
@@ -247,15 +244,15 @@
                         </div>
                     </section>
                     <!-- Sections -->
-                    <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                    <section class="rounded-2xl border border-outline-default bg-white p-5 shadow-sm dark:border-outline-default bg-surface-card">
                         <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                             <div class="flex items-center gap-3">
-                                <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                                <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
                                     <i data-lucide="list-checks" class="h-4 w-4"></i>
                                 </div>
                                 <div>
-                                    <h2 class="text-base font-semibold text-slate-950 dark:text-white">Report Section Selector</h2>
-                                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                                    <h2 class="text-base font-semibold text-content-primary text-content-primary">Report Section Selector</h2>
+                                    <p class="text-xs text-content-muted dark:text-content-muted">
                                         Choose the sections included in this request. Default selection follows the selected system template.
                                     </p>
                                 </div>
@@ -263,18 +260,18 @@
                             <div class="flex flex-wrap items-center gap-2">
                                 <button type="button"
                                         id="select-all-sections"
-                                        class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-blue-200 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:border-blue-700 dark:hover:text-blue-300">
+                                        class="inline-flex items-center gap-1 rounded-lg border border-outline-default bg-white px-3 py-1.5 text-xs font-semibold text-content-secondary shadow-sm transition hover:border-brand-outline hover:text-kaori-primary dark:border-outline-default bg-surface-subtle dark:text-content-secondary hover:border-brand-outline dark:hover:text-kaori-primary">
                                     <i data-lucide="check-check" class="h-3.5 w-3.5"></i>
                                     Select all
                                 </button>
                                 <button type="button"
                                         id="reset-default-sections"
-                                        class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-blue-200 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:border-blue-700 dark:hover:text-blue-300">
+                                        class="inline-flex items-center gap-1 rounded-lg border border-outline-default bg-white px-3 py-1.5 text-xs font-semibold text-content-secondary shadow-sm transition hover:border-brand-outline hover:text-kaori-primary dark:border-outline-default bg-surface-subtle dark:text-content-secondary hover:border-brand-outline dark:hover:text-kaori-primary">
                                     <i data-lucide="rotate-ccw" class="h-3.5 w-3.5"></i>
                                     Reset default
                                 </button>
                                 <span id="selected-section-count-badge"
-                                      class="rounded-xl bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 dark:bg-blue-950/50 dark:text-blue-300">
+                                      class="rounded-xl bg-kaori-soft px-3 py-1.5 text-xs font-semibold text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
                                     {{ payload.form_state.sections|length }} selected
                                 </span>
                             </div>
@@ -285,15 +282,15 @@
                         </div>
                         <div id="selected-section-list" class="grid gap-3 lg:grid-cols-2">
                             {% for section in payload.selected_section_options %}
-                                <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-blue-200 bg-blue-50/60 p-3 shadow-sm transition hover:border-blue-300 hover:bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 dark:hover:border-blue-700">
+                                <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-brand-outline bg-kaori-soft/60 p-3 shadow-sm transition hover:border-brand-outline hover:bg-kaori-soft border-brand-outline bg-kaori-soft hover:border-brand-outline">
                                     <input type="checkbox"
                                            name="sections"
                                            value="{{ section.value }}"
                                            checked
-                                           class="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950">
+                                           class="mt-1 h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary/20 dark:border-outline-default bg-surface-subtle">
                                     <span>
-                                        <span class="block text-sm font-semibold text-slate-800 dark:text-slate-100">{{ section.label }}</span>
-                                        <span class="mt-1 block text-xs leading-5 text-slate-500 dark:text-slate-400">{{ section.description }}</span>
+                                        <span class="block text-sm font-semibold text-content-primary dark:text-content-primary">{{ section.label }}</span>
+                                        <span class="mt-1 block text-xs leading-5 text-content-muted dark:text-content-muted">{{ section.description }}</span>
                                     </span>
                                 </label>
                             {% endfor %}
@@ -301,32 +298,32 @@
                     </section>
                     <!-- Report Type Guide -->
                     <section x-data="{ open: true, activeTab: 'kubereport' }"
-                             class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                             class="overflow-hidden rounded-2xl border border-outline-default bg-white shadow-sm dark:border-outline-default bg-surface-card">
                         <button type="button"
                                 @click="open = !open"
-                                class="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition hover:bg-slate-50 dark:hover:bg-slate-950/40">
+                                class="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition hover:bg-surface-subtle hover:bg-kaori-soft">
                             <span class="flex items-center gap-3">
-                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
                                     <i data-lucide="book-open" class="h-[18px] w-[18px]"></i>
                                 </span>
                                 <span>
-                                    <span class="block text-base font-semibold text-slate-950 dark:text-white">Report Type Guide</span>
-                                    <span class="block text-xs text-slate-500 dark:text-slate-400">Default system template catalog by infrastructure report family.</span>
+                                    <span class="block text-base font-semibold text-content-primary text-content-primary">Report Type Guide</span>
+                                    <span class="block text-xs text-content-muted dark:text-content-muted">Default system template catalog by infrastructure report family.</span>
                                 </span>
                             </span>
-                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-500 dark:border-slate-700 dark:text-slate-300">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-outline-default text-content-muted dark:border-outline-default dark:text-content-secondary">
                                 <i x-show="!open" data-lucide="chevron-down" class="h-4 w-4"></i>
                                 <i x-show="open" data-lucide="chevron-up" class="h-4 w-4"></i>
                             </span>
                         </button>
                         <div x-show="open"
                              x-collapse
-                             class="border-t border-slate-200 dark:border-slate-800">
+                             class="border-t border-outline-default dark:border-outline-default">
                             <div class="flex flex-wrap gap-2 px-5 pt-5">
                                 {% for family in payload.report_type_guide_groups %}
                                     <button type="button"
                                             @click="activeTab = '{{ family.key }}'"
-                                            :class="activeTab === '{{ family.key }}' ? 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-300' : 'border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:text-blue-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 dark:hover:border-blue-800 dark:hover:text-blue-300'"
+                                            :class="activeTab === '{{ family.key }}' ? 'border-brand-outline bg-kaori-soft text-kaori-primary border-brand-outline bg-kaori-soft dark:text-kaori-primary' : 'border-outline-default bg-white text-content-secondary hover:border-brand-outline hover:text-kaori-primary dark:border-outline-default bg-surface-subtle dark:text-content-secondary hover:border-brand-outline dark:hover:text-kaori-primary'"
                                             class="inline-flex items-center rounded-xl border px-3 py-2 text-xs font-semibold transition">
                                         {{ family.label }}
                                     </button>
@@ -334,20 +331,20 @@
                             </div>
                             {% for family in payload.report_type_guide_groups %}
                                 <div x-show="activeTab === '{{ family.key }}'" class="p-5">
-                                    <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">{{ family.description }}</p>
+                                    <p class="text-sm leading-6 text-content-secondary dark:text-content-secondary">{{ family.description }}</p>
                                     <div class="mt-4 grid gap-3 lg:grid-cols-2">
                                         {% for item in family['items'] %}
-                                            <article class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/60">
+                                            <article class="rounded-xl border border-outline-default bg-surface-subtle p-4 dark:border-outline-default bg-surface-subtle">
                                                 <div class="flex items-start gap-3">
-                                                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-blue-600 dark:bg-slate-900 dark:text-blue-300">
+                                                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-kaori-primary bg-surface-card dark:text-kaori-primary">
                                                         <i data-lucide="{{ item.icon }}" class="h-4 w-4"></i>
                                                     </div>
                                                     <div class="min-w-0">
                                                         <div class="flex flex-wrap items-center gap-2">
-                                                            <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ item.label }}</p>
-                                                            <span class="rounded-md bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700 dark:bg-blue-950/50 dark:text-blue-300">{{ item.status }}</span>
+                                                            <p class="text-sm font-semibold text-content-primary text-content-primary">{{ item.label }}</p>
+                                                            <span class="rounded-md bg-kaori-soft px-2 py-0.5 text-[11px] font-semibold text-kaori-primary bg-kaori-soft dark:text-kaori-primary">{{ item.status }}</span>
                                                         </div>
-                                                        <p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">{{ item.description }}</p>
+                                                        <p class="mt-1 text-xs leading-5 text-content-muted dark:text-content-muted">{{ item.description }}</p>
                                                     </div>
                                                 </div>
                                             </article>
@@ -358,58 +355,58 @@
                         </div>
                     </section>
                     <!-- Preview -->
-                    <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                    <section class="rounded-2xl border border-outline-default bg-white p-5 shadow-sm dark:border-outline-default bg-surface-card">
                         <div class="mb-5 flex items-center gap-3">
-                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
                                 <i data-lucide="eye" class="h-4 w-4"></i>
                             </div>
                             <div>
-                                <h2 class="text-base font-semibold text-slate-950 dark:text-white">Request Preview</h2>
-                                <p class="text-xs text-slate-500 dark:text-slate-400">
+                                <h2 class="text-base font-semibold text-content-primary text-content-primary">Request Preview</h2>
+                                <p class="text-xs text-content-muted dark:text-content-muted">
                                     This will create a report record first. PDF rendering is executed from Generated Reports.
                                 </p>
                             </div>
                         </div>
                         <div class="grid gap-3 md:grid-cols-2">
-                            <div class="rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-950">
-                                <p class="text-xs font-medium uppercase tracking-wide text-slate-400">Report Type</p>
+                            <div class="rounded-xl bg-surface-subtle px-4 py-3 bg-surface-subtle">
+                                <p class="text-xs font-medium uppercase tracking-wide text-content-muted">Report Type</p>
                                 <p id="preview-report-type"
-                                   class="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">{{ payload.selected_report_type.label }}</p>
+                                   class="mt-1 text-sm font-semibold text-content-primary dark:text-content-primary">{{ payload.selected_report_type.label }}</p>
                             </div>
-                            <div class="rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-950">
-                                <p class="text-xs font-medium uppercase tracking-wide text-slate-400">Scope</p>
+                            <div class="rounded-xl bg-surface-subtle px-4 py-3 bg-surface-subtle">
+                                <p class="text-xs font-medium uppercase tracking-wide text-content-muted">Scope</p>
                                 <p id="preview-scope"
-                                   class="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">Cluster / Namespace</p>
+                                   class="mt-1 text-sm font-semibold text-content-primary dark:text-content-primary">Cluster / Namespace</p>
                             </div>
-                            <div class="rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-950">
-                                <p class="text-xs font-medium uppercase tracking-wide text-slate-400">Sections</p>
+                            <div class="rounded-xl bg-surface-subtle px-4 py-3 bg-surface-subtle">
+                                <p class="text-xs font-medium uppercase tracking-wide text-content-muted">Sections</p>
                                 <p id="preview-sections"
-                                   class="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">{{ payload.form_state.sections|length }} selected</p>
+                                   class="mt-1 text-sm font-semibold text-content-primary dark:text-content-primary">{{ payload.form_state.sections|length }} selected</p>
                             </div>
-                            <div class="rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-950">
-                                <p class="text-xs font-medium uppercase tracking-wide text-slate-400">Storage</p>
-                                <p class="mt-1 text-sm font-semibold {% if payload.storage_context.ready %}text-blue-700 dark:text-blue-300{% else %}text-amber-700 dark:text-amber-300{% endif %}">
+                            <div class="rounded-xl bg-surface-subtle px-4 py-3 bg-surface-subtle">
+                                <p class="text-xs font-medium uppercase tracking-wide text-content-muted">Storage</p>
+                                <p class="mt-1 text-sm font-semibold {% if payload.storage_context.ready %}text-kaori-primary dark:text-kaori-primary{% else %}text-amber-700 dark:text-amber-300{% endif %}">
                                     {{ payload.storage_context.label }} · {{ payload.storage_context.status }}
                                 </p>
                             </div>
                         </div>
                     </section>
                     <!-- Actions -->
-                    <div class="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 md:flex-row md:items-center md:justify-between">
+                    <div class="flex flex-col gap-3 rounded-2xl border border-outline-default bg-white p-5 shadow-sm dark:border-outline-default bg-surface-card md:flex-row md:items-center md:justify-between">
                         <div>
-                            <p class="text-sm font-semibold text-slate-900 dark:text-white">Create report request</p>
-                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            <p class="text-sm font-semibold text-content-primary text-content-primary">Create report request</p>
+                            <p class="mt-1 text-xs text-content-muted dark:text-content-muted">
                                 Real-data PDF rendering is available. Prometheus-backed reports require a specific cluster in MVP2.
                             </p>
                         </div>
                         <div class="flex flex-wrap items-center gap-3">
                             <a href="{{ url_for('reports.generated_reports') }}"
-                               class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-blue-200 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-blue-700 dark:hover:text-blue-300">
+                               class="inline-flex items-center justify-center gap-2 rounded-xl border border-outline-default bg-white px-4 py-2 text-sm font-semibold text-content-secondary shadow-sm transition hover:border-brand-outline hover:text-kaori-primary dark:border-outline-default bg-surface-subtle dark:text-content-secondary hover:border-brand-outline dark:hover:text-kaori-primary">
                                 Cancel
                             </a>
                             <button type="submit"
                                     id="generate-report-button"
-                                    class="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-500/20 dark:bg-blue-500 dark:hover:bg-blue-600">
+                                    class="inline-flex items-center justify-center gap-2 rounded-xl bg-kaori-primary px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 bg-kaori-primary dark:hover:bg-kaori-primary">
                                 <i data-lucide="send" class="h-4 w-4"></i>
                                 Generate Report
                             </button>
@@ -420,99 +417,99 @@
             <!-- Right Panel -->
             <aside class="space-y-5">
                 <section x-data="{ open: true }"
-                         class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                         class="overflow-hidden rounded-2xl border border-outline-default bg-white shadow-sm dark:border-outline-default bg-surface-card">
                     <button type="button"
                             @click="open = !open"
-                            class="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition hover:bg-slate-50 dark:hover:bg-slate-950/40">
+                            class="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition hover:bg-surface-subtle hover:bg-kaori-soft">
                         <span class="flex items-center gap-3">
-                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl {% if payload.storage_context.ready %}bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300{% else %}bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-300{% endif %}">
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl {% if payload.storage_context.ready %}bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary{% else %}bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-300{% endif %}">
                                 <i data-lucide="hard-drive" class="h-[18px] w-[18px]"></i>
                             </span>
                             <span>
-                                <span class="block text-base font-semibold text-slate-950 dark:text-white">Storage Context</span>
-                                <span class="block text-xs text-slate-500 dark:text-slate-400">{{ payload.storage_context.backend|upper }} backend · {{ payload.storage_context.status }}</span>
+                                <span class="block text-base font-semibold text-content-primary text-content-primary">Storage Context</span>
+                                <span class="block text-xs text-content-muted dark:text-content-muted">{{ payload.storage_context.backend|upper }} backend · {{ payload.storage_context.status }}</span>
                             </span>
                         </span>
-                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-500 dark:border-slate-700 dark:text-slate-300">
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-outline-default text-content-muted dark:border-outline-default dark:text-content-secondary">
                             <i x-show="!open" data-lucide="chevron-down" class="h-4 w-4"></i>
                             <i x-show="open" data-lucide="chevron-up" class="h-4 w-4"></i>
                         </span>
                     </button>
                     <div x-show="open"
                          x-collapse
-                         class="border-t border-slate-200 px-5 py-5 dark:border-slate-800">
-                        <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">{{ payload.storage_context.description }}</p>
+                         class="border-t border-outline-default px-5 py-5 dark:border-outline-default">
+                        <p class="text-sm leading-6 text-content-secondary dark:text-content-secondary">{{ payload.storage_context.description }}</p>
                         <a href="{{ url_for('reports.storage') }}"
-                           class="mt-4 inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-300 dark:hover:bg-blue-900/50">
+                           class="mt-4 inline-flex items-center gap-2 rounded-xl border border-brand-outline bg-kaori-soft px-3 py-2 text-sm font-semibold text-kaori-primary transition hover:bg-kaori-soft border-brand-outline bg-kaori-soft dark:text-kaori-primary hover:bg-kaori-soft">
                             Open Reports Storage
                             <i data-lucide="arrow-right" class="h-4 w-4"></i>
                         </a>
                     </div>
                 </section>
                 <section x-data="{ open: true }"
-                         class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                         class="overflow-hidden rounded-2xl border border-outline-default bg-white shadow-sm dark:border-outline-default bg-surface-card">
                     <button type="button"
                             @click="open = !open"
-                            class="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition hover:bg-slate-50 dark:hover:bg-slate-950/40">
+                            class="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition hover:bg-surface-subtle hover:bg-kaori-soft">
                         <span class="flex items-center gap-3">
-                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
                                 <i data-lucide="route" class="h-[18px] w-[18px]"></i>
                             </span>
                             <span>
-                                <span class="block text-base font-semibold text-slate-950 dark:text-white">Generation Readiness</span>
-                                <span class="block text-xs text-slate-500 dark:text-slate-400">Current request, rendering, storage, and schedule readiness.</span>
+                                <span class="block text-base font-semibold text-content-primary text-content-primary">Generation Readiness</span>
+                                <span class="block text-xs text-content-muted dark:text-content-muted">Current request, rendering, storage, and schedule readiness.</span>
                             </span>
                         </span>
-                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-500 dark:border-slate-700 dark:text-slate-300">
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-outline-default text-content-muted dark:border-outline-default dark:text-content-secondary">
                             <i x-show="!open" data-lucide="chevron-down" class="h-4 w-4"></i>
                             <i x-show="open" data-lucide="chevron-up" class="h-4 w-4"></i>
                         </span>
                     </button>
                     <div x-show="open"
                          x-collapse
-                         class="divide-y divide-slate-100 border-t border-slate-200 dark:divide-slate-800 dark:border-slate-800">
+                         class="divide-y divide-outline-default border-t border-outline-default divide-outline-default dark:border-outline-default">
                         {% for item in payload.readiness %}
                             {% set tone_class = {
-                                                            'blue': 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300',
-                                                            'gray': 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
+                                                            'blue': 'bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary',
+                                                            'gray': 'bg-kaori-soft text-content-secondary bg-kaori-soft dark:text-content-secondary',
                                                             'amber': 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300'
-                                                        }.get(item.tone, 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300') %}
+                                                        }.get(item.tone, 'bg-kaori-soft text-content-secondary bg-kaori-soft dark:text-content-secondary') %}
                             <div class="px-5 py-4">
                                 <div class="flex items-center justify-between gap-3">
-                                    <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ item.label }}</p>
+                                    <p class="text-sm font-semibold text-content-primary dark:text-content-primary">{{ item.label }}</p>
                                     <span class="rounded-lg px-2 py-1 text-xs font-semibold {{ tone_class }}">{{ item.status }}</span>
                                 </div>
-                                <p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">{{ item.description }}</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted dark:text-content-muted">{{ item.description }}</p>
                             </div>
                         {% endfor %}
                     </div>
                 </section>
                 <section x-data="{ open: false }"
-                         class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                         class="overflow-hidden rounded-2xl border border-outline-default bg-white shadow-sm dark:border-outline-default bg-surface-card">
                     <button type="button"
                             @click="open = !open"
-                            class="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition hover:bg-slate-50 dark:hover:bg-slate-950/40">
+                            class="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition hover:bg-surface-subtle hover:bg-kaori-soft">
                         <span class="flex items-center gap-3">
-                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
                                 <i data-lucide="database-zap" class="h-[18px] w-[18px]"></i>
                             </span>
                             <span>
-                                <span class="block text-base font-semibold text-slate-950 dark:text-white">Data Source Context</span>
-                                <span class="block text-xs text-slate-500 dark:text-slate-400">How data sources feed the report generator.</span>
+                                <span class="block text-base font-semibold text-content-primary text-content-primary">Data Source Context</span>
+                                <span class="block text-xs text-content-muted dark:text-content-muted">How data sources feed the report generator.</span>
                             </span>
                         </span>
-                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-500 dark:border-slate-700 dark:text-slate-300">
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-outline-default text-content-muted dark:border-outline-default dark:text-content-secondary">
                             <i x-show="!open" data-lucide="chevron-down" class="h-4 w-4"></i>
                             <i x-show="open" data-lucide="chevron-up" class="h-4 w-4"></i>
                         </span>
                     </button>
                     <div x-show="open"
                          x-collapse
-                         class="border-t border-slate-200 px-5 py-5 dark:border-slate-800">
+                         class="border-t border-outline-default px-5 py-5 dark:border-outline-default">
                         <ul class="space-y-3">
                             {% for item in payload.data_source_context %}
-                                <li class="flex gap-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                                    <span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500"></span>
+                                <li class="flex gap-3 text-sm leading-6 text-content-secondary dark:text-content-secondary">
+                                    <span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-kaori-primary"></span>
                                     <span>{{ item }}</span>
                                 </li>
                             {% endfor %}
@@ -520,41 +517,41 @@
                     </div>
                 </section>
                 <section x-data="{ open: false }"
-                         class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                         class="overflow-hidden rounded-2xl border border-outline-default bg-white shadow-sm dark:border-outline-default bg-surface-card">
                     <button type="button"
                             @click="open = !open"
-                            class="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition hover:bg-slate-50 dark:hover:bg-slate-950/40">
+                            class="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition hover:bg-surface-subtle hover:bg-kaori-soft">
                         <span class="flex items-center gap-3">
-                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
                                 <i data-lucide="file-check-2" class="h-[18px] w-[18px]"></i>
                             </span>
                             <span>
-                                <span class="block text-base font-semibold text-slate-950 dark:text-white">Report Output Readiness</span>
-                                <span class="block text-xs text-slate-500 dark:text-slate-400">Checks report type, sections, data source expectation, PDF output, and artifact readiness.</span>
+                                <span class="block text-base font-semibold text-content-primary text-content-primary">Report Output Readiness</span>
+                                <span class="block text-xs text-content-muted dark:text-content-muted">Checks report type, sections, data source expectation, PDF output, and artifact readiness.</span>
                             </span>
                         </span>
-                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-500 dark:border-slate-700 dark:text-slate-300">
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-outline-default text-content-muted dark:border-outline-default dark:text-content-secondary">
                             <i x-show="!open" data-lucide="chevron-down" class="h-4 w-4"></i>
                             <i x-show="open" data-lucide="chevron-up" class="h-4 w-4"></i>
                         </span>
                     </button>
                     <div x-show="open"
                          x-collapse
-                         class="divide-y divide-slate-100 border-t border-slate-200 dark:divide-slate-800 dark:border-slate-800">
+                         class="divide-y divide-outline-default border-t border-outline-default divide-outline-default dark:border-outline-default">
                         {% for item in payload.report_output_readiness %}
                             {% set tone_class = {
-                                                            'blue': 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300',
+                                                            'blue': 'bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary',
                                                             'amber': 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300'
-                                                        }.get(item.tone, 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300') %}
+                                                        }.get(item.tone, 'bg-kaori-soft text-content-secondary bg-kaori-soft dark:text-content-secondary') %}
                             <div class="px-5 py-4">
                                 <div class="flex items-start justify-between gap-3">
                                     <div>
-                                        <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ item.label }}</p>
-                                        <p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">{{ item.renderer }} · {{ item.scope }} · {{ item.sections }} default sections</p>
+                                        <p class="text-sm font-semibold text-content-primary dark:text-content-primary">{{ item.label }}</p>
+                                        <p class="mt-1 text-xs leading-5 text-content-muted dark:text-content-muted">{{ item.renderer }} · {{ item.scope }} · {{ item.sections }} default sections</p>
                                     </div>
                                     <span class="shrink-0 rounded-lg px-2 py-1 text-xs font-semibold {{ tone_class }}">{{ item.status }}</span>
                                 </div>
-                                <p class="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">{{ item.note }}</p>
+                                <p class="mt-2 text-xs leading-5 text-content-muted dark:text-content-muted">{{ item.note }}</p>
                             </div>
                         {% endfor %}
                     </div>
@@ -663,21 +660,21 @@
 
                     selectedOptions.forEach(function (section) {
                         const label = document.createElement('label');
-                        label.className = 'flex cursor-pointer items-start gap-3 rounded-xl border border-blue-200 bg-blue-50/60 p-3 shadow-sm transition hover:border-blue-300 hover:bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 dark:hover:border-blue-700';
+                        label.className = 'flex cursor-pointer items-start gap-3 rounded-xl border border-brand-outline bg-kaori-soft/60 p-3 shadow-sm transition hover:border-brand-outline hover:bg-kaori-soft border-brand-outline bg-kaori-soft hover:border-brand-outline';
 
                         const input = document.createElement('input');
                         input.type = 'checkbox';
                         input.name = 'sections';
                         input.value = section.value;
                         input.checked = selectedSections.has(section.value);
-                        input.className = 'mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950';
+                        input.className = 'mt-1 h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary/20 dark:border-outline-default bg-surface-subtle';
                         input.addEventListener('change', function () {
                             updateSelectedSectionFromCheckbox(input);
                         });
 
                         const content = document.createElement('span');
-                        content.innerHTML = '<span class="block text-sm font-semibold text-slate-800 dark:text-slate-100"></span>'
-                            + '<span class="mt-1 block text-xs leading-5 text-slate-500 dark:text-slate-400"></span>';
+                        content.innerHTML = '<span class="block text-sm font-semibold text-content-primary dark:text-content-primary"></span>'
+                            + '<span class="mt-1 block text-xs leading-5 text-content-muted dark:text-content-muted"></span>';
                         content.querySelector('span').textContent = section.label;
                         content.querySelectorAll('span')[1].textContent = section.description;
 
@@ -757,8 +754,8 @@
 
                     generateButton.disabled = shouldBlock;
                     generateButton.className = shouldBlock
-                        ? 'inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-xl bg-slate-300 px-5 py-2 text-sm font-semibold text-slate-500 shadow-sm transition focus:outline-none focus:ring-4 focus:ring-blue-500/20 dark:bg-slate-700 dark:text-slate-400'
-                        : 'inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-500/20 dark:bg-blue-500 dark:hover:bg-blue-600';
+                        ? 'inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-xl bg-kaori-soft px-5 py-2 text-sm font-semibold text-content-muted shadow-sm transition focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 bg-kaori-soft dark:text-content-muted'
+                        : 'inline-flex items-center justify-center gap-2 rounded-xl bg-kaori-primary px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 bg-kaori-primary dark:hover:bg-kaori-primary';
                 }
 
                 function syncForm() {

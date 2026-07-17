@@ -2,24 +2,22 @@
 {% block title %}Report Templates{% endblock title %}
 {% block dashboard_content %}
     <div class="space-y-5">
-        <section class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 p-6 text-white shadow-sm">
-            <div class="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-white/10 blur-3xl"></div>
-            <div class="pointer-events-none absolute bottom-0 left-1/3 h-24 w-24 rounded-full bg-cyan-200/20 blur-2xl"></div>
+        <section class="relative overflow-hidden rounded-2xl bg-kaori-primary p-6 text-white shadow-sm">
             <div class="relative grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-stretch">
                 <div class="flex items-start gap-4">
                     <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white ring-1 ring-white/20">
                         <i data-lucide="layout-template" class="h-7 w-7"></i>
                     </div>
                     <div class="min-w-0">
-                        <span class="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-blue-50 ring-1 ring-white/20">
+                        <span class="inline-flex items-center gap-2 rounded-md bg-white/15 px-3 py-1 text-xs font-semibold text-white/90 ring-1 ring-white/20">
                             <i data-lucide="library" class="h-3.5 w-3.5"></i>
                             Infrastructure template library
                         </span>
                         <h1 class="mt-3 text-3xl font-bold tracking-tight md:text-4xl">{{ payload.page_title }}</h1>
-                        <p class="mt-2 max-w-3xl text-sm leading-6 text-blue-50/90 sm:text-base">{{ payload.page_subtitle }}</p>
-                        <div class="mt-4 flex flex-wrap gap-2 text-xs font-semibold text-blue-50">
+                        <p class="mt-2 max-w-3xl text-sm leading-6 text-white/85 sm:text-base">{{ payload.page_subtitle }}</p>
+                        <div class="mt-4 flex flex-wrap gap-2 text-xs font-semibold text-white/90">
                             <span class="rounded-md bg-white/15 px-3 py-1 ring-1 ring-white/20">Protected system templates</span>
-                            <span class="rounded-full bg-white/15 px-3 py-1 ring-1 ring-white/20">Custom report layouts</span>
+                            <span class="rounded-md bg-white/15 px-3 py-1 ring-1 ring-white/20">Custom report layouts</span>
                             <span class="rounded-md bg-white/15 px-3 py-1 ring-1 ring-white/20">PDF-ready sections</span>
                         </div>
                     </div>
@@ -27,9 +25,9 @@
                 <div class="rounded-2xl bg-white/12 p-4 ring-1 ring-white/20 backdrop-blur">
                     <div class="flex items-start justify-between gap-4">
                         <div>
-                            <p class="text-xs font-semibold uppercase tracking-wide text-blue-100">Template posture</p>
+                            <p class="text-xs font-semibold uppercase tracking-wide text-content-primary">Template posture</p>
                             <h2 class="mt-2 text-2xl font-bold">Ready</h2>
-                            <p class="mt-1 text-sm leading-6 text-blue-50/90">Build reusable report layouts from protected base templates or custom section checklists.</p>
+                            <p class="mt-1 text-sm leading-6 text-white/85">Build reusable report layouts from protected base templates or custom section checklists.</p>
                         </div>
                         <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/20">
                             <i data-lucide="shield-check" class="h-5 w-5"></i>
@@ -37,7 +35,7 @@
                     </div>
                     <div class="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
                         <a href="{{ url_for('reports.generate_report') }}"
-                           class="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-blue-700 shadow-sm transition hover:bg-blue-50">
+                           class="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft">
                             <i data-lucide="plus-circle" class="h-4 w-4"></i>
                             Generate
                         </a>
@@ -53,59 +51,59 @@
         <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {% for card in payload.summary_cards %}
                 {% set tone_class = {
-                                    'blue': 'bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300',
+                                    'blue': 'bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary',
                                     'green': 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-300',
                                     'purple': 'bg-violet-50 text-violet-600 dark:bg-violet-950/50 dark:text-violet-300',
                                     'amber': 'bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-300'
-                                }.get(card.tone, 'bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-300') %}
-                <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                                }.get(card.tone, 'bg-surface-subtle text-content-secondary bg-kaori-soft dark:text-content-secondary') %}
+                <article class="rounded-2xl border border-outline-default bg-white p-5 shadow-sm dark:border-outline-default bg-surface-card">
                     <div class="flex items-start gap-4">
                         <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl {{ tone_class }}">
                             <i data-lucide="{{ card.icon }}" class="h-6 w-6"></i>
                         </div>
                         <div class="min-w-0">
-                            <p class="text-sm font-semibold text-slate-600 dark:text-slate-300">{{ card.label }}</p>
-                            <p class="mt-2 text-3xl font-bold tracking-tight text-slate-950 dark:text-white">{{ card.value }}</p>
-                            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ card.caption }}</p>
+                            <p class="text-sm font-semibold text-content-secondary dark:text-content-secondary">{{ card.label }}</p>
+                            <p class="mt-2 text-3xl font-bold tracking-tight text-content-primary text-content-primary">{{ card.value }}</p>
+                            <p class="mt-1 text-sm text-content-muted dark:text-content-muted">{{ card.caption }}</p>
                         </div>
                     </div>
                 </article>
             {% endfor %}
         </section>
         <section x-data="{ open: false }"
-                 class="rounded-2xl border border-blue-100 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                 class="rounded-2xl border border-brand-outline bg-white shadow-sm dark:border-outline-default bg-surface-card">
             <button type="button"
                     @click="open = !open"
                     class="flex w-full items-center justify-between gap-4 px-5 py-4 text-left">
                 <span class="flex min-w-0 items-center gap-3">
-                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
                         <i data-lucide="shield-check" class="h-[18px] w-[18px]"></i>
                     </span>
                     <span class="min-w-0">
-                        <span class="block text-base font-semibold text-slate-950 dark:text-white">Base Template Guardrail</span>
-                        <span class="block text-xs text-slate-500 dark:text-slate-400">Protected defaults for safe report customization.</span>
+                        <span class="block text-base font-semibold text-content-primary text-content-primary">Base Template Guardrail</span>
+                        <span class="block text-xs text-content-muted dark:text-content-muted">Protected defaults for safe report customization.</span>
                     </span>
                 </span>
-                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-500 dark:border-slate-700 dark:text-slate-300">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-outline-default text-content-muted dark:border-outline-default dark:text-content-secondary">
                     <i x-show="!open" data-lucide="chevron-down" class="h-4 w-4"></i>
                     <i x-show="open" data-lucide="chevron-up" class="h-4 w-4"></i>
                 </span>
             </button>
             <div x-show="open"
                  x-collapse
-                 class="border-t border-slate-100 px-5 pb-5 pt-4 dark:border-slate-800">
+                 class="border-t border-outline-default px-5 pb-5 pt-4 dark:border-outline-default">
                 <div class="grid gap-3 md:grid-cols-3">
-                    <div class="rounded-2xl bg-blue-50 p-4 dark:bg-blue-950/30">
-                        <p class="text-sm font-semibold text-blue-900 dark:text-blue-100">Immutable baseline</p>
-                        <p class="mt-2 text-sm leading-6 text-blue-800 dark:text-blue-200">System templates cannot be edited or deleted. They define the default report contract for infrastructure reporting.</p>
+                    <div class="rounded-2xl bg-kaori-soft p-4 bg-kaori-soft">
+                        <p class="text-sm font-semibold text-content-primary dark:text-content-primary">Immutable baseline</p>
+                        <p class="mt-2 text-sm leading-6 text-content-secondary dark:text-content-secondary">System templates cannot be edited or deleted. They define the default report contract for infrastructure reporting.</p>
                     </div>
-                    <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
-                        <p class="text-sm font-semibold text-slate-900 dark:text-white">Safe customization</p>
-                        <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">Duplicate a base template or create a custom template, then choose the sections that should appear in the generated PDF.</p>
+                    <div class="rounded-2xl bg-surface-subtle p-4 bg-surface-subtle">
+                        <p class="text-sm font-semibold text-content-primary text-content-primary">Safe customization</p>
+                        <p class="mt-2 text-sm leading-6 text-content-secondary dark:text-content-secondary">Duplicate a base template or create a custom template, then choose the sections that should appear in the generated PDF.</p>
                     </div>
-                    <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
-                        <p class="text-sm font-semibold text-slate-900 dark:text-white">Domain ownership</p>
-                        <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">KubeReport owns current Kubernetes templates. ServerReport templates are reserved for future VM, server, and HCI reporting.</p>
+                    <div class="rounded-2xl bg-surface-subtle p-4 bg-surface-subtle">
+                        <p class="text-sm font-semibold text-content-primary text-content-primary">Domain ownership</p>
+                        <p class="mt-2 text-sm leading-6 text-content-secondary dark:text-content-secondary">KubeReport owns current Kubernetes templates. ServerReport templates are reserved for future VM, server, and HCI reporting.</p>
                     </div>
                 </div>
             </div>
@@ -113,19 +111,19 @@
         <section class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
             <div class="space-y-6">
                 <section id="templates-registry" class="space-y-4">
-                    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                    <div class="rounded-2xl border border-outline-default bg-white p-5 shadow-sm dark:border-outline-default bg-surface-card">
                         <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                             <div class="flex min-w-0 items-center gap-3">
-                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
                                     <i data-lucide="list-filter" class="h-[18px] w-[18px]"></i>
                                 </span>
                                 <div class="min-w-0">
-                                    <h2 class="text-base font-semibold text-slate-950 dark:text-white">Template Filters</h2>
-                                    <p class="text-xs text-slate-500 dark:text-slate-400">Filter templates by type, status, or keyword without reloading the page.</p>
+                                    <h2 class="text-base font-semibold text-content-primary text-content-primary">Template Filters</h2>
+                                    <p class="text-xs text-content-muted dark:text-content-muted">Filter templates by type, status, or keyword without reloading the page.</p>
                                 </div>
                             </div>
-                            <div class="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                                <span class="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 font-semibold text-blue-700 dark:bg-blue-500/10 dark:text-blue-300">
+                            <div class="flex flex-wrap items-center gap-2 text-xs text-content-muted dark:text-content-muted">
+                                <span class="inline-flex items-center gap-1.5 rounded-md bg-kaori-soft px-2.5 py-1 font-semibold text-kaori-primary bg-kaori-primary/10 dark:text-kaori-primary">
                                     <i data-lucide="library" class="h-3.5 w-3.5"></i>
                                     {{ payload.pagination.total_items }} templates matched
                                 </span>
@@ -136,7 +134,7 @@
                                        hx-select="#templates-registry"
                                        hx-swap="outerHTML"
                                        hx-push-url="true"
-                                       class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-2.5 py-1 font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
+                                       class="inline-flex items-center gap-1.5 rounded-md border border-outline-default px-2.5 py-1 font-semibold text-content-secondary hover:bg-surface-subtle dark:border-outline-default dark:text-content-secondary hover:bg-kaori-soft">
                                         <i data-lucide="x" class="h-3.5 w-3.5"></i>
                                         Clear {{ payload.active_filter_count }} filters
                                     </a>
@@ -154,9 +152,9 @@
                               class="grid gap-3 lg:grid-cols-[220px_180px_minmax(0,1fr)] lg:items-end">
                             <input type="hidden" name="page" value="1">
                             <label class="block">
-                                <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Report Type</span>
+                                <span class="text-xs font-medium text-content-muted dark:text-content-muted">Report Type</span>
                                 <select name="report_type"
-                                        class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                                        class="mt-1 w-full rounded-xl border border-outline-default bg-white px-3 py-2 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
                                     {% for option in payload.filter_options.report_types %}
                                         <option value="{{ option.value }}"
                                                 {% if payload.selected_filters.report_type == option.value %}selected{% endif %}>{{ option.label }}</option>
@@ -164,9 +162,9 @@
                                 </select>
                             </label>
                             <label class="block">
-                                <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Status</span>
+                                <span class="text-xs font-medium text-content-muted dark:text-content-muted">Status</span>
                                 <select name="status"
-                                        class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                                        class="mt-1 w-full rounded-xl border border-outline-default bg-white px-3 py-2 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
                                     {% for option in payload.filter_options.statuses %}
                                         <option value="{{ option.value }}"
                                                 {% if payload.selected_filters.status == option.value %}selected{% endif %}>{{ option.label }}</option>
@@ -174,15 +172,15 @@
                                 </select>
                             </label>
                             <label class="block">
-                                <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Search</span>
+                                <span class="text-xs font-medium text-content-muted dark:text-content-muted">Search</span>
                                 <div class="relative mt-1">
                                     <i data-lucide="search"
-                                       class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"></i>
+                                       class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"></i>
                                     <input type="search"
                                            name="search"
                                            value="{{ payload.selected_filters.search }}"
                                            placeholder="Search template..."
-                                           class="w-full rounded-xl border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                                           class="w-full rounded-xl border border-outline-default bg-white py-2 pl-9 pr-3 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
                                 </div>
                             </label>
                         </form>
@@ -190,32 +188,32 @@
                     <div class="space-y-4">
                         {% for template in payload.templates %}
                             {% set status_class = {
-                                                            'blue': 'bg-blue-50 text-blue-700 ring-blue-600/20 dark:bg-blue-950/50 dark:text-blue-300 dark:ring-blue-400/20',
+                                                            'blue': 'bg-kaori-soft text-kaori-primary ring-brand-outline bg-kaori-soft dark:text-kaori-primary ring-brand-outline',
                                                             'green': 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-400/20',
                                                             'purple': 'bg-violet-50 text-violet-700 ring-violet-600/20 dark:bg-violet-950/50 dark:text-violet-300 dark:ring-violet-400/20',
-                                                            'gray': 'bg-slate-100 text-slate-700 ring-slate-600/20 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-400/20'
-                                                        }.get(template.status_tone, 'bg-slate-100 text-slate-700 ring-slate-600/20 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-400/20') %}
+                                                            'gray': 'bg-kaori-soft text-content-secondary ring-slate-600/20 bg-kaori-soft dark:text-content-secondary dark:ring-slate-400/20'
+                                                        }.get(template.status_tone, 'bg-kaori-soft text-content-secondary ring-slate-600/20 bg-kaori-soft dark:text-content-secondary dark:ring-slate-400/20') %}
                             <article x-data="{ detailsOpen: false }"
-                                     class="rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:border-blue-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:hover:border-blue-800">
+                                     class="rounded-2xl border border-outline-default bg-white shadow-sm transition hover:border-brand-outline hover:shadow-md dark:border-outline-default bg-surface-card hover:border-brand-outline">
                                 <div class="p-5">
                                     <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                                         <div class="flex min-w-0 items-start gap-4">
-                                            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                                            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
                                                 <i data-lucide="{{ template.icon }}" class="h-6 w-6"></i>
                                             </div>
                                             <div class="min-w-0">
                                                 <div class="flex flex-wrap items-center gap-2">
-                                                    <h3 class="text-base font-semibold text-slate-950 dark:text-white">{{ template.name }}</h3>
+                                                    <h3 class="text-base font-semibold text-content-primary text-content-primary">{{ template.name }}</h3>
                                                     <span class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold ring-1 ring-inset {{ status_class }}">
                                                         <i data-lucide="{% if template.source == 'system' %}shield-check{% else %}pencil-ruler{% endif %}"
                                                            class="h-3.5 w-3.5"></i>
                                                         {{ template.status_label }}
                                                     </span>
                                                 </div>
-                                                <p class="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">{{ template.description }}</p>
+                                                <p class="mt-1 text-sm leading-6 text-content-muted dark:text-content-muted">{{ template.description }}</p>
                                                 <div class="mt-3 flex flex-wrap gap-2 text-xs">
-                                                    <span class="rounded-lg bg-slate-100 px-2.5 py-1 font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">{{ template.report_type_label }}</span>
-                                                    <span class="rounded-lg bg-slate-100 px-2.5 py-1 font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">{{ template.section_count }} sections</span>
+                                                    <span class="rounded-lg bg-kaori-soft px-2.5 py-1 font-semibold text-content-secondary bg-kaori-soft dark:text-content-secondary">{{ template.report_type_label }}</span>
+                                                    <span class="rounded-lg bg-kaori-soft px-2.5 py-1 font-semibold text-content-secondary bg-kaori-soft dark:text-content-secondary">{{ template.section_count }} sections</span>
                                                     <span class="rounded-lg bg-emerald-50 px-2.5 py-1 font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">{{ template.renderer_label }}</span>
                                                 </div>
                                             </div>
@@ -223,19 +221,19 @@
                                         <div class="flex shrink-0 flex-wrap items-center gap-2">
                                             <button type="button"
                                                     @click="detailsOpen = !detailsOpen"
-                                                    class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
+                                                    class="inline-flex items-center gap-2 rounded-xl border border-outline-default px-3 py-2 text-sm font-semibold text-content-secondary transition hover:bg-surface-subtle dark:border-outline-default dark:text-content-secondary hover:bg-kaori-soft">
                                                 <i x-show="!detailsOpen" data-lucide="chevron-down" class="h-4 w-4"></i>
                                                 <i x-show="detailsOpen" data-lucide="chevron-up" class="h-4 w-4"></i>
                                                 <span x-text="detailsOpen ? 'Hide details' : 'View more'"></span>
                                             </button>
                                             <a href="{{ template.generate_href }}"
-                                               class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">
+                                               class="inline-flex items-center gap-2 rounded-xl bg-kaori-primary px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-kaori-primary">
                                                 <i data-lucide="plus-circle" class="h-4 w-4"></i>
                                                 Generate
                                             </a>
                                             {% if template.can_edit %}
                                                 <a href="{{ template.edit_href }}#custom-template-form"
-                                                   class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
+                                                   class="inline-flex items-center gap-2 rounded-xl border border-outline-default px-3 py-2 text-sm font-semibold text-content-secondary transition hover:bg-surface-subtle dark:border-outline-default dark:text-content-secondary hover:bg-kaori-soft">
                                                     <i data-lucide="pencil" class="h-4 w-4"></i>
                                                     Edit
                                                 </a>
@@ -244,7 +242,7 @@
                                                 <form method="POST" action="{{ template.duplicate_href }}">
                                                     {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                                                     <button type="submit"
-                                                            class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
+                                                            class="inline-flex items-center gap-2 rounded-xl border border-outline-default px-3 py-2 text-sm font-semibold text-content-secondary transition hover:bg-surface-subtle dark:border-outline-default dark:text-content-secondary hover:bg-kaori-soft">
                                                         <i data-lucide="copy" class="h-4 w-4"></i>
                                                         Duplicate
                                                     </button>
@@ -268,28 +266,28 @@
                                     </div>
                                     <div x-show="detailsOpen"
                                          x-collapse
-                                         class="mt-5 border-t border-slate-100 pt-4 dark:border-slate-800">
+                                         class="mt-5 border-t border-outline-default pt-4 dark:border-outline-default">
                                         <div class="grid gap-3 text-sm md:grid-cols-2 xl:grid-cols-3">
-                                            <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
-                                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Domain</p>
-                                                <p class="mt-1 font-semibold text-slate-800 dark:text-slate-100">{{ template.report_domain_label }} / {{ template.source_kind_label }}</p>
+                                            <div class="rounded-2xl bg-surface-subtle p-4 bg-surface-subtle">
+                                                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Domain</p>
+                                                <p class="mt-1 font-semibold text-content-primary dark:text-content-primary">{{ template.report_domain_label }} / {{ template.source_kind_label }}</p>
                                             </div>
-                                            <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
-                                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Output</p>
-                                                <p class="mt-1 font-semibold text-slate-800 dark:text-slate-100">{{ template.output_format }} · {{ template.customization_status }}</p>
+                                            <div class="rounded-2xl bg-surface-subtle p-4 bg-surface-subtle">
+                                                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Output</p>
+                                                <p class="mt-1 font-semibold text-content-primary dark:text-content-primary">{{ template.output_format }} · {{ template.customization_status }}</p>
                                             </div>
-                                            <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
-                                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Ownership</p>
-                                                <p class="mt-1 font-semibold text-slate-800 dark:text-slate-100">{{ template.created_by_label }}</p>
-                                                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Updated {{ template.updated_label }}</p>
+                                            <div class="rounded-2xl bg-surface-subtle p-4 bg-surface-subtle">
+                                                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Ownership</p>
+                                                <p class="mt-1 font-semibold text-content-primary dark:text-content-primary">{{ template.created_by_label }}</p>
+                                                <p class="mt-1 text-xs text-content-muted dark:text-content-muted">Updated {{ template.updated_label }}</p>
                                             </div>
                                         </div>
                                         <div class="mt-4">
-                                            <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Template Sections</p>
+                                            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Template Sections</p>
                                             <div class="mt-3 flex flex-wrap gap-2">
                                                 {% for section in template.sections %}
-                                                    <span class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
-                                                        <i data-lucide="check" class="h-3.5 w-3.5 text-blue-500"></i>
+                                                    <span class="inline-flex items-center gap-1.5 rounded-lg border border-outline-default bg-surface-subtle px-2.5 py-1 text-xs font-semibold text-content-secondary dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
+                                                        <i data-lucide="check" class="h-3.5 w-3.5 text-white/900"></i>
                                                         {{ section }}
                                                     </span>
                                                 {% endfor %}
@@ -299,16 +297,16 @@
                                 </div>
                             </article>
                         {% else %}
-                            <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                                <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+                            <div class="rounded-2xl border border-dashed border-outline-default bg-white p-8 text-center shadow-sm dark:border-outline-default bg-surface-card">
+                                <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-kaori-soft text-content-muted bg-kaori-soft dark:text-content-secondary">
                                     <i data-lucide="search-x" class="h-6 w-6"></i>
                                 </div>
-                                <h3 class="mt-4 text-base font-semibold text-slate-900 dark:text-white">No templates matched the selected filters</h3>
-                                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Clear filters or search with a different report type or template keyword.</p>
+                                <h3 class="mt-4 text-base font-semibold text-content-primary text-content-primary">No templates matched the selected filters</h3>
+                                <p class="mt-1 text-sm text-content-muted dark:text-content-muted">Clear filters or search with a different report type or template keyword.</p>
                             </div>
                         {% endfor %}
                     </div>
-                    <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                    <div class="rounded-2xl border border-outline-default bg-white px-4 py-3 shadow-sm dark:border-outline-default bg-surface-card">
                         <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                             <form method="GET"
                                   action="{{ url_for('reports.report_templates') }}"
@@ -317,7 +315,7 @@
                                   hx-select="#templates-registry"
                                   hx-swap="outerHTML"
                                   hx-push-url="true"
-                                  class="flex flex-wrap items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                                  class="flex flex-wrap items-center gap-2 text-sm text-content-muted dark:text-content-muted">
                                 <input type="hidden"
                                        name="report_type"
                                        value="{{ payload.selected_filters.report_type }}">
@@ -336,7 +334,7 @@
                                         hx-swap="outerHTML"
                                         hx-push-url="true"
                                         hx-include="closest form"
-                                        class="rounded-lg border border-slate-300 bg-white px-2 py-1 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                                        class="rounded-lg border border-outline-default bg-white px-2 py-1 text-sm font-semibold text-content-secondary dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
                                     {% for option in payload.pagination.per_page_options %}
                                         <option value="{{ option }}"
                                                 {% if payload.pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
@@ -350,18 +348,18 @@
                                    hx-select="#templates-registry"
                                    hx-swap="outerHTML"
                                    hx-push-url="true"
-                                   class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold transition dark:border-slate-700 {% if not payload.pagination.has_previous %}pointer-events-none text-slate-300 dark:text-slate-600{% else %}text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800{% endif %}">
+                                   class="inline-flex items-center gap-2 rounded-xl border border-outline-default px-3 py-2 text-sm font-semibold transition dark:border-outline-default {% if not payload.pagination.has_previous %}pointer-events-none text-content-secondary dark:text-content-secondary{% else %}text-content-secondary hover:bg-surface-subtle dark:text-content-secondary hover:bg-kaori-soft{% endif %}">
                                     <i data-lucide="chevron-left" class="h-4 w-4"></i>
                                     Prev
                                 </a>
-                                <span class="rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">{{ payload.pagination.page }} / {{ payload.pagination.total_pages }}</span>
+                                <span class="rounded-xl bg-kaori-soft px-3 py-2 text-xs font-semibold text-content-secondary bg-kaori-soft dark:text-content-secondary">{{ payload.pagination.page }} / {{ payload.pagination.total_pages }}</span>
                                 <a href="{{ payload.pagination.next_href }}"
                                    hx-get="{{ payload.pagination.next_href }}"
                                    hx-target="#templates-registry"
                                    hx-select="#templates-registry"
                                    hx-swap="outerHTML"
                                    hx-push-url="true"
-                                   class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold transition dark:border-slate-700 {% if not payload.pagination.has_next %}pointer-events-none text-slate-300 dark:text-slate-600{% else %}text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800{% endif %}">
+                                   class="inline-flex items-center gap-2 rounded-xl border border-outline-default px-3 py-2 text-sm font-semibold transition dark:border-outline-default {% if not payload.pagination.has_next %}pointer-events-none text-content-secondary dark:text-content-secondary{% else %}text-content-secondary hover:bg-surface-subtle dark:text-content-secondary hover:bg-kaori-soft{% endif %}">
                                     Next
                                     <i data-lucide="chevron-right" class="h-4 w-4"></i>
                                 </a>
@@ -373,26 +371,26 @@
             <aside class="space-y-6">
                 {% set form = payload.edit_template or payload.create_form %}
                 <section id="custom-template-form"
-                         class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                         class="rounded-2xl border border-outline-default bg-white p-5 shadow-sm dark:border-outline-default bg-surface-card">
                     <div class="flex items-start justify-between gap-4">
                         <div class="flex items-center gap-3">
-                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
                                 <i data-lucide="pencil-ruler" class="h-4 w-4"></i>
                             </div>
                             <div>
-                                <h2 class="text-base font-semibold text-slate-950 dark:text-white">
+                                <h2 class="text-base font-semibold text-content-primary text-content-primary">
                                     {% if payload.edit_template %}
                                         Edit Custom Template
                                     {% else %}
                                         Create Custom Template
                                     {% endif %}
                                 </h2>
-                                <p class="text-xs text-slate-500 dark:text-slate-400">Custom templates pre-fill Generate Report with selected sections.</p>
+                                <p class="text-xs text-content-muted dark:text-content-muted">Custom templates pre-fill Generate Report with selected sections.</p>
                             </div>
                         </div>
                         {% if payload.edit_template %}
                             <a href="{{ url_for('reports.report_templates') }}#custom-template-form"
-                               class="text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-300">New</a>
+                               class="text-xs font-semibold text-kaori-primary hover:text-kaori-primary dark:text-kaori-primary">New</a>
                         {% endif %}
                     </div>
                     <form method="POST"
@@ -401,27 +399,27 @@
                           data-template-form>
                         {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                         <label class="block">
-                            <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Template Name</span>
+                            <span class="text-xs font-medium text-content-muted dark:text-content-muted">Template Name</span>
                             <input type="text"
                                    name="name"
                                    required
                                    value="{{ form.name }}"
                                    placeholder="Example: Weekly Capacity Review"
-                                   class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                                   class="mt-1 w-full rounded-xl border border-outline-default bg-white px-3 py-2 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
                         </label>
                         <label class="block">
-                            <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Description</span>
+                            <span class="text-xs font-medium text-content-muted dark:text-content-muted">Description</span>
                             <textarea name="description"
                                       rows="3"
                                       placeholder="Describe when this template should be used."
-                                      class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">{{ form.description }}</textarea>
+                                      class="mt-1 w-full rounded-xl border border-outline-default bg-white px-3 py-2 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 dark:border-outline-default bg-surface-subtle dark:text-content-secondary">{{ form.description }}</textarea>
                         </label>
                         <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
                             <label class="block">
-                                <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Report Type</span>
+                                <span class="text-xs font-medium text-content-muted dark:text-content-muted">Report Type</span>
                                 <select name="report_type"
                                         data-template-report-type
-                                        class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                                        class="mt-1 w-full rounded-xl border border-outline-default bg-white px-3 py-2 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
                                     {% for option in payload.filter_options.report_types %}
                                         {% if option.value %}
                                             <option value="{{ option.value }}"
@@ -431,9 +429,9 @@
                                 </select>
                             </label>
                             <label class="block">
-                                <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Status</span>
+                                <span class="text-xs font-medium text-content-muted dark:text-content-muted">Status</span>
                                 <select name="status"
-                                        class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                                        class="mt-1 w-full rounded-xl border border-outline-default bg-white px-3 py-2 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
                                     <option value="draft" {% if form.status == 'draft' %}selected{% endif %}>Draft</option>
                                     <option value="active" {% if form.status == 'active' %}selected{% endif %}>Active</option>
                                 </select>
@@ -441,25 +439,25 @@
                         </div>
                         <div>
                             <div class="flex items-center justify-between gap-3">
-                                <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Sections</span>
+                                <span class="text-xs font-medium text-content-muted dark:text-content-muted">Sections</span>
                                 <button type="button"
                                         data-template-reset-sections
-                                        class="text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-300">Reset default</button>
+                                        class="text-xs font-semibold text-kaori-primary hover:text-kaori-primary dark:text-kaori-primary">Reset default</button>
                             </div>
                             <div class="mt-2 space-y-2" data-template-section-list>
                                 {% for report_type, options in payload.section_options_by_report_type.items() %}
                                     <div data-template-section-group="{{ report_type }}"
                                          class="space-y-2 {% if form.report_type != report_type %}hidden{% endif %}">
                                         {% for option in options %}
-                                            <label class="flex gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm transition hover:border-blue-200 dark:border-slate-700 dark:bg-slate-950 dark:hover:border-blue-800">
+                                            <label class="flex gap-3 rounded-xl border border-outline-default bg-surface-subtle p-3 text-sm transition hover:border-brand-outline dark:border-outline-default bg-surface-subtle hover:border-brand-outline">
                                                 <input type="checkbox"
                                                        name="sections"
                                                        value="{{ option.value }}"
                                                        {% if option.value in form.sections %}checked{% endif %}
-                                                       class="mt-1 rounded border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-900">
+                                                       class="mt-1 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary/20 border-outline-default bg-surface-card">
                                                 <span>
-                                                    <span class="font-semibold text-slate-700 dark:text-slate-200">{{ option.label }}</span>
-                                                    <span class="block text-xs leading-5 text-slate-500 dark:text-slate-400">{{ option.description }}</span>
+                                                    <span class="font-semibold text-content-secondary dark:text-content-secondary">{{ option.label }}</span>
+                                                    <span class="block text-xs leading-5 text-content-muted dark:text-content-muted">{{ option.description }}</span>
                                                 </span>
                                             </label>
                                         {% endfor %}
@@ -468,7 +466,7 @@
                             </div>
                         </div>
                         <button type="submit"
-                                class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">
+                                class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-kaori-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-kaori-primary">
                             <i data-lucide="save" class="h-4 w-4"></i>
                             {% if payload.edit_template %}
                                 Save Template
@@ -479,31 +477,31 @@
                     </form>
                 </section>
                 <section x-data="{ open: false }"
-                         class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                         class="rounded-2xl border border-outline-default bg-white shadow-sm dark:border-outline-default bg-surface-card">
                     <button type="button"
                             @click="open = !open"
                             class="flex w-full items-center justify-between gap-4 px-5 py-4 text-left">
                         <span class="flex min-w-0 items-center gap-3">
-                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
                                 <i data-lucide="book-open" class="h-[18px] w-[18px]"></i>
                             </span>
                             <span class="min-w-0">
-                                <span class="block text-base font-semibold text-slate-950 dark:text-white">Template Context</span>
-                                <span class="block text-xs text-slate-500 dark:text-slate-400">How templates are used by the report workflow.</span>
+                                <span class="block text-base font-semibold text-content-primary text-content-primary">Template Context</span>
+                                <span class="block text-xs text-content-muted dark:text-content-muted">How templates are used by the report workflow.</span>
                             </span>
                         </span>
-                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-500 dark:border-slate-700 dark:text-slate-300">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-outline-default text-content-muted dark:border-outline-default dark:text-content-secondary">
                             <i x-show="!open" data-lucide="chevron-down" class="h-4 w-4"></i>
                             <i x-show="open" data-lucide="chevron-up" class="h-4 w-4"></i>
                         </span>
                     </button>
                     <div x-show="open"
                          x-collapse
-                         class="border-t border-slate-100 px-5 pb-5 pt-4 dark:border-slate-800">
+                         class="border-t border-outline-default px-5 pb-5 pt-4 dark:border-outline-default">
                         <ul class="space-y-3">
                             {% for item in payload.template_context %}
-                                <li class="flex gap-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                                    <span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500"></span>
+                                <li class="flex gap-3 text-sm leading-6 text-content-secondary dark:text-content-secondary">
+                                    <span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-kaori-primary"></span>
                                     <span>{{ item }}</span>
                                 </li>
                             {% endfor %}
@@ -511,43 +509,43 @@
                     </div>
                 </section>
                 <section x-data="{ open: false }"
-                         class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                         class="rounded-2xl border border-outline-default bg-white shadow-sm dark:border-outline-default bg-surface-card">
                     <button type="button"
                             @click="open = !open"
                             class="flex w-full items-center justify-between gap-4 px-5 py-4 text-left">
                         <span class="flex min-w-0 items-center gap-3">
-                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
                                 <i data-lucide="workflow" class="h-[18px] w-[18px]"></i>
                             </span>
                             <span class="min-w-0">
-                                <span class="block text-base font-semibold text-slate-950 dark:text-white">Renderer Readiness</span>
-                                <span class="block text-xs text-slate-500 dark:text-slate-400">PDF output readiness for system and custom templates.</span>
+                                <span class="block text-base font-semibold text-content-primary text-content-primary">Renderer Readiness</span>
+                                <span class="block text-xs text-content-muted dark:text-content-muted">PDF output readiness for system and custom templates.</span>
                             </span>
                         </span>
-                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-500 dark:border-slate-700 dark:text-slate-300">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-outline-default text-content-muted dark:border-outline-default dark:text-content-secondary">
                             <i x-show="!open" data-lucide="chevron-down" class="h-4 w-4"></i>
                             <i x-show="open" data-lucide="chevron-up" class="h-4 w-4"></i>
                         </span>
                     </button>
                     <div x-show="open"
                          x-collapse
-                         class="divide-y divide-slate-100 border-t border-slate-100 dark:divide-slate-800 dark:border-slate-800">
+                         class="divide-y divide-outline-default border-t border-outline-default divide-outline-default dark:border-outline-default">
                         {% for item in payload.renderer_readiness %}
                             {% set tone_class = {
-                                                            'blue': 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300',
+                                                            'blue': 'bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary',
                                                             'green': 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300',
-                                                            'gray': 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
+                                                            'gray': 'bg-kaori-soft text-content-secondary bg-kaori-soft dark:text-content-secondary',
                                                             'amber': 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300'
-                                                        }.get(item.tone, 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300') %}
+                                                        }.get(item.tone, 'bg-kaori-soft text-content-secondary bg-kaori-soft dark:text-content-secondary') %}
                             <div class="px-5 py-4">
                                 <div class="flex items-center justify-between gap-3">
                                     <div class="flex items-center gap-2">
-                                        <i data-lucide="{{ item.icon }}" class="h-4 w-4 text-blue-500"></i>
-                                        <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ item.label }}</p>
+                                        <i data-lucide="{{ item.icon }}" class="h-4 w-4 text-white/900"></i>
+                                        <p class="text-sm font-semibold text-content-primary dark:text-content-primary">{{ item.label }}</p>
                                     </div>
                                     <span class="rounded-lg px-2 py-1 text-xs font-semibold {{ tone_class }}">{{ item.status }}</span>
                                 </div>
-                                <p class="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">{{ item.description }}</p>
+                                <p class="mt-2 text-xs leading-5 text-content-muted dark:text-content-muted">{{ item.description }}</p>
                             </div>
                         {% endfor %}
                     </div>

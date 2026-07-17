@@ -2,36 +2,36 @@
 {% block title %}Report Schedules{% endblock title %}
 {% block dashboard_content %}
     <div class="space-y-6">
-        <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+        <section class="rounded-2xl border border-outline-default bg-white p-6 shadow-sm dark:border-outline-default bg-surface-card">
             <div class="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
                 <div class="flex items-start gap-4">
-                    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-300">
+                    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
                         <i data-lucide="calendar-clock" class="h-6 w-6"></i>
                     </div>
                     <div>
                         <div class="mb-2 flex flex-wrap items-center gap-2">
-                            <span class="inline-flex items-center gap-1.5 rounded-md bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-600/20 dark:bg-blue-950/50 dark:text-blue-300 dark:ring-blue-400/20">
+                            <span class="inline-flex items-center gap-1.5 rounded-md bg-kaori-soft px-2.5 py-1 text-xs font-semibold text-kaori-primary ring-1 ring-inset ring-brand-outline bg-kaori-soft dark:text-kaori-primary ring-brand-outline">
                                 <i data-lucide="play-circle" class="h-3.5 w-3.5"></i>
                                 {{ payload.status_label }}
                             </span>
-                            <span class="inline-flex items-center gap-1.5 rounded-md bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 ring-1 ring-inset ring-slate-600/20 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-400/20">
+                            <span class="inline-flex items-center gap-1.5 rounded-md bg-kaori-soft px-2.5 py-1 text-xs font-semibold text-content-secondary ring-1 ring-inset ring-slate-600/20 bg-kaori-soft dark:text-content-secondary dark:ring-slate-400/20">
                                 <i data-lucide="hard-drive" class="h-3.5 w-3.5"></i>
                                 Storage {{ payload.storage_context.status }}
                             </span>
                         </div>
-                        <h1 class="text-3xl font-bold tracking-tight text-slate-950 dark:text-white">{{ payload.page_title }}</h1>
-                        <p class="mt-1 max-w-3xl text-sm leading-6 text-slate-500 sm:text-base dark:text-slate-400">{{ payload.page_subtitle }}</p>
-                        <p class="mt-2 max-w-3xl text-xs leading-5 text-slate-500 dark:text-slate-400">{{ payload.status_description }}</p>
+                        <h1 class="text-3xl font-bold tracking-tight text-content-primary text-content-primary">{{ payload.page_title }}</h1>
+                        <p class="mt-1 max-w-3xl text-sm leading-6 text-content-muted sm:text-base dark:text-content-muted">{{ payload.page_subtitle }}</p>
+                        <p class="mt-2 max-w-3xl text-xs leading-5 text-content-muted dark:text-content-muted">{{ payload.status_description }}</p>
                     </div>
                 </div>
                 <div class="flex flex-wrap items-center gap-3">
                     <a href="{{ url_for('reports.schedules') }}"
-                       class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-blue-200 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-blue-700 dark:hover:text-blue-300">
+                       class="inline-flex items-center justify-center gap-2 rounded-xl border border-outline-default bg-white px-4 py-2 text-sm font-semibold text-content-secondary shadow-sm transition hover:border-brand-outline hover:text-kaori-primary dark:border-outline-default bg-surface-subtle dark:text-content-secondary hover:border-brand-outline dark:hover:text-kaori-primary">
                         <i data-lucide="refresh-cw" class="h-4 w-4"></i>
                         Refresh
                     </a>
                     <a href="{{ url_for('reports.generated_reports') }}"
-                       class="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600">
+                       class="inline-flex items-center justify-center gap-2 rounded-xl bg-kaori-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-kaori-primary bg-kaori-primary dark:hover:bg-kaori-primary">
                         <i data-lucide="files" class="h-4 w-4"></i>
                         Generated Reports
                     </a>
@@ -41,20 +41,20 @@
         <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {% for card in payload.summary_cards %}
                 {% set tone_class = {
-                                    'blue': 'bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300',
+                                    'blue': 'bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary',
                                     'green': 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-300',
                                     'purple': 'bg-violet-50 text-violet-600 dark:bg-violet-950/50 dark:text-violet-300',
                                     'red': 'bg-rose-50 text-rose-600 dark:bg-rose-950/50 dark:text-rose-300'
-                                }.get(card.tone, 'bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-300') %}
-                <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                                }.get(card.tone, 'bg-surface-subtle text-content-secondary bg-kaori-soft dark:text-content-secondary') %}
+                <article class="rounded-2xl border border-outline-default bg-white p-5 shadow-sm dark:border-outline-default bg-surface-card">
                     <div class="flex items-start gap-4">
                         <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl {{ tone_class }}">
                             <i data-lucide="{{ card.icon }}" class="h-6 w-6"></i>
                         </div>
                         <div>
-                            <p class="text-sm font-semibold text-slate-600 dark:text-slate-300">{{ card.label }}</p>
-                            <p class="mt-2 text-3xl font-bold tracking-tight text-slate-950 dark:text-white">{{ card.value }}</p>
-                            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ card.caption }}</p>
+                            <p class="text-sm font-semibold text-content-secondary dark:text-content-secondary">{{ card.label }}</p>
+                            <p class="mt-2 text-3xl font-bold tracking-tight text-content-primary text-content-primary">{{ card.value }}</p>
+                            <p class="mt-1 text-sm text-content-muted dark:text-content-muted">{{ card.caption }}</p>
                         </div>
                     </div>
                 </article>
@@ -75,44 +75,44 @@
         {% endif %}
         <section class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
             <div class="space-y-6">
-                <section class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                    <div class="border-b border-slate-200 px-5 py-4 dark:border-slate-700">
+                <section class="rounded-2xl border border-outline-default bg-white shadow-sm dark:border-outline-default bg-surface-card">
+                    <div class="border-b border-outline-default px-5 py-4 dark:border-outline-default">
                         <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                             <div>
-                                <h2 class="text-base font-semibold text-slate-950 dark:text-white">Configured Schedules</h2>
-                                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Recurring schedules create normal generated report records and PDF artifacts.</p>
+                                <h2 class="text-base font-semibold text-content-primary text-content-primary">Configured Schedules</h2>
+                                <p class="mt-1 text-xs text-content-muted dark:text-content-muted">Recurring schedules create normal generated report records and PDF artifacts.</p>
                             </div>
-                            <span class="inline-flex w-fit items-center gap-2 rounded-xl bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                            <span class="inline-flex w-fit items-center gap-2 rounded-xl bg-kaori-soft px-3 py-1.5 text-xs font-semibold text-content-secondary bg-kaori-soft dark:text-content-secondary">
                                 <i data-lucide="terminal" class="h-3.5 w-3.5"></i>
                                 flask run-report-schedules
                             </span>
                         </div>
                     </div>
-                    <div class="divide-y divide-slate-100 dark:divide-slate-800">
+                    <div class="divide-y divide-outline-default divide-outline-default">
                         {% if payload.schedules %}
                             {% for schedule in payload.schedules %}
                                 {% set status_class = {
                                                                     'green': 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-400/20',
-                                                                    'gray': 'bg-slate-100 text-slate-700 ring-slate-600/20 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-400/20'
-                                                                }.get(schedule.status_meta.tone, 'bg-slate-100 text-slate-700 ring-slate-600/20 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-400/20') %}
+                                                                    'gray': 'bg-kaori-soft text-content-secondary ring-slate-600/20 bg-kaori-soft dark:text-content-secondary dark:ring-slate-400/20'
+                                                                }.get(schedule.status_meta.tone, 'bg-kaori-soft text-content-secondary ring-slate-600/20 bg-kaori-soft dark:text-content-secondary dark:ring-slate-400/20') %}
                                 <article class="p-5">
                                     <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                                         <div class="min-w-0 flex-1">
                                             <div class="flex flex-wrap items-center gap-2">
-                                                <h3 class="text-sm font-semibold text-slate-950 dark:text-white">{{ schedule.name }}</h3>
+                                                <h3 class="text-sm font-semibold text-content-primary text-content-primary">{{ schedule.name }}</h3>
                                                 <span class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold ring-1 ring-inset {{ status_class }}">
                                                     <i data-lucide="{{ schedule.status_meta.icon }}" class="h-3.5 w-3.5"></i>
                                                     {{ schedule.status_meta.label }}
                                                 </span>
                                             </div>
-                                            <p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">{{ schedule.description }}</p>
-                                            <div class="mt-3 grid gap-2 text-xs text-slate-500 dark:text-slate-400 md:grid-cols-2 xl:grid-cols-3">
-                                                <span><strong class="text-slate-700 dark:text-slate-200">Type:</strong> {{ schedule.report_type }}</span>
-                                                <span><strong class="text-slate-700 dark:text-slate-200">Scope:</strong> {{ schedule.cluster }} / {{ schedule.namespace }}</span>
-                                                <span><strong class="text-slate-700 dark:text-slate-200">Cadence:</strong> {{ schedule.cadence }} at {{ schedule.run_time }} {{ schedule.timezone }}</span>
-                                                <span><strong class="text-slate-700 dark:text-slate-200">Next:</strong> {{ schedule.next_run_at }}</span>
-                                                <span><strong class="text-slate-700 dark:text-slate-200">Last:</strong> {{ schedule.last_run_at }}</span>
-                                                <span><strong class="text-slate-700 dark:text-slate-200">Sections:</strong> {{ schedule.sections_count }}</span>
+                                            <p class="mt-1 text-xs leading-5 text-content-muted dark:text-content-muted">{{ schedule.description }}</p>
+                                            <div class="mt-3 grid gap-2 text-xs text-content-muted dark:text-content-muted md:grid-cols-2 xl:grid-cols-3">
+                                                <span><strong class="text-content-secondary dark:text-content-secondary">Type:</strong> {{ schedule.report_type }}</span>
+                                                <span><strong class="text-content-secondary dark:text-content-secondary">Scope:</strong> {{ schedule.cluster }} / {{ schedule.namespace }}</span>
+                                                <span><strong class="text-content-secondary dark:text-content-secondary">Cadence:</strong> {{ schedule.cadence }} at {{ schedule.run_time }} {{ schedule.timezone }}</span>
+                                                <span><strong class="text-content-secondary dark:text-content-secondary">Next:</strong> {{ schedule.next_run_at }}</span>
+                                                <span><strong class="text-content-secondary dark:text-content-secondary">Last:</strong> {{ schedule.last_run_at }}</span>
+                                                <span><strong class="text-content-secondary dark:text-content-secondary">Sections:</strong> {{ schedule.sections_count }}</span>
                                             </div>
                                         </div>
                                         <div class="flex flex-wrap justify-start gap-2 lg:justify-end">
@@ -120,7 +120,7 @@
                                                   action="{{ url_for('reports.run_schedule', schedule_id=schedule.id) }}">
                                                 {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                                                 <button type="submit"
-                                                        class="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600">
+                                                        class="inline-flex items-center gap-1.5 rounded-lg bg-kaori-primary px-3 py-2 text-xs font-semibold text-white hover:bg-kaori-primary bg-kaori-primary dark:hover:bg-kaori-primary">
                                                     <i data-lucide="play" class="h-3.5 w-3.5"></i> Run now
                                                 </button>
                                             </form>
@@ -128,7 +128,7 @@
                                                   action="{{ url_for('reports.toggle_schedule', schedule_id=schedule.id) }}">
                                                 {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                                                 <button type="submit"
-                                                        class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:border-blue-200 hover:text-blue-700 dark:border-slate-700 dark:text-slate-200 dark:hover:border-blue-700 dark:hover:text-blue-300">
+                                                        class="inline-flex items-center gap-1.5 rounded-lg border border-outline-default px-3 py-2 text-xs font-semibold text-content-secondary hover:border-brand-outline hover:text-kaori-primary dark:border-outline-default dark:text-content-secondary hover:border-brand-outline dark:hover:text-kaori-primary">
                                                     <i data-lucide="{{ 'pause' if schedule.is_enabled else 'play' }}"
                                                        class="h-3.5 w-3.5"></i>
                                                     {{ 'Pause' if schedule.is_enabled else 'Enable' }}
@@ -136,14 +136,14 @@
                                             </form>
                                             {% if schedule.last_report_id %}
                                                 <a href="{{ url_for('reports.generated_report_detail', report_id=schedule.last_report_id) }}"
-                                                   class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:border-blue-200 hover:text-blue-700 dark:border-slate-700 dark:text-slate-200 dark:hover:border-blue-700 dark:hover:text-blue-300">
+                                                   class="inline-flex items-center gap-1.5 rounded-lg border border-outline-default px-3 py-2 text-xs font-semibold text-content-secondary hover:border-brand-outline hover:text-kaori-primary dark:border-outline-default dark:text-content-secondary hover:border-brand-outline dark:hover:text-kaori-primary">
                                                     <i data-lucide="file-text" class="h-3.5 w-3.5"></i> Last report
                                                 </a>
                                             {% endif %}
                                         </div>
                                     </div>
-                                    <details class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/50">
-                                        <summary class="cursor-pointer text-xs font-semibold text-slate-700 dark:text-slate-200">Edit schedule</summary>
+                                    <details class="mt-4 rounded-xl border border-outline-default bg-surface-subtle p-4 dark:border-outline-default bg-surface-subtle">
+                                        <summary class="cursor-pointer text-xs font-semibold text-content-secondary dark:text-content-secondary">Edit schedule</summary>
                                         <form method="POST"
                                               action="{{ url_for('reports.update_schedule', schedule_id=schedule.id) }}"
                                               class="mt-4 grid gap-4">
@@ -152,26 +152,26 @@
                                             {% endif %}
                                             <div class="grid gap-3 md:grid-cols-2">
                                                 <label class="block">
-                                                    <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Name</span>
+                                                    <span class="text-xs font-medium text-content-muted dark:text-content-muted">Name</span>
                                                     <input name="name"
                                                            value="{{ schedule.edit_state.name }}"
-                                                           class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                                                           class="mt-1 w-full rounded-xl border border-outline-default bg-white px-3 py-2 text-sm dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
                                                 </label>
                                                 <label class="block">
-                                                    <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Timezone</span>
+                                                    <span class="text-xs font-medium text-content-muted dark:text-content-muted">Timezone</span>
                                                     <input name="timezone"
                                                            value="{{ schedule.edit_state.timezone }}"
-                                                           class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                                                           class="mt-1 w-full rounded-xl border border-outline-default bg-white px-3 py-2 text-sm dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
                                                 </label>
                                             </div>
                                             <label class="block">
-                                                <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Description</span><textarea name="description" rows="2" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">{{ schedule.edit_state.description }}</textarea>
+                                                <span class="text-xs font-medium text-content-muted dark:text-content-muted">Description</span><textarea name="description" rows="2" class="mt-1 w-full rounded-xl border border-outline-default bg-white px-3 py-2 text-sm dark:border-outline-default bg-surface-subtle dark:text-content-secondary">{{ schedule.edit_state.description }}</textarea>
                                             </label>
                                             <div class="grid gap-3 md:grid-cols-3">
                                                 <label class="block">
-                                                    <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Report Type</span>
+                                                    <span class="text-xs font-medium text-content-muted dark:text-content-muted">Report Type</span>
                                                     <select name="report_type"
-                                                            class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                                                            class="mt-1 w-full rounded-xl border border-outline-default bg-white px-3 py-2 text-sm dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
                                                         {% for option in payload.report_type_options %}
                                                             <option value="{{ option.value }}"
                                                                     {% if schedule.edit_state.report_type == option.value %}selected{% endif %}>{{ option.label }}</option>
@@ -179,9 +179,9 @@
                                                     </select>
                                                 </label>
                                                 <label class="block">
-                                                    <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Cluster</span>
+                                                    <span class="text-xs font-medium text-content-muted dark:text-content-muted">Cluster</span>
                                                     <select name="cluster_id"
-                                                            class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                                                            class="mt-1 w-full rounded-xl border border-outline-default bg-white px-3 py-2 text-sm dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
                                                         {% for option in payload.clusters %}
                                                             <option value="{{ option.value }}"
                                                                     {% if schedule.edit_state.cluster_id == option.value %}selected{% endif %}>{{ option.label }}</option>
@@ -189,18 +189,18 @@
                                                     </select>
                                                 </label>
                                                 <label class="block">
-                                                    <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Namespace</span>
+                                                    <span class="text-xs font-medium text-content-muted dark:text-content-muted">Namespace</span>
                                                     <input name="namespace"
                                                            value="{{ schedule.edit_state.namespace }}"
                                                            placeholder="Optional"
-                                                           class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                                                           class="mt-1 w-full rounded-xl border border-outline-default bg-white px-3 py-2 text-sm dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
                                                 </label>
                                             </div>
                                             <div class="grid gap-3 md:grid-cols-4">
                                                 <label class="block">
-                                                    <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Period</span>
+                                                    <span class="text-xs font-medium text-content-muted dark:text-content-muted">Period</span>
                                                     <select name="period"
-                                                            class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                                                            class="mt-1 w-full rounded-xl border border-outline-default bg-white px-3 py-2 text-sm dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
                                                         {% for option in payload.period_options %}
                                                             <option value="{{ option.value }}"
                                                                     {% if schedule.edit_state.period == option.value %}selected{% endif %}>{{ option.label }}</option>
@@ -208,9 +208,9 @@
                                                     </select>
                                                 </label>
                                                 <label class="block">
-                                                    <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Cadence</span>
+                                                    <span class="text-xs font-medium text-content-muted dark:text-content-muted">Cadence</span>
                                                     <select name="cadence"
-                                                            class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                                                            class="mt-1 w-full rounded-xl border border-outline-default bg-white px-3 py-2 text-sm dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
                                                         {% for option in payload.cadence_options %}
                                                             <option value="{{ option.value }}"
                                                                     {% if schedule.edit_state.cadence == option.value %}selected{% endif %}>{{ option.label }}</option>
@@ -218,17 +218,17 @@
                                                     </select>
                                                 </label>
                                                 <label class="block">
-                                                    <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Run Time</span>
+                                                    <span class="text-xs font-medium text-content-muted dark:text-content-muted">Run Time</span>
                                                     <input type="time"
                                                            name="run_time"
                                                            value="{{ schedule.edit_state.run_time }}"
-                                                           class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                                                           class="mt-1 w-full rounded-xl border border-outline-default bg-white px-3 py-2 text-sm dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
                                                 </label>
                                                 <label class="block">
-                                                    <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Day</span>
+                                                    <span class="text-xs font-medium text-content-muted dark:text-content-muted">Day</span>
                                                     <input name="day_of_month"
                                                            value="{{ schedule.edit_state.day_of_month }}"
-                                                           class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                                                           class="mt-1 w-full rounded-xl border border-outline-default bg-white px-3 py-2 text-sm dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
                                                 </label>
                                             </div>
                                             <input type="hidden" name="output_format" value="pdf">
@@ -243,7 +243,7 @@
                                                    value="{{ schedule.edit_state.is_enabled }}">
                                             <div class="flex flex-wrap justify-end gap-2">
                                                 <button type="submit"
-                                                        class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"><i data-lucide="save" class="h-4 w-4"></i>Save changes</button>
+                                                        class="inline-flex items-center gap-2 rounded-xl bg-kaori-primary px-4 py-2 text-sm font-semibold text-white hover:bg-kaori-primary bg-kaori-primary dark:hover:bg-kaori-primary"><i data-lucide="save" class="h-4 w-4"></i>Save changes</button>
                                             </div>
                                         </form>
                                         <form method="POST"
@@ -259,54 +259,54 @@
                             {% endfor %}
                         {% else %}
                             <div class="p-10 text-center">
-                                <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+                                <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-kaori-soft text-content-muted bg-kaori-soft dark:text-content-secondary">
                                     <i data-lucide="calendar-plus" class="h-6 w-6"></i>
                                 </div>
-                                <h3 class="mt-4 text-sm font-semibold text-slate-950 dark:text-white">No schedules yet</h3>
-                                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Create the first recurring report schedule from the form on the right.</p>
+                                <h3 class="mt-4 text-sm font-semibold text-content-primary text-content-primary">No schedules yet</h3>
+                                <p class="mt-1 text-sm text-content-muted dark:text-content-muted">Create the first recurring report schedule from the form on the right.</p>
                             </div>
                         {% endif %}
                     </div>
                 </section>
-                <section class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                    <div class="border-b border-slate-200 px-5 py-4 dark:border-slate-700">
-                        <h2 class="text-base font-semibold text-slate-950 dark:text-white">Recent Schedule Runs</h2>
-                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Execution history created by Run now and the CLI runner.</p>
+                <section class="rounded-2xl border border-outline-default bg-white shadow-sm dark:border-outline-default bg-surface-card">
+                    <div class="border-b border-outline-default px-5 py-4 dark:border-outline-default">
+                        <h2 class="text-base font-semibold text-content-primary text-content-primary">Recent Schedule Runs</h2>
+                        <p class="mt-1 text-xs text-content-muted dark:text-content-muted">Execution history created by Run now and the CLI runner.</p>
                     </div>
-                    <div class="divide-y divide-slate-100 dark:divide-slate-800">
+                    <div class="divide-y divide-outline-default divide-outline-default">
                         {% if payload.recent_runs %}
                             {% for run in payload.recent_runs %}
                                 <div class="flex flex-col gap-3 px-5 py-4 md:flex-row md:items-center md:justify-between">
                                     <div>
-                                        <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ run.schedule_name }}</p>
-                                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ run.trigger_source }} • started {{ run.started_at }} • finished {{ run.finished_at }}</p>
+                                        <p class="text-sm font-semibold text-content-primary dark:text-content-primary">{{ run.schedule_name }}</p>
+                                        <p class="mt-1 text-xs text-content-muted dark:text-content-muted">{{ run.trigger_source }} • started {{ run.started_at }} • finished {{ run.finished_at }}</p>
                                         {% if run.error_message %}
                                             <p class="mt-1 text-xs text-rose-600 dark:text-rose-300">{{ run.error_message }}</p>
                                         {% endif %}
                                     </div>
                                     <div class="flex items-center gap-2">
-                                        <span class="rounded-md px-2.5 py-1 text-xs font-semibold {{ 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300' if run.status_tone == 'green' else 'bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300' if run.status_tone == 'red' else 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300' }}">{{ run.status_label }}</span>
+                                        <span class="rounded-md px-2.5 py-1 text-xs font-semibold {{ 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300' if run.status_tone == 'green' else 'bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300' if run.status_tone == 'red' else 'bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary' }}">{{ run.status_label }}</span>
                                         {% if run.report_id %}<a href="{{ url_for('reports.generated_report_detail', report_id=run.report_id) }}"
-   class="text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-300">Open report</a>{% endif %}
+   class="text-xs font-semibold text-kaori-primary hover:text-kaori-primary dark:text-kaori-primary">Open report</a>{% endif %}
                                     </div>
                                 </div>
                             {% endfor %}
                         {% else %}
-                            <div class="px-5 py-8 text-sm text-slate-500 dark:text-slate-400">No schedule runs recorded yet.</div>
+                            <div class="px-5 py-8 text-sm text-content-muted dark:text-content-muted">No schedule runs recorded yet.</div>
                         {% endif %}
                     </div>
                 </section>
             </div>
             <aside class="space-y-6">
-                <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900"
+                <section class="rounded-2xl border border-outline-default bg-white p-5 shadow-sm dark:border-outline-default bg-surface-card"
                          x-data='{ reportType: {{ payload.form_state.report_type|tojson }}, sections: {{ payload.form_state.sections|tojson }}, sectionOptionsByType: {{ payload.section_options_by_report_type|tojson }}, defaultSectionsByType: {{ payload.default_sections_by_report_type|tojson }}, selectDefaults() { this.sections = [...(this.defaultSectionsByType[this.reportType] || [])]; }, selectAll() { this.sections = (this.sectionOptionsByType[this.reportType] || []).map((item) => item.value); }, syncReportType() { this.selectDefaults(); } }'>
                     <div class="mb-4 flex items-center gap-3">
-                        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
                             <i data-lucide="calendar-plus" class="h-4 w-4"></i>
                         </div>
                         <div>
-                            <h2 class="text-base font-semibold text-slate-950 dark:text-white">Create Schedule</h2>
-                            <p class="text-xs text-slate-500 dark:text-slate-400">Define the recurring report contract.</p>
+                            <h2 class="text-base font-semibold text-content-primary text-content-primary">Create Schedule</h2>
+                            <p class="text-xs text-content-muted dark:text-content-muted">Define the recurring report contract.</p>
                         </div>
                     </div>
                     <form method="POST"
@@ -314,21 +314,21 @@
                           class="space-y-4">
                         {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                         <label class="block">
-                            <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Schedule Name</span>
+                            <span class="text-xs font-medium text-content-muted dark:text-content-muted">Schedule Name</span>
                             <input name="name"
                                    value="{{ payload.form_state.name }}"
                                    placeholder="Weekly Capacity Review"
-                                   class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                                   class="mt-1 w-full rounded-xl border border-outline-default bg-white px-3 py-2 text-sm dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
                         </label>
                         <label class="block">
-                            <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Description</span><textarea name="description" rows="2" placeholder="Recurring report for platform review." class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">{{ payload.form_state.description }}</textarea>
+                            <span class="text-xs font-medium text-content-muted dark:text-content-muted">Description</span><textarea name="description" rows="2" placeholder="Recurring report for platform review." class="mt-1 w-full rounded-xl border border-outline-default bg-white px-3 py-2 text-sm dark:border-outline-default bg-surface-subtle dark:text-content-secondary">{{ payload.form_state.description }}</textarea>
                         </label>
                         <label class="block">
-                            <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Report Type</span>
+                            <span class="text-xs font-medium text-content-muted dark:text-content-muted">Report Type</span>
                             <select name="report_type"
                                     x-model="reportType"
                                     x-on:change="syncReportType()"
-                                    class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                                    class="mt-1 w-full rounded-xl border border-outline-default bg-white px-3 py-2 text-sm dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
                                 {% for option in payload.report_type_options %}
                                     <option value="{{ option.value }}">{{ option.label }}</option>
                                 {% endfor %}
@@ -336,9 +336,9 @@
                         </label>
                         <div class="grid gap-3 md:grid-cols-2">
                             <label class="block">
-                                <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Cluster</span>
+                                <span class="text-xs font-medium text-content-muted dark:text-content-muted">Cluster</span>
                                 <select name="cluster_id"
-                                        class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                                        class="mt-1 w-full rounded-xl border border-outline-default bg-white px-3 py-2 text-sm dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
                                     {% for option in payload.clusters %}
                                         <option value="{{ option.value }}"
                                                 {% if payload.form_state.cluster_id == option.value %}selected{% endif %}>{{ option.label }}</option>
@@ -346,18 +346,18 @@
                                 </select>
                             </label>
                             <label class="block">
-                                <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Namespace</span>
+                                <span class="text-xs font-medium text-content-muted dark:text-content-muted">Namespace</span>
                                 <input name="namespace"
                                        value="{{ payload.form_state.namespace }}"
                                        placeholder="Optional"
-                                       class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                                       class="mt-1 w-full rounded-xl border border-outline-default bg-white px-3 py-2 text-sm dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
                             </label>
                         </div>
                         <div class="grid gap-3 md:grid-cols-2">
                             <label class="block">
-                                <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Period</span>
+                                <span class="text-xs font-medium text-content-muted dark:text-content-muted">Period</span>
                                 <select name="period"
-                                        class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                                        class="mt-1 w-full rounded-xl border border-outline-default bg-white px-3 py-2 text-sm dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
                                     {% for option in payload.period_options %}
                                         <option value="{{ option.value }}"
                                                 {% if payload.form_state.period == option.value %}selected{% endif %}>{{ option.label }}</option>
@@ -365,17 +365,17 @@
                                 </select>
                             </label>
                             <label class="block">
-                                <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Timezone</span>
+                                <span class="text-xs font-medium text-content-muted dark:text-content-muted">Timezone</span>
                                 <input name="timezone"
                                        value="{{ payload.form_state.timezone }}"
-                                       class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                                       class="mt-1 w-full rounded-xl border border-outline-default bg-white px-3 py-2 text-sm dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
                             </label>
                         </div>
                         <div class="grid gap-3 md:grid-cols-3">
                             <label class="block">
-                                <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Cadence</span>
+                                <span class="text-xs font-medium text-content-muted dark:text-content-muted">Cadence</span>
                                 <select name="cadence"
-                                        class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                                        class="mt-1 w-full rounded-xl border border-outline-default bg-white px-3 py-2 text-sm dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
                                     {% for option in payload.cadence_options %}
                                         <option value="{{ option.value }}"
                                                 {% if payload.form_state.cadence == option.value %}selected{% endif %}>{{ option.label }}</option>
@@ -383,16 +383,16 @@
                                 </select>
                             </label>
                             <label class="block">
-                                <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Run Time</span>
+                                <span class="text-xs font-medium text-content-muted dark:text-content-muted">Run Time</span>
                                 <input type="time"
                                        name="run_time"
                                        value="{{ payload.form_state.run_time }}"
-                                       class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                                       class="mt-1 w-full rounded-xl border border-outline-default bg-white px-3 py-2 text-sm dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
                             </label>
                             <label class="block">
-                                <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Monthly Day</span>
+                                <span class="text-xs font-medium text-content-muted dark:text-content-muted">Monthly Day</span>
                                 <select name="day_of_month"
-                                        class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                                        class="mt-1 w-full rounded-xl border border-outline-default bg-white px-3 py-2 text-sm dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
                                     {% for day in payload.day_of_month_options %}
                                         <option value="{{ day }}"
                                                 {% if payload.form_state.day_of_month == day|string %}selected{% endif %}>{{ day }}</option>
@@ -401,9 +401,9 @@
                             </label>
                         </div>
                         <label class="block">
-                            <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Weekly Day</span>
+                            <span class="text-xs font-medium text-content-muted dark:text-content-muted">Weekly Day</span>
                             <select name="day_of_week"
-                                    class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                                    class="mt-1 w-full rounded-xl border border-outline-default bg-white px-3 py-2 text-sm dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
                                 {% for day in payload.day_of_week_options %}
                                     <option value="{{ day.value }}"
                                             {% if payload.form_state.day_of_week == day.value|string %}selected{% endif %}>{{ day.label }}</option>
@@ -412,73 +412,73 @@
                         </label>
                         <input type="hidden" name="output_format" value="pdf">
                         <input type="hidden" name="is_enabled" value="1">
-                        <div class="rounded-xl border border-slate-200 p-3 dark:border-slate-800">
+                        <div class="rounded-xl border border-outline-default p-3 dark:border-outline-default">
                             <div class="mb-3 flex items-center justify-between gap-3">
-                                <span class="text-xs font-semibold text-slate-700 dark:text-slate-200">Sections</span>
+                                <span class="text-xs font-semibold text-content-secondary dark:text-content-secondary">Sections</span>
                                 <div class="flex gap-2">
                                     <button type="button"
                                             x-on:click="selectAll()"
-                                            class="text-xs font-semibold text-blue-600 dark:text-blue-300">Select all</button>
+                                            class="text-xs font-semibold text-kaori-primary dark:text-kaori-primary">Select all</button>
                                     <button type="button"
                                             x-on:click="selectDefaults()"
-                                            class="text-xs font-semibold text-slate-500 dark:text-slate-400">Reset</button>
+                                            class="text-xs font-semibold text-content-muted dark:text-content-muted">Reset</button>
                                 </div>
                             </div>
                             <div class="space-y-2">
                                 <template x-for="section in sectionOptionsByType[reportType] || []"
                                           :key="section.value">
-                                    <label class="flex items-start gap-2 rounded-lg border border-slate-100 p-2 dark:border-slate-800">
+                                    <label class="flex items-start gap-2 rounded-lg border border-outline-default p-2 dark:border-outline-default">
                                         <input type="checkbox"
                                                name="sections"
-                                               class="mt-1 rounded border-slate-300 text-blue-600"
+                                               class="mt-1 rounded border-outline-default text-kaori-primary"
                                                :value="section.value"
                                                x-model="sections">
-                                        <span><span class="block text-xs font-semibold text-slate-700 dark:text-slate-200"
-      x-text="section.label"></span><span class="block text-[11px] leading-4 text-slate-500 dark:text-slate-400"
+                                        <span><span class="block text-xs font-semibold text-content-secondary dark:text-content-secondary"
+      x-text="section.label"></span><span class="block text-[11px] leading-4 text-content-muted dark:text-content-muted"
       x-text="section.description"></span></span>
                                     </label>
                                 </template>
                             </div>
                         </div>
                         <button type="submit"
-                                class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600">
+                                class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-kaori-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-kaori-primary bg-kaori-primary dark:hover:bg-kaori-primary">
                             <i data-lucide="calendar-plus" class="h-4 w-4"></i>
                             Create Schedule
                         </button>
                     </form>
                 </section>
-                <section class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                    <div class="border-b border-slate-200 px-5 py-4 dark:border-slate-700">
-                        <h2 class="text-base font-semibold text-slate-950 dark:text-white">Scheduler Readiness</h2>
+                <section class="rounded-2xl border border-outline-default bg-white shadow-sm dark:border-outline-default bg-surface-card">
+                    <div class="border-b border-outline-default px-5 py-4 dark:border-outline-default">
+                        <h2 class="text-base font-semibold text-content-primary text-content-primary">Scheduler Readiness</h2>
                     </div>
-                    <div class="divide-y divide-slate-100 dark:divide-slate-800">
+                    <div class="divide-y divide-outline-default divide-outline-default">
                         {% for item in payload.scheduler_context %}
                             {% set tone_class = {
-                                                            'blue': 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300',
+                                                            'blue': 'bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary',
                                                             'amber': 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300',
-                                                            'gray': 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
-                                                        }.get(item.tone, 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300') %}
+                                                            'gray': 'bg-kaori-soft text-content-secondary bg-kaori-soft dark:text-content-secondary'
+                                                        }.get(item.tone, 'bg-kaori-soft text-content-secondary bg-kaori-soft dark:text-content-secondary') %}
                             <div class="flex gap-3 px-5 py-4">
                                 <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl {{ tone_class }}">
                                     <i data-lucide="{{ item.icon }}" class="h-4 w-4"></i>
                                 </div>
                                 <div>
                                     <div class="flex flex-wrap items-center gap-2">
-                                        <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ item.label }}</p>
+                                        <p class="text-sm font-semibold text-content-primary dark:text-content-primary">{{ item.label }}</p>
                                         <span class="rounded-lg px-2 py-0.5 text-[11px] font-semibold {{ tone_class }}">{{ item.status }}</span>
                                     </div>
-                                    <p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">{{ item.description }}</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted dark:text-content-muted">{{ item.description }}</p>
                                 </div>
                             </div>
                         {% endfor %}
                     </div>
                 </section>
-                <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                    <h2 class="text-base font-semibold text-slate-950 dark:text-white">Recommended Next Steps</h2>
+                <section class="rounded-2xl border border-outline-default bg-white p-5 shadow-sm dark:border-outline-default bg-surface-card">
+                    <h2 class="text-base font-semibold text-content-primary text-content-primary">Recommended Next Steps</h2>
                     <ul class="mt-4 space-y-3">
                         {% for action in payload.recommended_actions %}
-                            <li class="flex gap-3 text-sm text-slate-600 dark:text-slate-300"><i data-lucide="check-circle-2"
-   class="mt-0.5 h-4 w-4 shrink-0 text-blue-600 dark:text-blue-300"></i><span>{{ action }}</span></li>
+                            <li class="flex gap-3 text-sm text-content-secondary dark:text-content-secondary"><i data-lucide="check-circle-2"
+   class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary dark:text-kaori-primary"></i><span>{{ action }}</span></li>
                         {% endfor %}
                     </ul>
                 </section>
