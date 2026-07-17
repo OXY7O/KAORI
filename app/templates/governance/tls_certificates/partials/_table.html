@@ -1,4 +1,5 @@
 {% from 'inventory/components/_detail_macros.html' import detail_card, detail_row, detail_tip %}
+{% import 'components/detail_object.html' as detail_object %}
 {% import 'components/table_label.html' as table_label %}
 <div id="tls-certificates-table-card"
      class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
@@ -113,16 +114,20 @@
                                             ) %}
                                             {{ detail_row('Common Name', record.common_name or '-', tone='violet') }}
                                             {{ detail_row('Serial', record.serial_number or '-', mono=True, tone='violet') }}
-                                            <div class="rounded-lg bg-kaori-soft px-3 py-2.5 text-xs leading-5 text-kaori-primary">
-                                                <div class="flex items-center gap-2 text-[10px] font-semibold text-kaori-primary">
-                                                    <i data-lucide="stamp" class="h-3.5 w-3.5"></i>
-                                                    Issuer
+                                            {% call detail_object.stack() %}
+                                                <div class="rounded-lg border border-outline-default bg-kaori-soft p-3">
+                                                    <div class="flex items-start gap-2.5">
+                                                        <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-surface-card text-kaori-primary">
+                                                            <i data-lucide="stamp" class="h-3.5 w-3.5"></i>
+                                                        </span>
+                                                        <div class="min-w-0 flex-1">
+                                                            <p class="text-xs font-semibold text-content-primary">Issuer</p>
+                                                            <p class="mt-2 break-words text-xs font-normal leading-5 text-content-secondary">{{ record.issuer or 'Unknown issuer' }}</p>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <p class="mt-1.5 break-words font-normal">{{ record.issuer or 'Unknown issuer' }}</p>
-                                            </div>
-                                            <div class="mt-auto pt-2">
                                                 {{ detail_tip('Issuer and Common Name identify who signed the certificate and the primary identity represented by it.', 'violet', 'badge-check') }}
-                                            </div>
+                                            {% endcall %}
                                         {% endcall %}
                                         {% call detail_card(
                                             'Validity window',
@@ -134,16 +139,20 @@
                                             {{ detail_row('Valid From', record.not_before|user_date('%Y-%m-%d') , tone='emerald') }}
                                             {{ detail_row('Expires At', record.not_after|user_date('%Y-%m-%d') , tone='emerald') }}
                                             {{ detail_row('Remaining', (record.days_remaining ~ ' days') if record.days_remaining is not none else '-', tone='emerald') }}
-                                            <div class="rounded-xl bg-emerald-50 px-3 py-2.5 text-xs leading-5 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-200">
-                                                <div class="flex items-center gap-2 text-[10px] font-semibold text-emerald-600 dark:text-emerald-300">
-                                                    <i data-lucide="fingerprint" class="h-3.5 w-3.5"></i>
-                                                    SHA-256 fingerprint
+                                            {% call detail_object.stack() %}
+                                                <div class="rounded-lg border border-outline-default bg-kaori-soft p-3">
+                                                    <div class="flex items-start gap-2.5">
+                                                        <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-surface-card text-kaori-primary">
+                                                            <i data-lucide="fingerprint" class="h-3.5 w-3.5"></i>
+                                                        </span>
+                                                        <div class="min-w-0 flex-1">
+                                                            <p class="text-xs font-semibold text-content-primary">SHA-256 fingerprint</p>
+                                                            <p class="mt-2 break-all font-mono text-xs font-normal leading-5 text-content-secondary">{{ record.fingerprint_sha256 or '-' }}</p>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <p class="mt-1.5 break-all font-mono font-normal">{{ record.fingerprint_sha256 or '-' }}</p>
-                                            </div>
-                                            <div class="mt-auto pt-2">
                                                 {{ detail_tip('Review certificates approaching expiry before rotating the Kubernetes TLS Secret used by workloads or Ingress resources.', 'emerald', 'calendar-clock') }}
-                                            </div>
+                                            {% endcall %}
                                         {% endcall %}
                                         {% call detail_card(
                                             'Ingress usage',
@@ -208,30 +217,34 @@
                                             {{ detail_row('Type', record.secret_type or 'kubernetes.io/tls', tone='violet') }}
                                             {{ detail_row('SAN Count', (record.dns_names or []) |length, tone='violet') }}
                                             {{ detail_row('Ingress Hosts', (record.ingress_hosts or []) |length, tone='violet') }}
-                                            <div class="rounded-xl bg-violet-50 px-3 py-2.5 text-xs leading-5 text-violet-800 dark:bg-violet-500/10 dark:text-violet-200">
-                                                <div class="flex items-center justify-between gap-2">
-                                                    <div class="flex items-center gap-2 text-[10px] font-semibold text-violet-600 dark:text-violet-300">
-                                                        <i data-lucide="globe-2" class="h-3.5 w-3.5"></i>
-                                                        Certificate SANs
-                                                    </div>
-                                                    <span class="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-medium text-violet-700 dark:bg-violet-500/15 dark:text-violet-200">{{ (record.dns_names or [])|length }}</span>
-                                                </div>
-                                                {% if record.dns_names %}
-                                                    <div class="mt-1.5 flex flex-col gap-0.5">
-                                                        {% for domain in record.dns_names %}
-                                                            <span class="break-all font-normal">{{ domain }}</span>
-                                                        {% endfor %}
-                                                    </div>
-                                                {% else %}
-                                                    <p class="mt-1.5 text-violet-700/75 dark:text-violet-200/70">No Subject Alternative Name is recorded.</p>
-                                                {% endif %}
-                                            </div>
                                             {% if record.parse_error %}
-                                                <div class="rounded-xl bg-rose-50 px-3 py-2.5 text-xs text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">{{ record.parse_error }}</div>
+                                                <div class="rounded-lg border border-outline-default bg-rose-50 px-3 py-2.5 text-xs text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">{{ record.parse_error }}</div>
                                             {% endif %}
-                                            <div class="mt-auto pt-2">
+                                            {% call detail_object.stack() %}
+                                                <div class="rounded-lg border border-outline-default bg-kaori-soft p-3">
+                                                    <div class="flex items-start gap-2.5">
+                                                        <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-surface-card text-kaori-primary">
+                                                            <i data-lucide="globe-2" class="h-3.5 w-3.5"></i>
+                                                        </span>
+                                                        <div class="min-w-0 flex-1">
+                                                            <div class="flex items-center justify-between gap-3">
+                                                                <p class="text-xs font-semibold text-content-primary">Certificate SANs</p>
+                                                                {{ table_label.metadata_label((record.dns_names or [])|length ~ ' SANs') }}
+                                                            </div>
+                                                            {% if record.dns_names %}
+                                                                <div class="mt-2 flex flex-col gap-1 text-xs leading-5 text-content-secondary">
+                                                                    {% for domain in record.dns_names %}
+                                                                        <span class="break-all font-normal">{{ domain }}</span>
+                                                                    {% endfor %}
+                                                                </div>
+                                                            {% else %}
+                                                                <p class="mt-2 text-xs leading-5 text-content-muted">No Subject Alternative Name is recorded.</p>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                </div>
                                                 {{ detail_tip('SAN values are the hostnames covered by the certificate. They may differ from the Ingress hosts currently mapped to the Secret.', 'violet', 'globe-2') }}
-                                            </div>
+                                            {% endcall %}
                                         {% endcall %}
                                     </div>
                                 </div>
