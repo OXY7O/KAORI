@@ -14,12 +14,12 @@
                 {{ overview.source | title }}
             </span>
             {% if overview.connected %}
-                <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300">
+                <span class="inline-flex items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300">
                     <i data-lucide="check-circle-2" class="h-3.5 w-3.5"></i>
                     Connected
                 </span>
             {% else %}
-                <span class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                <span class="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
                     <i data-lucide="circle-off" class="h-3.5 w-3.5"></i>
                     Not Connected
                 </span>
@@ -67,7 +67,7 @@
                     <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Current alert and anomaly breakdown.</p>
                 </div>
                 {% if overview.total_signals == 0 %}
-                    <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300">
+                    <span class="inline-flex items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300">
                         <i data-lucide="shield-check" class="h-3.5 w-3.5"></i>
                         No active signals
                     </span>

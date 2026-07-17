@@ -107,7 +107,7 @@
                         Domains currently preventing a fully ready analytics posture.
                     </p>
                 </div>
-                <span class="inline-flex shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold {% if issue_count.value %}bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300{% else %}bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300{% endif %}">
+                <span class="inline-flex shrink-0 rounded-md px-2.5 py-1 text-[11px] font-bold {% if issue_count.value %}bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300{% else %}bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300{% endif %}">
                     {{ issue_count.value }} affected
                 </span>
             </div>
@@ -126,12 +126,12 @@
                             </div>
                             <div class="flex shrink-0 flex-wrap justify-end gap-1.5">
                                 {% if item.get('blocked_count', 0) %}
-                                    <span class="rounded-full bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">
+                                    <span class="rounded-md bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">
                                         {{ item.get('blocked_count', 0) }} blocked
                                     </span>
                                 {% endif %}
                                 {% if item.get('deprecated_count', 0) %}
-                                    <span class="rounded-full bg-slate-200 px-2 py-1 text-[10px] font-bold text-slate-700 dark:bg-slate-700 dark:text-slate-200">
+                                    <span class="rounded-md bg-slate-200 px-2 py-1 text-[10px] font-bold text-slate-700 dark:bg-slate-700 dark:text-slate-200">
                                         {{ item.get('deprecated_count', 0) }} deprecated
                                     </span>
                                 {% endif %}
@@ -165,7 +165,7 @@
                         </div>
                     </div>
                     <div class="flex shrink-0 items-center gap-2">
-                        <span class="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-bold text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">{{ blocked_details|length }}</span>
+                        <span class="rounded-md bg-amber-100 px-2.5 py-1 text-[11px] font-bold text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">{{ blocked_details|length }}</span>
                         <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400 transition group-open:rotate-180"></i>
                     </div>
                 </summary>
@@ -181,7 +181,7 @@
                                             {{ item.get('domain', 'Unknown domain')|replace('app.analytics.', '')|replace('app.', '')|replace('.', ' ')|replace('_', ' ')|title }} · {{ item.get('message', 'Validation check blocked.') }}
                                         </p>
                                     </div>
-                                    <span class="shrink-0 rounded-full bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">Blocked</span>
+                                    <span class="shrink-0 rounded-md bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">Blocked</span>
                                 </div>
 
                                 {% if item.get('missing_metrics') or item.get('missing_labels') %}

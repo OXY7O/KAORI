@@ -3,11 +3,11 @@
 {% block dashboard_content %}
     {% macro utilization_status_badge(value) %}
         {% if value > 90 %}
-            <span class="rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-700 dark:bg-red-500/10 dark:text-red-300">Critical</span>
+            <span class="rounded-md bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-700 dark:bg-red-500/10 dark:text-red-300">Critical</span>
         {% elif value >= 75 %}
-            <span class="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">Warning</span>
+            <span class="rounded-md bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">Warning</span>
         {% else %}
-            <span class="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">Normal</span>
+            <span class="rounded-md bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">Normal</span>
         {% endif %}
     {% endmacro %}
     {% macro utilization_fill_bar(value, tone='blue') %}

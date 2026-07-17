@@ -23,7 +23,7 @@
     {% if include_preview and retention.preview %}<input type="hidden" name="retention_preview" value="1">{% endif %}
 {%- endmacro %}
 {% macro archive_status_badge(status) -%}
-    <span class="inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold ring-1 ring-inset {% if status == 'ready' %}bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-900/40 {% elif status in ['pending', 'archiving', 'verifying', 'cleaning'] %}bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-900/40 {% elif status == 'cleanup_partial' %}bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-900/40 {% elif status == 'expired' %}bg-slate-100 text-slate-600 ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-700 {% else %}bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-900{% endif %}">
+    <span class="inline-flex rounded-md px-2.5 py-1 text-[10px] font-semibold ring-1 ring-inset {% if status == 'ready' %}bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-900/40 {% elif status in ['pending', 'archiving', 'verifying', 'cleaning'] %}bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-900/40 {% elif status == 'cleanup_partial' %}bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-900/40 {% elif status == 'expired' %}bg-slate-100 text-slate-600 ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-700 {% else %}bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-900{% endif %}">
         {{ status|replace('_', ' ') |title }}
     </span>
 {%- endmacro %}
@@ -67,7 +67,7 @@ archive_search=retention.archive_filters.search) %}
                 <div>
                     <div class="flex flex-wrap items-center gap-2">
                         <h2 class="text-lg font-semibold text-slate-950 dark:text-white">Retention &amp; Archive</h2>
-                        <span class="rounded-full px-2.5 py-1 text-[10px] font-semibold ring-1 ring-inset {% if retention.enabled %}bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-900/40{% else %}bg-slate-100 text-slate-600 ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-700{% endif %}">
+                        <span class="rounded-md px-2.5 py-1 text-[10px] font-semibold ring-1 ring-inset {% if retention.enabled %}bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-900/40{% else %}bg-slate-100 text-slate-600 ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-700{% endif %}">
                             {{ 'Enabled' if retention.enabled else 'Disabled' }}
                         </span>
                         {% if retention.has_active_archives %}
@@ -201,7 +201,7 @@ archive_search=retention.archive_filters.search) %}
                                         No automatic execution
                                     {% endif %}
                                 </p>
-                                <span class="flex-shrink-0 rounded-full px-2 py-0.5 text-[9px] font-semibold ring-1 ring-inset {% if retention.schedule_enabled %}bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-900/40{% else %}bg-slate-100 text-slate-600 ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-700{% endif %}">
+                                <span class="flex-shrink-0 rounded-md px-2 py-0.5 text-[9px] font-semibold ring-1 ring-inset {% if retention.schedule_enabled %}bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-900/40{% else %}bg-slate-100 text-slate-600 ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-700{% endif %}">
                                     {{ 'Beat configured' if retention.schedule_enabled else 'Schedule off' }}
                                 </span>
                             </div>
@@ -231,7 +231,7 @@ archive_search=retention.archive_filters.search) %}
                             </div>
                         </div>
                         <span title="{{ retention.storage.detail }}"
-                              class="rounded-full px-2.5 py-1 text-[10px] font-semibold ring-1 ring-inset {% if retention.storage.status_tone == 'emerald' %}bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-900/40 {% elif retention.storage.status_tone == 'amber' %}bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-900/40 {% elif retention.storage.status_tone == 'rose' %}bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-900/40 {% else %}bg-slate-100 text-slate-600 ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-700{% endif %}">{{ retention.storage.status_label }}</span>
+                              class="rounded-md px-2.5 py-1 text-[10px] font-semibold ring-1 ring-inset {% if retention.storage.status_tone == 'emerald' %}bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-900/40 {% elif retention.storage.status_tone == 'amber' %}bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-900/40 {% elif retention.storage.status_tone == 'rose' %}bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-900/40 {% else %}bg-slate-100 text-slate-600 ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-700{% endif %}">{{ retention.storage.status_label }}</span>
                     </div>
                     <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                         <div class="min-w-0">

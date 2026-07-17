@@ -35,8 +35,8 @@
                         <p class="mt-2 max-w-3xl text-sm leading-6 text-blue-50 sm:text-base">Manage default and custom access levels across KAORI modules and administrative actions.</p>
                         <div class="mt-4 flex flex-wrap gap-2">
                             <span class="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-bold ring-1 ring-white/15"><i data-lucide="lock-keyhole" class="h-3.5 w-3.5"></i> System Roles Locked</span>
-                            <span class="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-bold ring-1 ring-white/15"><i data-lucide="badge-check" class="h-3.5 w-3.5"></i> Permission Matrix Enabled</span>
-                            <span class="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-bold ring-1 ring-white/15"><i data-lucide="users" class="h-3.5 w-3.5"></i> User Assignment Ready</span>
+                            <span class="inline-flex items-center gap-1.5 rounded-md bg-white/15 px-3 py-1 text-xs font-bold ring-1 ring-white/15"><i data-lucide="badge-check" class="h-3.5 w-3.5"></i> Permission Matrix Enabled</span>
+                            <span class="inline-flex items-center gap-1.5 rounded-md bg-white/15 px-3 py-1 text-xs font-bold ring-1 ring-white/15"><i data-lucide="users" class="h-3.5 w-3.5"></i> User Assignment Ready</span>
                         </div>
                     </div>
                 </div>
@@ -164,7 +164,7 @@
                                         </div>
                                     </div>
                                     <div class="flex shrink-0 flex-wrap items-center gap-2 text-sm">
-                                        <span class="inline-flex items-center gap-1.5 rounded-full {{ 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300' if role.is_active else 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400' }} px-3 py-1 text-xs font-bold"><i data-lucide="circle-check" class="h-3.5 w-3.5"></i>{{ 'Active' if role.is_active else 'Inactive' }}</span>
+                                        <span class="inline-flex items-center gap-1.5 rounded-md {{ 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300' if role.is_active else 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400' }} px-3 py-1 text-xs font-bold"><i data-lucide="circle-check" class="h-3.5 w-3.5"></i>{{ 'Active' if role.is_active else 'Inactive' }}</span>
                                         <span class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300"><i data-lucide="shield-check" class="h-3.5 w-3.5"></i>{{ permission_count }} Permissions</span>
                                         <span class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300"><i data-lucide="users" class="h-3.5 w-3.5"></i>{{ assigned_users }} Users</span>
                                         <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm transition group-hover:border-blue-200 group-hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
@@ -355,7 +355,7 @@
                             <p class="mt-2 text-sm leading-6 text-blue-50">Default roles are locked to keep access behavior predictable. Use custom roles when a team needs a narrower or broader permission set than the built-in baseline.</p>
                             <div class="mt-4 flex flex-wrap gap-2">
                                 <span class="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-xs font-bold ring-1 ring-white/15"><i data-lucide="lock-keyhole" class="h-3.5 w-3.5"></i> Default Role · Locked</span>
-                                <span class="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-xs font-bold ring-1 ring-white/15"><i data-lucide="sparkles" class="h-3.5 w-3.5"></i> Custom Access Ready</span>
+                                <span class="inline-flex items-center gap-1.5 rounded-md bg-white/15 px-2.5 py-1 text-xs font-bold ring-1 ring-white/15"><i data-lucide="sparkles" class="h-3.5 w-3.5"></i> Custom Access Ready</span>
                             </div>
                         </div>
                     </div>

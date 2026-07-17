@@ -112,7 +112,7 @@
                                     <p class="mt-1 text-xs leading-5 text-blue-700 dark:text-blue-200">These attestations are cluster-level gates. Namespace policies remain inactive while either prerequisite is off.</p>
                                 </div>
                             </div>
-                            <span class="rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide {{ 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300' if selected_cluster_ready else 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300' }}">{{ 'Ready' if selected_cluster_ready else 'Blocked' }}</span>
+                            <span class="rounded-md px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide {{ 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300' if selected_cluster_ready else 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300' }}">{{ 'Ready' if selected_cluster_ready else 'Blocked' }}</span>
                         </div>
                         <form method="post"
                               action="{{ url_for('settings.secret_reveal.update_readiness', cluster_id=selected_cluster.id) }}"

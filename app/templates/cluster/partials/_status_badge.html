@@ -1,16 +1,16 @@
 {% set status = (cluster.status or 'unknown')|lower %}
 {% if status == 'connected' %}
-    <span class="inline-flex items-center gap-1.5 rounded-full border border-status-normal-border bg-status-normal-soft px-2.5 py-1 text-xs font-semibold text-status-normal-text">
+    <span class="inline-flex items-center gap-1.5 rounded-md border border-status-normal-border bg-status-normal-soft px-2.5 py-1 text-xs font-semibold text-status-normal-text">
         <i data-lucide="circle-check" class="h-3.5 w-3.5"></i>
         Connected
     </span>
 {% elif status == 'failed' %}
-    <span class="inline-flex items-center gap-1.5 rounded-full border border-status-critical-border bg-status-critical-soft px-2.5 py-1 text-xs font-semibold text-status-critical-text">
+    <span class="inline-flex items-center gap-1.5 rounded-md border border-status-critical-border bg-status-critical-soft px-2.5 py-1 text-xs font-semibold text-status-critical-text">
         <i data-lucide="circle-x" class="h-3.5 w-3.5"></i>
         Failed
     </span>
 {% else %}
-    <span class="inline-flex items-center gap-1.5 rounded-full border border-status-unknown-border bg-status-unknown-soft px-2.5 py-1 text-xs font-semibold text-status-unknown-text">
+    <span class="inline-flex items-center gap-1.5 rounded-md border border-status-unknown-border bg-status-unknown-soft px-2.5 py-1 text-xs font-semibold text-status-unknown-text">
         <i data-lucide="circle-help" class="h-3.5 w-3.5"></i>
         Unknown
     </span>

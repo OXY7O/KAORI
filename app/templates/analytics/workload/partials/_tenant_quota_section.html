@@ -99,7 +99,7 @@
                                 </div>
                             </td>
                             <td class="px-4 py-3">
-                                <span class="rounded-full px-2.5 py-1 text-xs font-semibold {{ row.quota_status.class }}">
+                                <span class="rounded-md px-2.5 py-1 text-xs font-semibold {{ row.quota_status.class }}">
                                     {{ row.quota_status.label }}
                                 </span>
                             </td>
@@ -135,7 +135,7 @@
                                 {% endif %}
                             </td>
                             <td class="px-4 py-3">
-                                <span class="rounded-full px-2.5 py-1 text-xs font-semibold {{ row.risk.class }}">{{ row.risk.label }}</span>
+                                <span class="rounded-md px-2.5 py-1 text-xs font-semibold {{ row.risk.class }}">{{ row.risk.label }}</span>
                             </td>
                             <td class="px-4 py-3 text-left">
                                 <button type="button"
@@ -157,8 +157,8 @@
                                         <div>
                                             <div class="flex flex-wrap items-center gap-2">
                                                 <h3 class="font-semibold text-slate-900 dark:text-white">{{ row.namespace }}</h3>
-                                                <span class="rounded-full px-2.5 py-1 text-xs font-semibold {{ row.risk.class }}">{{ row.risk.label }}</span>
-                                                <span class="rounded-full px-2.5 py-1 text-xs font-semibold {{ row.quota_status.class }}">{{ row.quota_status.label }}</span>
+                                                <span class="rounded-md px-2.5 py-1 text-xs font-semibold {{ row.risk.class }}">{{ row.risk.label }}</span>
+                                                <span class="rounded-md px-2.5 py-1 text-xs font-semibold {{ row.quota_status.class }}">{{ row.quota_status.label }}</span>
                                             </div>
                                             <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
                                                 Quota coverage, actual pressure, and missing ResourceQuota keys.

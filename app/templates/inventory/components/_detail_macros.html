@@ -95,7 +95,7 @@
     } -%}
     <div class="flex items-start justify-between gap-3">
         <span class="shrink-0 text-xs font-normal leading-5 text-slate-500 dark:text-slate-400">{{ label }}</span>
-        <span class="max-w-[68%] break-words rounded-full px-2 py-0.5 text-right text-xs font-normal leading-5 ring-1 ring-inset {{ state_classes.get(state, state_classes['neutral']) }}">{{ value if value not in [None, ''] else '-' }}</span>
+        <span class="max-w-[68%] break-words rounded-md px-2 py-0.5 text-right text-xs font-normal leading-5 ring-1 ring-inset {{ state_classes.get(state, state_classes['neutral']) }}">{{ value if value not in [None, ''] else '-' }}</span>
     </div>
 {%- endmacro %}
 {% macro detail_list_item(icon, value, icon_classes='text-slate-400') -%}

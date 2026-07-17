@@ -10,7 +10,7 @@
                     </div>
                     <div>
                         <div class="mb-2 flex flex-wrap items-center gap-2">
-                            <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold {{ payload.lifecycle_summary.class }}">
+                            <span class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold {{ payload.lifecycle_summary.class }}">
                                 <i data-lucide="{{ payload.lifecycle_summary.icon }}"
                                    class="h-3.5 w-3.5"></i>
                                 {{ payload.lifecycle_summary.label }}
@@ -70,7 +70,7 @@
                     <div>
                         <div class="flex flex-wrap items-center gap-2">
                             <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Storage Lifecycle</h2>
-                            <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ payload.lifecycle_summary.class }}">
+                            <span class="inline-flex rounded-md px-2.5 py-1 text-xs font-semibold {{ payload.lifecycle_summary.class }}">
                                 {{ payload.lifecycle_summary.level|title }}
                             </span>
                         </div>

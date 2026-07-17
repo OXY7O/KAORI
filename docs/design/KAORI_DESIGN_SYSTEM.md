@@ -89,10 +89,10 @@ Do not treat missing data as healthy. Disabled, unknown, pending, and degraded a
 ### Status label geometry
 
 - The current KAORI standard for operational status labels uses the same compact rectangular geometry as the violet metadata label: `rounded-md`, 24 px minimum height, compact horizontal padding, and a visible border.
-- Status labels must not use `rounded-full`. Full pill geometry is deprecated for status presentation and remains only as a temporary compatibility mode while existing pages are migrated.
+- Status labels must not use `rounded-full`. Full pill geometry is prohibited for operational status presentation.
 - Geometry stays consistent across normal, informational, warning, critical, unknown, disabled, maintenance, and pending states. Only the semantic border, soft background, text, copy, and icon change with the status.
-- Use the shared `components/table_label.html` macro with `shape='label'` for pages migrated to this standard. Do not recreate status-label classes inside page templates.
-- Kubernetes Cluster Management is the first reference implementation for the staged migration.
+- Use the shared `components/table_label.html` macro. Its geometry is the KAORI rectangular status label. Do not recreate status-label classes inside page templates when the shared macro can represent the state.
+- The rectangular status-label standard is applied globally across KAORI. Kubernetes Cluster Management remains the visual reference implementation.
 
 ## Typography
 
@@ -246,7 +246,7 @@ The authenticated application shell uses a floating, rounded navigation model ra
 - The component owns the eyebrow radius, height, padding, icon sizing, column width, and horizontal gap.
 - Page templates own only the title, optional role/subtitle, description, notice, and badges rendered inside the macro caller.
 - Do not apply manual left margin or padding to compensate for the leading icon.
-- Do not use `rounded-full` for hero eyebrows. Pills remain reserved for compact statuses, badges, filters, and metadata chips.
+- Do not use `rounded-full` for hero eyebrows. Full pills are reserved for avatars, toggles, progress tracks, state dots, and explicitly approved interactive filter chips.
 - Changes to hero eyebrow geometry or alignment must be made in the shared component first, then validated on Welcome and Kubernetes Operations Dashboard as reference pages.
 
 ## Welcome workspace reference
@@ -307,14 +307,14 @@ The Kubernetes Operations Dashboard is the reference implementation for authenti
 - Minimum height: 32 px.
 - Padding: 12 px horizontal and 6 px vertical.
 - Do not use `rounded-full` for role, workspace count, capability count, source, scope, or other non-status hero metadata.
-- `rounded-full` remains reserved for true status badges, avatars, toggles, and compact state indicators.
+- `rounded-full` is not permitted for text status badges. It remains reserved for avatars, toggles, progress tracks, state dots, and explicitly approved interactive filter chips.
 - Supporting informational strips below the description use `page_hero.supporting_strip()` with the same 6 px radius.
 
 ### Kubernetes Dashboard standard alignment
 
 - Kubernetes Dashboard must consume the shared hero component and solid-violet hero treatment.
 - Non-status metadata labels use `rounded-md`; they must not use pill styling.
-- `rounded-full` is reserved for dynamic status, state dots, avatar, toggle controls, and progress tracks.
+- `rounded-full` is reserved for state dots, avatars, toggle controls, progress tracks, and explicitly approved interactive filter chips.
 - Decorative and navigation icons use KAORI violet. Semantic colors are reserved for values that communicate health, severity, readiness, or process state.
 - Empty and unavailable placeholders use violet surfaces unless they communicate a true semantic failure or warning.
 - Dashboard loading indicators use a solid brand color and must not use gradients.
@@ -360,7 +360,7 @@ The Kubernetes Inventory Overview follows the authenticated operational overview
 
 `app/templates/components/table_label.html` is the authoritative implementation for compact labels inside operational tables.
 
-- Status labels use `table_label.status_label()` and remain pill-shaped because they communicate dynamic state.
+- Status labels use `table_label.status_label()` and follow the compact rectangular `rounded-md` geometry while retaining semantic status colors.
 - Metadata labels use `table_label.metadata_label()` and use a 6 px rectangular radius.
 - Standard table label geometry is 24 px minimum height, 8 px horizontal padding, 2 px vertical padding, 10 px semibold text, 16 px line height, 4 px internal gap, and a 12 px icon.
 - Do not create page-specific table badge sizes. Cluster health, inventory state, sync state, integration readiness, TLS exceptions, and risk hints must consume the shared compact size.
@@ -377,7 +377,7 @@ The Kubernetes Topology workspace follows the same Inventory hero and operationa
 - Health and collection states use semantic status tokens. Loading uses Pending, graph truncation uses Warning, startup failure uses Critical, and unknown resource state uses Unknown.
 - Topology filter labels use sentence case, `text-sm font-semibold`, 44 px controls, 8 px radius, and shared surface/outline tokens.
 - The graph workspace uses 12 px outer radius and 8 px internal control radius. Detail cards use 12 px radius; icon surfaces and buttons use 8 px radius.
-- Non-status resource and relationship labels in the detail drawer use rectangular metadata labels. Only dynamic health/status labels remain pill-shaped.
+- Non-status resource and relationship labels in the detail drawer use rectangular metadata labels. Dynamic health and status labels also use rectangular geometry, differentiated by semantic colors.
 - Empty graph and unselected-detail states use violet surfaces. Do not render missing inventory as Healthy.
 - The graph viewport height is controlled by Tailwind layout utilities rather than page-level inline CSS. JavaScript may update runtime dimensions only when required by the visualization library.
 
@@ -612,7 +612,7 @@ ConfigMap and Secret operation selectors use one consistent live-source pattern:
 - Structural cards, filter areas, expandable details, upload panels, and pagination use shared surface and outline tokens. Decorative blue, cyan, indigo, fuchsia, and gradient treatments are prohibited.
 - Non-status icons, labels, buttons, and section accents use KAORI violet. Certificate health, expiry, invalid state, and destructive update consequences retain semantic Normal, Warning, and Critical colors.
 - Overview filters use 44 px controls, 8 px radius, sentence-case labels, and violet focus rings. Tables remain left aligned except explicit action columns.
-- Cluster, namespace, SAN count, and other descriptive metadata use compact rectangular labels. Status badges remain compact semantic pills.
+- Cluster, namespace, SAN count, and other descriptive metadata use compact rectangular labels. Status badges use the same compact rectangular geometry with semantic colors.
 - Governance provides posture, relationship, and audit context. Certificate/private-key mutation remains delegated to the controlled Kubernetes Operations TLS rotation workflow.
 
 ### TLS Secret governance detail-card standard

@@ -179,13 +179,13 @@
                                         <div class="grid min-w-[150px] grid-cols-[58px_1fr] items-center gap-3">
                                             <span class="text-right tabular-nums">{{ row.usage_percent }}%</span>
                                             <div class="h-2 w-20 rounded-full bg-slate-100 dark:bg-slate-800">
-                                                <div class="h-2 rounded-full {% if row.risk.key == 'critical' %}bg-red-500{% elif row.risk.key == 'warning' %}bg-amber-500{% else %}bg-emerald-500{% endif %}"
+                                                <div class="h-2 rounded-md {% if row.risk.key == 'critical' %}bg-red-500{% elif row.risk.key == 'warning' %}bg-amber-500{% else %}bg-emerald-500{% endif %}"
                                                      style="width: {{ row.usage_bar_percent }}%"></div>
                                             </div>
                                         </div>
                                     </td>
                                     <td class="whitespace-nowrap px-2 py-3">
-                                        <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ row.risk.class }}">
+                                        <span class="inline-flex rounded-md px-2.5 py-1 text-xs font-semibold {{ row.risk.class }}">
                                             {{ row.risk.label }}
                                         </span>
                                     </td>
@@ -211,7 +211,7 @@
                                                     <div class="flex flex-wrap items-center gap-2">
                                                         <h3 class="font-semibold text-slate-900 dark:text-white">{{ row.workload }}</h3>
                                                         <span class="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">{{ row.namespace }}</span>
-                                                        <span class="rounded-full px-2.5 py-1 text-xs font-semibold {{ row.risk.class }}">{{ row.risk.label }}</span>
+                                                        <span class="rounded-md px-2.5 py-1 text-xs font-semibold {{ row.risk.class }}">{{ row.risk.label }}</span>
                                                     </div>
                                                     <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
                                                         Identity, usage, request/limit, risk context, and recommended action for this consumer.
@@ -252,7 +252,7 @@
                                                                 <p class="text-xs text-slate-500 dark:text-slate-400">Current usage compared with request, limit, or capacity.</p>
                                                             </div>
                                                         </div>
-                                                        <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ row.risk.class }}">
+                                                        <span class="inline-flex rounded-md px-2.5 py-1 text-xs font-semibold {{ row.risk.class }}">
                                                             {{ row.risk.label }}
                                                         </span>
                                                     </div>
@@ -280,7 +280,7 @@
                                                             <span>{{ row.usage_percent }}%</span>
                                                         </div>
                                                         <div class="mt-2 h-3 rounded-full bg-slate-100 dark:bg-slate-800">
-                                                            <div class="h-3 rounded-full {% if row.risk.key == 'critical' %}bg-red-500{% elif row.risk.key == 'warning' %}bg-amber-500{% else %}bg-emerald-500{% endif %}"
+                                                            <div class="h-3 rounded-md {% if row.risk.key == 'critical' %}bg-red-500{% elif row.risk.key == 'warning' %}bg-amber-500{% else %}bg-emerald-500{% endif %}"
                                                                  style="width: {{ row.usage_bar_percent }}%"></div>
                                                         </div>
                                                     </div>

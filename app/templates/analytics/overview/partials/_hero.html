@@ -48,7 +48,7 @@
                                     Step {{ dependency_blocker.stage }} · {{ dependency_blocker.badge }}
                                 </span>
                             {% else %}
-                                <span class="inline-flex items-center gap-2 rounded-full border border-white/15 {% if active_alerts|int > 0 %}bg-amber-400/20 text-amber-50{% else %}bg-white/10 text-blue-50{% endif %} px-3.5 py-2 text-sm font-semibold whitespace-nowrap">
+                                <span class="inline-flex items-center gap-2 rounded-md border border-white/15 {% if active_alerts|int > 0 %}bg-amber-400/20 text-amber-50{% else %}bg-white/10 text-blue-50{% endif %} px-3.5 py-2 text-sm font-semibold whitespace-nowrap">
                                     <i data-lucide="bell" class="h-4 w-4"></i>
                                     {{ active_alerts }} active alerts
                                 </span>

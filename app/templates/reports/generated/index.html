@@ -32,7 +32,7 @@
                             <i data-lucide="workflow" class="h-4 w-4"></i>
                             Lifecycle actions
                         </span>
-                        <span class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-2 text-sm font-semibold text-blue-50">
+                        <span class="inline-flex items-center gap-2 rounded-md border border-white/15 bg-white/10 px-3.5 py-2 text-sm font-semibold text-blue-50">
                             <i data-lucide="hard-drive" class="h-4 w-4"></i>
                             {{ payload.hero_posture[2].value }}
                         </span>
@@ -364,7 +364,7 @@
                                                                                     'red': 'bg-rose-50 text-rose-700 ring-rose-600/20 dark:bg-rose-950/50 dark:text-rose-300 dark:ring-rose-400/20',
                                                                                     'gray': 'bg-slate-100 text-slate-700 ring-slate-600/20 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-400/20'
                                                                                 }.get(report.status_meta.tone, 'bg-slate-100 text-slate-700 ring-slate-600/20 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-400/20') %}
-                                        <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset {{ status_class }}">
+                                        <span class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold ring-1 ring-inset {{ status_class }}">
                                             <i data-lucide="{{ report.status_meta.icon }}" class="h-3.5 w-3.5"></i>
                                             {{ report.status_meta.label }}
                                         </span>
@@ -466,7 +466,7 @@
                                                                                                     'red': 'bg-rose-50 text-rose-700 ring-rose-600/20 dark:bg-rose-950/50 dark:text-rose-300 dark:ring-rose-400/20'
                                                                                                 }.get(report.file_state.tone, 'bg-slate-100 text-slate-700 ring-slate-600/20 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-400/20') %}
                                                 <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Artifact</p>
-                                                <span class="mt-1 inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset {{ file_state_class }}">
+                                                <span class="mt-1 inline-flex w-fit items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold ring-1 ring-inset {{ file_state_class }}">
                                                     <i data-lucide="{{ report.file_state.icon }}" class="h-3.5 w-3.5"></i>
                                                     {{ report.file_state.label }}
                                                 </span>

@@ -74,7 +74,7 @@
                                 </span>
                             </div>
                             <div>
-                                <span class="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[9px] font-bold ring-1 ring-inset {% if is_success %}bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-900/40 {% elif is_warning %}bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-900/40 {% elif is_error %}bg-red-50 text-red-700 ring-red-200 dark:bg-red-500/10 dark:text-red-300 dark:ring-red-500/20 {% else %}bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20{% endif %}">
+                                <span class="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[9px] font-bold ring-1 ring-inset {% if is_success %}bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-900/40 {% elif is_warning %}bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-900/40 {% elif is_error %}bg-red-50 text-red-700 ring-red-200 dark:bg-red-500/10 dark:text-red-300 dark:ring-red-500/20 {% else %}bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20{% endif %}">
                                     <i data-lucide="{% if is_success %}check-circle-2{% elif is_warning %}alert-triangle{% elif is_error %}x-circle{% else %}info{% endif %}"
                                        class="h-3 w-3"></i>
                                     {{ item.status_label }}
@@ -109,7 +109,7 @@
                                         </div>
                                     </div>
                                     <div class="flex flex-shrink-0 flex-wrap items-center gap-2 lg:max-w-xs lg:justify-end">
-                                        <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[10px] font-extrabold ring-1 ring-inset {% if is_success %}bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-900/40 {% elif is_warning %}bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-900/40 {% elif is_error %}bg-red-50 text-red-700 ring-red-200 dark:bg-red-500/10 dark:text-red-300 dark:ring-red-500/20 {% else %}bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20{% endif %}">
+                                        <span class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[10px] font-extrabold ring-1 ring-inset {% if is_success %}bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-900/40 {% elif is_warning %}bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-900/40 {% elif is_error %}bg-red-50 text-red-700 ring-red-200 dark:bg-red-500/10 dark:text-red-300 dark:ring-red-500/20 {% else %}bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20{% endif %}">
                                             <i data-lucide="{% if is_success %}check-circle-2{% elif is_warning %}alert-triangle{% elif is_error %}x-circle{% else %}info{% endif %}"
                                                class="h-3.5 w-3.5"></i>
                                             {{ item.status_label }}

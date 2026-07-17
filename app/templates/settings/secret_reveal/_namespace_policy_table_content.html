@@ -43,7 +43,7 @@
                         </div>
                     </td>
                     <td class="px-5 py-3 text-left align-middle">
-                        <span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ring-1 ring-inset {{ live_classes }}">
+                        <span class="inline-flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium ring-1 ring-inset {{ live_classes }}">
                             <i data-lucide="{{ 'check' if row.in_live_cluster else 'info' }}"
                                class="h-3.5 w-3.5"></i>
                             {{ 'Current' if row.in_live_cluster else 'Missing' }}
