@@ -80,6 +80,13 @@ class User(UserMixin, db.Model):
 
     deleted_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), nullable=True, index=True)
 
+    external_identities = relationship(
+        'ExternalIdentityLink',
+        back_populates='user',
+        cascade='all, delete-orphan',
+        lazy='selectin',
+    )
+
     role_record: Mapped[Role | None] = relationship(
         'Role',
         back_populates='users',

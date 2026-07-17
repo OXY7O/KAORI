@@ -4,6 +4,7 @@ from app.models.audit import AuditEvent
 from app.models.auth import AuthLoginEvent
 from app.models.cluster import Cluster, ClusterStatus
 from app.models.governance import TLSCertificateInventory, TLSCertificateUpdateEvent
+from app.models.identity import ExternalIdentityLink, IdentityProvider
 from app.models.inventory import (
     ClusterInventory,
     ConfigurationInventory,
@@ -27,6 +28,8 @@ __all__ = [
     'ArchiveArtifact',
     'AuthLoginEvent',
     'AuditEvent',
+    'IdentityProvider',
+    'ExternalIdentityLink',
     'ClusterStatus',
     'Cluster',
     'User',

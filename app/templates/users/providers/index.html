@@ -1,0 +1,46 @@
+{% extends "layouts/app.html" %}
+{% block title %}Identity Providers{% endblock title %}
+{% block dashboard_content %}
+<div class="space-y-6">
+  <section class="rounded-2xl border border-brand-outline bg-kaori-primary p-5 text-brand-foreground shadow-sm lg:p-6">
+    <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Identity Administration</p>
+        <h1 class="mt-2 text-2xl font-bold tracking-tight">Identity Providers</h1>
+        <p class="mt-2 max-w-3xl text-sm leading-6 text-brand-foreground-muted">Configure LDAP now and reserve the same provider boundary for OIDC SSO. Secrets are referenced from environment variables and are never stored here.</p>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <a href="{{ url_for('users.index') }}" class="inline-flex h-10 items-center rounded-lg border border-white/40 bg-brand-surface-strong px-4 text-sm font-semibold text-white">Back to Users</a>
+        <a href="{{ url_for('users.create_provider') }}" class="inline-flex h-10 items-center gap-2 rounded-lg bg-white px-4 text-sm font-semibold text-kaori-primary"><i data-lucide="plus" class="h-4 w-4"></i>Add Provider</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <header class="border-b border-outline-subtle bg-surface-hover px-5 py-4">
+      <h2 class="text-sm font-semibold text-content-primary">Configured providers</h2>
+      <p class="mt-1 text-xs text-content-secondary">JIT remains off by default. Administrative provisioning is the initial controlled workflow.</p>
+    </header>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-outline-subtle text-sm">
+        <thead class="bg-surface-hover text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-content-tertiary">
+          <tr><th class="px-5 py-3">Provider</th><th class="px-5 py-3">Type</th><th class="px-5 py-3">State</th><th class="px-5 py-3">Provisioning</th><th class="px-5 py-3 text-right">Actions</th></tr>
+        </thead>
+        <tbody class="divide-y divide-outline-subtle">
+          {% for provider in providers %}
+          <tr class="hover:bg-surface-hover">
+            <td class="px-5 py-4"><p class="font-semibold text-content-primary">{{ provider.display_name }}</p><p class="mt-1 font-mono text-xs text-content-tertiary">{{ provider.key }}</p></td>
+            <td class="px-5 py-4"><span class="rounded-md bg-kaori-soft px-2 py-1 text-xs font-semibold text-kaori-primary">{{ provider.provider_type|upper }}</span></td>
+            <td class="px-5 py-4"><span class="rounded-md px-2 py-1 text-xs font-semibold {{ 'bg-status-success-soft text-status-success' if provider.enabled else 'bg-surface-hover text-content-secondary' }}">{{ 'Enabled' if provider.enabled else 'Disabled' }}</span></td>
+            <td class="px-5 py-4 text-content-secondary">{{ 'JIT enabled' if provider.jit_enabled else 'Administrative only' }}</td>
+            <td class="px-5 py-4"><div class="flex justify-end gap-2"><form method="post" action="{{ url_for('users.validate_provider', provider_id=provider.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="h-9 rounded-lg border border-outline-default px-3 text-xs font-semibold text-content-secondary hover:border-outline-focus hover:text-kaori-primary">Validate</button></form><a href="{{ url_for('users.edit_provider', provider_id=provider.id) }}" class="inline-flex h-9 items-center rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white">Edit</a></div></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5" class="px-5 py-12 text-center text-sm text-content-secondary">No external identity provider is configured.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock dashboard_content %}

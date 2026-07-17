@@ -12,6 +12,7 @@ AuthReason = Literal[
     'invalid_credentials',
     'database_unavailable',
     'user_inactive',
+    'provider_unavailable',
 ]
 
 
@@ -26,4 +27,5 @@ class AuthResult:
 
 INVALID_LOGIN_MESSAGE = 'Invalid username or password.'
 DATABASE_UNAVAILABLE_MESSAGE = 'Login service is temporarily unavailable. Please check the database connection.'
+PROVIDER_UNAVAILABLE_MESSAGE = 'External authentication provider is temporarily unavailable. Contact an administrator.'
 USER_INACTIVE_MESSAGE = 'This account is currently inactive. Contact an administrator to restore access.'

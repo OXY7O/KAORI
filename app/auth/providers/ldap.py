@@ -1,10 +1,41 @@
 from __future__ import annotations
 
+from sqlalchemy.exc import SQLAlchemyError
+
 from app.auth.results import AuthResult
+from app.extensions import db
+from app.models import ExternalIdentityLink, User
+from app.users.providers import ExternalProviderError, LdapDirectoryProvider
 
 
 class LdapAuthProvider:
     source = 'ldap'
 
     def authenticate(self, username: str, password: str) -> AuthResult:
-        raise NotImplementedError('LDAP authentication provider is planned for a later MVP2 auth phase.')
+        try:
+            link = (
+                ExternalIdentityLink.query
+                .join(User, User.id == ExternalIdentityLink.user_id)
+                .filter(
+                    ExternalIdentityLink.external_username == username.strip(),
+                    User.auth_source == 'ldap',
+                    User.deleted_at.is_(None),
+                )
+                .first()
+            )
+            if link is None or not link.provider.enabled:
+                return AuthResult(False, 'invalid_credentials', source=self.source)
+            user = link.user
+            if not user.is_active:
+                return AuthResult(False, 'user_inactive', source=self.source, user=user)
+            authenticated = LdapDirectoryProvider(link.provider).authenticate(
+                link.distinguished_name or '', password
+            )
+            if not authenticated:
+                return AuthResult(False, 'invalid_credentials', source=self.source)
+            return AuthResult(True, 'success', source=self.source, user=user)
+        except ExternalProviderError:
+            return AuthResult(False, 'provider_unavailable', source=self.source)
+        except SQLAlchemyError:
+            db.session.rollback()
+            return AuthResult(False, 'database_unavailable', source=self.source)

@@ -85,3 +85,24 @@ User Management is registered as the standalone `users` blueprint with the canon
 | Activate/deactivate/restore/delete | `users.*` | `/users/<id>/<action>` |
 
 There are no Settings wrappers, endpoint aliases, compatibility imports, or redirect shims.
+
+## External identity implementation
+
+The domain now owns:
+
+- identity-provider configuration routes;
+- LDAP connection validation;
+- LDAP directory search;
+- controlled administrative provisioning;
+- external identity projection.
+
+Persistence remains centralized in `app/models/identity.py`. LDAP protocol behavior is implemented in `app/users/providers/ldap.py`; authentication consumes it through `app/auth/providers/ldap.py`.
+
+Canonical administration routes:
+
+```text
+/users/providers
+/users/external-identities
+```
+
+OIDC fields are intentionally reserved but disabled. JIT provisioning remains blocked until the RBAC role-mapping phase.

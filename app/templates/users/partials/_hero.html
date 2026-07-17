@@ -20,13 +20,16 @@
                 <div>
                     <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Administrative action</p>
                     <p class="mt-1 text-sm font-semibold text-brand-foreground">Provision a managed identity</p>
-                    <p class="mt-1 text-xs leading-5 text-brand-foreground-muted">Create a local account now. LDAP and SSO projections will use the same administration workflow later.</p>
+                    <p class="mt-1 text-xs leading-5 text-brand-foreground-muted">Create local accounts directly or provision controlled LDAP identity projections from an enabled directory.</p>
                 </div>
+                <div class="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
                 <a href="{{ url_for('users.create') }}"
                    class="mt-4 inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-white/80 bg-white px-4 text-sm font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft hover:text-kaori-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80">
                     <i data-lucide="user-plus" class="h-4 w-4"></i>
-                    Add User
+                    Add Local User
                 </a>
+                <a href="{{ url_for('users.external_identities') }}" class="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-white/45 bg-brand-surface-strong px-4 text-sm font-semibold text-white transition hover:bg-white/15"><i data-lucide="contact-round" class="h-4 w-4"></i>Provision LDAP</a>
+                </div>
             </div>
         </aside>
     </div>

@@ -1,0 +1,21 @@
+{% extends "layouts/app.html" %}
+{% block title %}LDAP Directory Provisioning{% endblock title %}
+{% block dashboard_content %}
+<div class="space-y-6">
+  <section class="rounded-2xl border border-brand-outline bg-kaori-primary p-5 text-brand-foreground shadow-sm lg:p-6"><div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"><div><p class="text-xs font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">External Identity Projection</p><h1 class="mt-2 text-2xl font-bold">LDAP Directory Provisioning</h1><p class="mt-2 text-sm text-brand-foreground-muted">Search an enabled directory, select one identity, then assign its KAORI role and lifecycle state. No external password enters this workflow.</p></div><div class="flex gap-2"><a href="{{ url_for('users.providers') }}" class="inline-flex h-10 items-center rounded-lg border border-white/40 bg-brand-surface-strong px-4 text-sm font-semibold text-white">Providers</a><a href="{{ url_for('users.index') }}" class="inline-flex h-10 items-center rounded-lg bg-white px-4 text-sm font-semibold text-kaori-primary">Back to Users</a></div></div></section>
+  <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <form method="post" class="grid gap-4 border-b border-outline-subtle bg-surface-hover p-5 md:grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)_auto] md:items-end">{{ search_form.hidden_tag() }}<label><span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ search_form.provider_id.label.text }}</span>{{ search_form.provider_id(class_='h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm') }}</label><label><span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ search_form.query.label.text }}</span>{{ search_form.query(class_='h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm', placeholder='username, email, or display name') }}</label><button class="h-11 rounded-lg bg-kaori-primary px-5 text-sm font-semibold text-white">Search LDAP</button></form>
+    <div class="divide-y divide-outline-subtle">
+      {% for identity in results %}
+      <form method="post" action="{{ url_for('users.provision_identity') }}" class="grid gap-4 p-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(12rem,0.6fr)_auto] lg:items-center">
+        {{ provision_form.csrf_token }}
+        <input type="hidden" name="provider_id" value="{{ selected_provider.id }}"><input type="hidden" name="subject" value="{{ identity.subject }}"><input type="hidden" name="external_username" value="{{ identity.username }}"><input type="hidden" name="distinguished_name" value="{{ identity.distinguished_name }}"><input type="hidden" name="email" value="{{ identity.email or '' }}"><input type="hidden" name="display_name" value="{{ identity.display_name or '' }}">
+        <div><p class="font-semibold text-content-primary">{{ identity.display_name or identity.username }}</p><p class="mt-1 text-xs text-content-secondary">{{ identity.username }}{% if identity.email %} · {{ identity.email }}{% endif %}</p><p class="mt-1 truncate font-mono text-[11px] text-content-tertiary">{{ identity.distinguished_name }}</p></div>
+        <div class="grid gap-2"><select name="role_id" class="h-10 rounded-lg border border-outline-default bg-surface-card px-3 text-sm">{% for value,label in provision_form.role_id.choices %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select><label class="flex items-center gap-2 text-xs font-medium text-content-secondary"><input type="checkbox" name="is_active" checked> Active after provisioning</label></div>
+        <button class="h-10 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white">Provision</button>
+      </form>
+      {% else %}<div class="px-5 py-12 text-center text-sm text-content-secondary">Search an enabled LDAP provider to discover identities.</div>{% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock dashboard_content %}

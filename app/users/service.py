@@ -158,8 +158,9 @@ def create_or_update_user(form: Any, user: User | None = None) -> User:
     user.username = form.username.data.strip()
     user.email = form.email.data.strip().lower()
     user.display_name = normalize_optional_text(form.display_name.data)
-    user.auth_source = form.auth_source.data
-    user.external_id = normalize_optional_text(form.external_id.data)
+    if is_new:
+        user.auth_source = form.auth_source.data
+        user.external_id = normalize_optional_text(form.external_id.data)
     user.role_id = form.role_id.data
     role = db.session.get(Role, form.role_id.data)
     if role:

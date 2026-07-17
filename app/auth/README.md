@@ -112,3 +112,11 @@ No larger split is currently justified. Re-review when:
 - LDAP and SSO adapters are declarations only.
 - External identity projection and group/claim role mapping belong to the next RBAC/role-mapping design stage.
 - Password expiry, password history, forced rotation, and recovery codes are not implemented.
+
+## LDAP activation phase
+
+LDAP authentication is now an active adapter for administratively projected users. The adapter resolves an `ExternalIdentityLink`, checks that its provider is enabled, verifies the user by LDAP bind, then returns the linked KAORI `User`. User lifecycle remains authoritative in KAORI.
+
+OIDC configuration fields are reserved but OIDC cannot yet be enabled. JIT provisioning is blocked until RBAC role mapping is implemented.
+
+See `docs/authentication/EXTERNAL_IDENTITY_FLOW.md`.

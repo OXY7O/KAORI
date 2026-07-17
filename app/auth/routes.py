@@ -6,9 +6,10 @@ from flask_login import current_user, logout_user
 from app.auth.audit import record_login_attempt
 from app.auth.forms import LoginForm
 from app.auth.results import AuthResult
-from app.auth.services import DATABASE_UNAVAILABLE_MESSAGE, INVALID_LOGIN_MESSAGE, authenticate
+from app.auth.services import DATABASE_UNAVAILABLE_MESSAGE, INVALID_LOGIN_MESSAGE, PROVIDER_UNAVAILABLE_MESSAGE, authenticate
 from app.auth.session import clear_authenticated_session, establish_authenticated_session
 from app.extensions import db, limiter
+
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
@@ -73,6 +74,8 @@ def login():
 
         if result.reason == 'database_unavailable':
             message = result.message or DATABASE_UNAVAILABLE_MESSAGE
+        elif result.reason == 'provider_unavailable':
+            message = result.message or PROVIDER_UNAVAILABLE_MESSAGE
         else:
             message = result.message or INVALID_LOGIN_MESSAGE
         flash(message, 'danger')

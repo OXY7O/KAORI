@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-from flask import current_app
-
 from app.auth.providers.registry import build_provider_registry
 from app.auth.results import (
     DATABASE_UNAVAILABLE_MESSAGE,
     INVALID_LOGIN_MESSAGE,
+    PROVIDER_UNAVAILABLE_MESSAGE,
     USER_INACTIVE_MESSAGE,
     AuthReason,
     AuthResult,
@@ -13,38 +12,23 @@ from app.auth.results import (
 
 
 def authenticate(username: str, password: str) -> AuthResult:
-    """Authenticate through the currently active provider chain.
-
-    Local database authentication is authoritative in the current release and
-    remains permanently available as the recovery/break-glass provider. LDAP and
-    SSO names may be declared in configuration for deployment planning, but are
-    never invoked until their adapters are implemented and explicitly activated.
-    """
-
     registry = build_provider_registry()
+    local_result = registry.local.authenticate(username=username, password=password)
+    if local_result.success or local_result.reason in {'user_inactive', 'database_unavailable'}:
+        return local_result
 
-    if registry.unsupported:
-        current_app.logger.warning(
-            'Unsupported authentication providers configured and ignored: %s',
-            ', '.join(registry.unsupported),
-        )
+    unavailable_result: AuthResult | None = None
+    for provider in registry.external:
+        result = provider.authenticate(username=username, password=password)
+        if result.success or result.reason == 'user_inactive':
+            return result
+        if result.reason == 'provider_unavailable':
+            unavailable_result = result
 
-    result = registry.local.authenticate(username=username, password=password)
-
-    if registry.configured_additional:
-        current_app.logger.warning(
-            'Authentication providers are configured but not active yet: %s',
-            ', '.join(registry.configured_additional),
-        )
-
-    return result
+    return unavailable_result or local_result
 
 
 __all__ = [
-    'AuthReason',
-    'AuthResult',
-    'DATABASE_UNAVAILABLE_MESSAGE',
-    'INVALID_LOGIN_MESSAGE',
-    'USER_INACTIVE_MESSAGE',
-    'authenticate',
+    'AuthReason', 'AuthResult', 'DATABASE_UNAVAILABLE_MESSAGE', 'INVALID_LOGIN_MESSAGE',
+    'PROVIDER_UNAVAILABLE_MESSAGE', 'USER_INACTIVE_MESSAGE', 'authenticate',
 ]
