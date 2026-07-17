@@ -103,13 +103,13 @@
                     <p class="min-w-0 text-xs leading-5 text-content-muted lg:flex-1">
                         Save first, then run <strong class="font-semibold text-content-secondary">Validate</strong> from Identity Providers before enabling production access.
                     </p>
-                    <div class="flex w-full items-center gap-3 sm:w-auto sm:justify-end lg:shrink-0">
+                    <div class="flex justify-end gap-2 lg:shrink-0">
                         <a href="{{ url_for('users.providers') }}"
-                           class="inline-flex h-10 min-w-28 flex-1 items-center justify-center whitespace-nowrap rounded-lg border border-outline-default px-4 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus sm:flex-none">
+                           class="inline-flex h-10 items-center justify-center whitespace-nowrap rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                             Cancel
                         </a>
                         <button type="submit"
-                                class="inline-flex h-10 min-w-40 flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-kaori-primary px-5 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus sm:flex-none">
+                                class="inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card">
                             <i data-lucide="save" class="h-4 w-4 shrink-0"></i>
                             <span>Save Provider</span>
                         </button>
