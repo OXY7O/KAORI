@@ -246,20 +246,6 @@ def verify_activity_archive(archive_id: str) -> ResponseReturnValue:
         flash(feedback['message'], 'success')
     except Exception as exc:
         current_app.logger.exception('Activity archive verification failed for %s.', archive_id)
-        record_operational_activity(
-            user_id=current_user.id,
-            event_type='operational_activity_archive_verification_failed',
-            status='error',
-            title='Activity archive verification failed',
-            message='The selected archive could not be verified against the configured storage backend.',
-            detail='The archive registry was preserved for investigation and no cleanup was executed by this verification action.',
-            action_url=url_for('notifications.activity_log') + '#activity-retention',
-            metadata={
-                'archive_id': archive_id,
-                'error_type': type(exc).__name__,
-                'error_message': str(exc),
-            },
-        )
         feedback = {
             'status': 'error',
             'title': 'Archive verification failed',

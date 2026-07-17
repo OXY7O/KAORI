@@ -1,79 +1,84 @@
 {% set success_ratio = ((summary.success_count / summary.total_count) * 100) | round(0) if summary.total_count > 0 else 0 %}
-<section class="space-y-3">
+<div class="space-y-3">
     <div class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
             <h2 class="text-lg font-semibold text-content-primary dark:text-white">Activity audit snapshot</h2>
-            <p class="text-sm text-content-muted dark:text-content-muted">A compact summary of volume, review pressure, and operational posture before you inspect the detailed audit rows.</p>
+            <p class="text-sm text-content-muted dark:text-content-muted">Only the most important activity signals are shown here so users can review the table without visual clutter.</p>
         </div>
         <div class="text-sm text-content-muted dark:text-content-muted">
             Review focus <span class="font-semibold text-content-secondary dark:text-slate-200">{{ summary.attention_count }} need attention</span>
         </div>
     </div>
-    <div class="grid gap-4 xl:grid-cols-12">
-        <section class="xl:col-span-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <div class="rounded-2xl border border-brand-outline bg-gradient-to-br from-kaori-soft/95 to-white p-4 shadow-sm dark:from-[#261c42] dark:to-slate-900/80 dark:border-brand-outline">
-                <div class="flex items-start justify-between gap-3">
-                    <div>
-                        <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted dark:text-content-muted">Total activities</p>
-                        <p class="mt-2 text-3xl font-bold tracking-tight text-content-primary dark:text-white">{{ summary.total_count }}</p>
-                        <p class="mt-1 text-xs text-content-muted dark:text-content-muted">Current audit workspace</p>
-                    </div>
-                    <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-kaori-primary/10 text-kaori-primary dark:bg-kaori-primary/20 dark:text-kaori-accent"><i data-lucide="list-checks" class="h-5 w-5"></i></span>
-                </div>
-            </div>
-            <div class="rounded-2xl border border-amber-200 bg-amber-50/70 p-4 shadow-sm dark:border-amber-900/40 dark:bg-amber-950/10">
-                <div class="flex items-start justify-between gap-3">
-                    <div>
-                        <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted dark:text-content-muted">Need attention</p>
-                        <p class="mt-2 text-3xl font-bold tracking-tight text-content-primary dark:text-white">{{ summary.attention_count }}</p>
-                        <p class="mt-1 text-xs text-content-muted dark:text-content-muted">Warning, error, or follow-up</p>
-                    </div>
-                    <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300"><i data-lucide="triangle-alert" class="h-5 w-5"></i></span>
-                </div>
-            </div>
-            <div class="rounded-2xl border border-indigo-200 bg-indigo-50/70 p-4 shadow-sm dark:border-indigo-900/40 dark:bg-indigo-950/10">
-                <div class="flex items-start justify-between gap-3">
-                    <div>
-                        <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted dark:text-content-muted">Unread activities</p>
-                        <p class="mt-2 text-3xl font-bold tracking-tight text-content-primary dark:text-white">{{ summary.unread_count }}</p>
-                        <p class="mt-1 text-xs text-content-muted dark:text-content-muted">Items not yet reviewed</p>
-                    </div>
-                    <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-100 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300"><i data-lucide="mail" class="h-5 w-5"></i></span>
-                </div>
-            </div>
-            <div class="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 shadow-sm dark:border-emerald-900/40 dark:bg-emerald-950/10">
-                <div class="flex items-start justify-between gap-3">
-                    <div>
-                        <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted dark:text-content-muted">Success ratio</p>
-                        <p class="mt-2 text-3xl font-bold tracking-tight text-content-primary dark:text-white">{{ success_ratio | int }}%</p>
-                        <p class="mt-1 text-xs text-content-muted dark:text-content-muted">Successful outcomes</p>
-                    </div>
-                    <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"><i data-lucide="check-circle-2" class="h-5 w-5"></i></span>
-                </div>
-            </div>
-        </section>
-        <aside class="xl:col-span-4 rounded-2xl border border-outline-default bg-surface-card p-5 shadow-sm dark:border-outline-default dark:bg-surface-card">
+    <section class="relative overflow-hidden rounded-xl border border-brand-outline bg-kaori-primary p-5 text-brand-foreground shadow-sm">
+        <div class="relative flex flex-col gap-3 border-b border-white/15 pb-4 lg:flex-row lg:items-center lg:justify-between">
             <div class="flex items-start gap-3">
-                <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-kaori-soft text-kaori-primary dark:bg-kaori-soft dark:text-kaori-accent"><i data-lucide="scan-eye" class="h-5 w-5"></i></span>
+                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-surface-card/15 text-white backdrop-blur">
+                    <i data-lucide="activity" class="h-5 w-5"></i>
+                </span>
                 <div>
-                    <h3 class="text-sm font-semibold text-content-primary dark:text-white">Audit review guidance</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-muted dark:text-content-muted">Use the summary for prioritization, then validate details, target context, and metadata inside each audit row.</p>
+                    <h3 class="text-lg font-semibold text-white">Operational overview</h3>
+                    <p class="mt-1 text-sm text-brand-foreground-muted">Key activity signals for volume, review priority, unread items, and successful outcomes.</p>
                 </div>
             </div>
-            <div class="mt-4 grid gap-2">
-                <div class="rounded-xl bg-page px-3 py-3 ring-1 ring-inset ring-slate-200 dark:bg-slate-900/40 dark:ring-slate-700">
-                    <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted dark:text-content-muted">Best starting point</p>
-                    <p class="mt-1 text-sm font-semibold text-content-primary dark:text-white">Unread + attention items</p>
-                </div>
-                <div class="rounded-xl bg-page px-3 py-3 ring-1 ring-inset ring-slate-200 dark:bg-slate-900/40 dark:ring-slate-700">
-                    <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted dark:text-content-muted">What stays here</p>
-                    <p class="mt-1 text-sm font-semibold text-content-primary dark:text-white">Cross-user operational actions and outcomes</p>
-                </div>
-                <div class="rounded-xl bg-page px-3 py-3 ring-1 ring-inset ring-slate-200 dark:bg-slate-900/40 dark:ring-slate-700">
-                    <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted dark:text-content-muted">What stays elsewhere</p>
-                    <p class="mt-1 text-sm font-semibold text-content-primary dark:text-white">Topbar personal notifications and dedicated login security audit</p>
+            <div class="inline-flex items-center self-start rounded-md border border-white/20 bg-surface-card/15 px-3 py-1.5 text-[11px] font-semibold text-white backdrop-blur lg:self-auto">
+                {{ summary.success_count }} successful of {{ summary.total_count }} total activities
+            </div>
+        </div>
+        <div class="relative mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <div class="rounded-lg border border-brand-outline bg-brand-surface p-4 shadow-sm backdrop-blur">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-surface-card/15 text-white">
+                        <i data-lucide="list-checks" class="h-4.5 w-4.5"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Total activities</p>
+                        <p class="mt-1 text-3xl font-bold tracking-tight text-white">{{ summary.total_count }}</p>
+                        <p class="mt-1 text-xs text-brand-foreground-muted">Current audit workspace</p>
+                    </div>
                 </div>
             </div>
-        </aside>
-    </div>
-</section>
+            <div class="rounded-lg border border-brand-outline bg-brand-surface p-4 shadow-sm backdrop-blur">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-surface-card/15 text-amber-100">
+                        <i data-lucide="triangle-alert" class="h-4.5 w-4.5"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Need attention</p>
+                        <p class="mt-1 text-3xl font-bold tracking-tight text-white">{{ summary.attention_count }}</p>
+                        <p class="mt-1 text-xs text-brand-foreground-muted">Warning, error, or follow-up</p>
+                    </div>
+                </div>
+            </div>
+            <div class="rounded-lg border border-brand-outline bg-brand-surface p-4 shadow-sm backdrop-blur">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-surface-card/15 text-violet-100">
+                        <i data-lucide="mail" class="h-4.5 w-4.5"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Unread activities</p>
+                        <p class="mt-1 text-3xl font-bold tracking-tight text-white">{{ summary.unread_count }}</p>
+                        <p class="mt-1 text-xs text-brand-foreground-muted">Items not yet reviewed</p>
+                    </div>
+                </div>
+            </div>
+            <div class="rounded-lg border border-brand-outline bg-brand-surface p-4 shadow-sm backdrop-blur">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-surface-card/15 text-emerald-100">
+                        <i data-lucide="check-circle-2" class="h-4.5 w-4.5"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Success ratio</p>
+                        <p class="mt-1 text-3xl font-bold tracking-tight text-white">{{ success_ratio | int }}%</p>
+                        <p class="mt-1 text-xs text-brand-foreground-muted">Successful outcomes</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="relative mt-4 flex items-start gap-3 rounded-lg border border-brand-outline bg-brand-surface px-4 py-3 text-xs leading-5 text-brand-foreground-muted backdrop-blur">
+            <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-card/15 text-white">
+                <i data-lucide="info" class="h-4 w-4"></i>
+            </span>
+            <p>Shows cross-user operational actions only. Personal notifications and login security events remain in their dedicated views.</p>
+        </div>
+    </section>
+</div>
