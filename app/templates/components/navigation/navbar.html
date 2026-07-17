@@ -32,13 +32,25 @@
         x-data="{ quickOpen: false, notificationOpen: false, userOpen: false }">
     <div class="flex h-16 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <!-- Left: current page context -->
-        <div class="flex min-w-0 items-center gap-3">
+        <div class="flex min-w-0 items-center gap-2">
             <div class="inline-flex h-10 min-w-0 items-center gap-2 rounded-xl border border-outline-default bg-surface-card px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-content-muted shadow-sm transition">
                 <span class="truncate">KAORI</span>
                 <i data-lucide="chevron-right"
                    class="h-3.5 w-3.5 flex-shrink-0 text-content-muted"></i>
                 <span class="truncate text-kaori-primary">{{ current_page_label }}</span>
             </div>
+            <button @click="$dispatch('toggle-sidebar')"
+                    type="button"
+                    class="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-outline-default bg-surface-card text-content-secondary shadow-sm transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
+                    :title="sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'"
+                    :aria-label="sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'"
+                    :aria-expanded="sidebarOpen.toString()"
+                    aria-controls="app-sidebar">
+                <i data-lucide="panel-left-close"
+                   class="sidebar-toggle-expanded-icon h-4.5 w-4.5"></i>
+                <i data-lucide="panel-left-open"
+                   class="sidebar-toggle-collapsed-icon h-4.5 w-4.5"></i>
+            </button>
         </div>
         <!-- Center: future global search placeholder -->
         <div class="hidden min-w-0 flex-1 justify-center xl:flex">
