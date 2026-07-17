@@ -1,6 +1,7 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/live_lookup_notice.html" as live_lookup %}
+{% import "components/table_label.html" as table_label %}
 {% import "kubernetes_operations/configmaps/_components.html" as configmap_ui %}
 {% block title %}Create ConfigMap{% endblock title %}
 {% block dashboard_content %}
@@ -43,9 +44,9 @@
         <form method="post" hx-post="{{ url_for('kubernetes_operations.create_configmap') }}" hx-target="#configmap-operation-feedback" hx-swap="innerHTML" class="space-y-6">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
-                <section class="h-full overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm xl:col-start-1 xl:row-start-1">
+                <section class="flex h-full flex-col overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm xl:col-start-1 xl:row-start-1">
                     {{ configmap_ui.section_header('map-pin', 'Target location', 'Select the live cluster and namespace where the new ConfigMap will be created.') }}
-                    <div class="p-5 sm:p-6">
+                    <div class="flex-1 p-5 sm:p-6">
                         <div class="grid gap-5 lg:grid-cols-3">
                         <label class="block min-w-0">
                             <span class="text-sm font-semibold text-content-primary">Cluster</span>
@@ -66,7 +67,7 @@
                             {% endif %}
                         </div>
                     </div>
-                    <div class="grid gap-3 border-t border-outline-default bg-surface-hover px-5 py-3 sm:grid-cols-2 sm:px-6">
+                    <div class="mt-auto grid gap-3 border-t border-outline-default bg-surface-hover px-5 py-3 sm:grid-cols-2 sm:px-6">
                         {{ configmap_ui.guardrail('git-branch', 'Scoped namespace', 'Namespace choices always follow the selected live cluster.') }}
                         {{ configmap_ui.guardrail('shield-check', 'Safe create', 'An existing ConfigMap is never overwritten by this workflow.') }}
                     </div>

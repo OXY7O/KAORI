@@ -190,6 +190,7 @@ def get_reveal_workspace(
     namespaces: list[str] = []
     targets = []
     selection_error = None
+    selection_error_title = None
     cluster = (
         Cluster.query.filter_by(id=normalized_cluster_id).first()
         if normalized_cluster_id
@@ -202,31 +203,39 @@ def get_reveal_workspace(
         and _cluster_ready(cluster)
     )
     if cluster_available:
+        configured_names = get_configured_enabled_namespace_names(
+            normalized_cluster_id
+        )
         try:
-            configured_names = get_configured_enabled_namespace_names(
-                normalized_cluster_id
-            )
             namespaces = list_live_namespaces(
                 normalized_cluster_id,
                 allowed_namespaces=configured_names,
             )
+        except ValueError as exc:
+            selection_error = str(exc)
+            selection_error_title = 'Live namespace lookup failed'
+            normalized_namespace = ''
+            selected_secret_name = ''
+        else:
             if normalized_namespace not in namespaces:
                 normalized_namespace = ''
                 selected_secret_name = ''
             if normalized_namespace:
-                targets = list_live_secrets(
-                    normalized_cluster_id,
-                    normalized_namespace,
-                    supported_types=set(SUPPORTED_REVEAL_TYPES),
-                    blocked_types=BLOCKED_SECRET_TYPES,
-                )
-                live_names = {item.name for item in targets}
-                if selected_secret_name not in live_names:
+                try:
+                    targets = list_live_secrets(
+                        normalized_cluster_id,
+                        normalized_namespace,
+                        supported_types=set(SUPPORTED_REVEAL_TYPES),
+                        blocked_types=BLOCKED_SECRET_TYPES,
+                    )
+                except ValueError as exc:
+                    selection_error = str(exc)
+                    selection_error_title = 'Live Secret lookup failed'
                     selected_secret_name = ''
-        except ValueError as exc:
-            selection_error = str(exc)
-            normalized_namespace = ''
-            selected_secret_name = ''
+                else:
+                    live_names = {item.name for item in targets}
+                    if selected_secret_name not in live_names:
+                        selected_secret_name = ''
 
     return {
         'cluster_id': normalized_cluster_id if cluster_available else '',
@@ -241,6 +250,7 @@ def get_reveal_workspace(
             else 'disabled'
         ),
         'selection_error': selection_error,
+        'selection_error_title': selection_error_title,
     }
 
 

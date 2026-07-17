@@ -95,22 +95,31 @@ def _selection_context(
     namespaces: list[str] = []
     configmaps = []
     selection_error = None
+    selection_error_title = None
 
     if cluster_id:
         try:
             namespaces = get_namespaces(cluster_id)
+        except ValueError as exc:
+            selection_error = str(exc)
+            selection_error_title = "Live namespace lookup failed"
+            namespace = ""
+            configmap_name = ""
+        else:
             if namespace not in namespaces:
                 namespace = ""
                 configmap_name = ""
             if namespace:
-                configmaps = get_configmaps(cluster_id, namespace)
-                live_names = {item.name for item in configmaps}
-                if configmap_name not in live_names:
+                try:
+                    configmaps = get_configmaps(cluster_id, namespace)
+                except ValueError as exc:
+                    selection_error = str(exc)
+                    selection_error_title = "Live ConfigMap lookup failed"
                     configmap_name = ""
-        except ValueError as exc:
-            selection_error = str(exc)
-            namespace = ""
-            configmap_name = ""
+                else:
+                    live_names = {item.name for item in configmaps}
+                    if configmap_name not in live_names:
+                        configmap_name = ""
 
     return {
         **context,
@@ -120,6 +129,7 @@ def _selection_context(
         "selected_namespaces": namespaces,
         "selected_configmaps": configmaps,
         "selection_error": selection_error,
+        "selection_error_title": selection_error_title,
     }
 
 
@@ -253,6 +263,7 @@ def configmap_workspace():
         selected_namespace=context["selected_namespace"],
         selected_configmap_name=context["selected_configmap_name"],
         selection_error=context["selection_error"],
+        selection_error_title=context["selection_error_title"],
         workspace_mode=request.args.get("workspace_mode", "update"),
         delete_target_url=url_for("kubernetes_operations.configmap_delete_target"),
     )

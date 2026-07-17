@@ -73,26 +73,35 @@ def get_replace_workspace(
     namespaces: list[str] = []
     targets = []
     selection_error = None
+    selection_error_title = None
 
     if normalized_cluster_id:
         try:
             namespaces = list_live_namespaces(normalized_cluster_id)
+        except ValueError as exc:
+            selection_error = str(exc)
+            selection_error_title = "Live namespace lookup failed"
+            normalized_namespace = ""
+            selected_secret_name = ""
+        else:
             if normalized_namespace not in namespaces:
                 normalized_namespace = ""
                 selected_secret_name = ""
             if normalized_namespace:
-                targets = list_live_secrets(
-                    normalized_cluster_id,
-                    normalized_namespace,
-                    supported_types=set(SUPPORTED_REPLACE_TYPES),
-                )
-                live_names = {item.name for item in targets}
-                if selected_secret_name not in live_names:
+                try:
+                    targets = list_live_secrets(
+                        normalized_cluster_id,
+                        normalized_namespace,
+                        supported_types=set(SUPPORTED_REPLACE_TYPES),
+                    )
+                except ValueError as exc:
+                    selection_error = str(exc)
+                    selection_error_title = "Live Secret lookup failed"
                     selected_secret_name = ""
-        except ValueError as exc:
-            selection_error = str(exc)
-            normalized_namespace = ""
-            selected_secret_name = ""
+                else:
+                    live_names = {item.name for item in targets}
+                    if selected_secret_name not in live_names:
+                        selected_secret_name = ""
 
     return {
         "cluster_id": normalized_cluster_id,
@@ -101,6 +110,7 @@ def get_replace_workspace(
         "targets": targets,
         "selected_secret_name": selected_secret_name,
         "selection_error": selection_error,
+        "selection_error_title": selection_error_title,
         "replace_types": SUPPORTED_REPLACE_TYPES,
     }
 

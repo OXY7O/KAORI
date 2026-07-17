@@ -572,3 +572,17 @@ Secret Management follows the same authenticated operations geometry as ConfigMa
 - HTMX namespace partials update their dedicated full-width notice container through an out-of-band swap. The partial must not inject a notice before later filter controls in DOM order.
 - Never rebuild or package `app/static/css/output.css` from a source tree that does not contain the active KAORI token definitions. A UI that becomes white with black outlines indicates that token utilities such as `bg-kaori-primary`, `bg-surface-card`, and `border-outline-default` were dropped from the compiled artifact.
 - Lookup connectivity, authentication, kubeconfig, RBAC, namespace-list, object-list, and object-read failures use this Warning treatment. Destructive operation failures remain governed by their operation-result component.
+
+
+## Live Kubernetes selector standard
+
+ConfigMap and Secret operation selectors use one consistent live-source pattern:
+
+- The registered cluster selector appears first.
+- The live namespace selector appears second.
+- A live object selector appears third when the workflow targets an existing ConfigMap or Secret.
+- The `Live` indicator uses the shared compact status label.
+- When Kubernetes cannot be reached, the namespace selector is disabled and displays `No live namespaces available`.
+- Lookup failures use `components/live_lookup_notice.html` and render as one full-width row below every filter in the card.
+- A lookup notice must never occupy a filter column or use page-specific warning markup.
+- Cards with a bottom guidance footer use a flex-column layout so the footer remains flush with the bottom edge at every content height.
