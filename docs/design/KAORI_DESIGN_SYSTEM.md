@@ -595,3 +595,12 @@ ConfigMap and Secret operation selectors use one consistent live-source pattern:
 - Live lookup failures render as one full-width notification below the complete filter row. The filter grid and notification must not share the same column slot.
 - Destructive workflow cards use violet structural borders. Critical red is reserved for the final destructive button, confirmation control, and real consequence messaging.
 - Informational TLS rotation surfaces use KAORI violet. Semantic warning colors are reserved for real certificate or mutation risk states.
+
+## Kubernetes TLS Secret governance standard
+
+- Governance TLS Secret overview, detail, and bulk update pages use the KAORI violet authenticated-page baseline: solid `bg-kaori-primary` hero, 16 px hero radius, `p-5 lg:p-6`, a 7/5 split, rectangular metadata labels, and a compact posture panel.
+- Structural cards, filter areas, expandable details, upload panels, and pagination use shared surface and outline tokens. Decorative blue, cyan, indigo, fuchsia, and gradient treatments are prohibited.
+- Non-status icons, labels, buttons, and section accents use KAORI violet. Certificate health, expiry, invalid state, and destructive update consequences retain semantic Normal, Warning, and Critical colors.
+- Overview filters use 44 px controls, 8 px radius, sentence-case labels, and violet focus rings. Tables remain left aligned except explicit action columns.
+- Cluster, namespace, SAN count, and other descriptive metadata use compact rectangular labels. Status badges remain compact semantic pills.
+- Governance provides posture, relationship, and audit context. Certificate/private-key mutation remains delegated to the controlled Kubernetes Operations TLS rotation workflow.
