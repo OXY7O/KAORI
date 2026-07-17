@@ -1,14 +1,14 @@
 """add external identity foundation
 
 Revision ID: 20260717_external_identity
-Revises: 20260716_simplify_profiles
+Revises: 20260716_k8s_discovery_repair
 Create Date: 2026-07-17
 """
 from alembic import op
 import sqlalchemy as sa
 
 revision = '20260717_external_identity'
-down_revision = '20260716_profile_names'
+down_revision = '20260716_k8s_discovery_repair'
 branch_labels = None
 depends_on = None
 
