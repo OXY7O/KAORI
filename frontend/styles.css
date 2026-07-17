@@ -279,6 +279,13 @@
     padding-inline: 1rem;
 }
 
+/* Keep glyph descenders such as g, p, q, and y clear of truncate clipping. */
+.sidebar-submenu > a > span:last-child {
+    display: block;
+    line-height: 1.25rem;
+    padding-block: 0.0625rem;
+}
+
 .htmx-indicator {
     visibility: hidden;
     opacity: 0;
