@@ -1,12 +1,21 @@
-<section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm dark:border-outline-default dark:bg-surface-card">
+<section id="operational-activity-table" class="overflow-hidden rounded-[28px] border border-outline-default bg-surface-card shadow-sm dark:border-outline-default dark:bg-surface-card">
     <div class="border-b border-outline-default px-6 py-5 dark:border-outline-default">
-        <div class="flex items-center gap-3">
-            <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary dark:bg-kaori-soft dark:text-kaori-primary">
-                <i data-lucide="list-filter" class="h-5 w-5"></i>
-            </span>
-            <div>
-                <h2 class="text-lg font-semibold text-content-primary dark:text-white">Activity audit table</h2>
-                <p class="mt-1 text-sm text-content-muted dark:text-content-muted">Filter user access and operational actions, then inspect the complete actor, provider, client, target, and execution context.</p>
+        <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start">
+            <div class="flex items-start gap-3">
+                <span class="flex h-11 w-11 items-center justify-center rounded-2xl bg-kaori-soft text-kaori-primary dark:bg-kaori-soft dark:text-kaori-accent">
+                    <i data-lucide="list-filter" class="h-5 w-5"></i>
+                </span>
+                <div>
+                    <h2 class="text-lg font-semibold text-content-primary dark:text-white">Activity audit table</h2>
+                    <p class="mt-1 text-sm leading-6 text-content-muted dark:text-content-muted">Filter audit records, scan the most relevant signals, and open each row for complete actor, context, change, and metadata detail.</p>
+                </div>
+            </div>
+            <div class="rounded-2xl border border-brand-outline bg-kaori-soft/60 px-4 py-3 text-xs leading-5 text-kaori-primary dark:border-brand-outline dark:bg-kaori-soft dark:text-kaori-primary">
+                <p class="font-semibold text-content-primary dark:text-white">Fast review flow</p>
+                <ul class="mt-2 space-y-1.5">
+                    <li class="flex items-start gap-2"><span class="mt-1 h-1.5 w-1.5 rounded-full bg-kaori-primary"></span><span>Filter by user, status, type, and review state.</span></li>
+                    <li class="flex items-start gap-2"><span class="mt-1 h-1.5 w-1.5 rounded-full bg-kaori-primary"></span><span>Open a row to inspect target, changed values, and operational metadata.</span></li>
+                </ul>
             </div>
         </div>
         <div id="operational-activity-loading"
@@ -14,7 +23,7 @@
             <div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary dark:bg-kaori-primary"></div>
         </div>
     </div>
-    <div class="border-b border-outline-default px-6 py-4 dark:border-outline-default">
+    <div class="border-b border-outline-default bg-page px-6 py-5 dark:border-outline-default dark:bg-slate-950/30">
         <form id="operational-activity-filter-form"
               hx-get="{{ url_for('notifications.activity_log') }}"
               hx-target="#operational-activity-content"
@@ -22,62 +31,81 @@
               hx-push-url="true"
               hx-trigger="change from:select, keyup changed delay:500ms from:input[name='search']"
               hx-indicator="#operational-activity-loading"
-              class="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.75fr)_minmax(0,1fr)_minmax(0,0.75fr)_minmax(16rem,1.35fr)] xl:items-end">
+              class="space-y-4">
             <input type="hidden" name="page" value="1">
             <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
-            <div>
-                <label class="mb-2 block text-sm font-medium text-content-secondary dark:text-slate-300">User</label>
-                <select name="user_id"
-                        class="w-full rounded-xl border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary transition outline-none focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 dark:border-outline-default dark:bg-surface-card dark:text-content-primary dark:focus:border-kaori-primary dark:focus:ring-kaori-primary/10">
-                    <option value="">All Users</option>
-                    {% for option in user_options %}
-                        <option value="{{ option.id }}"
-                                {% if filters.user_id == option.id %}selected{% endif %}>{{ option.label }} · {{ option.email }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label class="mb-2 block text-sm font-medium text-content-secondary dark:text-slate-300">Status</label>
-                <select name="status"
-                        class="w-full rounded-xl border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary transition outline-none focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 dark:border-outline-default dark:bg-surface-card dark:text-content-primary dark:focus:border-kaori-primary dark:focus:ring-kaori-primary/10">
-                    {% for value, label in [('all', 'All Status'), ('success', 'Success'), ('warning', 'Warning'), ('error', 'Error'), ('info', 'Information')] %}
-                        <option value="{{ value }}"
-                                {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label class="mb-2 block text-sm font-medium text-content-secondary dark:text-slate-300">Activity Type</label>
-                <select name="event_type"
-                        class="w-full rounded-xl border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary transition outline-none focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 dark:border-outline-default dark:bg-surface-card dark:text-content-primary dark:focus:border-kaori-primary dark:focus:ring-kaori-primary/10">
-                    <option value="all">All Activity Types</option>
-                    {% for option in event_types %}
-                        <option value="{{ option.value }}"
-                                {% if filters.event_type == option.value %}selected{% endif %}>{{ option.label }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label class="mb-2 block text-sm font-medium text-content-secondary dark:text-slate-300">Read State</label>
-                <select name="read_state"
-                        class="w-full rounded-xl border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary transition outline-none focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 dark:border-outline-default dark:bg-surface-card dark:text-content-primary dark:focus:border-kaori-primary dark:focus:ring-kaori-primary/10">
-                    {% for value, label in [('all', 'All States'), ('unread', 'Unread'), ('read', 'Read')] %}
-                        <option value="{{ value }}"
-                                {% if filters.read_state == value %}selected{% endif %}>{{ label }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label class="mb-2 block text-sm font-medium text-content-secondary dark:text-slate-300">Search Activity</label>
-                <div class="relative">
-                    <i data-lucide="search"
-                       class="absolute left-3 top-3 h-4 w-4 text-content-muted dark:text-content-muted"></i>
-                    <input type="search"
-                           name="search"
-                           value="{{ filters.search }}"
-                           placeholder="Search user, message, detail, or type..."
-                           class="w-full rounded-xl border border-outline-default bg-surface-card py-2 pr-3 pl-10 text-sm text-content-primary transition outline-none placeholder:text-content-muted focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 dark:border-outline-default dark:bg-surface-card dark:text-content-primary dark:placeholder:text-content-muted dark:focus:border-kaori-primary dark:focus:ring-kaori-primary/10">
+            <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(16rem,1.2fr)] xl:items-end">
+                <div>
+                    <label class="mb-2 block text-sm font-medium text-content-secondary dark:text-slate-300">User</label>
+                    <select name="user_id"
+                            class="w-full rounded-2xl border border-outline-default bg-surface-card px-3 py-2.5 text-sm text-content-primary transition outline-none focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 dark:border-outline-default dark:bg-surface-card dark:text-content-primary dark:focus:border-kaori-primary dark:focus:ring-kaori-primary/10">
+                        <option value="">All users</option>
+                        {% for option in user_options %}
+                            <option value="{{ option.id }}"
+                                    {% if filters.user_id == option.id %}selected{% endif %}>{{ option.label }} · {{ option.email }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
+                <div>
+                    <label class="mb-2 block text-sm font-medium text-content-secondary dark:text-slate-300">Status</label>
+                    <select name="status"
+                            class="w-full rounded-2xl border border-outline-default bg-surface-card px-3 py-2.5 text-sm text-content-primary transition outline-none focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 dark:border-outline-default dark:bg-surface-card dark:text-content-primary dark:focus:border-kaori-primary dark:focus:ring-kaori-primary/10">
+                        {% for value, label in [('all', 'All status'), ('success', 'Success'), ('warning', 'Warning'), ('error', 'Error'), ('info', 'Information')] %}
+                            <option value="{{ value }}"
+                                    {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="mb-2 block text-sm font-medium text-content-secondary dark:text-slate-300">Activity type</label>
+                    <select name="event_type"
+                            class="w-full rounded-2xl border border-outline-default bg-surface-card px-3 py-2.5 text-sm text-content-primary transition outline-none focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 dark:border-outline-default dark:bg-surface-card dark:text-content-primary dark:focus:border-kaori-primary dark:focus:ring-kaori-primary/10">
+                        <option value="all">All activity types</option>
+                        {% for option in event_types %}
+                            <option value="{{ option.value }}"
+                                    {% if filters.event_type == option.value %}selected{% endif %}>{{ option.label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="mb-2 block text-sm font-medium text-content-secondary dark:text-slate-300">Read state</label>
+                    <select name="read_state"
+                            class="w-full rounded-2xl border border-outline-default bg-surface-card px-3 py-2.5 text-sm text-content-primary transition outline-none focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 dark:border-outline-default dark:bg-surface-card dark:text-content-primary dark:focus:border-kaori-primary dark:focus:ring-kaori-primary/10">
+                        {% for value, label in [('all', 'All states'), ('unread', 'Unread'), ('read', 'Read')] %}
+                            <option value="{{ value }}"
+                                    {% if filters.read_state == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="mb-2 block text-sm font-medium text-content-secondary dark:text-slate-300">Search activity</label>
+                    <div class="relative">
+                        <i data-lucide="search"
+                           class="absolute left-3 top-3.5 h-4 w-4 text-content-muted dark:text-content-muted"></i>
+                        <input type="search"
+                               name="search"
+                               value="{{ filters.search }}"
+                               placeholder="Search user, message, detail, or type..."
+                               class="w-full rounded-2xl border border-outline-default bg-surface-card py-2.5 pr-3 pl-10 text-sm text-content-primary transition outline-none placeholder:text-content-muted focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 dark:border-outline-default dark:bg-surface-card dark:text-content-primary dark:placeholder:text-content-muted dark:focus:border-kaori-primary dark:focus:ring-kaori-primary/10">
+                    </div>
+                </div>
+            </div>
+            <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-outline-default bg-surface-card px-4 py-3 text-xs leading-5 text-content-muted dark:border-outline-default dark:bg-surface-card dark:text-content-muted">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="inline-flex items-center gap-1 rounded-full bg-kaori-soft px-3 py-1 font-semibold text-kaori-primary ring-1 ring-inset ring-brand-outline dark:bg-kaori-soft dark:text-kaori-primary dark:ring-brand-outline">
+                        <i data-lucide="sliders-horizontal" class="h-3.5 w-3.5"></i>
+                        Filters update the table with HTMX
+                    </span>
+                    <span class="inline-flex items-center gap-1 rounded-full bg-surface-subtle px-3 py-1 font-semibold text-content-secondary ring-1 ring-inset ring-slate-200 dark:bg-surface-subtle dark:text-slate-300 dark:ring-slate-700">
+                        <i data-lucide="layout-list" class="h-3.5 w-3.5"></i>
+                        Default {{ pagination.per_page }} per page
+                    </span>
+                </div>
+                <a href="{{ url_for('notifications.activity_log') }}"
+                   class="inline-flex items-center gap-2 rounded-xl border border-outline-default bg-page px-3 py-2 font-semibold text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft/60 hover:text-kaori-primary dark:border-outline-default dark:bg-slate-900/40 dark:text-slate-200">
+                    <i data-lucide="rotate-ccw" class="h-3.5 w-3.5"></i>
+                    Reset filters
+                </a>
             </div>
         </form>
     </div>

@@ -5,10 +5,10 @@
     </span>
 {%- endmacro %}
 {% if items %}
-    <div class="min-w-0 overflow-hidden">
-        <div class="min-w-0">
+    <div class="min-w-0 overflow-hidden bg-page/60 p-4 dark:bg-slate-950/20">
+        <div class="min-w-0 space-y-3">
             <div style="grid-template-columns: minmax(6.75rem,0.72fr) minmax(12rem,1.12fr) minmax(16rem,1.85fr) minmax(6.5rem,0.62fr) minmax(6.5rem,0.62fr) 6.25rem"
-                 class="grid min-w-0 items-center gap-3 border-b border-outline-default bg-surface-subtle px-5 py-3 text-left text-[10px] font-bold uppercase tracking-wide text-content-muted dark:border-outline-default dark:bg-surface-card/50 dark:text-content-muted">
+                 class="grid min-w-0 items-center gap-3 rounded-2xl border border-brand-outline bg-gradient-to-r from-kaori-soft/85 via-white to-white px-5 py-3 text-left text-[10px] font-bold uppercase tracking-wide text-content-muted shadow-sm dark:border-brand-outline dark:bg-gradient-to-r dark:from-[#251b40] dark:via-[#1f1731] dark:to-[#1f1731] dark:text-content-muted">
                 <div>Time</div>
                 <div>Actor</div>
                 <div>Activity</div>
@@ -16,14 +16,14 @@
                 <div>Result</div>
                 <div>Details</div>
             </div>
-            <div class="divide-y divide-slate-200 dark:divide-slate-700">
+            <div class="space-y-3">
                 {% for item in items %}
                     {% set is_success = item.status == 'success' %}
                     {% set is_warning = item.status == 'warning' %}
                     {% set is_error = item.status == 'error' %}
-                    <details class="group relative bg-surface-card dark:bg-surface-card">
+                    <details class="group relative overflow-hidden rounded-[22px] border border-outline-default bg-surface-card shadow-sm transition hover:shadow-md dark:border-outline-default dark:bg-surface-card">
                         <summary style="grid-template-columns: minmax(6.75rem,0.72fr) minmax(12rem,1.12fr) minmax(16rem,1.85fr) minmax(6.5rem,0.62fr) minmax(6.5rem,0.62fr) 6.25rem"
-                                 class="grid min-w-0 cursor-pointer list-none items-center gap-3 px-5 py-4 text-left transition hover:bg-surface-subtle/80 focus:outline-none group-open:bg-kaori-soft/70 dark:hover:bg-slate-900 dark:group-open:bg-blue-950/30">
+                                 class="grid min-w-0 cursor-pointer list-none items-center gap-3 border-b border-transparent px-5 py-4 text-left transition hover:bg-kaori-soft/45 focus:outline-none group-open:border-outline-default group-open:bg-kaori-soft/65 dark:hover:bg-slate-900 dark:group-open:border-outline-default dark:group-open:bg-[#211935]">
                             <div class="relative min-w-0 pl-4">
                                 <span class="absolute left-0 top-2 h-2 w-2 rounded-full {% if item.is_read %}bg-slate-300 dark:bg-slate-600{% else %}bg-kaori-primary ring-2 ring-brand-outline dark:ring-brand-outline{% endif %}"></span>
                                 <p class="whitespace-nowrap text-[11px] font-bold text-content-primary dark:text-content-primary">
@@ -323,7 +323,7 @@
     {% set empty_state_min_height = "min-h-[260px]" %}
     {% include "components/states/_empty_state.html" %}
 {% endif %}
-<div class="flex flex-col gap-4 border-t border-outline-default bg-surface-subtle px-6 py-4 text-sm text-content-muted lg:flex-row lg:items-center lg:justify-between dark:border-outline-default dark:bg-surface-card/40 dark:text-content-muted">
+<div class="flex flex-col gap-4 border-t border-outline-default bg-page px-6 py-4 text-sm text-content-muted lg:flex-row lg:items-center lg:justify-between dark:border-outline-default dark:bg-surface-card/40 dark:text-content-muted">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
         <div>
             Showing
@@ -366,7 +366,7 @@
                hx-swap="innerHTML"
                hx-push-url="true"
                hx-indicator="#operational-activity-loading"
-               class="inline-flex items-center gap-2 rounded-xl border border-outline-default bg-surface-card px-3 py-2 text-sm font-medium text-content-secondary transition hover:bg-surface-subtle dark:border-outline-default dark:bg-surface-card dark:text-slate-200 dark:hover:bg-slate-700">
+               class="inline-flex items-center gap-2 rounded-xl border border-outline-default bg-surface-card px-3 py-2 text-sm font-medium text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft/60 hover:text-kaori-primary dark:border-outline-default dark:bg-surface-card dark:text-slate-200 dark:hover:bg-slate-700">
                 <i data-lucide="chevron-left" class="h-4 w-4"></i>
                 Previous
             </a>
@@ -376,7 +376,7 @@
                 Previous
             </span>
         {% endif %}
-        <span class="inline-flex items-center rounded-xl border border-outline-default bg-surface-card px-3 py-2 text-sm font-semibold text-content-secondary dark:border-outline-default dark:bg-surface-card dark:text-slate-200">
+        <span class="inline-flex items-center rounded-xl border border-brand-outline bg-kaori-soft/70 px-3 py-2 text-sm font-semibold text-kaori-primary dark:border-brand-outline dark:bg-kaori-soft dark:text-kaori-primary">
             Page {{ pagination.page }} / {{ pagination.total_pages }}
         </span>
         {% set next_url = url_for('notifications.activity_log', page=pagination.next_page, per_page=pagination.per_page, user_id=filters.user_id, status=filters.status, event_type=filters.event_type, read_state=filters.read_state, search=filters.search) %}
@@ -387,7 +387,7 @@
                hx-swap="innerHTML"
                hx-push-url="true"
                hx-indicator="#operational-activity-loading"
-               class="inline-flex items-center gap-2 rounded-xl border border-outline-default bg-surface-card px-3 py-2 text-sm font-medium text-content-secondary transition hover:bg-surface-subtle dark:border-outline-default dark:bg-surface-card dark:text-slate-200 dark:hover:bg-slate-700">
+               class="inline-flex items-center gap-2 rounded-xl border border-outline-default bg-surface-card px-3 py-2 text-sm font-medium text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft/60 hover:text-kaori-primary dark:border-outline-default dark:bg-surface-card dark:text-slate-200 dark:hover:bg-slate-700">
                 Next
                 <i data-lucide="chevron-right" class="h-4 w-4"></i>
             </a>
