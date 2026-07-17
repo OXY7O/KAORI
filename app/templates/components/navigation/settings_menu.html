@@ -1,12 +1,6 @@
-{% set settings_owned_endpoints = [
-    'settings.general',
-    'settings.account',
-    'settings.time_locale',
-    'settings.reports',
-    'settings.system_info'
-] %}
+{% set settings_owned_endpoints = ["settings.general", "settings.account", "settings.reports", "settings.system_info"] %}
 {% set settings_active = request.endpoint in settings_owned_endpoints
-    or (request.endpoint and request.endpoint.startswith('settings.secret_reveal.')) %}
+or (request.endpoint and request.endpoint.startswith('settings.secret_reveal.')) %}
 <details class="sidebar-menu space-y-1"
          {% if settings_active %}open{% endif %}>
     <summary class="{{ 'bg-kaori-primary text-white shadow-lg shadow-kaori-primary/20 ring-1 ring-white/10' if settings_active else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} sidebar-parent-link group flex cursor-pointer select-none items-center justify-between min-h-11 rounded-lg px-2.5 py-2 text-[12px] font-semibold transition [.sidebar-collapsed_&]:justify-center [.sidebar-collapsed_&]:px-2">
@@ -20,19 +14,13 @@
            class="sidebar-expanded-only sidebar-menu-chevron h-4 w-4 {{ 'text-kaori-accent' if settings_active else 'text-white/[0.35]' }}"></i>
     </summary>
     <div class="sidebar-expanded-only sidebar-submenu ml-6 mt-1 space-y-1 border-l border-white/10 pl-3">
-        {% if current_user.is_authenticated and current_user.has_permission('settings.view') %}
-            <a href="{{ url_for('settings.general') }}"
-               class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint == 'settings.general' else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] leading-4 transition">
-                <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint == 'settings.general' else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span><i data-lucide="settings" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">General</span>
-            </a>
-        {% endif %}
+        <a href="{{ url_for('settings.general') }}"
+           class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint == 'settings.general' else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] leading-4 transition">
+            <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint == 'settings.general' else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span><i data-lucide="settings" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">General</span>
+        </a>
         <a href="{{ url_for('settings.account') }}"
            class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint == 'settings.account' else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] leading-4 transition">
             <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint == 'settings.account' else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span><i data-lucide="user" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">Account</span>
-        </a>
-        <a href="{{ url_for('settings.time_locale') }}"
-           class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint == 'settings.time_locale' else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] leading-4 transition">
-            <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint == 'settings.time_locale' else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span><i data-lucide="clock" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">Time & Locale</span>
         </a>
         {% if current_user.is_authenticated and current_user.has_permission('kubernetes_secrets.manage_reveal') %}
             <a href="{{ url_for('settings.secret_reveal.index') }}"

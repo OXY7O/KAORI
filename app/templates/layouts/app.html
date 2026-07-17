@@ -1,12 +1,17 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full overflow-hidden text-[12px] 2xl:text-[13px] min-[1920px]:text-[14px]">
+<html lang="en"
+      class="h-full overflow-hidden text-[12px] 2xl:text-[13px] min-[1920px]:text-[14px]">
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link rel="icon"
               type="image/svg+xml"
               href="{{ url_for('static', filename='favicon.svg') }}" />
-        <title>{% block title %}KAORI{% endblock title %}</title>
+        <title>
+            {% block title %}
+                KAORI
+            {% endblock title %}
+        </title>
         <script>
             ;(function () {
                 const theme = localStorage.getItem('theme')
@@ -76,6 +81,16 @@
                  {% if current_user.is_authenticated and current_user.has_permission('clusters.sync') and cluster_onboarding.has_clusters %} hx-get="{{ url_for('cluster.active_sync_all_status') }}" hx-trigger="load" hx-swap="innerHTML" {% endif %}>
             </div>
         </div>
+        {% if current_user.is_authenticated and current_timezone_mode == 'automatic' %}
+            <div id="kaori-user-timezone-sync"
+                 class="hidden"
+                 data-mode="{{ current_timezone_mode }}"
+                 data-timezone="{{ current_timezone }}"
+                 data-url="{{ url_for('settings.sync_browser_timezone') }}"
+                 data-csrf="{{ csrf_token() }}"></div>
+            <script defer
+                    src="{{ url_for('static', filename='js/user_timezone_sync.js') }}"></script>
+        {% endif %}
         <script defer
                 src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
         <script src="https://unpkg.com/htmx.org@2.0.4"></script>

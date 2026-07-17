@@ -42,7 +42,15 @@
                     </div>
                     <div class="grid gap-1 px-4 py-3 sm:grid-cols-[8rem_minmax(0,1fr)] sm:items-center">
                         <dt class="text-xs font-semibold uppercase tracking-wider text-content-muted">Time zone</dt>
-                        <dd class="text-sm font-semibold text-content-primary">{{ current_user.timezone|default('UTC', true) }}</dd>
+                        <dd class="text-sm font-semibold text-content-primary">
+                            {{ current_timezone }} · {{ 'Automatic browser detection' if current_timezone_mode == 'automatic' else 'Manual selection' }}
+                        </dd>
+                    </div>
+                    <div class="grid gap-1 px-4 py-3 sm:grid-cols-[8rem_minmax(0,1fr)] sm:items-center">
+                        <dt class="text-xs font-semibold uppercase tracking-wider text-content-muted">Regional format</dt>
+                        <dd class="text-sm font-semibold text-content-primary">
+                            {{ current_locale }} · {{ '24-hour clock' if current_time_format == '24h' else '12-hour clock' }}
+                        </dd>
                     </div>
                 </dl>
             </article>
@@ -88,7 +96,7 @@
                         <p class="text-xs font-semibold uppercase tracking-widest text-kaori-primary">Last successful sign-in</p>
                         <p class="mt-1 text-sm font-semibold text-kaori-strong">
                             {% if current_user.last_login_at %}
-                                {{ current_user.last_login_at|user_datetime("%Y-%m-%d %H:%M:%S %Z") }}
+                                {{ current_user.last_login_at|user_datetime(include_seconds=true) }}
                             {% else %}
                                 No successful sign-in has been recorded yet.
                             {% endif %}

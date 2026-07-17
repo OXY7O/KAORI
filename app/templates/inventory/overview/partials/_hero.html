@@ -17,7 +17,7 @@
                 <div class="mt-5 flex flex-wrap gap-2">
                     {{ page_hero.meta_label('server', connected_clusters ~ ' / ' ~ total_clusters ~ ' clusters connected') }}
                     {{ page_hero.meta_label('database', inventory_total ~ ' collected resources') }}
-                    {{ page_hero.meta_label('clock-3', 'Last sync ' ~ (overview.health.last_sync|user_datetime('%d %b %Y %H:%M %Z'))) }}
+                    {{ page_hero.meta_label('clock-3', 'Last sync ' ~ (overview.health.last_sync|user_datetime)) }}
                 </div>
             {% endcall %}
         </div>

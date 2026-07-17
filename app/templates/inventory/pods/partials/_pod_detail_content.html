@@ -78,8 +78,8 @@
                 {{ detail_row('Owner', (pod.owner_type ~ ' · ' ~ pod.owner_name) if pod.owner_type != 'Standalone' else 'Standalone') }}
                 {{ detail_row('Age', pod.age) }}
                 {{ detail_row('Kubernetes UID', pod.uid, true) }}
-                {{ detail_row('Created', pod.created_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
-                {{ detail_row('Collected', pod.collected_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
+                {{ detail_row('Created', pod.created_at|user_datetime) }}
+                {{ detail_row('Collected', pod.collected_at|user_datetime) }}
                 <div class="mt-auto pt-3">{{ info_box('Inventory identity', 'Pod identity and owner from the latest inventory snapshot.', 'lightbulb', 'brand', true) }}</div>
             {% endcall %}
 
@@ -195,8 +195,8 @@
                                         </td>
                                         <td class="px-4 py-3 font-semibold tabular-nums {{ 'text-status-warning-text' if container.restart_count > 0 else 'text-content-primary' }}">{{ container.restart_count }}</td>
                                         <td class="px-4 py-3 text-[10px] leading-5 text-content-muted">
-                                            {% if container.started_at_value %}<div>Started {{ container.started_at_value|user_datetime('%Y-%m-%d %H:%M %Z') }}</div>{% endif %}
-                                            {% if container.finished_at_value %}<div>Finished {{ container.finished_at_value|user_datetime('%Y-%m-%d %H:%M %Z') }}</div>{% endif %}
+                                            {% if container.started_at_value %}<div>Started {{ container.started_at_value|user_datetime }}</div>{% endif %}
+                                            {% if container.finished_at_value %}<div>Finished {{ container.finished_at_value|user_datetime }}</div>{% endif %}
                                             {% if not container.started_at_value and not container.finished_at_value %}-{% endif %}
                                         </td>
                                     </tr>

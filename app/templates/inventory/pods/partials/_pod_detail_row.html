@@ -44,13 +44,13 @@
                 <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
                     <div class="mb-1 text-xs font-medium text-slate-500 dark:text-slate-400">Created</div>
                     <div class="text-xs font-medium text-slate-700 dark:text-slate-200">
-                        {{ pod.created_at.strftime("%Y-%m-%d %H:%M:%S") if pod.created_at else '-' }}
+                        {{ pod.created_at|user_datetime(include_seconds=true) if pod.created_at else '-' }}
                     </div>
                 </div>
                 <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
                     <div class="mb-1 text-xs font-medium text-slate-500 dark:text-slate-400">Last Collected</div>
                     <div class="text-xs font-medium text-slate-700 dark:text-slate-200">
-                        {{ pod.collected_at.strftime("%Y-%m-%d %H:%M:%S") if pod.collected_at else '-' }}
+                        {{ pod.collected_at|user_datetime(include_seconds=true) if pod.collected_at else '-' }}
                     </div>
                 </div>
             </div>

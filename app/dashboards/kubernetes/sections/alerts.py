@@ -46,7 +46,7 @@ def build_alerts_snapshot(*, live_cluster: Any | None) -> AlertsSnapshot:
                 title=name,
                 description=description,
                 severity=str(item.get('severity') or 'none').title(),
-                age=str(item.get('starts_at_display') or item.get('starts_at') or ''),
+                age=str(item.get('starts_at') or ''),
             )
         )
 

@@ -73,7 +73,7 @@
                 {{ detail_row('System UUID', node.system_uuid, True) }}
                 {{ detail_row('Cluster', node.cluster_name) }}
                 {{ detail_row('Age', node.age) }}
-                {{ detail_row('Collected', node.collected_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
+                {{ detail_row('Collected', node.collected_at|user_datetime) }}
                 {{ detail_tip('Age comes from node creation time; Collected is the latest KAORI snapshot.', 'clock-3') }}
             {% endcall %}
 

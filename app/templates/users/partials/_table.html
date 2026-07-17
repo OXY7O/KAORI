@@ -1,20 +1,20 @@
     <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-outline-subtle text-sm">
-            <thead class="bg-surface-hover text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-content-muted">
+        <table class="min-w-full divide-y divide-outline-subtle text-left text-sm">
+            <thead class="bg-surface-hover text-[11px] font-semibold uppercase tracking-[0.12em] text-content-muted">
                 <tr>
-                    <th class="px-6 py-3.5">User</th>
-                    <th class="px-6 py-3.5">Role</th>
-                    <th class="px-6 py-3.5">Auth Source</th>
-                    <th class="px-6 py-3.5">Status</th>
-                    <th class="px-6 py-3.5">Last Login</th>
-                    <th class="px-6 py-3.5 text-left">Actions</th>
+                    <th class="px-6 py-3.5 text-left">User</th>
+                    <th class="px-6 py-3.5 text-left">Role</th>
+                    <th class="px-6 py-3.5 text-left">Auth Source</th>
+                    <th class="px-6 py-3.5 text-left">Status</th>
+                    <th class="px-6 py-3.5 text-left">Last Login</th>
+                    <th class="px-6 py-3.5 text-right">Actions</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-outline-subtle">
                 {% for user in users %}
                     {% set actions = user_actions.get(user.id, {}) %}
                     <tr class="transition hover:bg-surface-hover">
-                        <td class="px-6 py-4 align-top">
+                        <td class="px-6 py-4 text-left align-top">
                             <div class="flex items-start gap-3">
                                 <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-subtle text-content-secondary ring-1 ring-outline-default">
                                     <i data-lucide="{{ 'shield-check' if user.is_super_admin else 'shield' if user.role_name == 'admin' else 'user' }}"
@@ -45,7 +45,7 @@
                                 </div>
                             </div>
                         </td>
-                        <td class="px-6 py-4 align-top">
+                        <td class="px-6 py-4 text-left align-top">
                             <div class="flex flex-wrap items-center gap-2">
                                 <span class="rounded-md bg-surface-subtle px-2.5 py-1 text-xs font-bold text-content-secondary">{{ user.role_display_name }}</span>
                                 {% if user.is_super_admin %}
@@ -53,14 +53,14 @@
                                 {% endif %}
                             </div>
                         </td>
-                        <td class="px-6 py-4 align-top">
+                        <td class="px-6 py-4 text-left align-top">
                             <span class="inline-flex items-center gap-1.5 rounded-md bg-kaori-soft px-2.5 py-1 text-xs font-bold text-kaori-primary ring-1 ring-kaori-primary/20 ">
                                 <i data-lucide="{{ 'database' if user.auth_source == 'database' else 'network' }}"
                                    class="h-3 w-3"></i>
                                 {{ user.auth_source|upper }}
                             </span>
                         </td>
-                        <td class="px-6 py-4 align-top">
+                        <td class="px-6 py-4 text-left align-top">
                             {% if user.deleted_at %}
                                 <span class="inline-flex items-center gap-1.5 rounded-md bg-surface-subtle px-2.5 py-1 text-xs font-bold text-content-muted"><i data-lucide="archive" class="h-3 w-3"></i> Deleted</span>
                             {% elif user.is_active %}
@@ -69,9 +69,9 @@
                                 <span class="inline-flex items-center gap-1.5 rounded-md bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700 ring-1 ring-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:ring-amber-900/60"><i data-lucide="pause-circle" class="h-3 w-3"></i> Inactive</span>
                             {% endif %}
                         </td>
-                        <td class="px-6 py-4 align-top text-content-muted">{{ user.last_login_at|user_datetime('%Y-%m-%d %H:%M %Z', 'Never') }}</td>
-                        <td class="px-6 py-4 align-top">
-                            <div class="flex flex-wrap justify-start gap-2">
+                        <td class="px-6 py-4 text-left align-top text-content-muted">{{ user.last_login_at|user_datetime('Never') }}</td>
+                        <td class="px-6 py-4 text-right align-top">
+                            <div class="flex flex-wrap justify-end gap-2">
                                 {% if actions.get('can_edit') %}
                                     <a href="{{ url_for('users.edit', user_id=user.id) }}"
                                        class="inline-flex items-center gap-1.5 rounded-lg border border-outline-default px-2.5 py-1.5 text-xs font-bold text-content-secondary transition hover:bg-surface-subtle"><i data-lucide="pencil" class="h-3.5 w-3.5"></i>Edit</a>

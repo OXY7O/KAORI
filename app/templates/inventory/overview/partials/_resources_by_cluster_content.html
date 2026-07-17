@@ -67,7 +67,7 @@
                     <td class="px-4 py-3.5">
                         <div class="flex min-w-[10.5rem] flex-col items-start gap-1">
                             {% if synced_at %}
-                                <span class="whitespace-nowrap text-[11px] font-medium text-content-secondary">{{ synced_at|user_datetime('%d %b %Y %H:%M %Z') }}</span>
+                                <span class="whitespace-nowrap text-[11px] font-medium text-content-secondary">{{ synced_at|user_datetime }}</span>
                             {% else %}
                                 <span class="text-[11px] font-medium text-content-disabled">Not collected</span>
                             {% endif %}

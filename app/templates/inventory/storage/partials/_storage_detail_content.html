@@ -24,7 +24,7 @@
 
         <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
             {% call detail_card('Storage identity', 'badge-info', item.age, 'min-h-[30rem]') %}
-                {{ detail_row('Cluster', item.cluster_name) }}{{ detail_row('Namespace scope', item.namespace) }}{{ detail_row('Type', item.type) }}{{ detail_row('Storage class', item.storage_class) }}{{ detail_row('Kubernetes UID', item.uid, true) }}{{ detail_row('Created', item.created_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}{{ detail_row('Collected', item.collected_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
+                {{ detail_row('Cluster', item.cluster_name) }}{{ detail_row('Namespace scope', item.namespace) }}{{ detail_row('Type', item.type) }}{{ detail_row('Storage class', item.storage_class) }}{{ detail_row('Kubernetes UID', item.uid, true) }}{{ detail_row('Created', item.created_at|user_datetime) }}{{ detail_row('Collected', item.collected_at|user_datetime) }}
                 <div class="mt-auto pt-3">{{ info_box('Inventory identity', item.type_description, 'lightbulb') }}</div>
             {% endcall %}
 

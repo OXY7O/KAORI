@@ -31,7 +31,7 @@
                             {{ table_label.status_label(hero_status_label, hero_status_tone, 'shield-check' if hero_status_tone == 'normal' else 'triangle-alert') }}
                         </div>
                         <div class="mt-3 grid grid-cols-2 gap-2">
-                            <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5"><div class="flex items-center gap-2 text-brand-foreground"><i data-lucide="calendar-clock" class="h-3.5 w-3.5"></i><p class="text-[11px] font-semibold">Days remaining</p></div><p class="mt-1.5 text-sm font-semibold text-brand-foreground">{{ record.days_remaining if record.days_remaining is not none else 'N/A' }}</p><p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">{{ record.not_after|user_date('%Y-%m-%d', 'Expiry unavailable') }}</p></div>
+                            <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5"><div class="flex items-center gap-2 text-brand-foreground"><i data-lucide="calendar-clock" class="h-3.5 w-3.5"></i><p class="text-[11px] font-semibold">Days remaining</p></div><p class="mt-1.5 text-sm font-semibold text-brand-foreground">{{ record.days_remaining if record.days_remaining is not none else 'N/A' }}</p><p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">{{ record.not_after|user_date('Expiry unavailable') }}</p></div>
                             <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5"><div class="flex items-center gap-2 text-brand-foreground"><i data-lucide="globe-2" class="h-3.5 w-3.5"></i><p class="text-[11px] font-semibold">SAN coverage</p></div><p class="mt-1.5 text-sm font-semibold text-brand-foreground">{{ (record.dns_names or [])|length }} names</p><p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">{{ (record.used_by or [])|length }} Ingress references</p></div>
                         </div>
                         <div class="mt-3 grid grid-cols-2 gap-2">
@@ -61,7 +61,7 @@
                     </div>
                     <div>
                         <p class="text-xs font-medium text-content-muted">Valid from</p>
-                        <p class="mt-1 text-sm font-bold text-content-primary">{{ record.not_before|user_date('%Y-%m-%d', 'N/A') }}</p>
+                        <p class="mt-1 text-sm font-bold text-content-primary">{{ record.not_before|user_date('N/A') }}</p>
                     </div>
                 </div>
             </div>
@@ -260,14 +260,14 @@
                                         <i data-lucide="calendar-check" class="h-4 w-4"></i>
                                         <p class="text-xs font-medium">Valid from</p>
                                     </div>
-                                    <p class="mt-2 text-sm font-semibold text-content-primary">{{ record.not_before|user_datetime('%Y-%m-%d %H:%M %Z', 'N/A') }}</p>
+                                    <p class="mt-2 text-sm font-semibold text-content-primary">{{ record.not_before|user_datetime('N/A') }}</p>
                                 </div>
                                 <div class="rounded-lg border border-kaori-primary/15 bg-kaori-soft p-4">
                                     <div class="flex items-center gap-2 text-kaori-primary">
                                         <i data-lucide="calendar-x" class="h-4 w-4"></i>
                                         <p class="text-xs font-medium">Expires at</p>
                                     </div>
-                                    <p class="mt-2 text-sm font-semibold text-content-primary">{{ record.not_after|user_datetime('%Y-%m-%d %H:%M %Z', 'N/A') }}</p>
+                                    <p class="mt-2 text-sm font-semibold text-content-primary">{{ record.not_after|user_datetime('N/A') }}</p>
                                 </div>
                             </div>
                         {% else %}

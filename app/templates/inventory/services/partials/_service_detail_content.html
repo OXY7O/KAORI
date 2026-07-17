@@ -62,8 +62,8 @@
                 {{ detail_row('Type', service.type) }}
                 {{ detail_row('Generation', service.generation) }}
                 {{ detail_row('Kubernetes UID', service.uid, true) }}
-                {{ detail_row('Created', service.created_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
-                {{ detail_row('Collected', service.collected_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
+                {{ detail_row('Created', service.created_at|user_datetime) }}
+                {{ detail_row('Collected', service.collected_at|user_datetime) }}
                 <div class="mt-auto pt-3">{{ info_box('Inventory identity', service.type_description, 'lightbulb', 'brand', true) }}</div>
             {% endcall %}
 

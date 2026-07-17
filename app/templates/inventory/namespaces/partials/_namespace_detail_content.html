@@ -103,8 +103,8 @@
                 {{ status_row('Status', namespace.status, namespace_status_tone, namespace_status_icon) }}
                 {{ detail_row('Age', namespace.age) }}
                 {{ detail_row('UID', namespace.uid, True) }}
-                {{ detail_row('Created', namespace.created_at|user_datetime('%Y-%m-%d %H:%M %Z') if namespace.created_at else '-') }}
-                {{ detail_row('Collected', namespace.collected_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
+                {{ detail_row('Created', namespace.created_at|user_datetime if namespace.created_at else '-') }}
+                {{ detail_row('Collected', namespace.collected_at|user_datetime) }}
                 {{ detail_tip('Age comes from creation time; Collected is the latest KAORI snapshot.', 'clock-3') }}
             {% endcall %}
 

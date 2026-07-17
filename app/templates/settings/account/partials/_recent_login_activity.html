@@ -36,7 +36,7 @@
                         {% set metadata = event.metadata_json or {} %}
                         {% set action = metadata.get('access_action') or ('logout' if event.title == 'User signed out' else 'login') %}
                         <tr class="align-top transition hover:bg-surface-elevated">
-                            <td class="whitespace-nowrap px-5 py-3.5 font-medium text-content-secondary">{{ event.created_at|user_datetime("%Y-%m-%d %H:%M:%S %Z") }}</td>
+                            <td class="whitespace-nowrap px-5 py-3.5 font-medium text-content-secondary">{{ event.created_at|user_datetime(include_seconds=true) }}</td>
                             <td class="whitespace-nowrap px-5 py-3.5">
                                 <span class="inline-flex items-center gap-1.5 text-sm font-semibold text-content-primary">
                                     <i data-lucide="{{ 'log-out' if action == 'logout' else 'log-in' }}" class="h-3.5 w-3.5 text-kaori-primary"></i>

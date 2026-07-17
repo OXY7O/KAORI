@@ -212,7 +212,7 @@
         <div class="flex flex-col gap-1 text-xs text-slate-500 dark:text-slate-400 sm:flex-row sm:items-center sm:justify-between">
             <span>Readiness changes only after a completed full validation.</span>
             <span class="font-medium">
-                {% if config.last_validated_at %}Last checked {{ config.last_validated_at.strftime('%d %b %Y, %H:%M') }}{% else %}Not validated yet{% endif %}
+                {% if config.last_validated_at %}Last checked {{ config.last_validated_at|user_datetime }}{% else %}Not validated yet{% endif %}
             </span>
         </div>
     </footer>

@@ -3,116 +3,202 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import cast
 
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import (
+    Blueprint,
+    flash,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
+)
 from flask_login import current_user, login_required
 
 from app.auth.forms import ChangePasswordForm
 from app.common.timezone import (
-    format_datetime,
+    format_user_datetime,
+    is_valid_timezone_name,
+    normalize_date_format,
+    normalize_locale,
+    normalize_time_format,
+    normalize_timezone_mode,
     normalize_timezone_name,
-    timezone_choices,
+    timezone_choice_groups,
 )
 from app.extensions import db
 from app.models import Notification, Permission, Role, User
 from app.rbac.decorators import permission_required
-from app.rbac.service import get_permissions_grouped_by_module, replace_role_permissions, seed_default_rbac
+from app.rbac.service import (
+    get_permissions_grouped_by_module,
+    replace_role_permissions,
+    seed_default_rbac,
+)
+from app.settings.general.forms import RegionalFormatForm, TimezonePreferenceForm
 from app.settings.roles.forms import RoleForm
 from app.users.service import build_user_identity_context, record_admin_event
 
 bp = Blueprint(
-    'settings',
+    "settings",
     __name__,
-    url_prefix='/settings',
+    url_prefix="/settings",
 )
 
 
-@bp.route('/')
-@bp.route('/general')
-@permission_required('settings.view')
-def general():
-    return render_template('settings/general/index.html')
-
-
-@bp.route('/time-locale', methods=['GET', 'POST'])
+@bp.route("/", methods=["GET", "POST"])
+@bp.route("/general", methods=["GET", "POST"])
 @login_required
-def time_locale():
-    user = cast(User, current_user)
-    timezone_error = None
-    selected_timezone = normalize_timezone_name(user.timezone)
+def general():
+    user = cast(User, current_user._get_current_object())
+    general_feedback = session.pop("general_settings_feedback", None)
+    active_tab = (request.args.get("tab") or "time-locale").strip().lower()
+    if active_tab not in {"time-locale", "regional-format"}:
+        active_tab = "time-locale"
 
-    if request.method == 'POST':
-        requested_timezone = (request.form.get('timezone') or '').strip()
-        normalized_timezone = normalize_timezone_name(requested_timezone)
+    timezone_form = TimezonePreferenceForm()
+    regional_form = RegionalFormatForm()
 
-        if not requested_timezone or normalized_timezone != requested_timezone:
-            timezone_error = 'Choose a valid IANA timezone from the available list.'
-            selected_timezone = requested_timezone or selected_timezone
-        else:
-            user.timezone = normalized_timezone
+    if request.method == "GET":
+        timezone_form.timezone_mode.data = normalize_timezone_mode(user.timezone_mode)
+        timezone_form.timezone.data = normalize_timezone_name(user.timezone)
+        regional_form.locale.data = normalize_locale(user.locale)
+        regional_form.date_format.data = normalize_date_format(user.date_format)
+        regional_form.time_format.data = normalize_time_format(user.time_format)
+
+    if active_tab == "time-locale" and timezone_form.submit_timezone.data:
+        if timezone_form.validate_on_submit():
+            timezone_mode = normalize_timezone_mode(timezone_form.timezone_mode.data)
+            requested_timezone = (
+                timezone_form.browser_timezone.data
+                if timezone_mode == "automatic"
+                else timezone_form.timezone.data
+            )
+
+            if not is_valid_timezone_name(requested_timezone):
+                timezone_form.timezone.errors = [
+                    "The selected or detected browser timezone is not a valid IANA timezone."
+                ]
+            else:
+                user.timezone_mode = timezone_mode
+                user.timezone = normalize_timezone_name(requested_timezone)
+                db.session.commit()
+                session["general_settings_feedback"] = {
+                    "title": "Time zone preference saved",
+                    "message": (
+                        f"KAORI now renders time-related information for this account using "
+                        f"{user.timezone}."
+                    ),
+                }
+                return redirect(url_for("settings.general", tab="time-locale"))
+
+    if active_tab == "regional-format" and regional_form.submit_regional.data:
+        if regional_form.validate_on_submit():
+            user.locale = normalize_locale(regional_form.locale.data)
+            user.date_format = normalize_date_format(regional_form.date_format.data)
+            user.time_format = normalize_time_format(regional_form.time_format.data)
             db.session.commit()
-            flash('Time preference saved.', 'success')
-            return redirect(url_for('settings.time_locale'))
+            session["general_settings_feedback"] = {
+                "title": "Regional format saved",
+                "message": (
+                    "Date, time, and locale presentation preferences are now active "
+                    "for this account."
+                ),
+            }
+            return redirect(url_for("settings.general", tab="regional-format"))
+
+    now_utc = datetime.now(UTC)
+    current_time_display = format_user_datetime(
+        now_utc,
+        user.timezone,
+        date_format=user.date_format,
+        time_format=user.time_format,
+        locale=user.locale,
+        include_seconds=True,
+    )
 
     return render_template(
-        'settings/time_locale/index.html',
-        selected_timezone=selected_timezone,
-        timezone_choices=timezone_choices(),
-        timezone_error=timezone_error,
-        current_time_display=format_datetime(
-            datetime.now(UTC),
-            selected_timezone,
-            '%d %b %Y %H:%M:%S %Z',
-        ),
+        "settings/general/index.html",
+        active_tab=active_tab,
+        timezone_form=timezone_form,
+        regional_form=regional_form,
+        timezone_choice_groups=timezone_choice_groups(),
+        current_time_display=current_time_display,
+        preview_timestamp=now_utc.isoformat(),
+        general_feedback=general_feedback,
+        page_title="General Settings",
     )
 
 
-@bp.route('/account', methods=['GET', 'POST'])
+@bp.post("/general/browser-timezone")
+@login_required
+def sync_browser_timezone():
+    user = cast(User, current_user._get_current_object())
+    if normalize_timezone_mode(user.timezone_mode) != "automatic":
+        return jsonify(
+            {"status": "ignored", "timezone": normalize_timezone_name(user.timezone)}
+        ), 200
+
+    payload = request.get_json(silent=True) or {}
+    browser_timezone = str(payload.get("timezone") or "").strip()
+    if not is_valid_timezone_name(browser_timezone):
+        return jsonify({"status": "invalid_timezone"}), 400
+
+    normalized_timezone = normalize_timezone_name(browser_timezone)
+    if normalized_timezone == normalize_timezone_name(user.timezone):
+        return jsonify({"status": "unchanged", "timezone": normalized_timezone}), 200
+
+    user.timezone = normalized_timezone
+    db.session.commit()
+    return jsonify({"status": "updated", "timezone": normalized_timezone}), 200
+
+
+@bp.route("/account", methods=["GET", "POST"])
 @login_required
 def account():
     user = cast(User, current_user)
     password_form = ChangePasswordForm()
-    auth_source = getattr(user, 'auth_source', 'database') or 'database'
-    can_change_password = auth_source == 'database'
+    auth_source = getattr(user, "auth_source", "database") or "database"
+    can_change_password = auth_source == "database"
 
     password_feedback = None
 
     if password_form.is_submitted():
         if not can_change_password:
             password_feedback = {
-                'status': 'warning',
-                'title': 'Password is managed externally',
-                'message': 'This account uses an external authentication source. Password updates must be completed in the connected identity provider.',
+                "status": "warning",
+                "title": "Password is managed externally",
+                "message": "This account uses an external authentication source. Password updates must be completed in the connected identity provider.",
             }
         elif password_form.validate():
-            current_password = password_form.current_password.data or ''
-            new_password = password_form.new_password.data or ''
+            current_password = password_form.current_password.data or ""
+            new_password = password_form.new_password.data or ""
 
             if not user.check_password(current_password):
                 password_form.current_password.errors = [
                     *password_form.current_password.errors,
-                    'Current password is incorrect.',
+                    "Current password is incorrect.",
                 ]
                 password_feedback = {
-                    'status': 'danger',
-                    'title': 'Password update failed',
-                    'message': 'The current password does not match the active local account password.',
+                    "status": "danger",
+                    "title": "Password update failed",
+                    "message": "The current password does not match the active local account password.",
                 }
             else:
                 user.set_password(new_password)
                 db.session.commit()
-                return redirect(url_for('settings.account', password_status='updated'))
+                return redirect(url_for("settings.account", password_status="updated"))
         else:
             password_feedback = {
-                'status': 'danger',
-                'title': 'Password update failed',
-                'message': 'Review the password requirements and highlighted fields before trying again.',
+                "status": "danger",
+                "title": "Password update failed",
+                "message": "Review the password requirements and highlighted fields before trying again.",
             }
 
-    if request.args.get('password_status') == 'updated':
+    if request.args.get("password_status") == "updated":
         password_feedback = {
-            'status': 'success',
-            'title': 'Password updated successfully',
-            'message': 'Your local database account password has been changed. Use the new password on your next sign-in.',
+            "status": "success",
+            "title": "Password updated successfully",
+            "message": "Your local database account password has been changed. Use the new password on your next sign-in.",
         }
 
     identity_context = build_user_identity_context(user)
@@ -120,7 +206,7 @@ def account():
     recent_login_events = (
         Notification.query.filter(
             Notification.user_id == user.id,
-            Notification.event_type == 'authentication',
+            Notification.event_type == "authentication",
         )
         .order_by(Notification.created_at.desc(), Notification.id.desc())
         .limit(5)
@@ -128,56 +214,66 @@ def account():
     )
 
     return render_template(
-        'settings/account/index.html',
+        "settings/account/index.html",
         password_form=password_form,
         can_change_password=can_change_password,
         password_feedback=password_feedback,
         identity_context=identity_context,
         recent_login_events=recent_login_events,
-        page_title='Account & Authentication',
+        page_title="Account & Authentication",
     )
 
 
-@bp.route('/roles')
-@permission_required('roles.view')
+@bp.route("/roles")
+@permission_required("roles.view")
 def roles():
     seed_default_rbac()
-    roles_list = Role.query.order_by(Role.is_system.desc(), Role.display_name.asc()).all()
+    roles_list = Role.query.order_by(
+        Role.is_system.desc(), Role.display_name.asc()
+    ).all()
     permissions_by_module = get_permissions_grouped_by_module()
-    return render_template('settings/roles/index.html', roles=roles_list, permissions_by_module=permissions_by_module)
+    return render_template(
+        "settings/roles/index.html",
+        roles=roles_list,
+        permissions_by_module=permissions_by_module,
+    )
 
 
-@bp.route('/roles/new', methods=['GET', 'POST'])
-@permission_required('roles.manage')
+@bp.route("/roles/new", methods=["GET", "POST"])
+@permission_required("roles.manage")
 def new_role():
     seed_default_rbac()
     form = RoleForm()
-    form.is_active.data = True if request.method == 'GET' else form.is_active.data
-    permissions = Permission.query.order_by(Permission.module.asc(), Permission.key.asc()).all()
+    form.is_active.data = True if request.method == "GET" else form.is_active.data
+    permissions = Permission.query.order_by(
+        Permission.module.asc(), Permission.key.asc()
+    ).all()
 
     if form.validate_on_submit():
         role = Role()
-        role.name = (form.name.data or '').strip().lower().replace(' ', '_')
+        role.name = (form.name.data or "").strip().lower().replace(" ", "_")
         role.display_name = form.display_name.data or role.name.title()
         role.description = form.description.data
         role.is_system = False
         role.is_active = bool(form.is_active.data)
         db.session.add(role)
         db.session.flush()
-        selected_permission_ids = [int(value) for value in request.form.getlist('permission_ids')]
+        selected_permission_ids = [
+            int(value) for value in request.form.getlist("permission_ids")
+        ]
         replace_role_permissions(role, selected_permission_ids)
         record_admin_event(
             actor=cast(User, current_user),
-            action='role.created',
+            action="role.created",
             target=role,
-            summary=f'Created role {role.display_name}.',
+            summary=f"Created role {role.display_name}.",
         )
         db.session.commit()
-        flash('Custom role created successfully.', 'success')
-        return redirect(url_for('settings.roles'))
+        flash("Custom role created successfully.", "success")
+        return redirect(url_for("settings.roles"))
 
     return render_template(
-        'settings/roles/form.html',
+        "settings/roles/form.html",
         form=form,
         role=None,
         permissions=permissions,
@@ -186,19 +282,21 @@ def new_role():
     )
 
 
-@bp.route('/roles/<int:role_id>/edit', methods=['GET', 'POST'])
-@permission_required('roles.manage')
+@bp.route("/roles/<int:role_id>/edit", methods=["GET", "POST"])
+@permission_required("roles.manage")
 def edit_role(role_id: int):
     role = db.session.get(Role, role_id)
     if role is None:
-        flash('Role not found.', 'danger')
-        return redirect(url_for('settings.roles'))
+        flash("Role not found.", "danger")
+        return redirect(url_for("settings.roles"))
 
     form = RoleForm(obj=role)
-    permissions = Permission.query.order_by(Permission.module.asc(), Permission.key.asc()).all()
+    permissions = Permission.query.order_by(
+        Permission.module.asc(), Permission.key.asc()
+    ).all()
     selected_permission_ids = {permission.id for permission in role.permissions}
 
-    if request.method == 'GET':
+    if request.method == "GET":
         form.is_active.data = role.is_active
 
     if form.validate_on_submit():
@@ -206,21 +304,23 @@ def edit_role(role_id: int):
         role.description = form.description.data
         role.is_active = bool(form.is_active.data)
         if not role.is_system:
-            role.name = (form.name.data or role.name).strip().lower().replace(' ', '_')
-            selected_permission_ids = {int(value) for value in request.form.getlist('permission_ids')}
+            role.name = (form.name.data or role.name).strip().lower().replace(" ", "_")
+            selected_permission_ids = {
+                int(value) for value in request.form.getlist("permission_ids")
+            }
             replace_role_permissions(role, selected_permission_ids)
         record_admin_event(
             actor=cast(User, current_user),
-            action='role.updated',
+            action="role.updated",
             target=role,
-            summary=f'Updated role {role.display_name}.',
+            summary=f"Updated role {role.display_name}.",
         )
         db.session.commit()
-        flash('Role updated successfully.', 'success')
-        return redirect(url_for('settings.roles'))
+        flash("Role updated successfully.", "success")
+        return redirect(url_for("settings.roles"))
 
     return render_template(
-        'settings/roles/form.html',
+        "settings/roles/form.html",
         form=form,
         role=role,
         permissions=permissions,
@@ -229,19 +329,23 @@ def edit_role(role_id: int):
     )
 
 
-@bp.route('/permissions')
-@permission_required('roles.view')
+@bp.route("/permissions")
+@permission_required("roles.view")
 def permission_catalog():
     seed_default_rbac()
     permissions_by_module = get_permissions_grouped_by_module()
-    roles_list = Role.query.order_by(Role.is_system.desc(), Role.display_name.asc()).all()
+    roles_list = Role.query.order_by(
+        Role.is_system.desc(), Role.display_name.asc()
+    ).all()
     permissions = Permission.query.order_by(
         Permission.module.asc(), Permission.action.asc(), Permission.key.asc()
     ).all()
-    assignment_count = sum(len(permission.role_permissions) for permission in permissions)
+    assignment_count = sum(
+        len(permission.role_permissions) for permission in permissions
+    )
 
     return render_template(
-        'settings/permissions/index.html',
+        "settings/permissions/index.html",
         permissions=permissions,
         permissions_by_module=permissions_by_module,
         roles=roles_list,
@@ -251,13 +355,13 @@ def permission_catalog():
     )
 
 
-@bp.route('/reports')
-@permission_required('settings.manage_integrations')
+@bp.route("/reports")
+@permission_required("settings.manage_integrations")
 def reports():
-    return render_template('settings/reports/index.html')
+    return render_template("settings/reports/index.html")
 
 
-@bp.route('/system-info')
-@permission_required('system.view')
+@bp.route("/system-info")
+@permission_required("system.view")
 def system_info():
-    return render_template('settings/system_info/index.html')
+    return render_template("settings/system_info/index.html")

@@ -52,7 +52,7 @@
                                 <p class="truncate text-sm font-semibold text-content-primary">{{ alert.title }}</p>
                                 <p class="mt-1 line-clamp-2 text-xs leading-5 text-content-muted">{{ alert.description }}</p>
                             </div>
-                            <span class="shrink-0 text-[11px] text-content-muted">{{ alert.age }}</span>
+                            <span class="shrink-0 text-[11px] text-content-muted">{{ alert.age|user_datetime }}</span>
                         </div>
                     {% endfor %}
                 {% else %}

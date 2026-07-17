@@ -1,0 +1,66 @@
+<form method="POST"
+      action="{{ url_for('settings.general', tab='regional-format') }}"
+      class="space-y-5">
+    {{ regional_form.hidden_tag() }}
+    <section class="rounded-2xl border border-outline-default bg-surface-card">
+        <header class="border-b border-outline-default px-5 py-4">
+            <div class="flex items-start gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
+                    <i data-lucide="calendar-range" class="h-5 w-5"></i>
+                </span>
+                <div>
+                    <h2 class="text-base font-bold text-content-primary">Regional Presentation</h2>
+                    <p class="mt-1 text-sm leading-6 text-content-muted">
+                        Control localized month labels, date order, and clock style for this account. The KAORI interface language remains unchanged.
+                    </p>
+                </div>
+            </div>
+        </header>
+        <div class="grid gap-5 p-5 md:grid-cols-2">
+            <div>
+                <label for="{{ regional_form.locale.id }}"
+                       class="text-sm font-semibold text-content-primary">Regional locale</label>
+                {{ regional_form.locale(class_='mt-2 h-11 w-full rounded-xl border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-primary outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10') }}
+                <p class="mt-2 text-xs leading-5 text-content-muted">
+                    Controls localized month labels and regional defaults, not application translation.
+                </p>
+            </div>
+            <div>
+                <label for="{{ regional_form.date_format.id }}"
+                       class="text-sm font-semibold text-content-primary">Date format</label>
+                {{ regional_form.date_format(class_='mt-2 h-11 w-full rounded-xl border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-primary outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10') }}
+                <p class="mt-2 text-xs leading-5 text-content-muted">
+                    Used for inventory, audit, reports, governance, and operational detail timestamps.
+                </p>
+            </div>
+            <div>
+                <label for="{{ regional_form.time_format.id }}"
+                       class="text-sm font-semibold text-content-primary">Time format</label>
+                {{ regional_form.time_format(class_='mt-2 h-11 w-full rounded-xl border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-primary outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10') }}
+                <p class="mt-2 text-xs leading-5 text-content-muted">Select 24-hour or 12-hour clock rendering throughout KAORI.</p>
+            </div>
+        </div>
+        <div class="mx-5 mb-5 rounded-xl border border-kaori-primary/25 bg-kaori-soft/60 p-4">
+            <div class="flex items-start gap-3">
+                <i data-lucide="scan-eye"
+                   class="mt-0.5 h-5 w-5 shrink-0 text-kaori-primary"></i>
+                <div>
+                    <p class="text-sm font-bold text-content-primary">Current preview</p>
+                    <p class="mt-1 text-sm font-semibold text-kaori-primary">{{ current_time_display }}</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">
+                        The preview updates after saving because server-rendered views use the persisted account preference.
+                    </p>
+                </div>
+            </div>
+        </div>
+        <footer class="flex justify-end border-t border-outline-default bg-surface-subtle px-5 py-4">
+            <button type="submit"
+                    name="{{ regional_form.submit_regional.name }}"
+                    value="1"
+                    class="inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                <i data-lucide="save" class="h-4 w-4 shrink-0"></i>
+                <span>Save</span>
+            </button>
+        </footer>
+    </section>
+</form>

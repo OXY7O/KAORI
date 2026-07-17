@@ -273,7 +273,7 @@ class ForecastAnalysisService(AnalyticsBaseService):
             'forecast_method': method,
             'method_label': method_meta['label'],
             'method_description': method_meta['description'],
-            'generated_at': end_time.strftime('%Y-%m-%d %H:%M:%S UTC'),
+            'generated_at': end_time,
             'items': items,
             'summary': summary,
             'chart': _build_chart_payload(items),

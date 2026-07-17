@@ -63,8 +63,8 @@
                 {{ detail_row('Kind', workload.type) }}
                 {{ detail_row('Age', workload.age) }}
                 {{ detail_row('Kubernetes UID', workload.uid, true) }}
-                {{ detail_row('Created', workload.created_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
-                {{ detail_row('Collected', workload.collected_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
+                {{ detail_row('Created', workload.created_at|user_datetime) }}
+                {{ detail_row('Collected', workload.collected_at|user_datetime) }}
                 <div class="mt-auto pt-3">{{ info_box('Inventory identity', 'Identifies the workload object and the latest snapshot collected by KAORI.', 'lightbulb', 'brand', true) }}</div>
             {% endcall %}
 

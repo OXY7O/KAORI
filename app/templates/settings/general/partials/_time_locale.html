@@ -89,7 +89,13 @@
             <p class="text-xs leading-5 text-content-muted">
                 Effective timezone: <span class="font-bold text-content-primary">{{ current_timezone }}</span>
             </p>
-            {{ timezone_form.submit_timezone(class_='inline-flex h-10 items-center justify-center rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover') }}
+            <button type="submit"
+                    name="{{ timezone_form.submit_timezone.name }}"
+                    value="1"
+                    class="inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                <i data-lucide="save" class="h-4 w-4 shrink-0"></i>
+                <span>Save</span>
+            </button>
         </footer>
     </section>
 </form>

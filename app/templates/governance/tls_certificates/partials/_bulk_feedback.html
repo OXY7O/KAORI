@@ -14,8 +14,8 @@
                     {% for item in preview.targets %}
                         <tr class="text-left">
                             <td class="px-4 py-3 text-left"><div class="font-semibold text-content-primary">{{ item.target.secret_name }}</div><div class="mt-1 text-xs text-content-muted">{{ item.target.cluster.name if item.target.cluster else item.target.cluster_id }} / {{ item.target.namespace }}</div></td>
-                            <td class="px-4 py-3 text-left text-content-secondary">{{ item.target.not_after|user_date('%Y-%m-%d', 'Invalid') }}</td>
-                            <td class="px-4 py-3 text-left text-content-secondary">{{ item.new_not_after|user_date('%Y-%m-%d') }}</td>
+                            <td class="px-4 py-3 text-left text-content-secondary">{{ item.target.not_after|user_date('Invalid') }}</td>
+                            <td class="px-4 py-3 text-left text-content-secondary">{{ item.new_not_after|user_date }}</td>
                             <td class="px-4 py-3 text-left">{% if item.uncovered_hosts %}{{ table_label.status_label('Warning', 'warning', 'triangle-alert') }}<span class="ml-2 text-xs text-content-muted">{{ item.uncovered_hosts|join(', ') }}</span>{% else %}{{ table_label.status_label('Ready', 'normal', 'check') }}{% endif %}</td>
                         </tr>
                     {% else %}

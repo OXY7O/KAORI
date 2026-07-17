@@ -279,7 +279,7 @@
                                             <div class="rounded-2xl bg-surface-subtle p-4 bg-surface-subtle">
                                                 <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Ownership</p>
                                                 <p class="mt-1 font-semibold text-content-primary dark:text-content-primary">{{ template.created_by_label }}</p>
-                                                <p class="mt-1 text-xs text-content-muted dark:text-content-muted">Updated {{ template.updated_label }}</p>
+                                                <p class="mt-1 text-xs text-content-muted dark:text-content-muted">{% if template.updated_at %}Updated {{ template.updated_at|user_datetime }}{% else %}{{ template.updated_label }}{% endif %}</p>
                                             </div>
                                         </div>
                                         <div class="mt-4">

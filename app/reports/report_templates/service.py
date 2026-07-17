@@ -303,7 +303,8 @@ def build_custom_template_item(template: ReportTemplate) -> dict[str, Any]:
         'edit_href': url_for('reports.report_templates', edit_template_id=template.id),
         'delete_href': url_for('reports.delete_report_template', template_id=template.id),
         'customization_status': 'Editable custom template',
-        'updated_label': format_datetime(template.updated_at),
+        'updated_at': template.updated_at,
+        'updated_label': None,
         'created_by_label': template.created_by_display_name_snapshot
         or template.created_by_username_snapshot
         or 'Unknown user',
@@ -766,12 +767,6 @@ def build_generate_href(report_type: str, sections: list[str], name: str | None 
 
 def build_copy_name(name: str) -> str:
     return f'{name} Copy'[:255]
-
-
-def format_datetime(value: datetime | None) -> str:
-    if value is None:
-        return '-'
-    return value.strftime('%Y-%m-%d %H:%M')
 
 
 def format_status_label(status: str) -> str:

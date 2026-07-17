@@ -218,7 +218,6 @@ def serialize_recent_report(report: Report) -> dict[str, Any]:
         'period': report.period,
         'scope': report.namespace or 'All namespaces',
         'created_at': report.created_at,
-        'created_at_display': format_datetime(report.created_at),
         'file_size': format_file_size(report.file_size_bytes),
         'href': url_for('reports.generated_report_detail', report_id=report.id),
     }
@@ -542,13 +541,6 @@ def get_status_tone(status: str) -> str:
         'failed': 'red',
         'archived': 'gray',
     }.get(status, 'gray')
-
-
-def format_datetime(value: datetime | None) -> str:
-    if value is None:
-        return '-'
-
-    return value.strftime('%Y-%m-%d %H:%M')
 
 
 def format_file_size(size_bytes: int | None) -> str:

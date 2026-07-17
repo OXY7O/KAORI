@@ -60,8 +60,8 @@
                 {{ detail_row('Ingress class', ingress.class) }}
                 {{ detail_row('Generation', ingress.generation) }}
                 {{ detail_row('Kubernetes UID', ingress.uid, true) }}
-                {{ detail_row('Created', ingress.created_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
-                {{ detail_row('Collected', ingress.collected_at|user_datetime('%Y-%m-%d %H:%M %Z')) }}
+                {{ detail_row('Created', ingress.created_at|user_datetime) }}
+                {{ detail_row('Collected', ingress.collected_at|user_datetime) }}
                 <div class="mt-auto pt-3">{{ info_box('Inventory identity', 'Ingress identity from the latest Kubernetes snapshot.', 'badge-info', 'brand', true) }}</div>
             {% endcall %}
 

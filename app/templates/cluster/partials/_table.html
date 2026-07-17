@@ -162,10 +162,10 @@
                         <td class="px-4 py-4 text-left">
                             <div class="text-xs leading-5 text-content-muted">
                                 <p class="font-medium text-content-secondary">
-                                    {% if cluster.last_check %}Checked {{ cluster.last_check|user_datetime("%Y-%m-%d %H:%M %Z") }}{% else %}Check pending{% endif %}
+                                    {% if cluster.last_check %}Checked {{ cluster.last_check|user_datetime }}{% else %}Check pending{% endif %}
                                 </p>
                                 <p>
-                                    {% if inventory.synced_at %}Synced {{ inventory.synced_at|user_datetime("%Y-%m-%d %H:%M %Z") }}{% else %}Inventory pending{% endif %}
+                                    {% if inventory.synced_at %}Synced {{ inventory.synced_at|user_datetime }}{% else %}Inventory pending{% endif %}
                                 </p>
                             </div>
                         </td>

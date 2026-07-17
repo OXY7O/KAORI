@@ -1,8 +1,8 @@
 {% set runbook_url = alert.runbook_url|default('') or alert.annotations.get('runbook_url') or alert.annotations.get('runbook') or alert.annotations.get('runbookURL') %}
 {% set alert_owner = alert.owner|default('') or alert.labels.get('owner') or alert.labels.get('team') or alert.labels.get('service') or alert.namespace %}
 {% set alert_contact = alert.contact|default('') or alert.labels.get('contact') or alert.labels.get('pagerduty') or alert.labels.get('slack') or alert.annotations.get('contact') or alert.annotations.get('pagerduty') or alert.annotations.get('slack') %}
-{% set started_display = alert.starts_at_display if alert.starts_at_display is defined else alert.starts_at %}
-{% set ends_display = alert.ends_at_display if alert.ends_at_display is defined else alert.ends_at %}
+{% set started_display = alert.starts_at|user_datetime %}
+{% set ends_display = alert.ends_at|user_datetime %}
 <tr class="hover:bg-surface-subtle dark:hover:bg-surface-hover/50">
  <td class="px-6 py-4 align-middle">
  <div class="flex min-w-0 items-center gap-3">

@@ -12,7 +12,16 @@ from app.auth.routes import auth_bp
 from app.cluster.onboarding import build_cluster_onboarding_context
 from app.cluster.routes import cluster_bp
 from app.commands import register_commands
-from app.common.timezone import format_date, format_datetime, normalize_timezone_name
+from app.common.timezone import (
+    format_user_date,
+    format_user_datetime,
+    format_user_time,
+    normalize_date_format,
+    normalize_locale,
+    normalize_time_format,
+    normalize_timezone_mode,
+    normalize_timezone_name,
+)
 from app.config import CONFIG_MAP
 from app.dashboards.kubernetes.routes import kubernetes_dashboard_bp
 from app.extensions import db, init_celery, limiter, login_manager, migrate, register_rate_limit_handlers
@@ -65,26 +74,93 @@ def create_app(config_name: str | None = None):
             if current_user.is_authenticated
             else 'UTC'
         )
+        current_timezone_mode = (
+            normalize_timezone_mode(getattr(current_user, 'timezone_mode', 'manual'))
+            if current_user.is_authenticated
+            else 'manual'
+        )
+        current_locale = (
+            normalize_locale(getattr(current_user, 'locale', 'en-US'))
+            if current_user.is_authenticated
+            else 'en-US'
+        )
+        current_date_format = (
+            normalize_date_format(getattr(current_user, 'date_format', 'day_month_year'))
+            if current_user.is_authenticated
+            else 'day_month_year'
+        )
+        current_time_format = (
+            normalize_time_format(getattr(current_user, 'time_format', '24h'))
+            if current_user.is_authenticated
+            else '24h'
+        )
 
         return {
             'app_version': app.config['APP_VERSION'],
             'current_year': datetime.now().year,
             'current_timezone': current_timezone,
+            'current_timezone_mode': current_timezone_mode,
+            'current_locale': current_locale,
+            'current_date_format': current_date_format,
+            'current_time_format': current_time_format,
             'csrf_token': generate_csrf,
             'load_navigation_notification_context': load_navigation_notification_context,
             'load_quick_action_feedback': load_quick_action_feedback,
             'cluster_onboarding': build_cluster_onboarding_context(),
         }
 
+    def _user_time_preferences():
+        if not current_user.is_authenticated:
+            return {
+                'timezone_name': 'UTC',
+                'locale': 'en-US',
+                'date_format': 'day_month_year',
+                'time_format': '24h',
+            }
+
+        return {
+            'timezone_name': normalize_timezone_name(getattr(current_user, 'timezone', 'UTC')),
+            'locale': normalize_locale(getattr(current_user, 'locale', 'en-US')),
+            'date_format': normalize_date_format(getattr(current_user, 'date_format', 'day_month_year')),
+            'time_format': normalize_time_format(getattr(current_user, 'time_format', '24h')),
+        }
+
     @app.template_filter('user_datetime')
-    def user_datetime_filter(value, pattern='%d %b %Y %H:%M %Z', empty='-'):
-        timezone_name = getattr(current_user, 'timezone', 'UTC') if current_user.is_authenticated else 'UTC'
-        return format_datetime(value, timezone_name, pattern, empty)
+    def user_datetime_filter(value, empty='-', include_seconds=False, include_timezone=True):
+        preferences = _user_time_preferences()
+        return format_user_datetime(
+            value,
+            preferences['timezone_name'],
+            date_format=preferences['date_format'],
+            time_format=preferences['time_format'],
+            locale=preferences['locale'],
+            include_seconds=include_seconds,
+            include_timezone=include_timezone,
+            empty=empty,
+        )
 
     @app.template_filter('user_date')
-    def user_date_filter(value, pattern='%d %b %Y', empty='-'):
-        timezone_name = getattr(current_user, 'timezone', 'UTC') if current_user.is_authenticated else 'UTC'
-        return format_date(value, timezone_name, pattern, empty)
+    def user_date_filter(value, empty='-'):
+        preferences = _user_time_preferences()
+        return format_user_date(
+            value,
+            preferences['timezone_name'],
+            date_format=preferences['date_format'],
+            locale=preferences['locale'],
+            empty=empty,
+        )
+
+    @app.template_filter('user_time')
+    def user_time_filter(value, empty='-', include_seconds=False, include_timezone=True):
+        preferences = _user_time_preferences()
+        return format_user_time(
+            value,
+            preferences['timezone_name'],
+            time_format=preferences['time_format'],
+            include_seconds=include_seconds,
+            include_timezone=include_timezone,
+            empty=empty,
+        )
 
     # Load configuration based on APP_ENV environment variable
     env = config_name or os.getenv('APP_ENV', 'development')

@@ -136,8 +136,8 @@
                                             (record.days_remaining ~ ' days') if record.days_remaining is not none else 'Invalid',
                                             'bg-kaori-soft text-kaori-primary'
                                             ) %}
-                                            {{ detail_row('Valid From', record.not_before|user_date('%Y-%m-%d') , tone='violet') }}
-                                            {{ detail_row('Expires At', record.not_after|user_date('%Y-%m-%d') , tone='violet') }}
+                                            {{ detail_row('Valid From', record.not_before|user_date , tone='violet') }}
+                                            {{ detail_row('Expires At', record.not_after|user_date , tone='violet') }}
                                             {{ detail_row('Remaining', (record.days_remaining ~ ' days') if record.days_remaining is not none else '-', tone='violet') }}
                                             {% call detail_object.stack() %}
                                                 <div class="rounded-lg border border-outline-default bg-kaori-soft p-3">

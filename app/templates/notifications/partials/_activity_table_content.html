@@ -27,10 +27,10 @@
                             <div class="relative min-w-0 pl-4">
                                 <span class="absolute left-0 top-2 h-2 w-2 rounded-full {% if item.is_read %}bg-slate-300 dark:bg-slate-600{% else %}bg-kaori-primary ring-2 ring-brand-outline dark:ring-brand-outline{% endif %}"></span>
                                 <p class="whitespace-nowrap text-[11px] font-bold text-content-primary dark:text-content-primary">
-                                    {{ item.created_at|user_datetime("%d %b %Y") }}
+                                    {{ item.created_at|user_date }}
                                 </p>
                                 <p class="mt-1 whitespace-nowrap text-[10px] font-semibold text-content-muted dark:text-content-muted">
-                                    {{ item.created_at|user_datetime("%H:%M:%S %Z") }}
+                                    {{ item.created_at|user_time(include_seconds=true) }}
                                 </p>
                                 <p class="mt-1 text-[10px] text-content-muted dark:text-content-muted">{{ item.created_label }}</p>
                             </div>
@@ -191,7 +191,7 @@
                                             <div class="flex items-start justify-between gap-3">
                                                 <dt class="text-content-muted dark:text-content-muted">Recorded</dt>
                                                 <dd class="text-right font-bold text-content-secondary dark:text-slate-200">
-                                                    {{ item.created_at|user_datetime("%d %b %Y %H:%M:%S %Z") }}
+                                                    {{ item.created_at|user_datetime(include_seconds=true) }}
                                                 </dd>
                                             </div>
                                             <div class="flex items-start justify-between gap-3">

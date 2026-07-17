@@ -1,5 +1,37 @@
 {% extends "layouts/app.html" %}
-{% block title %}General Settings{% endblock title %}
+{% block title %}
+    General Settings
+{% endblock title %}
 {% block dashboard_content %}
-    {% include "settings/general/partials/_placeholder.html" %}
+    <div class="space-y-6">
+        {% include "settings/general/partials/_hero.html" %}
+        <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+            {% include "settings/general/partials/_tabs.html" %}
+            {% if general_feedback %}
+                <div class="px-5 pt-5 xl:px-6 xl:pt-6">
+                    <div class="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-800 shadow-sm dark:border-emerald-900/60 dark:bg-emerald-950/35 dark:text-emerald-200">
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-200">
+                            <i data-lucide="circle-check" class="h-4 w-4"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <p class="text-sm font-bold">{{ general_feedback.title }}</p>
+                            <p class="mt-0.5 text-xs leading-5 opacity-85">{{ general_feedback.message }}</p>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+            <div class="grid gap-6 p-5 xl:grid-cols-12 xl:p-6">
+                <div class="xl:col-span-8">
+                    {% if active_tab == 'regional-format' %}
+                        {% include "settings/general/partials/_regional_format.html" %}
+                    {% else %}
+                        {% include "settings/general/partials/_time_locale.html" %}
+                    {% endif %}
+                </div>
+                <aside class="space-y-5 xl:col-span-4">
+                    {% include "settings/general/partials/_impact_information.html" %}
+                </aside>
+            </div>
+        </section>
+    </div>
 {% endblock dashboard_content %}
