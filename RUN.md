@@ -25,18 +25,20 @@ This file is the operational reference for local development and container-based
    CELERY_RESULT_BACKEND=redis://redis:6379/3
    ```
 
-5. Run **Dev Containers: Rebuild Without Cache and Reopen in Container**. The `worker` service starts automatically with the Dev Container and listens to the Celery `inventory` queue.
+5. Run **Dev Containers: Rebuild Without Cache and Reopen in Container**. The Dev Container installs the locked frontend dependencies, rebuilds `app/static/css/output.css` from the canonical `frontend/styles.css` entrypoint, validates the KAORI design tokens, and starts the `worker` service on the Celery `inventory` queue.
 6. In the Dev Container terminal, initialize a fresh database and the first administrator:
 
    ```bash
    bash scripts/init_db.sh --bootstrap-admin
    ```
 
-7. Start the Tailwind watcher in one terminal:
+7. Start the Tailwind watcher in one terminal when editing templates or styles:
 
    ```bash
    npm run watch-css
    ```
+
+   A valid CSS build is already created automatically during container creation and every container start. The watcher is only needed for live recompilation while developing.
 
 8. Press `F5` and select **KAORI: Flask Auto Reload**, or run:
 
@@ -68,7 +70,9 @@ This file is the operational reference for local development and container-based
 
 ### Daily development
 
-Use **Dev Containers: Reopen in Container**, then run:
+Use **Dev Containers: Reopen in Container**. KAORI rebuilds and validates the stylesheet automatically when the container starts.
+
+Run the watcher only while editing templates or `frontend/styles.css`:
 
 ```bash
 npm run watch-css

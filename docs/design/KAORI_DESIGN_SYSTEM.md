@@ -192,6 +192,8 @@ npm run watch-css
 
 The production Docker build executes the same `build-css` script and copies the generated stylesheet into the runtime image.
 
+`frontend/styles.css` is the only supported Tailwind entrypoint. Dev Container creation and startup rebuild the stylesheet automatically. The build then runs `scripts/verify_css_build.mjs`; it fails when required KAORI Violet Infrastructure tokens or generated utilities are missing. Keep `package-lock.json` committed so `npm ci` is deterministic in both the Dev Container and production image.
+
 ## Review checklist
 
 Validate each redesign in:
