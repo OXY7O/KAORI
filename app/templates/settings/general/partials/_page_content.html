@@ -1,0 +1,33 @@
+<div id="general-settings-page" class="space-y-6">
+    {% include "settings/general/partials/_hero.html" %}
+    <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+        {% include "settings/general/partials/_tabs.html" %}
+        <div class="grid gap-6 p-5 xl:grid-cols-12 xl:p-6">
+            <div class="xl:col-span-8">
+                {% if active_tab == 'regional-format' %}
+                    {% include "settings/general/partials/_regional_format.html" %}
+                {% elif active_tab == 'system-information' %}
+                    {% include "settings/general/partials/_system_information.html" %}
+                {% else %}
+                    {% include "settings/general/partials/_time_locale.html" %}
+                {% endif %}
+            </div>
+            <aside class="space-y-5 xl:col-span-4">
+                {% if active_tab == 'system-information' %}
+                    {% include "settings/general/partials/_system_information_context.html" %}
+                {% else %}
+                    {% include "settings/general/partials/_impact_information.html" %}
+                {% endif %}
+            </aside>
+        </div>
+    </section>
+</div>
+{% if timezone_sync_oob %}
+    <div id="kaori-user-timezone-sync"
+         hx-swap-oob="outerHTML"
+         class="hidden"
+         data-mode="{{ current_timezone_mode }}"
+         data-timezone="{{ current_timezone }}"
+         data-url="{{ url_for('settings.sync_browser_timezone') }}"
+         data-csrf="{{ csrf_token() }}"></div>
+{% endif %}

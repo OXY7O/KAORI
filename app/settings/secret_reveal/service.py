@@ -55,16 +55,10 @@ def _filter_namespace_rows(
 ) -> list[dict[str, Any]]:
     filtered_rows = rows
     if query:
-        filtered_rows = [
-            row for row in filtered_rows if query in row['namespace'].lower()
-        ]
+        filtered_rows = [row for row in filtered_rows if query in row['namespace'].lower()]
 
     if policy_filter == 'enabled':
-        return [
-            row
-            for row in filtered_rows
-            if row['policy'] in {'step_up', 'approval_required'}
-        ]
+        return [row for row in filtered_rows if row['policy'] in {'step_up', 'approval_required'}]
     if policy_filter == 'missing':
         return [row for row in filtered_rows if not row['in_live_cluster']]
     if policy_filter != 'all':
@@ -110,9 +104,7 @@ def build_secret_reveal_settings_context(
     total_pages = max(ceil(filtered_total / normalized_per_page), 1)
     current_page = min(requested_page, total_pages)
     start_offset = (current_page - 1) * normalized_per_page
-    namespace_rows = filtered_namespace_rows[
-        start_offset : start_offset + normalized_per_page
-    ]
+    namespace_rows = filtered_namespace_rows[start_offset : start_offset + normalized_per_page]
     start_item = start_offset + 1 if filtered_total else 0
     end_item = min(start_offset + normalized_per_page, filtered_total)
 
@@ -120,19 +112,14 @@ def build_secret_reveal_settings_context(
         SecretRevealNamespacePolicy.policy.in_(('step_up', 'approval_required'))
     ).count()
     protected_cluster_count = (
-        SecretRevealNamespacePolicy.query.with_entities(
-            SecretRevealNamespacePolicy.cluster_id
-        )
-        .filter(
-            SecretRevealNamespacePolicy.policy.in_(('step_up', 'approval_required'))
-        )
+        SecretRevealNamespacePolicy.query.with_entities(SecretRevealNamespacePolicy.cluster_id)
+        .filter(SecretRevealNamespacePolicy.policy.in_(('step_up', 'approval_required')))
         .distinct()
         .count()
     )
 
     selected_enabled_namespace_count = sum(
-        row['policy'] in {'step_up', 'approval_required'}
-        for row in all_namespace_rows
+        row['policy'] in {'step_up', 'approval_required'} for row in all_namespace_rows
     )
 
     return {
@@ -161,19 +148,12 @@ def build_secret_reveal_settings_context(
         'namespace_summary': {
             'total': len(all_namespace_rows),
             'enabled': selected_enabled_namespace_count,
-            'disabled': sum(
-                row['policy'] == 'disabled' for row in all_namespace_rows
-            ),
+            'disabled': sum(row['policy'] == 'disabled' for row in all_namespace_rows),
             'missing': sum(not row['in_live_cluster'] for row in all_namespace_rows),
         },
         'reveal_policy_choices': REVEAL_NAMESPACE_POLICIES,
-        'global_reveal_enabled': bool(
-            current_app.config.get('KUBERNETES_SECRET_REVEAL_ENABLED', False)
-        ),
-        'selected_cluster_ready': bool(
-            selected_cluster is not None
-            and cluster_reveal_readiness(selected_cluster)
-        ),
+        'global_reveal_enabled': bool(current_app.config.get('KUBERNETES_SECRET_REVEAL_ENABLED', False)),
+        'selected_cluster_ready': bool(selected_cluster is not None and cluster_reveal_readiness(selected_cluster)),
         'protected_cluster_count': protected_cluster_count,
         'total_enabled_namespaces': total_enabled_namespaces,
         'selected_enabled_namespace_count': selected_enabled_namespace_count,

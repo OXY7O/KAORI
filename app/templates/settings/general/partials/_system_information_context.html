@@ -1,0 +1,62 @@
+<section class="rounded-2xl border border-outline-default bg-surface-card p-5">
+    <div class="flex items-start gap-3">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
+            <i data-lucide="variable" class="h-5 w-5"></i>
+        </span>
+        <div>
+            <h2 class="text-base font-bold text-content-primary">Version Configuration</h2>
+            <p class="mt-1 text-sm leading-6 text-content-muted">
+                Release identity is deployment metadata, not an editable user preference.
+            </p>
+        </div>
+    </div>
+    <dl class="mt-5 space-y-3 text-xs">
+        <div class="rounded-xl border border-outline-default bg-surface-subtle p-3.5">
+            <dt class="font-bold text-content-primary">Required variable</dt>
+            <dd class="mt-1 font-mono leading-5 text-kaori-primary">APP_VERSION={{ system_information.version }}</dd>
+        </div>
+        <div class="rounded-xl border border-outline-default bg-surface-subtle p-3.5">
+            <dt class="font-bold text-content-primary">Optional build metadata</dt>
+            <dd class="mt-1 leading-5 text-content-muted">
+                APP_BUILD_SHA and APP_BUILD_DATE provide immutable release traceability when supplied by the image build or deployment pipeline.
+            </dd>
+        </div>
+        <div class="rounded-xl border border-outline-default bg-surface-subtle p-3.5">
+            <dt class="font-bold text-content-primary">Deployment rule</dt>
+            <dd class="mt-1 leading-5 text-content-muted">
+                Keep APP_VERSION aligned with the immutable KAORI image tag to make support and rollback decisions unambiguous.
+            </dd>
+        </div>
+    </dl>
+</section>
+
+<section class="rounded-2xl border border-outline-default bg-surface-card p-5">
+    <div class="flex items-start gap-3">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
+            <i data-lucide="shield-ellipsis" class="h-5 w-5"></i>
+        </span>
+        <div>
+            <h2 class="text-base font-bold text-content-primary">Information Boundary</h2>
+            <p class="mt-1 text-sm leading-6 text-content-muted">
+                This tab is intentionally safe for every authenticated KAORI user.
+            </p>
+        </div>
+    </div>
+    <div class="mt-5 space-y-3">
+        {% for icon, title, text in [
+            ('eye', 'Visible', 'Product name, release version, environment label, optional build reference, and the shipped capability catalog.'),
+            ('eye-off', 'Not exposed', 'Secrets, provider credentials, database URLs, Redis endpoints, Kubernetes credentials, and internal service addresses.'),
+            ('lock-keyhole', 'Configuration access', 'Viewing release information does not grant permission to configure integrations, users, roles, or system-level controls.'),
+            ] %}
+            <div class="flex items-start gap-3 rounded-xl border border-outline-default bg-surface-subtle p-3.5">
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary">
+                    <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+                </span>
+                <div>
+                    <p class="text-sm font-semibold text-content-primary">{{ title }}</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ text }}</p>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</section>

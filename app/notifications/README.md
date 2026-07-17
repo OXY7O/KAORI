@@ -59,3 +59,14 @@ notification bells from being appended beside or below toast containers.
 
 The Activity Audit Log uses the KAORI Violet Infrastructure presentation standard. The page hero and operational posture use KAORI Violet surfaces, while success, warning, failure, pending, and disabled states retain their semantic colors. Text labels use compact rectangular geometry (`rounded-md`) rather than pill geometry. Activity payloads, audit metadata, filters, HTMX pagination, retention execution, and lifecycle behavior are unchanged by this visual standard.
 
+
+## Toast visual standard
+
+Operational toast cards use KAORI Violet surface, border, typography, and action
+styles. Semantic status colors are limited to the status accent, icon, and status
+label. The progress or completion rail is a separate narrow element below the toast
+card; it must not be absolutely attached to the card edge. This separation keeps the
+operation state visible without making the toast look like a single fused block.
+
+Personal preference saves do not generate operational toasts. They create personal
+Notification Center records and trigger the canonical notification refresh event.

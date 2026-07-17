@@ -1,4 +1,4 @@
-{% set settings_owned_endpoints = ["settings.general", "settings.account", "settings.reports", "settings.system_info"] %}
+{% set settings_owned_endpoints = ["settings.general", "settings.account", "settings.reports"] %}
 {% set settings_active = request.endpoint in settings_owned_endpoints
 or (request.endpoint and request.endpoint.startswith('settings.secret_reveal.')) %}
 <details class="sidebar-menu space-y-1"
@@ -32,12 +32,6 @@ or (request.endpoint and request.endpoint.startswith('settings.secret_reveal.'))
             <a href="{{ url_for('settings.reports') }}"
                class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint == 'settings.reports' else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] leading-4 transition">
                 <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint == 'settings.reports' else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span><i data-lucide="file-text" class="h-3.5 w-3.5"></i><span>Reports</span>
-            </a>
-        {% endif %}
-        {% if current_user.is_authenticated and current_user.has_permission('system.view') %}
-            <a href="{{ url_for('settings.system_info') }}"
-               class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint == 'settings.system_info' else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] leading-4 transition">
-                <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint == 'settings.system_info' else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span><i data-lucide="server" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">System Information</span>
             </a>
         {% endif %}
     </div>

@@ -52,7 +52,6 @@ Local authentication must remain available even after external providers are ena
 | `partials/_feature_cards.html`   | Compact platform-value cards shown in the brand panel.                                              |
 | `partials/_login_form.html`      | Form composition, labels, fields, submit action, theme control, and audit notice.                   |
 | `partials/_login_alerts.html`    | Safe success/error messages rendered from Flask flash messages.                                     |
-| `partials/_provider_status.html` | Current actionable provider indicator. LDAP/SSO controls must not appear before their routes work.  |
 | `partials/_footer_meta.html`     | Version/legal/environment footer metadata.                                                          |
 
 ## Current local authentication flow

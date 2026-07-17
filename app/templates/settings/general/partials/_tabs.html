@@ -1,19 +1,26 @@
 <nav class="border-b border-outline-default bg-surface-subtle px-5 pt-4"
      aria-label="General settings sections">
-    <div class="flex flex-wrap gap-2" role="tablist">
+    <div class="flex gap-2 overflow-x-auto" role="tablist">
         <a href="{{ url_for('settings.general', tab='time-locale') }}"
            role="tab"
            aria-selected="{{ 'true' if active_tab == 'time-locale' else 'false' }}"
-           class="inline-flex min-h-10 items-center gap-2 rounded-t-xl border px-4 py-2.5 text-sm font-semibold transition {{ 'border-outline-default border-b-surface-card bg-surface-card text-kaori-primary -mb-px' if active_tab == 'time-locale' else 'border-transparent text-content-muted hover:bg-kaori-soft hover:text-kaori-primary' }}">
+           class="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-t-xl border px-4 py-2.5 text-sm font-semibold transition {{ 'border-outline-default border-b-surface-card bg-surface-card text-kaori-primary -mb-px' if active_tab == 'time-locale' else 'border-transparent text-content-muted hover:bg-kaori-soft hover:text-kaori-primary' }}">
             <i data-lucide="globe-2" class="h-4 w-4"></i>
             Time Zone
         </a>
         <a href="{{ url_for('settings.general', tab='regional-format') }}"
            role="tab"
            aria-selected="{{ 'true' if active_tab == 'regional-format' else 'false' }}"
-           class="inline-flex min-h-10 items-center gap-2 rounded-t-xl border px-4 py-2.5 text-sm font-semibold transition {{ 'border-outline-default border-b-surface-card bg-surface-card text-kaori-primary -mb-px' if active_tab == 'regional-format' else 'border-transparent text-content-muted hover:bg-kaori-soft hover:text-kaori-primary' }}">
+           class="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-t-xl border px-4 py-2.5 text-sm font-semibold transition {{ 'border-outline-default border-b-surface-card bg-surface-card text-kaori-primary -mb-px' if active_tab == 'regional-format' else 'border-transparent text-content-muted hover:bg-kaori-soft hover:text-kaori-primary' }}">
             <i data-lucide="calendar-range" class="h-4 w-4"></i>
             Regional Format
+        </a>
+        <a href="{{ url_for('settings.general', tab='system-information') }}"
+           role="tab"
+           aria-selected="{{ 'true' if active_tab == 'system-information' else 'false' }}"
+           class="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-t-xl border px-4 py-2.5 text-sm font-semibold transition {{ 'border-outline-default border-b-surface-card bg-surface-card text-kaori-primary -mb-px' if active_tab == 'system-information' else 'border-transparent text-content-muted hover:bg-kaori-soft hover:text-kaori-primary' }}">
+            <i data-lucide="badge-info" class="h-4 w-4"></i>
+            System Information
         </a>
     </div>
 </nav>

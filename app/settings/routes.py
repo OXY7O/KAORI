@@ -1,16 +1,18 @@
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime
-from typing import cast
+from typing import Any, cast
 
 from flask import (
     Blueprint,
+    current_app,
     flash,
     jsonify,
+    make_response,
     redirect,
     render_template,
     request,
-    session,
     url_for,
 )
 from flask_login import current_user, login_required
@@ -28,6 +30,7 @@ from app.common.timezone import (
 )
 from app.extensions import db
 from app.models import Notification, Permission, Role, User
+from app.notifications.service import record_operational_activity
 from app.rbac.decorators import permission_required
 from app.rbac.service import (
     get_permissions_grouped_by_module,
@@ -36,6 +39,7 @@ from app.rbac.service import (
 )
 from app.settings.general.forms import RegionalFormatForm, TimezonePreferenceForm
 from app.settings.roles.forms import RoleForm
+from app.settings.system_information import build_system_information
 from app.users.service import build_user_identity_context, record_admin_event
 
 bp = Blueprint(
@@ -50,53 +54,93 @@ bp = Blueprint(
 @login_required
 def general():
     user = cast(User, current_user._get_current_object())
-    general_feedback = session.pop('general_settings_feedback', None)
     active_tab = (request.args.get('tab') or 'time-locale').strip().lower()
-    if active_tab not in {'time-locale', 'regional-format'}:
+    if active_tab not in {'time-locale', 'regional-format', 'system-information'}:
         active_tab = 'time-locale'
 
     timezone_form = TimezonePreferenceForm()
     regional_form = RegionalFormatForm()
+    notification_changed = False
 
-    if request.method == 'GET':
+    timezone_submission = (
+        request.method == 'POST' and active_tab == 'time-locale' and bool(timezone_form.submit_timezone.data)
+    )
+    regional_submission = (
+        request.method == 'POST' and active_tab == 'regional-format' and bool(regional_form.submit_regional.data)
+    )
+
+    if not timezone_submission:
         timezone_form.timezone_mode.data = normalize_timezone_mode(user.timezone_mode)
         timezone_form.timezone.data = normalize_timezone_name(user.timezone)
+    if not regional_submission:
         regional_form.locale.data = normalize_locale(user.locale)
         regional_form.date_format.data = normalize_date_format(user.date_format)
         regional_form.time_format.data = normalize_time_format(user.time_format)
 
-    if active_tab == 'time-locale' and timezone_form.submit_timezone.data:
-        if timezone_form.validate_on_submit():
-            timezone_mode = normalize_timezone_mode(timezone_form.timezone_mode.data)
-            requested_timezone = (
-                timezone_form.browser_timezone.data if timezone_mode == 'automatic' else timezone_form.timezone.data
-            )
+    if timezone_submission and timezone_form.validate_on_submit():
+        timezone_mode = normalize_timezone_mode(timezone_form.timezone_mode.data)
+        requested_timezone = (
+            timezone_form.browser_timezone.data if timezone_mode == 'automatic' else timezone_form.timezone.data
+        )
 
-            if not is_valid_timezone_name(requested_timezone):
-                timezone_form.timezone.errors = [
-                    'The selected or detected browser timezone is not a valid IANA timezone.'
-                ]
-            else:
-                user.timezone_mode = timezone_mode
-                user.timezone = normalize_timezone_name(requested_timezone)
-                db.session.commit()
-                session['general_settings_feedback'] = {
-                    'title': 'Time zone preference saved',
-                    'message': (f'KAORI now renders time-related information for this account using {user.timezone}.'),
-                }
+        if not is_valid_timezone_name(requested_timezone):
+            timezone_form.timezone.errors = ['The selected or detected browser timezone is not a valid IANA timezone.']
+        else:
+            user.timezone_mode = timezone_mode
+            user.timezone = normalize_timezone_name(requested_timezone)
+            db.session.commit()
+            record_operational_activity(
+                user_id=user.id,
+                event_type='user_preference',
+                status='success',
+                title='Time zone preference saved',
+                message=(f'KAORI now renders time-related information for this account using {user.timezone}.'),
+                action_url=url_for('settings.general', tab='time-locale'),
+                action_label='Open General Settings',
+                action_icon='settings-2',
+                metadata={
+                    'preference': 'timezone',
+                    'timezone_mode': user.timezone_mode,
+                    'timezone': user.timezone,
+                },
+            )
+            notification_changed = True
+            if not request.headers.get('HX-Request'):
                 return redirect(url_for('settings.general', tab='time-locale'))
 
-    if active_tab == 'regional-format' and regional_form.submit_regional.data:
-        if regional_form.validate_on_submit():
-            user.locale = normalize_locale(regional_form.locale.data)
-            user.date_format = normalize_date_format(regional_form.date_format.data)
-            user.time_format = normalize_time_format(regional_form.time_format.data)
-            db.session.commit()
-            session['general_settings_feedback'] = {
-                'title': 'Regional format saved',
-                'message': ('Date, time, and locale presentation preferences are now active for this account.'),
-            }
+            timezone_form = TimezonePreferenceForm()
+            timezone_form.timezone_mode.data = normalize_timezone_mode(user.timezone_mode)
+            timezone_form.timezone.data = normalize_timezone_name(user.timezone)
+
+    if regional_submission and regional_form.validate_on_submit():
+        user.locale = normalize_locale(regional_form.locale.data)
+        user.date_format = normalize_date_format(regional_form.date_format.data)
+        user.time_format = normalize_time_format(regional_form.time_format.data)
+        db.session.commit()
+        record_operational_activity(
+            user_id=user.id,
+            event_type='user_preference',
+            status='success',
+            title='Regional format preference saved',
+            message=('Date, time, and locale presentation preferences are now active for this account.'),
+            action_url=url_for('settings.general', tab='regional-format'),
+            action_label='Open General Settings',
+            action_icon='settings-2',
+            metadata={
+                'preference': 'regional_format',
+                'locale': user.locale,
+                'date_format': user.date_format,
+                'time_format': user.time_format,
+            },
+        )
+        notification_changed = True
+        if not request.headers.get('HX-Request'):
             return redirect(url_for('settings.general', tab='regional-format'))
+
+        regional_form = RegionalFormatForm()
+        regional_form.locale.data = normalize_locale(user.locale)
+        regional_form.date_format.data = normalize_date_format(user.date_format)
+        regional_form.time_format.data = normalize_time_format(user.time_format)
 
     now_utc = datetime.now(UTC)
     current_time_display = format_user_datetime(
@@ -107,18 +151,32 @@ def general():
         locale=user.locale,
         include_seconds=True,
     )
+    context: dict[str, Any] = {
+        'active_tab': active_tab,
+        'timezone_form': timezone_form,
+        'regional_form': regional_form,
+        'timezone_choice_groups': timezone_choice_groups(),
+        'current_time_display': current_time_display,
+        'preview_timestamp': now_utc.isoformat(),
+        'system_information': build_system_information(current_app.config),
+        'page_title': 'General Settings',
+        'timezone_sync_oob': bool(request.headers.get('HX-Request')),
+    }
 
-    return render_template(
-        'settings/general/index.html',
-        active_tab=active_tab,
-        timezone_form=timezone_form,
-        regional_form=regional_form,
-        timezone_choice_groups=timezone_choice_groups(),
-        current_time_display=current_time_display,
-        preview_timestamp=now_utc.isoformat(),
-        general_feedback=general_feedback,
-        page_title='General Settings',
+    template_name = (
+        'settings/general/partials/_page_content.html'
+        if request.headers.get('HX-Request')
+        else 'settings/general/index.html'
     )
+    response = make_response(render_template(template_name, **context))
+    if notification_changed:
+        response.headers['HX-Trigger'] = json.dumps(
+            {
+                'kaori:notifications-changed': True,
+                'kaori:general-settings-saved': {'tab': active_tab},
+            }
+        )
+    return response
 
 
 @bp.post('/general/browser-timezone')
@@ -364,9 +422,3 @@ def permission_catalog():
 @permission_required('settings.manage_integrations')
 def reports():
     return render_template('settings/reports/index.html')
-
-
-@bp.route('/system-info')
-@permission_required('system.view')
-def system_info():
-    return render_template('settings/system_info/index.html')

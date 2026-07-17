@@ -81,7 +81,7 @@
                  {% if current_user.is_authenticated and current_user.has_permission('clusters.sync') and cluster_onboarding.has_clusters %} hx-get="{{ url_for('cluster.active_sync_all_status') }}" hx-trigger="load" hx-swap="innerHTML" {% endif %}>
             </div>
         </div>
-        {% if current_user.is_authenticated and current_timezone_mode == 'automatic' %}
+        {% if current_user.is_authenticated %}
             <div id="kaori-user-timezone-sync"
                  class="hidden"
                  data-mode="{{ current_timezone_mode }}"
@@ -217,16 +217,22 @@
                 toast.setAttribute('data-operational-progress-toast', '')
                 toast.setAttribute('role', 'status')
                 toast.setAttribute('aria-live', 'polite')
-                toast.className = 'quick-action-toast pointer-events-auto relative isolate w-full overflow-hidden rounded-2xl border border-kaori-primary/25 bg-surface-elevated shadow-2xl shadow-black/15'
+                toast.className = 'quick-action-toast pointer-events-auto w-full space-y-2'
+
+                const card = document.createElement('article')
+                card.className = 'relative isolate overflow-hidden rounded-2xl border border-outline-default bg-surface-elevated shadow-xl shadow-black/10'
+
+                const accent = document.createElement('span')
+                accent.className = 'absolute inset-y-0 left-0 w-1 bg-kaori-primary'
 
                 const content = document.createElement('div')
-                content.className = 'p-4 pb-5'
+                content.className = 'p-4 pl-5'
 
                 const row = document.createElement('div')
                 row.className = 'flex items-start gap-3'
 
                 const iconWrap = document.createElement('span')
-                iconWrap.className = 'mt-0.5 flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-kaori-soft text-kaori-primary'
+                iconWrap.className = 'mt-0.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary'
                 iconWrap.innerHTML = '<i data-lucide="loader-circle" class="h-5 w-5 animate-spin"></i>'
 
                 const copy = document.createElement('div')
@@ -244,17 +250,18 @@
                 closeButton.type = 'button'
                 closeButton.setAttribute('data-quick-action-toast-close', '')
                 closeButton.setAttribute('aria-label', 'Close operational progress')
-                closeButton.className = 'absolute right-3 top-3 z-20 rounded-xl p-1 text-content-muted transition hover:bg-surface-hover hover:text-content-primary'
+                closeButton.className = 'absolute right-3 top-3 z-20 rounded-lg p-1 text-content-muted transition hover:bg-kaori-soft hover:text-kaori-primary'
                 closeButton.innerHTML = '<i data-lucide="x" class="h-4 w-4"></i>'
 
                 const progressTrack = document.createElement('div')
-                progressTrack.className = 'absolute inset-x-0 bottom-0 h-1 overflow-hidden bg-kaori-soft'
+                progressTrack.className = 'mx-3 h-1 overflow-hidden rounded-full bg-surface-hover shadow-sm'
                 progressTrack.innerHTML = '<div class="notification-progress-indeterminate h-full rounded-full bg-kaori-primary"></div>'
 
                 copy.append(heading, description)
                 row.append(iconWrap, copy)
                 content.append(row)
-                toast.append(content, closeButton, progressTrack)
+                card.append(accent, content, closeButton)
+                toast.append(card, progressTrack)
                 container.append(toast)
 
                 if (window.lucide) {

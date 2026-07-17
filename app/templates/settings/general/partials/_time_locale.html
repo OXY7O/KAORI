@@ -1,5 +1,9 @@
 <form method="POST"
       action="{{ url_for('settings.general', tab='time-locale') }}"
+      hx-post="{{ url_for('settings.general', tab='time-locale') }}"
+      hx-target="#general-settings-page"
+      hx-swap="outerHTML"
+      hx-push-url="true"
       class="space-y-5">
     {{ timezone_form.hidden_tag() }}
     <section class="rounded-2xl border border-outline-default bg-surface-card">
@@ -92,9 +96,11 @@
             <button type="submit"
                     name="{{ timezone_form.submit_timezone.name }}"
                     value="1"
-                    class="inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                    data-operation-submit
+                    data-loading-label="Saving..."
+                    class="inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-wait disabled:opacity-75">
                 <i data-lucide="save" class="h-4 w-4 shrink-0"></i>
-                <span>Save</span>
+                <span data-operation-submit-label>Save</span>
             </button>
         </footer>
     </section>

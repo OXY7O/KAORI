@@ -377,6 +377,8 @@ class Config:
         'APP_VERSION',
         '1.0.0',
     )
+    APP_BUILD_SHA = _env_optional_str('APP_BUILD_SHA')
+    APP_BUILD_DATE = _env_optional_str('APP_BUILD_DATE')
 
     # Reusable archive storage profile. The unified Activity Audit Log uses
     # this profile now; reports and future domains can reuse the same Local/S3

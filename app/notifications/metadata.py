@@ -72,6 +72,12 @@ def metadata_items(
 ) -> list[dict[str, Any]]:
     preferred_order = (
         'event_key',
+        'preference',
+        'timezone_mode',
+        'timezone',
+        'locale',
+        'date_format',
+        'time_format',
         'task_id',
         'archive_id',
         'certificate_id',
@@ -112,6 +118,12 @@ def metadata_items(
     )
     label_overrides = {
         'event_key': 'Event key',
+        'preference': 'Preference',
+        'timezone_mode': 'Timezone source',
+        'timezone': 'Timezone',
+        'locale': 'Regional locale',
+        'date_format': 'Date format',
+        'time_format': 'Time format',
         'task_id': 'Task ID',
         'archive_id': 'Archive ID',
         'certificate_id': 'Certificate ID',

@@ -106,6 +106,17 @@ def build_event_context(
             source_label='Authentication provider',
             source_detail=auth_source or 'Provider not recorded',
         )
+    elif event_type == 'user_preference':
+        preference_name = _string_metadata(metadata, 'preference')
+        context.update(
+            module_label='Personal Settings',
+            target_type='User Preference',
+            target_name=(preference_name or 'General Settings').replace('_', ' ').title(),
+            event_icon='settings-2',
+            event_tone='violet',
+            source_label='Preference scope',
+            source_detail='Authenticated user account',
+        )
     elif event_type.startswith('operational_activity_'):
         context.update(
             module_label='Activity Retention',
