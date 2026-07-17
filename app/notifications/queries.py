@@ -12,6 +12,7 @@ from app.notifications.constants import ACTIVITY_PER_PAGE_OPTIONS, ALLOWED_STATU
 from app.notifications.event_catalog import event_label
 from app.notifications.presentation import _serialize_notification, _user_label
 
+
 def get_navigation_notification_context(
     *,
     user_id: int,
@@ -20,6 +21,7 @@ def get_navigation_notification_context(
     normalized_limit = max(1, min(limit, NAVIGATION_NOTIFICATION_LIMIT))
     base_query = Notification.query.filter(
         Notification.user_id == user_id,
+        Notification.event_type != 'authentication',
     )
     unread_count = base_query.filter(
         Notification.read_at.is_(None),
@@ -73,7 +75,7 @@ def get_notification_activity_context(
     normalized_search = search.strip()
     normalized_user_id = _normalize_user_filter(user_id)
 
-    filtered_query = Notification.query.join(
+    filtered_query = Notification.query.outerjoin(
         User,
         User.id == Notification.user_id,
     )
@@ -83,7 +85,7 @@ def get_notification_activity_context(
             Notification.user_id == normalized_user_id,
         )
 
-    event_type_query = db.session.query(Notification.event_type).join(
+    event_type_query = db.session.query(Notification.event_type).outerjoin(
         User,
         User.id == Notification.user_id,
     )
@@ -134,7 +136,7 @@ def get_notification_activity_context(
         error_out=False,
     )
 
-    page_user_ids = {notification.user_id for notification in pagination.items}
+    page_user_ids = {notification.user_id for notification in pagination.items if notification.user_id is not None}
     page_users = User.query.filter(User.id.in_(page_user_ids)).all() if page_user_ids else []
     users_by_id = {user.id: user for user in page_users}
 

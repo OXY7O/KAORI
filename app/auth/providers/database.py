@@ -9,6 +9,7 @@ from app.auth.results import (
     USER_INACTIVE_MESSAGE,
     AuthResult,
 )
+from app.extensions import db
 from app.models import User
 
 _DUMMY_PASSWORD_HASH = generate_password_hash('kaori-auth-timing-placeholder')
@@ -26,6 +27,7 @@ class DatabaseAuthProvider:
                 User.deleted_at.is_(None),
             ).first()
         except SQLAlchemyError:
+            db.session.rollback()
             return AuthResult(
                 success=False,
                 reason='database_unavailable',
@@ -44,11 +46,24 @@ class DatabaseAuthProvider:
                 message=INVALID_LOGIN_MESSAGE,
             )
 
+        if user.auth_source != self.source:
+            # The username belongs to an external identity. Keep the public
+            # response indistinguishable, but allow the provider registry to
+            # continue with LDAP or a future password-based external adapter.
+            check_password_hash(_DUMMY_PASSWORD_HASH, password)
+            return AuthResult(
+                success=False,
+                reason='invalid_credentials',
+                source=self.source,
+                message=INVALID_LOGIN_MESSAGE,
+            )
+
         if not user.check_password(password):
             return AuthResult(
                 success=False,
                 reason='invalid_credentials',
                 source=self.source,
+                user=user,
                 message=INVALID_LOGIN_MESSAGE,
             )
 

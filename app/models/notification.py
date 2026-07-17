@@ -20,9 +20,9 @@ class Notification(db.Model):
 
     id: Mapped[int] = mapped_column(primary_key=True)
 
-    user_id: Mapped[int] = mapped_column(
+    user_id: Mapped[int | None] = mapped_column(
         db.ForeignKey('users.id', ondelete='CASCADE'),
-        nullable=False,
+        nullable=True,
         index=True,
     )
 

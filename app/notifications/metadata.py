@@ -5,6 +5,7 @@ from typing import Any
 
 from app.notifications.normalization import standardize_activity_text
 
+
 def changed_fields(metadata: dict[str, Any]) -> list[dict[str, str]]:
     changed_items: list[dict[str, str]] = []
     label_overrides = {
@@ -53,8 +54,7 @@ def _metadata_value(value: Any) -> str:
         if not value:
             return '-'
         return ', '.join(
-            f'{str(key).replace("_", " ").title()}: {_metadata_value(item)}'
-            for key, item in value.items()
+            f'{str(key).replace("_", " ").title()}: {_metadata_value(item)}' for key, item in value.items()
         )
     if isinstance(value, list):
         return ', '.join(_metadata_value(item) for item in value) if value else '-'
@@ -97,6 +97,14 @@ def metadata_items(
         'endpoint',
         'server',
         'auth_type',
+        'result',
+        'result_reason',
+        'reason_code',
+        'ip_address',
+        'browser',
+        'operating_system',
+        'device_type',
+        'user_agent',
         'timeout_seconds',
         'verify_ssl',
         'failure_code',
@@ -135,12 +143,30 @@ def metadata_items(
         'checksum_sha256': 'SHA-256 checksum',
         'size_bytes': 'Archive size',
         'download_kind': 'Downloaded file',
+        'result': 'Authentication result',
+        'result_reason': 'Result detail',
+        'reason_code': 'Reason code',
+        'ip_address': 'IP address',
+        'browser': 'Browser',
+        'operating_system': 'Operating system',
+        'device_type': 'Device type',
+        'user_agent': 'User agent',
+        'legacy_login_event_id': 'Legacy Login Activity ID',
     }
     context_keys = {
         'cluster_name',
         'environment',
         'submitted_name',
         'submitted_environment',
+        'audit_schema',
+        'access_action',
+        'username',
+        'auth_source',
+        'authentication_provider',
+        'actor_display_name',
+        'actor_email',
+        'actor_role',
+        'legacy_login_event_id',
     }
 
     visible_metadata: dict[str, Any] = {'event_key': event_type}
@@ -158,11 +184,14 @@ def metadata_items(
     for key in keys:
         value = visible_metadata[key]
         if key in {'reason', 'error', 'error_message'}:
-            rendered_value = standardize_activity_text(
-                _metadata_value(value),
-                event_type=event_type,
-                status='error',
-            ) or 'The operation did not complete successfully.'
+            rendered_value = (
+                standardize_activity_text(
+                    _metadata_value(value),
+                    event_type=event_type,
+                    status='error',
+                )
+                or 'The operation did not complete successfully.'
+            )
         elif key == 'duration_seconds':
             rendered_value = f'{_metadata_value(value)} seconds'
         elif key == 'response_time_ms':
@@ -172,23 +201,32 @@ def metadata_items(
         elif key == 'size_bytes':
             try:
                 size_value = int(value)
-                rendered_value = f'{size_value / 1024:.1f} KiB' if size_value < 1024 * 1024 else f'{size_value / (1024 * 1024):.1f} MiB'
+                rendered_value = (
+                    f'{size_value / 1024:.1f} KiB'
+                    if size_value < 1024 * 1024
+                    else f'{size_value / (1024 * 1024):.1f} MiB'
+                )
             except (TypeError, ValueError):
                 rendered_value = _metadata_value(value)
         else:
             rendered_value = _metadata_value(value)
 
         is_identifier = key.endswith('_id') or key in {'event_key', 'task_id', 'checksum_sha256'}
+        is_error_metadata = key in {
+            'failed_count',
+            'failure_code',
+            'reason',
+            'error',
+            'error_message',
+        } or (key == 'reason_code' and str(value or '').strip().lower() not in {'success', 'user_initiated'})
         items.append(
             {
                 'key': key,
                 'label': label_overrides.get(key, key.replace('_', ' ').title()),
                 'value': rendered_value,
                 'is_identifier': is_identifier,
-                'tone': 'rose' if key in {'failed_count', 'failure_code', 'reason', 'error', 'error_message'} else 'slate',
+                'tone': 'rose' if is_error_metadata else 'slate',
             }
         )
 
     return items
-
-

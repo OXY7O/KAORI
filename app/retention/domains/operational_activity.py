@@ -197,10 +197,16 @@ class OperationalActivityArchiveDomain:
             },
             'actor_snapshot': {
                 'user_id': user.id if user is not None else notification.user_id,
-                'username': user.username if user is not None else None,
-                'email': user.email if user is not None else None,
-                'display_name': user.display_name if user is not None else None,
-                'auth_source': user.auth_source if user is not None else None,
+                'username': (user.username if user is not None else (notification.metadata_json or {}).get('username')),
+                'email': (user.email if user is not None else (notification.metadata_json or {}).get('actor_email')),
+                'display_name': (
+                    user.display_name
+                    if user is not None
+                    else (notification.metadata_json or {}).get('actor_display_name')
+                ),
+                'auth_source': (
+                    user.auth_source if user is not None else (notification.metadata_json or {}).get('auth_source')
+                ),
                 'deleted_at': _isoformat(user.deleted_at) if user is not None else None,
             },
         }

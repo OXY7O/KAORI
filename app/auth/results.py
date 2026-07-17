@@ -15,6 +15,8 @@ AuthReason = Literal[
     'provider_unavailable',
     'identity_not_provisioned',
     'state_mismatch',
+    'authorization_denied',
+    'authorization_code_missing',
 ]
 
 

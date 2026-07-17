@@ -2,12 +2,13 @@ from __future__ import annotations
 
 from typing import Any
 
+
 def event_label(event_type: str) -> str:
     """Return a human-readable label while keeping the stored event key unchanged."""
     normalized = event_type.strip()
     prefix = 'operational_activity_'
     if normalized.startswith(prefix):
-        normalized = normalized[len(prefix):]
+        normalized = normalized[len(prefix) :]
     return normalized.replace('_', ' ').strip().title() or 'Activity'
 
 
@@ -36,6 +37,12 @@ def build_event_context(
     environment = _string_metadata(metadata, 'environment', 'submitted_environment')
     endpoint = _string_metadata(metadata, 'endpoint', 'server')
     task_id = _string_metadata(metadata, 'task_id')
+    access_action = _string_metadata(metadata, 'access_action')
+    auth_source = _string_metadata(metadata, 'authentication_provider', 'auth_source')
+    auth_result = _string_metadata(metadata, 'result')
+    username = _string_metadata(metadata, 'username')
+    browser = _string_metadata(metadata, 'browser')
+    operating_system = _string_metadata(metadata, 'operating_system')
 
     context: dict[str, Any] = {
         'module_label': 'Operations',
@@ -87,6 +94,18 @@ def build_event_context(
             event_icon='shield-check',
             event_tone='cyan',
         )
+    elif event_type == 'authentication':
+        action_is_logout = access_action == 'logout'
+        result_failed = auth_result == 'failed'
+        context.update(
+            module_label='User Access',
+            target_type='User Session',
+            target_name=username or 'Unauthenticated request',
+            event_icon='log-out' if action_is_logout else 'log-in',
+            event_tone='rose' if result_failed else 'indigo',
+            source_label='Authentication provider',
+            source_detail=auth_source or 'Provider not recorded',
+        )
     elif event_type.startswith('operational_activity_'):
         context.update(
             module_label='Activity Retention',
@@ -99,6 +118,9 @@ def build_event_context(
     if task_id:
         context['source_label'] = 'Background task'
         context['source_detail'] = f'Task {task_id}'
+    elif event_type == 'authentication':
+        context['source_label'] = 'Authentication provider'
+        context['source_detail'] = auth_source or 'Provider not recorded'
     elif event_type.endswith('_connection_test'):
         context['source_label'] = 'Interactive test'
         context['source_detail'] = 'KAORI web action'
@@ -113,6 +135,32 @@ def build_event_context(
             'tone': 'blue',
         }
     ]
+
+    if event_type == 'authentication':
+        context_items.append(
+            {
+                'label': 'Action',
+                'value': 'Sign out' if access_action == 'logout' else 'Sign in',
+                'tone': 'indigo',
+            }
+        )
+        if auth_source:
+            context_items.append(
+                {
+                    'label': 'Provider',
+                    'value': auth_source,
+                    'tone': 'blue',
+                }
+            )
+        client_label = ' on '.join(value for value in (browser, operating_system) if value)
+        if client_label:
+            context_items.append(
+                {
+                    'label': 'Client',
+                    'value': client_label,
+                    'tone': 'amber',
+                }
+            )
 
     if environment:
         context_items.append(
@@ -134,5 +182,3 @@ def build_event_context(
 
     context['context_items'] = context_items
     return context
-
-

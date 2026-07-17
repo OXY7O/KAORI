@@ -14,13 +14,17 @@ from app.auth.results import (
 def authenticate(username: str, password: str) -> AuthResult:
     registry = build_provider_registry()
     local_result = registry.local.authenticate(username=username, password=password)
-    if local_result.success or local_result.reason in {'user_inactive', 'database_unavailable'}:
+    if (
+        local_result.success
+        or local_result.user is not None
+        or local_result.reason in {'user_inactive', 'database_unavailable'}
+    ):
         return local_result
 
     unavailable_result: AuthResult | None = None
     for provider in registry.external:
         result = provider.authenticate(username=username, password=password)
-        if result.success or result.reason == 'user_inactive':
+        if result.success or result.user is not None or result.reason == 'user_inactive':
             return result
         if result.reason == 'provider_unavailable':
             unavailable_result = result
@@ -29,6 +33,11 @@ def authenticate(username: str, password: str) -> AuthResult:
 
 
 __all__ = [
-    'AuthReason', 'AuthResult', 'DATABASE_UNAVAILABLE_MESSAGE', 'INVALID_LOGIN_MESSAGE',
-    'PROVIDER_UNAVAILABLE_MESSAGE', 'USER_INACTIVE_MESSAGE', 'authenticate',
+    'AuthReason',
+    'AuthResult',
+    'DATABASE_UNAVAILABLE_MESSAGE',
+    'INVALID_LOGIN_MESSAGE',
+    'PROVIDER_UNAVAILABLE_MESSAGE',
+    'USER_INACTIVE_MESSAGE',
+    'authenticate',
 ]

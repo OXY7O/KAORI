@@ -64,7 +64,7 @@ LDAP/SSO implementation must add provider discovery and identity projection serv
 
 ## Known staged work
 
-Authentication event consolidation into Activity Audit Log is the target. The separate navigation entry is removed in this stage. The legacy `AuthLoginEvent` persistence remains temporarily until a migration can preserve historical records and archive semantics without data loss.
+Authentication events are consolidated into Activity Audit Log under the `authentication` event type. Login success, login failure, and logout now share the operational audit presentation with provider, IP, browser, operating system, device, user-agent, result, and reason metadata. Legacy `AuthLoginEvent` persistence remains temporarily as a compatibility source, while migration `20260717_auth_activity` backfills its historical rows into the unified audit stream.
 
 ## Persistence boundary
 

@@ -2,9 +2,9 @@ from datetime import UTC, datetime
 from secrets import compare_digest
 
 from flask import Blueprint, current_app, flash, redirect, render_template, request, session, url_for
-from flask_login import current_user, logout_user
+from flask_login import current_user, login_required, logout_user
 
-from app.auth.audit import record_login_attempt
+from app.auth.audit import record_login_attempt, record_logout
 from app.auth.forms import LoginForm
 from app.auth.providers.oauth import (
     SsoProviderError,
@@ -15,12 +15,16 @@ from app.auth.providers.oauth import (
     state_fingerprint,
 )
 from app.auth.results import AuthResult
-from app.auth.services import DATABASE_UNAVAILABLE_MESSAGE, INVALID_LOGIN_MESSAGE, PROVIDER_UNAVAILABLE_MESSAGE, authenticate
+from app.auth.services import (
+    DATABASE_UNAVAILABLE_MESSAGE,
+    INVALID_LOGIN_MESSAGE,
+    PROVIDER_UNAVAILABLE_MESSAGE,
+    authenticate,
+)
 from app.auth.session import clear_authenticated_session, establish_authenticated_session
 from app.auth.sso import enabled_sso_providers, resolve_sso_identity
 from app.extensions import db, limiter
 from app.models import IdentityProvider
-
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
@@ -118,6 +122,12 @@ def sso_start(provider_key: str):
     except SsoProviderError as exc:
         session.pop(SSO_SESSION_KEY, None)
         current_app.logger.warning('SSO start failed for provider %s: %s', provider.key, exc)
+        record_login_attempt(
+            username=provider.key,
+            source=provider.provider_type,
+            success=False,
+            reason='provider_unavailable',
+        )
         flash('The selected SSO provider is not configured correctly.', 'danger')
         return redirect(url_for('auth.login'))
     return redirect(authorization_url)
@@ -148,13 +158,15 @@ def sso_callback(provider_key: str):
 
     provider_error = request.args.get('error')
     if provider_error:
-        result = AuthResult(False, 'invalid_credentials', source=provider.provider_type)
+        result = AuthResult(False, 'authorization_denied', source=provider.provider_type)
         _record_result(provider.key, result)
         flash('The external sign-in request was cancelled or denied.', 'danger')
         return redirect(url_for('auth.login'))
 
     code = request.args.get('code', '')
     if not code:
+        result = AuthResult(False, 'authorization_code_missing', source=provider.provider_type)
+        _record_result(provider.key, result)
         flash('The SSO callback did not include an authorization code.', 'danger')
         return redirect(url_for('auth.login'))
 
@@ -180,7 +192,11 @@ def sso_callback(provider_key: str):
 
 
 @auth_bp.route('/logout', methods=['POST'])
+@login_required
 def logout():
+    user = current_user._get_current_object()
+    source = str(session.get('auth_source') or user.last_auth_source or user.auth_source or 'database')
+    record_logout(user=user, source=source)
     logout_user()
     clear_authenticated_session()
     session.pop(SSO_SESSION_KEY, None)

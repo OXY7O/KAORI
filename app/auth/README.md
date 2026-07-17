@@ -28,7 +28,7 @@ Local authentication must remain available even after external providers are ena
 | `services.py` | Authentication orchestration. It invokes the active provider chain and returns a normalized `AuthResult`; it must not read Flask request fields or create sessions. |
 | `routes.py` | HTTP boundary: form submission, rate limit binding, success/failure response, login metadata update, safe redirect, and logout endpoint. Route functions should remain thin. |
 | `session.py` | Session rotation, Flask-Login establishment, persistent-session policy, authentication-source state, and auth-owned session cleanup. |
-| `audit.py` | Best-effort Login Activity persistence and retention query helpers. It must never store credentials, tokens, assertions, or raw exceptions. |
+| `audit.py` | Unified authentication audit boundary. It dual-writes legacy Login Activity and Activity Audit Log records, captures safe provider/IP/client metadata, records logout, and retains legacy cleanup helpers. It must never store credentials, tokens, assertions, or raw exceptions. |
 
 ### Provider files
 
@@ -124,3 +124,10 @@ See `docs/authentication/EXTERNAL_IDENTITY_FLOW.md`.
 ## Google and GitHub SSO
 
 Browser SSO adapters are implemented in `app/auth/providers/oauth.py`, while projection and admission policy remain in `app/auth/sso.py`. Google uses OIDC and GitHub uses OAuth App semantics. See `docs/authentication/GOOGLE_GITHUB_SSO.md`.
+
+
+## Unified Activity Audit Log
+
+Every completed login attempt and every user-initiated logout is recorded under the canonical `authentication` event type in Activity Audit Log. The event metadata captures the sign-in/sign-out action, provider, result, reason code, attempted username, IP address, browser, operating system, device class, and raw user-agent. Failed attempts that cannot be mapped to a KAORI user are stored with a nullable actor and presented as unauthenticated requests.
+
+Authentication events are audit-only records and are marked reviewed when written, so routine login/logout activity does not create unread personal notification-center items. Legacy `AuthLoginEvent` persistence remains temporarily for backward compatibility; migration `20260717_auth_activity` backfills existing Login Activity rows into the unified audit stream.
