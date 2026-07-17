@@ -1,46 +1,241 @@
 {% extends "layouts/app.html" %}
 {% block title %}Identity Providers{% endblock title %}
 {% block dashboard_content %}
-<div class="space-y-6">
-  <section class="rounded-2xl border border-brand-outline bg-kaori-primary p-5 text-brand-foreground shadow-sm lg:p-6">
-    <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-      <div>
-        <p class="text-xs font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Identity Administration</p>
-        <h1 class="mt-2 text-2xl font-bold tracking-tight">Identity Providers</h1>
-        <p class="mt-2 max-w-3xl text-sm leading-6 text-brand-foreground-muted">Configure LDAP, Google OpenID Connect, and GitHub OAuth through one controlled identity-provider boundary. Secrets are referenced from environment variables and are never stored here.</p>
-      </div>
-      <div class="flex flex-wrap gap-2">
-        <a href="{{ url_for('users.index') }}" class="inline-flex h-10 items-center rounded-lg border border-white/40 bg-brand-surface-strong px-4 text-sm font-semibold text-white">Back to Users</a>
-        <a href="{{ url_for('users.create_provider') }}" class="inline-flex h-10 items-center gap-2 rounded-lg bg-white px-4 text-sm font-semibold text-kaori-primary"><i data-lucide="plus" class="h-4 w-4"></i>Add Provider</a>
-      </div>
-    </div>
-  </section>
+    {% import "components/page_hero.html" as page_hero %}
+    {% set enabled_count = providers|selectattr('enabled')|list|length %}
+    {% set ldap_count = providers|selectattr('provider_type', 'equalto', 'ldap')|list|length %}
+    {% set sso_count = providers|rejectattr('provider_type', 'equalto', 'ldap')|list|length %}
 
-  <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <header class="border-b border-outline-subtle bg-surface-hover px-5 py-4">
-      <h2 class="text-sm font-semibold text-content-primary">Configured providers</h2>
-      <p class="mt-1 text-xs text-content-secondary">LDAP uses administrative provisioning. Google and GitHub can use controlled JIT with a non-admin role and provider-specific allow-list.</p>
-    </header>
-    <div class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-outline-subtle text-sm">
-        <thead class="bg-surface-hover text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-content-tertiary">
-          <tr><th class="px-5 py-3">Provider</th><th class="px-5 py-3">Type</th><th class="px-5 py-3">State</th><th class="px-5 py-3">Provisioning</th><th class="px-5 py-3 text-right">Actions</th></tr>
-        </thead>
-        <tbody class="divide-y divide-outline-subtle">
-          {% for provider in providers %}
-          <tr class="hover:bg-surface-hover">
-            <td class="px-5 py-4"><p class="font-semibold text-content-primary">{{ provider.display_name }}</p><p class="mt-1 font-mono text-xs text-content-tertiary">{{ provider.key }}</p></td>
-            <td class="px-5 py-4"><span class="rounded-md bg-kaori-soft px-2 py-1 text-xs font-semibold text-kaori-primary">{{ provider.provider_type|upper }}</span></td>
-            <td class="px-5 py-4"><span class="rounded-md px-2 py-1 text-xs font-semibold {{ 'bg-status-success-soft text-status-success' if provider.enabled else 'bg-surface-hover text-content-secondary' }}">{{ 'Enabled' if provider.enabled else 'Disabled' }}</span></td>
-            <td class="px-5 py-4 text-content-secondary">{% if provider.jit_enabled %}JIT · {{ provider.default_role.display_name if provider.default_role else 'Role unavailable' }}{% elif provider.provider_type == 'ldap' %}Administrative only{% else %}Pre-provisioned only{% endif %}</td>
-            <td class="px-5 py-4"><div class="flex justify-end gap-2"><form method="post" action="{{ url_for('users.validate_provider', provider_id=provider.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="h-9 rounded-lg border border-outline-default px-3 text-xs font-semibold text-content-secondary hover:border-outline-focus hover:text-kaori-primary">Validate</button></form><a href="{{ url_for('users.edit_provider', provider_id=provider.id) }}" class="inline-flex h-9 items-center rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white">Edit</a></div></td>
-          </tr>
-          {% else %}
-          <tr><td colspan="5" class="px-5 py-12 text-center text-sm text-content-secondary">No external identity provider is configured.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
+    <div class="space-y-6">
+        <section class="relative overflow-hidden rounded-2xl border border-brand-outline bg-kaori-primary p-5 text-brand-foreground shadow-sm lg:p-6">
+            <div class="relative grid gap-5 xl:grid-cols-12 xl:items-stretch">
+                <div class="flex min-w-0 flex-col justify-center xl:col-span-8">
+                    {% call page_hero.intro('fingerprint', 'Identity Administration', 'shield-user') %}
+                        <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">
+                            Identity Providers
+                        </h1>
+                        <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">
+                            Manage LDAP, Google OpenID Connect, and GitHub OAuth integrations through a provider-neutral authentication boundary with explicit provisioning and admission controls.
+                        </p>
+                        <div class="mt-5 flex flex-wrap gap-2">
+                            {{ page_hero.meta_label('blocks', providers|length ~ ' Configured') }}
+                            {{ page_hero.meta_label('power', enabled_count ~ ' Enabled') }}
+                            {{ page_hero.meta_label('key-round', 'Secrets Externalized') }}
+                        </div>
+                    {% endcall %}
+                </div>
+
+                <div class="xl:col-span-4">
+                    <div class="flex h-full flex-col justify-between rounded-xl border border-brand-outline bg-brand-surface p-4 backdrop-blur">
+                        <div>
+                            <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-brand-foreground-muted">Provider administration</p>
+                            <p class="mt-2 text-sm font-semibold leading-5 text-brand-foreground">Add a provider, validate its live integration, then expose it only when the runtime configuration is ready.</p>
+                        </div>
+                        <div class="mt-5 grid gap-2 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+                            <a href="{{ url_for('users.create_provider') }}"
+                               class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-white px-4 text-sm font-semibold text-kaori-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
+                                <i data-lucide="plus" class="h-4 w-4"></i>
+                                Add Provider
+                            </a>
+                            <a href="{{ url_for('users.external_identities') }}"
+                               class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-brand-outline bg-brand-surface-strong px-4 text-sm font-semibold text-brand-foreground transition hover:bg-brand-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
+                                <i data-lucide="contact-round" class="h-4 w-4"></i>
+                                LDAP Provisioning
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="grid gap-6 xl:grid-cols-12 xl:items-start">
+            <main class="min-w-0 xl:col-span-8">
+                <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+                    <header class="flex flex-col gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <h2 class="text-base font-semibold text-content-primary">Configured providers</h2>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Review provider type, administrative state, provisioning model, and available actions.</p>
+                        </div>
+                        <div class="flex flex-wrap gap-2 text-xs font-semibold">
+                            <span class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-outline-subtle bg-surface-card px-2.5 text-content-secondary">
+                                <i data-lucide="network" class="h-3.5 w-3.5 text-kaori-primary"></i>
+                                {{ ldap_count }} LDAP
+                            </span>
+                            <span class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-outline-subtle bg-surface-card px-2.5 text-content-secondary">
+                                <i data-lucide="log-in" class="h-3.5 w-3.5 text-kaori-primary"></i>
+                                {{ sso_count }} SSO
+                            </span>
+                        </div>
+                    </header>
+
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-outline-subtle text-sm">
+                            <thead class="bg-surface-card text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-content-tertiary">
+                                <tr>
+                                    <th class="px-5 py-3">Provider</th>
+                                    <th class="px-5 py-3">Type</th>
+                                    <th class="px-5 py-3">State</th>
+                                    <th class="px-5 py-3">Access model</th>
+                                    <th class="px-5 py-3 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-outline-subtle">
+                                {% for provider in providers %}
+                                    {% set is_ldap = provider.provider_type == 'ldap' %}
+                                    {% set is_google = provider.provider_type == 'google_oidc' %}
+                                    <tr class="transition hover:bg-surface-hover">
+                                        <td class="px-5 py-4 align-top">
+                                            <div class="flex min-w-[190px] items-start gap-3">
+                                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                                                    <i data-lucide="{{ 'network' if is_ldap else ('chrome' if is_google else 'github') }}" class="h-4.5 w-4.5"></i>
+                                                </span>
+                                                <div class="min-w-0">
+                                                    <p class="font-semibold text-content-primary">{{ provider.display_name }}</p>
+                                                    <p class="mt-1 truncate font-mono text-xs text-content-tertiary">{{ provider.key }}</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-5 py-4 align-top">
+                                            <span class="inline-flex rounded-md bg-kaori-soft px-2 py-1 text-xs font-semibold text-kaori-primary">
+                                                {{ 'LDAP / AD' if is_ldap else ('Google OIDC' if is_google else 'GitHub OAuth') }}
+                                            </span>
+                                        </td>
+                                        <td class="px-5 py-4 align-top">
+                                            <span class="inline-flex rounded-md px-2 py-1 text-xs font-semibold {{ 'bg-status-success-soft text-status-success' if provider.enabled else 'bg-surface-hover text-content-secondary' }}">
+                                                {{ 'Enabled' if provider.enabled else 'Disabled' }}
+                                            </span>
+                                            <p class="mt-2 max-w-[170px] text-xs leading-5 text-content-muted">
+                                                {{ 'Authentication allowed when runtime requirements are available.' if provider.enabled else 'Not exposed for authentication.' }}
+                                            </p>
+                                        </td>
+                                        <td class="px-5 py-4 align-top text-content-secondary">
+                                            {% if is_ldap %}
+                                                <p class="font-semibold text-content-primary">Administrative provisioning</p>
+                                                <p class="mt-1 max-w-[210px] text-xs leading-5 text-content-muted">Users are discovered and projected from the directory before sign-in.</p>
+                                            {% elif provider.jit_enabled %}
+                                                <p class="font-semibold text-content-primary">Controlled JIT</p>
+                                                <p class="mt-1 max-w-[210px] text-xs leading-5 text-content-muted">Default role: {{ provider.default_role.display_name if provider.default_role else 'Role unavailable' }}</p>
+                                            {% else %}
+                                                <p class="font-semibold text-content-primary">Pre-provisioned SSO</p>
+                                                <p class="mt-1 max-w-[210px] text-xs leading-5 text-content-muted">Only identities already linked in KAORI may sign in.</p>
+                                            {% endif %}
+                                        </td>
+                                        <td class="px-5 py-4 align-top">
+                                            <div class="flex min-w-[150px] justify-end gap-2">
+                                                <form method="post" action="{{ url_for('users.validate_provider', provider_id=provider.id) }}">
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                    <button type="submit"
+                                                            class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-outline-default px-3 text-xs font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kaori-primary/20">
+                                                        <i data-lucide="badge-check" class="h-3.5 w-3.5"></i>
+                                                        Validate
+                                                    </button>
+                                                </form>
+                                                <a href="{{ url_for('users.edit_provider', provider_id=provider.id) }}"
+                                                   class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kaori-primary/20">
+                                                    <i data-lucide="pencil" class="h-3.5 w-3.5"></i>
+                                                    Edit
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% else %}
+                                    <tr>
+                                        <td colspan="5" class="px-5 py-14 text-center">
+                                            <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl border border-outline-subtle bg-surface-elevated text-kaori-primary">
+                                                <i data-lucide="fingerprint" class="h-6 w-6"></i>
+                                            </span>
+                                            <h3 class="mt-4 text-sm font-semibold text-content-primary">No external provider configured</h3>
+                                            <p class="mx-auto mt-1 max-w-lg text-xs leading-5 text-content-muted">Add LDAP, Google, or GitHub when the corresponding directory or SSO application is ready.</p>
+                                            <a href="{{ url_for('users.create_provider') }}"
+                                               class="mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover">
+                                                <i data-lucide="plus" class="h-4 w-4"></i>
+                                                Add Provider
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </main>
+
+            <aside class="space-y-5 xl:sticky xl:top-6 xl:col-span-4">
+                <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+                    <header class="flex items-start gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                            <i data-lucide="workflow" class="h-5 w-5"></i>
+                        </span>
+                        <div>
+                            <h2 class="text-base font-semibold text-content-primary">How each provider is used</h2>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Authentication and provisioning behavior differs by provider type.</p>
+                        </div>
+                    </header>
+                    <div class="divide-y divide-outline-subtle px-5">
+                        <div class="flex items-start gap-3 py-4">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="network" class="h-4 w-4"></i></span>
+                            <div>
+                                <p class="text-sm font-semibold text-content-primary">LDAP / Active Directory</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Administrators search the directory and provision users first. Users authenticate through the normal username and password form; LDAP does not add a separate login button.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3 py-4">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="chrome" class="h-4 w-4"></i></span>
+                            <div>
+                                <p class="text-sm font-semibold text-content-primary">Google OpenID Connect</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Adds a Google sign-in option when enabled and its client secret is available at runtime. JIT can be restricted by approved email domains.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3 py-4">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="github" class="h-4 w-4"></i></span>
+                            <div>
+                                <p class="text-sm font-semibold text-content-primary">GitHub OAuth</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Adds a GitHub sign-in option when enabled and runtime-ready. Controlled JIT uses approved GitHub logins or immutable numeric user IDs.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+                    <header class="flex items-start gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                            <i data-lucide="list-checks" class="h-5 w-5"></i>
+                        </span>
+                        <div>
+                            <h2 class="text-sm font-semibold text-content-primary">Activation sequence</h2>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Use the same controlled sequence for every provider.</p>
+                        </div>
+                    </header>
+                    <div class="divide-y divide-outline-subtle px-5">
+                        {% for icon, title, text in [
+                            ('settings-2', 'Configure', 'Save only the settings required by the selected provider type.'),
+                            ('key-round', 'Supply secrets', 'Expose the referenced bind or client secret environment variable to the KAORI runtime.'),
+                            ('badge-check', 'Validate', 'Run live validation before relying on the provider for authentication.'),
+                            ('power', 'Enable', 'Enable the provider only after its integration and admission policy are ready.')
+                        ] %}
+                            <div class="flex items-start gap-3 py-3.5">
+                                <i data-lucide="{{ icon }}" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
+                                <div>
+                                    <p class="text-xs font-semibold text-content-primary">{{ title }}</p>
+                                    <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ text }}</p>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </section>
+
+                <section class="overflow-hidden rounded-xl border border-status-info-border bg-status-info-soft shadow-sm">
+                    <div class="flex items-start gap-3 p-5">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-status-info-border bg-surface-card text-status-info">
+                            <i data-lucide="shield-check" class="h-5 w-5"></i>
+                        </span>
+                        <div>
+                            <h2 class="text-sm font-semibold text-status-info-text">Credential boundary</h2>
+                            <p class="mt-1 text-xs leading-5 text-status-info-text">KAORI stores provider metadata and environment-variable names only. LDAP bind passwords, OAuth client secrets, authorization codes, and OAuth tokens are not persisted in provider records.</p>
+                        </div>
+                    </div>
+                </section>
+            </aside>
+        </div>
     </div>
-  </section>
-</div>
 {% endblock dashboard_content %}

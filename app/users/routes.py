@@ -311,27 +311,36 @@ def validate_provider(provider_id: int):
 
 
 def _apply_provider_form(provider: IdentityProvider, form: IdentityProviderForm) -> None:
+    provider_type = form.provider_type.data
+    is_ldap = provider_type == 'ldap'
+    is_google = provider_type == 'google_oidc'
+    is_github = provider_type == 'github_oauth'
+
     provider.key = (form.key.data or '').strip().lower()
     provider.display_name = (form.display_name.data or '').strip()
-    provider.provider_type = form.provider_type.data
+    provider.provider_type = provider_type
     provider.enabled = bool(form.enabled.data)
-    provider.jit_enabled = bool(form.jit_enabled.data)
-    provider.server_uri = (form.server_uri.data or '').strip() or None
-    provider.base_dn = (form.base_dn.data or '').strip() or None
-    provider.bind_dn = (form.bind_dn.data or '').strip() or None
-    provider.bind_password_env = (form.bind_password_env.data or '').strip() or None
-    provider.user_filter = (form.user_filter.data or '').strip() or None
+    provider.jit_enabled = bool(form.jit_enabled.data) if not is_ldap else False
+
+    provider.server_uri = ((form.server_uri.data or '').strip() or None) if is_ldap else None
+    provider.base_dn = ((form.base_dn.data or '').strip() or None) if is_ldap else None
+    provider.bind_dn = ((form.bind_dn.data or '').strip() or None) if is_ldap else None
+    provider.bind_password_env = ((form.bind_password_env.data or '').strip() or None) if is_ldap else None
+    provider.user_filter = ((form.user_filter.data or '').strip() or None) if is_ldap else None
     provider.tls_mode = form.tls_mode.data
     provider.username_attribute = (form.username_attribute.data or '').strip()
     provider.email_attribute = (form.email_attribute.data or '').strip()
     provider.display_name_attribute = (form.display_name_attribute.data or '').strip()
     provider.stable_id_attribute = (form.stable_id_attribute.data or '').strip()
-    provider.oidc_issuer = 'https://accounts.google.com' if form.provider_type.data == 'google_oidc' else None
-    provider.oidc_client_id = (form.oidc_client_id.data or '').strip() or None
-    provider.oidc_client_secret_env = (form.oidc_client_secret_env.data or '').strip() or None
-    provider.default_role_id = form.default_role_id.data or None
-    provider.allowed_domains = (form.allowed_domains.data or '').strip() or None
-    provider.allowed_subjects = (form.allowed_subjects.data or '').strip() or None
+
+    provider.oidc_issuer = 'https://accounts.google.com' if is_google else None
+    provider.oidc_client_id = ((form.oidc_client_id.data or '').strip() or None) if not is_ldap else None
+    provider.oidc_client_secret_env = (
+        ((form.oidc_client_secret_env.data or '').strip() or None) if not is_ldap else None
+    )
+    provider.default_role_id = (form.default_role_id.data or None) if not is_ldap else None
+    provider.allowed_domains = ((form.allowed_domains.data or '').strip() or None) if is_google else None
+    provider.allowed_subjects = ((form.allowed_subjects.data or '').strip() or None) if is_github else None
 
 
 def _assign_provider_role_choices(form: IdentityProviderForm) -> None:
