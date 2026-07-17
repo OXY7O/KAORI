@@ -604,3 +604,11 @@ ConfigMap and Secret operation selectors use one consistent live-source pattern:
 - Overview filters use 44 px controls, 8 px radius, sentence-case labels, and violet focus rings. Tables remain left aligned except explicit action columns.
 - Cluster, namespace, SAN count, and other descriptive metadata use compact rectangular labels. Status badges remain compact semantic pills.
 - Governance provides posture, relationship, and audit context. Certificate/private-key mutation remains delegated to the controlled Kubernetes Operations TLS rotation workflow.
+
+### TLS Secret governance detail-card standard
+
+- Certificate Identity, Subject Alternative Names, Ingress Usage, and Validity Window use the same detail-card anatomy as Kubernetes Inventory details: a structural header, primary content, optional nested object or dashed empty state, 12 px separation, and one concise shared tip pinned at the bottom.
+- Use `components/detail_object.html` for nested summaries and empty collections, and `components/inventory_detail_tip.html` for the bottom information tip. Page-specific tip markup is prohibited.
+- Empty SAN, Ingress reference, or validity metadata uses the centered dashed violet empty state. Empty operational context is not a Warning unless a real collection or parsing failure occurred.
+- Validity Window is structurally violet/neutral. Healthy green is permitted only inside the compact certificate status badge; date cards, remaining-validity surface, icons, borders, and information tips must not use green or teal decoration.
+- Every populated detail card keeps the information tip below its content with the shared 12 px separation. Adding card height is not a substitute for this spacing.

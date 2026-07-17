@@ -1,6 +1,8 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/detail_object.html" as detail_object %}
+{% import "components/inventory_detail_tip.html" as detail_tip %}
 {% block title %}Kubernetes TLS Secret Record{% endblock title %}
 {% block dashboard_content %}
     <div class="space-y-6">
@@ -88,8 +90,8 @@
         </section>
         <section class="grid gap-6 xl:grid-cols-[1.2fr_0.8fr] xl:items-stretch">
             <div class="space-y-6 xl:contents">
-                <div class="overflow-hidden rounded-xl border border-kaori-primary/20 bg-surface-card shadow-sm xl:col-start-1 xl:row-start-1 xl:h-full ">
-                    <div class="flex flex-col gap-3 border-b border-kaori-primary/15 bg-kaori-soft px-5 py-4  sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex h-full flex-col overflow-hidden rounded-xl border border-kaori-primary/20 bg-surface-card shadow-sm xl:col-start-1 xl:row-start-1">
+                    <div class="flex flex-col gap-3 border-b border-kaori-primary/15 bg-kaori-soft px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                         <div class="flex items-center gap-3">
                             <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-primary text-white">
                                 <i data-lucide="badge-check" class="h-5 w-5"></i>
@@ -99,50 +101,52 @@
                                 <p class="text-sm text-content-muted">Primary subject, issuing authority, and unique certificate identifiers.</p>
                             </div>
                         </div>
-                        <span class="inline-flex w-fit items-center rounded-md border border-kaori-primary/15 bg-kaori-soft px-3 py-1 text-xs font-semibold text-kaori-primary ">
-                            X.509 certificate
-                        </span>
+                        {{ table_label.metadata_label('X.509 certificate', 'badge-check') }}
                     </div>
-                    <div class="space-y-4 p-5">
-                        <div class="grid gap-3 sm:grid-cols-2">
-                            <div class="rounded-lg border border-kaori-primary/15 bg-kaori-soft p-4 ">
-                                <p class="text-xs font-medium text-kaori-primary">Common Name</p>
-                                <p class="mt-2 break-words text-sm font-semibold text-content-primary">{{ record.common_name or 'N/A' }}</p>
-                            </div>
-                            <div class="rounded-lg border border-outline-default bg-surface-hover p-4">
-                                <p class="text-xs font-medium text-content-muted">Serial number</p>
-                                <p class="mt-2 break-all font-mono text-xs leading-5 text-content-secondary">{{ record.serial_number or 'N/A' }}</p>
-                            </div>
-                        </div>
-                        <div class="rounded-lg bg-kaori-soft px-4 py-3.5 text-kaori-primary ">
-                            <div class="flex items-start gap-3">
-                                <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary ">
-                                    <i data-lucide="stamp" class="h-4 w-4"></i>
-                                </span>
-                                <div class="min-w-0">
-                                    <p class="text-xs font-medium">Issuer</p>
-                                    <p class="mt-1 break-words text-xs leading-5">{{ record.issuer or 'N/A' }}</p>
+                    <div class="flex flex-1 flex-col p-5">
+                        {% if record.common_name or record.serial_number or record.issuer or record.fingerprint_sha256 %}
+                            <div class="grid gap-3 sm:grid-cols-2">
+                                <div class="rounded-lg border border-kaori-primary/15 bg-kaori-soft p-4">
+                                    <div class="flex items-center gap-2 text-kaori-primary">
+                                        <i data-lucide="badge-check" class="h-4 w-4"></i>
+                                        <p class="text-xs font-medium">Common Name</p>
+                                    </div>
+                                    <p class="mt-2 break-words text-sm font-semibold text-content-primary">{{ record.common_name or 'N/A' }}</p>
+                                </div>
+                                <div class="rounded-lg border border-kaori-primary/15 bg-kaori-soft p-4">
+                                    <div class="flex items-center gap-2 text-kaori-primary">
+                                        <i data-lucide="hash" class="h-4 w-4"></i>
+                                        <p class="text-xs font-medium">Serial number</p>
+                                    </div>
+                                    <p class="mt-2 break-all font-mono text-xs leading-5 text-content-secondary">{{ record.serial_number or 'N/A' }}</p>
                                 </div>
                             </div>
-                        </div>
-                        <div class="rounded-lg bg-kaori-soft px-4 py-3.5 text-kaori-primary ">
-                            <div class="flex items-start gap-3">
-                                <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary ">
-                                    <i data-lucide="fingerprint" class="h-4 w-4"></i>
-                                </span>
-                                <div class="min-w-0">
-                                    <p class="text-xs font-medium">SHA-256 fingerprint</p>
-                                    <p class="mt-1 break-all font-mono text-[11px] leading-5">{{ record.fingerprint_sha256 or 'N/A' }}</p>
-                                </div>
+                            <div class="mt-4">
+                                {% call detail_object.card('Certificate identifiers', '2 fields', 'fingerprint') %}
+                                    <div class="grid grid-cols-[5.5rem_minmax(0,1fr)] items-start gap-3 text-xs leading-5">
+                                        <span class="text-content-muted">Issuer</span>
+                                        <span class="min-w-0 break-words text-right font-medium text-content-primary">{{ record.issuer or 'N/A' }}</span>
+                                    </div>
+                                    <div class="grid grid-cols-[5.5rem_minmax(0,1fr)] items-start gap-3 text-xs leading-5">
+                                        <span class="text-content-muted">SHA-256</span>
+                                        <span class="min-w-0 break-all text-right font-mono text-[11px] text-content-primary">{{ record.fingerprint_sha256 or 'N/A' }}</span>
+                                    </div>
+                                {% endcall %}
                             </div>
-                        </div>
-                        {% if record.parse_error %}
-                            <div class="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200">{{ record.parse_error }}</div>
+                        {% else %}
+                            {{ detail_object.empty('Certificate identity unavailable', 'The certificate snapshot does not contain parsed subject or identifier metadata.', 'badge-x') }}
                         {% endif %}
+                        {% if record.parse_error %}
+                            <div class="mt-4 rounded-lg border border-status-critical-border bg-status-critical-soft p-4 text-xs leading-5 text-status-critical-text">{{ record.parse_error }}</div>
+                        {% endif %}
+                        {% call detail_object.stack() %}
+                            {{ detail_tip.tip('Identity values come from parsed certificate metadata; Secret payloads are never shown.', 'shield-check') }}
+                        {% endcall %}
                     </div>
                 </div>
-                <div class="overflow-hidden rounded-xl border border-kaori-primary/20 bg-surface-card shadow-sm xl:col-start-1 xl:row-start-2 xl:self-start ">
-                    <div class="flex flex-col gap-3 border-b border-kaori-primary/15 bg-kaori-soft px-5 py-4  sm:flex-row sm:items-center sm:justify-between">
+
+                <div class="flex flex-col overflow-hidden rounded-xl border border-kaori-primary/20 bg-surface-card shadow-sm xl:col-start-1 xl:row-start-2 xl:self-start">
+                    <div class="flex flex-col gap-3 border-b border-kaori-primary/15 bg-kaori-soft px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                         <div class="flex items-center gap-3">
                             <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-primary text-white">
                                 <i data-lucide="globe-2" class="h-5 w-5"></i>
@@ -152,43 +156,31 @@
                                 <p class="text-sm text-content-muted">DNS identities covered by this certificate.</p>
                             </div>
                         </div>
-                        <span class="inline-flex w-fit items-center rounded-md border border-kaori-primary/15 bg-kaori-soft px-3 py-1 text-xs font-semibold text-kaori-primary">
-                            {{ (record.dns_names or [])|length }} SANs
-                        </span>
+                        {{ table_label.metadata_label(((record.dns_names or [])|length) ~ ' SANs', 'globe-2') }}
                     </div>
-                    <div class="space-y-4 p-5">
+                    <div class="flex flex-1 flex-col p-5">
                         {% if record.dns_names %}
-                            <div class="grid gap-2 sm:grid-cols-2">
-                                {% for domain in record.dns_names %}
-                                    <div class="flex min-w-0 items-center gap-2.5 rounded-lg border border-kaori-primary/15 bg-kaori-soft px-3.5 py-3">
-                                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary">
-                                            <i data-lucide="shield-check" class="h-4 w-4"></i>
-                                        </span>
-                                        <span class="min-w-0 break-all text-xs font-medium text-content-primary">{{ domain }}</span>
-                                    </div>
-                                {% endfor %}
-                            </div>
-                        {% else %}
-                            <div class="flex items-start gap-3 rounded-lg border border-dashed border-kaori-primary/20 bg-kaori-soft p-4 text-sm text-kaori-primary">
-                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-surface-card text-kaori-primary">
-                                    <i data-lucide="shield-off" class="h-4 w-4"></i>
-                                </span>
-                                <div>
-                                    <p class="font-medium">No SAN DNS names found</p>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">The certificate does not contain a recorded DNS Subject Alternative Name.</p>
+                            {% call detail_object.card('DNS identities', ((record.dns_names or [])|length) ~ ' entries', 'globe-2') %}
+                                <div class="grid gap-2 sm:grid-cols-2">
+                                    {% for domain in record.dns_names %}
+                                        <div class="flex min-w-0 items-center gap-2 rounded-md border border-outline-default bg-surface-card px-2.5 py-2">
+                                            <i data-lucide="shield-check" class="h-3.5 w-3.5 shrink-0 text-kaori-primary"></i>
+                                            <span class="min-w-0 break-all text-xs font-medium text-content-primary">{{ domain }}</span>
+                                        </div>
+                                    {% endfor %}
                                 </div>
-                            </div>
+                            {% endcall %}
+                        {% else %}
+                            {{ detail_object.empty('No SAN DNS names found', 'The certificate does not contain a recorded DNS Subject Alternative Name.', 'shield-off') }}
                         {% endif %}
-                        <div class="flex items-start gap-2.5 rounded-lg bg-kaori-soft px-4 py-3 text-xs leading-5 text-kaori-primary">
-                            <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary">
-                                <i data-lucide="info" class="h-4 w-4"></i>
-                            </span>
-                            <p>SANs define the DNS names covered by this certificate and should include every hostname served by the mapped Ingress resources.</p>
-                        </div>
+                        {% call detail_object.stack() %}
+                            {{ detail_tip.tip('SANs should cover every hostname served by the mapped Ingress resources.', 'info') }}
+                        {% endcall %}
                     </div>
                 </div>
-                <div class="overflow-hidden rounded-xl border border-kaori-primary/20 bg-surface-card shadow-sm xl:col-start-1 xl:row-start-3 xl:self-start ">
-                    <div class="flex flex-col gap-3 border-b border-kaori-primary/15 bg-kaori-soft px-5 py-4  sm:flex-row sm:items-center sm:justify-between">
+
+                <div class="flex flex-col overflow-hidden rounded-xl border border-kaori-primary/20 bg-surface-card shadow-sm xl:col-start-1 xl:row-start-3 xl:self-start">
+                    <div class="flex flex-col gap-3 border-b border-kaori-primary/15 bg-kaori-soft px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                         <div class="flex items-center gap-3">
                             <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-primary text-white">
                                 <i data-lucide="route" class="h-5 w-5"></i>
@@ -198,64 +190,45 @@
                                 <p class="text-sm text-content-muted">Ingress resources and mapped hosts currently referencing this TLS Secret.</p>
                             </div>
                         </div>
-                        <span class="inline-flex w-fit items-center rounded-md border border-kaori-primary/15 bg-kaori-soft px-3 py-1 text-xs font-semibold text-kaori-primary">
-                            {{ (record.used_by or [])|length }} references
-                        </span>
+                        {{ table_label.metadata_label(((record.used_by or [])|length) ~ ' references', 'route') }}
                     </div>
-                    <div class="grid gap-3 p-5 lg:grid-cols-2">
-                        {% for consumer in record.used_by or [] %}
-                            <article class="flex h-full flex-col overflow-hidden rounded-lg border border-kaori-primary/15 bg-kaori-soft">
-                                <div class="border-b border-dashed border-kaori-primary/20 px-4 py-3 ">
-                                    <div class="flex items-center gap-3">
-                                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
-                                            <i data-lucide="network" class="h-4 w-4"></i>
-                                        </span>
-                                        <div class="min-w-0 flex-1 space-y-2">
-                                            <div class="grid grid-cols-[5.5rem_minmax(0,1fr)] items-start gap-3">
-                                                <span class="text-xs font-medium text-kaori-primary">Ingress</span>
-                                                <span class="min-w-0 break-words text-sm font-semibold text-content-primary">{{ consumer.name }}</span>
-                                            </div>
-                                            <div class="grid grid-cols-[5.5rem_minmax(0,1fr)] items-start gap-3">
-                                                <span class="text-xs font-medium text-kaori-primary">Namespace</span>
-                                                <span class="min-w-0 break-words text-sm font-medium text-content-secondary">{{ consumer.namespace }}</span>
+                    <div class="flex flex-1 flex-col p-5">
+                        {% if record.used_by %}
+                            <div class="grid gap-3 lg:grid-cols-2">
+                                {% for consumer in record.used_by %}
+                                    {% call detail_object.card(consumer.name, consumer.namespace, 'route') %}
+                                        <div>
+                                            <p class="text-xs text-content-muted">Mapped hosts</p>
+                                            <div class="mt-2 flex flex-wrap gap-2">
+                                                {% for host in consumer.hosts or [] %}
+                                                    <a href="https://{{ host }}"
+                                                       target="_blank"
+                                                       rel="noopener noreferrer"
+                                                       class="inline-flex items-center gap-1.5 rounded-md border border-kaori-primary/15 bg-surface-card px-2.5 py-1 text-xs font-medium text-kaori-primary transition hover:bg-kaori-soft">
+                                                        <span>{{ host }}</span>
+                                                        <i data-lucide="external-link" class="h-3 w-3"></i>
+                                                    </a>
+                                                {% else %}
+                                                    <span class="text-xs text-content-muted">No hosts mapped.</span>
+                                                {% endfor %}
                                             </div>
                                         </div>
-                                    </div>
-                                </div>
-                                <div class="flex-1 px-4 py-3">
-                                    <p class="text-xs font-medium text-kaori-primary">Mapped hosts</p>
-                                    <div class="mt-2 flex flex-wrap gap-2">
-                                        {% for host in consumer.hosts or [] %}
-                                            <a href="https://{{ host }}"
-                                               target="_blank"
-                                               rel="noopener noreferrer"
-                                               class="inline-flex items-center gap-1.5 rounded-md border border-kaori-primary/15 bg-surface-card px-2.5 py-1 text-xs font-medium text-kaori-primary transition hover:bg-kaori-soft">
-                                                <span>{{ host }}</span>
-                                                <i data-lucide="external-link" class="h-3 w-3"></i>
-                                            </a>
-                                        {% else %}
-                                            <span class="text-xs text-content-muted">No hosts mapped.</span>
-                                        {% endfor %}
-                                    </div>
-                                </div>
-                            </article>
-                        {% else %}
-                            <div class="flex items-start gap-3 rounded-2xl border border-dashed border-amber-200 bg-amber-50/70 p-4 text-sm text-amber-800 lg:col-span-2  dark:bg-amber-950/15 dark:text-amber-200">
-                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary dark:bg-amber-500/15 dark:text-amber-300">
-                                    <i data-lucide="route-off" class="h-4 w-4"></i>
-                                </span>
-                                <div>
-                                    <p class="font-medium">No Ingress mapping found</p>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">This TLS Secret is not currently referenced by an inventoried Ingress resource.</p>
-                                </div>
+                                    {% endcall %}
+                                {% endfor %}
                             </div>
-                        {% endfor %}
+                        {% else %}
+                            {{ detail_object.empty('No Ingress mapping found', 'This TLS Secret is not currently referenced by an inventoried Ingress resource.', 'route-off') }}
+                        {% endif %}
+                        {% call detail_object.stack() %}
+                            {{ detail_tip.tip('Ingress references come from the latest inventory snapshot and may not include external consumers.', 'route') }}
+                        {% endcall %}
                     </div>
                 </div>
             </div>
+
             <div class="space-y-6 xl:contents">
-                <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm xl:col-start-2 xl:row-start-1 xl:h-full ">
-                    <div class="border-b border-kaori-primary/15 bg-kaori-soft px-5 py-4 ">
+                <div class="flex h-full flex-col overflow-hidden rounded-xl border border-kaori-primary/20 bg-surface-card shadow-sm xl:col-start-2 xl:row-start-1">
+                    <div class="border-b border-kaori-primary/15 bg-kaori-soft px-5 py-4">
                         <div class="flex items-center gap-3">
                             <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-primary text-white">
                                 <i data-lucide="calendar-clock" class="h-5 w-5"></i>
@@ -266,12 +239,11 @@
                             </div>
                         </div>
                     </div>
-                    <div class="space-y-4 p-5">
-                        <div class="relative overflow-hidden rounded-lg bg-kaori-primary-dark p-4 text-white shadow-sm shadow-black/10">
-                            
-                            <div class="relative flex items-end justify-between gap-4">
+                    <div class="flex flex-1 flex-col p-5">
+                        <div class="rounded-lg bg-kaori-primary-dark p-4 text-brand-foreground shadow-sm">
+                            <div class="flex items-end justify-between gap-4">
                                 <div>
-                                    <p class="text-xs text-emerald-50/80">Remaining validity</p>
+                                    <p class="text-xs text-brand-foreground-muted">Remaining validity</p>
                                     <p class="mt-1 text-3xl font-bold">{{ record.days_remaining if record.days_remaining is not none else 'N/A' }}
                                         {% if record.days_remaining is not none %}<span class="ml-1 text-base font-medium">days</span>{% endif %}
                                     </p>
@@ -281,28 +253,29 @@
                                 {% endwith %}
                             </div>
                         </div>
-                        <div class="grid gap-3 sm:grid-cols-2">
-                            <div class="rounded-lg border border-status-normal-border bg-emerald-50/70 p-4 dark:border-emerald-900/30 dark:bg-emerald-950/15">
-                                <div class="flex items-center gap-2 text-emerald-700 dark:text-emerald-300">
-                                    <i data-lucide="calendar-check" class="h-4 w-4"></i>
-                                    <p class="text-xs font-medium">Valid from</p>
+                        {% if record.not_before or record.not_after %}
+                            <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                                <div class="rounded-lg border border-kaori-primary/15 bg-kaori-soft p-4">
+                                    <div class="flex items-center gap-2 text-kaori-primary">
+                                        <i data-lucide="calendar-check" class="h-4 w-4"></i>
+                                        <p class="text-xs font-medium">Valid from</p>
+                                    </div>
+                                    <p class="mt-2 text-sm font-semibold text-content-primary">{{ record.not_before|user_datetime('%Y-%m-%d %H:%M %Z', 'N/A') }}</p>
                                 </div>
-                                <p class="mt-2 text-sm font-semibold text-content-primary">{{ record.not_before|user_datetime('%Y-%m-%d %H:%M %Z', 'N/A') }}</p>
-                            </div>
-                            <div class="rounded-lg border border-status-normal-border bg-teal-50/70 p-4 dark:border-teal-900/30 dark:bg-teal-950/15">
-                                <div class="flex items-center gap-2 text-teal-700 dark:text-teal-300">
-                                    <i data-lucide="calendar-x" class="h-4 w-4"></i>
-                                    <p class="text-xs font-medium">Expires at</p>
+                                <div class="rounded-lg border border-kaori-primary/15 bg-kaori-soft p-4">
+                                    <div class="flex items-center gap-2 text-kaori-primary">
+                                        <i data-lucide="calendar-x" class="h-4 w-4"></i>
+                                        <p class="text-xs font-medium">Expires at</p>
+                                    </div>
+                                    <p class="mt-2 text-sm font-semibold text-content-primary">{{ record.not_after|user_datetime('%Y-%m-%d %H:%M %Z', 'N/A') }}</p>
                                 </div>
-                                <p class="mt-2 text-sm font-semibold text-content-primary">{{ record.not_after|user_datetime('%Y-%m-%d %H:%M %Z', 'N/A') }}</p>
                             </div>
-                        </div>
-                        <div class="flex items-start gap-2.5 rounded-lg bg-status-normal-soft px-4 py-3 text-xs leading-5 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-200">
-                            <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300">
-                                <i data-lucide="lightbulb" class="h-4 w-4"></i>
-                            </span>
-                            <p>Plan certificate rotation before the expiry date so workloads and Ingress endpoints can be updated without service interruption.</p>
-                        </div>
+                        {% else %}
+                            <div class="mt-4">{{ detail_object.empty('Validity dates unavailable', 'The certificate snapshot does not contain a valid start or expiry timestamp.', 'calendar-off') }}</div>
+                        {% endif %}
+                        {% call detail_object.stack() %}
+                            {{ detail_tip.tip('Rotate before expiry so workloads and Ingress endpoints can be updated without interruption.', 'calendar-clock') }}
+                        {% endcall %}
                     </div>
                 </div>
                 <div id="update-secret"
