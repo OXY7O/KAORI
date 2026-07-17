@@ -1,42 +1,57 @@
 {% extends "layouts/app.html" %}
 {% block title %}{{ 'Add User' if mode == 'create' else 'Edit User' }}{% endblock title %}
 {% block dashboard_content %}
-    <div class="{{ 'space-y-4' if mode == 'create' else 'space-y-6' }}">
+    <div class="space-y-6">
         {% import "components/page_hero.html" as page_hero %}
-        <section class="relative overflow-hidden rounded-2xl border border-brand-outline bg-kaori-primary {{ 'p-4 lg:p-5' if mode == 'create' else 'p-5 lg:p-6' }} text-brand-foreground shadow-sm">
+        <section class="relative overflow-hidden rounded-2xl border border-brand-outline bg-kaori-primary p-5 text-brand-foreground shadow-sm lg:p-6">
             <div class="relative grid gap-5 xl:grid-cols-12 xl:items-stretch">
                 <div class="flex min-w-0 flex-col justify-center xl:col-span-8">
-                    {% call page_hero.intro('user-cog', 'Access administration', 'user-plus' if mode == 'create' else 'pencil-line') %}
+                    {% call page_hero.intro('user-cog', 'Access Administration', 'user-plus' if mode == 'create' else 'pencil-line') %}
                         <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">
                             {{ 'Add User' if mode == 'create' else 'Edit User' }}
                         </h1>
                         <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">
-                            {{ 'Create an identity, choose its credential owner, and assign access.' if mode == 'create' else 'Update identity metadata, lifecycle controls, authentication ownership, and assigned access role.' }}
+                            {{ 'Create a Local Database account, then assign lifecycle state and RBAC authorization. External identities follow their provider-specific provisioning path.' if mode == 'create' else 'Update identity metadata, lifecycle controls, authentication ownership, and assigned access role.' }}
                         </p>
-                        <div class="{{ 'mt-3' if mode == 'create' else 'mt-5' }} flex flex-wrap gap-2">
+                        <div class="mt-5 flex flex-wrap gap-2">
                             {% if mode == 'edit' and user %}
                                 {{ page_hero.meta_label('user', user.display_label) }}
                                 {{ page_hero.meta_label('shield', user.role_display_name) }}
                                 {{ page_hero.meta_label('database' if user.auth_source == 'database' else 'network', user.auth_source|upper) }}
                             {% else %}
-                                {{ page_hero.meta_label('database', 'Local Database ready') }}
-                                {{ page_hero.meta_label('network', 'LDAP and SSO prepared') }}
+                                {{ page_hero.meta_label('database', 'Local Database') }}
+                                {{ page_hero.meta_label('building-2', 'LDAP Directory') }}
+                                {{ page_hero.meta_label('key-round', 'Google & GitHub SSO') }}
                             {% endif %}
                         </div>
                     {% endcall %}
                 </div>
-                <aside class="flex items-start justify-end xl:col-span-4">
-                    <a href="{{ url_for('users.index') }}"
-                       class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-white/70 bg-white px-4 text-sm font-semibold text-kaori-primary transition hover:bg-kaori-soft hover:text-kaori-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70">
-                        <i data-lucide="arrow-left" class="h-4 w-4"></i>
-                        Back to Users
-                    </a>
+                <aside class="xl:col-span-4">
+                    <div class="flex h-full flex-col justify-between rounded-xl border border-brand-outline bg-brand-surface p-4 backdrop-blur">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-widest text-brand-foreground-muted">
+                                {{ 'Account creation paths' if mode == 'create' else 'Administrative update' }}
+                            </p>
+                            <p class="mt-2 text-sm font-semibold leading-6 text-brand-foreground">
+                                {% if mode == 'create' %}
+                                    Create Local Database users here. Provision LDAP users from Directory Provisioning, while Google and GitHub users enter through a linked identity or controlled JIT.
+                                {% else %}
+                                    Review identity ownership, account state, role assignment, and administrative protection before saving changes.
+                                {% endif %}
+                            </p>
+                        </div>
+                        <a href="{{ url_for('users.index') }}"
+                           class="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-brand-outline bg-brand-surface-strong px-4 text-sm font-semibold text-brand-foreground transition hover:bg-brand-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
+                            <i data-lucide="arrow-left" class="h-4 w-4"></i>
+                            Back to Users
+                        </a>
+                    </div>
                 </aside>
             </div>
         </section>
 
         <div class="grid gap-5 xl:grid-cols-12 xl:items-start">
-        <form method="post" data-user-form class="xl:col-span-8">
+        <form method="post" class="xl:col-span-8">
             {{ form.hidden_tag() }}
             <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
                 <header class="flex items-center gap-3 border-b border-outline-subtle px-5 py-4">
@@ -102,64 +117,85 @@
                             </div>
                             <div>
                                 <h3 class="text-sm font-semibold text-content-primary">Authentication Ownership</h3>
-                                <p class="mt-0.5 text-xs leading-5 text-content-muted">Choose the credential owner and external identity reference.</p>
-                            </div>
-                        </div>
-                        <div class="grid {{ 'gap-4 lg:grid-cols-2' if mode == 'create' else 'gap-5 lg:grid-cols-2' }}">
-                            <div>
-                                <label class="mb-1.5 block text-sm font-semibold text-content-primary">Authentication source</label>
-                                {{ form.auth_source(class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", **{'data-auth-source': ''}) }}
-                                <p class="mt-1.5 text-xs leading-4 text-content-muted">KAORI manages Local credentials; external providers manage their own.</p>
-                            </div>
-                            <div>
-                                <label class="mb-1.5 block text-sm font-semibold text-content-primary">External identity ID</label>
-                                {{ form.external_id(class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20 disabled:cursor-not-allowed disabled:bg-surface-hover disabled:text-content-disabled", placeholder="LDAP object ID, OIDC subject, or SAML NameID", **{'data-external-id': ''}) }}
-                                <p class="mt-1.5 text-xs leading-4 text-content-muted" data-external-help>Only for LDAP or SSO identities.</p>
+                                <p class="mt-0.5 text-xs leading-5 text-content-muted">
+                                    {{ 'This page creates Local Database credentials; external identities use their provider workflow.' if mode == 'create' else 'Review the authoritative credential owner and external identity reference.' }}
+                                </p>
                             </div>
                         </div>
 
                         {% if mode == 'create' %}
-                            <div class="mt-4 grid gap-4 border-t border-outline-subtle pt-4 lg:grid-cols-2" data-password-fields>
-                                <div>
-                                    <label class="mb-1.5 block text-sm font-semibold text-content-primary">Initial password</label>
-                                    {{ form.password(class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20 disabled:cursor-not-allowed disabled:bg-surface-hover disabled:text-content-disabled", autocomplete="new-password", **{'data-password-input': ''}) }}
-                                </div>
-                                <div>
-                                    <label class="mb-1.5 block text-sm font-semibold text-content-primary">Confirm password</label>
-                                    {{ form.confirm_password(class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20 disabled:cursor-not-allowed disabled:bg-surface-hover disabled:text-content-disabled", autocomplete="new-password", **{'data-password-input': ''}) }}
-                                </div>
-                                <div class="lg:col-span-2 rounded-lg border border-outline-subtle bg-surface-card px-3 py-2 text-xs leading-4 text-content-muted" data-password-note>
-                                    Password fields are required for Local Database users and disabled for LDAP or SSO identities.
-                                </div>
-                            </div>
-                        {% elif user %}
-                            <div class="mt-5 border-t border-outline-subtle pt-5">
-                                <div class="flex flex-col gap-3 rounded-lg border border-outline-subtle bg-surface-card p-4 sm:flex-row sm:items-center sm:justify-between">
+                            <input type="hidden" name="{{ form.auth_source.name }}" value="database">
+                            <div class="grid gap-4 lg:grid-cols-2">
+                                <div class="lg:col-span-2 rounded-lg border border-brand-outline bg-kaori-soft p-4">
                                     <div class="flex items-start gap-3">
-                                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                                            <i data-lucide="key-round" class="h-4 w-4"></i>
+                                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-surface-card text-kaori-primary shadow-sm">
+                                            <i data-lucide="database" class="h-5 w-5"></i>
                                         </div>
-                                        <div>
-                                            <p class="text-sm font-semibold text-content-primary">Credential management</p>
-                                            <p class="mt-1 text-xs leading-5 text-content-muted">
-                                                {{ 'Use the dedicated reset flow for this Local Database account.' if user.auth_source == 'database' else 'Credentials are controlled by the external identity provider.' }}
+                                        <div class="min-w-0">
+                                            <div class="flex flex-wrap items-center gap-2">
+                                                <h4 class="text-sm font-semibold text-kaori-strong">Local Database</h4>
+                                                <span class="inline-flex rounded-md border border-brand-outline bg-surface-card px-2 py-0.5 text-[11px] font-semibold text-kaori-primary">Created on this page</span>
+                                            </div>
+                                            <p class="mt-1.5 text-xs leading-5 text-kaori-primary">
+                                                KAORI owns this account credential. LDAP identities must use Directory Provisioning; Google and GitHub identities use an existing identity link or controlled JIT.
                                             </p>
                                         </div>
                                     </div>
-                                    {% if reset_password_allowed %}
-                                        <a href="{{ url_for('users.reset_password', user_id=user.id) }}"
-                                           class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                                            <i data-lucide="key-round" class="h-4 w-4"></i>
-                                            Reset Password
-                                        </a>
-                                    {% elif user.auth_source == 'database' %}
-                                        <span class="inline-flex h-9 shrink-0 items-center gap-2 rounded-md border border-status-warning-border bg-status-warning-soft px-3 text-xs font-semibold text-status-warning-text" title="{{ reset_password_reason or 'Password reset is restricted for this account.' }}">
-                                            <i data-lucide="lock" class="h-3.5 w-3.5"></i>
-                                            Reset restricted
-                                        </span>
-                                    {% endif %}
+                                </div>
+                                <div>
+                                    <label class="mb-1.5 block text-sm font-semibold text-content-primary">Initial password</label>
+                                    {{ form.password(class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", autocomplete="new-password") }}
+                                    <p class="mt-1.5 text-xs leading-5 text-content-muted">Minimum eight characters. Use the dedicated reset workflow after the account is created.</p>
+                                </div>
+                                <div>
+                                    <label class="mb-1.5 block text-sm font-semibold text-content-primary">Confirm password</label>
+                                    {{ form.confirm_password(class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", autocomplete="new-password") }}
+                                    <p class="mt-1.5 text-xs leading-5 text-content-muted">Repeat the initial password exactly before submitting the account.</p>
                                 </div>
                             </div>
+                        {% else %}
+                            <div class="grid gap-5 lg:grid-cols-2">
+                                <div>
+                                    <label class="mb-1.5 block text-sm font-semibold text-content-primary">Authentication source</label>
+                                    {{ form.auth_source(class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20") }}
+                                    <p class="mt-1.5 text-xs leading-5 text-content-muted">KAORI owns Local Database credentials; external providers remain authoritative for LDAP and SSO authentication.</p>
+                                </div>
+                                <div>
+                                    <label class="mb-1.5 block text-sm font-semibold text-content-primary">External identity ID</label>
+                                    {{ form.external_id(class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", placeholder="LDAP stable ID, Google subject, or GitHub user ID") }}
+                                    <p class="mt-1.5 text-xs leading-5 text-content-muted">Stable upstream subject used to bind this KAORI identity to its external provider.</p>
+                                </div>
+                            </div>
+
+                            {% if user %}
+                                <div class="mt-5 border-t border-outline-subtle pt-5">
+                                    <div class="flex flex-col gap-3 rounded-lg border border-outline-subtle bg-surface-card p-4 sm:flex-row sm:items-center sm:justify-between">
+                                        <div class="flex items-start gap-3">
+                                            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                                                <i data-lucide="key-round" class="h-4 w-4"></i>
+                                            </div>
+                                            <div>
+                                                <p class="text-sm font-semibold text-content-primary">Credential management</p>
+                                                <p class="mt-1 text-xs leading-5 text-content-muted">
+                                                    {{ 'Use the dedicated reset flow for this Local Database account.' if user.auth_source == 'database' else 'Credentials are controlled by the external identity provider.' }}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        {% if reset_password_allowed %}
+                                            <a href="{{ url_for('users.reset_password', user_id=user.id) }}"
+                                               class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                                <i data-lucide="key-round" class="h-4 w-4"></i>
+                                                Reset Password
+                                            </a>
+                                        {% elif user.auth_source == 'database' %}
+                                            <span class="inline-flex h-9 shrink-0 items-center gap-2 rounded-md border border-status-warning-border bg-status-warning-soft px-3 text-xs font-semibold text-status-warning-text" title="{{ reset_password_reason or 'Password reset is restricted for this account.' }}">
+                                                <i data-lucide="lock" class="h-3.5 w-3.5"></i>
+                                                Reset restricted
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endif %}
                         {% endif %}
                     </section>
 
@@ -170,41 +206,53 @@
                             </div>
                             <div>
                                 <h3 class="text-sm font-semibold text-content-primary">Lifecycle & Administrative Controls</h3>
-                                <p class="mt-0.5 text-xs leading-5 text-content-muted">Assign role, account state, and administrative tier.</p>
+                                <p class="mt-0.5 text-xs leading-5 text-content-muted">
+                                    Role, active state, and administrative tier are presented with the same control structure.
+                                </p>
                             </div>
                         </div>
-                        <div class="grid {{ 'gap-4 xl:grid-cols-3' if mode == 'create' else 'gap-5 lg:grid-cols-2' }}">
-                            <div>
-                                <label class="mb-1.5 block text-sm font-semibold text-content-primary">Assigned role</label>
+
+                        <div class="grid gap-4 xl:grid-cols-3">
+                            <div class="flex min-h-full flex-col rounded-lg border border-outline-subtle bg-surface-card p-3.5">
+                                <label class="mb-2 block text-sm font-semibold text-content-primary">Assigned role</label>
                                 {{ form.role_id(class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20") }}
-                                {% if not can_manage_admin_fields %}<p class="mt-2 text-xs leading-5 text-content-muted">Administrator-level roles are restricted to super admins.</p>{% endif %}
+                                <p class="mt-3 text-xs leading-5 text-content-muted">
+                                    Defines the RBAC permissions available after authentication.
+                                    {% if not can_manage_admin_fields %} Administrator-level roles remain restricted to super admins.{% endif %}
+                                </p>
                             </div>
-                            <div class="{{ 'contents' if mode == 'create' else 'space-y-3' }}">
-                                <label class="flex items-start gap-3 rounded-lg border border-outline-subtle bg-surface-card p-3">
-                                    {{ form.is_active(class="mt-0.5 h-4 w-4 rounded border-outline-strong accent-kaori-primary focus:ring-kaori-primary") }}
-                                    <span>
-                                        <span class="block text-sm font-semibold text-content-primary">Active account</span>
-                                        <span class="mt-0.5 block text-xs leading-5 text-content-muted">Active users may authenticate when their identity source is available.</span>
+
+                            <label class="flex min-h-full cursor-pointer flex-col rounded-lg border border-outline-subtle bg-surface-card p-3.5 transition hover:border-outline-strong">
+                                <span class="flex h-11 items-center gap-3 rounded-lg border border-outline-default bg-surface-elevated px-3.5">
+                                    {{ form.is_active(class="h-4 w-4 shrink-0 rounded border-outline-strong accent-kaori-primary focus:ring-kaori-primary") }}
+                                    <span class="text-sm font-semibold text-content-primary">Active account</span>
+                                </span>
+                                <span class="mt-3 text-xs leading-5 text-content-muted">
+                                    Allows sign-in when the identity source and provider are available. Disable the account to block access without deleting it.
+                                </span>
+                            </label>
+
+                            {% if can_manage_admin_fields %}
+                                <label class="flex min-h-full cursor-pointer flex-col rounded-lg border border-outline-subtle bg-surface-card p-3.5 transition hover:border-outline-strong">
+                                    <span class="flex h-11 items-center gap-3 rounded-lg border border-brand-outline bg-kaori-soft px-3.5">
+                                        {{ form.is_super_admin(class="h-4 w-4 shrink-0 rounded border-outline-strong accent-kaori-primary focus:ring-kaori-primary") }}
+                                        <span class="text-sm font-semibold text-kaori-strong">Super Admin</span>
+                                    </span>
+                                    <span class="mt-3 text-xs leading-5 text-content-muted">
+                                        Grants the highest administrative tier. Last-super-admin safeguards protect the final active Super Admin account.
                                     </span>
                                 </label>
-                                {% if can_manage_admin_fields %}
-                                    <label class="flex items-start gap-3 rounded-lg border border-brand-outline bg-kaori-soft p-3">
-                                        {{ form.is_super_admin(class="mt-0.5 h-4 w-4 rounded border-outline-strong accent-kaori-primary focus:ring-kaori-primary") }}
-                                        <span>
-                                            <span class="block text-sm font-semibold text-kaori-strong">Super Admin</span>
-                                            <span class="mt-0.5 block text-xs leading-5 text-kaori-primary">Grants the highest administrative tier and remains protected by last-super-admin safeguards.</span>
-                                        </span>
-                                    </label>
-                                {% else %}
-                                    <div class="flex items-start gap-3 rounded-lg border border-outline-subtle bg-surface-hover p-3">
-                                        <i data-lucide="lock" class="mt-0.5 h-4 w-4 shrink-0 text-content-muted"></i>
-                                        <div>
-                                            <p class="text-sm font-semibold text-content-secondary">Super Admin assignment restricted</p>
-                                            <p class="mt-0.5 text-xs leading-5 text-content-muted">Only an existing super admin may change this administrative tier.</p>
-                                        </div>
+                            {% else %}
+                                <div class="flex min-h-full flex-col rounded-lg border border-outline-subtle bg-surface-card p-3.5">
+                                    <div class="flex h-11 items-center gap-3 rounded-lg border border-outline-default bg-surface-hover px-3.5">
+                                        <i data-lucide="lock" class="h-4 w-4 shrink-0 text-content-muted"></i>
+                                        <span class="text-sm font-semibold text-content-secondary">Super Admin restricted</span>
                                     </div>
-                                {% endif %}
-                            </div>
+                                    <p class="mt-3 text-xs leading-5 text-content-muted">
+                                        Only an existing super admin may assign or remove the protected Super Admin tier.
+                                    </p>
+                                </div>
+                            {% endif %}
                         </div>
                     </section>
 
@@ -257,72 +305,125 @@
                                 <i data-lucide="waypoints" class="h-4 w-4"></i>
                             </div>
                             <div>
-                                <h2 class="text-sm font-semibold text-content-primary">Identity source guide</h2>
-                                <p class="mt-0.5 text-xs leading-5 text-content-muted">Choose where credentials are owned before creating the KAORI account.</p>
+                                <h2 class="text-sm font-semibold text-content-primary">Identity creation paths</h2>
+                                <p class="mt-0.5 text-xs leading-5 text-content-muted">
+                                    Each provider owns a different account-admission workflow.
+                                </p>
                             </div>
                         </div>
                     </header>
 
-                    <div class="space-y-3 p-4">
-                        <article class="rounded-lg border border-brand-outline bg-kaori-soft p-3.5">
+                    <div class="divide-y divide-outline-subtle">
+                        <article class="p-4">
                             <div class="flex items-start gap-3">
-                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
+                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary">
                                     <i data-lucide="database" class="h-4 w-4"></i>
                                 </div>
                                 <div class="min-w-0">
                                     <div class="flex flex-wrap items-center gap-2">
-                                        <h3 class="text-sm font-semibold text-kaori-strong">Local Database</h3>
-                                        <span class="inline-flex rounded-md border border-brand-outline bg-surface-card px-2 py-0.5 text-[11px] font-semibold text-kaori-primary">Available</span>
+                                        <h3 class="text-sm font-semibold text-content-primary">Local Database</h3>
+                                        <span class="inline-flex rounded-md border border-brand-outline bg-kaori-soft px-2 py-0.5 text-[11px] font-semibold text-kaori-primary">Create here</span>
                                     </div>
-                                    <p class="mt-1.5 text-xs leading-5 text-kaori-primary">KAORI stores the account and manages its password. An initial password is required.</p>
+                                    <p class="mt-1.5 text-xs leading-5 text-content-muted">
+                                        KAORI stores the password hash and manages password reset. This form creates the local account directly.
+                                    </p>
                                 </div>
                             </div>
                         </article>
 
-                        <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-3.5">
+                        <article class="p-4">
                             <div class="flex items-start gap-3">
-                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-content-secondary shadow-sm">
+                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-elevated text-content-secondary">
                                     <i data-lucide="building-2" class="h-4 w-4"></i>
                                 </div>
                                 <div class="min-w-0">
                                     <div class="flex flex-wrap items-center gap-2">
                                         <h3 class="text-sm font-semibold text-content-primary">LDAP / Active Directory</h3>
-                                        <span class="inline-flex rounded-md border border-outline-default bg-surface-card px-2 py-0.5 text-[11px] font-semibold text-content-secondary">Prepared</span>
+                                        <span class="inline-flex rounded-md border border-outline-default bg-surface-hover px-2 py-0.5 text-[11px] font-semibold text-content-secondary">Directory Provisioning</span>
                                     </div>
-                                    <p class="mt-1.5 text-xs leading-5 text-content-muted">The directory owns the password. KAORI stores only an identity projection, lifecycle state, and assigned role.</p>
+                                    <p class="mt-1.5 text-xs leading-5 text-content-muted">
+                                        Search the configured directory, select the authoritative identity, assign a KAORI role, then provision it. LDAP keeps password ownership.
+                                    </p>
                                 </div>
                             </div>
                         </article>
 
-                        <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-3.5">
+                        <article class="p-4">
                             <div class="flex items-start gap-3">
-                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-content-secondary shadow-sm">
-                                    <i data-lucide="key-round" class="h-4 w-4"></i>
+                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-elevated text-content-secondary">
+                                    <i data-lucide="chrome" class="h-4 w-4"></i>
                                 </div>
                                 <div class="min-w-0">
                                     <div class="flex flex-wrap items-center gap-2">
-                                        <h3 class="text-sm font-semibold text-content-primary">SSO / Identity Provider</h3>
-                                        <span class="inline-flex rounded-md border border-outline-default bg-surface-card px-2 py-0.5 text-[11px] font-semibold text-content-secondary">Prepared</span>
+                                        <h3 class="text-sm font-semibold text-content-primary">Google OpenID Connect</h3>
+                                        <span class="inline-flex rounded-md border border-outline-default bg-surface-hover px-2 py-0.5 text-[11px] font-semibold text-content-secondary">SSO admission</span>
                                     </div>
-                                    <p class="mt-1.5 text-xs leading-5 text-content-muted">The IdP authenticates the user. KAORI links a stable external subject and applies local lifecycle and authorization controls.</p>
+                                    <p class="mt-1.5 text-xs leading-5 text-content-muted">
+                                        Google authenticates the user. KAORI accepts an existing identity link or creates an admitted user through controlled domain-restricted JIT.
+                                    </p>
+                                </div>
+                            </div>
+                        </article>
+
+                        <article class="p-4">
+                            <div class="flex items-start gap-3">
+                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-elevated text-content-secondary">
+                                    <i data-lucide="github" class="h-4 w-4"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <h3 class="text-sm font-semibold text-content-primary">GitHub OAuth</h3>
+                                        <span class="inline-flex rounded-md border border-outline-default bg-surface-hover px-2 py-0.5 text-[11px] font-semibold text-content-secondary">SSO admission</span>
+                                    </div>
+                                    <p class="mt-1.5 text-xs leading-5 text-content-muted">
+                                        GitHub authenticates the user. Controlled JIT requires an allowed login or immutable numeric GitHub user ID.
+                                    </p>
                                 </div>
                             </div>
                         </article>
                     </div>
+
+                    <footer class="grid gap-2 border-t border-outline-subtle bg-surface-hover p-4 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+                        <a href="{{ url_for('users.external_identities') }}"
+                           class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                            <i data-lucide="contact-round" class="h-4 w-4"></i>
+                            LDAP Provisioning
+                        </a>
+                        <a href="{{ url_for('users.providers') }}"
+                           class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                            <i data-lucide="fingerprint" class="h-4 w-4"></i>
+                            Identity Providers
+                        </a>
+                    </footer>
                 </section>
 
-                <section class="rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm">
-                    <div class="flex items-start gap-3">
-                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                            <i data-lucide="route" class="h-4 w-4"></i>
+                <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+                    <header class="border-b border-outline-subtle bg-surface-hover px-4 py-3.5">
+                        <div class="flex items-start gap-3">
+                            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                                <i data-lucide="shield-check" class="h-4 w-4"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-sm font-semibold text-content-primary">Administrative boundary</h2>
+                                <p class="mt-0.5 text-xs leading-5 text-content-muted">
+                                    Authentication source and authorization remain separate controls.
+                                </p>
+                            </div>
                         </div>
-                        <div>
-                            <h2 class="text-sm font-semibold text-content-primary">Provisioning flow</h2>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Create or project identity → assign role → set lifecycle state → record the administrative action.</p>
+                    </header>
+                    <div class="space-y-3 p-4 text-xs leading-5 text-content-muted">
+                        <div class="grid grid-cols-[24px_minmax(0,1fr)] gap-2">
+                            <span class="font-semibold text-kaori-primary">01</span>
+                            <p><strong class="font-semibold text-content-secondary">Assigned role</strong> defines permitted KAORI operations after sign-in.</p>
                         </div>
-                    </div>
-                    <div class="mt-3 rounded-lg border border-outline-subtle bg-surface-hover px-3 py-2.5 text-xs leading-5 text-content-muted">
-                        External-provider passwords are never entered, stored, or reset by KAORI.
+                        <div class="grid grid-cols-[24px_minmax(0,1fr)] gap-2">
+                            <span class="font-semibold text-kaori-primary">02</span>
+                            <p><strong class="font-semibold text-content-secondary">Active account</strong> gates access for Local, LDAP, Google, and GitHub identities.</p>
+                        </div>
+                        <div class="grid grid-cols-[24px_minmax(0,1fr)] gap-2">
+                            <span class="font-semibold text-kaori-primary">03</span>
+                            <p><strong class="font-semibold text-content-secondary">Super Admin</strong> is provider-independent, but a Local Database break-glass super admin must remain available.</p>
+                        </div>
                     </div>
                 </section>
             </aside>
@@ -402,42 +503,4 @@
         </div>
     </div>
 
-    {% if mode == 'create' %}
-        <script>
-            (() => {
-                const form = document.querySelector('[data-user-form]');
-                if (!form) return;
-                const source = form.querySelector('[data-auth-source]');
-                const externalId = form.querySelector('[data-external-id]');
-                const passwordInputs = [...form.querySelectorAll('[data-password-input]')];
-                const passwordNote = form.querySelector('[data-password-note]');
-                const externalHelp = form.querySelector('[data-external-help]');
-                if (!source || !externalId) return;
-
-                const syncIdentityFields = () => {
-                    const isLocal = source.value === 'database';
-                    externalId.disabled = isLocal;
-                    externalId.required = !isLocal;
-                    passwordInputs.forEach((input) => {
-                        input.disabled = !isLocal;
-                        input.required = isLocal;
-                        if (!isLocal) input.value = '';
-                    });
-                    if (passwordNote) {
-                        passwordNote.textContent = isLocal
-                            ? 'KAORI owns this credential. Set and confirm the initial Local Database password.'
-                            : 'Password fields are disabled because credentials are managed by the selected external provider.';
-                    }
-                    if (externalHelp) {
-                        externalHelp.textContent = isLocal
-                            ? 'Not used for Local Database identities.'
-                            : 'Required stable identity reference for the external provider projection.';
-                    }
-                };
-
-                source.addEventListener('change', syncIdentityFields);
-                syncIdentityFields();
-            })();
-        </script>
-    {% endif %}
 {% endblock dashboard_content %}
