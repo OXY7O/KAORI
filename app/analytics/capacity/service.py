@@ -25,6 +25,7 @@ from app.analytics.common.payloads import get_empty_capacity_payload
 from app.analytics.utilization.service import UtilizationService
 from app.common.dependencies import (
     cluster_required_blocker,
+    prometheus_capability_blocker,
     prometheus_connection_blocker,
     prometheus_setup_blocker,
 )
@@ -34,6 +35,8 @@ from app.intelligence.recommendation_engine import (
     format_recommendation_cards,
 )
 from app.models import Cluster
+from app.prometheus.capabilities import definition as capability_definition
+from app.prometheus.consumer import PrometheusConsumer
 from app.prometheus.exceptions import PrometheusError
 from app.prometheus.service import PrometheusService
 
@@ -137,9 +140,10 @@ def get_capacity_page_context(
         utilization_service = UtilizationService(
             prometheus,
         )
-
+        consumer = PrometheusConsumer(cluster)
         capacity_service = CapacityService(
             utilization_service,
+            consumer,
         )
 
         prometheus_status = capacity_service.get_prometheus_status()
@@ -161,9 +165,22 @@ def get_capacity_page_context(
                 ),
             )
         else:
-            capacity_payload = capacity_service.get_capacity_analysis(
-                time_range=selected_time_range,
-            )
+            requirements = consumer.requirements(CapacityService.REQUIRED_CAPABILITIES)
+            if not requirements.ok:
+                missing = list((requirements.payload or {}).get('missing_capabilities') or [])
+                labels = [
+                    capability_definition(key).label if capability_definition(key) else key
+                    for key in missing
+                ]
+                dependency_blocker = prometheus_capability_blocker(
+                    cluster,
+                    feature_label='Capacity Analytics',
+                    missing_capabilities=labels,
+                )
+            else:
+                capacity_payload = capacity_service.get_capacity_analysis(
+                    time_range=selected_time_range,
+                )
 
     except PrometheusError as exc:
         message = str(exc) or 'Prometheus is not configured for the selected cluster.'
@@ -200,11 +217,33 @@ def get_capacity_page_context(
 
 
 class CapacityService(AnalyticsBaseService):
+    REQUIRED_CAPABILITIES = (
+        'instant_query',
+        'range_query',
+        'kubernetes_identity',
+        'capacity_metrics',
+        'resource_requests_limits',
+    )
+
     def __init__(
         self,
         utilization_service: UtilizationService,
+        consumer: PrometheusConsumer,
     ) -> None:
         self.utilization_service = utilization_service
+        self.consumer = consumer
+
+    def get_prometheus_result(
+        self,
+        query: str,
+    ) -> list[dict[str, Any]]:
+        response = self.consumer.query(
+            query,
+            required_capabilities=self.REQUIRED_CAPABILITIES,
+        )
+        data = response.get('data', {}) if isinstance(response, dict) else {}
+        result = data.get('result', []) if isinstance(data, dict) else []
+        return [item for item in result if isinstance(item, dict)]
 
     def get_capacity_analysis(
         self,
@@ -1071,6 +1110,7 @@ def get_capacity_snapshot(
 
         capacity_service = CapacityService(
             utilization_service,
+            PrometheusConsumer(cluster),
         )
 
         capacity_payload = capacity_service.get_capacity_analysis(

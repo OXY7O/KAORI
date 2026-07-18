@@ -417,3 +417,8 @@ executing a hidden compatibility fallback.
 Filesystem PromQL returns the original series so identity labels remain
 available. KAORI aggregates device series by the canonical node identity in the
 consumer-facing storage service.
+
+
+### Capacity capability boundary
+
+Capacity Analytics is now capability-gated through `PrometheusConsumer`. Worker allocatable, usage, node-role, pod-placement, and request/limit contracts must pass integration validation before the page, dashboard snapshot, or report section executes capacity queries.

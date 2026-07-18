@@ -5,7 +5,7 @@
     <button type="button" hx-post="{{ url_for('prometheus.validate_integration', cluster_id=cluster.id) }}" hx-target="#operational-action-feedback" hx-swap="innerHTML" hx-disabled-elt="this" class="inline-flex items-center gap-2 rounded-xl bg-kaori-primary px-4 py-2.5 text-sm font-bold text-white hover:bg-kaori-primary-hover"><i data-lucide="refresh-cw" class="h-4 w-4"></i>Refresh runtime</button>
   </header>
   <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-5">
-    {% for label, value in [('Health', runtime_state.health_status|replace('_',' ')|title),('Score', runtime_state.health_score|string ~ '/100'),('Readiness', runtime_state.readiness|replace('_',' ')|title),('Latency', runtime_state.latency_ms|string ~ ' ms' if runtime_state.latency_ms is not none else 'Not observed'),('Capabilities', runtime_state.capability_count|string ~ ' available')] %}
+    {% for label, value in [('Health', runtime_state.health_status_label),('Score', runtime_state.health_score_display),('Readiness', runtime_state.readiness_label),('Latency', runtime_state.latency_display),('Capabilities', runtime_state.capability_count_display)] %}
       <div class="bg-surface-card p-4"><p class="text-[10px] font-bold uppercase tracking-[0.12em] text-content-tertiary">{{ label }}</p><p class="mt-3 text-sm font-bold text-content-primary">{{ value }}</p></div>
     {% endfor %}
   </div>

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from app.common.presentation import present_count, present_key_label, present_milliseconds, present_user_datetime
 from app.integrations.runtime.contracts import RuntimeState
 
 
@@ -10,7 +11,9 @@ def runtime_state_view(state: RuntimeState) -> dict[str, object]:
         'instance_name': state.instance_name,
         'observed_at': state.observed_at,
         'readiness': state.readiness,
+        'readiness_label': present_key_label(state.readiness),
         'health_status': state.health.status,
+        'health_status_label': present_key_label(state.health.status),
         'health_score': state.health.score,
         'health_summary': state.health.summary,
         'diagnostics': state.diagnostics,
@@ -18,11 +21,15 @@ def runtime_state_view(state: RuntimeState) -> dict[str, object]:
         'capability_profile': state.snapshot.profile,
         'compatibility_profile': state.snapshot.compatibility_profile,
         'capability_count': len(state.snapshot.capabilities),
+        'capability_count_display': present_count(len(state.snapshot.capabilities), 'capability'),
         'capabilities': state.snapshot.capabilities,
         'latency_ms': state.latency_ms,
+        'latency_display': present_milliseconds(state.latency_ms),
         'last_success_at': state.last_success_at,
         'last_failure_at': state.last_failure_at,
         'message': state.message,
+        'health_score_display': f'{state.health.score}/100',
+        'observed_at_display': present_user_datetime(state.observed_at, empty='Not observed', include_seconds=True),
     }
 
 
@@ -59,14 +66,21 @@ def runtime_history_view(rows, *, pagination: dict[str, object]) -> dict[str, ob
         rendered_rows.append({
             'id': row.id,
             'observed_at': row.observed_at,
+            'observed_at_display': present_user_datetime(row.observed_at, empty='Unknown', include_seconds=True),
             'trigger_type': row.trigger_type,
+            'trigger_type_label': present_key_label(row.trigger_type),
             'readiness': row.readiness,
+            'readiness_label': present_key_label(row.readiness),
             'health_status': row.health_status,
+            'health_status_label': present_key_label(row.health_status),
             'health_score': row.health_score,
+            'health_score_display': f'{row.health_score}/100',
             'latency_ms': row.latency_ms,
+            'latency_display': present_milliseconds(row.latency_ms),
             'compatibility_profile': row.compatibility_profile,
             'capability_profile': row.capability_profile,
             'capability_count': len(current_capabilities),
+            'capability_count_display': present_count(len(current_capabilities), 'observed capability'),
             'transition': transition,
             'added_capabilities': added_capabilities,
             'removed_capabilities': removed_capabilities,

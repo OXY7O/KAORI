@@ -152,3 +152,16 @@ If any requirement is not satisfied, the domain is blocked before data queries
 run. Connected-but-incomplete integrations must not be presented as feature
 ready. Provider-specific identity workarounds, including treating
 `instance="IP:port"` as a Kubernetes node name, are prohibited.
+
+
+## Capacity Analytics contract
+
+Capacity Analytics requires the complete consumer contract before it executes queries:
+
+- `instant_query`
+- `range_query`
+- `kubernetes_identity`
+- `capacity_metrics`
+- `resource_requests_limits`
+
+The contract covers worker allocatable CPU, memory and pods; current container usage; pod placement; node-role exclusion; and request/limit metrics. A connected endpoint is not sufficient. Missing metrics or incomplete canonical labels must block the feature and direct remediation to the Prometheus/Thanos source.

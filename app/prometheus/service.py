@@ -14,6 +14,7 @@ from app.integrations.compatibility import (
 )
 from app.models import Cluster, PrometheusConfig
 from app.prometheus.client import PrometheusClient
+from app.prometheus.consumer import PrometheusConsumer
 from app.prometheus.exceptions import PrometheusError
 from app.prometheus.forms import PrometheusConfigForm
 from app.prometheus.query_profiles.audit import PromQLProfileAuditor
@@ -41,10 +42,10 @@ class PrometheusService:
         if not config:
             raise PrometheusError('Prometheus configuration not found')
         self.client = PrometheusClient(config)
+        self.consumer = PrometheusConsumer(cluster)
 
     def instant_query(self, query: str) -> dict[str, Any]:
-        self._require_runtime_readiness()
-        return self.client.query(query)
+        return self.consumer.query(query)
 
     def range_query(
         self,
@@ -53,8 +54,7 @@ class PrometheusService:
         end: str,
         step: str,
     ) -> dict[str, Any]:
-        self._require_runtime_readiness()
-        return self.client.query_range(query=query, start=start, end=end, step=step)
+        return self.consumer.query_range(query, start, end, step)
 
     def test_connection(self) -> dict[str, Any]:
         """Run a fast endpoint identity and compatibility check.

@@ -1,17 +1,15 @@
-from app.prometheus.client import PrometheusClient
+from app.prometheus.consumer import PrometheusConsumer
 
 
 class AnalyticsPrometheusService:
-    """
-    Base service for all analytics modules.
-    """
+    """Compatibility wrapper around the canonical Prometheus consumer facade."""
 
     def __init__(self, cluster):
         self.cluster = cluster
-        self.client = PrometheusClient(cluster)
+        self.consumer = PrometheusConsumer(cluster)
 
     def query(self, promql: str):
-        return self.client.query(promql)
+        return self.consumer.query(promql)
 
     def query_range(
         self,
@@ -20,7 +18,7 @@ class AnalyticsPrometheusService:
         end,
         step: str = '1h',
     ):
-        return self.client.query_range(
+        return self.consumer.query_range(
             promql,
             start,
             end,

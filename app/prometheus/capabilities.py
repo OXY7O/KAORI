@@ -34,6 +34,20 @@ CAPABILITIES: dict[str, CapabilityDefinition] = {
         'Scrape kube-state-metrics and preserve namespace, pod, node, and workload identity labels.',
         expected_signals=('kube_node_info', 'kube_pod_info', 'kube_namespace_status_phase'),
     ),
+    'capacity_metrics': CapabilityDefinition(
+        'capacity_metrics', 'Worker Capacity Metrics', ('Capacity Analytics', 'Forecast'),
+        'Worker allocatable capacity, current usage, and worker-only headroom cannot be calculated reliably.',
+        'kube-state-metrics, container metrics, and node identity pipeline',
+        'Expose allocatable node metrics, container CPU and memory usage, pod placement, and node-role labels with canonical Kubernetes node identity.',
+        expected_signals=(
+            'kube_node_status_allocatable',
+            'container_cpu_usage_seconds_total',
+            'container_memory_working_set_bytes',
+            'kube_node_role',
+            'kube_pod_info',
+        ),
+        validation_query='count(kube_node_status_allocatable{resource="cpu",unit="core"})',
+    ),
     'resource_requests_limits': CapabilityDefinition(
         'resource_requests_limits', 'Resource Requests and Limits', ('Capacity', 'Top Consumers', 'Forecast'),
         'Capacity pressure, overcommit, and request/limit analysis are incomplete.', 'kube-state-metrics scrape pipeline',

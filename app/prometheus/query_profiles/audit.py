@@ -194,6 +194,41 @@ class PromQLProfileAuditor:
             'All Kubernetes identity metrics are queryable.' if not missing_identity else f"Missing metrics: {', '.join(missing_identity)}",
         )
 
+        capacity_metrics = {
+            'kube_node_status_allocatable',
+            'container_cpu_usage_seconds_total',
+            'container_memory_working_set_bytes',
+            'kube_node_role',
+            'kube_pod_info',
+        }
+        missing_capacity = sorted(capacity_metrics - available_metrics)
+        capacity_label_requirements = {
+            'kube_node_status_allocatable': {'node', 'resource', 'unit'},
+            'container_cpu_usage_seconds_total': {'node', 'container'},
+            'container_memory_working_set_bytes': {'node', 'container'},
+            'kube_node_role': {'node', 'role'},
+            'kube_pod_info': {'node', 'namespace', 'pod'},
+        }
+        invalid_capacity_labels = sorted(
+            metric
+            for metric, required_labels in capacity_label_requirements.items()
+            if metric in available_metrics
+            and not required_labels.issubset(metric_labels.get(metric, set()))
+        )
+        if missing_capacity:
+            capacity_status = 'missing'
+            capacity_evidence = f"Missing metrics: {', '.join(missing_capacity)}"
+        elif invalid_capacity_labels:
+            capacity_status = 'misconfigured'
+            capacity_evidence = (
+                'Required worker-capacity labels are incomplete on: '
+                f"{', '.join(invalid_capacity_labels)}."
+            )
+        else:
+            capacity_status = 'available'
+            capacity_evidence = 'Worker allocatable, usage, role, and pod-placement contracts are queryable.'
+        add('capacity_metrics', capacity_status, capacity_evidence)
+
         resource = {'kube_pod_container_resource_requests', 'kube_pod_container_resource_limits'}
         missing_resource = sorted(resource - available_metrics)
         add(

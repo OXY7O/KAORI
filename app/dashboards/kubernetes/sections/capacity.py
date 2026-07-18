@@ -22,10 +22,14 @@ def build_capacity_snapshot(*, live_cluster: Any | None, selected_cluster_id: st
     try:
         from app.analytics.capacity.service import CapacityService
         from app.analytics.utilization.service import UtilizationService
+        from app.prometheus.consumer import PrometheusConsumer
         from app.prometheus.service import PrometheusService
 
         prometheus = PrometheusService(live_cluster)
-        capacity_service = CapacityService(UtilizationService(prometheus))
+        capacity_service = CapacityService(
+            UtilizationService(prometheus),
+            PrometheusConsumer(live_cluster),
+        )
         summary = capacity_service.get_capacity_summary_from_summary({})
     except Exception as exc:
         return empty_capacity_snapshot(insight=f'Prometheus worker capacity snapshot unavailable: {exc}')

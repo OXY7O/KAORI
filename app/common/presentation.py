@@ -54,3 +54,22 @@ def present_user_datetime(
         include_timezone=include_timezone,
         empty=empty,
     )
+
+
+def present_key_label(value: str | None, *, empty: str = '-') -> str:
+    """Convert a canonical snake-case key into a presentation label in Python."""
+    if not value:
+        return empty
+    return str(value).replace('_', ' ').strip().title()
+
+
+def present_count(value: int | None, singular: str, plural: str | None = None) -> str:
+    count = int(value or 0)
+    noun = singular if count == 1 else (plural or f'{singular}s')
+    return f'{count} {noun}'
+
+
+def present_milliseconds(value: int | float | None, *, empty: str = 'Not observed') -> str:
+    if value is None:
+        return empty
+    return f'{int(value)} ms'

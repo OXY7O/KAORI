@@ -11,6 +11,7 @@ from app.analytics.utilization.service import UtilizationService
 from app.analytics.utilization.service import get_selected_cluster as get_utilization_selected_cluster
 from app.intelligence.recommendation_engine import build_capacity_actionable_recommendations
 from app.models.report import Report
+from app.prometheus.consumer import PrometheusConsumer
 from app.prometheus.service import PrometheusService
 from app.reports.export.helpers import (
     _format_resource_number,
@@ -180,6 +181,7 @@ def get_report_capacity_analysis_payload(
 
         capacity_service = CapacityService(
             utilization_service,
+            PrometheusConsumer(cluster),
         )
 
         prometheus_status = utilization_service.get_prometheus_status()

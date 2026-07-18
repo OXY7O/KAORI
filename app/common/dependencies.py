@@ -85,16 +85,19 @@ def prometheus_connection_blocker(
 def prometheus_capability_blocker(
     cluster: Cluster,
     *,
-    capability_labels: list[str],
+    capability_labels: list[str] | None = None,
+    feature_label: str = 'Storage Analytics',
+    missing_capabilities: list[str] | None = None,
 ) -> DependencyBlocker:
-    labels = ', '.join(capability_labels) if capability_labels else 'required storage capabilities'
+    selected = capability_labels if capability_labels is not None else missing_capabilities
+    labels = ', '.join(selected or []) if selected else 'required capabilities'
     return {
         'kind': 'prometheus_capability',
         'stage': 3,
-        'badge': 'Storage capability incomplete',
-        'title': 'Storage Analytics integration contract is not ready',
+        'badge': f'{feature_label} capability incomplete',
+        'title': f'{feature_label} integration contract is not ready',
         'description': (
-            f'{cluster.name} is connected, but Storage Analytics requires additional '
+            f'{cluster.name} is connected, but {feature_label} requires additional '
             f'capabilities: {labels}. Resolve them at the Prometheus/Thanos source before '
             'using this page.'
         ),

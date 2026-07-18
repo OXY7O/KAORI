@@ -71,3 +71,21 @@ Each unavailable capability exposes:
 - concrete remediation and an optional validation query.
 
 Prometheus is the second provider using the shared Integration Runtime Framework. Manual Full Validation and scheduled monitoring use the same runtime adapter, health scoring, immutable observations, and history model.
+
+## Consumer boundary
+
+`app/prometheus/consumer.py` is the canonical read boundary for Kubernetes
+Analytics and future asset consumers. It accepts a cluster context, resolves the
+configured Prometheus or Thanos Query endpoint, checks integration readiness and
+required capabilities, and only then executes the query.
+
+The endpoint product is intentionally transparent to analytics. A query may be
+served by direct Prometheus or Thanos Query, but the consumer exposes one source
+contract containing endpoint product, compatibility profile, capability profile,
+readiness, and runtime health.
+
+Confirmed missing or misconfigured capabilities block only operations that
+explicitly require them. A migrated configuration without a capability snapshot
+remains temporarily compatible when its readiness is already `ready`; rerunning
+full validation replaces that compatibility behavior with authoritative
+capability evidence.

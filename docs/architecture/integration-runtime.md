@@ -236,3 +236,8 @@ Template renders the supplied string
 A runtime row may retain the raw value for sorting or internal logic, but the
 Jinja template must render `*_display` fields. Provider adapters and persistence
 remain timezone-neutral; user preferences affect presentation only.
+
+
+## Template normalization rule
+
+Integration Runtime templates render presentation-ready values only. Datetime conversion, canonical-key labels, counters, units, latency strings, and health-score strings are produced in Python. Jinja templates must not call `strftime`, timezone filters, `replace(...).title()`, or construct unit/plural display strings for runtime data. When a touched template still performs such formatting, normalize it in the same change.

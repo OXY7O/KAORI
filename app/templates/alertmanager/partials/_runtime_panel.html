@@ -18,12 +18,12 @@
     </header>
     <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-6">
         {% for label, value in [
-            ('Health', runtime_state.health_status|replace('_',' ')|title),
-            ('Health Score', runtime_state.health_score|string ~ '/100'),
-            ('Readiness', runtime_state.readiness|replace('_',' ')|title),
-            ('Latency', runtime_state.latency_ms|string ~ ' ms' if runtime_state.latency_ms is not none else 'Not observed'),
+            ('Health', runtime_state.health_status_label),
+            ('Health Score', runtime_state.health_score_display),
+            ('Readiness', runtime_state.readiness_label),
+            ('Latency', runtime_state.latency_display),
             ('Capability Profile', runtime_state.capability_profile or 'Not detected'),
-            ('Capabilities', runtime_state.capability_count|string ~ ' observed')
+            ('Capabilities', runtime_state.capability_count_display)
         ] %}
             <div class="min-h-[7.5rem] bg-surface-card p-4">
                 <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-content-tertiary">{{ label }}</p>
@@ -56,7 +56,7 @@
             <div class="rounded-xl border border-brand-outline bg-kaori-soft p-4">
                 <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-kaori-primary">Health interpretation</p>
                 <p class="mt-2 text-sm font-bold text-content-primary">{{ runtime_state.health_summary }}</p>
-                <p class="mt-2 text-xs leading-5 text-content-secondary">Observed {{ runtime_state.observed_at.strftime('%Y-%m-%d %H:%M:%S UTC') if runtime_state.observed_at else 'not yet' }}.</p>
+                <p class="mt-2 text-xs leading-5 text-content-secondary">Observed {{ runtime_state.observed_at_display }}.</p>
             </div>
             {% for factor in runtime_state.factors %}
                 <div class="rounded-xl border border-outline-subtle bg-surface-hover p-3">

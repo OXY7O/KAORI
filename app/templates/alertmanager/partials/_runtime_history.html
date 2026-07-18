@@ -57,20 +57,20 @@
                     {% for row in runtime_history.rows %}
                         <tr class="align-top">
                             <td class="whitespace-nowrap px-5 py-4 text-sm font-semibold text-content-primary sm:px-6">
-                                {{ row.observed_at.strftime('%Y-%m-%d %H:%M:%S UTC') if row.observed_at else 'Unknown' }}
+                                {{ row.observed_at_display }}
                             </td>
                             <td class="px-4 py-4">
                                 {{ status_badge('ready' if row.health_status == 'healthy' else ('degraded' if row.health_status == 'degraded' else 'blocked')) }}
-                                <p class="mt-2 text-xs text-content-secondary">Readiness: {{ row.readiness|replace('_', ' ')|title }}</p>
+                                <p class="mt-2 text-xs text-content-secondary">Readiness: {{ row.readiness_label }}</p>
                             </td>
-                            <td class="px-4 py-4 text-sm font-bold text-content-primary">{{ row.health_score }}/100</td>
-                            <td class="px-4 py-4 text-sm text-content-secondary">{{ row.latency_ms|string ~ ' ms' if row.latency_ms is not none else 'Not observed' }}</td>
+                            <td class="px-4 py-4 text-sm font-bold text-content-primary">{{ row.health_score_display }}</td>
+                            <td class="px-4 py-4 text-sm text-content-secondary">{{ row.latency_display }}</td>
                             <td class="px-4 py-4">
-                                <span class="inline-flex min-h-6 items-center rounded-md border border-outline-default bg-surface-hover px-2 py-1 text-[10px] font-semibold text-content-secondary">{{ row.trigger_type|replace('_', ' ')|title }}</span>
+                                <span class="inline-flex min-h-6 items-center rounded-md border border-outline-default bg-surface-hover px-2 py-1 text-[10px] font-semibold text-content-secondary">{{ row.trigger_type_label }}</span>
                             </td>
                             <td class="px-4 py-4">
                                 <p class="text-sm font-bold text-content-primary">{{ row.capability_profile or 'Not detected' }}</p>
-                                <p class="mt-1 text-xs text-content-secondary">{{ row.capability_count }} observed capabilities</p>
+                                <p class="mt-1 text-xs text-content-secondary">{{ row.capability_count_display }}</p>
                                 {% if row.capability_changed %}
                                     <div class="mt-2 space-y-1 text-xs">
                                         {% if row.added_capabilities %}<p class="font-semibold text-emerald-700">Added: {{ row.added_capabilities|join(', ') }}</p>{% endif %}
