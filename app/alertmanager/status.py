@@ -3,9 +3,9 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 from app.extensions import db
-from app.models.alertmanager import AlertmanagerConfig, AlertmanagerInstance
+from app.models.alertmanager import AlertmanagerInstance
 
-AlertmanagerStatusSource = AlertmanagerInstance | AlertmanagerConfig
+AlertmanagerStatusSource = AlertmanagerInstance
 
 
 def mark_status(

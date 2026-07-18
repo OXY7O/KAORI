@@ -36,7 +36,8 @@ def resolve_kubernetes_for_cluster(cluster: Cluster | str) -> KubernetesAssetRun
 
 def kubeconfig_for_cluster(cluster: Cluster) -> str:
     runtime = resolve_kubernetes_for_cluster(cluster)
-    if runtime is not None:
-        return runtime.connection.kubeconfig
-    # Compatibility fallback during the migration window only.
-    return cluster.kubeconfig
+    if runtime is None or not runtime.connection.kubeconfig:
+        raise RuntimeError(
+            f'No canonical Kubernetes connection is bound to cluster {cluster.id}.'
+        )
+    return runtime.connection.kubeconfig

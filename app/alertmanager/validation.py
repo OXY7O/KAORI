@@ -14,10 +14,10 @@ from app.alertmanager.status import mark_status
 from app.common.integration_errors import describe_integration_failure
 from app.extensions import db
 from app.integrations.compatibility import evaluate_compatibility
-from app.models.alertmanager import AlertmanagerConfig, AlertmanagerInstance
+from app.models.alertmanager import AlertmanagerInstance
 
 logger = logging.getLogger(__name__)
-ValidatableAlertmanager = AlertmanagerInstance | AlertmanagerConfig
+ValidatableAlertmanager = AlertmanagerInstance
 
 
 def validate_source(source: ValidatableAlertmanager, *, source_label: str) -> ValidationResult:

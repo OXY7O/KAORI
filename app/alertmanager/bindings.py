@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 from app.alertmanager.forms import AlertmanagerBindingForm
-from app.alertmanager.repository import find_binding, get_binding, resolve_instances_for_scope
-from app.alertmanager.resolver import resolve_alertmanager_sources
+from app.alertmanager.repository import find_binding, get_binding, list_bindings_for_scope
 from app.extensions import db
-from app.models.alertmanager import AlertmanagerBinding, AlertmanagerInstance
+from app.integrations.lifecycle import ensure_canonical_instance
+from app.models.alertmanager import AlertmanagerInstance
+from app.models.integration import IntegrationBinding
+
+DEFAULT_CAPABILITIES = ['alerts', 'silences', 'routing', 'receivers']
 
 
 def create_or_update_binding(
@@ -12,7 +15,7 @@ def create_or_update_binding(
     instance: AlertmanagerInstance,
     form: AlertmanagerBindingForm,
     commit: bool = True,
-) -> AlertmanagerBinding:
+) -> IntegrationBinding:
     if not form.scope_key:
         raise ValueError('Binding scope is required.')
     if form.binding_role == 'primary':
@@ -22,21 +25,24 @@ def create_or_update_binding(
             scope_key=form.scope_key,
         )
 
+    canonical = ensure_canonical_instance(instance, provider_type='alertmanager')
     binding = find_binding(
         instance_id=instance.id,
         scope_type=form.scope_type,
         scope_key=form.scope_key,
     )
     if binding is None:
-        binding = AlertmanagerBinding()
-        binding.alertmanager_instance_id = instance.id
-        binding.scope_type = form.scope_type
-        binding.scope_key = form.scope_key
+        binding = IntegrationBinding(
+            integration_instance_id=canonical.id,
+            asset_type=form.scope_type,
+            asset_key=str(form.scope_key),
+            binding_role=form.binding_role,
+        )
         db.session.add(binding)
 
-    binding.binding_role = form.binding_role
     binding.priority = form.priority
     binding.enabled = form.enabled
+    binding.capability_scope = DEFAULT_CAPABILITIES
     if commit:
         try:
             db.session.commit()
@@ -48,7 +54,7 @@ def create_or_update_binding(
     return binding
 
 
-def delete_binding(binding_id: int) -> AlertmanagerBinding | None:
+def delete_binding(binding_id: int) -> IntegrationBinding | None:
     binding = get_binding(binding_id)
     if binding is None:
         return None
@@ -61,13 +67,9 @@ def delete_binding(binding_id: int) -> AlertmanagerBinding | None:
     return binding
 
 
-def resolve_sources(
-    *,
-    scope_type: str,
-    scope_key: str,
-    required_capabilities: tuple[str, ...] = (),
-) -> list[AlertmanagerInstance]:
-    """Return ordered eligible instances while preserving the legacy list contract."""
+def resolve_sources(*, scope_type: str, scope_key: str, required_capabilities: tuple[str, ...] = ()) -> list[AlertmanagerInstance]:
+    from app.alertmanager.resolver import resolve_alertmanager_sources
+
     resolution = resolve_alertmanager_sources(
         scope_type=scope_type,
         scope_key=scope_key,
@@ -77,17 +79,14 @@ def resolve_sources(
 
 
 def _ensure_primary_available(*, instance_id: int, scope_type: str, scope_key: str) -> None:
-    for source in resolve_instances_for_scope(scope_type=scope_type, scope_key=scope_key):
-        if source.id == instance_id:
+    for binding in list_bindings_for_scope(scope_type=scope_type, scope_key=scope_key):
+        if binding.binding_role != 'primary' or not binding.enabled:
             continue
-        for binding in source.bindings:
-            if (
-                binding.enabled
-                and binding.scope_type == scope_type
-                and binding.scope_key == scope_key
-                and binding.binding_role == 'primary'
-            ):
-                raise ValueError(
-                    'This scope already has a primary Alertmanager binding. '
-                    'Use secondary/fallback or remove the existing primary binding first.'
-                )
+        provider = AlertmanagerInstance.query.filter_by(
+            integration_instance_id=binding.integration_instance_id,
+        ).first()
+        if provider is not None and provider.id != instance_id:
+            raise ValueError(
+                'This scope already has a primary Alertmanager binding. '
+                'Use secondary/fallback or remove the existing primary binding first.'
+            )

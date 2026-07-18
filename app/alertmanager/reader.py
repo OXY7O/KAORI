@@ -8,9 +8,9 @@ from app.alertmanager.exceptions import AlertmanagerError
 from app.alertmanager.normalizers.alerts import normalize_alerts
 from app.alertmanager.normalizers.silences import normalize_silences
 from app.alertmanager.status import mark_status
-from app.models.alertmanager import AlertmanagerConfig, AlertmanagerInstance
+from app.models.alertmanager import AlertmanagerInstance
 
-ReadableAlertmanager = AlertmanagerInstance | AlertmanagerConfig
+ReadableAlertmanager = AlertmanagerInstance
 
 
 def read_alerts(

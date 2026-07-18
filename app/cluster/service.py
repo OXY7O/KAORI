@@ -10,10 +10,10 @@ from sqlalchemy import func, or_
 
 from app.extensions import db
 from app.integrations.kubernetes import kubeconfig_for_cluster
+from app.alertmanager.resolver import resolve_alertmanager_sources
+from app.prometheus.repository import resolve_instance_for_cluster
 from app.kubernetes.service import test_cluster_connection
 from app.models import (
-    AlertmanagerBinding,
-    AlertmanagerConfig,
     AlertmanagerInstance,
     Cluster,
     ClusterInventory,
@@ -315,37 +315,16 @@ def get_alertmanager_summary(
     cluster_ids: list[str],
 ) -> dict[str, dict[str, Any]]:
     summary: dict[str, dict[str, Any]] = {}
-
-    if not cluster_ids:
-        return summary
-
-    role_rank = {'primary': 0, 'secondary': 1, 'fallback': 2}
-    bindings = (
-        db.session.query(AlertmanagerBinding, AlertmanagerInstance)
-        .join(
-            AlertmanagerInstance,
-            AlertmanagerBinding.alertmanager_instance_id == AlertmanagerInstance.id,
+    for cluster_id in cluster_ids:
+        resolution = resolve_alertmanager_sources(
+            scope_type='kubernetes_cluster',
+            scope_key=cluster_id,
         )
-        .filter(
-            AlertmanagerBinding.scope_type == 'kubernetes_cluster',
-            AlertmanagerBinding.scope_key.in_(cluster_ids),
-            AlertmanagerBinding.enabled.is_(True),
-            AlertmanagerInstance.enabled.is_(True),
-        )
-        .all()
-    )
-    bindings.sort(
-        key=lambda item: (
-            item[0].scope_key,
-            role_rank.get(item[0].binding_role, 9),
-            item[0].priority,
-            item[0].id,
-        )
-    )
-    for binding, instance in bindings:
-        if binding.scope_key in summary:
+        selected = resolution.selected
+        if selected is None:
             continue
-        summary[binding.scope_key] = {
+        instance = selected.instance
+        summary[cluster_id] = {
             'configured': bool(instance.endpoint),
             'connected': instance.last_status == 'connected',
             'status': instance.last_status or 'configured',
@@ -356,24 +335,6 @@ def get_alertmanager_summary(
             'instance_id': instance.id,
             'instance_name': instance.name,
         }
-
-    legacy_cluster_ids = [cluster_id for cluster_id in cluster_ids if cluster_id not in summary]
-    if legacy_cluster_ids:
-        configs = AlertmanagerConfig.query.filter(
-            AlertmanagerConfig.cluster_id.in_(legacy_cluster_ids)
-        ).all()
-        for config in configs:
-            summary[config.cluster_id] = {
-                'configured': bool(config.endpoint),
-                'connected': config.last_status == 'connected',
-                'status': config.last_status or 'configured',
-                'label': config.display_status,
-                'response_time_ms': config.last_response_time_ms,
-                'last_checked_at': config.last_checked_at,
-                'error': config.last_error,
-                'legacy_source': True,
-            }
-
     return summary
 
 
@@ -381,14 +342,8 @@ def get_prometheus_summary(
     clusters: list[Cluster],
 ) -> dict[str, dict[str, Any]]:
     summary: dict[str, dict[str, Any]] = {}
-
     for cluster in clusters:
-        config = getattr(
-            cluster,
-            'prometheus_config',
-            None,
-        )
-
+        config = resolve_instance_for_cluster(cluster.id)
         if config is None:
             summary[cluster.id] = {
                 'configured': False,
@@ -396,21 +351,11 @@ def get_prometheus_summary(
                 'endpoint': None,
             }
             continue
-
-        endpoint = getattr(
-            config,
-            'endpoint',
-            None,
-        )
-
         summary[cluster.id] = {
-            'configured': bool(
-                endpoint,
-            ),
-            'label': 'Configured' if endpoint else 'Not Set',
-            'endpoint': endpoint,
+            'configured': bool(config.endpoint),
+            'label': 'Configured' if config.endpoint else 'Not Set',
+            'endpoint': config.endpoint,
         }
-
     return summary
 
 
@@ -473,10 +418,10 @@ def _sync_kubernetes_runtime(cluster: Cluster, *, kubeconfig: str | None = None)
         connection = KubernetesConnection(
             integration_instance_id=canonical.id,
             cluster_id=cluster.id,
-            kubeconfig=kubeconfig or cluster.kubeconfig,
+            kubeconfig=kubeconfig or '',
         )
         db.session.add(connection)
-    connection.kubeconfig = kubeconfig or connection.kubeconfig or cluster.kubeconfig
+    connection.kubeconfig = kubeconfig or connection.kubeconfig
     connection.verify_ssl = cluster.kube_verify_ssl
     connection.allow_weak_tls = cluster.kube_allow_weak_tls
     connection.server = cluster.server
@@ -528,7 +473,6 @@ def create_cluster(
     cluster.name = name
     cluster.environment = environment
     cluster.description = description
-    cluster.kubeconfig = kubeconfig
     cluster.server = result['server']
     cluster.kube_verify_ssl = kube_verify_ssl
     cluster.kube_allow_weak_tls = kube_allow_weak_tls

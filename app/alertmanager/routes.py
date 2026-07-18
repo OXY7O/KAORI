@@ -303,11 +303,11 @@ def create_binding(instance_id: int) -> ResponseReturnValue:
             status='success',
             title='Alertmanager binding saved',
             message=f'{instance.name} is now available to the selected asset scope.',
-            detail=f'{binding.scope_type}:{binding.scope_key} is mapped as {binding.binding_role}.',
+            detail=f'{binding.asset_type}:{binding.asset_key} is mapped as {binding.binding_role}.',
             metadata={
                 'binding_id': binding.id,
-                'scope_type': binding.scope_type,
-                'scope_key': binding.scope_key,
+                'scope_type': binding.asset_type,
+                'scope_key': binding.asset_key,
                 'binding_role': binding.binding_role,
                 'priority': binding.priority,
             },
@@ -322,7 +322,7 @@ def remove_binding(instance_id: int, binding_id: int) -> ResponseReturnValue:
     if instance is None:
         abort(404)
     binding = get_alertmanager_binding(binding_id)
-    if binding is None or binding.alertmanager_instance_id != instance_id:
+    if binding is None or binding.integration_instance_id != instance.integration_instance_id:
         abort(404)
     removed_binding = remove_alertmanager_binding(binding_id)
     if removed_binding is None:
@@ -334,11 +334,11 @@ def remove_binding(instance_id: int, binding_id: int) -> ResponseReturnValue:
         status='success',
         title='Alertmanager binding removed',
         message=f'{instance.name} is no longer mapped to the selected asset scope.',
-        detail=f'{binding.scope_type}:{binding.scope_key} was removed.',
+        detail=f'{binding.asset_type}:{binding.asset_key} was removed.',
         metadata={
             'binding_id': binding.id,
-            'scope_type': binding.scope_type,
-            'scope_key': binding.scope_key,
+            'scope_type': binding.asset_type,
+            'scope_key': binding.asset_key,
         },
     )
     return redirect(url_for('alertmanager.instance_detail', instance_id=instance_id))

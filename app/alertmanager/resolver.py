@@ -4,7 +4,8 @@ from dataclasses import dataclass
 from typing import Final
 
 from app.integrations.resolver import resolve_integration
-from app.models.alertmanager import AlertmanagerBinding, AlertmanagerInstance
+from app.models.alertmanager import AlertmanagerInstance
+from app.models.integration import IntegrationBinding
 
 _ROLE_ORDER: Final[dict[str, int]] = {
     'primary': 0,
@@ -20,7 +21,7 @@ _FAILED_HEALTH: Final[set[str]] = {'disconnected', 'error', 'incompatible'}
 @dataclass(frozen=True, slots=True)
 class ResolvedAlertmanagerSource:
     instance: AlertmanagerInstance
-    binding: AlertmanagerBinding
+    binding: IntegrationBinding
     eligible: bool
     capability_state: str
     missing_capabilities: tuple[str, ...]
@@ -86,26 +87,20 @@ def resolve_alertmanager_sources(
         asset_key=scope_key,
         required_capabilities=required_capabilities,
     )
-    from app.models.alertmanager import AlertmanagerBinding
-    candidates = []
+    candidates: list[ResolvedAlertmanagerSource] = []
     for item in canonical.candidates:
-        instance = item.instance
         provider_instance = AlertmanagerInstance.query.filter_by(
-            integration_instance_id=instance.id,
+            integration_instance_id=item.instance.id,
         ).first()
         if provider_instance is None:
             continue
-        legacy_binding = AlertmanagerBinding(
-            id=item.binding.id,
-            alertmanager_instance_id=provider_instance.id,
-            scope_type=item.binding.asset_type,
-            scope_key=item.binding.asset_key,
-            binding_role=item.binding.binding_role,
-            priority=item.binding.priority,
-            enabled=item.binding.enabled,
+        candidates.append(
+            _evaluate_binding(
+                item.binding,
+                provider_instance,
+                required_capabilities=required_capabilities,
+            )
         )
-        legacy_binding.instance = provider_instance
-        candidates.append(_evaluate_binding(legacy_binding, required_capabilities=required_capabilities))
     candidates.sort(key=lambda candidate: candidate.score)
     return AlertmanagerSourceResolution(
         scope_type=scope_type,
@@ -116,11 +111,11 @@ def resolve_alertmanager_sources(
 
 
 def _evaluate_binding(
-    binding: AlertmanagerBinding,
+    binding: IntegrationBinding,
+    instance: AlertmanagerInstance,
     *,
     required_capabilities: tuple[str, ...],
 ) -> ResolvedAlertmanagerSource:
-    instance = binding.instance
     readiness = (instance.readiness_status or '').strip().lower()
     health = (instance.last_status or '').strip().lower()
     observed_capabilities = set(instance.capabilities or ())

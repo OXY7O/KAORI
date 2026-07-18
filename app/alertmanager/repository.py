@@ -1,9 +1,12 @@
 from __future__ import annotations
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app.extensions import db
-from app.models.alertmanager import AlertmanagerBinding, AlertmanagerConfig, AlertmanagerInstance
+from app.models.alertmanager import AlertmanagerInstance
+from app.models.integration import IntegrationBinding, IntegrationInstance
+
+PROVIDER_TYPE = 'alertmanager'
 
 
 def list_instances() -> list[AlertmanagerInstance]:
@@ -20,77 +23,80 @@ def get_instance_by_name(name: str) -> AlertmanagerInstance | None:
     return db.session.execute(statement).scalar_one_or_none()
 
 
-def get_legacy_config_by_cluster_id(cluster_id: str) -> AlertmanagerConfig | None:
-    statement = select(AlertmanagerConfig).where(AlertmanagerConfig.cluster_id == cluster_id)
-    return db.session.execute(statement).scalar_one_or_none()
-
-
-def list_bindings_for_instance(instance_id: int) -> list[AlertmanagerBinding]:
+def list_bindings_for_instance(instance_id: int) -> list[IntegrationBinding]:
+    instance = get_instance(instance_id)
+    if instance is None or instance.integration_instance_id is None:
+        return []
     statement = (
-        select(AlertmanagerBinding)
-        .where(AlertmanagerBinding.alertmanager_instance_id == instance_id)
-        .order_by(AlertmanagerBinding.priority.asc(), AlertmanagerBinding.id.asc())
+        select(IntegrationBinding)
+        .where(IntegrationBinding.integration_instance_id == instance.integration_instance_id)
+        .order_by(IntegrationBinding.priority.asc(), IntegrationBinding.id.asc())
     )
     return list(db.session.execute(statement).scalars().all())
 
 
-def get_binding(binding_id: int) -> AlertmanagerBinding | None:
-    return db.session.get(AlertmanagerBinding, binding_id)
-
-
-def list_bindings_for_scope(
-    *,
-    scope_type: str,
-    scope_key: str,
-) -> list[AlertmanagerBinding]:
+def get_binding(binding_id: int) -> IntegrationBinding | None:
     statement = (
-        select(AlertmanagerBinding)
-        .join(AlertmanagerBinding.instance)
+        select(IntegrationBinding)
+        .join(IntegrationBinding.instance)
         .where(
-            AlertmanagerBinding.scope_type == scope_type,
-            AlertmanagerBinding.scope_key == scope_key,
-            AlertmanagerBinding.enabled.is_(True),
-            AlertmanagerInstance.enabled.is_(True),
+            IntegrationBinding.id == binding_id,
+            IntegrationInstance.provider_type == PROVIDER_TYPE,
+        )
+    )
+    return db.session.execute(statement).scalar_one_or_none()
+
+
+def list_bindings_for_scope(*, scope_type: str, scope_key: str) -> list[IntegrationBinding]:
+    statement = (
+        select(IntegrationBinding)
+        .join(IntegrationBinding.instance)
+        .where(
+            IntegrationBinding.asset_type == scope_type,
+            IntegrationBinding.asset_key == str(scope_key),
+            IntegrationBinding.enabled.is_(True),
+            IntegrationInstance.provider_type == PROVIDER_TYPE,
+            IntegrationInstance.enabled.is_(True),
         )
     )
     return list(db.session.execute(statement).scalars().all())
 
 
-def find_binding(
-    *,
-    instance_id: int,
-    scope_type: str,
-    scope_key: str,
-) -> AlertmanagerBinding | None:
-    statement = select(AlertmanagerBinding).where(
-        AlertmanagerBinding.alertmanager_instance_id == instance_id,
-        AlertmanagerBinding.scope_type == scope_type,
-        AlertmanagerBinding.scope_key == scope_key,
+def find_binding(*, instance_id: int, scope_type: str, scope_key: str) -> IntegrationBinding | None:
+    instance = get_instance(instance_id)
+    if instance is None or instance.integration_instance_id is None:
+        return None
+    statement = select(IntegrationBinding).where(
+        IntegrationBinding.integration_instance_id == instance.integration_instance_id,
+        IntegrationBinding.asset_type == scope_type,
+        IntegrationBinding.asset_key == str(scope_key),
     )
     return db.session.execute(statement).scalar_one_or_none()
 
 
-def resolve_instances_for_scope(
-    *,
-    scope_type: str,
-    scope_key: str,
-) -> list[AlertmanagerInstance]:
-    # Compatibility helper. New consumers should use
-    # alertmanager.resolver.resolve_alertmanager_sources().
+def provider_instance_for_binding(binding: IntegrationBinding) -> AlertmanagerInstance | None:
+    return AlertmanagerInstance.query.filter_by(
+        integration_instance_id=binding.integration_instance_id,
+    ).first()
+
+
+def resolve_instances_for_scope(*, scope_type: str, scope_key: str) -> list[AlertmanagerInstance]:
     role_order = {'primary': 0, 'secondary': 1, 'fallback': 2}
     bindings = list_bindings_for_scope(scope_type=scope_type, scope_key=scope_key)
-    bindings.sort(
-        key=lambda item: (
-            role_order.get(item.binding_role, 9),
-            item.priority,
-            item.id,
-        )
-    )
-    return [binding.instance for binding in bindings]
+    bindings.sort(key=lambda item: (role_order.get(item.binding_role, 9), item.priority, item.id))
+    instances: list[AlertmanagerInstance] = []
+    for binding in bindings:
+        instance = provider_instance_for_binding(binding)
+        if instance is not None:
+            instances.append(instance)
+    return instances
 
 
 def count_bindings_by_scope_type() -> dict[str, int]:
-    counts: dict[str, int] = {}
-    for binding in db.session.execute(select(AlertmanagerBinding)).scalars():
-        counts[binding.scope_type] = counts.get(binding.scope_type, 0) + 1
-    return counts
+    statement = (
+        select(IntegrationBinding.asset_type, func.count(IntegrationBinding.id))
+        .join(IntegrationBinding.instance)
+        .where(IntegrationInstance.provider_type == PROVIDER_TYPE)
+        .group_by(IntegrationBinding.asset_type)
+    )
+    return {scope_type: int(count) for scope_type, count in db.session.execute(statement).all()}

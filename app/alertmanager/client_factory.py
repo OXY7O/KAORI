@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from app.alertmanager.client import AlertmanagerClient
 from app.alertmanager.contracts import AlertmanagerConnectionSpec
-from app.models.alertmanager import AlertmanagerConfig, AlertmanagerInstance
+from app.models.alertmanager import AlertmanagerInstance
 
-AlertmanagerConnectionSource = AlertmanagerInstance | AlertmanagerConfig
+AlertmanagerConnectionSource = AlertmanagerInstance
 
 
 def connection_spec(source: AlertmanagerConnectionSource) -> AlertmanagerConnectionSpec:

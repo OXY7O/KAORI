@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from app.alertmanager.capabilities import CAPABILITIES, CAPABILITY_BY_KEY
-from app.alertmanager.repository import count_bindings_by_scope_type, list_instances
+from app.alertmanager.repository import count_bindings_by_scope_type, list_bindings_for_instance, list_instances
 from app.alertmanager.requirements import evaluate_module_readiness
 from app.alertmanager.resolver import AlertmanagerSourceResolution, resolve_alertmanager_sources
 from app.alertmanager.runtime_adapter import runtime_adapter
@@ -11,7 +11,8 @@ from app.alertmanager.sanitization import safe_endpoint
 from app.extensions import db
 from app.integrations.runtime.presentation import runtime_history_view, runtime_state_view
 from app.integrations.runtime.repository import paginate_runtime_history
-from app.models.alertmanager import AlertmanagerBinding, AlertmanagerInstance
+from app.models.alertmanager import AlertmanagerInstance
+from app.models.integration import IntegrationBinding
 from app.models.cluster import Cluster
 
 
@@ -60,7 +61,8 @@ def build_inventory_context(
 
 
 def build_instance_context(instance: AlertmanagerInstance | None = None) -> dict[str, Any]:
-    clusters = Cluster.query.order_by(Cluster.name.asc()).all()
+    clusters = Cluster.query.order_by(Cluster.created_at.asc(), Cluster.id.asc()).all()
+    bindings = list_bindings_for_instance(instance.id) if instance else []
     observed_capabilities = set(instance.capabilities or []) if instance else set()
     capability_rows = [
         {
@@ -75,8 +77,8 @@ def build_instance_context(instance: AlertmanagerInstance | None = None) -> dict
     ]
     return {
         'instance': instance,
-        'bindings': list(instance.bindings) if instance is not None else [],
-        'binding_rows': [_binding_row(binding) for binding in instance.bindings] if instance else [],
+        'bindings': bindings,
+        'binding_rows': [_binding_row(binding) for binding in bindings],
         'clusters': clusters,
         'capability_rows': capability_rows,
         'module_readiness_rows': evaluate_module_readiness(observed_capabilities),
@@ -84,7 +86,7 @@ def build_instance_context(instance: AlertmanagerInstance | None = None) -> dict
         'runtime_state': runtime_state_view(runtime_adapter.get_state(instance)) if instance else None,
         'runtime_history': build_runtime_history_context(instance) if instance else None,
         'stats': {
-            'bindings': len(instance.bindings) if instance else 0,
+            'bindings': len(bindings),
             'ready': bool(instance and instance.readiness_status == 'ready'),
             'capabilities': len(observed_capabilities),
         },
@@ -102,8 +104,8 @@ def _instance_row(instance: AlertmanagerInstance) -> dict[str, Any]:
         'readiness': readiness,
         'profile': instance.compatibility_profile,
         'deployment_type': instance.deployment_type,
-        'binding_count': len(instance.bindings),
-        'scope_types': sorted({binding.scope_type for binding in instance.bindings if binding.enabled}),
+        'binding_count': len(list_bindings_for_instance(instance.id)),
+        'scope_types': sorted({binding.asset_type for binding in list_bindings_for_instance(instance.id) if binding.enabled}),
         'search_text': ' '.join(
             filter(
                 None,
@@ -118,16 +120,16 @@ def _instance_row(instance: AlertmanagerInstance) -> dict[str, Any]:
     }
 
 
-def _binding_row(binding: AlertmanagerBinding) -> dict[str, Any]:
-    label = binding.scope_key
-    if binding.scope_type == 'kubernetes_cluster':
-        cluster = db.session.get(Cluster, binding.scope_key)
+def _binding_row(binding: IntegrationBinding) -> dict[str, Any]:
+    label = binding.asset_key
+    if binding.asset_type == 'kubernetes_cluster':
+        cluster = db.session.get(Cluster, binding.asset_key)
         if cluster is not None:
             label = cluster.name
     return {
         'binding': binding,
         'scope_label': label,
-        'scope_type_label': binding.scope_type.replace('_', ' ').title(),
+        'scope_type_label': binding.asset_type.replace('_', ' ').title(),
     }
 
 
@@ -163,26 +165,26 @@ def _paginate(
 def _source_resolution_rows(instance: AlertmanagerInstance) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     seen_scopes: set[tuple[str, str]] = set()
-    for binding in instance.bindings:
-        scope = (binding.scope_type, binding.scope_key)
+    for binding in list_bindings_for_instance(instance.id):
+        scope = (binding.asset_type, binding.asset_key)
         if scope in seen_scopes:
             continue
         seen_scopes.add(scope)
         alerts_resolution = resolve_alertmanager_sources(
-            scope_type=binding.scope_type,
-            scope_key=binding.scope_key,
+            scope_type=binding.asset_type,
+            scope_key=binding.asset_key,
             required_capabilities=('alerts_v2',),
         )
         silences_resolution = resolve_alertmanager_sources(
-            scope_type=binding.scope_type,
-            scope_key=binding.scope_key,
+            scope_type=binding.asset_type,
+            scope_key=binding.asset_key,
             required_capabilities=('silences_v2',),
         )
         rows.append({
-            'scope_type': binding.scope_type,
-            'scope_type_label': binding.scope_type.replace('_', ' ').title(),
-            'scope_key': binding.scope_key,
-            'scope_label': _scope_label(binding.scope_type, binding.scope_key),
+            'scope_type': binding.asset_type,
+            'scope_type_label': binding.asset_type.replace('_', ' ').title(),
+            'scope_key': binding.asset_key,
+            'scope_label': _scope_label(binding.asset_type, binding.asset_key),
             'alerts': _resolution_view(alerts_resolution, current_instance_id=instance.id),
             'silences': _resolution_view(silences_resolution, current_instance_id=instance.id),
         })
