@@ -15,9 +15,9 @@
     {% set section_summary = 'Review your KAORI profile, authoritative identity source, authorization role, lifecycle state, and most recent verified sign-in.' %}
     {% set section_boundary = 'The provider verifies identity while KAORI applies account lifecycle, RBAC authorization, administrative safeguards, and personal presentation settings.' %}
 {% endif %}
-<section class="relative overflow-hidden rounded-2xl border border-brand-outline bg-kaori-primary p-5 text-brand-foreground shadow-sm lg:p-6">
-    <div class="relative grid gap-5 xl:grid-cols-12 xl:items-stretch">
-        <div class="flex min-w-0 flex-col justify-center xl:col-span-8">
+<section class="{{ page_hero.shell_classes() }}">
+    <div class="{{ page_hero.layout_classes() }}">
+        <div class="{{ page_hero.content_classes() }}">
             {% call page_hero.intro(section_icon, section_eyebrow, 'user-round-cog') %}
                 <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">
                     Account & Authentication
@@ -34,8 +34,8 @@
             {% endcall %}
         </div>
 
-        <aside class="xl:col-span-4">
-            <div class="flex h-full flex-col justify-between rounded-xl border border-brand-outline bg-brand-surface p-4 backdrop-blur">
+        <aside class="{{ page_hero.aside_classes() }}">
+            <div class="flex h-full min-h-[12rem] flex-col justify-between rounded-xl border border-brand-outline bg-brand-surface p-4 backdrop-blur">
                 <div>
                     <p class="text-xs font-semibold uppercase tracking-widest text-brand-foreground-muted">Current section boundary</p>
                     <p class="mt-2 text-sm font-semibold leading-6 text-brand-foreground">{{ section_boundary }}</p>

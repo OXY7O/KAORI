@@ -22,9 +22,9 @@
     <div class="space-y-6" x-data="{ query: '', type: 'all', status: 'all', page: 1, perPage: 5, roles: [
         {% for role in roles %} { id: {{ role.id }}, type: {{ ('system' if role.is_system else 'custom')|tojson|forceescape }}, status: {{ ('active' if role.is_active else 'inactive')|tojson|forceescape }}, search: {{ ((role.display_name or '') ~ ' ' ~ (role.name or '') ~ ' ' ~ (role.description or ''))|lower|tojson|forceescape }} }{{ ',' if not loop.last else '' }} {% endfor %}
         ], filtered() { const term = this.query.trim().toLowerCase(); return this.roles.filter((role) => { const queryMatch = !term || role.search.includes(term); const typeMatch = this.type === 'all' || role.type === this.type; const statusMatch = this.status === 'all' || role.status === this.status; return queryMatch && typeMatch && statusMatch; }); }, pages() { return Math.max(1, Math.ceil(this.filtered().length / this.perPage)); }, visible(roleId) { const index = this.filtered().findIndex((role) => role.id === Number(roleId)); const start = (this.page - 1) * this.perPage; return index >= start && index < start + this.perPage; }, start() { return this.filtered().length ? ((this.page - 1) * this.perPage) + 1 : 0; }, end() { return Math.min(this.page * this.perPage, this.filtered().length); }, resetPage() { this.page = 1; }, normalizePage() { if (this.page > this.pages()) this.page = this.pages(); } }">
-        <section class="relative overflow-hidden rounded-2xl border border-brand-outline bg-kaori-primary p-5 text-brand-foreground shadow-sm lg:p-6">
-            <div class="relative grid gap-5 xl:grid-cols-12 xl:items-stretch">
-                <div class="flex min-w-0 flex-col justify-center xl:col-span-8">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('shield-check', 'Access management', 'key-round') %}
                         <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">Roles &amp; Access</h1>
                         <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">
@@ -37,7 +37,7 @@
                         </div>
                     {% endcall %}
                 </div>
-                <aside class="xl:col-span-4" aria-label="Role management actions">
+                <aside class="{{ page_hero.aside_classes() }}" aria-label="Role management actions">
                     <div class="flex h-full min-h-[12rem] flex-col rounded-xl border border-brand-outline bg-brand-surface-strong p-4 backdrop-blur-md">
                         <div>
                             <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Role lifecycle</p>
@@ -304,7 +304,10 @@
                         <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="workflow" class="h-5 w-5"></i></span>
                         <div>
                             <h2 class="text-base font-bold text-content-primary">Role model</h2>
-                            <p class="mt-1 text-sm leading-6 text-content-muted">One active role maps to each user. Super Admin remains a separate emergency authority flag and is not a normal role.</p>
+                            <div class="mt-3 flex gap-2.5 rounded-xl border border-brand-outline bg-kaori-soft px-3.5 py-3 text-sm leading-6 text-kaori-primary">
+                                <i data-lucide="shield-alert" class="mt-0.5 h-4 w-4 shrink-0"></i>
+                                <p>One active role maps to each user. Super Admin remains a separate emergency authority flag and is not a normal role.</p>
+                            </div>
                         </div>
                     </div>
                     <div class="mt-4 space-y-3 text-sm leading-5 text-content-secondary">

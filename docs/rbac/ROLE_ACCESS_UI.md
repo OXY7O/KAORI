@@ -7,8 +7,9 @@ Roles & Access and Permission Catalog follow **KAORI Violet Infrastructure** and
 Required visual rules:
 
 - use semantic Tailwind tokens from `frontend/styles.css`;
-- use the shared `components/page_hero.html` introduction macro;
+- use the shared shell, layout, content, aside, and introduction macros from `components/page_hero.html`;
 - use a solid `bg-kaori-primary` authenticated hero;
+- Settings and Access heroes use the same `min-h-[15rem]` shell, `min-h-[12rem]` grid, 8/4 desktop layout, title scale, padding, and 12rem minimum context panel;
 - do not use gradients or raw hex colors;
 - use violet for product identity and selection;
 - use semantic green/amber/red/slate only for actual state;
@@ -42,7 +43,7 @@ Role registry
   - lifecycle actions
 
 Context rail
-  - role model explanation
+  - role model explanation in a violet distinction block
   - default role coverage
   - Permission Catalog boundary
 ```
@@ -90,6 +91,15 @@ Permission Catalog is read-only and should answer:
 - that permission creation is a code change.
 
 It must not offer rename, delete, inline edit, or direct role mutation controls.
+
+The registry uses the global KAORI pagination contract because permission volume is expected to grow:
+
+- default `5` permission cards per page;
+- selectable `5`, `10`, `25`, and `50`;
+- search and module filters reset to page 1;
+- pagination operates on effective filtered permissions while retaining module grouping;
+- empty filtered results show an explicit no-match state;
+- the authorization boundary explanation is presented in a violet distinction block.
 
 ## 7. Copy standards
 

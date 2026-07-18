@@ -12,10 +12,73 @@
         {{ module_label(permission.module or permission.key.split('.')[0] ) }} · {{ action_label(permission.action or permission.key.split('.')[-1] ) }}
     {%- endmacro %}
     <div class="space-y-6"
-         x-data="{ search: '', moduleFilter: 'all', expanded: {}, isExpanded(moduleName) { return Boolean(this.expanded[moduleName]) || this.search.trim() !== ''; }, toggle(moduleName) { this.expanded[moduleName] = !this.expanded[moduleName]; }, toggleAll() { const names = {{ permissions_by_module.keys() |list|tojson|forceescape }}; const next = !names.every((name) => Boolean(this.expanded[name])); names.forEach((name) => { this.expanded[name] = next; }); } }">
-        <section class="relative overflow-hidden rounded-2xl border border-brand-outline bg-kaori-primary p-5 text-brand-foreground shadow-sm lg:p-6">
-            <div class="relative grid gap-5 xl:grid-cols-12 xl:items-stretch">
-                <div class="flex min-w-0 flex-col justify-center xl:col-span-8">
+         x-data="{
+             search: '',
+             moduleFilter: 'all',
+             expanded: {},
+             page: 1,
+             perPage: 5,
+             modules: {{ permissions_by_module.keys() |list|tojson|forceescape }},
+             permissions: [
+                 {% for permission in permissions %}
+                     {
+                         key: {{ permission.key|tojson|forceescape }},
+                         module: {{ (permission.module or permission.key.split('.')[0])|tojson|forceescape }},
+                         search: {{ ((permission.key ~ ' ' ~ (permission.description or '') ~ ' ' ~ (permission.action or '') ~ ' ' ~ (permission.module or permission.key.split('.')[0]))|lower)|tojson|forceescape }}
+                     }{{ ',' if not loop.last else '' }}
+                 {% endfor %}
+             ],
+             init() {
+                 this.modules.forEach((name) => { this.expanded[name] = true; });
+             },
+             filtered() {
+                 const term = this.search.trim().toLowerCase();
+                 return this.permissions.filter((permission) => {
+                     const queryMatch = !term || permission.search.includes(term);
+                     const moduleMatch = this.moduleFilter === 'all' || permission.module === this.moduleFilter;
+                     return queryMatch && moduleMatch;
+                 });
+             },
+             pages() {
+                 return Math.max(1, Math.ceil(this.filtered().length / this.perPage));
+             },
+             pageItems() {
+                 const start = (this.page - 1) * this.perPage;
+                 return this.filtered().slice(start, start + this.perPage);
+             },
+             visible(permissionKey) {
+                 return this.pageItems().some((permission) => permission.key === permissionKey);
+             },
+             visibleInModule(moduleName) {
+                 return this.pageItems().some((permission) => permission.module === moduleName);
+             },
+             moduleFilteredCount(moduleName) {
+                 return this.filtered().filter((permission) => permission.module === moduleName).length;
+             },
+             start() {
+                 return this.filtered().length ? ((this.page - 1) * this.perPage) + 1 : 0;
+             },
+             end() {
+                 return Math.min(this.page * this.perPage, this.filtered().length);
+             },
+             resetPage() {
+                 this.page = 1;
+                 if (this.moduleFilter !== 'all') this.expanded[this.moduleFilter] = true;
+             },
+             isExpanded(moduleName) {
+                 return Boolean(this.expanded[moduleName]) || this.search.trim() !== '';
+             },
+             toggle(moduleName) {
+                 this.expanded[moduleName] = !this.expanded[moduleName];
+             },
+             toggleAll() {
+                 const next = !this.modules.every((name) => Boolean(this.expanded[name]));
+                 this.modules.forEach((name) => { this.expanded[name] = next; });
+             }
+         }">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('book-key', 'RBAC registry', 'key-round') %}
                         <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">Permission Catalog</h1>
                         <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">
@@ -28,7 +91,7 @@
                         </div>
                     {% endcall %}
                 </div>
-                <aside class="xl:col-span-4" aria-label="Permission registry policy">
+                <aside class="{{ page_hero.aside_classes() }}" aria-label="Permission registry policy">
                     <div class="flex h-full min-h-[12rem] flex-col rounded-xl border border-brand-outline bg-brand-surface-strong p-4 backdrop-blur-md">
                         <div class="flex items-start justify-between gap-3">
                             <div>
@@ -80,11 +143,13 @@
                                 <i data-lucide="search"
                                    class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"></i>
                                 <input x-model="search"
+                                       @input="resetPage()"
                                        type="search"
                                        placeholder="Search permission..."
                                        class="h-10 w-full rounded-lg border border-outline-default bg-surface-card pl-9 pr-3 text-sm font-medium text-content-primary outline-none placeholder:text-content-muted focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                             </label>
                             <select x-model="moduleFilter"
+                                    @change="resetPage()"
                                     class="h-10 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                                 <option value="all">All modules</option>
                                 {% for module_name in permissions_by_module.keys() %}
@@ -101,7 +166,8 @@
                 </header>
                 <div class="divide-y divide-outline-default">
                     {% for module_name, module_permissions in permissions_by_module.items() %}
-                        <section x-show="moduleFilter === 'all' || moduleFilter === {{ module_name|tojson|forceescape }}">
+                        <section x-show="visibleInModule({{ module_name|tojson|forceescape }})"
+                                 x-cloak>
                             <button type="button"
                                     @click="toggle({{ module_name|tojson|forceescape }})"
                                     class="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition hover:bg-surface-hover">
@@ -116,7 +182,7 @@
                                     </div>
                                 </div>
                                 <div class="flex shrink-0 items-center gap-2">
-                                    <span class="rounded-md bg-kaori-soft px-2.5 py-1 text-xs font-semibold text-kaori-primary">{{ module_permissions|length }} items</span>
+                                    <span class="rounded-md bg-kaori-soft px-2.5 py-1 text-xs font-semibold text-kaori-primary"><span x-text="moduleFilteredCount({{ module_name|tojson|forceescape }})"></span> matching</span>
                                     <span class="flex h-9 w-9 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-muted"><i data-lucide="chevron-down"
    class="h-4 w-4 transition-transform"
    :class="isExpanded({{ module_name|tojson|forceescape }}) ? 'rotate-180' : ''"></i></span>
@@ -127,7 +193,8 @@
                                  class="grid gap-3 border-t border-outline-default bg-surface-subtle p-5 lg:grid-cols-2">
                                 {% for permission in module_permissions %}
                                     {% set role_usage = permission.role_permissions|map(attribute='role')|list %}
-                                    <article x-show="search.trim() === '' || {{ ((permission.key ~ ' ' ~ (permission.description or '') ~ ' ' ~ permission.action ~ ' ' ~ module_name)|lower)|tojson|forceescape }}.includes(search.toLowerCase())"
+                                    <article x-show="visible({{ permission.key|tojson|forceescape }})"
+                                             x-cloak
                                              class="rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm transition hover:border-brand-outline">
                                         <div class="flex flex-wrap items-center justify-between gap-2">
                                             <h4 class="text-sm font-bold text-content-primary">{{ permission_title(permission) }}</h4>
@@ -155,7 +222,45 @@
                             </div>
                         </section>
                     {% endfor %}
+                    <div x-show="filtered().length === 0"
+                         x-cloak
+                         class="px-5 py-12 text-center">
+                        <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-surface-subtle text-content-muted"><i data-lucide="search-x" class="h-6 w-6"></i></span>
+                        <h3 class="mt-3 text-sm font-bold text-content-primary">No matching permissions</h3>
+                        <p class="mt-1 text-sm text-content-muted">Adjust the permission search or module filter.</p>
+                    </div>
                 </div>
+                <footer class="flex flex-col gap-3 border-t border-outline-default px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex items-center gap-3 text-sm text-content-muted">
+                        <span>Showing <strong class="text-content-primary" x-text="start()"></strong>–<strong class="text-content-primary" x-text="end()"></strong> of <strong class="text-content-primary" x-text="filtered().length"></strong></span>
+                        <label class="inline-flex items-center gap-2">
+                            <span class="text-xs">Rows</span>
+                            <select x-model.number="perPage"
+                                    @change="resetPage()"
+                                    class="h-9 rounded-lg border border-outline-default bg-surface-card px-2 text-sm font-medium text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                                <option value="5">5</option>
+                                <option value="10">10</option>
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button type="button"
+                                @click="page = Math.max(1, page - 1)"
+                                :disabled="page <= 1"
+                                class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-secondary transition hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50">
+                            <i data-lucide="chevron-left" class="h-4 w-4"></i>Previous
+                        </button>
+                        <span class="min-w-20 text-center text-sm font-semibold text-content-muted">Page <span x-text="page"></span> / <span x-text="pages()"></span></span>
+                        <button type="button"
+                                @click="page = Math.min(pages(), page + 1)"
+                                :disabled="page >= pages()"
+                                class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-secondary transition hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50">
+                            Next<i data-lucide="chevron-right" class="h-4 w-4"></i>
+                        </button>
+                    </div>
+                </footer>
             </div>
             <aside class="space-y-5">
                 <section class="rounded-2xl border border-outline-default bg-surface-card p-5 shadow-sm">
@@ -163,7 +268,10 @@
                         <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="route" class="h-5 w-5"></i></span>
                         <div>
                             <h2 class="text-base font-bold text-content-primary">Authorization contract</h2>
-                            <p class="mt-1 text-sm leading-6 text-content-muted">Server-side permission checks remain authoritative. Navigation visibility and disabled controls are usability layers, not security boundaries.</p>
+                            <div class="mt-3 flex gap-2.5 rounded-xl border border-brand-outline bg-kaori-soft px-3.5 py-3 text-sm leading-6 text-kaori-primary">
+                                <i data-lucide="shield-check" class="mt-0.5 h-4 w-4 shrink-0"></i>
+                                <p>Server-side permission checks remain authoritative. Navigation visibility and disabled controls are usability layers, not security boundaries.</p>
+                            </div>
                         </div>
                     </div>
                     <div class="mt-4 space-y-3 text-sm leading-5 text-content-secondary">

@@ -52,9 +52,9 @@
     <div class="space-y-6" x-data="{ search: '', selected: [], expanded: {}, sync() { this.selected = Array.from(document.querySelectorAll('[data-role-permission]:checked')).map((item) => ({ id: item.value, label: item.dataset.label, module: item.dataset.module })); }, toggleModule(moduleName) { const items = Array.from(document.querySelectorAll(`[data-role-permission][data-module='${moduleName}']`)).filter((item) => !item.disabled); const shouldSelect = items.some((item) => !item.checked); items.forEach((item) => { item.checked = shouldSelect; }); this.sync(); }, moduleSelected(moduleName) { const items = Array.from(document.querySelectorAll(`[data-role-permission][data-module='${moduleName}']`)); return items.length > 0 && items.every((item) => item.checked); }, toggleExpanded(moduleName) { this.expanded[moduleName] = !this.expanded[moduleName]; }, isExpanded(moduleName) { return this.search.trim() !== '' || this.expanded[moduleName] !== false; } }" x-init="
         {% for module_name in permissions_by_module.keys() %}expanded[{{ module_name|tojson|forceescape }}] = true;{% endfor %}
         sync()">
-        <section class="relative overflow-hidden rounded-2xl border border-brand-outline bg-kaori-primary p-5 text-brand-foreground shadow-sm lg:p-6">
-            <div class="relative grid gap-5 xl:grid-cols-12 xl:items-stretch">
-                <div class="flex min-w-0 flex-col justify-center xl:col-span-8">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('shield-check', 'Access management', 'user-cog') %}
                         <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">
                             {% if page_mode == 'clone' %}
@@ -88,7 +88,7 @@
                         </div>
                     {% endcall %}
                 </div>
-                <aside class="xl:col-span-4" aria-label="Role state">
+                <aside class="{{ page_hero.aside_classes() }}" aria-label="Role state">
                     <div class="flex h-full min-h-[12rem] flex-col rounded-xl border border-brand-outline bg-brand-surface-strong p-4 backdrop-blur-md">
                         <div class="flex items-start justify-between gap-3">
                             <div>

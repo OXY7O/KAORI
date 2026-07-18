@@ -6,9 +6,9 @@
          x-data="{ activeAuditWorkspaceTab: 'retention', openAuditSnapshot() { this.activeAuditWorkspaceTab = 'snapshot'; this.$nextTick(() => document.getElementById('operational-activity-table')?.scrollIntoView({ behavior: 'smooth', block: 'start' })); } }">
         {% import "components/page_hero.html" as page_hero %}
         {% import "components/table_label.html" as table_label %}
-        <section class="relative overflow-hidden rounded-2xl border border-brand-outline bg-kaori-primary p-5 text-brand-foreground shadow-sm lg:p-6">
-            <div class="relative grid gap-5 xl:grid-cols-12 xl:items-stretch">
-                <div class="flex min-w-0 flex-col justify-center xl:col-span-8">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('history', 'Administrative activity audit', 'shield-check') %}
                         <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">Activity Audit Log</h1>
                         <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">Review cross-user actions, background jobs, operational outcomes, and recorded execution context from one administrative audit workspace.</p>
@@ -20,8 +20,8 @@
                         </div>
                     {% endcall %}
                 </div>
-                <aside class="xl:col-span-4" aria-label="Activity review posture">
-                    <div class="flex h-full min-h-[10rem] flex-col rounded-xl border border-brand-outline bg-brand-surface p-4 backdrop-blur-md">
+                <aside class="{{ page_hero.aside_classes() }}" aria-label="Activity review posture">
+                    <div class="flex h-full min-h-[12rem] flex-col rounded-xl border border-brand-outline bg-brand-surface p-4 backdrop-blur-md">
                         <div class="flex items-start justify-between gap-4">
                             <div class="min-w-0">
                                 <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Review posture</p>

@@ -3,9 +3,9 @@
 {% block dashboard_content %}
     <div class="space-y-6">
         {% import "components/page_hero.html" as page_hero %}
-        <section class="relative overflow-hidden rounded-2xl border border-brand-outline bg-kaori-primary p-5 text-brand-foreground shadow-sm lg:p-6">
-            <div class="relative grid gap-5 xl:grid-cols-12 xl:items-stretch">
-                <div class="flex min-w-0 flex-col justify-center xl:col-span-8">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('user-cog', 'Access Administration', 'user-plus' if mode == 'create' else 'pencil-line') %}
                         <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">
                             {{ 'Add User' if mode == 'create' else 'Edit User' }}
@@ -27,8 +27,8 @@
                         </div>
                     {% endcall %}
                 </div>
-                <aside class="xl:col-span-4">
-                    <div class="flex h-full flex-col justify-between rounded-xl border border-brand-outline bg-brand-surface p-4 backdrop-blur">
+                <aside class="{{ page_hero.aside_classes() }}">
+                    <div class="flex h-full min-h-[12rem] flex-col justify-between rounded-xl border border-brand-outline bg-brand-surface p-4 backdrop-blur">
                         <div>
                             <p class="text-xs font-semibold uppercase tracking-widest text-brand-foreground-muted">
                                 {{ 'Account creation paths' if mode == 'create' else 'Administrative update' }}

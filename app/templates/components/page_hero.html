@@ -1,3 +1,19 @@
+{% macro shell_classes() -%}
+relative min-h-[15rem] overflow-hidden rounded-2xl border border-brand-outline bg-kaori-primary p-5 text-brand-foreground shadow-sm lg:p-6
+{%- endmacro %}
+
+{% macro layout_classes() -%}
+relative grid min-h-[12rem] gap-5 xl:grid-cols-12 xl:items-stretch
+{%- endmacro %}
+
+{% macro content_classes() -%}
+flex min-w-0 flex-col justify-center xl:col-span-8
+{%- endmacro %}
+
+{% macro aside_classes() -%}
+min-w-0 xl:col-span-4
+{%- endmacro %}
+
 {% macro eyebrow(icon, label) -%}
     <div class="inline-flex min-h-8 w-fit items-center gap-2 rounded-lg border border-brand-outline bg-brand-surface px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-brand-foreground backdrop-blur">
         <i data-lucide="{{ icon }}" class="h-4 w-4 shrink-0" aria-hidden="true"></i>

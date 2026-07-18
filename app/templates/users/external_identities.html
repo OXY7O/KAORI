@@ -6,9 +6,9 @@
     {% set has_ldap_providers = ldap_provider_count > 0 %}
 
     <div class="space-y-6">
-        <section class="relative overflow-hidden rounded-2xl border border-brand-outline bg-kaori-primary p-5 text-brand-foreground shadow-sm lg:p-6">
-            <div class="relative grid gap-5 xl:grid-cols-12 xl:items-stretch">
-                <div class="flex min-w-0 flex-col justify-center xl:col-span-8">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('network', 'Identity Administration', 'contact-round') %}
                         <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">
                             LDAP Directory Provisioning
@@ -24,8 +24,8 @@
                     {% endcall %}
                 </div>
 
-                <aside class="xl:col-span-4">
-                    <div class="flex h-full min-h-[9rem] flex-col justify-between rounded-xl border border-brand-outline bg-brand-surface-strong p-4 backdrop-blur-md">
+                <aside class="{{ page_hero.aside_classes() }}">
+                    <div class="flex h-full min-h-[12rem] flex-col justify-between rounded-xl border border-brand-outline bg-brand-surface-strong p-4 backdrop-blur-md">
                         <div>
                             <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Directory boundary</p>
                             <p class="mt-1 text-sm font-semibold text-brand-foreground">Provider configuration controls discovery</p>

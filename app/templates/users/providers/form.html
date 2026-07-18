@@ -7,9 +7,9 @@
     {% set selected_type = form.provider_type.data or 'ldap' %}
     {% set selected_label = 'LDAP / Active Directory' if selected_type == 'ldap' else ('Google OpenID Connect' if selected_type == 'google_oidc' else 'GitHub OAuth') %}
     <div class="space-y-6" data-provider-form-page>
-        <section class="relative overflow-hidden rounded-2xl border border-brand-outline bg-kaori-primary p-5 text-brand-foreground shadow-sm lg:p-6">
-            <div class="relative grid gap-5 xl:grid-cols-12 xl:items-stretch">
-                <div class="flex min-w-0 flex-col justify-center xl:col-span-8">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('fingerprint', 'Identity Administration', 'badge-plus') %}
                         <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">
                             {{ 'Edit' if provider else 'Add' }} Identity Provider
@@ -24,8 +24,8 @@
                         </div>
                     {% endcall %}
                 </div>
-                <div class="xl:col-span-4">
-                    <div class="flex h-full flex-col justify-between rounded-xl border border-brand-outline bg-brand-surface p-4 backdrop-blur">
+                <div class="{{ page_hero.aside_classes() }}">
+                    <div class="flex h-full min-h-[12rem] flex-col justify-between rounded-xl border border-brand-outline bg-brand-surface p-4 backdrop-blur">
                         <div>
                             <p class="text-xs font-semibold uppercase tracking-widest text-brand-foreground-muted">Configuration sequence</p>
                             <p class="mt-2 text-sm font-semibold leading-6 text-brand-foreground">

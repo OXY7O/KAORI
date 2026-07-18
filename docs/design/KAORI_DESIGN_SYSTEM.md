@@ -232,14 +232,18 @@ The authenticated application shell uses a floating, rounded navigation model ra
 
 ## Shared hero component
 
-`app/templates/components/page_hero.html` is the authoritative implementation for authenticated hero introductions.
+`app/templates/components/page_hero.html` is the authoritative implementation for authenticated hero structure and introductions.
 
+- Use `page_hero.shell_classes()` for the outer authenticated hero surface.
+- Use `page_hero.layout_classes()` for the standard 8/4 desktop grid and shared height contract.
+- Use `page_hero.content_classes()` and `page_hero.aside_classes()` for the primary and supporting columns.
 - Use `page_hero.intro(eyebrow_icon, eyebrow_label, leading_icon)` whenever a hero has an eyebrow and a leading icon.
-- The component owns the eyebrow radius, height, padding, icon sizing, column width, and horizontal gap.
-- Page templates own only the title, optional role/subtitle, description, notice, and badges rendered inside the macro caller.
+- The standard Settings and Access hero shell uses `min-h-[15rem]`; its grid and right context panel use a 12rem minimum height. Content may grow naturally when copy or controls require more space.
+- The component owns the outer radius, border, solid brand surface, responsive padding, eyebrow geometry, icon sizing, column width, and horizontal gap.
+- Page templates own only the title, optional role/subtitle, description, notice, badges, and context-panel content.
 - Do not apply manual left margin or padding to compensate for the leading icon.
 - Do not use `rounded-full` for hero eyebrows. Pills remain reserved for compact statuses, badges, filters, and metadata chips.
-- Changes to hero eyebrow geometry or alignment must be made in the shared component first, then validated on Welcome and Kubernetes Operations Dashboard as reference pages.
+- Changes to hero geometry or alignment must be made in the shared component first, then validated across Settings, Access, Welcome, and Kubernetes Operations Dashboard reference pages.
 
 ## Welcome workspace reference
 
