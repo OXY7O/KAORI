@@ -176,3 +176,11 @@ app/alertmanager/runtime_adapter.py
 ```
 
 Alertmanager is the first adapter. Prometheus should become the second adapter after the shared contract is validated in production use.
+
+## Runtime evidence and scheduled monitoring
+
+A refresh is not only a UI action. Both manual HTMX refresh and Celery Beat
+must execute the same adapter orchestration and append an immutable runtime
+observation. This provides validation history, health trend input, capability
+change evidence, and a stable data source for the shared Integrations dashboard.
+Provider credentials and configuration are never copied into the observation.

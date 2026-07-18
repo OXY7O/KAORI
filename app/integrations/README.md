@@ -120,3 +120,16 @@ Primary, secondary, and fallback are preference levels only. They do not mean
 that every source is processed at the same time. A secondary source is selected
 when it is healthier or when the primary source lacks a capability required by
 the requested operation.
+
+## Runtime persistence and monitoring
+
+Every manual or scheduled runtime refresh must persist one immutable
+`IntegrationRuntimeObservation`. The shared record stores provider identity,
+readiness, health score, diagnostics, compatibility, and the capability
+snapshot observed during that run. Provider configuration remains in the
+provider-owned model; historical runtime evidence remains in the shared model.
+
+Celery Beat invokes `app.integrations.runtime.tasks.refresh_integration_runtime`
+using the same provider adapter and orchestration path as HTMX manual refresh.
+The default interval is five minutes and can be controlled with
+`INTEGRATION_RUNTIME_MONITORING_*` environment variables.

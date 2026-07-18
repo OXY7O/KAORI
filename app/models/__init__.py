@@ -58,3 +58,6 @@ __all__ = [
     'SecretRevealNamespacePolicy',
     'SecretRevealRequest',
 ]
+
+from app.models.integration_runtime import IntegrationRuntimeObservation
+__all__.append('IntegrationRuntimeObservation')

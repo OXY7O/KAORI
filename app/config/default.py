@@ -124,10 +124,9 @@ def _retention_queue_name() -> str:
 
 
 def _build_maintenance_beat_schedule() -> dict[str, dict[str, object]]:
-    if not _env_bool('ACTIVITY_RETENTION_SCHEDULE_ENABLED', True):
-        return {}
-
-    return {
+    schedule: dict[str, dict[str, object]] = {}
+    if _env_bool('ACTIVITY_RETENTION_SCHEDULE_ENABLED', True):
+        schedule.update({
         'operational-activity-retention': {
             'task': 'app.retention.tasks.run_scheduled_retention',
             'schedule': crontab(
@@ -138,7 +137,14 @@ def _build_maintenance_beat_schedule() -> dict[str, dict[str, object]]:
                 'queue': _retention_queue_name(),
             },
         }
-    }
+    })
+    if _env_bool('INTEGRATION_RUNTIME_MONITORING_ENABLED', True):
+        schedule['integration-runtime-monitoring'] = {
+            'task': 'app.integrations.runtime.tasks.refresh_integration_runtime',
+            'schedule': crontab(minute=f"*/{_bounded_env_int('INTEGRATION_RUNTIME_MONITORING_INTERVAL_MINUTES', 5, 1, 60)}"),
+            'options': {'queue': _env_str('INTEGRATION_RUNTIME_CELERY_QUEUE', 'inventory').strip() or 'inventory'},
+        }
+    return schedule
 
 
 def _normalize_storage_backend(
@@ -256,6 +262,7 @@ class Config:
         'imports': (
             'app.cluster.tasks',
             'app.retention.tasks',
+            'app.integrations.runtime.tasks',
         ),
         'task_routes': {
             'app.cluster.tasks.sync_all_clusters': {
@@ -266,6 +273,9 @@ class Config:
             },
             'app.retention.tasks.run_scheduled_retention': {
                 'queue': _retention_queue_name(),
+            },
+            'app.integrations.runtime.tasks.refresh_integration_runtime': {
+                'queue': _env_str('INTEGRATION_RUNTIME_CELERY_QUEUE', 'inventory').strip() or 'inventory',
             },
         },
         'visibility_timeout': CELERY_VISIBILITY_TIMEOUT_SECONDS,

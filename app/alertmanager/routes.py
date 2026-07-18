@@ -29,7 +29,7 @@ from app.alertmanager.service import (
     validate_alertmanager_instance,
 )
 from app.integrations.runtime.presentation import runtime_state_view
-from app.integrations.runtime.refresh import refresh_runtime as refresh_provider_runtime
+from app.integrations.runtime.monitoring import refresh_and_record as refresh_provider_runtime
 from app.notifications.service import get_navigation_notification_context
 from app.rbac.decorators import permission_required
 
@@ -170,7 +170,7 @@ def refresh_runtime(instance_id: int) -> ResponseReturnValue:
     if instance is None:
         abort(404)
 
-    result, state = refresh_provider_runtime(runtime_adapter, instance)
+    result, state, _observation = refresh_provider_runtime(runtime_adapter, instance, trigger_type="manual")
     record_instance_activity(
         user_id=int(current_user.id),
         instance=instance,
