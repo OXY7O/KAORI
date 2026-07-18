@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from math import isfinite
 from typing import Any
 
+from app.prometheus.exceptions import PrometheusError
 from app.prometheus.query_profiles import get_query
 
 
@@ -57,12 +58,39 @@ def _evaluate(client: Any, contract: FeatureContract, *, sample_namespace: str) 
         query_texts.append(expression)
         try:
             response = client.query(expression)
-        except Exception as exc:  # endpoint errors are evidence, not template assumptions
-            checks.append(_check(query_key, 'failed', f'Query execution raised {type(exc).__name__}: {exc}', expression, 0, None))
+        except PrometheusError as exc:
+            checks.append(_check(
+                query_key,
+                'failed',
+                f'Endpoint rejected the exact registered query: {exc}',
+                expression,
+                0,
+                None,
+                error_detail=str(exc),
+            ))
+        except Exception as exc:  # unexpected evaluator faults are isolated per query
+            checks.append(_check(
+                query_key,
+                'failed',
+                f'Query evaluation raised {type(exc).__name__}: {exc}',
+                expression,
+                0,
+                None,
+                error_detail=f'{type(exc).__name__}: {exc}',
+            ))
             continue
 
         if response.get('status') != 'success':
-            checks.append(_check(query_key, 'failed', 'Prometheus-compatible endpoint rejected the query.', expression, 0, None))
+            detail = _response_error_detail(response)
+            checks.append(_check(
+                query_key,
+                'failed',
+                f'Endpoint rejected the exact registered query: {detail}',
+                expression,
+                0,
+                None,
+                error_detail=detail,
+            ))
             continue
 
         successful += 1
@@ -151,7 +179,16 @@ def _required_labels_satisfied(requirements: tuple[str, ...], observed: set[str]
     return True
 
 
-def _check(key: str, status: str, evidence: str, query: str, series_count: int, value_summary: str | None) -> dict[str, Any]:
+def _check(
+    key: str,
+    status: str,
+    evidence: str,
+    query: str,
+    series_count: int,
+    value_summary: str | None,
+    *,
+    error_detail: str | None = None,
+) -> dict[str, Any]:
     return {
         'key': key,
         'label': key.rsplit('.', 1)[-1].replace('_', ' ').title(),
@@ -161,7 +198,15 @@ def _check(key: str, status: str, evidence: str, query: str, series_count: int, 
         'query': query,
         'series_count_display': f'{series_count} response series',
         'value_summary': value_summary or 'No numeric sample observed',
+        'error_detail': error_detail,
     }
+
+
+def _response_error_detail(response: dict[str, Any]) -> str:
+    error_type = str(response.get('errorType') or '').strip()
+    error = str(response.get('error') or '').strip()
+    detail = ': '.join(part for part in (error_type, error) if part)
+    return detail or 'endpoint returned a non-success response'
 
 
 def _remediation(status: str, successful: int, expected: int, usable: int) -> str:

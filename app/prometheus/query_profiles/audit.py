@@ -20,6 +20,8 @@ class QueryCheckResult:
     missing_labels: tuple[str, ...] = ()
     deprecated: bool = False
     replacement_key: str | None = None
+    execution_error: str | None = None
+    executed_expression: str | None = None
 
 
 class PromQLProfileAuditor:
@@ -65,12 +67,30 @@ class PromQLProfileAuditor:
             elif definition.is_deprecated:
                 status = 'deprecated'
                 message = 'Query is deprecated and must use its registered replacement.'
-            elif execute_queries:
+            execution_error: str | None = None
+            executed_expression: str | None = None
+            if status == 'ready' and execute_queries:
                 expression = definition.expression.replace('$namespace', _escape_label_value(sample_namespace))
-                response = self.client.query(expression)
-                if response.get('status') != 'success':
-                    status = 'blocked'
-                    message = 'Prometheus rejected the query.'
+                executed_expression = expression
+                unresolved = _unresolved_runtime_tokens(expression)
+                if unresolved:
+                    status = 'deferred'
+                    message = (
+                        'Query execution is deferred because the registered expression requires '
+                        f'runtime values: {", ".join(unresolved)}.'
+                    )
+                else:
+                    try:
+                        response = self.client.query(expression)
+                    except PrometheusError as exc:
+                        status = 'blocked'
+                        execution_error = str(exc)
+                        message = f'Prometheus rejected the registered query: {execution_error}'
+                    else:
+                        if response.get('status') != 'success':
+                            status = 'blocked'
+                            execution_error = _response_error_detail(response)
+                            message = f'Prometheus rejected the registered query: {execution_error}'
 
             results.append(QueryCheckResult(
                 key=definition.key,
@@ -80,11 +100,14 @@ class PromQLProfileAuditor:
                 missing_labels=tuple(sorted(set(missing_labels))),
                 deprecated=definition.is_deprecated,
                 replacement_key=definition.replacement_key,
+                execution_error=execution_error,
+                executed_expression=executed_expression,
             ))
 
         retention = self.validate_retention(('24h', '7d', '30d', '60d'))
         blocked = sum(item.status == 'blocked' for item in results)
         deprecated = sum(item.status == 'deprecated' for item in results)
+        deferred = sum(item.status == 'deferred' for item in results)
         domain_summary = self._domain_summary(definitions, results)
         blocked_details = self._blocked_details(definitions, results)
         capability_assessments = self._capability_assessments(
@@ -103,7 +126,8 @@ class PromQLProfileAuditor:
             'profile': PROFILE_KEY,
             'checked_at': datetime.now(UTC).isoformat(),
             'query_count': len(results),
-            'ready_count': len(results) - blocked - deprecated,
+            'ready_count': len(results) - blocked - deprecated - deferred,
+            'deferred_count': deferred,
             'blocked_count': blocked,
             'critical_blocked_count': critical_blocked,
             'deprecated_count': deprecated,
@@ -664,6 +688,8 @@ class PromQLProfileAuditor:
                 'message': result.message,
                 'missing_metrics': list(result.missing_metrics),
                 'missing_labels': list(result.missing_labels),
+                'execution_error': result.execution_error,
+                'executed_expression': result.executed_expression,
             })
         return output
 
@@ -671,7 +697,7 @@ class PromQLProfileAuditor:
     def _domain_summary(definitions: Sequence[Any], results: Sequence[QueryCheckResult]) -> dict[str, dict[str, int]]:
         output: dict[str, dict[str, int]] = {}
         for definition, result in zip(definitions, results, strict=True):
-            item = output.setdefault(definition.domain, {'query_count': 0, 'ready_count': 0, 'blocked_count': 0, 'deprecated_count': 0})
+            item = output.setdefault(definition.domain, {'query_count': 0, 'ready_count': 0, 'blocked_count': 0, 'deprecated_count': 0, 'deferred_count': 0})
             item['query_count'] += 1
             if result.status == 'ready':
                 item['ready_count'] += 1
@@ -679,7 +705,29 @@ class PromQLProfileAuditor:
                 item['blocked_count'] += 1
             elif result.status == 'deprecated':
                 item['deprecated_count'] += 1
+            elif result.status == 'deferred':
+                item['deferred_count'] += 1
         return output
+
+
+def _unresolved_runtime_tokens(expression: str) -> tuple[str, ...]:
+    tokens = (
+        '__TIME_RANGE__',
+        '__TIME_STEP__',
+        '$cluster',
+        '$node',
+        '$pod',
+        '$container',
+        '$mountpoint',
+    )
+    return tuple(token for token in tokens if token in expression)
+
+
+def _response_error_detail(response: dict[str, Any]) -> str:
+    error_type = str(response.get('errorType') or '').strip()
+    error = str(response.get('error') or '').strip()
+    detail = ': '.join(part for part in (error_type, error) if part)
+    return detail or 'endpoint returned a non-success response'
 
 
 def _parse_duration(value: str) -> timedelta:

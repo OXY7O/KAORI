@@ -186,6 +186,12 @@
                                                 <span class="text-[10px] font-bold {% if check.status == 'ready' %}text-emerald-700 dark:text-emerald-300{% elif check.status == 'not_observed' %}text-slate-600 dark:text-slate-300{% else %}text-red-700 dark:text-red-300{% endif %}">{{ check.status_label }}</span>
                                             </div>
                                             <p class="mt-1 text-[11px] leading-5 text-slate-500 dark:text-slate-400">{{ check.evidence }} · {{ check.series_count_display }}</p>
+                                            {% if check.error_detail %}
+                                                <div class="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 dark:border-red-500/25 dark:bg-red-500/10">
+                                                    <p class="text-[10px] font-bold uppercase tracking-wider text-red-700 dark:text-red-300">Endpoint response</p>
+                                                    <p class="mt-1 break-words text-[11px] leading-5 text-red-800 dark:text-red-200">{{ check.error_detail }}</p>
+                                                </div>
+                                            {% endif %}
                                             <code class="mt-2 block overflow-x-auto rounded-lg bg-slate-950 px-3 py-2 text-[11px] text-slate-100">{{ check.query }}</code>
                                         </div>
                                     {% endfor %}
@@ -292,6 +298,12 @@
                                         <p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
                                             {{ item.get('domain_label', item.get('domain', 'Unknown domain')) }} · {{ item.get('message', 'Validation check blocked.') }}
                                         </p>
+                                        {% if item.get('execution_error') %}
+                                            <p class="mt-2 break-words text-[11px] leading-5 text-red-700 dark:text-red-300">{{ item.get('execution_error') }}</p>
+                                        {% endif %}
+                                        {% if item.get('executed_expression') %}
+                                            <code class="mt-2 block overflow-x-auto rounded-lg bg-slate-950 px-3 py-2 text-[11px] text-slate-100">{{ item.get('executed_expression') }}</code>
+                                        {% endif %}
                                     </div>
                                     <span class="shrink-0 rounded-md bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">Blocked</span>
                                 </div>

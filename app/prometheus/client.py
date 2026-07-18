@@ -136,4 +136,25 @@ class PrometheusClient:
             raise PrometheusAuthenticationError('Authentication failed')
 
         if response.status_code >= 400:
-            raise PrometheusQueryError(f'HTTP {response.status_code}')
+            detail = PrometheusClient._response_error_detail(response)
+            message = f'HTTP {response.status_code}'
+            if detail:
+                message = f'{message}: {detail}'
+            raise PrometheusQueryError(message)
+
+    @staticmethod
+    def _response_error_detail(response: requests.Response) -> str:
+        try:
+            payload = response.json()
+        except ValueError:
+            payload = None
+
+        if isinstance(payload, dict):
+            error_type = str(payload.get('errorType') or '').strip()
+            error = str(payload.get('error') or '').strip()
+            detail = ': '.join(part for part in (error_type, error) if part)
+            if detail:
+                return detail[:1000]
+
+        return (response.text or '').strip()[:1000]
+

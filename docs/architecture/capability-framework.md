@@ -140,3 +140,8 @@ Exact Kubernetes Analytics query contracts
 Runtime presentation models must be self-contained. Templates render `refresh_url`, binding labels, health, readiness, and evidence supplied by Python; they must not construct URLs from a `cluster` object or infer provider binding.
 
 Endpoint runtime health and Analytics readiness are separate signals. A reachable endpoint may remain runtime-healthy while Analytics readiness is degraded because one or more exact registered feature queries failed. Capability and `/series` discovery are diagnostic evidence only and cannot override a successful feature-query contract.
+
+
+## Per-query failure boundary
+
+A single rejected PromQL expression must never terminate Full Validation. Every registered query is evaluated within its own failure boundary and produces explicit evidence: exact expression, endpoint response, observed samples, and remediation. Runtime parameter templates are deferred until their owning consumer supplies the required time range, step, or selector values.

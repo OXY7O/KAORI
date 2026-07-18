@@ -101,3 +101,10 @@ The Analytics Readiness panel exposes Expected, Observed, Technical Evidence, va
 The current Prometheus integration is bound to a Kubernetes cluster rather than managed as a free-standing provider instance. It still uses the shared Integration Runtime adapter, observation, history, health-scoring, and presentation contracts used by Alertmanager.
 
 Runtime view models own route URLs and binding labels. Prometheus templates must not access `cluster.id` to build refresh actions. Full Validation executes the exact registered Kubernetes Analytics queries and stores a feature-contract summary. The resulting contract summary is authoritative for `query_validation_status` and Analytics readiness; metric-name and recent-series schema discovery remain technical diagnostics.
+
+
+## Query validation failure isolation
+
+Full Validation executes registered PromQL checks independently. A rejected query is stored as contract evidence and must not abort the complete validation run. Runtime-bound query templates containing placeholders such as `__TIME_RANGE__` and `__TIME_STEP__` are marked deferred during instant validation rather than being sent to the endpoint unchanged.
+
+HTTP error evidence includes the Prometheus-compatible endpoint error type and message when available. Analytics Readiness technical detail displays the exact registered query, response-series count, and endpoint rejection detail.
