@@ -27,6 +27,7 @@ from app.alertmanager.repository import (
 from app.alertmanager.resolver import AlertmanagerSourceResolution, resolve_alertmanager_sources
 from app.alertmanager.validation import validate_source
 from app.extensions import db
+from app.integrations.lifecycle import bind_instance, ensure_canonical_instance
 from app.models.alertmanager import AlertmanagerBinding, AlertmanagerConfig, AlertmanagerInstance
 from app.models.cluster import Cluster
 
@@ -106,6 +107,8 @@ def save_alertmanager_instance(
     instance.capabilities = None
     instance.validation_message = 'Configuration changed. Run validation before KAORI uses this integration.'
     instance.last_validated_at = None
+    db.session.flush()
+    ensure_canonical_instance(instance, provider_type='alertmanager')
     if commit:
         try:
             db.session.commit()
@@ -208,6 +211,13 @@ def materialize_legacy_cluster_config(cluster_id: str) -> AlertmanagerInstance |
     binding.priority = 100
     binding.enabled = True
     db.session.add(binding)
+    canonical = ensure_canonical_instance(instance, provider_type='alertmanager')
+    bind_instance(
+        canonical,
+        asset_type=KUBERNETES_CLUSTER_SCOPE,
+        asset_key=cluster_id,
+        capability_scope=['alerts', 'silences', 'routing', 'receivers'],
+    )
     try:
         db.session.commit()
     except Exception:

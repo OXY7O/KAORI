@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from app.extensions import db
+from app.integrations.kubernetes import kubeconfig_for_cluster
 from app.kubernetes_operations.secrets.live_service import (
     list_live_namespaces,
     verify_live_namespace,
@@ -40,7 +41,7 @@ def normalize_namespace_policy(value: str | None) -> str:
 
 def cluster_reveal_readiness(cluster: Cluster) -> bool:
     return bool(
-        cluster.kubeconfig
+        kubeconfig_for_cluster(cluster)
         and cluster.secret_reveal_encryption_verified
         and cluster.secret_reveal_audit_verified
     )

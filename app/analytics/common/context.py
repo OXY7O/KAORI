@@ -20,6 +20,7 @@ from app.common.dependencies import (
 )
 from app.models import Cluster
 from app.prometheus.exceptions import PrometheusError
+from app.prometheus.repository import resolve_instance_for_cluster
 from app.prometheus.service import PrometheusService
 
 
@@ -81,7 +82,7 @@ def build_analysis_utilization_context(
         base_context['dependency_blocker'] = cluster_required_blocker()
         return clusters, None, None, base_context
 
-    prometheus_config = cluster.prometheus_config
+    prometheus_config = resolve_instance_for_cluster(cluster.id)
 
     if prometheus_config is None or not prometheus_config.endpoint.strip():
         base_context['prometheus_status'] = {

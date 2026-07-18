@@ -8,8 +8,9 @@ from app.models.integration_runtime import IntegrationRuntimeObservation
 from .contracts import RuntimeState
 
 
-def persist_runtime_state(state: RuntimeState, *, trigger_type: str) -> IntegrationRuntimeObservation:
+def persist_runtime_state(state: RuntimeState, *, trigger_type: str, integration_instance_id: int | None = None) -> IntegrationRuntimeObservation:
     row = IntegrationRuntimeObservation(
+        integration_instance_id=integration_instance_id,
         provider=state.provider,
         instance_id=state.instance_id,
         instance_name=state.instance_name,

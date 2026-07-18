@@ -69,21 +69,21 @@
  <span class="text-[11px] font-semibold uppercase tracking-wide text-content-muted ">CPU Headroom</span>
  <span class="h-2 w-2 rounded-full bg-kaori-primary"></span>
  </div>
- <div class="mt-1 text-xl font-bold tracking-tight text-content-primary ">{{ "%.1f"|format(cpu_headroom) }}%</div>
+ <div class="mt-1 text-xl font-bold tracking-tight text-content-primary ">{{ cpu_headroom_display }}</div>
  </div>
  <div class="rounded-xl border border-indigo-100 bg-surface-card/80 px-4 py-3 shadow-sm dark:border-indigo-900/60 ">
  <div class="flex items-center justify-between gap-3">
  <span class="text-[11px] font-semibold uppercase tracking-wide text-content-muted ">Memory Headroom</span>
  <span class="h-2 w-2 rounded-full bg-indigo-500"></span>
  </div>
- <div class="mt-1 text-xl font-bold tracking-tight text-content-primary ">{{ "%.1f"|format(memory_headroom) }}%</div>
+ <div class="mt-1 text-xl font-bold tracking-tight text-content-primary ">{{ memory_headroom_display }}</div>
  </div>
  <div class="rounded-xl border border-cyan-100 bg-surface-card/80 px-4 py-3 shadow-sm dark:border-cyan-900/60 ">
  <div class="flex items-center justify-between gap-3">
  <span class="text-[11px] font-semibold uppercase tracking-wide text-content-muted ">Pod Headroom</span>
  <span class="h-2 w-2 rounded-full bg-cyan-500"></span>
  </div>
- <div class="mt-1 text-xl font-bold tracking-tight text-content-primary ">{{ "%.1f"|format(pod_headroom) }}%</div>
+ <div class="mt-1 text-xl font-bold tracking-tight text-content-primary ">{{ pod_headroom_display }}</div>
  </div>
  </div>
  </div>
@@ -297,7 +297,7 @@
  </div>
  <div class="mt-6">
  <div class="text-4xl font-bold tracking-tight text-content-primary ">
- {{ "%.1f"|format(item['headroom']) }}%
+ {{ item.headroom_display }}
  </div>
  <p class="mt-2 text-sm leading-5 text-content-muted ">
  Remaining worker {{ item['label']|lower }} capacity.
@@ -306,7 +306,7 @@
  <div class="mt-6">
  <div class="mb-2 flex items-center justify-between text-xs font-medium text-content-muted ">
  <span>Headroom</span>
- <span>{{ "%.1f"|format(item['headroom']) }}%</span>
+ <span>{{ item.headroom_display }}</span>
  </div>
  <div class="h-2.5 overflow-hidden rounded-full bg-surface-hover ">
  <div class="h-full rounded-full {{ progress_class }}"
@@ -343,7 +343,7 @@
  {% endif %}
  "></circle>
  <text x="18" y="17" text-anchor="middle" class="fill-content-primary text-[0.42rem] font-bold ">
- {{ "%.0f"|format(item['headroom']) }}%
+ {{ item.headroom_integer_display }}
  </text>
  <text x="18" y="22" text-anchor="middle" class="fill-content-muted text-[0.22rem] font-semibold uppercase ">
  Headroom

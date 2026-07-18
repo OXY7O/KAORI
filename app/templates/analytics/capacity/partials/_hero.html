@@ -37,7 +37,7 @@
  {% if dependency_blocker %}
  {{ page_hero.meta_label('lock-keyhole', 'Step ' ~ dependency_blocker.stage ~ ' · ' ~ dependency_blocker.badge) }}
  {% else %}
- {{ page_hero.meta_label('cpu', 'CPU headroom ' ~ ('%.1f'|format(cpu_headroom)) ~ '%') }}
+ {{ page_hero.meta_label('cpu', 'CPU headroom ' ~ cpu_headroom_display) }}
  {{ page_hero.meta_label('list-checks', recommendation_count|default(0) ~ ' actionable') }}
  {% endif %}
  </div>
@@ -60,7 +60,7 @@
  <div class="mt-auto grid grid-cols-2 gap-3 pt-4">
  <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-3">
  <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-foreground-muted">Lowest headroom</p>
- <p class="mt-1 text-2xl font-bold text-brand-foreground">{{ '%.1f'|format(lowest_headroom) }}%</p>
+ <p class="mt-1 text-2xl font-bold text-brand-foreground">{{ lowest_headroom_display }}</p>
  </div>
  <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-3">
  <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-foreground-muted">Time range</p>

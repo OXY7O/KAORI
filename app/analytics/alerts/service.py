@@ -30,6 +30,7 @@ from app.intelligence.recommendation_engine import (
 )
 from app.models import Cluster, NamespaceInventory
 from app.prometheus.exceptions import PrometheusError
+from app.prometheus.repository import resolve_instance_for_cluster
 from app.prometheus.service import PrometheusService
 
 DEFAULT_PER_PAGE = 5
@@ -1439,11 +1440,7 @@ def build_prometheus_status(
             'response_time_ms': None,
         }
 
-    config = getattr(
-        cluster,
-        'prometheus_config',
-        None,
-    )
+    config = resolve_instance_for_cluster(cluster.id)
 
     if config is None or not getattr(
         config,

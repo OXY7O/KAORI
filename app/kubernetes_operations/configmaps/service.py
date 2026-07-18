@@ -11,9 +11,10 @@ from kubernetes.client.exceptions import ApiException
 from kubernetes.config.config_exception import ConfigException
 from urllib3.exceptions import HTTPError as Urllib3HTTPError
 
-from app.models.cluster import Cluster
+from app.integrations.kubernetes import kubeconfig_for_cluster
 from app.kubernetes.client import KubernetesClient
 from app.kubernetes.tls import legacy_tls_context
+from app.models.cluster import Cluster
 from app.models.inventory import ConfigurationInventory, PodInventory
 
 _DNS_LABEL = re.compile(r"^[a-z0-9](?:[-a-z0-9]*[a-z0-9])?$")
@@ -255,7 +256,7 @@ def _parse_entries(form: Any) -> tuple[dict[str, str], dict[str, bytes]]:
 
 def _api(cluster: Cluster) -> CoreV1Api:
     return KubernetesClient(
-        cluster.kubeconfig,
+        kubeconfig_for_cluster(cluster),
         verify_ssl=bool(cluster.kube_verify_ssl),
     ).core_api()
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from app.alertmanager.resolver import resolve_alertmanager_sources
+from app.integrations.kubernetes import resolve_kubernetes_for_cluster
 from app.models import Cluster
 from app.prometheus.repository import resolve_instance_for_cluster
 
@@ -68,7 +69,12 @@ def dependency_state_for_cluster(cluster: Cluster) -> ClusterDependencyState:
     else:
         alert_reason = None
 
-    kubernetes_ready = cluster.status == 'connected'
+    kubernetes_runtime = resolve_kubernetes_for_cluster(cluster)
+    kubernetes_ready = bool(
+        kubernetes_runtime
+        and kubernetes_runtime.connection.readiness_status == 'ready'
+        and cluster.status == 'connected'
+    )
     return ClusterDependencyState(
         cluster_id=cluster.id,
         cluster_name=cluster.name,

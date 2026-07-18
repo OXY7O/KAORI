@@ -38,6 +38,7 @@ from app.models import Cluster
 from app.prometheus.capabilities import definition as capability_definition
 from app.prometheus.consumer import PrometheusConsumer
 from app.prometheus.exceptions import PrometheusError
+from app.prometheus.repository import resolve_instance_for_cluster
 from app.prometheus.service import PrometheusService
 
 CAPACITY_TIME_RANGE_STEP_MAP = {
@@ -114,7 +115,7 @@ def get_capacity_page_context(
     dependency_blocker = None
     capacity_payload = empty_capacity_payload.copy()
 
-    prometheus_config = cluster.prometheus_config
+    prometheus_config = resolve_instance_for_cluster(cluster.id)
 
     if prometheus_config is None or not prometheus_config.endpoint.strip():
         return {

@@ -7,7 +7,7 @@ from celery import shared_task
 from app.alertmanager.runtime_adapter import runtime_adapter as alertmanager_runtime_adapter
 from app.extensions import db
 from app.models.alertmanager import AlertmanagerInstance
-from app.models.prometheus import PrometheusConfig
+from app.models.prometheus import PrometheusInstance
 from app.prometheus.runtime_adapter import runtime_adapter as prometheus_runtime_adapter
 
 from .monitoring import refresh_and_record
@@ -20,7 +20,7 @@ def refresh_integration_runtime(self) -> dict[str, object]:
     results: dict[str, object] = {'refreshed': 0, 'failed': 0, 'providers': {}}
     providers = (
         ('alertmanager', alertmanager_runtime_adapter, AlertmanagerInstance.query.filter_by(enabled=True).order_by(AlertmanagerInstance.id.asc()).all()),
-        ('prometheus', prometheus_runtime_adapter, PrometheusConfig.query.order_by(PrometheusConfig.id.asc()).all()),
+        ('prometheus', prometheus_runtime_adapter, PrometheusInstance.query.filter_by(enabled=True).order_by(PrometheusInstance.id.asc()).all()),
     )
     for provider, adapter, instances in providers:
         provider_result = {'refreshed': 0, 'failed': 0, 'instances': []}

@@ -4,6 +4,7 @@ from app.models.audit import AuditEvent
 from app.models.cluster import Cluster, ClusterStatus
 from app.models.governance import TLSCertificateInventory, TLSCertificateUpdateEvent
 from app.models.identity import ExternalIdentityLink, IdentityProvider
+from app.models.integration import IntegrationBinding, IntegrationInstance, KubernetesConnection
 from app.models.integration_runtime import IntegrationRuntimeObservation
 from app.models.inventory import (
     ClusterInventory,
@@ -29,6 +30,9 @@ __all__ = [
     'AuditEvent',
     'IdentityProvider',
     'IntegrationRuntimeObservation',
+    'IntegrationInstance',
+    'IntegrationBinding',
+    'KubernetesConnection',
     'ExternalIdentityLink',
     'ClusterStatus',
     'Cluster',

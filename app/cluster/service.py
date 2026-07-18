@@ -9,6 +9,7 @@ import yaml
 from sqlalchemy import func, or_
 
 from app.extensions import db
+from app.integrations.kubernetes import kubeconfig_for_cluster
 from app.kubernetes.service import test_cluster_connection
 from app.models import (
     AlertmanagerBinding,
@@ -19,6 +20,7 @@ from app.models import (
     ClusterStatus,
     NamespaceInventory,
 )
+from app.models.integration import IntegrationBinding, IntegrationInstance, KubernetesConnection
 
 DEFAULT_CLUSTER_PER_PAGE = 5
 CLUSTER_PER_PAGE_OPTIONS = [
@@ -442,6 +444,67 @@ def get_cluster_by_id(cluster_id: str) -> Cluster | None:
 
 
 
+def _sync_kubernetes_runtime(cluster: Cluster, *, kubeconfig: str | None = None) -> KubernetesConnection:
+    connection = cluster.kubernetes_connection
+    canonical = connection.integration_instance if connection else None
+    if canonical is None:
+        canonical = IntegrationInstance(
+            provider_type='kubernetes',
+            name=f'{cluster.name} Kubernetes API',
+            description=cluster.description,
+            environment=cluster.environment,
+            enabled=True,
+            readiness_status=cluster.kubernetes_readiness_status,
+            health_status=cluster.status,
+            last_checked_at=cluster.last_check,
+            metadata_json={'asset_type': 'kubernetes_cluster', 'asset_key': cluster.id},
+        )
+        db.session.add(canonical)
+        db.session.flush()
+    else:
+        canonical.name = f'{cluster.name} Kubernetes API'
+        canonical.description = cluster.description
+        canonical.environment = cluster.environment
+        canonical.readiness_status = cluster.kubernetes_readiness_status
+        canonical.health_status = cluster.status
+        canonical.last_checked_at = cluster.last_check
+
+    if connection is None:
+        connection = KubernetesConnection(
+            integration_instance_id=canonical.id,
+            cluster_id=cluster.id,
+            kubeconfig=kubeconfig or cluster.kubeconfig,
+        )
+        db.session.add(connection)
+    connection.kubeconfig = kubeconfig or connection.kubeconfig or cluster.kubeconfig
+    connection.verify_ssl = cluster.kube_verify_ssl
+    connection.allow_weak_tls = cluster.kube_allow_weak_tls
+    connection.server = cluster.server
+    connection.compatibility_profile = cluster.kubernetes_compatibility_profile
+    connection.readiness_status = cluster.kubernetes_readiness_status
+    connection.validation_message = cluster.kubernetes_validation_message
+    connection.last_validated_at = cluster.kubernetes_last_validated_at
+    connection.discovery_summary = cluster.kubernetes_api_discovery_summary
+
+    binding = IntegrationBinding.query.filter_by(
+        integration_instance_id=canonical.id,
+        asset_type='kubernetes_cluster',
+        asset_key=cluster.id,
+        binding_role='primary',
+    ).first()
+    if binding is None:
+        db.session.add(IntegrationBinding(
+            integration_instance_id=canonical.id,
+            asset_type='kubernetes_cluster',
+            asset_key=cluster.id,
+            binding_role='primary',
+            priority=100,
+            enabled=True,
+            capability_scope=['inventory', 'operations', 'governance', 'discovery'],
+        ))
+    return connection
+
+
 def create_cluster(
     name: str,
     environment: str,
@@ -473,6 +536,8 @@ def create_cluster(
     db.session.add(
         cluster,
     )
+    db.session.flush()
+    _sync_kubernetes_runtime(cluster, kubeconfig=kubeconfig)
     db.session.commit()
 
     return cluster
@@ -496,7 +561,7 @@ def run_test_cluster(cluster: Cluster) -> dict[str, Any]:
     )
 
     result = test_cluster_connection(
-        kubeconfig_content=cluster.kubeconfig,
+        kubeconfig_content=kubeconfig_for_cluster(cluster),
         endpoint=cluster.server,
         verify_ssl=verify_ssl,
         allow_weak_tls=allow_weak_tls,
@@ -523,6 +588,7 @@ def run_test_cluster(cluster: Cluster) -> dict[str, Any]:
     else:
         cluster.status = ClusterStatus.FAILED.value
 
+    _sync_kubernetes_runtime(cluster)
     db.session.commit()
 
     return result

@@ -8,6 +8,7 @@ from kubernetes.client import V1Ingress, V1Secret
 
 from app.governance.tls_certificates.constants import TLS_CRT_KEY, TLS_SECRET_TYPE, TLS_STATUS_INVALID
 from app.governance.tls_certificates.validator import decode_secret_data, parse_certificate
+from app.integrations.kubernetes import kubeconfig_for_cluster
 from app.kubernetes.client import KubernetesClient
 from app.kubernetes.tls import legacy_tls_context
 from app.models import Cluster
@@ -25,7 +26,7 @@ def _response_items(response: Any) -> list[Any]:
 
 def build_kubernetes_client(cluster: Cluster) -> KubernetesClient:
     return KubernetesClient(
-        cluster.kubeconfig,
+        kubeconfig_for_cluster(cluster),
         verify_ssl=bool(cluster.kube_verify_ssl),
     )
 

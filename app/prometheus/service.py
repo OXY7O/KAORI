@@ -12,6 +12,7 @@ from app.integrations.compatibility import (
     evaluate_compatibility,
     get_profile,
 )
+from app.integrations.lifecycle import bind_instance, ensure_canonical_instance
 from app.models import Cluster, PrometheusBinding, PrometheusConfig, PrometheusInstance
 from app.prometheus.client import PrometheusClient
 from app.prometheus.consumer import PrometheusConsumer
@@ -384,5 +385,15 @@ class PrometheusService:
         )
         for field in fields:
             setattr(instance, field, getattr(config, field, None))
+        canonical = ensure_canonical_instance(instance, provider_type='prometheus')
+        bind_instance(
+            canonical,
+            asset_type=KUBERNETES_CLUSTER_SCOPE,
+            asset_key=cluster.id,
+            capability_scope=[
+                'metrics', 'capacity', 'utilization', 'storage', 'workload',
+                'forecast', 'top_consumers', 'alert_metrics',
+            ],
+        )
         return instance
 

@@ -28,6 +28,7 @@ class AlertmanagerInstance(db.Model):
     __tablename__ = 'alertmanager_instances'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    integration_instance_id: Mapped[int | None] = mapped_column(ForeignKey('integration_instances.id', ondelete='CASCADE'), nullable=True, unique=True)
     name: Mapped[str] = mapped_column(String(160), nullable=False, unique=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     deployment_type: Mapped[str] = mapped_column(

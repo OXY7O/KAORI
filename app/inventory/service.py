@@ -1,3 +1,4 @@
+
 from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
 from typing import Any, cast
@@ -7,6 +8,7 @@ from kubernetes.client.exceptions import ApiException
 from sqlalchemy import func, or_, select
 
 from app.extensions import db
+from app.integrations.kubernetes import kubeconfig_for_cluster
 from app.inventory.collector import (
     get_cluster_version,
     get_configuration_inventory,
@@ -904,7 +906,7 @@ def sync_inventory(
             enabled=allow_weak_tls,
         ):
             client = KubernetesClient(
-                kubeconfig_content=cluster.kubeconfig,
+                kubeconfig_content=kubeconfig_for_cluster(cluster),
                 verify_ssl=verify_ssl,
             )
 

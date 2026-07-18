@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Final
 
-from app.alertmanager.repository import list_bindings_for_scope
+from app.integrations.resolver import resolve_integration
 from app.models.alertmanager import AlertmanagerBinding, AlertmanagerInstance
 
 _ROLE_ORDER: Final[dict[str, int]] = {
@@ -80,10 +80,32 @@ def resolve_alertmanager_sources(
     scope_key: str,
     required_capabilities: tuple[str, ...] = (),
 ) -> AlertmanagerSourceResolution:
-    candidates = [
-        _evaluate_binding(binding, required_capabilities=required_capabilities)
-        for binding in list_bindings_for_scope(scope_type=scope_type, scope_key=scope_key)
-    ]
+    canonical = resolve_integration(
+        provider_type='alertmanager',
+        asset_type=scope_type,
+        asset_key=scope_key,
+        required_capabilities=required_capabilities,
+    )
+    from app.models.alertmanager import AlertmanagerBinding
+    candidates = []
+    for item in canonical.candidates:
+        instance = item.instance
+        provider_instance = AlertmanagerInstance.query.filter_by(
+            integration_instance_id=instance.id,
+        ).first()
+        if provider_instance is None:
+            continue
+        legacy_binding = AlertmanagerBinding(
+            id=item.binding.id,
+            alertmanager_instance_id=provider_instance.id,
+            scope_type=item.binding.asset_type,
+            scope_key=item.binding.asset_key,
+            binding_role=item.binding.binding_role,
+            priority=item.binding.priority,
+            enabled=item.binding.enabled,
+        )
+        legacy_binding.instance = provider_instance
+        candidates.append(_evaluate_binding(legacy_binding, required_capabilities=required_capabilities))
     candidates.sort(key=lambda candidate: candidate.score)
     return AlertmanagerSourceResolution(
         scope_type=scope_type,

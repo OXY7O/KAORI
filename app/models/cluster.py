@@ -5,13 +5,14 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, Integer, JSON, String, Text
+from sqlalchemy import JSON, Boolean, DateTime, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.extensions import db
 
 if TYPE_CHECKING:
     from app.models.alertmanager import AlertmanagerConfig
+    from app.models.integration import KubernetesConnection
     from app.models.prometheus import PrometheusConfig
 
 
@@ -81,6 +82,15 @@ class Cluster(db.Model):
 
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC)
+    )
+
+
+    kubernetes_connection: Mapped[KubernetesConnection | None] = relationship(
+        'KubernetesConnection',
+        back_populates='cluster',
+        cascade='all, delete-orphan',
+        passive_deletes=True,
+        uselist=False,
     )
 
     prometheus_config: Mapped[PrometheusConfig | None] = relationship(

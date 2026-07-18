@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Any, Iterable, cast
+from typing import Any, cast
 
 from kubernetes.client import CoreV1Api, V1NamespaceList, V1Secret, V1SecretList
 from kubernetes.client.exceptions import ApiException
 from kubernetes.config.config_exception import ConfigException
 from urllib3.exceptions import HTTPError as Urllib3HTTPError
 
+from app.integrations.kubernetes import kubeconfig_for_cluster
 from app.kubernetes.client import KubernetesClient
 from app.kubernetes.tls import legacy_tls_context
 from app.models import Cluster, ConfigurationInventory
@@ -60,7 +62,7 @@ def get_cluster(cluster_id: str | None) -> Cluster:
 
 def core_api(cluster: Cluster) -> CoreV1Api:
     return KubernetesClient(
-        cluster.kubeconfig,
+        kubeconfig_for_cluster(cluster),
         verify_ssl=bool(cluster.kube_verify_ssl),
     ).core_api()
 

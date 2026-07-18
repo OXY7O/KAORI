@@ -6,6 +6,7 @@ from typing import Any
 
 from app.analytics.utilization import queries
 from app.models import Cluster
+from app.prometheus.repository import resolve_instance_for_cluster
 from app.prometheus.service import PrometheusService
 
 
@@ -1183,11 +1184,7 @@ def _build_prometheus_service(
 def _get_cluster_prometheus_endpoint(
     cluster: Cluster,
 ) -> str:
-    prometheus_config = getattr(
-        cluster,
-        'prometheus_config',
-        None,
-    )
+    prometheus_config = resolve_instance_for_cluster(cluster.id)
 
     endpoint = getattr(
         prometheus_config,
