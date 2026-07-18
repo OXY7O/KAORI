@@ -95,3 +95,9 @@ capability evidence.
 Storage readiness is validated with the same PromQL contract used by Storage Analytics. KAORI no longer marks the filesystem capability as misconfigured solely because a bounded `/series` discovery sample does not report a canonical node label. The exact `/var` query, with `/` as fallback, is authoritative.
 
 The Analytics Readiness panel exposes Expected, Observed, Technical Evidence, validation query, possible causes, and remediation. Metric availability remains visible as troubleshooting evidence but does not override a successful feature query contract.
+
+## Cluster-bound runtime and authoritative query contracts
+
+The current Prometheus integration is bound to a Kubernetes cluster rather than managed as a free-standing provider instance. It still uses the shared Integration Runtime adapter, observation, history, health-scoring, and presentation contracts used by Alertmanager.
+
+Runtime view models own route URLs and binding labels. Prometheus templates must not access `cluster.id` to build refresh actions. Full Validation executes the exact registered Kubernetes Analytics queries and stores a feature-contract summary. The resulting contract summary is authoritative for `query_validation_status` and Analytics readiness; metric-name and recent-series schema discovery remain technical diagnostics.

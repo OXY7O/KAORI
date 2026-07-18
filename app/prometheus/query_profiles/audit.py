@@ -93,6 +93,7 @@ class PromQLProfileAuditor:
         feature_contracts = evaluate_feature_contracts(self.client, sample_namespace=sample_namespace) if execute_queries else []
         if feature_contracts:
             self._reconcile_capabilities_from_contracts(capability_assessments, feature_contracts)
+        feature_contract_summary = self._feature_contract_summary(feature_contracts)
         module_readiness = self._module_readiness(domain_summary)
         core_domains = {'app.prometheus', 'app.analytics.capacity', 'app.analytics.utilization'}
         critical_blocked = sum(
@@ -114,6 +115,7 @@ class PromQLProfileAuditor:
             ),
             'module_readiness': module_readiness,
             'feature_contracts': feature_contracts,
+            'feature_contract_summary': feature_contract_summary,
             'retention': retention,
             'results': [asdict(item) for item in results],
         }
@@ -165,6 +167,31 @@ class PromQLProfileAuditor:
             assessment['recommendation'] = ' '.join(
                 item['recommendation'] for item in selected if item['status'] != 'ready'
             ) or 'No remediation is required. The exact registered Analytics queries passed.'
+
+
+    @staticmethod
+    def _feature_contract_summary(contracts: list[dict[str, Any]]) -> dict[str, Any]:
+        if not contracts:
+            return {
+                'status': 'validation_required',
+                'status_label': 'Validation Required',
+                'ready_count': 0,
+                'failed_count': 0,
+                'not_observed_count': 0,
+                'total_count': 0,
+            }
+        failed = sum(item.get('status') == 'failed' for item in contracts)
+        ready = sum(item.get('status') == 'ready' for item in contracts)
+        not_observed = sum(item.get('status') == 'not_observed' for item in contracts)
+        status = 'degraded' if failed else 'ready'
+        return {
+            'status': status,
+            'status_label': 'Degraded' if failed else 'Ready',
+            'ready_count': ready,
+            'failed_count': failed,
+            'not_observed_count': not_observed,
+            'total_count': len(contracts),
+        }
 
     def validate_retention(self, horizons: Iterable[str]) -> dict[str, dict[str, Any]]:
         output: dict[str, dict[str, Any]] = {}

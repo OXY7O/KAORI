@@ -113,13 +113,13 @@ class PrometheusService:
             query_status = 'blocked'
             readiness = 'blocked'
         else:
-            query_audit = PromQLProfileAuditor(self.client).audit(execute_queries=False)
-            query_status = 'ready' if query_audit['blocked_count'] == 0 else 'degraded'
+            query_audit = PromQLProfileAuditor(self.client).audit(execute_queries=True)
+            contract_summary = query_audit.get('feature_contract_summary') or {}
+            query_status = contract_summary.get('status', 'validation_required')
             readiness = resolution.endpoint_compatibility.readiness
-            # Overall Analytics readiness is blocked/degraded only when core dashboard,
-            # capacity, or utilization contracts fail. Optional analytics domains remain
-            # visible in domain_summary without making a healthy endpoint globally degraded.
-            if readiness == 'ready' and query_audit.get('critical_blocked_count', 0) > 0:
+            # Runtime compatibility and Analytics readiness are separate. The endpoint can
+            # remain connected while one or more exact feature-query contracts are degraded.
+            if readiness == 'ready' and query_status != 'ready':
                 readiness = 'degraded'
 
         config.readiness_status = readiness
@@ -227,12 +227,12 @@ class PrometheusService:
             return resolution.endpoint_compatibility.message
         if query_status == 'ready':
             return (
-                'Endpoint compatibility, Prometheus source profile, required metric '
-                'schemas, PromQL, and retention checks passed.'
+                'Endpoint compatibility and every registered Kubernetes Analytics query '
+                'contract passed against the configured runtime.'
             )
         return (
-            'Core Kubernetes Analytics is available. Some optional analytics domains '
-            'have missing metrics or label schemas; review the validation coverage details.'
+            'The Prometheus runtime is connected, but one or more exact Kubernetes '
+            'Analytics query contracts require review. Open the observed technical evidence.'
         )
 
     @staticmethod

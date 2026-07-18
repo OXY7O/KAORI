@@ -18,8 +18,9 @@ class PrometheusRuntimeAdapter:
     def get_state(self, instance: PrometheusConfig, *, validation_result: dict[str, Any] | None = None) -> RuntimeState:
         now = datetime.now(UTC)
         assessments = ((instance.capabilities or {}).get('assessments') or [])
+        contract_summary = ((instance.query_validation_summary or {}).get('feature_contract_summary') or {})
         diagnostics = self._diagnostics(instance, assessments)
-        health = calculate_health(self._factors(instance, assessments))
+        health = calculate_health(self._factors(instance, assessments, contract_summary))
         available = tuple(sorted((instance.capabilities or {}).get('available') or ()))
         snapshot = CapabilitySnapshot(
             profile=instance.capability_profile or instance.query_profile,
@@ -32,6 +33,9 @@ class PrometheusRuntimeAdapter:
                 'source_prometheus_major': instance.source_prometheus_major,
                 'module_readiness': instance.module_readiness or {},
                 'capability_assessments': assessments,
+                'feature_contract_summary': contract_summary,
+                'binding_type': 'kubernetes_cluster',
+                'cluster_id': str(instance.cluster_id),
             },
         )
         return RuntimeState(
@@ -73,13 +77,18 @@ class PrometheusRuntimeAdapter:
         return tuple(rows)
 
     @staticmethod
-    def _factors(instance: PrometheusConfig, assessments: list[dict[str, Any]]) -> tuple[HealthFactor, ...]:
+    def _factors(
+        instance: PrometheusConfig,
+        assessments: list[dict[str, Any]],
+        contract_summary: dict[str, Any],
+    ) -> tuple[HealthFactor, ...]:
         missing = [item for item in assessments if item.get('status') in {'missing', 'misconfigured', 'unsupported'}]
         capability_score = max(0, round(100 - (len(missing) * 15))) if assessments else 50
+        contract_status = contract_summary.get('status') or instance.query_validation_status
         return (
             HealthFactor('connectivity', 'Connectivity', 'success' if instance.last_status == 'connected' else ('failed' if instance.last_status else 'unknown'), 30, 100 if instance.last_status == 'connected' else (0 if instance.last_status else 50), instance.last_error or ''),
             HealthFactor('readiness', 'Analytics readiness', 'success' if instance.readiness_status == 'ready' else ('failed' if instance.readiness_status == 'blocked' else 'warning'), 25, 100 if instance.readiness_status == 'ready' else (0 if instance.readiness_status == 'blocked' else 65), instance.validation_message or ''),
-            HealthFactor('query_contract', 'PromQL contract', 'success' if instance.query_validation_status == 'ready' else ('failed' if instance.query_validation_status == 'blocked' else 'warning'), 25, 100 if instance.query_validation_status == 'ready' else (0 if instance.query_validation_status == 'blocked' else 65)),
+            HealthFactor('query_contract', 'Analytics query contracts', 'success' if contract_status == 'ready' else ('failed' if contract_status == 'blocked' else 'warning'), 25, 100 if contract_status == 'ready' else (0 if contract_status == 'blocked' else 65), f"{contract_summary.get('failed_count', 0)} of {contract_summary.get('total_count', 0)} feature contracts failed."),
             HealthFactor('capability', 'Capability coverage', 'success' if not missing and assessments else ('warning' if assessments else 'unknown'), 10, capability_score, f'{len(missing)} capabilities require attention.'),
             HealthFactor('latency', 'Latency', 'warning' if (instance.last_response_time_ms or 0) > 1500 else ('success' if instance.last_response_time_ms is not None else 'unknown'), 10, 60 if (instance.last_response_time_ms or 0) > 1500 else (100 if instance.last_response_time_ms is not None else 50)),
         )

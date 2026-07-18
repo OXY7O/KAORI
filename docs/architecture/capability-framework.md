@@ -122,3 +122,21 @@ Analytics readiness is authoritative only when KAORI executes the exact query ex
 A Prometheus aggregate vector with an empty label set, for example `{} 4` returned by `count(...)`, is a valid successful result when the value is finite and satisfies the contract. Label validation must use a separate query that preserves the required labels.
 
 Every Analytics contract exposes presentation-ready `Expected`, `Observed`, exact validation query, response-series count, numeric result evidence, and evidence-based remediation. Empty results are classified as `Not Observed` for contracts where absence of active objects or alerts is valid.
+
+## Cluster-bound Prometheus runtime
+
+Prometheus is currently configured as a metrics runtime bound to one Kubernetes cluster. The runtime adapter follows the same shared Integration Runtime lifecycle used by Alertmanager, while its binding remains explicit:
+
+```text
+Kubernetes cluster
+        ↓
+Prometheus or Thanos Query configuration
+        ↓
+Prometheus runtime observation
+        ↓
+Exact Kubernetes Analytics query contracts
+```
+
+Runtime presentation models must be self-contained. Templates render `refresh_url`, binding labels, health, readiness, and evidence supplied by Python; they must not construct URLs from a `cluster` object or infer provider binding.
+
+Endpoint runtime health and Analytics readiness are separate signals. A reachable endpoint may remain runtime-healthy while Analytics readiness is degraded because one or more exact registered feature queries failed. Capability and `/series` discovery are diagnostic evidence only and cannot override a successful feature-query contract.

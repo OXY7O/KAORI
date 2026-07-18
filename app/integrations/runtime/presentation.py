@@ -4,7 +4,14 @@ from app.common.presentation import present_count, present_key_label, present_mi
 from app.integrations.runtime.contracts import RuntimeState
 
 
-def runtime_state_view(state: RuntimeState) -> dict[str, object]:
+def runtime_state_view(
+    state: RuntimeState,
+    *,
+    actions: dict[str, str] | None = None,
+    binding: dict[str, str] | None = None,
+) -> dict[str, object]:
+    actions = actions or {}
+    binding = binding or {}
     return {
         'provider': state.provider,
         'instance_id': state.instance_id,
@@ -30,6 +37,13 @@ def runtime_state_view(state: RuntimeState) -> dict[str, object]:
         'message': state.message,
         'health_score_display': f'{state.health.score}/100',
         'observed_at_display': present_user_datetime(state.observed_at, empty='Not observed', include_seconds=True),
+        'refresh_url': actions.get('refresh_url'),
+        'configuration_url': actions.get('configuration_url'),
+        'history_url': actions.get('history_url'),
+        'binding_type': binding.get('type'),
+        'binding_id': binding.get('id'),
+        'binding_name': binding.get('name'),
+        'binding_label': binding.get('label'),
     }
 
 

@@ -1,8 +1,8 @@
 {% from "integrations/partials/_status_badge.html" import status_badge %}
 <section id="prometheus-runtime-panel"{% if runtime_oob|default(false) %} hx-swap-oob="outerHTML"{% endif %} class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
   <header class="flex items-start justify-between gap-4 border-b border-outline-subtle px-5 py-4">
-    <div><h2 class="text-lg font-bold text-content-primary">Integration Runtime</h2><p class="mt-1 text-sm text-content-secondary">Endpoint health, query-contract readiness, and observed capability coverage.</p></div>
-    <button type="button" hx-post="{{ url_for('prometheus.validate_integration', cluster_id=cluster.id) }}" hx-target="#operational-action-feedback" hx-swap="innerHTML" hx-disabled-elt="this" class="inline-flex items-center gap-2 rounded-xl bg-kaori-primary px-4 py-2.5 text-sm font-bold text-white hover:bg-kaori-primary-hover"><i data-lucide="refresh-cw" class="h-4 w-4"></i>Refresh runtime</button>
+    <div><h2 class="text-lg font-bold text-content-primary">Prometheus Runtime</h2><p class="mt-1 text-sm text-content-secondary">Endpoint health, Analytics query-contract readiness, and observed capability coverage{% if runtime_state.binding_label %} for {{ runtime_state.binding_label }}{% endif %}.</p></div>
+    <button type="button" hx-post="{{ runtime_state.refresh_url }}" hx-target="#operational-action-feedback" hx-swap="innerHTML" hx-disabled-elt="this" class="inline-flex items-center gap-2 rounded-xl bg-kaori-primary px-4 py-2.5 text-sm font-bold text-white hover:bg-kaori-primary-hover"><i data-lucide="refresh-cw" class="h-4 w-4"></i>Refresh runtime</button>
   </header>
   <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-5">
     {% for label, value in [('Health', runtime_state.health_status_label),('Score', runtime_state.health_score_display),('Readiness', runtime_state.readiness_label),('Latency', runtime_state.latency_display),('Capabilities', runtime_state.capability_count_display)] %}

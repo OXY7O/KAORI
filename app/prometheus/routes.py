@@ -25,6 +25,23 @@ from app.rbac.decorators import permission_required
 
 logger = logging.getLogger(__name__)
 
+
+def _runtime_view(cluster, state):
+    """Build a self-contained, cluster-bound Prometheus runtime view model."""
+    return runtime_state_view(
+        state,
+        actions={
+            'refresh_url': url_for('prometheus.validate_integration', cluster_id=cluster.id),
+            'configuration_url': url_for('prometheus.configuration', cluster_id=cluster.id),
+        },
+        binding={
+            'type': 'kubernetes_cluster',
+            'id': str(cluster.id),
+            'name': cluster.name,
+            'label': f'Kubernetes cluster {cluster.name}',
+        },
+    )
+
 prometheus_bp = Blueprint(
     'prometheus',
     __name__,
@@ -175,7 +192,7 @@ def configuration(
         form.timeout.data = config.timeout
         form.verify_ssl.data = config.verify_ssl
 
-    runtime_state = runtime_state_view(runtime_adapter.get_state(config)) if config else None
+    runtime_state = _runtime_view(cluster, runtime_adapter.get_state(config)) if config else None
     history_rows, history_pagination = (
         paginate_runtime_history('prometheus', str(config.id), page=1, per_page=5)
         if config else ([], {'page': 1, 'per_page': 5, 'total_items': 0, 'total_pages': 1, 'start_item': 0, 'end_item': 0, 'has_prev': False, 'has_next': False, 'prev_page': 0, 'next_page': 2, 'allowed_per_page': (5,10,25,50)})
@@ -244,7 +261,10 @@ def test_connection(
                     cluster.prometheus_config.last_validated_at if cluster.prometheus_config else None,
                     empty='Not validated yet',
                 ),
-                runtime_state=(runtime_state_view(locals()['runtime_state_obj']) if 'runtime_state_obj' in locals() else None),
+                runtime_state=(
+                    _runtime_view(cluster, runtime_adapter.get_state(cluster.prometheus_config))
+                    if cluster.prometheus_config else None
+                ),
                 notification_context=get_navigation_notification_context(
                     user_id=current_user.id,
                 ),
@@ -297,7 +317,10 @@ def test_connection(
                     cluster.prometheus_config.last_validated_at if cluster.prometheus_config else None,
                     empty='Not validated yet',
                 ),
-                runtime_state=(runtime_state_view(locals()['runtime_state_obj']) if 'runtime_state_obj' in locals() else None),
+                runtime_state=(
+                    _runtime_view(cluster, runtime_adapter.get_state(cluster.prometheus_config))
+                    if cluster.prometheus_config else None
+                ),
                 notification_context=get_navigation_notification_context(
                     user_id=current_user.id,
                 ),
@@ -342,7 +365,10 @@ def test_connection(
                     cluster.prometheus_config.last_validated_at if cluster.prometheus_config else None,
                     empty='Not validated yet',
                 ),
-                runtime_state=(runtime_state_view(locals()['runtime_state_obj']) if 'runtime_state_obj' in locals() else None),
+                runtime_state=(
+                    _runtime_view(cluster, runtime_adapter.get_state(cluster.prometheus_config))
+                    if cluster.prometheus_config else None
+                ),
                 notification_context=get_navigation_notification_context(
                     user_id=current_user.id,
                 ),
@@ -401,7 +427,10 @@ def validate_integration(
                     cluster.prometheus_config.last_validated_at if cluster.prometheus_config else None,
                     empty='Not validated yet',
                 ),
-                runtime_state=(runtime_state_view(locals()['runtime_state_obj']) if 'runtime_state_obj' in locals() else None),
+                runtime_state=(
+                    _runtime_view(cluster, runtime_adapter.get_state(cluster.prometheus_config))
+                    if cluster.prometheus_config else None
+                ),
                 notification_context=get_navigation_notification_context(
                     user_id=current_user.id,
                 ),
@@ -458,7 +487,10 @@ def validate_integration(
                     cluster.prometheus_config.last_validated_at if cluster.prometheus_config else None,
                     empty='Not validated yet',
                 ),
-                runtime_state=(runtime_state_view(locals()['runtime_state_obj']) if 'runtime_state_obj' in locals() else None),
+                runtime_state=(
+                    _runtime_view(cluster, runtime_adapter.get_state(cluster.prometheus_config))
+                    if cluster.prometheus_config else None
+                ),
                 notification_context=get_navigation_notification_context(
                     user_id=current_user.id,
                 ),
