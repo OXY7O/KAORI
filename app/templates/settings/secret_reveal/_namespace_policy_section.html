@@ -1,34 +1,34 @@
 <section id="secret-reveal-namespace-section"
-         class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm border-outline-default bg-surface-subtle">
-    <div class="border-b border-outline-default px-6 py-5 border-outline-default">
+         class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+    <div class="border-b border-outline-default px-6 py-5">
         <div class="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
-            <div class="flex items-center gap-3">
-                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary dark:bg-kaori-soft/10 dark:text-kaori-accent">
+            <div class="flex items-start gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
                     <i data-lucide="boxes" class="h-5 w-5"></i>
-                </div>
+                </span>
                 <div>
-                    <h2 class="text-lg font-semibold text-content-primary">Allow Reveal per Namespace</h2>
-                    <p class="mt-1 text-sm text-content-muted">Enable protected access only for namespaces that require operational Secret reveal.</p>
+                    <h2 class="text-lg font-semibold text-content-primary">Namespace policies</h2>
+                    <p class="mt-1 text-sm text-content-muted">Allow protected access only in namespaces with a clear operational requirement.</p>
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2 text-xs font-medium">
-                <span class="inline-flex items-center gap-1.5 rounded-md bg-kaori-soft px-3 py-1 text-kaori-primary ring-1 ring-inset ring-brand-outline dark:bg-kaori-soft/10 dark:text-kaori-accent dark:ring-kaori-primary/25">
+                <span class="inline-flex items-center gap-1.5 rounded-md bg-kaori-soft px-3 py-1 text-kaori-primary ring-1 ring-inset ring-brand-outline">
                     <i data-lucide="server" class="h-3.5 w-3.5"></i>
                     {{ selected_cluster.name }}
                 </span>
-                <span class="inline-flex rounded-md bg-surface-subtle px-3 py-1 text-content-secondary ring-1 ring-inset ring-outline-default bg-surface-subtle/50 dark:ring-slate-600">{{ namespace_summary.total }} total</span>
-                <span class="inline-flex rounded-md bg-emerald-50 px-3 py-1 text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/25">{{ namespace_summary.enabled }} enabled</span>
+                <span class="inline-flex rounded-md bg-surface-subtle px-3 py-1 text-content-secondary ring-1 ring-inset ring-outline-default">{{ namespace_summary.total }} total</span>
+                <span class="inline-flex rounded-md bg-status-normal-soft px-3 py-1 text-status-normal-text ring-1 ring-inset ring-status-normal-border">{{ namespace_summary.enabled }} enabled</span>
                 {% if namespace_summary.missing %}
-                    <span class="inline-flex rounded-md bg-amber-50 px-3 py-1 text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/25">{{ namespace_summary.missing }} missing</span>
+                    <span class="inline-flex rounded-md bg-status-warning-soft px-3 py-1 text-status-warning-text ring-1 ring-inset ring-status-warning-border">{{ namespace_summary.missing }} missing</span>
                 {% endif %}
             </div>
         </div>
         <div id="secret-reveal-namespace-loading"
-             class="htmx-indicator mt-4 h-1 overflow-hidden rounded-md bg-kaori-soft dark:bg-blue-950/60">
-            <div class="h-full w-1/3 animate-pulse rounded-md bg-kaori-primary dark:bg-blue-400"></div>
+             class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-kaori-soft">
+            <div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div>
         </div>
     </div>
-    <div class="border-b border-outline-default bg-surface-subtle px-6 py-4 border-outline-default">
+    <div class="border-b border-outline-default bg-surface-hover px-6 py-4">
         <form method="get"
               action="{{ url_for('settings.secret_reveal.index') }}"
               hx-get="{{ url_for('settings.secret_reveal.index') }}"
@@ -38,31 +38,27 @@
               hx-push-url="true"
               hx-trigger="change from:select[name='namespace_policy'], keyup changed delay:500ms from:input[name='namespace_q']"
               hx-indicator="#secret-reveal-namespace-loading"
-              class="flex flex-col gap-4 md:flex-row md:items-end">
+              class="grid gap-4 md:grid-cols-[minmax(0,1fr)_18rem] md:items-end">
             <input type="hidden" name="cluster_id" value="{{ selected_cluster.id }}">
             <input type="hidden" name="page" value="1">
-            <input type="hidden"
-                   name="per_page"
-                   value="{{ namespace_pagination.per_page }}">
-            <div class="min-w-0 flex-1">
-                <label class="mb-2 block text-sm font-medium text-content-secondary">Search Namespace</label>
+            <input type="hidden" name="per_page" value="{{ namespace_pagination.per_page }}">
+            <div class="min-w-0">
+                <label class="mb-2 block text-sm font-medium text-content-secondary">Search namespace</label>
                 <div class="relative">
-                    <i data-lucide="search"
-                       class="absolute left-3 top-3 h-4 w-4 text-content-muted"></i>
+                    <i data-lucide="search" class="absolute left-3 top-3.5 h-4 w-4 text-content-muted"></i>
                     <input type="search"
                            name="namespace_q"
                            value="{{ namespace_filters.query }}"
                            placeholder="Search namespace name..."
-                           class="w-full rounded-xl border border-outline-default bg-surface-card py-2 pr-3 pl-10 text-sm text-content-primary transition outline-none placeholder:text-content-muted focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 border-outline-default text-content-primary dark:placeholder:text-content-muted dark:focus:border-kaori-primary dark:focus:ring-kaori-primary/20">
+                           class="h-11 w-full rounded-lg border border-outline-default bg-surface-card py-2 pr-3 pl-10 text-sm text-content-primary transition outline-none placeholder:text-content-muted focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10">
                 </div>
             </div>
-            <div class="w-full md:w-72 md:shrink-0">
-                <label class="mb-2 block text-sm font-medium text-content-secondary">Reveal Policy</label>
+            <div>
+                <label class="mb-2 block text-sm font-medium text-content-secondary">Reveal policy</label>
                 <select name="namespace_policy"
-                        class="w-full rounded-xl border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary transition outline-none focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 border-outline-default text-content-primary dark:focus:border-kaori-primary dark:focus:ring-kaori-primary/20">
+                        class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary transition outline-none focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10">
                     {% for value, label in namespace_filter_options.items() %}
-                        <option value="{{ value }}"
-                                {% if namespace_filters.policy == value %}selected{% endif %}>{{ label }}</option>
+                        <option value="{{ value }}" {% if namespace_filters.policy == value %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
             </div>

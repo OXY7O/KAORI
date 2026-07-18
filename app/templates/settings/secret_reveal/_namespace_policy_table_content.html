@@ -1,7 +1,5 @@
 <div class="overflow-x-auto">
-    <table class="w-full text-content-primary text-content-primary"
-           style="min-width: 980px;
-                  table-layout: fixed">
+    <table class="w-full table-fixed text-content-primary" style="min-width: 980px">
         <colgroup>
             <col style="width: 31%;">
             <col style="width: 15%;">
@@ -9,43 +7,41 @@
             <col style="width: 34%;">
         </colgroup>
         <thead>
-            <tr class="border-b border-outline-default bg-surface-subtle text-xs uppercase tracking-wide text-content-secondary border-outline-default bg-surface-subtle/40">
+            <tr class="border-b border-brand-outline bg-kaori-soft/70 text-xs uppercase tracking-wide text-content-secondary">
                 <th class="px-5 py-3 text-left">Namespace</th>
                 <th class="px-5 py-3 text-left">Live source</th>
-                <th class="px-5 py-3 text-left">Current Policy</th>
-                <th class="px-5 py-3 text-left">Configure</th>
+                <th class="px-5 py-3 text-left">Current policy</th>
+                <th class="px-5 py-3 text-right">Configure</th>
             </tr>
         </thead>
         <tbody>
             {% for row in namespace_rows %}
-                {% set live_classes = 'bg-green-50 text-green-700 ring-green-200 dark:bg-green-500/10 dark:text-green-300 dark:ring-green-500/25' if row.in_live_cluster else 'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/25' %}
+                {% set live_classes = 'bg-status-normal-soft text-status-normal-text ring-status-normal-border' if row.in_live_cluster else 'bg-status-warning-soft text-status-warning-text ring-status-warning-border' %}
                 {% if row.policy == 'approval_required' %}
-                    {% set policy_classes = "bg-kaori-soft text-kaori-primary ring-brand-outline dark:bg-kaori-soft/10 dark:text-kaori-accent dark:ring-kaori-primary/25" %}
-                    {% set policy_icon = "users" %}
+                    {% set policy_classes = 'bg-kaori-soft text-kaori-primary ring-brand-outline' %}
+                    {% set policy_icon = 'users' %}
                 {% elif row.policy == 'step_up' %}
-                    {% set policy_classes = "bg-kaori-soft text-kaori-primary ring-brand-outline dark:bg-kaori-soft/10 dark:text-kaori-accent dark:ring-kaori-primary/25" %}
-                    {% set policy_icon = "shield-check" %}
+                    {% set policy_classes = 'bg-kaori-soft text-kaori-primary ring-brand-outline' %}
+                    {% set policy_icon = 'shield-check' %}
                 {% else %}
-                    {% set policy_classes = "bg-surface-subtle text-content-secondary ring-outline-default bg-surface-subtle/50 dark:ring-slate-600" %}
-                    {% set policy_icon = "lock" %}
+                    {% set policy_classes = 'bg-surface-subtle text-content-secondary ring-outline-default' %}
+                    {% set policy_icon = 'lock' %}
                 {% endif %}
-                <tr class="border-t border-outline-default text-sm transition hover:bg-kaori-soft/30 border-outline-default dark:hover:bg-surface-subtle/30">
+                <tr class="border-t border-outline-default text-sm transition hover:bg-kaori-soft/40">
                     <td class="px-5 py-3 align-middle">
                         <div class="flex max-w-[360px] items-center gap-2.5">
-                            <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-surface-subtle text-content-secondary bg-surface-subtle">
+                            <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
                                 <i data-lucide="box" class="h-4 w-4"></i>
                             </span>
                             <div class="min-w-0">
-                                <div class="truncate font-semibold text-content-primary"
-                                     title="{{ row.namespace }}">{{ row.namespace }}</div>
+                                <div class="truncate font-semibold text-content-primary" title="{{ row.namespace }}">{{ row.namespace }}</div>
                                 <div class="mt-0.5 text-xs text-content-muted">Namespace-scoped Secret access</div>
                             </div>
                         </div>
                     </td>
                     <td class="px-5 py-3 text-left align-middle">
                         <span class="inline-flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium ring-1 ring-inset {{ live_classes }}">
-                            <i data-lucide="{{ 'check' if row.in_live_cluster else 'info' }}"
-                               class="h-3.5 w-3.5"></i>
+                            <i data-lucide="{{ 'check' if row.in_live_cluster else 'info' }}" class="h-3.5 w-3.5"></i>
                             {{ 'Current' if row.in_live_cluster else 'Missing' }}
                         </span>
                     </td>
@@ -58,23 +54,17 @@
                     <td class="px-5 py-3 align-middle">
                         <form method="post"
                               action="{{ url_for('settings.secret_reveal.update_namespace_policy', cluster_id=selected_cluster.id) }}"
-                              class="flex w-full items-center gap-3">
+                              class="ml-auto flex w-full max-w-md items-center justify-end gap-3">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <input type="hidden" name="namespace" value="{{ row.namespace }}">
-                            <input type="hidden"
-                                   name="namespace_q"
-                                   value="{{ namespace_filters.query }}">
-                            <input type="hidden"
-                                   name="namespace_policy"
-                                   value="{{ namespace_filters.policy }}">
+                            <input type="hidden" name="namespace_q" value="{{ namespace_filters.query }}">
+                            <input type="hidden" name="namespace_policy" value="{{ namespace_filters.policy }}">
                             <input type="hidden" name="page" value="{{ namespace_pagination.page }}">
-                            <input type="hidden"
-                                   name="per_page"
-                                   value="{{ namespace_pagination.per_page }}">
+                            <input type="hidden" name="per_page" value="{{ namespace_pagination.per_page }}">
                             <select name="policy"
                                     aria-label="Reveal policy for {{ row.namespace }}"
                                     {% if not row.in_live_cluster and row.policy == 'disabled' %}disabled{% endif %}
-                                    class="h-10 min-w-0 flex-1 rounded-xl border border-outline-default bg-surface-card px-3 text-sm text-content-primary outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-content-muted border-outline-default bg-surface-subtle text-content-primary dark:focus:border-kaori-primary dark:focus:ring-kaori-primary/20 dark:disabled:bg-surface-subtle dark:disabled:text-content-secondary">
+                                    class="h-10 min-w-0 flex-1 rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 disabled:cursor-not-allowed disabled:bg-surface-disabled disabled:text-content-muted">
                                 {% for value, label in reveal_policy_choices.items() %}
                                     <option value="{{ value }}" {% if row.policy == value %}selected{% endif %}>{{ label }}</option>
                                 {% endfor %}
@@ -82,7 +72,7 @@
                             <button type="submit"
                                     title="Save {{ row.namespace }} policy"
                                     {% if not row.in_live_cluster and row.policy == 'disabled' %}disabled{% endif %}
-                                    class="inline-flex h-10 w-24 shrink-0 items-center justify-center gap-2 rounded-xl bg-kaori-primary px-3 text-sm font-semibold text-white shadow-sm outline-none transition hover:bg-kaori-strong focus:ring-4 focus:ring-kaori-primary/20 disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-content-muted disabled:shadow-none dark:bg-kaori-primary dark:hover:bg-kaori-primary dark:focus:ring-kaori-primary/20 dark:disabled:bg-surface-subtle dark:disabled:text-content-secondary">
+                                    class="inline-flex h-10 w-24 shrink-0 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-3 text-sm font-semibold text-white shadow-sm outline-none transition hover:bg-kaori-primary-hover focus:ring-4 focus:ring-kaori-primary/20 disabled:cursor-not-allowed disabled:bg-surface-disabled disabled:text-content-muted disabled:shadow-none">
                                 <i data-lucide="save" class="h-4 w-4"></i>
                                 Save
                             </button>
@@ -95,7 +85,7 @@
                         {% if namespace_summary.total %}
                             {% set empty_state_icon = "search" %}
                             {% set empty_state_title = "No namespace matches the current filters" %}
-                            {% set empty_state_description = "Adjust the search or Reveal policy filter to show namespace settings." %}
+                            {% set empty_state_description = "Adjust the search or reveal policy filter to show namespace settings." %}
                         {% else %}
                             {% set empty_state_icon = "box" %}
                             {% set empty_state_title = "No live namespace available" %}
@@ -109,7 +99,7 @@
         </tbody>
     </table>
 </div>
-<div class="flex flex-col gap-4 border-t border-outline-default bg-surface-subtle px-6 py-4 text-sm text-content-muted lg:flex-row lg:items-center lg:justify-between border-outline-default">
+<div class="flex flex-col gap-4 border-t border-outline-default bg-surface-hover px-6 py-4 text-sm text-content-muted lg:flex-row lg:items-center lg:justify-between">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
         <div>
             Showing <span class="font-semibold text-content-secondary">{{ namespace_pagination.start_item }}</span> -
@@ -127,20 +117,15 @@
               hx-indicator="#secret-reveal-namespace-loading"
               class="flex items-center">
             <input type="hidden" name="cluster_id" value="{{ selected_cluster.id }}">
-            <input type="hidden"
-                   name="namespace_q"
-                   value="{{ namespace_filters.query }}">
-            <input type="hidden"
-                   name="namespace_policy"
-                   value="{{ namespace_filters.policy }}">
+            <input type="hidden" name="namespace_q" value="{{ namespace_filters.query }}">
+            <input type="hidden" name="namespace_policy" value="{{ namespace_filters.policy }}">
             <input type="hidden" name="page" value="1">
             <select name="per_page"
                     aria-label="Rows per page"
                     onchange="this.form.requestSubmit()"
-                    class="rounded-xl border border-outline-default bg-surface-card px-3 py-2 text-sm font-medium text-content-primary outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 border-outline-default bg-surface-subtle text-content-primary dark:focus:border-kaori-primary dark:focus:ring-kaori-primary/20">
+                    class="rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm font-medium text-content-primary outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10">
                 {% for option in namespace_per_page_options %}
-                    <option value="{{ option }}"
-                            {% if namespace_pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
+                    <option value="{{ option }}" {% if namespace_pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
                 {% endfor %}
             </select>
         </form>
@@ -155,15 +140,13 @@
                hx-swap="innerHTML"
                hx-push-url="true"
                hx-indicator="#secret-reveal-namespace-loading"
-               class="inline-flex items-center gap-2 rounded-xl border border-outline-default bg-surface-card px-3 py-2 text-sm font-medium text-content-secondary transition hover:bg-surface-subtle border-outline-default bg-surface-subtle dark:hover:bg-surface-subtle">
+               class="inline-flex items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm font-medium text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft/60 hover:text-kaori-primary">
                 <i data-lucide="chevron-left" class="h-4 w-4"></i>Previous
             </a>
         {% else %}
-            <span class="inline-flex cursor-not-allowed items-center gap-2 rounded-xl border border-outline-default bg-surface-subtle px-3 py-2 text-sm font-medium text-content-muted border-outline-default bg-surface-subtle">
-                <i data-lucide="chevron-left" class="h-4 w-4"></i>Previous
-            </span>
+            <span class="inline-flex cursor-not-allowed items-center gap-2 rounded-lg border border-outline-default bg-surface-disabled px-3 py-2 text-sm font-medium text-content-muted"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
         {% endif %}
-        <span class="inline-flex items-center rounded-xl border border-outline-default bg-surface-card px-3 py-2 text-sm font-semibold text-content-secondary border-outline-default bg-surface-subtle">Page {{ namespace_pagination.page }} / {{ namespace_pagination.total_pages }}</span>
+        <span class="inline-flex items-center rounded-lg border border-brand-outline bg-kaori-soft/70 px-3 py-2 text-sm font-semibold text-kaori-primary">Page {{ namespace_pagination.page }} / {{ namespace_pagination.total_pages }}</span>
         {% if namespace_pagination.has_next %}
             {% set next_url = url_for('settings.secret_reveal.index', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.next_page, per_page=namespace_pagination.per_page) %}
             <a href="{{ next_url }}"
@@ -173,13 +156,11 @@
                hx-swap="innerHTML"
                hx-push-url="true"
                hx-indicator="#secret-reveal-namespace-loading"
-               class="inline-flex items-center gap-2 rounded-xl border border-outline-default bg-surface-card px-3 py-2 text-sm font-medium text-content-secondary transition hover:bg-surface-subtle border-outline-default bg-surface-subtle dark:hover:bg-surface-subtle">
+               class="inline-flex items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm font-medium text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft/60 hover:text-kaori-primary">
                 Next<i data-lucide="chevron-right" class="h-4 w-4"></i>
             </a>
         {% else %}
-            <span class="inline-flex cursor-not-allowed items-center gap-2 rounded-xl border border-outline-default bg-surface-subtle px-3 py-2 text-sm font-medium text-content-muted border-outline-default bg-surface-subtle">
-                Next<i data-lucide="chevron-right" class="h-4 w-4"></i>
-            </span>
+            <span class="inline-flex cursor-not-allowed items-center gap-2 rounded-lg border border-outline-default bg-surface-disabled px-3 py-2 text-sm font-medium text-content-muted">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
         {% endif %}
     </div>
 </div>
