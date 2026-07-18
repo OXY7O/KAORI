@@ -6,8 +6,10 @@ from app.alertmanager.capabilities import CAPABILITIES, CAPABILITY_BY_KEY
 from app.alertmanager.repository import count_bindings_by_scope_type, list_instances
 from app.alertmanager.requirements import evaluate_module_readiness
 from app.alertmanager.resolver import AlertmanagerSourceResolution, resolve_alertmanager_sources
+from app.alertmanager.runtime_adapter import runtime_adapter
 from app.alertmanager.sanitization import safe_endpoint
 from app.extensions import db
+from app.integrations.runtime.presentation import runtime_state_view
 from app.models.alertmanager import AlertmanagerBinding, AlertmanagerInstance
 from app.models.cluster import Cluster
 
@@ -78,6 +80,7 @@ def build_instance_context(instance: AlertmanagerInstance | None = None) -> dict
         'capability_rows': capability_rows,
         'module_readiness_rows': evaluate_module_readiness(observed_capabilities),
         'source_resolution_rows': _source_resolution_rows(instance) if instance else [],
+        'runtime_state': runtime_state_view(runtime_adapter.get_state(instance)) if instance else None,
         'stats': {
             'bindings': len(instance.bindings) if instance else 0,
             'ready': bool(instance and instance.readiness_status == 'ready'),

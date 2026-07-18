@@ -1,0 +1,69 @@
+<section id="alertmanager-runtime-panel" class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+    <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <div class="flex items-start gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="activity" class="h-5 w-5"></i></span>
+            <div>
+                <h2 class="text-lg font-bold text-content-primary">Runtime Health & Diagnostics</h2>
+                <p class="mt-1 text-sm text-content-secondary">Readiness describes configuration fitness; health describes the latest observed runtime condition.</p>
+            </div>
+        </div>
+        <button type="button"
+                hx-post="{{ url_for('alertmanager.refresh_runtime', instance_id=instance.id) }}"
+                hx-target="#alertmanager-runtime-panel"
+                hx-swap="outerHTML"
+                hx-disabled-elt="this"
+                class="inline-flex items-center justify-center gap-2 rounded-xl bg-kaori-primary px-4 py-2.5 text-sm font-bold text-white transition hover:bg-kaori-primary-hover disabled:cursor-wait disabled:opacity-70">
+            <i data-lucide="refresh-cw" class="h-4 w-4"></i>Refresh runtime
+        </button>
+    </header>
+    <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-6">
+        {% for label, value in [
+            ('Health', runtime_state.health_status|replace('_',' ')|title),
+            ('Health Score', runtime_state.health_score|string ~ '/100'),
+            ('Readiness', runtime_state.readiness|replace('_',' ')|title),
+            ('Latency', runtime_state.latency_ms|string ~ ' ms' if runtime_state.latency_ms is not none else 'Not observed'),
+            ('Capability Profile', runtime_state.capability_profile or 'Not detected'),
+            ('Capabilities', runtime_state.capability_count|string ~ ' observed')
+        ] %}
+            <div class="min-h-[7.5rem] bg-surface-card p-4">
+                <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-content-tertiary">{{ label }}</p>
+                <p class="mt-3 break-words text-sm font-bold text-content-primary">{{ value }}</p>
+            </div>
+        {% endfor %}
+    </div>
+    <div class="grid gap-5 border-t border-outline-subtle p-5 sm:p-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div class="overflow-hidden rounded-xl border border-outline-subtle">
+            <div class="border-b border-outline-subtle bg-surface-hover px-4 py-3">
+                <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-content-tertiary">Diagnostic pipeline</p>
+            </div>
+            <div class="divide-y divide-outline-subtle">
+                {% for step in runtime_state.diagnostics %}
+                    <div class="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                            <p class="text-sm font-bold text-content-primary">{{ step.label }}</p>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">{{ step.detail }}</p>
+                            {% if step.recommendation %}<p class="mt-1 text-xs font-semibold text-amber-700">{{ step.recommendation }}</p>{% endif %}
+                        </div>
+                        <div class="flex shrink-0 items-center gap-2">
+                            {{ status_badge('ready' if step.status == 'success' else ('blocked' if step.status == 'failed' else 'validation_required')) }}
+                            {% if step.duration_ms is not none %}<span class="text-xs text-content-tertiary">{{ step.duration_ms }} ms</span>{% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="space-y-3">
+            <div class="rounded-xl border border-brand-outline bg-kaori-soft p-4">
+                <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-kaori-primary">Health interpretation</p>
+                <p class="mt-2 text-sm font-bold text-content-primary">{{ runtime_state.health_summary }}</p>
+                <p class="mt-2 text-xs leading-5 text-content-secondary">Observed {{ runtime_state.observed_at.strftime('%Y-%m-%d %H:%M:%S UTC') if runtime_state.observed_at else 'not yet' }}.</p>
+            </div>
+            {% for factor in runtime_state.factors %}
+                <div class="rounded-xl border border-outline-subtle bg-surface-hover p-3">
+                    <div class="flex items-center justify-between gap-3"><p class="text-sm font-bold text-content-primary">{{ factor.label }}</p><span class="text-xs font-bold text-content-secondary">{{ factor.score }}/100</span></div>
+                    {% if factor.detail %}<p class="mt-1 text-xs leading-5 text-content-secondary">{{ factor.detail }}</p>{% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>

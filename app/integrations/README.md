@@ -76,3 +76,16 @@ The list defaults to 5 items and supports 5, 10, 25, and 50. It may filter by
 query, deployment type, and readiness. Cluster Management may link to a bound
 instance, but must not recreate cluster-owned Alertmanager configuration.
 Legacy cluster URLs are compatibility redirects only.
+
+## Integration Runtime Framework
+
+Shared runtime contracts live in `app/integrations/runtime/`. Provider packages implement an adapter while the framework owns the common runtime lifecycle and UI vocabulary.
+
+- `contracts.py` defines provider-neutral runtime state, diagnostics, health factors, and capability snapshots.
+- `scoring.py` converts weighted health factors into a stable `healthy`, `degraded`, or `unhealthy` state.
+- `refresh.py` orchestrates provider refresh without importing provider internals.
+- `presentation.py` converts runtime state into a template-safe view model.
+
+Provider-specific endpoint, authentication, API probing, compatibility mapping, and capability discovery remain inside the provider package. The first adapter is `app/alertmanager/runtime_adapter.py`.
+
+Readiness and health are intentionally separate: readiness describes whether configuration and compatibility permit use; health describes the latest observed runtime condition.

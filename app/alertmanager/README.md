@@ -375,3 +375,7 @@ New asset analytics must call the consumer facade or `resolve_alertmanager_sourc
 ## Effective source resolution presentation
 
 The instance detail page exposes the resolver decision for every bound scope. Alert retrieval and silence retrieval are evaluated independently because they require different capabilities (`alerts_v2` and `silences_v2`). The presentation layer shows the effective instance, current-instance participation, role, priority, operational state, eligibility, missing capabilities, and the resolver decision reason for every candidate. This is diagnostic presentation only; source selection remains owned by `resolver.py` and provider execution/fallback remains owned by `consumer.py`.
+
+## Shared integration runtime adapter
+
+`runtime_adapter.py` implements the provider-neutral Integration Runtime contract. It translates Alertmanager validation output and persisted instance observations into diagnostics, weighted health factors, a capability snapshot, and a runtime state. The HTMX runtime refresh endpoint updates only the runtime panel and records a sanitized audit event. Alertmanager-specific HTTP and capability logic stays in this package; health contracts and scoring remain under `app/integrations/runtime/` for reuse by Prometheus and future providers.

@@ -14,6 +14,7 @@ from app.alertmanager.forms import (
 )
 from app.alertmanager.notifications import record_instance_activity
 from app.alertmanager.presentation import build_instance_context
+from app.alertmanager.runtime_adapter import runtime_adapter
 from app.alertmanager.service import (
     add_alertmanager_binding,
     create_alertmanager_instance,
@@ -27,6 +28,8 @@ from app.alertmanager.service import (
     test_alertmanager_connection,
     validate_alertmanager_instance,
 )
+from app.integrations.runtime.presentation import runtime_state_view
+from app.integrations.runtime.refresh import refresh_runtime as refresh_provider_runtime
 from app.notifications.service import get_navigation_notification_context
 from app.rbac.decorators import permission_required
 
@@ -157,6 +160,39 @@ def instance_detail(instance_id: int) -> ResponseReturnValue:
         'alertmanager/instance_form.html',
         **build_instance_context(instance),
         initial_cluster=None,
+    )
+
+
+@alertmanager_bp.post('/instances/<int:instance_id>/runtime/refresh')
+@permission_required('settings.manage_integrations')
+def refresh_runtime(instance_id: int) -> ResponseReturnValue:
+    instance = get_alertmanager_instance(instance_id)
+    if instance is None:
+        abort(404)
+
+    result, state = refresh_provider_runtime(runtime_adapter, instance)
+    record_instance_activity(
+        user_id=int(current_user.id),
+        instance=instance,
+        event_type='alertmanager_runtime_refreshed' if result.connected else 'alertmanager_runtime_refresh_failed',
+        status='success' if state.health.status == 'healthy' else ('warning' if state.health.status == 'degraded' else 'error'),
+        title='Alertmanager runtime refreshed',
+        message=f'{instance.name} runtime health is {state.health.status}.',
+        detail=result.reason or state.message,
+        metadata={
+            'health_status': state.health.status,
+            'health_score': state.health.score,
+            'readiness_status': state.readiness,
+            'latency_ms': state.latency_ms,
+            'capability_profile': state.snapshot.profile,
+            'capability_count': len(state.snapshot.capabilities),
+        },
+        queue_feedback=False,
+    )
+    return render_template(
+        'alertmanager/partials/_runtime_panel.html',
+        instance=instance,
+        runtime_state=runtime_state_view(state),
     )
 
 
