@@ -8,10 +8,9 @@
      data-operation-result-toast="{{ notification_id|default(task_id|default('result-' ~ range(100000, 999999) |random)) }}"
      role="status"
      aria-live="polite"
-     class="quick-action-toast pointer-events-auto w-full space-y-2">
+     class="quick-action-toast pointer-events-auto w-full">
     <article class="relative isolate overflow-hidden rounded-2xl border border-outline-default bg-surface-elevated shadow-xl shadow-black/10">
-        <span class="absolute inset-y-0 left-0 w-1 {% if is_success %}bg-status-normal{% elif is_warning %}bg-status-warning{% elif is_error %}bg-status-critical{% else %}bg-kaori-primary{% endif %}"></span>
-        <div class="p-4 pl-5">
+        <div class="p-4">
             <div class="flex items-start gap-3">
                 <span class="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl {% if is_success %}bg-status-normal-soft text-status-normal-text{% elif is_warning %}bg-status-warning-soft text-status-warning-text{% elif is_error %}bg-status-critical-soft text-status-critical-text{% else %}bg-kaori-soft text-kaori-primary{% endif %}">
                     {% if is_success %}
@@ -113,10 +112,10 @@
                 </div>
             </div>
         </div>
+        <div class="h-1 overflow-hidden bg-kaori-soft/70" aria-hidden="true">
+            <div class="h-full w-full {% if is_success %}bg-status-normal{% elif is_warning %}bg-status-warning{% elif is_error %}bg-status-critical{% else %}bg-kaori-primary{% endif %}"></div>
+        </div>
     </article>
-    <div class="mx-3 h-1 overflow-hidden rounded-full bg-surface-hover shadow-sm" aria-hidden="true">
-        <div class="h-full w-full rounded-full {% if is_success %}bg-status-normal{% elif is_warning %}bg-status-warning{% elif is_error %}bg-status-critical{% else %}bg-kaori-primary{% endif %}"></div>
-    </div>
 </div>
 {% if toast_oob|default(false) %}
     </div>

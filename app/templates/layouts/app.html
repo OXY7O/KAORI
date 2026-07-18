@@ -217,16 +217,13 @@
                 toast.setAttribute('data-operational-progress-toast', '')
                 toast.setAttribute('role', 'status')
                 toast.setAttribute('aria-live', 'polite')
-                toast.className = 'quick-action-toast pointer-events-auto w-full space-y-2'
+                toast.className = 'quick-action-toast pointer-events-auto w-full'
 
                 const card = document.createElement('article')
                 card.className = 'relative isolate overflow-hidden rounded-2xl border border-outline-default bg-surface-elevated shadow-xl shadow-black/10'
 
-                const accent = document.createElement('span')
-                accent.className = 'absolute inset-y-0 left-0 w-1 bg-kaori-primary'
-
                 const content = document.createElement('div')
-                content.className = 'p-4 pl-5'
+                content.className = 'p-4'
 
                 const row = document.createElement('div')
                 row.className = 'flex items-start gap-3'
@@ -254,14 +251,14 @@
                 closeButton.innerHTML = '<i data-lucide="x" class="h-4 w-4"></i>'
 
                 const progressTrack = document.createElement('div')
-                progressTrack.className = 'mx-3 h-1 overflow-hidden rounded-full bg-surface-hover shadow-sm'
-                progressTrack.innerHTML = '<div class="notification-progress-indeterminate h-full rounded-full bg-kaori-primary"></div>'
+                progressTrack.className = 'h-1 overflow-hidden bg-kaori-soft/70'
+                progressTrack.innerHTML = '<div class="notification-progress-indeterminate h-full bg-kaori-primary"></div>'
 
                 copy.append(heading, description)
                 row.append(iconWrap, copy)
                 content.append(row)
-                card.append(accent, content, closeButton)
-                toast.append(card, progressTrack)
+                card.append(content, closeButton, progressTrack)
+                toast.append(card)
                 container.append(toast)
 
                 if (window.lucide) {
