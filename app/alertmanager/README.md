@@ -379,3 +379,48 @@ The instance detail page exposes the resolver decision for every bound scope. Al
 ## Shared integration runtime adapter
 
 `runtime_adapter.py` implements the provider-neutral Integration Runtime contract. It translates Alertmanager validation output and persisted instance observations into diagnostics, weighted health factors, a capability snapshot, and a runtime state. The HTMX runtime refresh endpoint updates only the runtime panel and records a sanitized audit event. Alertmanager-specific HTTP and capability logic stays in this package; health contracts and scoring remain under `app/integrations/runtime/` for reuse by Prometheus and future providers.
+
+
+## Simplified source-selection flow
+
+Primary, secondary, and fallback bindings define preference, not simultaneous
+alert processing.
+
+```text
+Consumer asks for alerts or silences
+        ↓
+Resolver checks the required capability and current runtime state
+        ↓
+Use the healthiest eligible source
+        ↓
+If the live request fails, try the next eligible source
+```
+
+Example:
+
+```text
+Primary is healthy and has Alerts API
+→ use Primary for alerts
+
+Primary has no Silences API
+Secondary has Silences API
+→ use Secondary for silences
+
+Primary becomes unreachable during the request
+→ consumer tries Secondary
+```
+
+Kubernetes Analytics never implements this decision. It calls the public
+consumer facade and receives canonical Alertmanager records.
+
+## Shared Integration Runtime relationship
+
+Alertmanager is the first provider adapter for the shared framework documented
+in `docs/architecture/integration-runtime.md`. Alertmanager owns endpoint,
+authentication, API probing, profile mapping, and provider diagnostics. The
+shared framework owns runtime contracts, readiness-versus-health vocabulary,
+health scoring, refresh orchestration, and template-safe presentation.
+
+The complete cross-domain standards are listed in
+`docs/architecture/README.md` and must be reviewed before adding another
+provider or changing consumer behavior.

@@ -89,3 +89,34 @@ Shared runtime contracts live in `app/integrations/runtime/`. Provider packages 
 Provider-specific endpoint, authentication, API probing, compatibility mapping, and capability discovery remain inside the provider package. The first adapter is `app/alertmanager/runtime_adapter.py`.
 
 Readiness and health are intentionally separate: readiness describes whether configuration and compatibility permit use; health describes the latest observed runtime condition.
+
+
+## Canonical architecture references
+
+All new provider integrations must follow the shared standards in:
+
+- `docs/architecture/integration-lifecycle.md`;
+- `docs/architecture/integration-runtime.md`;
+- `docs/architecture/provider-adapter.md`;
+- `docs/architecture/capability-framework.md`;
+- `docs/architecture/compatibility-framework.md`; and
+- `docs/architecture/consumer-pattern.md`.
+
+The simplified operational rule is:
+
+```text
+Register provider once
+        ↓
+Validate and discover capabilities
+        ↓
+Bind it to an asset scope
+        ↓
+Resolver selects the healthiest eligible source
+        ↓
+Consumer returns canonical data to analytics
+```
+
+Primary, secondary, and fallback are preference levels only. They do not mean
+that every source is processed at the same time. A secondary source is selected
+when it is healthier or when the primary source lacks a capability required by
+the requested operation.
