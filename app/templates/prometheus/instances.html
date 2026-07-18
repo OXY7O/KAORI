@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Prometheus Instances{% endblock %}
+{% block content %}
+<div class="space-y-6">
+  <section class="rounded-xl border border-violet-200 bg-white p-6 shadow-sm dark:border-violet-900/60 dark:bg-slate-950">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-violet-600">Integrations</p>
+        <h1 class="mt-1 text-2xl font-bold text-slate-900 dark:text-white">Prometheus Instances</h1>
+        <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">Standalone Prometheus and Thanos runtimes mapped to infrastructure assets through canonical bindings.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200 text-left text-sm dark:divide-slate-800">
+        <thead class="bg-slate-50 dark:bg-slate-900/70"><tr>
+          <th class="px-5 py-3 font-semibold">Instance</th><th class="px-5 py-3 font-semibold">Endpoint</th><th class="px-5 py-3 font-semibold">Readiness</th><th class="px-5 py-3 font-semibold">Bindings</th><th class="px-5 py-3 font-semibold">Last checked</th><th class="px-5 py-3 text-right font-semibold">Action</th>
+        </tr></thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for row in rows %}
+          <tr>
+            <td class="px-5 py-4"><div class="font-semibold text-slate-900 dark:text-white">{{ row.instance.name }}</div><div class="text-xs text-slate-500">{{ row.instance.endpoint_product or 'Prometheus-compatible' }}</div></td>
+            <td class="px-5 py-4 text-slate-600 dark:text-slate-300">{{ row.instance.endpoint }}</td>
+            <td class="px-5 py-4"><span class="inline-flex min-h-6 items-center rounded-md border border-violet-200 bg-violet-50 px-2 text-[10px] font-semibold text-violet-700 dark:border-violet-800 dark:bg-violet-950/40 dark:text-violet-200">{{ row.status_label }}</span></td>
+            <td class="px-5 py-4">{{ row.binding_count }}</td><td class="px-5 py-4">{{ row.last_checked_at_display }}</td>
+            <td class="px-5 py-4 text-right">{% if row.primary_cluster_id %}<a class="font-semibold text-violet-700 hover:text-violet-800" href="{{ row.detail_url }}">Open</a>{% else %}<span class="text-xs text-amber-700">Binding required</span>{% endif %}</td>
+          </tr>
+          <tr><td colspan="6" class="bg-slate-50/60 px-5 py-3 dark:bg-slate-900/30">
+            <form method="post" action="{{ url_for('prometheus.add_instance_binding', instance_id=row.instance.id) }}" class="flex flex-wrap items-end gap-3">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <label class="text-xs font-semibold">Map asset<select name="cluster_id" required class="ml-2 rounded-md border border-slate-300 bg-white px-2 py-1.5 dark:border-slate-700 dark:bg-slate-900">{% for cluster in clusters %}<option value="{{ cluster.id }}">{{ cluster.name }}</option>{% endfor %}</select></label>
+              <select name="binding_role" class="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-900"><option value="primary">Primary</option><option value="secondary">Secondary</option><option value="fallback">Fallback</option></select>
+              <input name="priority" type="number" value="100" min="1" class="w-20 rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-900">
+              <button class="rounded-md bg-violet-600 px-3 py-2 text-xs font-semibold text-white hover:bg-violet-700">Add binding</button>
+            </form>
+          </td></tr>
+        {% else %}<tr><td colspan="6" class="px-5 py-10 text-center text-slate-500">No Prometheus runtime is registered.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}

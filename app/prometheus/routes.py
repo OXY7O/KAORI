@@ -12,14 +12,23 @@ from app.common.presentation import present_user_datetime
 from app.integrations.runtime.monitoring import refresh_and_record
 from app.integrations.runtime.presentation import runtime_history_view, runtime_state_view
 from app.integrations.runtime.repository import paginate_runtime_history
-from app.models import Cluster
+from app.extensions.db import db
+from app.integrations.lifecycle import bind_instance, ensure_canonical_instance
+from app.models import Cluster, PrometheusInstance
+from app.models.integration import IntegrationBinding
 from app.notifications.service import (
     get_navigation_notification_context,
     record_operational_activity,
 )
 from app.prometheus.exceptions import PrometheusError
 from app.prometheus.forms import PrometheusConfigForm
-from app.prometheus.repository import resolve_instance_for_cluster
+from app.prometheus.repository import (
+    cluster_bindings_for_instance,
+    get_instance,
+    list_instances,
+    primary_cluster_id_for_instance,
+    resolve_instance_for_cluster,
+)
 from app.prometheus.runtime_adapter import runtime_adapter
 from app.prometheus.service import PrometheusService
 from app.rbac.decorators import permission_required
@@ -67,6 +76,94 @@ def _get_cluster_or_404(
 
 def _runtime_source(cluster):
     return resolve_instance_for_cluster(cluster.id)
+
+
+def _instance_or_404(instance_id: int) -> PrometheusInstance:
+    instance = get_instance(instance_id)
+    if instance is None:
+        abort(404)
+    return instance
+
+
+def _cluster_for_instance_or_404(instance: PrometheusInstance) -> Cluster:
+    cluster_id = primary_cluster_id_for_instance(instance)
+    if cluster_id is None:
+        abort(409, description='Prometheus instance has no enabled Kubernetes cluster binding.')
+    return _get_cluster_or_404(cluster_id)
+
+
+@prometheus_bp.get('/instances')
+@permission_required('settings.manage_integrations')
+def instances() -> ResponseReturnValue:
+    rows = []
+    for instance in list_instances():
+        bindings = cluster_bindings_for_instance(instance)
+        rows.append({
+            'instance': instance,
+            'binding_count': len(bindings),
+            'primary_cluster_id': bindings[0].asset_key if bindings else None,
+            'detail_url': url_for('prometheus.instance_detail', instance_id=instance.id),
+            'status_label': (instance.readiness_status or 'validation_required').replace('_', ' ').title(),
+            'last_checked_at_display': present_user_datetime(instance.last_checked_at, empty='Not checked yet'),
+        })
+    clusters = Cluster.query.order_by(Cluster.created_at.asc(), Cluster.id.asc()).all()
+    return render_template('prometheus/instances.html', rows=rows, clusters=clusters)
+
+
+@prometheus_bp.route('/instances/<int:instance_id>', methods=['GET', 'POST'])
+@permission_required('settings.manage_integrations')
+def instance_detail(instance_id: int) -> ResponseReturnValue:
+    instance = _instance_or_404(instance_id)
+    cluster = _cluster_for_instance_or_404(instance)
+    return configuration(cluster.id)
+
+
+@prometheus_bp.post('/instances/<int:instance_id>/bindings')
+@permission_required('settings.manage_integrations')
+def add_instance_binding(instance_id: int) -> ResponseReturnValue:
+    instance = _instance_or_404(instance_id)
+    cluster = _get_cluster_or_404(request.form.get('cluster_id', '').strip())
+    canonical = ensure_canonical_instance(instance, provider_type='prometheus')
+    bind_instance(
+        canonical,
+        asset_type='kubernetes_cluster',
+        asset_key=cluster.id,
+        binding_role=request.form.get('binding_role', 'primary'),
+        priority=request.form.get('priority', 100, type=int),
+        capability_scope=[
+            'metrics', 'capacity', 'utilization', 'storage', 'workload',
+            'forecast', 'top_consumers', 'alert_metrics',
+        ],
+    )
+    db.session.commit()
+    return redirect(url_for('prometheus.instances'))
+
+
+@prometheus_bp.post('/instances/<int:instance_id>/bindings/<int:binding_id>/delete')
+@permission_required('settings.manage_integrations')
+def delete_instance_binding(instance_id: int, binding_id: int) -> ResponseReturnValue:
+    instance = _instance_or_404(instance_id)
+    binding = IntegrationBinding.query.filter_by(
+        id=binding_id, integration_instance_id=instance.integration_instance_id,
+    ).first()
+    if binding is None:
+        abort(404)
+    db.session.delete(binding)
+    db.session.commit()
+    return redirect(url_for('prometheus.instances'))
+
+
+@prometheus_bp.post('/instances/<int:instance_id>/test')
+@permission_required('settings.manage_integrations')
+def instance_test(instance_id: int) -> ResponseReturnValue:
+    return test_connection(_cluster_for_instance_or_404(_instance_or_404(instance_id)).id)
+
+
+@prometheus_bp.post('/instances/<int:instance_id>/validate')
+@permission_required('settings.manage_integrations')
+def instance_validate(instance_id: int) -> ResponseReturnValue:
+    return validate_integration(_cluster_for_instance_or_404(_instance_or_404(instance_id)).id)
+
 
 
 @prometheus_bp.route(

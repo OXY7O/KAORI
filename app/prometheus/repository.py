@@ -22,3 +22,34 @@ def resolve_instance_for_cluster(
         return None
     record = provider_record(selected.instance)
     return record if isinstance(record, PrometheusInstance) else None
+
+
+def get_instance(instance_id: int) -> PrometheusInstance | None:
+    return PrometheusInstance.query.filter_by(id=instance_id).first()
+
+
+def list_instances() -> list[PrometheusInstance]:
+    return PrometheusInstance.query.order_by(
+        PrometheusInstance.created_at.asc(),
+        PrometheusInstance.id.asc(),
+    ).all()
+
+
+def cluster_bindings_for_instance(instance: PrometheusInstance):
+    from app.models.integration import IntegrationBinding
+
+    if instance.integration_instance_id is None:
+        return []
+    return IntegrationBinding.query.filter_by(
+        integration_instance_id=instance.integration_instance_id,
+        asset_type=KUBERNETES_CLUSTER_SCOPE,
+        enabled=True,
+    ).order_by(
+        IntegrationBinding.priority.asc(),
+        IntegrationBinding.id.asc(),
+    ).all()
+
+
+def primary_cluster_id_for_instance(instance: PrometheusInstance) -> str | None:
+    bindings = cluster_bindings_for_instance(instance)
+    return bindings[0].asset_key if bindings else None
