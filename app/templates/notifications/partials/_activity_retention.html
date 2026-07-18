@@ -392,6 +392,12 @@ archive_search=retention.archive_filters.search) %}
             </div>
         </form>
         {% if retention.archives %}
+            {% set archive_actions = namespace(available=false) %}
+            {% for archive in retention.archives %}
+                {% if (archive.is_downloadable and current_user.has_permission('settings.export_operational_activity')) or (archive.is_verifiable and current_user.has_permission('settings.manage_operational_activity_retention')) %}
+                    {% set archive_actions.available = true %}
+                {% endif %}
+            {% endfor %}
             <div class="mt-4 overflow-x-auto rounded-xl border border-outline-default dark:border-outline-default">
                 <table class="min-w-full divide-y divide-slate-200 text-left text-xs dark:divide-slate-700">
                     <thead class="bg-surface-subtle text-[10px] font-semibold uppercase tracking-wide text-content-muted dark:bg-surface-card/50 dark:text-content-muted">
@@ -402,8 +408,8 @@ archive_search=retention.archive_filters.search) %}
                             <th class="px-4 py-3">Mode</th>
                             <th class="px-4 py-3">Storage</th>
                             <th class="px-4 py-3">Status</th>
-                            <th class="px-4 py-3">Generated</th>
-                            <th class="px-4 py-3 text-right">Actions</th>
+                            <th class="px-4 py-3 {% if not archive_actions.available %}text-right{% endif %}">Generated</th>
+                            {% if archive_actions.available %}<th class="px-4 py-3 text-right">Actions</th>{% endif %}
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-200 bg-surface-card dark:divide-slate-700 dark:bg-surface-card">
@@ -426,8 +432,16 @@ archive_search=retention.archive_filters.search) %}
                                     <div class="mt-1 text-[10px] text-content-muted dark:text-content-muted">{{ archive.cleanup_deleted_count }} cleaned</div>
                                 </td>
                                 <td class="px-4 py-3 text-content-secondary dark:text-slate-300">
-                                    <div>{{ archive.operation_mode|replace('_', ' ') |title }}</div>
-                                    <div class="mt-1 text-[10px] text-content-muted">{{ archive.trigger_type|title }}</div>
+                                    <div class="flex flex-col items-start gap-1.5">
+                                        <span class="inline-flex items-center gap-1 rounded-lg bg-kaori-soft px-2.5 py-1 text-[10px] font-semibold text-kaori-primary ring-1 ring-inset ring-brand-outline dark:bg-kaori-soft dark:text-kaori-primary dark:ring-brand-outline">
+                                            <span class="font-bold">Mode</span>
+                                            <span>{{ archive.operation_mode|replace('_', ' ') |title }}</span>
+                                        </span>
+                                        <span class="inline-flex items-center gap-1 rounded-lg bg-surface-subtle px-2.5 py-1 text-[10px] font-semibold text-content-secondary ring-1 ring-inset ring-slate-200 dark:bg-surface-subtle dark:text-slate-300 dark:ring-slate-700">
+                                            <span class="font-bold">Trigger</span>
+                                            <span>{{ archive.trigger_type|title }}</span>
+                                        </span>
+                                    </div>
                                 </td>
                                 <td class="px-4 py-3 text-content-secondary dark:text-slate-300">
                                     <div class="font-semibold text-content-primary dark:text-content-primary">{{ archive.storage_label }}</div>
@@ -447,11 +461,12 @@ archive_search=retention.archive_filters.search) %}
                                         <p class="mt-1 max-w-xs text-[10px] leading-4 text-content-muted dark:text-content-muted">Full technical detail is available in Activity Audit Log.</p>
                                     {% endif %}
                                 </td>
-                                <td class="px-4 py-3 text-content-secondary dark:text-slate-300">
+                                <td class="px-4 py-3 text-content-secondary dark:text-slate-300 {% if not archive_actions.available %}text-right{% endif %}">
                                     {{ archive.created_at|user_datetime("%d %b %Y") }}
                                     <div class="mt-1 text-[10px] text-content-muted">{{ archive.created_at|user_datetime("%H:%M %Z") }}</div>
                                 </td>
-                                <td class="px-4 py-3">
+                                {% if archive_actions.available %}
+                                <td class="px-4 py-3 text-right">
                                     <div class="flex flex-wrap justify-end gap-2">
                                         {% if archive.is_downloadable and current_user.has_permission('settings.export_operational_activity') %}
                                             <a href="{{ url_for('notifications.download_activity_archive', archive_id=archive.id, kind='data') }}"
@@ -483,6 +498,7 @@ archive_search=retention.archive_filters.search) %}
                                         {% endif %}
                                     </div>
                                 </td>
+                                {% endif %}
                             </tr>
                         {% endfor %}
                     </tbody>

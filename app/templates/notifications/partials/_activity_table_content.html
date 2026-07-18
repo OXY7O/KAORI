@@ -14,7 +14,7 @@
                 <div>Activity</div>
                 <div>Target</div>
                 <div>Result</div>
-                <div>Details</div>
+                <div class="text-right">Details</div>
             </div>
             <div class="divide-y divide-slate-200 dark:divide-slate-700">
                 {% for item in items %}
@@ -80,8 +80,8 @@
                                     {{ item.status_label }}
                                 </span>
                             </div>
-                            <div class="flex justify-start pr-2">
-                                <span class="inline-flex items-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-2.5 py-1.5 text-[10px] font-bold text-content-secondary shadow-sm transition group-open:border-brand-outline group-open:bg-kaori-soft group-open:text-kaori-primary dark:border-outline-default dark:bg-surface-card dark:text-slate-300 dark:group-open:border-blue-900/60 dark:group-open:bg-blue-950/40 dark:group-open:text-kaori-primary">
+                            <div class="flex justify-end">
+                                <span class="inline-flex items-center gap-1.5 rounded-lg border border-brand-outline bg-kaori-soft px-3 py-2 text-[10px] font-semibold text-kaori-primary shadow-sm transition hover:border-kaori-primary hover:bg-kaori-primary hover:text-white group-open:border-kaori-primary group-open:bg-kaori-primary group-open:text-white dark:border-brand-outline dark:bg-kaori-soft dark:text-kaori-primary">
                                     <i data-lucide="eye" class="h-3.5 w-3.5"></i>
                                     <span>Details</span>
                                     <i data-lucide="chevron-down"
