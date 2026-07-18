@@ -100,6 +100,7 @@ def instances() -> ResponseReturnValue:
         bindings = cluster_bindings_for_instance(instance)
         rows.append({
             'instance': instance,
+            'bindings': bindings,
             'binding_count': len(bindings),
             'primary_cluster_id': bindings[0].asset_key if bindings else None,
             'detail_url': url_for('prometheus.instance_detail', instance_id=instance.id),

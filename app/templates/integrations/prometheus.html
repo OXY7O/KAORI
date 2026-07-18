@@ -6,6 +6,10 @@
   {% set title='Prometheus Integrations' %}
   {% set description='Validate Prometheus runtime compatibility, versioned PromQL profiles, metric schemas, and query readiness across connected Kubernetes environments.' %}
   {% include 'integrations/partials/_hero.html' %}
+  <nav class="flex flex-wrap gap-2 rounded-xl border border-outline-default bg-surface-card p-2 shadow-sm" aria-label="Prometheus integration sections">
+    <a href="{{ url_for('integrations.prometheus') }}" class="inline-flex items-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white"><i data-lucide="layout-list" class="h-4 w-4"></i>Inventory</a>
+    <a href="{{ url_for('prometheus.instances') }}" class="inline-flex items-center gap-2 rounded-lg border border-outline-default bg-surface-subtle px-4 py-2 text-sm font-semibold text-content-secondary transition hover:border-kaori-primary/40 hover:text-kaori-primary"><i data-lucide="waypoints" class="h-4 w-4"></i>Instances & Bindings</a>
+  </nav>
   {% include 'integrations/prometheus/partials/_inventory_card.html' %}
 </div>
 {% endblock %}

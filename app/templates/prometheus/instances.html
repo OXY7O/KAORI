@@ -1,45 +1,69 @@
-{% extends "base.html" %}
-{% block title %}Prometheus Instances{% endblock %}
-{% block content %}
+{% extends "layouts/app.html" %}
+{% block title %}Prometheus Instances & Bindings · KAORI{% endblock %}
+{% block dashboard_content %}
 <div class="space-y-6">
-  <section class="rounded-xl border border-violet-200 bg-white p-6 shadow-sm dark:border-violet-900/60 dark:bg-slate-950">
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-violet-600">Integrations</p>
-        <h1 class="mt-1 text-2xl font-bold text-slate-900 dark:text-white">Prometheus Instances</h1>
-        <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">Standalone Prometheus and Thanos runtimes mapped to infrastructure assets through canonical bindings.</p>
+  <section class="rounded-xl border border-kaori-primary/20 bg-surface-card p-6 shadow-sm">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div class="min-w-0">
+        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-kaori-primary">Observability integration</p>
+        <h1 class="mt-1 text-2xl font-bold text-content-primary">Prometheus Instances & Bindings</h1>
+        <p class="mt-2 max-w-3xl text-sm leading-6 text-content-secondary">Manage standalone Prometheus or Thanos runtimes and map each runtime to Kubernetes assets through canonical integration bindings.</p>
       </div>
+      <a href="{{ url_for('integrations.prometheus') }}" class="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-subtle px-4 py-2.5 text-sm font-semibold text-content-secondary transition hover:border-kaori-primary/40 hover:text-kaori-primary"><i data-lucide="layout-list" class="h-4 w-4"></i>View inventory</a>
     </div>
   </section>
 
-  <section class="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
-    <div class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-slate-200 text-left text-sm dark:divide-slate-800">
-        <thead class="bg-slate-50 dark:bg-slate-900/70"><tr>
-          <th class="px-5 py-3 font-semibold">Instance</th><th class="px-5 py-3 font-semibold">Endpoint</th><th class="px-5 py-3 font-semibold">Readiness</th><th class="px-5 py-3 font-semibold">Bindings</th><th class="px-5 py-3 font-semibold">Last checked</th><th class="px-5 py-3 text-right font-semibold">Action</th>
-        </tr></thead>
-        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-        {% for row in rows %}
-          <tr>
-            <td class="px-5 py-4"><div class="font-semibold text-slate-900 dark:text-white">{{ row.instance.name }}</div><div class="text-xs text-slate-500">{{ row.instance.endpoint_product or 'Prometheus-compatible' }}</div></td>
-            <td class="px-5 py-4 text-slate-600 dark:text-slate-300">{{ row.instance.endpoint }}</td>
-            <td class="px-5 py-4"><span class="inline-flex min-h-6 items-center rounded-md border border-violet-200 bg-violet-50 px-2 text-[10px] font-semibold text-violet-700 dark:border-violet-800 dark:bg-violet-950/40 dark:text-violet-200">{{ row.status_label }}</span></td>
-            <td class="px-5 py-4">{{ row.binding_count }}</td><td class="px-5 py-4">{{ row.last_checked_at_display }}</td>
-            <td class="px-5 py-4 text-right">{% if row.primary_cluster_id %}<a class="font-semibold text-violet-700 hover:text-violet-800" href="{{ row.detail_url }}">Open</a>{% else %}<span class="text-xs text-amber-700">Binding required</span>{% endif %}</td>
-          </tr>
-          <tr><td colspan="6" class="bg-slate-50/60 px-5 py-3 dark:bg-slate-900/30">
-            <form method="post" action="{{ url_for('prometheus.add_instance_binding', instance_id=row.instance.id) }}" class="flex flex-wrap items-end gap-3">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <label class="text-xs font-semibold">Map asset<select name="cluster_id" required class="ml-2 rounded-md border border-slate-300 bg-white px-2 py-1.5 dark:border-slate-700 dark:bg-slate-900">{% for cluster in clusters %}<option value="{{ cluster.id }}">{{ cluster.name }}</option>{% endfor %}</select></label>
-              <select name="binding_role" class="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-900"><option value="primary">Primary</option><option value="secondary">Secondary</option><option value="fallback">Fallback</option></select>
-              <input name="priority" type="number" value="100" min="1" class="w-20 rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-900">
-              <button class="rounded-md bg-violet-600 px-3 py-2 text-xs font-semibold text-white hover:bg-violet-700">Add binding</button>
-            </form>
-          </td></tr>
-        {% else %}<tr><td colspan="6" class="px-5 py-10 text-center text-slate-500">No Prometheus runtime is registered.</td></tr>{% endfor %}
-        </tbody>
-      </table>
+  <nav class="flex flex-wrap gap-2 rounded-xl border border-outline-default bg-surface-card p-2 shadow-sm" aria-label="Prometheus integration sections">
+    <a href="{{ url_for('integrations.prometheus') }}" class="inline-flex items-center gap-2 rounded-lg border border-outline-default bg-surface-subtle px-4 py-2 text-sm font-semibold text-content-secondary transition hover:border-kaori-primary/40 hover:text-kaori-primary"><i data-lucide="layout-list" class="h-4 w-4"></i>Inventory</a>
+    <a href="{{ url_for('prometheus.instances') }}" class="inline-flex items-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white"><i data-lucide="waypoints" class="h-4 w-4"></i>Instances & Bindings</a>
+  </nav>
+
+  {% for row in rows %}
+  <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <header class="flex flex-col gap-4 border-b border-outline-subtle px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+      <div class="min-w-0">
+        <div class="flex flex-wrap items-center gap-2">
+          <h2 class="truncate text-lg font-bold text-content-primary">{{ row.instance.name }}</h2>
+          <span class="inline-flex min-h-6 items-center rounded-md border border-kaori-primary/20 bg-kaori-primary-soft px-2 text-[10px] font-semibold text-kaori-primary-dark">{{ row.status_label }}</span>
+        </div>
+        <p class="mt-1 truncate font-mono text-xs text-content-muted" title="{{ row.instance.endpoint }}">{{ row.instance.endpoint }}</p>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="inline-flex min-h-6 items-center rounded-md border border-outline-default bg-surface-subtle px-2 text-[10px] font-semibold text-content-secondary">{{ row.binding_count }} binding{{ '' if row.binding_count == 1 else 's' }}</span>
+        {% if row.primary_cluster_id %}<a href="{{ row.detail_url }}" class="inline-flex items-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover"><i data-lucide="settings-2" class="h-4 w-4"></i>Open configuration</a>{% endif %}
+      </div>
+    </header>
+
+    <div class="grid gap-5 p-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+      <div class="overflow-hidden rounded-xl border border-outline-default">
+        <div class="border-b border-outline-subtle bg-surface-subtle px-4 py-3"><h3 class="text-sm font-bold text-content-primary">Asset bindings</h3><p class="mt-1 text-xs text-content-muted">Canonical mappings used by runtime resolution and Analytics dependencies.</p></div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-left text-sm">
+            <thead class="border-b border-outline-subtle bg-surface-card text-xs uppercase tracking-wide text-content-muted"><tr><th class="px-4 py-3">Asset</th><th class="px-4 py-3">Role</th><th class="px-4 py-3">Priority</th><th class="px-4 py-3">Status</th><th class="px-4 py-3 text-right">Action</th></tr></thead>
+            <tbody class="divide-y divide-outline-subtle">
+              {% for binding in row.bindings %}
+              <tr><td class="px-4 py-3"><div class="font-semibold text-content-primary">{{ binding.asset_key }}</div><div class="text-xs text-content-muted">{{ binding.asset_type|replace('_', ' ')|title }}</div></td><td class="px-4 py-3"><span class="inline-flex min-h-6 items-center rounded-md border border-kaori-primary/20 bg-kaori-primary-soft px-2 text-[10px] font-semibold text-kaori-primary-dark">{{ binding.binding_role|title }}</span></td><td class="px-4 py-3 text-content-secondary">{{ binding.priority }}</td><td class="px-4 py-3"><span class="inline-flex min-h-6 items-center rounded-md border px-2 text-[10px] font-semibold {{ 'border-emerald-200 bg-emerald-50 text-emerald-700' if binding.enabled else 'border-slate-200 bg-slate-50 text-slate-600' }}">{{ 'Enabled' if binding.enabled else 'Disabled' }}</span></td><td class="px-4 py-3 text-right"><form method="post" action="{{ url_for('prometheus.delete_instance_binding', instance_id=row.instance.id, binding_id=binding.id) }}" onsubmit="return confirm('Remove this Prometheus binding?')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50"><i data-lucide="unlink" class="h-3.5 w-3.5"></i>Remove</button></form></td></tr>
+              {% else %}<tr><td colspan="5" class="px-4 py-8 text-center text-sm text-content-muted">No asset binding exists for this runtime.</td></tr>{% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <aside class="rounded-xl border border-kaori-primary/20 bg-kaori-primary-soft/40 p-4">
+        <div class="flex items-center gap-2"><span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-primary text-white"><i data-lucide="link-2" class="h-4 w-4"></i></span><div><h3 class="text-sm font-bold text-content-primary">Add asset binding</h3><p class="text-xs text-content-muted">Map this runtime to a cluster.</p></div></div>
+        {% if clusters %}
+        <form method="post" action="{{ url_for('prometheus.add_instance_binding', instance_id=row.instance.id) }}" class="mt-4 space-y-4">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <label class="block"><span class="mb-1.5 block text-xs font-semibold text-content-secondary">Kubernetes cluster</span><select name="cluster_id" required class="w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2.5 text-sm text-content-primary">{% for cluster in clusters %}<option value="{{ cluster.id }}">{{ cluster.name }}</option>{% endfor %}</select></label>
+          <div class="grid grid-cols-2 gap-3"><label class="block"><span class="mb-1.5 block text-xs font-semibold text-content-secondary">Binding role</span><select name="binding_role" class="w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2.5 text-sm text-content-primary"><option value="primary">Primary</option><option value="secondary">Secondary</option><option value="fallback">Fallback</option></select></label><label class="block"><span class="mb-1.5 block text-xs font-semibold text-content-secondary">Priority</span><input name="priority" type="number" value="100" min="1" class="w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2.5 text-sm text-content-primary"></label></div>
+          <button class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover"><i data-lucide="plus" class="h-4 w-4"></i>Add binding</button>
+        </form>
+        {% else %}<div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-3 text-xs text-amber-800">No Kubernetes cluster is available to bind.</div>{% endif %}
+      </aside>
     </div>
   </section>
+  {% else %}
+  <section class="rounded-xl border border-kaori-primary/20 bg-kaori-primary-soft/35 px-6 py-10 text-center"><i data-lucide="activity" class="mx-auto h-8 w-8 text-kaori-primary"></i><h2 class="mt-3 text-base font-bold text-content-primary">No Prometheus runtime registered</h2><p class="mt-1 text-sm text-content-secondary">Create or save a Prometheus configuration from the inventory page first. The standalone runtime will then appear here for asset mapping.</p><a href="{{ url_for('integrations.prometheus') }}" class="mt-4 inline-flex items-center gap-2 rounded-lg bg-kaori-primary px-4 py-2.5 text-sm font-semibold text-white"><i data-lucide="arrow-left" class="h-4 w-4"></i>Open Prometheus inventory</a></section>
+  {% endfor %}
 </div>
 {% endblock %}
