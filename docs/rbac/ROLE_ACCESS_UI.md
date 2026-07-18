@@ -82,7 +82,22 @@ Mode must be clear in the hero, supporting notice, field state, permission matri
 
 ## 6. Permission Catalog
 
-Permission Catalog is read-only and should answer:
+Permission Catalog is the read-only UI projection of the backend-owned permission registry. Permission definitions originate in `app/rbac/defaults.py` and are synchronized to the database through `flask seed-rbac`.
+
+The ownership chain is:
+
+```text
+Permission Catalog
+  -> defines atomic capabilities
+Roles & Access
+  -> bundles selected capabilities into reusable roles
+User Management
+  -> assigns one active role to each user account
+Authorization runtime
+  -> enforces the effective permission set on the server
+```
+
+Permission Catalog should answer:
 
 - what capability a key grants;
 - which module/action it belongs to;
@@ -90,7 +105,7 @@ Permission Catalog is read-only and should answer:
 - whether it is unassigned;
 - that permission creation is a code change.
 
-It must not offer rename, delete, inline edit, or direct role mutation controls.
+It must not offer rename, delete, inline edit, or direct role mutation controls. Roles & Access owns permission-to-role composition; User Management owns role-to-user assignment. Identity Provider configuration may choose a default role for JIT-provisioned users, but it does not create permission keys or grant Super Admin.
 
 The registry uses the global KAORI pagination contract because permission volume is expected to grow. Its pagination unit is the top-level permission section/module, not individual permission cards:
 

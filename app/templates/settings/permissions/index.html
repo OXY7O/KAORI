@@ -272,24 +272,51 @@
                 </footer>
             </div>
             <aside class="space-y-5">
-                <section class="rounded-2xl border border-outline-default bg-surface-card p-5 shadow-sm">
-                    <div class="flex items-start gap-3">
-                        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="route" class="h-5 w-5"></i></span>
-                        <div>
-                            <h2 class="text-base font-bold text-content-primary">Authorization contract</h2>
-                            <div class="mt-3 flex gap-2.5 rounded-xl border border-brand-outline bg-kaori-soft px-3.5 py-3 text-sm leading-6 text-kaori-primary">
-                                <i data-lucide="shield-check" class="mt-0.5 h-4 w-4 shrink-0"></i>
-                                <p>Server-side permission checks remain authoritative. Navigation visibility and disabled controls are usability layers, not security boundaries.</p>
+                <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+                    <header class="border-b border-outline-default px-5 py-4">
+                        <div class="flex items-start gap-3">
+                            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="workflow" class="h-5 w-5"></i></span>
+                            <div>
+                                <h2 class="text-base font-bold text-content-primary">How RBAC is applied</h2>
+                                <p class="mt-1 text-sm leading-5 text-content-muted">Permissions define capabilities, roles package them, and User Management assigns one role to a user.</p>
                             </div>
                         </div>
-                    </div>
-                    <div class="mt-4 space-y-3 text-sm leading-5 text-content-secondary">
-                        <div class="flex gap-2"><i data-lucide="shield-check"
-   class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i><span>Every protected mutation must use a route guard.</span></div>
-                        <div class="flex gap-2"><i data-lucide="git-merge"
-   class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i><span>Dependent write permissions include their required view baseline.</span></div>
-                        <div class="flex gap-2"><i data-lucide="history"
-   class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i><span>Role lifecycle changes are recorded in Activity Audit Log.</span></div>
+                    </header>
+                    <div class="px-5 py-4">
+                        <ol class="relative space-y-4 before:absolute before:bottom-4 before:left-4 before:top-4 before:w-px before:bg-outline-default">
+                            <li class="relative flex gap-3">
+                                <span class="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-brand-outline bg-kaori-soft text-xs font-bold text-kaori-primary">1</span>
+                                <div class="min-w-0 pt-0.5">
+                                    <p class="text-sm font-bold text-content-primary">Permission Catalog</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Backend-defined permission keys are synchronized to the database by <code class="font-mono font-semibold text-content-secondary">flask seed-rbac</code>. The catalog is read-only in the UI.</p>
+                                </div>
+                            </li>
+                            <li class="relative flex gap-3">
+                                <span class="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-brand-outline bg-kaori-soft text-xs font-bold text-kaori-primary">2</span>
+                                <div class="min-w-0 pt-0.5">
+                                    <p class="text-sm font-bold text-content-primary">Roles &amp; Access</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Selected permission keys are bundled into protected default roles or administrator-managed custom roles.</p>
+                                </div>
+                            </li>
+                            <li class="relative flex gap-3">
+                                <span class="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-brand-outline bg-kaori-soft text-xs font-bold text-kaori-primary">3</span>
+                                <div class="min-w-0 pt-0.5">
+                                    <p class="text-sm font-bold text-content-primary">User assignment</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">User Management assigns one active role to each account. Identity Providers may supply a configured default role during JIT provisioning.</p>
+                                </div>
+                            </li>
+                            <li class="relative flex gap-3">
+                                <span class="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-brand-outline bg-kaori-soft text-xs font-bold text-kaori-primary">4</span>
+                                <div class="min-w-0 pt-0.5">
+                                    <p class="text-sm font-bold text-content-primary">Server enforcement</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Route and service guards evaluate the authenticated user's active role. Super Admin remains a separate emergency authority flag.</p>
+                                </div>
+                            </li>
+                        </ol>
+                        <div class="mt-4 flex gap-2.5 rounded-xl border border-brand-outline bg-kaori-soft px-3.5 py-3 text-sm leading-5 text-kaori-primary">
+                            <i data-lucide="shield-check" class="mt-0.5 h-4 w-4 shrink-0"></i>
+                            <p><strong>Security boundary:</strong> server-side permission checks are authoritative. Hidden navigation and disabled controls only improve usability.</p>
+                        </div>
                     </div>
                 </section>
                 <section class="rounded-2xl border border-outline-default bg-surface-card p-5 shadow-sm">

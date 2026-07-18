@@ -58,6 +58,16 @@ Each permission includes:
 
 Permission creation and renaming are code changes. They are not administrative UI operations because route guards, navigation, tests, and documentation depend on stable keys.
 
+The administrative ownership boundary is explicit:
+
+- **Permission Catalog** presents the backend-owned registry synchronized by `flask seed-rbac`;
+- **Roles & Access** composes permission keys into protected default roles and editable custom roles;
+- **User Management** assigns one active role to a local user account;
+- **Identity Provider configuration** may map a default role for JIT provisioning;
+- **authorization decorators and services** enforce the resulting permission set on the server.
+
+Roles & Access therefore does not directly own user access assignment. It defines the reusable role that User Management or an approved identity-provider mapping can assign.
+
 ## 4. Role types
 
 ### 4.1 Protected default role

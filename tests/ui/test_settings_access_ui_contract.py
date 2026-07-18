@@ -64,23 +64,34 @@ def test_permission_catalog_uses_section_based_standard_pagination() -> None:
     assert 'pageItems()' not in source
 
 
-def test_rbac_boundary_descriptions_use_violet_distinction_blocks() -> None:
+def test_rbac_ownership_and_authorization_flow_are_explicit() -> None:
     roles_source = Path('app/templates/settings/roles/index.html').read_text(encoding='utf-8')
     permissions_source = Path('app/templates/settings/permissions/index.html').read_text(encoding='utf-8')
 
-    for source, copy in (
-        (
-            roles_source,
-            'One active role maps to each user. Super Admin remains a separate emergency authority flag and is not a normal role.',
-        ),
-        (
-            permissions_source,
-            'Server-side permission checks remain authoritative. Navigation visibility and disabled controls are usability layers, not security boundaries.',
-        ),
-    ):
-        copy_position = source.index(copy)
-        block_start = source.rfind('<div class="', 0, copy_position)
-        block_fragment = source[block_start:copy_position]
-        assert 'border-brand-outline' in block_fragment
-        assert 'bg-kaori-soft' in block_fragment
-        assert 'text-kaori-primary' in block_fragment
+    role_model_copy = (
+        'Roles & Access builds reusable role profiles from the Permission Catalog. '
+        'User Management assigns one active role to each user. '
+        'Super Admin remains a separate emergency authority flag, not a normal role.'
+    )
+    assert role_model_copy in roles_source
+
+    required_flow_fragments = (
+        'How RBAC is applied',
+        'Permission Catalog',
+        'flask seed-rbac',
+        'Roles &amp; Access',
+        'User assignment',
+        'User Management assigns one active role to each account.',
+        'Server enforcement',
+        'Security boundary:',
+        'server-side permission checks are authoritative',
+    )
+    missing = [fragment for fragment in required_flow_fragments if fragment not in permissions_source]
+    assert not missing, f'Permission Catalog RBAC flow is incomplete: {missing}'
+
+    boundary_position = permissions_source.index('Security boundary:')
+    block_start = permissions_source.rfind('<div class="', 0, boundary_position)
+    block_fragment = permissions_source[block_start:boundary_position]
+    assert 'border-brand-outline' in block_fragment
+    assert 'bg-kaori-soft' in block_fragment
+    assert 'text-kaori-primary' in block_fragment
