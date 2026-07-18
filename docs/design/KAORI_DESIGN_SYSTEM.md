@@ -206,20 +206,20 @@ Validate each redesign in:
 - 100% browser zoom
 - loading, empty, error, disabled, and permission states where applicable
 - keyboard focus and visible focus rings
-- the fixed expanded navigation used by the application shell
+- the open and closed navigation states used by the application shell
 
 ## Application shell reference
 
 The authenticated application shell uses a floating, rounded navigation model rather than a full-bleed rectangular sidebar.
 
 - Place the application shell on `surface-page` with a compact outer gutter.
-- Use a fixed 250 px sidebar at the standard desktop density. The user-facing collapse control is not part of the KAORI application-shell contract.
+- Use a 250 px sidebar at the standard desktop density when navigation is open. The navbar control may fully hide or restore the sidebar; do not introduce a narrow icon-only rail.
 - The sidebar uses `surface-sidebar` as its foundation. Violet is reserved for the active item, focus state, brand icon, and restrained ambient highlights.
 - Use a 16 px (`rounded-2xl`) outer radius for both the sidebar and main application frame.
 - Keep navigation groups visually separated by compact uppercase labels; do not add decorative dividers between every item.
 - Active navigation uses a filled violet state with white label and icon. Inactive items use muted on-brand content with a subtle translucent hover surface.
 - Nested navigation remains inside the sidebar and uses a low-contrast vertical guide, compact rows, and a violet accent for the selected child.
-- The authenticated sidebar remains expanded at the standard desktop width. Do not add a collapse-navigation control unless a new navigation contract is explicitly approved.
+- The navbar open/close control persists `kaori.sidebarOpen` locally and toggles the entire 250 px sidebar. The content frame expands into the released space when navigation is closed.
 - The main application frame uses semantic surface and outline tokens in both light and dark mode. Avoid raw white, slate, blue, or violet utilities when a KAORI token exists.
 
 
@@ -244,6 +244,9 @@ The authenticated application shell uses a floating, rounded navigation model ra
 - Do not apply manual left margin or padding to compensate for the leading icon.
 - Do not use `rounded-full` for hero eyebrows. Pills remain reserved for compact statuses, badges, filters, and metadata chips.
 - Changes to hero geometry or alignment must be made in the shared component first, then validated across Settings, Access, Welcome, and Kubernetes Operations Dashboard reference pages.
+
+- Settings and Access two-column forms must use `items-start` and self-sized cards. A primary configuration card must never stretch merely because the contextual rail contains longer guidance.
+- Primary form actions and permission disclosures align to the same content-column width as the configuration card.
 
 ## Welcome workspace reference
 

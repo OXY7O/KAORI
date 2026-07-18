@@ -78,16 +78,20 @@ def test_general_and_account_tabs_use_htmx_without_full_page_reload() -> None:
             assert 'hx-get=' in source
 
 
-def test_sidebar_collapse_navigation_is_removed() -> None:
+def test_sidebar_open_close_control_has_shared_state() -> None:
     layout_source = Path('app/templates/layouts/app.html').read_text(encoding='utf-8')
     sidebar_source = Path('app/templates/components/navigation/sidebar.html').read_text(encoding='utf-8')
+    navbar_source = Path('app/templates/components/navigation/navbar.html').read_text(encoding='utf-8')
 
-    assert 'Collapse navigation' not in sidebar_source
-    assert 'toggle-sidebar' not in sidebar_source
-    assert '@toggle-sidebar.window' not in layout_source
-    assert 'x-data="{ sidebarOpen:' not in layout_source
+    assert "sidebarOpen: localStorage.getItem('kaori.sidebarOpen') !== 'false'" in layout_source
+    assert 'toggleSidebar() {' in layout_source
+    assert "localStorage.setItem('kaori.sidebarOpen'" in layout_source
+    assert '@click="toggleSidebar()"' in navbar_source
+    assert ':aria-expanded="sidebarOpen.toString()"' in navbar_source
+    assert 'id="app-sidebar"' in sidebar_source
+    assert 'x-show="sidebarOpen"' in sidebar_source
     assert 'sidebar-collapsed' not in layout_source
-    assert 'kubereport.sidebarOpen' not in layout_source
+    assert 'w-[78px]' not in sidebar_source
 
 
 def test_permission_catalog_uses_section_based_standard_pagination() -> None:
@@ -142,7 +146,8 @@ def test_rbac_ownership_and_authorization_flow_are_explicit() -> None:
     assert '>Role model<' not in roles_source
 
     required_permission_flow_fragments = (
-        '<details open class="group overflow-hidden',
+        '<details open',
+        'class="group overflow-hidden',
         'How RBAC is applied',
         'group-open:rotate-180',
         'Permission Catalog',
@@ -237,13 +242,14 @@ def test_role_form_guardrails_and_permission_matrix_disclosures_are_available() 
     script = Path('app/static/js/role_permission_editor.js').read_text(encoding='utf-8')
 
     required_form_fragments = (
-        '<details open class="group overflow-hidden',
+        '<details open',
+        'class="group overflow-hidden',
         'Access guardrails',
         'Design for responsibility',
         'Dependency normalization',
         'Assignment impact',
         'Super Admin boundary',
-        'grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]',
+        'grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_360px]',
         'data-role-permission-matrix',
         'data-role-module-toggle-all',
         'data-role-module-toggle-all-label',
@@ -276,3 +282,50 @@ def test_role_form_guardrails_and_permission_matrix_disclosures_are_available() 
     )
     missing_script = [fragment for fragment in required_script_fragments if fragment not in script]
     assert not missing_script, f'Global permission controls are incomplete: {missing_script}'
+
+
+
+def test_role_form_cards_are_proportional_and_self_sized() -> None:
+    source = Path('app/templates/settings/roles/form.html').read_text(encoding='utf-8')
+
+    assert 'grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_360px]' in source
+    assert 'self-start overflow-hidden rounded-2xl' in source
+    assert 'Role identity' in source
+    assert 'Operational purpose' in source
+    assert 'Assignment availability' in source
+    assert 'Effective coverage' in source
+    assert 'Permission changes affect every account and Identity Provider default' in source
+    assert 'sm:items-center sm:justify-between xl:col-start-1' in source
+
+
+def test_permission_catalog_role_coverage_is_closed_by_default() -> None:
+    source = Path('app/templates/settings/permissions/index.html').read_text(encoding='utf-8')
+
+    position = source.index('Role coverage')
+    details_start = source.rfind('<details', 0, position)
+    details_end = source.index('>', details_start)
+    assert details_start >= 0
+    assert ' open' not in source[details_start:details_end]
+    assert '{{ roles|length }} roles' in source
+    assert 'group-open:rotate-180' in source[position:position + 1400]
+
+
+def test_activity_retention_uses_overview_pattern() -> None:
+    source = Path('app/templates/notifications/partials/_activity_retention.html').read_text(encoding='utf-8')
+
+    required = (
+        'Retention &amp; Archive Overview',
+        'grid gap-px bg-outline-subtle md:grid-cols-2 xl:grid-cols-4',
+        'Operational overview',
+        'Archive-first lifecycle',
+        'Hot data',
+        'Archive retention',
+        'Scheduled run',
+        'Worker readiness',
+        'Last lifecycle run',
+        'Failure posture',
+    )
+    missing = [fragment for fragment in required if fragment not in source]
+    assert not missing, f'Activity retention overview is incomplete: {missing}'
+    assert 'Lifecycle overview' not in source
+    assert 'bg-gradient-to-r' not in source

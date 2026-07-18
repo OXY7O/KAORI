@@ -102,10 +102,17 @@ Mode must be clear in the hero, supporting notice, field state, permission matri
 - use `app/static/js/role_permission_editor.js` for progressive enhancement only;
 - never clear and recreate every role-permission link for a small change; update relationship rows differentially;
 - roll back failed role updates and render a visible operational toast instead of returning an unhandled blank response;
+- keep Role Configuration, Role Summary, and Access Guardrails self-sized with `items-start`; the left configuration card must not inherit the right rail height;
+- present Role Configuration as three proportional groups: role identity, operational purpose, and assignment availability;
+- present Role Summary as one primary effective-coverage panel plus compact lifecycle and assignment facts instead of a flat grid of equally weighted counters;
+- align the final create/update action card to the same primary content column used by Role Configuration and Permission Matrix;
 - present Access Guardrails as a native expandable section with `open` set by default;
 - explain responsibility-based role design, dependency normalization, assignment impact, and the separate Super Admin boundary.
 
 ## 6. Permission Catalog
+
+Role Coverage in Permission Catalog is supporting context rather than the primary registry. Render it as a native disclosure closed by default so the catalog remains compact while still exposing dynamic role counts on demand.
+
 
 Permission Catalog is the read-only UI projection of the backend-owned permission registry. Permission definitions originate in `app/rbac/defaults.py` and are synchronized to the database through `flask seed-rbac`.
 

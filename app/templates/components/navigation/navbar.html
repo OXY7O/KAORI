@@ -33,7 +33,7 @@
     <div class="flex h-16 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <!-- Left: sidebar control and current page context -->
         <div class="flex min-w-0 items-center gap-2">
-            <button @click="sidebarOpen = !sidebarOpen"
+            <button @click="toggleSidebar()"
                     type="button"
                     class="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-outline-default bg-surface-card text-content-secondary shadow-sm transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
                     :title="sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'"

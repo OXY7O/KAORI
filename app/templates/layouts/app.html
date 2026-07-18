@@ -32,7 +32,9 @@
         {% endblock page_styles %}
     </head>
     <body class="h-full overflow-hidden bg-surface-page font-sans text-content-primary antialiased transition-colors duration-300">
-        <div class="flex h-full min-h-0 gap-2 overflow-hidden bg-surface-page p-2">
+        <div class="flex h-full min-h-0 gap-2 overflow-hidden bg-surface-page p-2"
+             x-data="{ sidebarOpen: localStorage.getItem('kaori.sidebarOpen') !== 'false', toggleSidebar() { this.sidebarOpen = !this.sidebarOpen; localStorage.setItem('kaori.sidebarOpen', this.sidebarOpen ? 'true' : 'false'); } }"
+             @keydown.escape.window="if (window.innerWidth < 1024 && sidebarOpen) { toggleSidebar() }">
             {% include "components/navigation/sidebar.html" %}
             <div class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
                 {% include "components/navigation/navbar.html" %}

@@ -49,7 +49,7 @@ def test_role_permission_checkbox_stays_inside_its_card_viewport():
 def test_role_permission_matrix_is_compact_and_closed_by_default():
     source = Path('app/templates/settings/roles/form.html').read_text(encoding='utf-8')
 
-    assert 'grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]' in source
+    assert 'grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_360px]' in source
     assert 'data-role-permission-matrix' in source
     tag_start = source.rfind('<details', 0, source.index('data-role-permission-matrix'))
     tag_end = source.index('>', tag_start)

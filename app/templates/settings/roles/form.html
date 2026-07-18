@@ -169,9 +169,9 @@
                     </div>
                 </section>
             {% endif %}
-            <section class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-                <div class="rounded-2xl border border-outline-default bg-surface-card shadow-sm">
-                    <header class="border-b border-outline-default px-5 py-4">
+            <section class="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+                <div class="self-start overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+                    <header class="border-b border-outline-default bg-surface-hover px-5 py-4">
                         <div class="flex items-center gap-3">
                             <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="badge" class="h-5 w-5"></i></span>
                             <div>
@@ -180,74 +180,130 @@
                             </div>
                         </div>
                     </header>
-                    <div class="grid gap-5 p-5 lg:grid-cols-2">
-                        <label class="space-y-2">
-                            <span class="text-sm font-semibold text-content-secondary">Role slug</span>
-                            {{ form.name(class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 font-mono text-sm font-semibold text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20 disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-content-disabled", placeholder="platform_operator", readonly=read_only) }}
-                            <span class="block text-xs leading-5 text-content-muted">Stable identifier. Letters, numbers, spaces, hyphens, and underscores are normalized to lowercase underscores.</span>
-                        </label>
-                        <label class="space-y-2">
-                            <span class="text-sm font-semibold text-content-secondary">Display name</span>
-                            {{ form.display_name(class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-semibold text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20 disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-content-disabled", placeholder="Platform Operator", readonly=read_only) }}
-                            <span class="block text-xs leading-5 text-content-muted">Human-readable role label shown in User Management and identity projection.</span>
-                        </label>
-                        <label class="space-y-2 lg:col-span-2">
-                            <span class="text-sm font-semibold text-content-secondary">Description</span>
-                            {{ form.description(class="min-h-28 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 py-3 text-sm leading-6 text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20 disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-content-disabled", rows="4", maxlength="500", placeholder="Describe the responsibilities, intended users, and operational boundary for this role.", readonly=read_only) }}
-                            <span class="block text-xs text-content-muted">Maximum 500 characters.</span>
-                        </label>
-                        <div class="lg:col-span-2">
-                            <label class="flex items-start gap-3 rounded-xl border border-outline-default bg-surface-subtle p-4 {{ 'cursor-default' if read_only else 'cursor-pointer' }}">
-                                {{ form.is_active(class="mt-1 h-4 w-4 rounded border-outline-strong accent-kaori-primary focus:ring-kaori-primary", disabled=read_only) }}
-                                <span>
-                                    <span class="block text-sm font-bold text-content-primary">Active role</span>
-                                    <span class="mt-1 block text-sm leading-6 text-content-muted">Active roles can be selected for new user assignments and identity-provider default mapping. Existing users lose role-derived access when a custom role is inactive.</span>
+                    <div class="space-y-5 p-5">
+                        <section class="rounded-xl border border-outline-default bg-surface-card p-4">
+                            <div class="mb-4 flex items-start justify-between gap-3">
+                                <div class="flex items-start gap-3">
+                                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="fingerprint" class="h-4 w-4"></i></span>
+                                    <div>
+                                        <h3 class="text-sm font-bold text-content-primary">Role identity</h3>
+                                        <p class="mt-0.5 text-xs leading-5 text-content-muted">Stable machine identity and user-facing access label.</p>
+                                    </div>
+                                </div>
+                                <span class="inline-flex min-h-7 items-center rounded-md border border-brand-outline bg-kaori-soft px-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-kaori-primary">Custom profile</span>
+                            </div>
+                            <div class="grid gap-5 lg:grid-cols-2">
+                                <label class="space-y-2">
+                                    <span class="text-sm font-semibold text-content-secondary">Role slug</span>
+                                    {{ form.name(class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 font-mono text-sm font-semibold text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20 disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-content-disabled", placeholder="platform_operator", readonly=read_only) }}
+                                    <span class="block text-xs leading-5 text-content-muted">Normalized to lowercase underscores and used as the stable backend identifier.</span>
+                                </label>
+                                <label class="space-y-2">
+                                    <span class="text-sm font-semibold text-content-secondary">Display name</span>
+                                    {{ form.display_name(class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-semibold text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20 disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-content-disabled", placeholder="Platform Operator", readonly=read_only) }}
+                                    <span class="block text-xs leading-5 text-content-muted">Shown in User Management, role assignment, and identity projection.</span>
+                                </label>
+                            </div>
+                        </section>
+                        <section class="rounded-xl border border-outline-default bg-surface-subtle p-4">
+                            <div class="mb-3 flex items-start gap-3">
+                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-content-secondary shadow-sm"><i data-lucide="align-left" class="h-4 w-4"></i></span>
+                                <div>
+                                    <h3 class="text-sm font-bold text-content-primary">Operational purpose</h3>
+                                    <p class="mt-0.5 text-xs leading-5 text-content-muted">Describe who should receive this role and the responsibility boundary it represents.</p>
+                                </div>
+                            </div>
+                            <label class="space-y-2">
+                                <span class="sr-only">Description</span>
+                                {{ form.description(class="min-h-28 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 py-3 text-sm leading-6 text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20 disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-content-disabled", rows="4", maxlength="500", placeholder="Describe the responsibilities, intended users, and operational boundary for this role.", readonly=read_only) }}
+                                <span class="block text-right text-xs text-content-muted">Maximum 500 characters</span>
+                            </label>
+                        </section>
+                        <section class="rounded-xl border border-brand-outline bg-kaori-soft p-4">
+                            <label class="flex items-start gap-3 {{ 'cursor-default' if read_only else 'cursor-pointer' }}">
+                                <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm"><i data-lucide="power" class="h-4 w-4"></i></span>
+                                {{ form.is_active(class="mt-3 h-4 w-4 rounded border-outline-strong accent-kaori-primary focus:ring-kaori-primary", disabled=read_only) }}
+                                <span class="min-w-0 flex-1">
+                                    <span class="flex flex-wrap items-center gap-2">
+                                        <span class="text-sm font-bold text-content-primary">Assignment availability</span>
+                                        <span class="rounded-md border border-brand-outline bg-surface-card px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-kaori-primary">Active role</span>
+                                    </span>
+                                    <span class="mt-1 block text-sm leading-6 text-content-muted">Active custom roles can be assigned in User Management and selected as an Identity Provider default. Deactivation removes role-derived access from assigned users.</span>
                                 </span>
                             </label>
-                        </div>
+                        </section>
                     </div>
                 </div>
-                <aside class="space-y-5">
-                    <section class="rounded-2xl border border-outline-default bg-surface-card p-5 shadow-sm">
-                        <div class="flex items-center gap-3">
-                            <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="bar-chart-3" class="h-5 w-5"></i></span>
-                            <div>
-                                <h2 class="text-base font-bold text-content-primary">Role summary</h2>
-                                <p class="mt-0.5 text-sm text-content-muted">Current effective scope.</p>
+                <aside class="self-start space-y-5">
+                    <section class="self-start overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+                        <header class="border-b border-outline-default bg-surface-hover px-5 py-4">
+                            <div class="flex items-center gap-3">
+                                <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="bar-chart-3" class="h-5 w-5"></i></span>
+                                <div>
+                                    <h2 class="text-base font-bold text-content-primary">Role summary</h2>
+                                    <p class="mt-0.5 text-xs leading-5 text-content-muted">Effective scope and assignment posture.</p>
+                                </div>
+                            </div>
+                        </header>
+                        <div class="space-y-4 p-5">
+                            <div class="rounded-xl border border-brand-outline bg-kaori-soft p-4">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div>
+                                        <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-kaori-primary">Effective coverage</p>
+                                        <p class="mt-2 text-3xl font-bold tracking-tight text-content-primary"><span data-role-selected-count>{{ selected_count }}</span> <span class="text-sm font-semibold text-content-muted">permissions</span></p>
+                                        <p class="mt-1 text-xs leading-5 text-content-muted">Distributed across <strong data-role-selected-module-count class="text-content-primary">{{ selected_module_ns.count }}</strong> application modules.</p>
+                                    </div>
+                                    {% if role and role.is_active %}
+                                        <span class="rounded-md border border-status-normal-border bg-status-normal-soft px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-status-normal-text">Active</span>
+                                    {% elif role %}
+                                        <span class="rounded-md border border-status-disabled-border bg-status-disabled-soft px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-status-disabled-text">Inactive</span>
+                                    {% else %}
+                                        <span class="rounded-md border border-status-pending-border bg-status-pending-soft px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-status-pending-text">Draft</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <dl class="grid grid-cols-2 gap-3">
+                                <div class="rounded-xl border border-outline-default bg-surface-subtle p-3.5">
+                                    <dt class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Role type</dt>
+                                    <dd class="mt-1.5 text-sm font-bold text-content-primary">
+                                        {{ 'Default baseline' if role and role.is_system else 'Custom role' }}
+                                    </dd>
+                                </div>
+                                <div class="rounded-xl border border-outline-default bg-surface-subtle p-3.5">
+                                    <dt class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Assigned users</dt>
+                                    <dd class="mt-1.5 text-sm font-bold text-content-primary">
+                                        {{ assigned_user_count if role else 0 }}
+                                    </dd>
+                                </div>
+                                <div class="rounded-xl border border-outline-default bg-surface-subtle p-3.5">
+                                    <dt class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Lifecycle</dt>
+                                    <dd class="mt-1.5 text-sm font-bold text-content-primary">
+                                        {% if page_mode == 'clone' %}
+                                            Clone draft
+                                        {% elif page_mode == 'edit' %}
+                                            Managed update
+                                        {% elif read_only %}
+                                            Read only
+                                        {% else %}
+                                            New profile
+                                        {% endif %}
+                                    </dd>
+                                </div>
+                                <div class="rounded-xl border border-outline-default bg-surface-subtle p-3.5">
+                                    <dt class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Assignment model</dt>
+                                    <dd class="mt-1.5 text-sm font-bold text-content-primary">
+                                        One role / user
+                                    </dd>
+                                </div>
+                            </dl>
+                            <div class="flex items-start gap-2.5 rounded-xl border border-outline-default bg-surface-hover p-3.5 text-xs leading-5 text-content-muted">
+                                <i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
+                                <p>Permission changes affect every account and Identity Provider default currently mapped to this role.</p>
                             </div>
                         </div>
-                        <dl class="mt-4 grid grid-cols-2 gap-3">
-                            <div class="rounded-xl border border-outline-default bg-surface-subtle p-3">
-                                <dt class="text-[11px] font-semibold uppercase tracking-[0.12em] text-content-muted">Permissions</dt>
-                                <dd class="mt-1 text-2xl font-bold text-content-primary"
-                                    data-role-selected-count>
-                                    {{ selected_count }}
-                                </dd>
-                            </div>
-                            <div class="rounded-xl border border-outline-default bg-surface-subtle p-3">
-                                <dt class="text-[11px] font-semibold uppercase tracking-[0.12em] text-content-muted">Modules</dt>
-                                <dd class="mt-1 text-2xl font-bold text-content-primary"
-                                    data-role-selected-module-count>
-                                    {{ selected_module_ns.count }}
-                                </dd>
-                            </div>
-                            {% if role %}
-                                <div class="rounded-xl border border-outline-default bg-surface-subtle p-3">
-                                    <dt class="text-[11px] font-semibold uppercase tracking-[0.12em] text-content-muted">Users</dt>
-                                    <dd class="mt-1 text-2xl font-bold text-content-primary">
-                                        {{ assigned_user_count }}
-                                    </dd>
-                                </div>
-                                <div class="rounded-xl border border-outline-default bg-surface-subtle p-3">
-                                    <dt class="text-[11px] font-semibold uppercase tracking-[0.12em] text-content-muted">Type</dt>
-                                    <dd class="mt-2 text-sm font-bold text-content-primary">
-                                        {{ 'Default' if role.is_system else 'Custom' }}
-                                    </dd>
-                                </div>
-                            {% endif %}
-                        </dl>
                     </section>
-                    <details open class="group overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+                    <details open
+                             class="group overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
                         <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 marker:hidden">
                             <div class="flex items-center gap-3">
                                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="shield-check" class="h-5 w-5"></i></span>
@@ -263,7 +319,8 @@
                         <div class="grid gap-3 border-t border-outline-default bg-surface-subtle p-4">
                             <div class="rounded-xl border border-outline-default bg-surface-card p-3.5">
                                 <div class="flex items-start gap-3">
-                                    <i data-lucide="scan-search" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
+                                    <i data-lucide="scan-search"
+                                       class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
                                     <div>
                                         <p class="text-sm font-semibold text-content-primary">Design for responsibility</p>
                                         <p class="mt-1 text-xs leading-5 text-content-muted">Build reusable access profiles around operational duties. Do not create one-off roles for individual users unless the boundary is intentionally reusable.</p>
@@ -272,7 +329,8 @@
                             </div>
                             <div class="rounded-xl border border-outline-default bg-surface-card p-3.5">
                                 <div class="flex items-start gap-3">
-                                    <i data-lucide="git-merge" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
+                                    <i data-lucide="git-merge"
+                                       class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
                                     <div>
                                         <p class="text-sm font-semibold text-content-primary">Dependency normalization</p>
                                         <p class="mt-1 text-xs leading-5 text-content-muted">Mutation permissions automatically include their required view baseline, so the saved role remains operationally consistent.</p>
@@ -281,7 +339,8 @@
                             </div>
                             <div class="rounded-xl border border-outline-default bg-surface-card p-3.5">
                                 <div class="flex items-start gap-3">
-                                    <i data-lucide="users-round" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
+                                    <i data-lucide="users-round"
+                                       class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
                                     <div>
                                         <p class="text-sm font-semibold text-content-primary">Assignment impact</p>
                                         <p class="mt-1 text-xs leading-5 text-content-muted">User Management assigns one active role per account. Deactivating this role removes its permission scope from every assigned user.</p>
@@ -301,7 +360,7 @@
                     </details>
                 </aside>
             </section>
-            <section class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+            <section class="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
                 <details class="group overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm xl:col-start-1"
                          data-role-permission-matrix>
                     <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 marker:hidden">
@@ -417,33 +476,35 @@
                     </div>
                 </details>
             </section>
-            <section class="flex flex-col gap-3 rounded-2xl border border-outline-default bg-surface-card px-5 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-                <p class="flex items-start gap-2 text-xs leading-5 text-content-muted">
-                    <i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0"></i>
-                    Role changes take effect on the next authorization check; active sessions do not cache permission assignments in the current implementation.
-                </p>
-                <div class="flex shrink-0 justify-end gap-3">
-                    <a href="{{ url_for('settings.roles') }}"
-                       class="inline-flex min-h-10 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-4 py-2 text-sm font-semibold text-content-secondary hover:bg-surface-hover">{{ 'Back' if read_only else 'Cancel' }}</a>
-                    {% if read_only and not is_system_role and current_user.has_permission('roles.manage') %}
-                        <a href="{{ url_for('settings.edit_role', role_id=role.id) }}"
-                           class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white hover:bg-kaori-primary/90"><i data-lucide="pencil" class="h-4 w-4"></i>Edit custom role</a>
-                    {% elif read_only and is_system_role and current_user.has_permission('roles.manage') %}
-                        <a href="{{ url_for('settings.clone_role', role_id=role.id) }}"
-                           class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white hover:bg-kaori-primary/90"><i data-lucide="copy-plus" class="h-4 w-4"></i>Clone default role</a>
-                    {% elif not read_only %}
-                        <button type="submit"
-                                class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white hover:bg-kaori-primary/90">
-                            <i data-lucide="save" class="h-4 w-4"></i>
-                            {% if page_mode == 'clone' %}
-                                Create cloned role
-                            {% elif page_mode == 'edit' %}
-                                Update custom role
-                            {% else %}
-                                Create custom role
-                            {% endif %}
-                        </button>
-                    {% endif %}
+            <section class="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+                <div class="flex flex-col gap-3 rounded-2xl border border-outline-default bg-surface-card px-5 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between xl:col-start-1">
+                    <p class="flex items-start gap-2 text-xs leading-5 text-content-muted">
+                        <i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0"></i>
+                        Role changes take effect on the next authorization check; active sessions do not cache permission assignments in the current implementation.
+                    </p>
+                    <div class="flex shrink-0 justify-end gap-3">
+                        <a href="{{ url_for('settings.roles') }}"
+                           class="inline-flex min-h-10 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-4 py-2 text-sm font-semibold text-content-secondary hover:bg-surface-hover">{{ 'Back' if read_only else 'Cancel' }}</a>
+                        {% if read_only and not is_system_role and current_user.has_permission('roles.manage') %}
+                            <a href="{{ url_for('settings.edit_role', role_id=role.id) }}"
+                               class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white hover:bg-kaori-primary/90"><i data-lucide="pencil" class="h-4 w-4"></i>Edit custom role</a>
+                        {% elif read_only and is_system_role and current_user.has_permission('roles.manage') %}
+                            <a href="{{ url_for('settings.clone_role', role_id=role.id) }}"
+                               class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white hover:bg-kaori-primary/90"><i data-lucide="copy-plus" class="h-4 w-4"></i>Clone default role</a>
+                        {% elif not read_only %}
+                            <button type="submit"
+                                    class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white hover:bg-kaori-primary/90">
+                                <i data-lucide="save" class="h-4 w-4"></i>
+                                {% if page_mode == 'clone' %}
+                                    Create cloned role
+                                {% elif page_mode == 'edit' %}
+                                    Update custom role
+                                {% else %}
+                                    Create custom role
+                                {% endif %}
+                            </button>
+                        {% endif %}
+                    </div>
                 </div>
             </section>
         </form>
