@@ -34,6 +34,22 @@ CAPABILITIES: dict[str, CapabilityDefinition] = {
         'Scrape kube-state-metrics and preserve namespace, pod, node, and workload identity labels.',
         expected_signals=('kube_node_info', 'kube_pod_info', 'kube_namespace_status_phase'),
     ),
+    'utilization_metrics': CapabilityDefinition(
+        'utilization_metrics', 'Utilization Metrics', ('Utilization Analytics', 'Kubernetes Dashboard'),
+        'CPU, memory, pod, readiness, and pressure utilization cannot be calculated reliably.',
+        'kube-state-metrics, kubelet, cAdvisor, and Prometheus scrape pipeline',
+        'Expose node capacity, container CPU and memory usage, pod status, node conditions, and canonical node identity labels through the configured Prometheus or Thanos Query endpoint.',
+        expected_signals=(
+            'kube_node_status_capacity',
+            'container_cpu_usage_seconds_total',
+            'container_memory_working_set_bytes',
+            'kube_pod_status_phase',
+            'kube_node_status_condition',
+            'kube_node_info',
+            'kube_pod_info',
+        ),
+        validation_query='count(kube_node_status_capacity{resource="cpu"})',
+    ),
     'capacity_metrics': CapabilityDefinition(
         'capacity_metrics', 'Worker Capacity Metrics', ('Capacity Analytics', 'Forecast'),
         'Worker allocatable capacity, current usage, and worker-only headroom cannot be calculated reliably.',

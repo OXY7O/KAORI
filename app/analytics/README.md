@@ -422,3 +422,7 @@ consumer-facing storage service.
 ### Capacity capability boundary
 
 Capacity Analytics is now capability-gated through `PrometheusConsumer`. Worker allocatable, usage, node-role, pod-placement, and request/limit contracts must pass integration validation before the page, dashboard snapshot, or report section executes capacity queries.
+
+## Utilization capability contract
+
+Utilization Analytics consumes Prometheus or Thanos only through `PrometheusConsumer` and requires instant query, range query, Kubernetes identity, utilization metrics, and canonical filesystem node identity. Node drill-down storage must use a canonical Kubernetes node label; `instance=IP:port` is not a supported identity fallback. Integration validation must report missing metrics or label remediation before the page is considered ready. Presentation strings introduced while touching Utilization templates are prepared in Python rather than formatted in Jinja.

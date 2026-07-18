@@ -104,15 +104,15 @@
             </div>
             {{ risk_status(storage_risk.get('status', 'Normal')) }}
         </div>
-        <p class="mt-5 text-4xl font-bold">{{ detail_summary.storage_utilization }}%</p>
-        <p class="mt-2 text-sm leading-6 text-brand-foreground-muted">{{ detail_summary.storage_usage_gib }} GiB used from {{ detail_summary.storage_capacity_gib }} GiB capacity.</p>
+        <p class="mt-5 text-4xl font-bold">{{ detail_summary.storage_utilization_display }}</p>
+        <p class="mt-2 text-sm leading-6 text-brand-foreground-muted">{{ detail_summary.storage_usage_summary }}</p>
         <div class="mt-5 h-2 overflow-hidden rounded-full bg-brand-surface">
-            <div class="h-full rounded-full bg-brand-foreground" style="width: {{ detail_summary.storage_utilization|default(0)|float }}%"></div>
+            <div class="h-full rounded-full bg-brand-foreground" style="width: {{ detail_summary.storage_utilization_width }}%"></div>
         </div>
         <div class="mt-auto space-y-3 pt-5">
             <div class="rounded-lg border border-brand-outline bg-brand-surface p-3">
-                <p class="font-semibold text-brand-foreground">{{ selected_filesystem_instance if selected_filesystem_instance else 'All filesystem instances' }}</p>
-                <p class="mt-1 text-xs leading-5 text-brand-foreground-muted">Filesystem signals are reported by instance and mountpoint, which may not map directly to a Kubernetes node name.</p>
+                <p class="font-semibold text-brand-foreground">{{ detail_summary.storage_scope }}</p>
+                <p class="mt-1 text-xs leading-5 text-brand-foreground-muted">Filesystem signals use the canonical Kubernetes node label validated during Prometheus/Thanos integration.</p>
             </div>
             <p class="border-t border-brand-outline pt-3 text-xs leading-5 text-brand-foreground-muted">{{ storage_risk.get('reason', '-') }}</p>
         </div>

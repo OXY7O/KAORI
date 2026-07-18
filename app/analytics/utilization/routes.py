@@ -13,6 +13,7 @@ from app.analytics.utilization.service import (
 from app.common.dependencies import (
     DependencyBlocker,
     cluster_required_blocker,
+    prometheus_capability_blocker,
     prometheus_connection_blocker,
     prometheus_setup_blocker,
     render_dependency_blocker,
@@ -124,6 +125,18 @@ def utilization_trend() -> str:
     if cluster is None or service is None:
         return render_dependency_blocker(
             cluster_required_blocker(),
+        )
+
+
+    requirements = service.requirements()
+    if not requirements.ok:
+        missing = list((requirements.payload or {}).get('missing_capabilities', []))
+        return render_dependency_blocker(
+            prometheus_capability_blocker(
+                cluster,
+                feature_label='Utilization Analytics',
+                missing_capabilities=missing,
+            )
         )
 
     trend_hours = _get_trend_hours()
@@ -286,11 +299,6 @@ def utilization() -> str:
         type=str,
     )
 
-    selected_filesystem_instance = request.args.get(
-        'filesystem_instance',
-        '',
-        type=str,
-    )
 
     selected_trend_node = request.args.get(
         'trend_node',
@@ -311,7 +319,6 @@ def utilization() -> str:
 
     available_nodes: list[str] = []
     available_worker_nodes: list[str] = []
-    available_filesystem_instances: list[str] = []
 
     risk_assessment = _empty_risk_assessment()
     detail_risk_assessment = _empty_risk_assessment()
@@ -345,9 +352,7 @@ def utilization() -> str:
             allowed_trend_hours=ALLOWED_TREND_HOURS,
             available_nodes=[],
             available_worker_nodes=[],
-            available_filesystem_instances=[],
             selected_node='',
-            selected_filesystem_instance='',
             selected_trend_node='',
             cluster_query_endpoint='analytics.utilization',
             cluster_query_hidden_params={},
@@ -382,9 +387,7 @@ def utilization() -> str:
             allowed_trend_hours=ALLOWED_TREND_HOURS,
             available_nodes=[],
             available_worker_nodes=[],
-            available_filesystem_instances=[],
             selected_node='',
-            selected_filesystem_instance='',
             selected_trend_node='',
             cluster_query_endpoint='analytics.utilization',
             cluster_query_hidden_params={},
@@ -400,6 +403,39 @@ def utilization() -> str:
             prometheus,
         )
 
+        requirements = service.requirements()
+        if not requirements.ok:
+            missing = list((requirements.payload or {}).get('missing_capabilities', []))
+            dependency_blocker = prometheus_capability_blocker(
+                cluster,
+                feature_label='Utilization Analytics',
+                missing_capabilities=missing,
+            )
+            return render_template(
+                'analytics/utilization/index.html',
+                cluster=cluster,
+                clusters=clusters,
+                summary=summary,
+                summary_table=summary_table,
+                detail_summary=detail_summary,
+                trends=trends,
+                error=None,
+                dependency_blocker=dependency_blocker,
+                prometheus_status=prometheus_status,
+                cluster_info=cluster_info,
+                risk_assessment=risk_assessment,
+                detail_risk_assessment=detail_risk_assessment,
+                trend_hours=trend_hours,
+                allowed_trend_hours=ALLOWED_TREND_HOURS,
+                available_nodes=[],
+                available_worker_nodes=[],
+                selected_node='',
+                selected_trend_node='',
+                cluster_query_endpoint='analytics.utilization',
+                cluster_query_hidden_params={},
+                **_empty_recommendation_context(),
+            )
+
         prometheus_status = service.get_prometheus_status()
 
         if not prometheus_status.get('connected', False):
@@ -413,7 +449,6 @@ def utilization() -> str:
 
         available_nodes = service.get_node_names()
         available_worker_nodes = service.get_worker_node_names()
-        available_filesystem_instances = service.get_filesystem_instances()
 
         if selected_node not in available_nodes:
             selected_node = ''
@@ -421,8 +456,6 @@ def utilization() -> str:
         if selected_trend_node not in available_worker_nodes:
             selected_trend_node = ''
 
-        if selected_filesystem_instance not in available_filesystem_instances:
-            selected_filesystem_instance = ''
 
         summary = service.get_summary()
 
@@ -436,7 +469,6 @@ def utilization() -> str:
 
         detail_summary = service.get_detail_summary(
             node_name=selected_node or None,
-            filesystem_instance=selected_filesystem_instance or None,
         )
 
         trends = service.get_trends(
@@ -509,16 +541,13 @@ def utilization() -> str:
         allowed_trend_hours=ALLOWED_TREND_HOURS,
         available_nodes=available_nodes,
         available_worker_nodes=available_worker_nodes,
-        available_filesystem_instances=available_filesystem_instances,
         selected_node=selected_node,
-        selected_filesystem_instance=selected_filesystem_instance,
         selected_trend_node=selected_trend_node,
         cluster_query_endpoint='analytics.utilization',
         cluster_query_hidden_params={
             'trend_hours': trend_hours,
             'trend_node': selected_trend_node,
             'node': selected_node,
-            'filesystem_instance': selected_filesystem_instance,
         },
         **recommendation_context,
     )
@@ -541,13 +570,20 @@ def utilization_node_detail() -> str:
             cluster_required_blocker(),
         )
 
+
+    requirements = service.requirements()
+    if not requirements.ok:
+        missing = list((requirements.payload or {}).get('missing_capabilities', []))
+        return render_dependency_blocker(
+            prometheus_capability_blocker(
+                cluster,
+                feature_label='Utilization Analytics',
+                missing_capabilities=missing,
+            )
+        )
+
     selected_node = request.args.get(
         'node',
-        '',
-        type=str,
-    )
-    selected_filesystem_instance = request.args.get(
-        'filesystem_instance',
         '',
         type=str,
     )
@@ -557,17 +593,13 @@ def utilization_node_detail() -> str:
 
     try:
         available_nodes = service.get_node_names()
-        available_filesystem_instances = service.get_filesystem_instances()
 
         if selected_node not in available_nodes:
             selected_node = ''
 
-        if selected_filesystem_instance not in available_filesystem_instances:
-            selected_filesystem_instance = ''
 
         detail_summary = service.get_detail_summary(
             node_name=selected_node or None,
-            filesystem_instance=selected_filesystem_instance or None,
         )
 
         detail_risk_assessment = service.get_capacity_pressure_risk(
@@ -602,8 +634,6 @@ def utilization_node_detail() -> str:
         detail_summary=detail_summary,
         detail_risk_assessment=detail_risk_assessment,
         available_nodes=available_nodes,
-        available_filesystem_instances=available_filesystem_instances,
         selected_node=selected_node,
-        selected_filesystem_instance=selected_filesystem_instance,
         error=None,
     )

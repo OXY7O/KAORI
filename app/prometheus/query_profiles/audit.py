@@ -194,6 +194,45 @@ class PromQLProfileAuditor:
             'All Kubernetes identity metrics are queryable.' if not missing_identity else f"Missing metrics: {', '.join(missing_identity)}",
         )
 
+        utilization_metrics = {
+            'kube_node_status_capacity',
+            'container_cpu_usage_seconds_total',
+            'container_memory_working_set_bytes',
+            'kube_pod_status_phase',
+            'kube_node_status_condition',
+            'kube_node_info',
+            'kube_pod_info',
+        }
+        missing_utilization = sorted(utilization_metrics - available_metrics)
+        utilization_label_requirements = {
+            'kube_node_status_capacity': {'node', 'resource'},
+            'container_cpu_usage_seconds_total': {'node', 'container'},
+            'container_memory_working_set_bytes': {'node', 'container'},
+            'kube_pod_status_phase': {'namespace', 'pod', 'phase'},
+            'kube_node_status_condition': {'node', 'condition', 'status'},
+            'kube_node_info': {'node'},
+            'kube_pod_info': {'node', 'namespace', 'pod'},
+        }
+        invalid_utilization_labels = sorted(
+            metric
+            for metric, required_labels in utilization_label_requirements.items()
+            if metric in available_metrics
+            and not required_labels.issubset(metric_labels.get(metric, set()))
+        )
+        if missing_utilization:
+            utilization_status = 'missing'
+            utilization_evidence = f"Missing metrics: {', '.join(missing_utilization)}"
+        elif invalid_utilization_labels:
+            utilization_status = 'misconfigured'
+            utilization_evidence = (
+                'Required utilization labels are incomplete on: '
+                f"{', '.join(invalid_utilization_labels)}."
+            )
+        else:
+            utilization_status = 'available'
+            utilization_evidence = 'CPU, memory, pod, readiness, pressure, and node identity contracts are queryable.'
+        add('utilization_metrics', utilization_status, utilization_evidence)
+
         capacity_metrics = {
             'kube_node_status_allocatable',
             'container_cpu_usage_seconds_total',

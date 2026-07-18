@@ -32,11 +32,23 @@ def get_selected_cluster(
 
 
 class UtilizationService:
+    REQUIRED_CAPABILITIES = (
+        'instant_query',
+        'range_query',
+        'kubernetes_identity',
+        'utilization_metrics',
+        'node_filesystem_identity',
+    )
+
     def __init__(
         self,
         prometheus: PrometheusService,
     ) -> None:
         self.prometheus = prometheus
+        self.consumer = prometheus.consumer
+
+    def requirements(self):
+        return self.consumer.requirements(self.REQUIRED_CAPABILITIES)
 
     @staticmethod
     def _extract_scalar(
@@ -63,8 +75,9 @@ class UtilizationService:
     ) -> dict[str, bool | int | str]:
         start = perf_counter()
 
-        self.prometheus.instant_query(
+        self.consumer.query(
             queries.PROMETHEUS_HEALTH,
+            required_capabilities=self.REQUIRED_CAPABILITIES,
         )
 
         response_time_ms = int((perf_counter() - start) * 1000)
@@ -202,21 +215,6 @@ class UtilizationService:
             ),
         )
 
-    def _format_instance_query(
-        self,
-        query_template: str,
-        instance: str | None = None,
-    ) -> str:
-        if not instance:
-            return query_template
-
-        return query_template.replace(
-            '{instance}',
-            self._escape_label_value(
-                instance,
-            ),
-        )
-
     def _query_series(
         self,
         query: str,
@@ -231,11 +229,12 @@ class UtilizationService:
             hours=hours,
         )
 
-        response = self.prometheus.range_query(
-            query=query,
-            start=start.isoformat(),
-            end=end.isoformat(),
-            step=step,
+        response = self.consumer.query_range(
+            query,
+            start.isoformat(),
+            end.isoformat(),
+            step,
+            required_capabilities=self.REQUIRED_CAPABILITIES,
         )
 
         return self._extract_series(
@@ -246,8 +245,9 @@ class UtilizationService:
         self,
         query: str,
     ) -> float:
-        response = self.prometheus.instant_query(
+        response = self.consumer.query(
             query,
+            required_capabilities=self.REQUIRED_CAPABILITIES,
         )
 
         return round(
@@ -362,14 +362,14 @@ class UtilizationService:
 
     def get_storage_capacity(
         self,
-        filesystem_instance: str | None = None,
+        node_name: str | None = None,
     ) -> float:
         query = queries.STORAGE_CAPACITY
 
-        if filesystem_instance:
-            query = self._format_instance_query(
-                queries.STORAGE_CAPACITY_BY_INSTANCE,
-                filesystem_instance,
+        if node_name:
+            query = self._format_node_query(
+                queries.STORAGE_CAPACITY_BY_NODE,
+                node_name,
             )
 
         return self._query_scalar(
@@ -378,14 +378,14 @@ class UtilizationService:
 
     def get_storage_available(
         self,
-        filesystem_instance: str | None = None,
+        node_name: str | None = None,
     ) -> float:
         query = queries.STORAGE_AVAILABLE
 
-        if filesystem_instance:
-            query = self._format_instance_query(
-                queries.STORAGE_AVAILABLE_BY_INSTANCE,
-                filesystem_instance,
+        if node_name:
+            query = self._format_node_query(
+                queries.STORAGE_AVAILABLE_BY_NODE,
+                node_name,
             )
 
         return self._query_scalar(
@@ -394,14 +394,14 @@ class UtilizationService:
 
     def get_storage_usage(
         self,
-        filesystem_instance: str | None = None,
+        node_name: str | None = None,
     ) -> float:
         query = queries.STORAGE_USAGE
 
-        if filesystem_instance:
-            query = self._format_instance_query(
-                queries.STORAGE_USAGE_BY_INSTANCE,
-                filesystem_instance,
+        if node_name:
+            query = self._format_node_query(
+                queries.STORAGE_USAGE_BY_NODE,
+                node_name,
             )
 
         return self._query_scalar(
@@ -410,14 +410,14 @@ class UtilizationService:
 
     def get_storage_utilization(
         self,
-        filesystem_instance: str | None = None,
+        node_name: str | None = None,
     ) -> float:
         query = queries.STORAGE_UTILIZATION
 
-        if filesystem_instance:
-            query = self._format_instance_query(
-                queries.STORAGE_UTILIZATION_BY_INSTANCE,
-                filesystem_instance,
+        if node_name:
+            query = self._format_node_query(
+                queries.STORAGE_UTILIZATION_BY_NODE,
+                node_name,
             )
 
         return self._query_scalar(
@@ -524,8 +524,9 @@ class UtilizationService:
     def get_node_names(
         self,
     ) -> list[str]:
-        response = self.prometheus.instant_query(
+        response = self.consumer.query(
             queries.NODE_LIST,
+            required_capabilities=self.REQUIRED_CAPABILITIES,
         )
 
         return self._extract_label_values(
@@ -536,8 +537,9 @@ class UtilizationService:
     def get_worker_node_names(
         self,
     ) -> list[str]:
-        response = self.prometheus.instant_query(
+        response = self.consumer.query(
             queries.WORKER_NODE_LIST,
+            required_capabilities=self.REQUIRED_CAPABILITIES,
         )
 
         return self._extract_label_values(
@@ -545,23 +547,12 @@ class UtilizationService:
             'node',
         )
 
-    def get_filesystem_instances(
-        self,
-    ) -> list[str]:
-        response = self.prometheus.instant_query(
-            queries.FILESYSTEM_INSTANCE_LIST,
-        )
-
-        return self._extract_label_values(
-            response,
-            'instance',
-        )
-
     def get_kubernetes_version(
         self,
     ) -> str:
-        response = self.prometheus.instant_query(
+        response = self.consumer.query(
             queries.KUBERNETES_VERSION,
+            required_capabilities=self.REQUIRED_CAPABILITIES,
         )
 
         try:
@@ -701,21 +692,21 @@ class UtilizationService:
     def get_detail_summary(
         self,
         node_name: str | None = None,
-        filesystem_instance: str | None = None,
     ) -> dict[str, int | float | str | None]:
         storage_capacity = self.get_storage_capacity(
-            filesystem_instance,
+            node_name,
         )
         storage_usage = self.get_storage_usage(
-            filesystem_instance,
+            node_name,
         )
         storage_available = self.get_storage_available(
-            filesystem_instance,
+            node_name,
         )
+        storage_utilization = self.get_storage_utilization(node_name)
 
         return {
             'node_name': node_name,
-            'filesystem_instance': filesystem_instance,
+            'storage_scope': node_name or 'All canonical nodes',
             'cpu_capacity': self.get_cpu_capacity(
                 node_name,
             ),
@@ -737,8 +728,12 @@ class UtilizationService:
             'storage_capacity': storage_capacity,
             'storage_usage': storage_usage,
             'storage_available': storage_available,
-            'storage_utilization': self.get_storage_utilization(
-                filesystem_instance,
+            'storage_utilization': storage_utilization,
+            'storage_utilization_display': f'{storage_utilization:.2f}%',
+            'storage_utilization_width': max(0.0, min(100.0, storage_utilization)),
+            'storage_usage_summary': (
+                f'{self.bytes_to_gib(storage_usage):.2f} GiB used from '
+                f'{self.bytes_to_gib(storage_capacity):.2f} GiB capacity.'
             ),
             'storage_capacity_gib': self.bytes_to_gib(
                 storage_capacity,

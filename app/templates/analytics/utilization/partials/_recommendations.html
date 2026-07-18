@@ -28,8 +28,7 @@
                             cluster_id=cluster.id if cluster else '',
                             trend_hours=trend_hours,
                             trend_node=selected_trend_node,
-                            node=selected_node,
-                            filesystem_instance=selected_filesystem_instance
+                            node=selected_node
                         ) %}
                         {% if item.resource == 'storage' or item.source == 'storage' or item.action_type == 'storage_review' %}
                             {% set recommendation_url = url_for('analytics.storage', cluster_id=cluster.id if cluster else '', time_range='24h') %}

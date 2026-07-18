@@ -165,3 +165,7 @@ Capacity Analytics requires the complete consumer contract before it executes qu
 - `resource_requests_limits`
 
 The contract covers worker allocatable CPU, memory and pods; current container usage; pod placement; node-role exclusion; and request/limit metrics. A connected endpoint is not sufficient. Missing metrics or incomplete canonical labels must block the feature and direct remediation to the Prometheus/Thanos source.
+
+## Utilization capability contract
+
+Utilization Analytics consumes Prometheus or Thanos only through `PrometheusConsumer` and requires instant query, range query, Kubernetes identity, utilization metrics, and canonical filesystem node identity. Node drill-down storage must use a canonical Kubernetes node label; `instance=IP:port` is not a supported identity fallback. Integration validation must report missing metrics or label remediation before the page is considered ready. Presentation strings introduced while touching Utilization templates are prepared in Python rather than formatted in Jinja.
