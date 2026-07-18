@@ -12,7 +12,8 @@ from app.kubernetes_operations.secrets.reveal_policy import (
 )
 from app.models import Cluster, SecretRevealNamespacePolicy
 
-_NAMESPACE_PER_PAGE_OPTIONS = (10, 25, 50)
+_NAMESPACE_DEFAULT_PER_PAGE = 5
+_NAMESPACE_PER_PAGE_OPTIONS = (_NAMESPACE_DEFAULT_PER_PAGE, 10, 25, 50)
 _NAMESPACE_POLICY_FILTERS = {
     'all': 'All policies',
     'enabled': 'Enabled only',
@@ -32,11 +33,11 @@ def _normalize_page(value: str | int | None) -> int:
 
 def _normalize_per_page(value: str | int | None) -> int:
     try:
-        per_page = int(value or 10)
+        per_page = int(value or _NAMESPACE_DEFAULT_PER_PAGE)
     except (TypeError, ValueError):
-        per_page = 10
+        per_page = _NAMESPACE_DEFAULT_PER_PAGE
     if per_page not in _NAMESPACE_PER_PAGE_OPTIONS:
-        return 10
+        return _NAMESPACE_DEFAULT_PER_PAGE
     return per_page
 
 

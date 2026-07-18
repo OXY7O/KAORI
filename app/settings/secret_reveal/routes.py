@@ -2,7 +2,15 @@ from __future__ import annotations
 
 from typing import Any
 
-from flask import Blueprint, current_app, redirect, render_template, request, url_for
+from flask import (
+    Blueprint,
+    current_app,
+    make_response,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 from flask_login import current_user
 from flask_wtf.csrf import validate_csrf
 from wtforms.validators import ValidationError
@@ -80,6 +88,40 @@ def index():
         per_page=request.args.get('per_page'),
     )
     return render_template('settings/secret_reveal/index.html', **context)
+
+
+@bp.route('/workspace')
+@permission_required('kubernetes_secrets.manage_reveal')
+def workspace():
+    context = build_secret_reveal_settings_context(
+        request.args.get('cluster_id'),
+        namespace_query=request.args.get('namespace_q'),
+        namespace_policy_filter=request.args.get('namespace_policy'),
+        page=request.args.get('page'),
+        per_page=request.args.get('per_page'),
+    )
+    context['workspace_partial'] = True
+    response = make_response(
+        render_template(
+            'settings/secret_reveal/_cluster_workspace.html',
+            **context,
+        )
+    )
+
+    selected_cluster = context.get('selected_cluster')
+    push_args: dict[str, Any] = {
+        'namespace_q': context['namespace_filters']['query'],
+        'namespace_policy': context['namespace_filters']['policy'],
+        'page': context['namespace_pagination']['page'],
+        'per_page': context['namespace_pagination']['per_page'],
+    }
+    if selected_cluster is not None:
+        push_args['cluster_id'] = selected_cluster.id
+    response.headers['HX-Push-Url'] = url_for(
+        'settings.secret_reveal.index',
+        **push_args,
+    )
+    return response
 
 
 @bp.route('/cluster/<string:cluster_id>/readiness', methods=['POST'])
