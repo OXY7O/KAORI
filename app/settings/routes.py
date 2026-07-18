@@ -277,11 +277,9 @@ def account():
                 if not is_htmx:
                     return redirect(url_for('settings.account', tab='credentials'))
 
-                password_feedback = {
-                    'status': 'success',
-                    'title': 'Password updated successfully',
-                    'message': 'Your local database account password has been changed. Use the new password on your next sign-in.',
-                }
+                # Success feedback is delivered once through the shared operational
+                # toast and persisted Activity Audit record. Keep the credential
+                # workspace free from a duplicate inline success message.
                 password_form = ChangePasswordForm()
         else:
             password_feedback = {
@@ -383,10 +381,10 @@ def _create_custom_role_from_form(
 ) -> Role | None:
     slug = normalize_role_slug(form.name.data)
     if len(slug) < 2:
-        form.name.errors.append('Role slug must contain at least two letters or numbers.')
+        form.name.errors = [*form.name.errors, 'Role slug must contain at least two letters or numbers.']
         return None
     if role_slug_exists(slug):
-        form.name.errors.append('A role with this slug already exists.')
+        form.name.errors = [*form.name.errors, 'A role with this slug already exists.']
         return None
 
     role = Role()
@@ -580,9 +578,9 @@ def edit_role(role_id: int):
     if form.validate_on_submit():
         slug = normalize_role_slug(form.name.data)
         if len(slug) < 2:
-            form.name.errors.append('Role slug must contain at least two letters or numbers.')
+            form.name.errors = [*form.name.errors, 'Role slug must contain at least two letters or numbers.']
         elif role_slug_exists(slug, exclude_role_id=role.id):
-            form.name.errors.append('A role with this slug already exists.')
+            form.name.errors = [*form.name.errors, 'A role with this slug already exists.']
         else:
             try:
                 role.name = slug

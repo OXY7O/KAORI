@@ -485,7 +485,11 @@ def _apply_provider_form(provider: IdentityProvider, form: IdentityProviderForm)
 
 def _assign_provider_role_choices(form: IdentityProviderForm) -> None:
     roles = Role.query.filter_by(is_active=True).filter(Role.name != 'admin').order_by(Role.display_name.asc()).all()
-    form.default_role_id.choices = [('0', 'Select role')] + [(str(role.id), role.display_name) for role in roles]
+    role_choices: list[tuple[Any, str] | tuple[Any, str, dict[str, Any]]] = [
+        (0, 'Select role'),
+        *((role.id, role.display_name) for role in roles),
+    ]
+    form.default_role_id.choices = role_choices
 
 
 @bp.route('/external-identities', methods=['GET', 'POST'])

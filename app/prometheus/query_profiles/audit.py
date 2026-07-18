@@ -1,11 +1,11 @@
 from __future__ import annotations
 
+from collections.abc import Iterable, Sequence
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime, timedelta
-from typing import Any, Iterable
+from typing import Any
 
 from app.prometheus.exceptions import PrometheusError
-
 from app.prometheus.query_profiles import PROFILE_KEY, list_queries
 
 
@@ -148,7 +148,7 @@ class PromQLProfileAuditor:
         return output
 
     @staticmethod
-    def _blocked_details(definitions: list[Any], results: list[QueryCheckResult]) -> list[dict[str, Any]]:
+    def _blocked_details(definitions: Sequence[Any], results: Sequence[QueryCheckResult]) -> list[dict[str, Any]]:
         """Return compact, user-facing evidence for checks that block profile coverage."""
         output: list[dict[str, Any]] = []
         for definition, result in zip(definitions, results, strict=True):
@@ -164,7 +164,7 @@ class PromQLProfileAuditor:
         return output
 
     @staticmethod
-    def _domain_summary(definitions: list[Any], results: list[QueryCheckResult]) -> dict[str, dict[str, int]]:
+    def _domain_summary(definitions: Sequence[Any], results: Sequence[QueryCheckResult]) -> dict[str, dict[str, int]]:
         output: dict[str, dict[str, int]] = {}
         for definition, result in zip(definitions, results, strict=True):
             item = output.setdefault(definition.domain, {'query_count': 0, 'ready_count': 0, 'blocked_count': 0, 'deprecated_count': 0})

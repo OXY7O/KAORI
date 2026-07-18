@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import cast
 
 from flask import current_app
 
@@ -84,8 +85,12 @@ def build_artifact_storage_for_backend(
     locator = dict(locator or {})
 
     if normalized_backend == 'local':
+        configured_local_root = cast(
+            str | Path | None,
+            locator.get('local_root'),
+        )
         local_root = resolve_app_path(
-            locator.get('local_root') or profile.local_root,
+            configured_local_root or profile.local_root,
             profile.local_root,
         )
         return LocalArtifactStorage(root_dir=local_root)

@@ -335,11 +335,12 @@ def _build_storage_context(
         status_label = "Verified"
         status_tone = "emerald"
         detail = "A previous archive was uploaded and checksum-verified on this S3-compatible backend."
-    elif profile.s3_endpoint_url:
+    elif profile.s3_endpoint_url is not None:
+        endpoint_url: str = profile.s3_endpoint_url
         endpoint_probe = _cached_status(
-            f"archive-storage:{profile.s3_endpoint_url}",
+            f"archive-storage:{endpoint_url}",
             20.0,
-            lambda: _probe_storage_endpoint(profile.s3_endpoint_url),
+            lambda: _probe_storage_endpoint(endpoint_url),
         )
         if endpoint_probe["reachable"]:
             status = "reachable"

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from pathlib import Path
 
 from flask import current_app
@@ -14,12 +15,16 @@ class LocalReportStorage(LocalArtifactStorage):
         self,
         source_path: Path,
         object_key: str,
+        *,
+        content_type: str = 'application/pdf',
+        metadata: Mapping[str, str] | None = None,
     ) -> StoredReportFile:
+        report_metadata = {'artifact-kind': 'report', **dict(metadata or {})}
         return super().save_file(
             source_path,
             object_key,
-            content_type='application/pdf',
-            metadata={'artifact-kind': 'report'},
+            content_type=content_type,
+            metadata=report_metadata,
         )
 
 

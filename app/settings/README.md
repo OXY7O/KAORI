@@ -54,7 +54,22 @@ Local Database password changes use HTMX and replace `#account-authentication-pa
 - creates a personal `account_security` notification for the authenticated user;
 - triggers `kaori:notifications-changed` so the top Notification Center refreshes immediately;
 - returns the shared KAORI Violet operational result toast through an out-of-band HTMX swap;
+- does not render a duplicate inline success banner after the toast is emitted;
 - excludes current and new password values from notification and audit metadata;
 - keeps profile, role, lifecycle state, Super Admin tier, and external identity links unchanged.
 
 Normal POST and redirect remain available only as progressive-enhancement fallback when HTMX is unavailable.
+
+
+## Report Settings contract
+
+`/settings/reports` should own platform-wide reporting defaults and governance policies that are consumed by the operational Reports module. It must not duplicate day-to-day report workflows.
+
+Recommended ownership:
+
+- generation defaults: default timezone, locale, date presentation, report period, and output profile;
+- execution guardrails: maximum report period, concurrency, timeout, retry, and all-cluster eligibility;
+- governance defaults: classification, watermark, masking, naming convention, and audit requirements;
+- delivery and lifecycle defaults: default storage policy, retention period, download expiry, and schedule execution posture.
+
+The operational Reports module remains responsible for Generate, Generated Reports, Templates, Schedules, and Storage operations. A dedicated `reports.manage_settings` permission is recommended before the placeholder becomes an editable configuration surface; `settings.manage_integrations` should remain focused on integration configuration.

@@ -67,9 +67,9 @@ def _auth_source_label(value: str | None) -> str:
     )
 
 
-def _user_label(user: User | None, user_id: int) -> str:
+def _user_label(user: User | None, user_id: int | None) -> str:
     if user is None:
-        return f"User #{user_id}"
+        return f"User #{user_id}" if user_id is not None else "System service"
 
     suffix = " · Deleted" if user.deleted_at is not None else ""
     return f"{user.display_label}{suffix}"

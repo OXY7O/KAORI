@@ -180,12 +180,10 @@ def replace_role_permissions(role: Role, permission_ids: Iterable[int]) -> set[i
             db.session.delete(role_permission)
 
     for permission_id in sorted(selected_ids - set(existing_by_permission_id)):
-        db.session.add(
-            RolePermission(
-                role_id=role.id,
-                permission_id=permission_id,
-            )
-        )
+        role_permission = RolePermission()
+        role_permission.role_id = role.id
+        role_permission.permission_id = permission_id
+        db.session.add(role_permission)
 
     return selected_ids
 
