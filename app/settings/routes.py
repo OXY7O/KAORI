@@ -7,7 +7,6 @@ from typing import Any, cast
 from flask import (
     Blueprint,
     current_app,
-    flash,
     jsonify,
     make_response,
     redirect,
@@ -34,6 +33,7 @@ from app.extensions import db
 from app.models import Notification, Permission, Role, User
 from app.notifications.service import record_operational_activity
 from app.rbac.decorators import permission_required
+from app.rbac.notifications import role_access_feedback
 from app.rbac.service import (
     expand_permission_ids,
     get_permissions_grouped_by_module,
@@ -370,6 +370,8 @@ def roles():
         delete_role_form=DeleteRoleForm(),
         role_delete_blockers=role_delete_blockers,
         role_assignment_counts=role_assignment_counts,
+        role_permission_keys={role.id: role.permission_keys() for role in roles_list},
+        total_permissions=sum(len(items) for items in permissions_by_module.values()),
     )
 
 
@@ -433,7 +435,14 @@ def new_role():
             selected_permission_ids=selected_permission_ids,
         )
         if role is not None:
-            flash('Custom role created successfully.', 'success')
+            role_access_feedback(
+                actor=cast(User, current_user),
+                event_type='rbac_role_created',
+                status='success',
+                title='Custom role created',
+                message=f'{role.display_name} is ready for user assignment.',
+                role=role,
+            )
             return redirect(url_for('settings.roles'))
 
     selected_permission_ids = expand_permission_ids(selected_permission_ids)
@@ -454,7 +463,13 @@ def clone_role(role_id: int):
     seed_default_rbac()
     source_role = db.session.get(Role, role_id)
     if source_role is None or not source_role.is_system:
-        flash('Only a protected default role can be used as a clone source.', 'warning')
+        role_access_feedback(
+            actor=cast(User, current_user),
+            event_type='rbac_role_clone_rejected',
+            status='warning',
+            title='Role clone blocked',
+            message='Only a protected default role can be used as a clone source.',
+        )
         return redirect(url_for('settings.roles'))
 
     form = RoleForm()
@@ -476,7 +491,15 @@ def clone_role(role_id: int):
             clone_source=source_role,
         )
         if role is not None:
-            flash(f'{source_role.display_name} was cloned as a custom role.', 'success')
+            role_access_feedback(
+                actor=cast(User, current_user),
+                event_type='rbac_role_cloned',
+                status='success',
+                title='Default role cloned',
+                message=f'{source_role.display_name} was cloned as {role.display_name}.',
+                role=role,
+                detail='The cloned role is custom and can now be adjusted independently.',
+            )
             return redirect(url_for('settings.roles'))
 
     selected_permission_ids = expand_permission_ids(selected_permission_ids)
@@ -497,7 +520,13 @@ def role_detail(role_id: int):
     seed_default_rbac()
     role = db.session.get(Role, role_id)
     if role is None:
-        flash('Role not found.', 'danger')
+        role_access_feedback(
+            actor=cast(User, current_user),
+            event_type='rbac_role_unavailable',
+            status='error',
+            title='Role unavailable',
+            message='The requested role record was not found.',
+        )
         return redirect(url_for('settings.roles'))
 
     form = RoleForm(obj=role)
@@ -519,10 +548,24 @@ def role_detail(role_id: int):
 def edit_role(role_id: int):
     role = db.session.get(Role, role_id)
     if role is None:
-        flash('Role not found.', 'danger')
+        role_access_feedback(
+            actor=cast(User, current_user),
+            event_type='rbac_role_update_rejected',
+            status='error',
+            title='Role update unavailable',
+            message='The requested role record was not found.',
+        )
         return redirect(url_for('settings.roles'))
     if role.is_system:
-        flash('Default roles are code-owned and cannot be edited. Clone the role to create a custom variant.', 'warning')
+        role_access_feedback(
+            actor=cast(User, current_user),
+            event_type='rbac_role_update_rejected',
+            status='warning',
+            title='Default role is protected',
+            message='Default roles are code-owned and cannot be edited.',
+            role=role,
+            detail='Clone the default role to create an editable custom variant.',
+        )
         return redirect(url_for('settings.role_detail', role_id=role.id))
 
     form = RoleForm(obj=role)
@@ -565,12 +608,25 @@ def edit_role(role_id: int):
                     'Failed to update custom role %s with submitted permissions.',
                     role_id,
                 )
-                flash(
-                    'The custom role could not be updated. No role changes were saved. Review the selection and try again.',
-                    'danger',
+                role_access_feedback(
+                    actor=cast(User, current_user),
+                    event_type='rbac_role_update_failed',
+                    status='error',
+                    title='Custom role update failed',
+                    message='No role changes were saved.',
+                    role=role,
+                    detail='Review the role configuration and permission selection, then try again.',
                 )
             else:
-                flash('Custom role updated successfully.', 'success')
+                role_access_feedback(
+                    actor=cast(User, current_user),
+                    event_type='rbac_role_updated',
+                    status='success',
+                    title='Custom role updated',
+                    message=f'{role.display_name} access scope was updated.',
+                    role=role,
+                    detail=f'{len(effective_permission_ids)} effective permissions are now assigned.',
+                )
                 return redirect(url_for('settings.roles'))
 
     selected_permission_ids = expand_permission_ids(selected_permission_ids)
@@ -591,15 +647,35 @@ def edit_role(role_id: int):
 def delete_role(role_id: int):
     role = db.session.get(Role, role_id)
     if role is None:
-        flash('Role not found.', 'danger')
+        role_access_feedback(
+            actor=cast(User, current_user),
+            event_type='rbac_role_delete_rejected',
+            status='error',
+            title='Role deletion unavailable',
+            message='The requested role record was not found.',
+        )
         return redirect(url_for('settings.roles'))
 
     form = DeleteRoleForm()
     if not form.validate_on_submit() or str(form.role_id.data) != str(role.id):
-        flash('The role deletion request could not be validated.', 'danger')
+        role_access_feedback(
+            actor=cast(User, current_user),
+            event_type='rbac_role_delete_rejected',
+            status='error',
+            title='Role deletion rejected',
+            message='The role deletion request could not be validated.',
+            role=role,
+        )
         return redirect(url_for('settings.roles'))
     if role.is_system:
-        flash('Default roles cannot be deleted.', 'danger')
+        role_access_feedback(
+            actor=cast(User, current_user),
+            event_type='rbac_role_delete_rejected',
+            status='warning',
+            title='Default role is protected',
+            message='Default roles cannot be deleted.',
+            role=role,
+        )
         return redirect(url_for('settings.roles'))
 
     blockers = get_role_delete_blockers(role)
@@ -609,10 +685,27 @@ def delete_role(role_id: int):
             blocker_parts.append(f"{blockers['assigned_users']} user assignment(s)")
         if blockers['identity_providers']:
             blocker_parts.append(f"{blockers['identity_providers']} identity provider default mapping(s)")
-        flash('Role deletion is blocked by ' + ' and '.join(blocker_parts) + '.', 'warning')
+        role_access_feedback(
+            actor=cast(User, current_user),
+            event_type='rbac_role_delete_blocked',
+            status='warning',
+            title='Role deletion blocked',
+            message='The custom role is still referenced by ' + ' and '.join(blocker_parts) + '.',
+            role=role,
+            detail='Remove the user and identity-provider mappings before deleting this role.',
+        )
         return redirect(url_for('settings.roles'))
 
     role_name = role.display_name
+    role_snapshot = {
+        'target_type': 'role',
+        'target_id': role.id,
+        'role_slug': role.name,
+        'role_display_name': role.display_name,
+        'role_type': 'custom',
+        'lifecycle_status': 'deleted',
+        'permission_count': len(role.permissions),
+    }
     record_admin_event(
         actor=cast(User, current_user),
         action='role.deleted',
@@ -622,7 +715,15 @@ def delete_role(role_id: int):
     )
     db.session.delete(role)
     db.session.commit()
-    flash(f'Custom role {role_name} was deleted.', 'success')
+    role_access_feedback(
+        actor=cast(User, current_user),
+        event_type='rbac_role_deleted',
+        status='success',
+        title='Custom role deleted',
+        message=f'{role_name} was removed from the role registry.',
+        role_snapshot=role_snapshot,
+        detail='Historical administrative records remain available in Activity Audit Log.',
+    )
     return redirect(url_for('settings.roles'))
 
 

@@ -29,6 +29,10 @@ Provides:
 
 Both require authentication and return HTTP 403 when authorization fails. Do not replace server-side decorators with template-only visibility checks.
 
+### `notifications.py`
+
+Builds the standard persistent KAORI toast and Notification-backed Activity Audit metadata for role create, clone, update, failure, blocked delete, and delete outcomes. It does not replace the successful-mutation `AuditEvent` record.
+
 ### `service.py`
 
 Owns RBAC business rules:
@@ -48,7 +52,9 @@ Owns RBAC business rules:
 - `app/models/user.py`: normalized role relation and `has_permission()`.
 - `app/settings/routes.py`: list/detail/create/clone/edit/delete and Permission Catalog routes.
 - `app/settings/roles/forms.py`: role and deletion CSRF forms.
-- `app/templates/settings/roles/`: KAORI Violet role registry and role form.
+- `app/templates/settings/roles/`: KAORI Violet overview, tabbed role registry, dynamic role-permission matrix, and role form.
+- `app/static/js/role_access_tabs.js`: progressive enhancement for Role Registry / Mapping Matrix tabs.
+- `app/static/js/role_permission_editor.js`: scoped Permission Matrix search, module toggles, global Select all/Clear all, counters, and viewport protection.
 - `app/templates/settings/permissions/`: read-only Permission Catalog.
 - `app/commands/rbac.py`: `flask seed-rbac`.
 - `docs/rbac/`: complete architecture, data model, flow, default-role review, permission-registry review, security, UI, and test documentation.
@@ -62,3 +68,8 @@ Owns RBAC business rules:
 - UI visibility is not authorization.
 - Every protected mutation requires a server-side permission guard and target-state validation.
 - Current role scope is global; do not imply cluster- or namespace-scoped RBAC.
+
+
+## Operational feedback rule
+
+RBAC routes do not use Flask flash messages. Mutation outcomes are recorded through `role_access_feedback()`, which produces both the standard persistent toast and the Activity Audit notification record. Successful mutations continue to write `AuditEvent` rows before the primary transaction commits.

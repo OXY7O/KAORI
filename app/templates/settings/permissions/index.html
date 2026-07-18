@@ -118,27 +118,69 @@
                 </aside>
             </div>
         </section>
-        <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {% set metrics = [
-                            ('key-round', 'Permissions', total_permissions, 'Registered access contracts', 'bg-kaori-soft text-kaori-primary'),
-                            ('boxes', 'Modules', total_modules, 'Application control domains', 'bg-status-info-soft text-status-info-text'),
-                            ('shield-check', 'Assignments', assignment_count, 'Permission-to-role links', 'bg-status-normal-soft text-status-normal-text'),
-                            ('lock-keyhole', 'Registry mode', 'Read-only', 'Seeded from application code', 'bg-status-warning-soft text-status-warning-text')
-                        ] %}
-            {% for icon, label, value, description, tone in metrics %}
-                <article class="rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm">
-                    <div class="flex items-center gap-3">
-                        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl {{ tone }}"><i data-lucide="{{ icon }}" class="h-5 w-5"></i></span>
+        <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+            <header class="border-b border-outline-subtle px-5 py-4 lg:px-6">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex min-w-0 items-center gap-3">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
+                            <i data-lucide="book-key" class="h-5 w-5"></i>
+                        </span>
                         <div class="min-w-0">
-                            <p class="text-[11px] font-semibold uppercase tracking-[0.12em] text-content-muted">{{ label }}</p>
-                            <p class="mt-1 text-2xl font-bold leading-none text-content-primary">{{ value }}</p>
-                            <p class="mt-1.5 text-xs text-content-muted">{{ description }}</p>
+                            <h2 class="text-base font-semibold text-content-primary">Permission Registry Overview</h2>
+                            <p class="mt-0.5 text-xs leading-5 text-content-muted">A current view of backend capability contracts, module coverage, and role consumption.</p>
                         </div>
                     </div>
-                </article>
-            {% endfor %}
+                    <span class="inline-flex h-8 shrink-0 items-center gap-1.5 self-start rounded-lg border border-outline-default bg-surface-subtle px-3 text-xs font-semibold text-content-secondary sm:self-auto">
+                        <i data-lucide="lock-keyhole" class="h-3.5 w-3.5 text-kaori-primary"></i>
+                        Read-only registry
+                    </span>
+                </div>
+            </header>
+            <div class="grid gap-px bg-outline-subtle md:grid-cols-2 xl:grid-cols-4">
+                {% set metrics = [
+                                ('key-round', 'Permission Contracts', total_permissions, 'Atomic application capabilities registered by the backend.', 'bg-kaori-soft text-kaori-primary'),
+                                ('boxes', 'Control Modules', total_modules, 'Application domains used to organize permission ownership.', 'bg-status-info-soft text-status-info-text'),
+                                ('shield-check', 'Role Mappings', assignment_count, 'Current permission-to-role links across default and custom roles.', 'bg-status-normal-soft text-status-normal-text'),
+                                ('database-zap', 'Synchronization', 'seed-rbac', 'The backend registry is synchronized to the database through the RBAC seed command.', 'bg-status-warning-soft text-status-warning-text')
+                            ] %}
+                {% for icon, label, value, description, tone in metrics %}
+                    <article class="flex min-h-[12rem] flex-col bg-surface-card p-5">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <p class="text-xs font-semibold uppercase tracking-[0.12em] text-content-muted">{{ label }}</p>
+                                <p class="mt-2 truncate text-3xl font-bold tracking-tight text-content-primary">{{ value }}</p>
+                            </div>
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl {{ tone }}">
+                                <i data-lucide="{{ icon }}" class="h-5 w-5"></i>
+                            </span>
+                        </div>
+                        <p class="mt-3 text-sm leading-6 text-content-muted">{{ description }}</p>
+                    </article>
+                {% endfor %}
+            </div>
+            <div class="border-t border-outline-subtle bg-surface-hover px-5 py-4 lg:px-6">
+                <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                    {% set registry_boundaries = [
+                                    ('code-xml', 'Backend Ownership', 'Permission keys are defined in application code, not created from the UI.'),
+                                    ('refresh-cw', 'Seed Synchronization', 'seed-rbac creates missing records and converges protected default mappings.'),
+                                    ('layers-3', 'Role Consumption', 'Roles & Access selects registry keys and packages them into reusable profiles.'),
+                                    ('shield-check', 'Authoritative Enforcement', 'Route and service permission checks remain the security boundary.')
+                                ] %}
+                    {% for icon, title, description in registry_boundaries %}
+                        <div class="flex items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card p-3.5">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                                <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+                            </span>
+                            <div>
+                                <p class="text-sm font-semibold text-content-primary">{{ title }}</p>
+                                <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ description }}</p>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
         </section>
-        <section class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <section class="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
             <div class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
                 <header class="border-b border-outline-default px-5 py-4">
                     <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
@@ -240,13 +282,14 @@
                     </div>
                 </div>
                 <footer class="flex flex-col gap-3 border-t border-outline-default px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div class="flex items-center gap-3 text-sm text-content-muted">
-                        <span>Showing sections <strong class="text-content-primary" x-text="start()"></strong>–<strong class="text-content-primary" x-text="end()"></strong> of <strong class="text-content-primary" x-text="filteredModules().length"></strong></span>
-                        <label class="inline-flex items-center gap-2">
-                            <span class="text-xs">Sections</span>
+                    <div class="flex flex-wrap items-center gap-3 text-sm text-content-muted">
+                        <span>Showing <strong class="text-content-primary" x-text="start()"></strong>–<strong class="text-content-primary" x-text="end()"></strong> of <strong class="text-content-primary" x-text="filteredModules().length"></strong> sections</span>
+                        <label>
+                            <span class="sr-only">Sections per page</span>
                             <select x-model.number="perPage"
                                     @change="resetPage()"
-                                    class="h-9 rounded-lg border border-outline-default bg-surface-card px-2 text-sm font-medium text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                                    aria-label="Sections per page"
+                                    class="h-9 min-w-16 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                                 <option value="5">5</option>
                                 <option value="10">10</option>
                                 <option value="25">25</option>

@@ -26,13 +26,19 @@ Hero
   - Permission Catalog action
   - New Custom Role action for roles.manage
 
-Summary metrics
-  - total roles
-  - default roles
-  - custom roles
-  - active roles
+Role & Access Overview
+  - one shared overview container matching User Management / Identity & Access Overview
+  - role population, default baseline, custom extension, and assignment-ready metrics
+  - four-step Permission Registry -> Role Composition -> User Assignment -> Server Enforcement boundary
 
-Role registry
+View tabs
+  - Role Registry is the default tab
+  - Role-Permission Matrix is a second tab on the same page
+  - the matrix is generated from current database roles and backend permission sections
+  - new custom roles appear as matrix columns after the next page render
+  - Super Admin is excluded because it is not a normal role
+
+Role Registry tab
   - search
   - type filter
   - status filter
@@ -43,7 +49,7 @@ Role registry
   - lifecycle actions
 
 Context rail
-  - role model explanation in a violet distinction block
+  - role assignment flow, not a generic role-model paragraph
   - default role coverage
   - Permission Catalog boundary
 ```
@@ -75,6 +81,8 @@ Mode must be clear in the hero, supporting notice, field state, permission matri
 - group by permission module;
 - show action label, stable permission key, and description;
 - allow module select/clear only in editable modes;
+- provide a global Select all / Clear all control for large registries;
+- update the global control label and `aria-pressed` state from the effective checkbox selection;
 - show selected permission and module counts;
 - keep system/default detail fully read-only;
 - explain automatic view-permission prerequisites;
@@ -85,7 +93,9 @@ Mode must be clear in the hero, supporting notice, field state, permission matri
 - restore document scroll origin defensively after permission focus/change while preserving the internal `<main>` scroll container;
 - use `app/static/js/role_permission_editor.js` for progressive enhancement only;
 - never clear and recreate every role-permission link for a small change; update relationship rows differentially;
-- roll back failed role updates and render a visible error instead of returning an unhandled blank response.
+- roll back failed role updates and render a visible operational toast instead of returning an unhandled blank response;
+- present Access Guardrails as a native expandable section with `open` set by default;
+- explain responsibility-based role design, dependency normalization, assignment impact, and the separate Super Admin boundary.
 
 ## 6. Permission Catalog
 
@@ -123,6 +133,8 @@ The registry uses the global KAORI pagination contract because permission volume
 - search and module filters reset to page 1;
 - search may reduce the permission cards shown inside a module, while pagination continues to count the matching modules;
 - empty filtered results show an explicit no-match state;
+- the footer reads `Showing 1–5 of 12 sections`, followed by the numeric page-size selector;
+- the registry/content column uses top alignment so a taller context rail cannot create blank space below its footer;
 - the authorization boundary explanation is presented in a violet distinction block.
 
 ## 7. Copy standards
@@ -137,3 +149,19 @@ Use consistent terms:
 - **Active/Inactive** for custom-role assignment availability and permission effectiveness.
 
 Avoid calling default roles “editable templates.” They are baselines that can be cloned.
+
+
+## 8. Access denied state
+
+The authenticated HTTP 403 page follows KAORI Violet and distinguishes two conditions without exposing the requested permission key:
+
+- **Access role unavailable** when the account has no normalized active role or the assigned role is inactive;
+- **Access denied** when an active role exists but does not include the requested capability.
+
+The page shows the current authorization state, a return-to-Welcome action, Account & Authentication access, administrator resolution guidance, and the server-side security boundary.
+
+## 9. RBAC operational feedback and audit
+
+Role lifecycle actions must not use Flask flash messages. Create, clone, update, failed update, blocked delete, and successful delete use the persistent KAORI operational toast and create a Notification-backed Activity Audit record with `module=rbac` metadata.
+
+The legacy `AuditEvent` record remains for successful administrative mutations. Notification persistence is intentionally isolated from the primary mutation transaction so a notification-storage failure does not undo a successfully committed role change.

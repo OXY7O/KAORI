@@ -247,19 +247,58 @@
                             {% endif %}
                         </dl>
                     </section>
-                    <section class="rounded-2xl border border-outline-default bg-surface-card p-5 shadow-sm">
-                        <div class="flex items-start gap-3">
-                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-status-info-soft text-status-info-text"><i data-lucide="shield-check" class="h-5 w-5"></i></span>
-                            <div>
-                                <h2 class="text-base font-bold text-content-primary">Access guardrails</h2>
-                                <div class="mt-3 space-y-3 text-sm leading-5 text-content-secondary">
-                                    <p>Apply least privilege and create roles around operational responsibility, not individual users.</p>
-                                    <p>Write actions automatically include their required read/view baseline.</p>
-                                    <p>Super Admin is separate from role assignment and should remain restricted to emergency platform authority.</p>
+                    <details open class="group overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+                        <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 marker:hidden">
+                            <div class="flex items-center gap-3">
+                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="shield-check" class="h-5 w-5"></i></span>
+                                <div>
+                                    <h2 class="text-base font-bold text-content-primary">Access guardrails</h2>
+                                    <p class="mt-0.5 text-xs leading-5 text-content-muted">Operational rules applied when this role is saved and assigned.</p>
+                                </div>
+                            </div>
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-muted transition group-open:rotate-180">
+                                <i data-lucide="chevron-down" class="h-4 w-4"></i>
+                            </span>
+                        </summary>
+                        <div class="grid gap-3 border-t border-outline-default bg-surface-subtle p-4">
+                            <div class="rounded-xl border border-outline-default bg-surface-card p-3.5">
+                                <div class="flex items-start gap-3">
+                                    <i data-lucide="scan-search" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
+                                    <div>
+                                        <p class="text-sm font-semibold text-content-primary">Design for responsibility</p>
+                                        <p class="mt-1 text-xs leading-5 text-content-muted">Build reusable access profiles around operational duties. Do not create one-off roles for individual users unless the boundary is intentionally reusable.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="rounded-xl border border-outline-default bg-surface-card p-3.5">
+                                <div class="flex items-start gap-3">
+                                    <i data-lucide="git-merge" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
+                                    <div>
+                                        <p class="text-sm font-semibold text-content-primary">Dependency normalization</p>
+                                        <p class="mt-1 text-xs leading-5 text-content-muted">Mutation permissions automatically include their required view baseline, so the saved role remains operationally consistent.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="rounded-xl border border-outline-default bg-surface-card p-3.5">
+                                <div class="flex items-start gap-3">
+                                    <i data-lucide="users-round" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
+                                    <div>
+                                        <p class="text-sm font-semibold text-content-primary">Assignment impact</p>
+                                        <p class="mt-1 text-xs leading-5 text-content-muted">User Management assigns one active role per account. Deactivating this role removes its permission scope from every assigned user.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="rounded-xl border border-brand-outline bg-kaori-soft p-3.5 text-kaori-primary">
+                                <div class="flex items-start gap-3">
+                                    <i data-lucide="shield-alert" class="mt-0.5 h-4 w-4 shrink-0"></i>
+                                    <div>
+                                        <p class="text-sm font-semibold">Super Admin boundary</p>
+                                        <p class="mt-1 text-xs leading-5">Super Admin is not a role and is never granted through this matrix. It remains a separately controlled emergency authority flag.</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </section>
+                    </details>
                 </aside>
             </section>
             <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
@@ -272,15 +311,25 @@
                                 <p class="mt-0.5 text-sm text-content-muted">Permissions are grouped by application module and action contract.</p>
                             </div>
                         </div>
-                        <label class="relative w-full lg:w-72">
-                            <span class="sr-only">Search permissions</span>
-                            <i data-lucide="search"
-                               class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"></i>
-                            <input data-role-permission-search
-                                   type="search"
-                                   placeholder="Search permissions..."
-                                   class="h-10 w-full rounded-lg border border-outline-default bg-surface-card pl-9 pr-3 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-muted focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
-                        </label>
+                        <div class="flex w-full flex-col gap-2 sm:flex-row lg:w-auto">
+                            {% if not read_only %}
+                                <button type="button"
+                                        data-role-toggle-all
+                                        class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-brand-outline bg-kaori-soft px-3.5 text-sm font-semibold text-kaori-primary transition hover:bg-kaori-primary hover:text-white">
+                                    <i data-lucide="list-checks" class="h-4 w-4"></i>
+                                    <span data-role-toggle-all-label>Select all</span>
+                                </button>
+                            {% endif %}
+                            <label class="relative w-full lg:w-72">
+                                <span class="sr-only">Search permissions</span>
+                                <i data-lucide="search"
+                                   class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"></i>
+                                <input data-role-permission-search
+                                       type="search"
+                                       placeholder="Search permissions..."
+                                       class="h-10 w-full rounded-lg border border-outline-default bg-surface-card pl-9 pr-3 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-muted focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                            </label>
+                        </div>
                     </div>
                 </header>
                 <div class="space-y-4 bg-surface-subtle p-5">

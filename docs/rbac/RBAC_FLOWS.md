@@ -43,7 +43,9 @@ roles.manage actor opens New Custom Role
   -> create Role(is_system=false)
   -> create RolePermission rows
   -> record role.created audit event
-  -> commit
+  -> commit role transaction
+  -> persist RBAC operational notification
+  -> queue KAORI toast for redirect
 ```
 
 A custom role may be created with minimal permissions, but KAORI administrators should define a clear responsibility and avoid creating user-specific roles.
@@ -59,6 +61,8 @@ roles.manage actor chooses Clone on a default role
   -> validate as a new custom role
   -> record role.cloned with source metadata
   -> commit independent custom role
+  -> persist RBAC operational notification
+  -> queue KAORI toast for redirect
 ```
 
 Only default roles are clone sources in the current UI. The source remains unchanged.
@@ -84,9 +88,12 @@ roles.manage actor opens custom role editor
   -> change metadata/status/permissions
   -> normalize and validate unique slug
   -> expand permission dependencies
-  -> replace RolePermission set transactionally
+  -> update RolePermission rows differentially
   -> record role.updated audit event
-  -> commit
+  -> commit role transaction
+  -> persist RBAC operational notification
+  -> queue success toast
+  -> on failure: rollback, record failed operational activity, and render the editor with an error toast
 ```
 
 An attempt to edit a default role is redirected to read-only detail with guidance to clone.
@@ -145,9 +152,12 @@ roles.manage actor requests delete
   -> count non-deleted user assignments
   -> count identity-provider default mappings
   -> if blockers exist: reject with details
+  -> snapshot non-secret role metadata
   -> record role.deleted audit event
   -> delete role and role-permission rows
-  -> commit
+  -> commit role transaction
+  -> persist RBAC operational notification from the snapshot
+  -> queue success toast
 ```
 
 Deletion is permanent. Use deactivation when the role may be needed for recovery, historical review, or temporary suspension.
@@ -166,3 +176,29 @@ engineer adds permission to app/rbac/defaults.py
 ```
 
 A permission must not be added only to the UI or only to the default-role seed.
+
+
+## 12. Role registry and mapping matrix render
+
+```text
+GET /settings/roles
+  -> seed/converge default RBAC
+  -> query every current role
+  -> query grouped permission registry
+  -> build role_id -> permission-key set
+  -> render Role Registry tab
+  -> render Role-Permission Matrix tab from the same live result set
+```
+
+The matrix has no independent cached mapping. Adding, cloning, updating, or deleting a role changes the matrix on the next Roles & Access render.
+
+## 13. Authorization denial presentation
+
+```text
+permission_required(key) rejects request
+  -> HTTP 403
+  -> account has no active normalized role? show Access role unavailable
+  -> otherwise show Access denied
+  -> never reveal the protected permission key
+  -> provide KAORI Violet resolution guidance
+```

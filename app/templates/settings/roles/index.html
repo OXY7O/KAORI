@@ -19,7 +19,7 @@
     {% for role in roles %}
         {% set assigned_ns.total = assigned_ns.total + role_assignment_counts.get(role.id, 0) %}
     {% endfor %}
-    <div class="space-y-6" x-data="{ query: '', type: 'all', status: 'all', page: 1, perPage: 5, roles: [
+    <div class="space-y-6" data-role-access-tabs x-data="{ query: '', type: 'all', status: 'all', page: 1, perPage: 5, roles: [
         {% for role in roles %} { id: {{ role.id }}, type: {{ ('system' if role.is_system else 'custom')|tojson|forceescape }}, status: {{ ('active' if role.is_active else 'inactive')|tojson|forceescape }}, search: {{ ((role.display_name or '') ~ ' ' ~ (role.name or '') ~ ' ' ~ (role.description or ''))|lower|tojson|forceescape }} }{{ ',' if not loop.last else '' }} {% endfor %}
         ], filtered() { const term = this.query.trim().toLowerCase(); return this.roles.filter((role) => { const queryMatch = !term || role.search.includes(term); const typeMatch = this.type === 'all' || role.type === this.type; const statusMatch = this.status === 'all' || role.status === this.status; return queryMatch && typeMatch && statusMatch; }); }, pages() { return Math.max(1, Math.ceil(this.filtered().length / this.perPage)); }, visible(roleId) { const index = this.filtered().findIndex((role) => role.id === Number(roleId)); const start = (this.page - 1) * this.perPage; return index >= start && index < start + this.perPage; }, start() { return this.filtered().length ? ((this.page - 1) * this.perPage) + 1 : 0; }, end() { return Math.min(this.page * this.perPage, this.filtered().length); }, resetPage() { this.page = 1; }, normalizePage() { if (this.page > this.pages()) this.page = this.pages(); } }">
         <section class="{{ page_hero.shell_classes() }}">
@@ -62,29 +62,83 @@
                 </aside>
             </div>
         </section>
-        <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {% set metrics = [
-                            ('shield', 'Total roles', total_roles, 'All access profiles', 'bg-kaori-soft text-kaori-primary'),
-                            ('lock-keyhole', 'Default roles', system_roles, 'Protected system baseline', 'bg-kaori-soft text-kaori-primary'),
-                            ('sparkles', 'Custom roles', custom_roles, 'Team-specific profiles', 'bg-status-info-soft text-status-info-text'),
-                            ('circle-check', 'Active roles', active_roles, 'Available for assignment', 'bg-status-normal-soft text-status-normal-text')
-                        ] %}
-            {% for icon, label, value, description, tone in metrics %}
-                <article class="rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm">
-                    <div class="flex items-center gap-3">
-                        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl {{ tone }}">
-                            <i data-lucide="{{ icon }}" class="h-5 w-5"></i>
+        <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+            <header class="border-b border-outline-subtle px-5 py-4 lg:px-6">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex min-w-0 items-center gap-3">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
+                            <i data-lucide="shield-check" class="h-5 w-5"></i>
                         </span>
                         <div class="min-w-0">
-                            <p class="text-[11px] font-semibold uppercase tracking-[0.12em] text-content-muted">{{ label }}</p>
-                            <p class="mt-1 text-2xl font-bold leading-none text-content-primary">{{ value }}</p>
-                            <p class="mt-1.5 text-xs text-content-muted">{{ description }}</p>
+                            <h2 class="text-base font-semibold text-content-primary">Role &amp; Access Overview</h2>
+                            <p class="mt-0.5 text-xs leading-5 text-content-muted">Current role population, lifecycle state, permission coverage, and account assignment posture.</p>
                         </div>
                     </div>
-                </article>
-            {% endfor %}
+                    <span class="inline-flex h-8 shrink-0 items-center gap-1.5 self-start rounded-lg border border-outline-default bg-surface-subtle px-3 text-xs font-semibold text-content-secondary sm:self-auto">
+                        <i data-lucide="users-round" class="h-3.5 w-3.5 text-kaori-primary"></i>
+                        {{ assigned_ns.total }} active assignments
+                    </span>
+                </div>
+            </header>
+            <div class="grid gap-px bg-outline-subtle md:grid-cols-2 xl:grid-cols-4">
+                {% set metrics = [
+                                ('shield', 'Role Population', total_roles, 'All default and custom access profiles currently registered.', 'bg-kaori-soft text-kaori-primary'),
+                                ('lock-keyhole', 'Default Baselines', system_roles, 'Code-owned roles restored to their canonical permission scope by seed-rbac.', 'bg-kaori-soft text-kaori-primary'),
+                                ('sparkles', 'Custom Extensions', custom_roles, 'Administrator-managed roles created directly or cloned from a default baseline.', 'bg-status-info-soft text-status-info-text'),
+                                ('circle-check', 'Assignment Ready', active_roles, 'Active roles available to User Management and identity-provider defaults.', 'bg-status-normal-soft text-status-normal-text')
+                            ] %}
+                {% for icon, label, value, description, tone in metrics %}
+                    <article class="flex min-h-[12rem] flex-col bg-surface-card p-5">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-[0.12em] text-content-muted">{{ label }}</p>
+                                <p class="mt-2 text-3xl font-bold tracking-tight text-content-primary">{{ value }}</p>
+                            </div>
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl {{ tone }}">
+                                <i data-lucide="{{ icon }}" class="h-5 w-5"></i>
+                            </span>
+                        </div>
+                        <p class="mt-3 text-sm leading-6 text-content-muted">{{ description }}</p>
+                    </article>
+                {% endfor %}
+            </div>
+            <div class="border-t border-outline-subtle bg-surface-hover px-5 py-4 lg:px-6">
+                <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                    {% set flow_items = [
+                                    ('book-key', 'Permission Registry', 'Backend-defined capability contracts synchronized through seed-rbac.'),
+                                    ('layers-3', 'Role Composition', 'Roles & Access packages permissions into reusable default or custom profiles.'),
+                                    ('user-round-check', 'User Assignment', 'User Management assigns one active role to each managed account.'),
+                                    ('shield-check', 'Server Enforcement', 'Route and service guards evaluate the effective role on every protected action.')
+                                ] %}
+                    {% for icon, title, description in flow_items %}
+                        <div class="flex items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card p-3.5">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                                <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+                            </span>
+                            <div>
+                                <p class="text-sm font-semibold text-content-primary">{{ title }}</p>
+                                <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ description }}</p>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
         </section>
-        <section class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <nav class="flex flex-wrap items-center gap-2 rounded-xl border border-outline-default bg-surface-card p-2 shadow-sm" aria-label="Roles and access views">
+            <button type="button"
+                    data-role-access-tab="registry"
+                    class="inline-flex min-h-10 items-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white transition">
+                <i data-lucide="list-tree" class="h-4 w-4"></i>
+                Role Registry
+            </button>
+            <button type="button"
+                    data-role-access-tab="matrix"
+                    class="inline-flex min-h-10 items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-content-secondary transition hover:bg-surface-hover hover:text-kaori-primary">
+                <i data-lucide="table-properties" class="h-4 w-4"></i>
+                Role-Permission Matrix
+            </button>
+        </nav>
+        <section data-role-access-panel="registry" class="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
             <div class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
                 <header class="border-b border-outline-default px-5 py-4">
                     <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
@@ -243,7 +297,7 @@
                                         <form method="post"
                                               action="{{ url_for('settings.delete_role', role_id=role.id) }}"
                                               class="mt-5 flex justify-end gap-3">
-                                            {{ delete_role_form.csrf_token(id='delete_role_csrf_' ~ role.id) }}
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="role_id" value="{{ role.id }}">
                                             <button type="button"
                                                     @click="deleteOpen = false"
@@ -299,24 +353,37 @@
                 </footer>
             </div>
             <aside class="space-y-5">
-                <section class="rounded-2xl border border-outline-default bg-surface-card p-5 shadow-sm">
-                    <div class="flex items-start gap-3">
-                        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="workflow" class="h-5 w-5"></i></span>
-                        <div>
-                            <h2 class="text-base font-bold text-content-primary">Role model</h2>
-                            <div class="mt-3 flex gap-2.5 rounded-xl border border-brand-outline bg-kaori-soft px-3.5 py-3 text-sm leading-6 text-kaori-primary">
-                                <i data-lucide="shield-alert" class="mt-0.5 h-4 w-4 shrink-0"></i>
-                                <p>Roles & Access builds reusable role profiles from the Permission Catalog. User Management assigns one active role to each user. Super Admin remains a separate emergency authority flag, not a normal role.</p>
+                <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+                    <header class="border-b border-outline-default px-5 py-4">
+                        <div class="flex items-start gap-3">
+                            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="workflow" class="h-5 w-5"></i></span>
+                            <div>
+                                <h2 class="text-base font-bold text-content-primary">Role assignment flow</h2>
+                                <p class="mt-1 text-sm leading-5 text-content-muted">How backend capabilities become effective user access.</p>
                             </div>
                         </div>
-                    </div>
-                    <div class="mt-4 space-y-3 text-sm leading-5 text-content-secondary">
-                        <div class="flex gap-2"><i data-lucide="lock-keyhole"
-   class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i><span>Default roles are seeded from code and cannot be edited, deactivated, or deleted.</span></div>
-                        <div class="flex gap-2"><i data-lucide="copy-plus"
-   class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i><span>Clone a default role to create a customizable permission baseline.</span></div>
-                        <div class="flex gap-2"><i data-lucide="git-merge"
-   class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i><span>Required view permissions are automatically included with dependent write actions.</span></div>
+                    </header>
+                    <div class="px-5 py-4">
+                        <ol class="relative space-y-4 before:absolute before:bottom-4 before:left-4 before:top-4 before:w-px before:bg-outline-default">
+                            {% set role_flow = [
+                                            ('1', 'Permission Catalog', 'Code-owned permission keys define atomic application capabilities.'),
+                                            ('2', 'Role Composition', 'Default or custom roles package those keys into reusable access profiles.'),
+                                            ('3', 'User Management', 'One active role is assigned to each account and evaluated by server guards.')
+                                        ] %}
+                            {% for number, title, description in role_flow %}
+                                <li class="relative flex gap-3">
+                                    <span class="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-brand-outline bg-kaori-soft text-xs font-bold text-kaori-primary">{{ number }}</span>
+                                    <div class="min-w-0 pt-0.5">
+                                        <p class="text-sm font-bold text-content-primary">{{ title }}</p>
+                                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>
+                                    </div>
+                                </li>
+                            {% endfor %}
+                        </ol>
+                        <div class="mt-4 flex gap-2.5 rounded-xl border border-brand-outline bg-kaori-soft px-3.5 py-3 text-xs leading-5 text-kaori-primary">
+                            <i data-lucide="shield-alert" class="mt-0.5 h-4 w-4 shrink-0"></i>
+                            <p>Super Admin remains a separate emergency authority flag and is never represented as a normal role column.</p>
+                        </div>
                     </div>
                 </section>
                 <section class="rounded-2xl border border-outline-default bg-surface-card p-5 shadow-sm">
@@ -356,5 +423,80 @@
                 </section>
             </aside>
         </section>
+        <section data-role-access-panel="matrix" hidden class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+            <header class="border-b border-outline-default px-5 py-4 lg:px-6">
+                <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div class="flex items-center gap-3">
+                        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="table-properties" class="h-5 w-5"></i></span>
+                        <div>
+                            <h2 class="text-base font-bold text-content-primary">Role-Permission Mapping Matrix</h2>
+                            <p class="mt-0.5 text-sm text-content-muted">Live mapping generated from the current role registry. New custom roles appear automatically after creation.</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2 text-xs font-semibold text-content-muted">
+                        <span class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-outline-default bg-surface-subtle px-3"><i data-lucide="shield" class="h-3.5 w-3.5 text-kaori-primary"></i>{{ total_roles }} roles</span>
+                        <span class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-outline-default bg-surface-subtle px-3"><i data-lucide="key-round" class="h-3.5 w-3.5 text-kaori-primary"></i>{{ total_permissions }} permissions</span>
+                    </div>
+                </div>
+            </header>
+            <div class="overflow-x-auto">
+                <table class="min-w-max border-separate border-spacing-0 text-left text-sm">
+                    <thead>
+                        <tr>
+                            <th class="sticky left-0 z-20 min-w-[300px] border-b border-r border-outline-default bg-surface-hover px-5 py-4 text-xs font-semibold uppercase tracking-[0.12em] text-content-muted">Permission contract</th>
+                            {% for role in roles %}
+                                <th class="min-w-[180px] border-b border-r border-outline-default bg-surface-hover px-4 py-3 align-top last:border-r-0">
+                                    <a href="{{ url_for('settings.role_detail', role_id=role.id) }}" class="group block">
+                                        <span class="block text-sm font-bold text-content-primary group-hover:text-kaori-primary">{{ role.display_name }}</span>
+                                        <span class="mt-1 block font-mono text-[10px] font-semibold text-content-muted">{{ role.name }}</span>
+                                        <span class="mt-2 inline-flex rounded-md border px-2 py-1 text-[10px] font-semibold {{ 'border-brand-outline bg-kaori-soft text-kaori-primary' if role.is_system else ('border-status-normal-border bg-status-normal-soft text-status-normal-text' if role.is_active else 'border-outline-default bg-surface-subtle text-content-muted') }}">
+                                            {{ 'Default · Locked' if role.is_system else ('Custom · Active' if role.is_active else 'Custom · Inactive') }}
+                                        </span>
+                                    </a>
+                                </th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for module_name, module_permissions in permissions_by_module.items() %}
+                            <tr>
+                                <th colspan="{{ total_roles + 1 }}" class="border-b border-outline-default bg-kaori-soft px-5 py-3 text-xs font-bold uppercase tracking-[0.12em] text-kaori-primary">
+                                    {{ module_label(module_name) }} · {{ module_permissions|length }} permissions
+                                </th>
+                            </tr>
+                            {% for permission in module_permissions %}
+                                <tr class="group hover:bg-surface-hover">
+                                    <th class="sticky left-0 z-10 border-b border-r border-outline-default bg-surface-card px-5 py-3 group-hover:bg-surface-hover">
+                                        <span class="block text-sm font-semibold text-content-primary">{{ action_label(permission.action) }}</span>
+                                        <span class="mt-1 block font-mono text-[11px] font-semibold text-content-muted">{{ permission.key }}</span>
+                                    </th>
+                                    {% for role in roles %}
+                                        {% set mapped = permission.key in role_permission_keys.get(role.id, []) %}
+                                        <td class="border-b border-r border-outline-default px-4 py-3 text-center last:border-r-0">
+                                            {% if mapped %}
+                                                <span class="mx-auto flex h-8 w-8 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary" title="Mapped to {{ role.display_name }}">
+                                                    <i data-lucide="check" class="h-4 w-4"></i>
+                                                </span>
+                                            {% else %}
+                                                <span class="mx-auto flex h-8 w-8 items-center justify-center rounded-lg border border-outline-subtle bg-surface-subtle text-content-disabled" title="Not mapped to {{ role.display_name }}">
+                                                    <i data-lucide="minus" class="h-4 w-4"></i>
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <footer class="border-t border-outline-default bg-surface-hover px-5 py-4 lg:px-6">
+                <div class="flex flex-col gap-2 text-xs leading-5 text-content-muted sm:flex-row sm:items-center sm:justify-between">
+                    <p>Matrix columns are generated from active database role records; rows are generated from the backend Permission Catalog.</p>
+                    <p class="font-semibold text-content-secondary">Super Admin is intentionally excluded.</p>
+                </div>
+            </footer>
+        </section>
     </div>
+    <script defer src="{{ url_for('static', filename='js/role_access_tabs.js') }}"></script>
 {% endblock dashboard_content %}

@@ -15,6 +15,8 @@
         const searchInput = root.querySelector('[data-role-permission-search]')
         const selectedCount = root.querySelector('[data-role-selected-count]')
         const selectedModuleCount = root.querySelector('[data-role-selected-module-count]')
+        const toggleAllButton = root.querySelector('[data-role-toggle-all]')
+        const toggleAllLabel = root.querySelector('[data-role-toggle-all-label]')
         const moduleSections = Array.from(root.querySelectorAll('[data-role-module-section]'))
 
         const permissionInputs = () => Array.from(root.querySelectorAll('[data-role-permission]'))
@@ -72,6 +74,15 @@
             }
 
             moduleSections.forEach(syncModuleAction)
+
+            const editableInputs = permissionInputs().filter((input) => !input.disabled)
+            const allSelected = editableInputs.length > 0 && editableInputs.every((input) => input.checked)
+            if (toggleAllLabel) {
+                toggleAllLabel.textContent = allSelected ? 'Clear all' : 'Select all'
+            }
+            if (toggleAllButton) {
+                toggleAllButton.setAttribute('aria-pressed', allSelected ? 'true' : 'false')
+            }
         }
 
         function applySearch() {
@@ -123,6 +134,19 @@
                     syncSummary()
                 })
             }
+        })
+
+
+        toggleAllButton?.addEventListener('click', () => {
+            const inputs = permissionInputs().filter((input) => !input.disabled)
+            const shouldSelect = inputs.some((input) => !input.checked)
+
+            inputs.forEach((input) => {
+                input.checked = shouldSelect
+            })
+
+            syncSummary()
+            requestAnimationFrame(repairDocumentViewport)
         })
 
         root.addEventListener('focusin', (event) => {

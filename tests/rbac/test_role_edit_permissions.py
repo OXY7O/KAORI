@@ -10,7 +10,7 @@ os.environ.setdefault('TEST_DATABASE_URL', 'sqlite+pysqlite:///:memory:')
 
 from app import create_app  # noqa: E402
 from app.extensions import db  # noqa: E402
-from app.models import Permission, Role, User  # noqa: E402
+from app.models import Notification, Permission, Role, User  # noqa: E402
 from app.rbac.service import expand_permission_keys, replace_role_permissions, seed_default_rbac  # noqa: E402
 
 
@@ -95,7 +95,9 @@ def test_edit_custom_role_accepts_every_registered_permission(app) -> None:
 
         assert response.status_code == 200, permission_key
         assert response.request.path == '/settings/roles', permission_key
-        assert b'Custom role updated successfully.' in response.data, permission_key
+        assert b'Custom role updated' in response.data, permission_key
+        assert b'access scope was updated' in response.data, permission_key
+        assert b'Custom role updated successfully.' not in response.data, permission_key
 
         with app.app_context():
             db.session.expire_all()
@@ -104,6 +106,12 @@ def test_edit_custom_role_accepts_every_registered_permission(app) -> None:
             assert role.permission_keys() == expand_permission_keys(
                 baseline_keys | {permission_key}
             ), permission_key
+            notification = Notification.query.order_by(Notification.id.desc()).first()
+            assert notification is not None
+            assert notification.event_type == 'rbac_role_updated'
+            assert notification.status == 'success'
+            assert notification.metadata_json['module'] == 'rbac'
+            assert notification.metadata_json['target_id'] == role_id
 
 
 def test_edit_custom_role_rolls_back_database_failure(app, monkeypatch) -> None:
@@ -125,10 +133,16 @@ def test_edit_custom_role_rolls_back_database_failure(app, monkeypatch) -> None:
     )
 
     assert response.status_code == 200
-    assert b'The custom role could not be updated.' in response.data
+    assert b'Custom role update failed' in response.data
+    assert b'No role changes were saved.' in response.data
+    assert b'The custom role could not be updated.' not in response.data
 
     with app.app_context():
         db.session.expire_all()
         role = db.session.get(Role, role_id)
         assert role is not None
         assert role.permission_keys() == original_keys
+        notification = Notification.query.order_by(Notification.id.desc()).first()
+        assert notification is not None
+        assert notification.event_type == 'rbac_role_update_failed'
+        assert notification.status == 'error'

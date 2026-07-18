@@ -1,13 +1,89 @@
 {% extends "layouts/app.html" %}
 {% block title %}Access Denied{% endblock title %}
 {% block dashboard_content %}
-    <div class="mx-auto max-w-2xl rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm dark:border-slate-800 dark:bg-slate-950">
-        <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-300">
-            <i data-lucide="shield-alert" class="h-7 w-7"></i>
+    {% set assigned_role = current_user.role_record if current_user.is_authenticated else none %}
+    {% set role_unavailable = current_user.is_authenticated and not current_user.is_super_admin and (not assigned_role or not assigned_role.is_active) %}
+    <section class="mx-auto max-w-5xl overflow-hidden rounded-2xl border border-brand-outline bg-surface-card shadow-sm">
+        <div class="grid lg:grid-cols-[minmax(0,1fr)_320px]">
+            <div class="relative overflow-hidden bg-kaori-primary p-6 text-brand-foreground sm:p-8 lg:p-10">
+                <div class="absolute -right-16 -top-20 h-56 w-56 rounded-full border border-white/10"></div>
+                <div class="absolute -bottom-24 right-20 h-48 w-48 rounded-full border border-white/10"></div>
+                <div class="relative max-w-2xl">
+                    <span class="inline-flex h-14 w-14 items-center justify-center rounded-2xl border border-brand-outline bg-brand-surface-strong">
+                        <i data-lucide="shield-alert" class="h-7 w-7"></i>
+                    </span>
+                    <p class="mt-6 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-foreground-muted">KAORI access boundary</p>
+                    <h1 class="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
+                        {{ 'Access role unavailable' if role_unavailable else 'Access denied' }}
+                    </h1>
+                    <p class="mt-4 max-w-xl text-sm font-medium leading-7 text-brand-foreground-muted sm:text-base">
+                        {% if role_unavailable %}
+                            Your account does not currently have an active RBAC role assignment. KAORI cannot open protected workspaces until an access administrator assigns or reactivates a role.
+                        {% else %}
+                            Your active role does not include the permission required to open this workspace or perform this action.
+                        {% endif %}
+                    </p>
+                    <div class="mt-7 flex flex-wrap gap-3">
+                        <a href="{{ url_for('welcome.index') }}"
+                           class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-white/30 bg-surface-card px-4 py-2.5 text-sm font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70">
+                            <i data-lucide="house" class="h-4 w-4"></i>
+                            Back to Welcome
+                        </a>
+                        <a href="{{ url_for('settings.account') }}"
+                           class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-brand-outline bg-brand-surface px-4 py-2.5 text-sm font-semibold text-brand-foreground transition hover:bg-brand-surface-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70">
+                            <i data-lucide="user-round-cog" class="h-4 w-4"></i>
+                            Review account access
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <aside class="bg-surface-subtle p-6 sm:p-8" aria-label="Access resolution guidance">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
+                        <i data-lucide="key-round" class="h-5 w-5"></i>
+                    </span>
+                    <div>
+                        <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-content-muted">Current authorization</p>
+                        <h2 class="mt-1 text-base font-bold text-content-primary">
+                            {% if current_user.is_super_admin %}
+                                Super Admin
+                            {% elif assigned_role %}
+                                {{ assigned_role.display_name }}
+                            {% else %}
+                                No normalized role
+                            {% endif %}
+                        </h2>
+                        <p class="mt-1 text-sm leading-6 text-content-muted">
+                            {% if current_user.is_super_admin %}
+                                Emergency authority is active, but this request was still rejected by an application boundary.
+                            {% elif assigned_role and assigned_role.is_active %}
+                                The role is active, but the requested capability is outside its permission scope.
+                            {% elif assigned_role %}
+                                The assigned role is inactive and cannot grant application access.
+                            {% else %}
+                                No active role record is linked to this account.
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                <div class="mt-6 space-y-3">
+                    <div class="rounded-xl border border-outline-default bg-surface-card p-4">
+                        <div class="flex items-start gap-3">
+                            <i data-lucide="user-cog" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
+                            <div>
+                                <p class="text-sm font-semibold text-content-primary">Access administrator action</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Review the account in User Management and assign an active role with the required operational responsibility.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="rounded-xl border border-brand-outline bg-kaori-soft p-4 text-kaori-primary">
+                        <div class="flex items-start gap-3">
+                            <i data-lucide="shield-check" class="mt-0.5 h-4 w-4 shrink-0"></i>
+                            <p class="text-xs leading-5"><strong>Security boundary:</strong> navigation visibility is only a usability layer. Server-side permission checks remain authoritative.</p>
+                        </div>
+                    </div>
+                </div>
+            </aside>
         </div>
-        <h1 class="mt-4 text-2xl font-extrabold text-slate-950 dark:text-white">Access denied</h1>
-        <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Your role does not include the permission required to open this workspace or perform this action.</p>
-        <a href="{{ url_for('welcome.index') }}"
-           class="mt-6 inline-flex rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-500">Back to Welcome</a>
-    </div>
+    </section>
 {% endblock dashboard_content %}
