@@ -96,23 +96,23 @@ DEFAULT_PERMISSIONS = [
 DEFAULT_ROLE_DEFINITIONS = {
     'viewer': {
         'display_name': 'Viewer',
-        'description': 'Read-only access to the welcome workspace, Kubernetes dashboard, inventory, analytics, and reports.',
+        'description': 'Broad read-only infrastructure visibility across dashboard, cluster inventory, analytics, governance, intelligence, ConfigMaps, and reports.',
     },
     'operator': {
         'display_name': 'Operator',
-        'description': 'Operational access for sync actions, report generation, and daily review.',
+        'description': 'Daily infrastructure operations including sync, report generation, ConfigMap changes, TLS inventory refresh, and controlled TLS Secret rotation.',
     },
     'editor': {
         'display_name': 'Editor',
-        'description': 'Configuration access for clusters, integrations, templates, and schedules.',
+        'description': 'Infrastructure configuration access for clusters, integrations, Secrets, bulk TLS rotation, report templates, schedules, and storage operations.',
     },
     'admin': {
         'display_name': 'Admin',
-        'description': 'Administrative access to users, roles, integrations, and protected settings.',
+        'description': 'Application administration across users, roles, integrations, operations, retention, and protected settings, excluding direct Secret reveal.',
     },
     'auditor': {
         'display_name': 'Auditor',
-        'description': 'Read-only audit and security visibility without operational write access.',
+        'description': 'Read-only infrastructure, user, role, system, audit, and archive-export visibility without operational write access.',
     },
 }
 

@@ -1,4 +1,5 @@
 {% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
 {% block title %}Permission Catalog{% endblock title %}
 {% block dashboard_content %}
     {% macro module_label(value) -%}
@@ -11,254 +12,200 @@
         {{ module_label(permission.module or permission.key.split('.')[0] ) }} · {{ action_label(permission.action or permission.key.split('.')[-1] ) }}
     {%- endmacro %}
     <div class="space-y-6"
-         x-data='permissionCatalog({{ permissions_by_module.keys() |list|tojson }})'>
-        <section class="overflow-hidden rounded-2xl border border-brand-outline bg-kaori-primary p-6 text-white shadow-sm">
-            <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-                <div class="flex gap-4">
-                    <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-surface-card/15 ring-1 ring-white/20">
-                        <i data-lucide="key-round" class="h-7 w-7"></i>
-                    </div>
-                    <div class="max-w-4xl">
-                        <div class="mb-2 text-xs font-bold uppercase tracking-[0.28em] text-white/80">RBAC Registry</div>
-                        <h1 class="text-3xl font-extrabold tracking-tight">Permission Catalog</h1>
-                        <p class="mt-2 max-w-3xl text-sm leading-6 text-white/85 sm:text-base">Review the application permission registry used by roles, route guards, and administrative access controls.</p>
-                        <div class="mt-4 flex flex-wrap gap-2">
-                            <span class="inline-flex items-center gap-1.5 rounded-md bg-surface-card/15 px-3 py-1 text-xs font-bold ring-1 ring-white/15"><i data-lucide="eye" class="h-3.5 w-3.5"></i> Read-only Registry</span>
-                            <span class="inline-flex items-center gap-1.5 rounded-md bg-surface-card/15 px-3 py-1 text-xs font-bold ring-1 ring-white/15"><i data-lucide="shield-check" class="h-3.5 w-3.5"></i> RBAC Contract</span>
-                            <span class="inline-flex items-center gap-1.5 rounded-md bg-surface-card/15 px-3 py-1 text-xs font-bold ring-1 ring-white/15"><i data-lucide="route" class="h-3.5 w-3.5"></i> Route Guard Ready</span>
+         x-data="{ search: '', moduleFilter: 'all', expanded: {}, isExpanded(moduleName) { return Boolean(this.expanded[moduleName]) || this.search.trim() !== ''; }, toggle(moduleName) { this.expanded[moduleName] = !this.expanded[moduleName]; }, toggleAll() { const names = {{ permissions_by_module.keys() |list|tojson }}; const next = !names.every((name) => Boolean(this.expanded[name])); names.forEach((name) => { this.expanded[name] = next; }); } }">
+        <section class="relative overflow-hidden rounded-2xl border border-brand-outline bg-kaori-primary p-5 text-brand-foreground shadow-sm lg:p-6">
+            <div class="relative grid gap-5 xl:grid-cols-12 xl:items-stretch">
+                <div class="flex min-w-0 flex-col justify-center xl:col-span-8">
+                    {% call page_hero.intro('book-key', 'RBAC registry', 'key-round') %}
+                        <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">Permission Catalog</h1>
+                        <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">
+                            Review the code-backed permission contracts used by route guards, navigation visibility, custom roles, and administrative workflows.
+                        </p>
+                        <div class="mt-5 flex flex-wrap gap-2">
+                            {{ page_hero.meta_label('key-round', total_permissions ~ ' permissions') }}
+                            {{ page_hero.meta_label('boxes', total_modules ~ ' modules') }}
+                            {{ page_hero.meta_label('git-branch', assignment_count ~ ' role assignments') }}
                         </div>
-                    </div>
+                    {% endcall %}
                 </div>
-                <a href="{{ url_for('settings.roles') }}"
-                   class="inline-flex items-center justify-center gap-2 rounded-2xl bg-surface-card/10 px-4 py-2.5 text-sm font-bold text-white ring-1 ring-white/25 transition hover:bg-surface-card/15">
-                    <i data-lucide="arrow-left" class="h-4 w-4"></i>
-                    Back to Roles & Access
-                </a>
-            </div>
-        </section>
-        <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <div class="rounded-2xl border border-outline-default bg-surface-card p-5 shadow-sm">
-                <div class="flex items-center gap-4">
-                    <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-kaori-soft text-kaori-primary dark:bg-kaori-soft dark:text-kaori-accent">
-                        <i data-lucide="key-round" class="h-6 w-6"></i>
-                    </div>
-                    <div>
-                        <p class="text-xs font-bold uppercase tracking-[0.16em] text-content-muted">Total Permissions</p>
-                        <div class="mt-1 text-3xl font-extrabold text-content-primary">{{ total_permissions }}</div>
-                        <p class="mt-1 text-sm text-content-muted">Application access controls</p>
-                    </div>
-                </div>
-            </div>
-            <div class="rounded-2xl border border-outline-default bg-surface-card p-5 shadow-sm">
-                <div class="flex items-center gap-4">
-                    <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-600 dark:bg-cyan-950/50 dark:text-cyan-300">
-                        <i data-lucide="boxes" class="h-6 w-6"></i>
-                    </div>
-                    <div>
-                        <p class="text-xs font-bold uppercase tracking-[0.16em] text-content-muted">Permission Modules</p>
-                        <div class="mt-1 text-3xl font-extrabold text-content-primary">{{ total_modules }}</div>
-                        <p class="mt-1 text-sm text-content-muted">Grouped by feature area</p>
-                    </div>
-                </div>
-            </div>
-            <div class="rounded-2xl border border-outline-default bg-surface-card p-5 shadow-sm">
-                <div class="flex items-center gap-4">
-                    <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-300">
-                        <i data-lucide="shield-check" class="h-6 w-6"></i>
-                    </div>
-                    <div>
-                        <p class="text-xs font-bold uppercase tracking-[0.16em] text-content-muted">Role Assignments</p>
-                        <div class="mt-1 text-3xl font-extrabold text-content-primary">{{ assignment_count }}</div>
-                        <p class="mt-1 text-sm text-content-muted">Permission-to-role links</p>
-                    </div>
-                </div>
-            </div>
-            <div class="rounded-2xl border border-outline-default bg-surface-card p-5 shadow-sm">
-                <div class="flex items-center gap-4">
-                    <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-300">
-                        <i data-lucide="lock-keyhole" class="h-6 w-6"></i>
-                    </div>
-                    <div>
-                        <p class="text-xs font-bold uppercase tracking-[0.16em] text-content-muted">Registry Mode</p>
-                        <div class="mt-1 text-xl font-extrabold text-content-primary">Read-only</div>
-                        <p class="mt-1 text-sm text-content-muted">Seeded from application code</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-        <section class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-            <div class="rounded-2xl border border-outline-default bg-surface-card shadow-sm">
-                <div class="border-b border-outline-default p-5">
-                    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                        <div>
-                            <div class="flex items-center gap-3">
-                                <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-kaori-soft text-kaori-primary dark:bg-kaori-soft dark:text-kaori-accent"><i data-lucide="list-tree" class="h-5 w-5"></i></span>
-                                <div>
-                                    <h2 class="text-lg font-extrabold text-content-primary">Permission Registry</h2>
-                                    <p class="text-sm text-content-muted">Browse all seeded permissions and see which roles consume them.</p>
-                                </div>
+                <aside class="xl:col-span-4" aria-label="Permission registry policy">
+                    <div class="flex h-full min-h-[12rem] flex-col rounded-xl border border-brand-outline bg-brand-surface-strong p-4 backdrop-blur-md">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Registry policy</p>
+                                <h2 class="mt-1 text-base font-semibold text-brand-foreground">Read-only, code-owned</h2>
                             </div>
+                            <span class="flex h-10 w-10 items-center justify-center rounded-lg border border-brand-outline bg-brand-surface text-brand-foreground"><i data-lucide="lock-keyhole" class="h-5 w-5"></i></span>
                         </div>
-                        <div class="grid gap-3 lg:w-[620px] xl:grid-cols-[minmax(0,1fr)_180px_150px]">
-                            <label class="relative block">
+                        <p class="mt-2 text-sm leading-5 text-brand-foreground-muted">Permission keys are application contracts. Access administrators assign them to roles; they do not create or rename keys from the UI.</p>
+                        <a href="{{ url_for('settings.roles') }}"
+                           class="mt-auto inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-brand-outline bg-brand-surface px-3 py-2 text-sm font-semibold text-brand-foreground hover:bg-brand-surface-strong">
+                            <i data-lucide="arrow-left" class="h-4 w-4"></i>Back to Roles &amp; Access
+                        </a>
+                    </div>
+                </aside>
+            </div>
+        </section>
+        <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {% set metrics = [
+                            ('key-round', 'Permissions', total_permissions, 'Registered access contracts', 'bg-kaori-soft text-kaori-primary'),
+                            ('boxes', 'Modules', total_modules, 'Application control domains', 'bg-status-info-soft text-status-info-text'),
+                            ('shield-check', 'Assignments', assignment_count, 'Permission-to-role links', 'bg-status-normal-soft text-status-normal-text'),
+                            ('lock-keyhole', 'Registry mode', 'Read-only', 'Seeded from application code', 'bg-status-warning-soft text-status-warning-text')
+                        ] %}
+            {% for icon, label, value, description, tone in metrics %}
+                <article class="rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm">
+                    <div class="flex items-center gap-3">
+                        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl {{ tone }}"><i data-lucide="{{ icon }}" class="h-5 w-5"></i></span>
+                        <div class="min-w-0">
+                            <p class="text-[11px] font-semibold uppercase tracking-[0.12em] text-content-muted">{{ label }}</p>
+                            <p class="mt-1 text-2xl font-bold leading-none text-content-primary">{{ value }}</p>
+                            <p class="mt-1.5 text-xs text-content-muted">{{ description }}</p>
+                        </div>
+                    </div>
+                </article>
+            {% endfor %}
+        </section>
+        <section class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+            <div class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+                <header class="border-b border-outline-default px-5 py-4">
+                    <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                        <div>
+                            <h2 class="text-base font-bold text-content-primary">Permission registry</h2>
+                            <p class="mt-1 text-sm text-content-muted">Browse permission purpose, key, action, and current role coverage.</p>
+                        </div>
+                        <div class="grid gap-2 sm:grid-cols-[minmax(0,1fr)_180px_auto] xl:w-[620px]">
+                            <label class="relative">
+                                <span class="sr-only">Search permissions</span>
                                 <i data-lucide="search"
                                    class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"></i>
-                                <input x-model.debounce.150ms="search"
+                                <input x-model="search"
                                        type="search"
                                        placeholder="Search permission..."
-                                       class="w-full rounded-2xl border border-outline-default bg-surface-card py-2.5 pl-9 pr-3 text-sm font-medium text-content-secondary outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/20 dark:focus:ring-kaori-primary/20">
+                                       class="h-10 w-full rounded-lg border border-outline-default bg-surface-card pl-9 pr-3 text-sm font-medium text-content-primary outline-none placeholder:text-content-muted focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                             </label>
                             <select x-model="moduleFilter"
-                                    class="w-full rounded-2xl border border-outline-default bg-surface-card px-3 py-2.5 text-sm font-bold text-content-secondary outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/20 dark:focus:ring-kaori-primary/20">
-                                <option value="all">All Modules</option>
+                                    class="h-10 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                                <option value="all">All modules</option>
                                 {% for module_name in permissions_by_module.keys() %}
                                     <option value="{{ module_name }}">{{ module_label(module_name) }}</option>
                                 {% endfor %}
                             </select>
                             <button type="button"
                                     @click="toggleAll()"
-                                    class="inline-flex items-center justify-center gap-2 rounded-2xl border border-outline-default bg-surface-card px-3 py-2.5 text-sm font-bold text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary dark:hover:border-brand-outline dark:hover:bg-kaori-soft dark:hover:text-kaori-accent">
-                                <i :data-lucide="allExpanded() ? 'minimize-2' : 'maximize-2'"
-                                   class="h-4 w-4"></i>
-                                <span x-text="allExpanded() ? 'Collapse All' : 'Expand All'"></span>
+                                    class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-secondary hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary">
+                                <i data-lucide="panel-top-open" class="h-4 w-4"></i>Toggle all
                             </button>
                         </div>
                     </div>
-                </div>
-                <div class="divide-y divide-outline-default dark:divide-outline-default">
+                </header>
+                <div class="divide-y divide-outline-default">
                     {% for module_name, module_permissions in permissions_by_module.items() %}
-                        <section class="group"
-                                 x-show="moduleFilter === 'all' || moduleFilter === '{{ module_name }}'">
+                        <section x-show="moduleFilter === 'all' || moduleFilter === {{ module_name|tojson }}">
                             <button type="button"
-                                    class="flex w-full items-center justify-between gap-4 p-5 text-left transition hover:bg-surface-subtle dark:hover:bg-surface-subtle"
-                                    @click="toggleModule('{{ module_name }}')">
+                                    @click="toggle({{ module_name|tojson }})"
+                                    class="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition hover:bg-surface-hover">
                                 <div class="flex min-w-0 items-center gap-3">
-                                    <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-surface-subtle text-content-secondary transition group-hover:bg-kaori-soft group-hover:text-kaori-primary dark:group-hover:bg-kaori-soft dark:group-hover:text-kaori-accent">
-                                        <i data-lucide="folder-key" class="h-5 w-5"></i>
-                                    </span>
+                                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="box" class="h-5 w-5"></i></span>
                                     <div class="min-w-0">
                                         <div class="flex flex-wrap items-center gap-2">
-                                            <h3 class="text-base font-extrabold text-content-primary">{{ module_label(module_name) }}</h3>
-                                            <span class="rounded-md bg-surface-subtle px-2.5 py-1 text-[11px] font-bold text-content-secondary">{{ module_name }}</span>
+                                            <h3 class="text-sm font-bold text-content-primary sm:text-base">{{ module_label(module_name) }}</h3>
+                                            <span class="rounded-md border border-outline-default bg-surface-subtle px-2 py-1 font-mono text-[11px] font-semibold text-content-muted">{{ module_name }}</span>
                                         </div>
-                                        <p class="mt-1 text-sm text-content-muted">
-                                            {{ module_permissions|length }} permissions registered for {{ module_label(module_name) }} access controls.
-                                        </p>
+                                        <p class="mt-1 text-sm text-content-muted">{{ module_permissions|length }} permission contracts in this module.</p>
                                     </div>
                                 </div>
-                                <div class="flex shrink-0 items-center gap-3">
-                                    <span class="hidden rounded-md bg-kaori-soft px-3 py-1 text-xs font-bold text-kaori-primary dark:bg-kaori-soft dark:text-kaori-accent sm:inline-flex">
-                                        {{ module_permissions|length }} items
-                                    </span>
-                                    <span class="flex h-9 w-9 items-center justify-center rounded-2xl border border-outline-default bg-surface-card text-content-muted transition group-hover:border-brand-outline group-hover:text-kaori-primary dark:group-hover:border-brand-outline dark:group-hover:text-kaori-accent">
-                                        <i x-show="!isExpanded('{{ module_name }}') && search.trim() === ''"
-                                           data-lucide="chevron-right"
-                                           class="h-4 w-4"></i>
-                                        <i x-show="isExpanded('{{ module_name }}') || search.trim() !== ''"
-                                           data-lucide="chevron-down"
-                                           class="h-4 w-4"></i>
-                                    </span>
+                                <div class="flex shrink-0 items-center gap-2">
+                                    <span class="rounded-md bg-kaori-soft px-2.5 py-1 text-xs font-semibold text-kaori-primary">{{ module_permissions|length }} items</span>
+                                    <span class="flex h-9 w-9 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-muted"><i data-lucide="chevron-down"
+   class="h-4 w-4 transition-transform"
+   :class="isExpanded({{ module_name|tojson }}) ? 'rotate-180' : ''"></i></span>
                                 </div>
                             </button>
-                            <div x-show="isExpanded('{{ module_name }}') || search.trim() !== ''"
-                                 class="border-t border-outline-default bg-surface-subtle p-5">
-                                <div class="grid gap-3 lg:grid-cols-2">
-                                    {% for permission in module_permissions %}
-                                        {% set role_usage = permission.role_permissions|map(attribute='role')|list %}
-                                        <article class="rounded-2xl border border-outline-default bg-surface-card p-4 shadow-sm transition hover:border-brand-outline hover:shadow-md dark:hover:border-brand-outline"
-                                                 x-show="search.trim() === '' || '{{ permission.key|lower }} {{ permission.description|default('', true) |lower }} {{ module_label(permission.module) |lower }} {{ action_label(permission.action) |lower }}'.includes(search.toLowerCase())">
-                                            <div class="flex items-start justify-between gap-3">
-                                                <div class="min-w-0">
-                                                    <div class="flex flex-wrap items-center gap-2">
-                                                        <h4 class="text-sm font-extrabold text-content-primary">{{ permission_title(permission) }}</h4>
-                                                        <span class="rounded-md bg-kaori-soft px-2.5 py-1 text-[11px] font-bold text-kaori-primary dark:bg-kaori-soft dark:text-kaori-accent">{{ action_label(permission.action) }}</span>
-                                                    </div>
-                                                    <p class="mt-2 text-sm leading-6 text-content-secondary">{{ permission.description or 'No description is defined for this permission yet.' }}</p>
-                                                </div>
+                            <div x-show="isExpanded({{ module_name|tojson }})"
+                                 x-collapse
+                                 class="grid gap-3 border-t border-outline-default bg-surface-subtle p-5 lg:grid-cols-2">
+                                {% for permission in module_permissions %}
+                                    {% set role_usage = permission.role_permissions|map(attribute='role')|list %}
+                                    <article x-show="search.trim() === '' || {{ ((permission.key ~ ' ' ~ (permission.description or '') ~ ' ' ~ permission.action ~ ' ' ~ module_name)|lower)|tojson }}.includes(search.toLowerCase())"
+                                             class="rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm transition hover:border-brand-outline">
+                                        <div class="flex flex-wrap items-center justify-between gap-2">
+                                            <h4 class="text-sm font-bold text-content-primary">{{ permission_title(permission) }}</h4>
+                                            <span class="rounded-md bg-kaori-soft px-2.5 py-1 text-[11px] font-semibold text-kaori-primary">{{ action_label(permission.action) }}</span>
+                                        </div>
+                                        <p class="mt-2 text-sm leading-6 text-content-secondary">{{ permission.description or 'No permission description is defined.' }}</p>
+                                        <div class="mt-3 rounded-lg border border-outline-default bg-surface-subtle px-3 py-2 font-mono text-xs font-semibold text-content-muted">{{ permission.key }}</div>
+                                        <div class="mt-4">
+                                            <p class="text-[11px] font-semibold uppercase tracking-[0.12em] text-content-muted">Used by roles</p>
+                                            <div class="mt-2 flex flex-wrap gap-2">
+                                                {% if role_usage %}
+                                                    {% for role in role_usage|sort(attribute='display_name') %}
+                                                        <a href="{{ url_for('settings.role_detail', role_id=role.id) }}"
+                                                           class="inline-flex items-center gap-1.5 rounded-md border border-brand-outline bg-kaori-soft px-2.5 py-1 text-xs font-semibold text-kaori-primary hover:bg-kaori-primary hover:text-white">
+                                                            <span class="h-1.5 w-1.5 rounded-full bg-kaori-primary"></span>{{ role.display_name }}
+                                                        </a>
+                                                    {% endfor %}
+                                                {% else %}
+                                                    <span class="inline-flex items-center gap-1.5 rounded-md bg-status-warning-soft px-2.5 py-1 text-xs font-semibold text-status-warning-text"><i data-lucide="triangle-alert" class="h-3.5 w-3.5"></i>Unassigned</span>
+                                                {% endif %}
                                             </div>
-                                            <div class="mt-4 rounded-xl bg-surface-subtle px-3 py-2 font-mono text-xs font-semibold text-content-muted ring-1 ring-outline-default dark:ring-outline-default">{{ permission.key }}</div>
-                                            <div class="mt-4">
-                                                <p class="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-content-muted">Used by roles</p>
-                                                <div class="flex flex-wrap gap-2">
-                                                    {% if role_usage %}
-                                                        {% for role in role_usage|sort(attribute='display_name') %}
-                                                            <span class="inline-flex items-center gap-1.5 rounded-md {{ 'bg-kaori-soft text-kaori-primary dark:bg-kaori-soft dark:text-kaori-accent' if role.is_system else 'bg-kaori-soft text-kaori-primary dark:bg-kaori-soft dark:text-kaori-accent' }} px-2.5 py-1 text-xs font-bold">
-                                                                <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-primary' if role.is_system else 'bg-kaori-primary' }}"></span>
-                                                                {{ role.display_name }}
-                                                            </span>
-                                                        {% endfor %}
-                                                    {% else %}
-                                                        <span class="inline-flex items-center gap-1.5 rounded-md bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-700 dark:bg-amber-950/50 dark:text-amber-300"><i data-lucide="circle-alert" class="h-3.5 w-3.5"></i> Unassigned</span>
-                                                    {% endif %}
-                                                </div>
-                                            </div>
-                                        </article>
-                                    {% endfor %}
-                                </div>
+                                        </div>
+                                    </article>
+                                {% endfor %}
                             </div>
                         </section>
                     {% endfor %}
                 </div>
             </div>
-            <aside class="space-y-6">
-                <section class="rounded-2xl border border-brand-outline bg-kaori-primary p-5 text-white shadow-sm">
+            <aside class="space-y-5">
+                <section class="rounded-2xl border border-outline-default bg-surface-card p-5 shadow-sm">
                     <div class="flex items-start gap-3">
-                        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-surface-card/15 ring-1 ring-white/20"><i data-lucide="lock-keyhole" class="h-5 w-5"></i></span>
+                        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="route" class="h-5 w-5"></i></span>
                         <div>
-                            <h2 class="text-base font-extrabold">Permission keys are locked</h2>
-                            <p class="mt-2 text-sm leading-6 text-white/85">Permission keys are application contracts used by route guards. Manage access by assigning permissions to custom roles, not by editing registry keys directly.</p>
+                            <h2 class="text-base font-bold text-content-primary">Authorization contract</h2>
+                            <p class="mt-1 text-sm leading-6 text-content-muted">Server-side permission checks remain authoritative. Navigation visibility and disabled controls are usability layers, not security boundaries.</p>
                         </div>
                     </div>
-                    <div class="mt-4 flex flex-wrap gap-2">
-                        <span class="rounded-md bg-surface-card/15 px-3 py-1 text-xs font-bold ring-1 ring-white/15">Read-only</span>
-                        <span class="rounded-md bg-surface-card/15 px-3 py-1 text-xs font-bold ring-1 ring-white/15">Code-backed</span>
+                    <div class="mt-4 space-y-3 text-sm leading-5 text-content-secondary">
+                        <div class="flex gap-2"><i data-lucide="shield-check"
+   class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i><span>Every protected mutation must use a route guard.</span></div>
+                        <div class="flex gap-2"><i data-lucide="git-merge"
+   class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i><span>Dependent write permissions include their required view baseline.</span></div>
+                        <div class="flex gap-2"><i data-lucide="history"
+   class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i><span>Role lifecycle changes are recorded in Activity Audit Log.</span></div>
                     </div>
                 </section>
                 <section class="rounded-2xl border border-outline-default bg-surface-card p-5 shadow-sm">
-                    <div class="mb-4 flex items-center gap-3">
-                        <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-kaori-soft text-kaori-primary dark:bg-kaori-soft dark:text-kaori-accent"><i data-lucide="shield-check" class="h-5 w-5"></i></span>
+                    <div class="flex items-center justify-between gap-3">
                         <div>
-                            <h2 class="text-base font-extrabold text-content-primary">Role Coverage</h2>
-                            <p class="text-sm text-content-muted">Assigned permission count by role.</p>
+                            <h2 class="text-base font-bold text-content-primary">Role coverage</h2>
+                            <p class="mt-1 text-sm text-content-muted">Effective permission count by role.</p>
                         </div>
+                        <span class="rounded-md bg-kaori-soft px-2.5 py-1 text-xs font-semibold text-kaori-primary">{{ roles|length }} roles</span>
                     </div>
-                    <div class="space-y-3">
+                    <div class="mt-4 space-y-3">
                         {% for role in roles %}
-                            <div class="flex items-center justify-between rounded-2xl bg-surface-subtle px-3 py-3/70">
+                            <a href="{{ url_for('settings.role_detail', role_id=role.id) }}"
+                               class="flex items-center justify-between gap-3 rounded-xl border border-outline-default bg-surface-subtle px-3 py-3 transition hover:border-brand-outline hover:bg-kaori-soft">
                                 <div class="min-w-0">
-                                    <div class="truncate text-sm font-bold text-content-primary text-content-primary">{{ role.display_name }}</div>
-                                    <div class="text-xs text-content-muted">{{ 'Default Role · Locked' if role.is_system else 'Custom Role' }}</div>
+                                    <p class="truncate text-sm font-semibold text-content-primary">{{ role.display_name }}</p>
+                                    <p class="mt-0.5 text-xs text-content-muted">{{ 'Default · Locked' if role.is_system else 'Custom role' }}</p>
                                 </div>
-                                <span class="rounded-md bg-surface-subtle px-2.5 py-1 text-xs font-bold text-white">{{ role.permissions|length }}</span>
-                            </div>
+                                <span class="rounded-md bg-surface-card px-2.5 py-1 text-xs font-bold text-content-primary">{{ role.permissions|length }}</span>
+                            </a>
                         {% endfor %}
+                    </div>
+                </section>
+                <section class="rounded-2xl border border-brand-outline bg-kaori-primary p-5 text-brand-foreground shadow-sm">
+                    <div class="flex items-start gap-3">
+                        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-brand-outline bg-brand-surface-strong"><i data-lucide="code-xml" class="h-5 w-5"></i></span>
+                        <div>
+                            <h2 class="text-base font-bold">Adding a permission</h2>
+                            <p class="mt-1 text-sm leading-6 text-brand-foreground-muted">New permissions must be added in <code class="font-mono text-brand-foreground">app/rbac/defaults.py</code>, enforced on routes, documented, seeded, and included in the RBAC test matrix.</p>
+                        </div>
                     </div>
                 </section>
             </aside>
         </section>
     </div>
-    <script>
-function permissionCatalog(moduleNames) {
-    return {
-        search: '',
-        moduleFilter: 'all',
-        expandedModules: {},
-        isExpanded(moduleName) {
-            return Boolean(this.expandedModules[moduleName]);
-        },
-        toggleModule(moduleName) {
-            this.expandedModules[moduleName] = !this.isExpanded(moduleName);
-        },
-        allExpanded() {
-            return moduleNames.length > 0 && moduleNames.every((moduleName) => this.isExpanded(moduleName));
-        },
-        toggleAll() {
-            const nextState = !this.allExpanded();
-            moduleNames.forEach((moduleName) => {
-                this.expandedModules[moduleName] = nextState;
-            });
-        },
-    };
-}
-    </script>
 {% endblock dashboard_content %}

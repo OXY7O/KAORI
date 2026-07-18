@@ -16,6 +16,7 @@ from flask import (
     url_for,
 )
 from flask_login import current_user, login_required
+from sqlalchemy import func
 
 from app.auth.forms import ChangePasswordForm
 from app.common.timezone import (
@@ -33,12 +34,16 @@ from app.models import Notification, Permission, Role, User
 from app.notifications.service import record_operational_activity
 from app.rbac.decorators import permission_required
 from app.rbac.service import (
+    expand_permission_ids,
     get_permissions_grouped_by_module,
+    get_role_delete_blockers,
+    normalize_role_slug,
     replace_role_permissions,
+    role_slug_exists,
     seed_default_rbac,
 )
 from app.settings.general.forms import RegionalFormatForm, TimezonePreferenceForm
-from app.settings.roles.forms import RoleForm
+from app.settings.roles.forms import DeleteRoleForm, RoleForm
 from app.settings.system_information import build_system_information
 from app.users.service import build_user_identity_context, record_admin_event
 
@@ -55,7 +60,11 @@ bp = Blueprint(
 def general():
     user = cast(User, current_user._get_current_object())
     active_tab = (request.args.get('tab') or 'time-locale').strip().lower()
-    if active_tab not in {'time-locale', 'regional-format', 'system-information'}:
+    can_view_system_information = user.has_permission('system.view')
+    allowed_tabs = {'time-locale', 'regional-format'}
+    if can_view_system_information:
+        allowed_tabs.add('system-information')
+    if active_tab not in allowed_tabs:
         active_tab = 'time-locale'
 
     timezone_form = TimezonePreferenceForm()
@@ -158,7 +167,10 @@ def general():
         'timezone_choice_groups': timezone_choice_groups(),
         'current_time_display': current_time_display,
         'preview_timestamp': now_utc.isoformat(),
-        'system_information': build_system_information(current_app.config),
+        'system_information': (
+            build_system_information(current_app.config) if can_view_system_information else None
+        ),
+        'can_view_system_information': can_view_system_information,
         'page_title': 'General Settings',
         'timezone_sync_oob': bool(request.headers.get('HX-Request')),
     }
@@ -332,13 +344,75 @@ def account():
 @permission_required('roles.view')
 def roles():
     seed_default_rbac()
+    actor = cast(User, current_user._get_current_object())
     roles_list = Role.query.order_by(Role.is_system.desc(), Role.display_name.asc()).all()
     permissions_by_module = get_permissions_grouped_by_module()
+    role_assignment_counts = {
+        int(role_id): int(count)
+        for role_id, count in (
+            db.session.query(User.role_id, func.count(User.id))
+            .filter(User.role_id.is_not(None), User.deleted_at.is_(None))
+            .group_by(User.role_id)
+            .all()
+        )
+    }
+    role_delete_blockers = {
+        role.id: get_role_delete_blockers(role)
+        for role in roles_list
+        if not role.is_system
+    }
     return render_template(
         'settings/roles/index.html',
         roles=roles_list,
         permissions_by_module=permissions_by_module,
+        can_manage_roles=actor.has_permission('roles.manage'),
+        delete_role_form=DeleteRoleForm(),
+        role_delete_blockers=role_delete_blockers,
+        role_assignment_counts=role_assignment_counts,
     )
+
+
+def _create_custom_role_from_form(
+    *,
+    form: RoleForm,
+    selected_permission_ids: set[int],
+    clone_source: Role | None = None,
+) -> Role | None:
+    slug = normalize_role_slug(form.name.data)
+    if len(slug) < 2:
+        form.name.errors.append('Role slug must contain at least two letters or numbers.')
+        return None
+    if role_slug_exists(slug):
+        form.name.errors.append('A role with this slug already exists.')
+        return None
+
+    role = Role()
+    role.name = slug
+    role.display_name = (form.display_name.data or slug.replace('_', ' ').title()).strip()
+    role.description = (form.description.data or '').strip() or None
+    role.is_system = False
+    role.is_active = bool(form.is_active.data)
+    db.session.add(role)
+    db.session.flush()
+    effective_permission_ids = replace_role_permissions(role, selected_permission_ids)
+    record_admin_event(
+        actor=cast(User, current_user),
+        action='role.cloned' if clone_source else 'role.created',
+        target=role,
+        summary=(
+            f'Cloned system role {clone_source.display_name} as {role.display_name}.'
+            if clone_source
+            else f'Created role {role.display_name}.'
+        ),
+        metadata={
+            'role_slug': role.name,
+            'source_role_id': clone_source.id if clone_source else None,
+            'source_role_slug': clone_source.name if clone_source else None,
+            'permission_count': len(effective_permission_ids),
+        },
+    )
+    db.session.commit()
+    return role
 
 
 @bp.route('/roles/new', methods=['GET', 'POST'])
@@ -346,37 +420,96 @@ def roles():
 def new_role():
     seed_default_rbac()
     form = RoleForm()
-    form.is_active.data = True if request.method == 'GET' else form.is_active.data
-    permissions = Permission.query.order_by(Permission.module.asc(), Permission.key.asc()).all()
+    if request.method == 'GET':
+        form.is_active.data = True
 
+    selected_permission_ids = {
+        int(value) for value in request.form.getlist('permission_ids') if value.isdigit()
+    }
     if form.validate_on_submit():
-        role = Role()
-        role.name = (form.name.data or '').strip().lower().replace(' ', '_')
-        role.display_name = form.display_name.data or role.name.title()
-        role.description = form.description.data
-        role.is_system = False
-        role.is_active = bool(form.is_active.data)
-        db.session.add(role)
-        db.session.flush()
-        selected_permission_ids = [int(value) for value in request.form.getlist('permission_ids')]
-        replace_role_permissions(role, selected_permission_ids)
-        record_admin_event(
-            actor=cast(User, current_user),
-            action='role.created',
-            target=role,
-            summary=f'Created role {role.display_name}.',
+        role = _create_custom_role_from_form(
+            form=form,
+            selected_permission_ids=selected_permission_ids,
         )
-        db.session.commit()
-        flash('Custom role created successfully.', 'success')
-        return redirect(url_for('settings.roles'))
+        if role is not None:
+            flash('Custom role created successfully.', 'success')
+            return redirect(url_for('settings.roles'))
 
+    selected_permission_ids = expand_permission_ids(selected_permission_ids)
     return render_template(
         'settings/roles/form.html',
         form=form,
         role=None,
-        permissions=permissions,
+        clone_source=None,
+        view_only=False,
         permissions_by_module=get_permissions_grouped_by_module(),
-        selected_permission_ids=set(),
+        selected_permission_ids=selected_permission_ids,
+    )
+
+
+@bp.route('/roles/<int:role_id>/clone', methods=['GET', 'POST'])
+@permission_required('roles.manage')
+def clone_role(role_id: int):
+    seed_default_rbac()
+    source_role = db.session.get(Role, role_id)
+    if source_role is None or not source_role.is_system:
+        flash('Only a protected default role can be used as a clone source.', 'warning')
+        return redirect(url_for('settings.roles'))
+
+    form = RoleForm()
+    selected_permission_ids = {permission.id for permission in source_role.permissions}
+    if request.method == 'GET':
+        form.name.data = f'{source_role.name}_custom'
+        form.display_name.data = f'{source_role.display_name} Custom'
+        form.description.data = f'Custom role cloned from the {source_role.display_name} default baseline.'
+        form.is_active.data = True
+    else:
+        selected_permission_ids = {
+            int(value) for value in request.form.getlist('permission_ids') if value.isdigit()
+        }
+
+    if form.validate_on_submit():
+        role = _create_custom_role_from_form(
+            form=form,
+            selected_permission_ids=selected_permission_ids,
+            clone_source=source_role,
+        )
+        if role is not None:
+            flash(f'{source_role.display_name} was cloned as a custom role.', 'success')
+            return redirect(url_for('settings.roles'))
+
+    selected_permission_ids = expand_permission_ids(selected_permission_ids)
+    return render_template(
+        'settings/roles/form.html',
+        form=form,
+        role=None,
+        clone_source=source_role,
+        view_only=False,
+        permissions_by_module=get_permissions_grouped_by_module(),
+        selected_permission_ids=selected_permission_ids,
+    )
+
+
+@bp.route('/roles/<int:role_id>')
+@permission_required('roles.view')
+def role_detail(role_id: int):
+    seed_default_rbac()
+    role = db.session.get(Role, role_id)
+    if role is None:
+        flash('Role not found.', 'danger')
+        return redirect(url_for('settings.roles'))
+
+    form = RoleForm(obj=role)
+    form.is_active.data = role.is_active
+    return render_template(
+        'settings/roles/form.html',
+        form=form,
+        role=role,
+        clone_source=None,
+        view_only=True,
+        permissions_by_module=get_permissions_grouped_by_module(),
+        selected_permission_ids={permission.id for permission in role.permissions},
+        assigned_user_count=User.query.filter(User.role_id == role.id, User.deleted_at.is_(None)).count(),
     )
 
 
@@ -387,40 +520,97 @@ def edit_role(role_id: int):
     if role is None:
         flash('Role not found.', 'danger')
         return redirect(url_for('settings.roles'))
+    if role.is_system:
+        flash('Default roles are code-owned and cannot be edited. Clone the role to create a custom variant.', 'warning')
+        return redirect(url_for('settings.role_detail', role_id=role.id))
 
     form = RoleForm(obj=role)
-    permissions = Permission.query.order_by(Permission.module.asc(), Permission.key.asc()).all()
     selected_permission_ids = {permission.id for permission in role.permissions}
-
     if request.method == 'GET':
         form.is_active.data = role.is_active
+    else:
+        selected_permission_ids = {
+            int(value) for value in request.form.getlist('permission_ids') if value.isdigit()
+        }
 
     if form.validate_on_submit():
-        role.display_name = form.display_name.data or role.display_name
-        role.description = form.description.data
-        role.is_active = bool(form.is_active.data)
-        if not role.is_system:
-            role.name = (form.name.data or role.name).strip().lower().replace(' ', '_')
-            selected_permission_ids = {int(value) for value in request.form.getlist('permission_ids')}
-            replace_role_permissions(role, selected_permission_ids)
-        record_admin_event(
-            actor=cast(User, current_user),
-            action='role.updated',
-            target=role,
-            summary=f'Updated role {role.display_name}.',
-        )
-        db.session.commit()
-        flash('Role updated successfully.', 'success')
-        return redirect(url_for('settings.roles'))
+        slug = normalize_role_slug(form.name.data)
+        if len(slug) < 2:
+            form.name.errors.append('Role slug must contain at least two letters or numbers.')
+        elif role_slug_exists(slug, exclude_role_id=role.id):
+            form.name.errors.append('A role with this slug already exists.')
+        else:
+            role.name = slug
+            role.display_name = (form.display_name.data or role.display_name).strip()
+            role.description = (form.description.data or '').strip() or None
+            role.is_active = bool(form.is_active.data)
+            effective_permission_ids = replace_role_permissions(role, selected_permission_ids)
+            record_admin_event(
+                actor=cast(User, current_user),
+                action='role.updated',
+                target=role,
+                summary=f'Updated role {role.display_name}.',
+                metadata={
+                    'role_slug': role.name,
+                    'permission_count': len(effective_permission_ids),
+                    'is_active': role.is_active,
+                },
+            )
+            db.session.commit()
+            flash('Custom role updated successfully.', 'success')
+            return redirect(url_for('settings.roles'))
 
+    selected_permission_ids = expand_permission_ids(selected_permission_ids)
     return render_template(
         'settings/roles/form.html',
         form=form,
         role=role,
-        permissions=permissions,
+        clone_source=None,
+        view_only=False,
         permissions_by_module=get_permissions_grouped_by_module(),
         selected_permission_ids=selected_permission_ids,
+        assigned_user_count=User.query.filter(User.role_id == role.id, User.deleted_at.is_(None)).count(),
     )
+
+
+@bp.post('/roles/<int:role_id>/delete')
+@permission_required('roles.manage')
+def delete_role(role_id: int):
+    role = db.session.get(Role, role_id)
+    if role is None:
+        flash('Role not found.', 'danger')
+        return redirect(url_for('settings.roles'))
+
+    form = DeleteRoleForm()
+    if not form.validate_on_submit() or str(form.role_id.data) != str(role.id):
+        flash('The role deletion request could not be validated.', 'danger')
+        return redirect(url_for('settings.roles'))
+    if role.is_system:
+        flash('Default roles cannot be deleted.', 'danger')
+        return redirect(url_for('settings.roles'))
+
+    blockers = get_role_delete_blockers(role)
+    if blockers['assigned_users'] or blockers['identity_providers']:
+        blocker_parts = []
+        if blockers['assigned_users']:
+            blocker_parts.append(f"{blockers['assigned_users']} user assignment(s)")
+        if blockers['identity_providers']:
+            blocker_parts.append(f"{blockers['identity_providers']} identity provider default mapping(s)")
+        flash('Role deletion is blocked by ' + ' and '.join(blocker_parts) + '.', 'warning')
+        return redirect(url_for('settings.roles'))
+
+    role_name = role.display_name
+    record_admin_event(
+        actor=cast(User, current_user),
+        action='role.deleted',
+        target=role,
+        summary=f'Deleted custom role {role_name}.',
+        metadata={'role_slug': role.name},
+    )
+    db.session.delete(role)
+    db.session.commit()
+    flash(f'Custom role {role_name} was deleted.', 'success')
+    return redirect(url_for('settings.roles'))
 
 
 @bp.route('/permissions')

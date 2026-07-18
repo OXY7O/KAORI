@@ -15,12 +15,14 @@
             <i data-lucide="calendar-range" class="h-4 w-4"></i>
             Regional Format
         </a>
-        <a href="{{ url_for('settings.general', tab='system-information') }}"
-           role="tab"
-           aria-selected="{{ 'true' if active_tab == 'system-information' else 'false' }}"
-           class="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-t-xl border px-4 py-2.5 text-sm font-semibold transition {{ 'border-outline-default border-b-surface-card bg-surface-card text-kaori-primary -mb-px' if active_tab == 'system-information' else 'border-transparent text-content-muted hover:bg-kaori-soft hover:text-kaori-primary' }}">
-            <i data-lucide="badge-info" class="h-4 w-4"></i>
-            System Information
-        </a>
+        {% if can_view_system_information %}
+            <a href="{{ url_for('settings.general', tab='system-information') }}"
+               role="tab"
+               aria-selected="{{ 'true' if active_tab == 'system-information' else 'false' }}"
+               class="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-t-xl border px-4 py-2.5 text-sm font-semibold transition {{ 'border-outline-default border-b-surface-card bg-surface-card text-kaori-primary -mb-px' if active_tab == 'system-information' else 'border-transparent text-content-muted hover:bg-kaori-soft hover:text-kaori-primary' }}">
+                <i data-lucide="badge-info" class="h-4 w-4"></i>
+                System Information
+            </a>
+        {% endif %}
     </div>
 </nav>

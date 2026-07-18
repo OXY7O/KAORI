@@ -1,0 +1,142 @@
+# RBAC Architecture
+
+## 1. Purpose
+
+Authentication proves identity. User Management owns the local KAORI account and identity projection. RBAC resolves the authenticated user into an effective permission set and enforces that set on every protected server-side operation.
+
+The authorization decision is:
+
+```text
+authenticated user
+  -> active, non-deleted account
+  -> explicit Super Admin override OR active assigned role
+  -> effective permission keys
+  -> route/service authorization decision
+```
+
+UI visibility is not an authorization boundary. A hidden menu, disabled button, or omitted link may improve usability, but the route or service must still reject an unauthorized request.
+
+## 2. Component ownership
+
+| Component | Ownership |
+|---|---|
+| `app/models/rbac.py` | Central SQLAlchemy models for Role, Permission, and RolePermission. |
+| `app/models/user.py` | User-to-role relation, role display helpers, and runtime `has_permission()`. |
+| `app/rbac/defaults.py` | Canonical permission registry and protected default-role definitions. |
+| `app/rbac/service.py` | Seeding, slug normalization, dependency expansion, permission replacement, and delete blockers. |
+| `app/rbac/decorators.py` | `permission_required()` and `any_permission_required()` route guards. |
+| `app/settings/routes.py` | Role and Permission Catalog HTTP lifecycle. |
+| `app/settings/roles/forms.py` | CSRF-protected role create/update/delete forms. |
+| `app/templates/settings/roles/` | Roles & Access list, detail, clone, and custom-role editor. |
+| `app/templates/settings/permissions/` | Read-only permission registry and role coverage. |
+| `app/commands/rbac.py` | Idempotent `flask seed-rbac` command. |
+
+All database models remain centralized in `app/models/`. The RBAC domain package contains policy, services, decorators, and documentation only.
+
+## 3. Permission registry
+
+A permission key is a stable application contract with this structure:
+
+```text
+<resource-or-domain>.<action>
+```
+
+Examples:
+
+- `clusters.view`
+- `clusters.sync`
+- `users.reset_password`
+- `settings.view_operational_activity`
+- `kubernetes_secrets.approve_reveal`
+
+Each permission includes:
+
+- unique key;
+- module used for catalog grouping;
+- normalized action label;
+- human-readable description.
+
+Permission creation and renaming are code changes. They are not administrative UI operations because route guards, navigation, tests, and documentation depend on stable keys.
+
+## 4. Role types
+
+### 4.1 Protected default role
+
+A default role has `is_system = true` and is owned by `DEFAULT_ROLE_DEFINITIONS` and `DEFAULT_ROLE_PERMISSIONS`.
+
+Default roles:
+
+- cannot be edited;
+- cannot be deactivated;
+- cannot be deleted;
+- can be reviewed;
+- can be cloned into a custom role;
+- are restored to the canonical definition by `seed_default_rbac()`.
+
+The seed is convergent. It adds missing default assignments and removes assignments that are not present in the current code baseline.
+
+### 4.2 Custom role
+
+A custom role has `is_system = false` and may be:
+
+- created from an empty permission selection;
+- cloned from a protected default role;
+- renamed by display name and slug;
+- activated or deactivated;
+- assigned a custom permission set;
+- deleted only when no non-deleted user or identity-provider default mapping references it.
+
+### 4.3 Super Admin
+
+`User.is_super_admin` is a separate emergency/platform authority flag. It is not a role and does not aggregate with multiple roles.
+
+`User.has_permission()` returns `true` for every key when `is_super_admin` is true. This includes protected permissions intentionally excluded from the Admin default role, such as direct protected secret reveal.
+
+Super Admin lifecycle constraints are enforced by User Management:
+
+- only a Super Admin may manage admin-level accounts;
+- the last active Super Admin cannot be demoted, disabled, or deleted;
+- normal Admin users cannot manage peer Admin or Super Admin accounts.
+
+## 5. Authorization runtime
+
+`User.has_permission(permission_key)` resolves in this order:
+
+1. Super Admin: allow.
+2. Active normalized role record: check `role.permissions`.
+3. Legacy role slug fallback: check `DEFAULT_ROLE_PERMISSIONS`.
+4. Otherwise: deny.
+
+The legacy fallback exists for migration compatibility. New authorization design must use `role_id` and `role_record` as the normalized source.
+
+## 6. Permission dependencies
+
+KAORI prevents internally inconsistent custom roles by expanding dependent action permissions to include required view permissions.
+
+Examples:
+
+```text
+users.manage -> users.view
+roles.manage -> roles.view
+clusters.sync -> clusters.view
+reports.generate -> reports.view
+kubernetes_configmaps.update -> kubernetes_configmaps.view
+settings.export_operational_activity -> settings.view_operational_activity
+```
+
+Dependency expansion is performed in `app/rbac/service.py` before replacing a custom role's assignments. It is a consistency rule, not a substitute for route guards.
+
+## 7. Current scope boundary
+
+Current RBAC is global to the KAORI application. A role permission such as `clusters.sync` applies to every cluster visible to the platform. There is no current policy object for:
+
+- selected cluster IDs;
+- namespaces;
+- environments;
+- business services;
+- tenants;
+- asset ownership;
+- time-bound access;
+- approval-required role activation.
+
+Future scoped authorization should add a policy layer instead of encoding scope into permission key names.

@@ -1,11 +1,62 @@
 from __future__ import annotations
 
+import re
 from collections import defaultdict
 from collections.abc import Iterable
 
 from app.extensions import db
-from app.models import Permission, Role, RolePermission, User
+from app.models import IdentityProvider, Permission, Role, RolePermission, User
 from app.rbac.defaults import DEFAULT_PERMISSIONS, DEFAULT_ROLE_DEFINITIONS, DEFAULT_ROLE_PERMISSIONS
+
+ROLE_SLUG_PATTERN = re.compile(r'[^a-z0-9_]+')
+
+# Action permissions that require a baseline view permission. The service expands
+# selected permissions so custom roles cannot be saved in an internally
+# inconsistent state such as users.manage without users.view.
+PERMISSION_DEPENDENCIES: dict[str, set[str]] = {
+    'clusters.manage': {'clusters.view'},
+    'clusters.sync': {'clusters.view'},
+    'kubernetes_configmaps.create': {'kubernetes_configmaps.view'},
+    'kubernetes_configmaps.update': {'kubernetes_configmaps.view'},
+    'kubernetes_configmaps.delete': {'kubernetes_configmaps.view'},
+    'kubernetes_secrets.create': {'kubernetes_secrets.view'},
+    'kubernetes_secrets.replace': {'kubernetes_secrets.view'},
+    'kubernetes_secrets.delete': {'kubernetes_secrets.view'},
+    'kubernetes_secrets.reveal': {'kubernetes_secrets.view'},
+    'kubernetes_secrets.approve_reveal': {'kubernetes_secrets.view'},
+    'kubernetes_secrets.manage_reveal': {'kubernetes_secrets.view'},
+    'kubernetes_secrets.rotate_tls': {'kubernetes_secrets.view'},
+    'kubernetes_secrets.bulk_rotate_tls': {'kubernetes_secrets.view'},
+    'tls_certificates.sync': {'tls_certificates.view'},
+    'tls_certificates.update': {'tls_certificates.view'},
+    'tls_certificates.bulk_update': {'tls_certificates.view'},
+    'reports.generate': {'reports.view'},
+    'reports.manage_templates': {'reports.view'},
+    'reports.manage_schedules': {'reports.view'},
+    'reports.manage_storage': {'reports.view'},
+    'settings.export_operational_activity': {'settings.view_operational_activity'},
+    'settings.manage_operational_activity_retention': {'settings.view_operational_activity'},
+    'users.manage': {'users.view'},
+    'users.reset_password': {'users.view'},
+    'users.activate': {'users.view'},
+    'users.delete': {'users.view'},
+    'roles.manage': {'roles.view'},
+    'system.manage': {'system.view'},
+}
+
+
+def normalize_role_slug(value: str | None) -> str:
+    normalized = (value or '').strip().lower().replace('-', '_').replace(' ', '_')
+    normalized = ROLE_SLUG_PATTERN.sub('_', normalized)
+    normalized = re.sub(r'_+', '_', normalized).strip('_')
+    return normalized
+
+
+def role_slug_exists(slug: str, *, exclude_role_id: int | None = None) -> bool:
+    query = Role.query.filter(Role.name == slug)
+    if exclude_role_id is not None:
+        query = query.filter(Role.id != exclude_role_id)
+    return db.session.query(query.exists()).scalar()
 
 
 def seed_default_rbac() -> dict[str, int]:
@@ -16,14 +67,10 @@ def seed_default_rbac() -> dict[str, int]:
         if permission is None:
             permission = Permission()
             permission.key = key
-            permission.module = module
-            permission.action = action
-            permission.description = description
             db.session.add(permission)
-        else:
-            permission.module = module
-            permission.action = action
-            permission.description = description
+        permission.module = module
+        permission.action = action
+        permission.description = description
         permission_by_key[key] = permission
 
     db.session.flush()
@@ -45,10 +92,20 @@ def seed_default_rbac() -> dict[str, int]:
 
     for role_name, permission_keys in DEFAULT_ROLE_PERMISSIONS.items():
         role = role_by_name[role_name]
-        existing_keys = {
-            role_permission.permission.key for role_permission in role.role_permissions if role_permission.permission
+        existing_by_key = {
+            role_permission.permission.key: role_permission
+            for role_permission in role.role_permissions
+            if role_permission.permission
         }
-        for permission_key in permission_keys - existing_keys:
+
+        # System roles are code-owned baselines. Seeding is convergent: it adds
+        # missing assignments and removes assignments that are not part of the
+        # current canonical definition.
+        for permission_key, role_permission in existing_by_key.items():
+            if permission_key not in permission_keys:
+                db.session.delete(role_permission)
+
+        for permission_key in permission_keys - set(existing_by_key):
             permission = permission_by_key.get(permission_key)
             if permission is None:
                 continue
@@ -84,12 +141,47 @@ def get_permissions_grouped_by_module() -> dict[str, list[Permission]]:
     return dict(grouped)
 
 
-def replace_role_permissions(role: Role, permission_ids: Iterable[int]) -> None:
+def expand_permission_keys(permission_keys: Iterable[str]) -> set[str]:
+    expanded = {str(key) for key in permission_keys}
+    pending = list(expanded)
+    while pending:
+        permission_key = pending.pop()
+        for dependency_key in PERMISSION_DEPENDENCIES.get(permission_key, set()):
+            if dependency_key not in expanded:
+                expanded.add(dependency_key)
+                pending.append(dependency_key)
+    return expanded
+
+
+def expand_permission_ids(permission_ids: Iterable[int]) -> set[int]:
     selected_ids = {int(permission_id) for permission_id in permission_ids}
+    if not selected_ids:
+        return set()
+
+    selected_permissions = Permission.query.filter(Permission.id.in_(selected_ids)).all()
+    selected_keys = {permission.key for permission in selected_permissions}
+    expanded_keys = expand_permission_keys(selected_keys)
+    expanded_permissions = Permission.query.filter(Permission.key.in_(expanded_keys)).all()
+    return {permission.id for permission in expanded_permissions}
+
+
+def replace_role_permissions(role: Role, permission_ids: Iterable[int]) -> set[int]:
+    if role.is_system:
+        raise ValueError('System role permissions are code-owned and cannot be replaced.')
+
+    selected_ids = expand_permission_ids(permission_ids)
     role.role_permissions.clear()
     db.session.flush()
-    for permission_id in selected_ids:
+    for permission_id in sorted(selected_ids):
         role_permission = RolePermission()
         role_permission.role_id = role.id
         role_permission.permission_id = permission_id
         db.session.add(role_permission)
+    return selected_ids
+
+
+def get_role_delete_blockers(role: Role) -> dict[str, int]:
+    return {
+        'assigned_users': User.query.filter(User.role_id == role.id, User.deleted_at.is_(None)).count(),
+        'identity_providers': IdentityProvider.query.filter(IdentityProvider.default_role_id == role.id).count(),
+    }
