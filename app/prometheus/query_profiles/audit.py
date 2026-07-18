@@ -212,20 +212,40 @@ class PromQLProfileAuditor:
 
         filesystem_metrics = {'node_filesystem_size_bytes', 'node_filesystem_avail_bytes'}
         filesystem_present = filesystem_metrics.issubset(available_metrics)
-        observed_labels = set().union(*(metric_labels.get(metric, set()) for metric in filesystem_metrics))
         canonical_labels = {'node', 'nodename', 'kubernetes_node'}
+        labels_by_metric = {
+            metric: metric_labels.get(metric, set())
+            for metric in filesystem_metrics
+        }
+        missing_identity_metrics = sorted(
+            metric
+            for metric, labels in labels_by_metric.items()
+            if not labels & canonical_labels
+        )
+        observed_labels = set().union(*labels_by_metric.values())
         if not filesystem_present:
             node_status = 'missing'
             node_evidence = 'node_filesystem_size_bytes or node_filesystem_avail_bytes is missing.'
-        elif observed_labels & canonical_labels:
+        elif not missing_identity_metrics:
+            canonical_observed = sorted(observed_labels & canonical_labels)
             node_status = 'available'
-            node_evidence = f"Canonical identity label observed: {', '.join(sorted(observed_labels & canonical_labels))}."
+            node_evidence = (
+                'Canonical identity labels are present on both filesystem metrics: '
+                f"{', '.join(canonical_observed)}."
+            )
         elif 'instance' in observed_labels:
             node_status = 'misconfigured'
-            node_evidence = 'Only the instance label was observed; values may be IP:port and cannot be treated as canonical Kubernetes node names.'
+            node_evidence = (
+                'Canonical node identity is missing from '
+                f"{', '.join(missing_identity_metrics)}; only instance may be available. "
+                'IP:port values cannot be treated as Kubernetes node names.'
+            )
         else:
             node_status = 'not_observed'
-            node_evidence = 'Filesystem metrics exist, but no canonical node identity label was observed in the recent sample window.'
+            node_evidence = (
+                'Filesystem metrics exist, but canonical node identity was not observed on '
+                f"{', '.join(missing_identity_metrics)}."
+            )
         add('node_filesystem_identity', node_status, node_evidence)
 
         history_ready = bool(retention.get('60d', {}).get('available'))

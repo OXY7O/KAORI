@@ -374,3 +374,46 @@ Refactor by cohesive responsibility and testability, not by arbitrary line
 limits. As a practical review trigger, any module above roughly 800–1,000 lines
 or any function above roughly 80–100 lines should be examined for multiple
 reasons to change. These are review triggers, not hard coding rules.
+
+## Consumer migration rule
+
+Prometheus and Thanos reads must enter analytics through
+`app.prometheus.consumer.PrometheusConsumer`, directly or through the temporary
+`PrometheusService` compatibility wrapper. New analytics code must declare the
+capabilities required by a query when the requirement is more specific than the
+base Instant Query or Range Query API.
+
+Examples:
+
+```python
+consumer.query(
+    query,
+    required_capabilities=('instant_query', 'node_filesystem_identity'),
+)
+```
+
+A page must not hide an integration contract failure by introducing an IP-based
+or provider-specific query workaround. Missing metric labels, retention, or
+identity mapping must be reported by integration validation and surfaced as a
+capability blocker or degraded dependency state.
+
+## Storage Analytics consumer contract
+
+Storage Analytics is the first Kubernetes Analytics domain migrated to the
+capability-aware consumer boundary. The page requires all of the following
+before it loads live data:
+
+- `instant_query`
+- `kubernetes_identity`
+- `pvc_usage`
+- `node_filesystem_identity`
+
+The filesystem contract accepts canonical `node`, `nodename`, or
+`kubernetes_node` labels. It does not use `instance="IP:port"` as a node name.
+When the contract is incomplete, the page renders an integration capability
+blocker and directs the operator to Prometheus/Thanos remediation instead of
+executing a hidden compatibility fallback.
+
+Filesystem PromQL returns the original series so identity labels remain
+available. KAORI aggregates device series by the canonical node identity in the
+consumer-facing storage service.

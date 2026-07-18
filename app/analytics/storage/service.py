@@ -22,13 +22,18 @@ from app.analytics.common.params import (
 from app.analytics.common.payloads import get_empty_storage_payload
 from app.analytics.storage import queries
 from app.analytics.utilization.service import UtilizationService
-from app.common.dependencies import prometheus_connection_blocker
+from app.common.dependencies import (
+    prometheus_capability_blocker,
+    prometheus_connection_blocker,
+)
 from app.intelligence.recommendation_engine import (
     build_storage_actionable_recommendations,
     count_actionable_recommendations,
     format_recommendation_cards,
 )
 from app.models import Cluster
+from app.prometheus.capabilities import definition as capability_definition
+from app.prometheus.consumer import PrometheusConsumer
 from app.prometheus.exceptions import PrometheusError
 from app.prometheus.service import PrometheusService
 
@@ -80,11 +85,59 @@ def build_storage_recommendation_context(
 
 
 class StorageAnalysisService(AnalyticsBaseService):
+    REQUIRED_CAPABILITIES = (
+        'instant_query',
+        'kubernetes_identity',
+        'pvc_usage',
+        'node_filesystem_identity',
+    )
+    CANONICAL_NODE_LABELS = (
+        'node',
+        'nodename',
+        'kubernetes_node',
+    )
+
     def __init__(
         self,
         utilization_service: UtilizationService,
+        consumer: PrometheusConsumer,
     ) -> None:
         self.utilization_service = utilization_service
+        self.consumer = consumer
+
+    def get_prometheus_result(
+        self,
+        query: str,
+    ) -> list[dict[str, Any]]:
+        response = self.consumer.query(
+            query,
+            required_capabilities=self.REQUIRED_CAPABILITIES,
+        )
+        data = response.get('data', {}) if isinstance(response, dict) else {}
+        result = data.get('result', []) if isinstance(data, dict) else []
+        return [item for item in result if isinstance(item, dict)]
+
+    def get_filesystem_vector_map(
+        self,
+        query: str,
+    ) -> dict[str, float]:
+        values: dict[str, float] = {}
+        for item in self.get_prometheus_result(query):
+            metric = item.get('metric', {})
+            if not isinstance(metric, dict):
+                continue
+            node = next(
+                (
+                    str(metric.get(label, '')).strip()
+                    for label in self.CANONICAL_NODE_LABELS
+                    if str(metric.get(label, '')).strip()
+                ),
+                '',
+            )
+            if not node:
+                continue
+            values[node] = values.get(node, 0.0) + self.extract_value(item)
+        return values
 
     def paginate_rows(
         self,
@@ -97,7 +150,7 @@ class StorageAnalysisService(AnalyticsBaseService):
             page=page,
             per_page=per_page,
             allowed_per_page=ALLOWED_PER_PAGE_VALUES,
-            default_per_page=10,
+            default_per_page=5,
         )
 
     def get_storage_namespace_options(
@@ -212,31 +265,27 @@ class StorageAnalysisService(AnalyticsBaseService):
         selected_pvc_status: str = '',
         selected_pvc_storage_class: str = '',
         pvc_page: int = 1,
-        pvc_per_page: int = 10,
+        pvc_per_page: int = 5,
         selected_pv_search: str = '',
         selected_pv_status: str = '',
         selected_pv_storage_class: str = '',
         pv_page: int = 1,
-        pv_per_page: int = 10,
+        pv_per_page: int = 5,
     ) -> dict[str, Any]:
-        node_var_size = self.get_prometheus_vector_map(
-            query=queries.NODE_VAR_FILESYSTEM_SIZE_QUERY,
-            label='instance',
+        node_var_size = self.get_filesystem_vector_map(
+            queries.NODE_VAR_FILESYSTEM_SIZE_QUERY,
         )
 
-        node_var_available = self.get_prometheus_vector_map(
-            query=queries.NODE_VAR_FILESYSTEM_AVAILABLE_QUERY,
-            label='instance',
+        node_var_available = self.get_filesystem_vector_map(
+            queries.NODE_VAR_FILESYSTEM_AVAILABLE_QUERY,
         )
 
-        node_root_size = self.get_prometheus_vector_map(
-            query=queries.NODE_ROOT_FILESYSTEM_SIZE_QUERY,
-            label='instance',
+        node_root_size = self.get_filesystem_vector_map(
+            queries.NODE_ROOT_FILESYSTEM_SIZE_QUERY,
         )
 
-        node_root_available = self.get_prometheus_vector_map(
-            query=queries.NODE_ROOT_FILESYSTEM_AVAILABLE_QUERY,
-            label='instance',
+        node_root_available = self.get_filesystem_vector_map(
+            queries.NODE_ROOT_FILESYSTEM_AVAILABLE_QUERY,
         )
 
         node_size: dict[str, float] = {}
@@ -1128,9 +1177,32 @@ def get_storage_analysis_context(
         apply_empty_payload()
         return context
 
+    consumer = PrometheusConsumer(cluster)
     storage_service = StorageAnalysisService(
         utilization_service,
+        consumer,
     )
+
+    requirements = consumer.requirements(
+        StorageAnalysisService.REQUIRED_CAPABILITIES,
+    )
+    if not requirements.ok:
+        missing_keys = requirements.payload.get('missing_capabilities', [])
+        capability_labels = []
+        for key in missing_keys:
+            item = capability_definition(str(key))
+            capability_labels.append(item.label if item else str(key))
+        context['dependency_blocker'] = prometheus_capability_blocker(
+            cluster,
+            capability_labels=capability_labels,
+        )
+        context['storage_capability_contract'] = {
+            'required': list(StorageAnalysisService.REQUIRED_CAPABILITIES),
+            'missing': list(missing_keys),
+            'source': requirements.source,
+        }
+        apply_empty_payload()
+        return context
 
     try:
         prometheus_status = storage_service.get_prometheus_status()
@@ -1174,7 +1246,7 @@ def get_storage_analysis_context(
             pvc_per_page=get_per_page_arg(
                 query_args=query_args,
                 name='pvc_per_page',
-                default=10,
+                default=5,
             ),
             selected_pv_search=selected_pv_search,
             selected_pv_status=selected_pv_status,
@@ -1187,7 +1259,7 @@ def get_storage_analysis_context(
             pv_per_page=get_per_page_arg(
                 query_args=query_args,
                 name='pv_per_page',
-                default=10,
+                default=5,
             ),
         )
         namespace_options = storage_service.get_storage_namespace_options()

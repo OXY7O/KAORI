@@ -10,6 +10,7 @@ DependencyKind = Literal[
     'cluster_required',
     'prometheus_setup',
     'prometheus_connection',
+    'prometheus_capability',
     'alert_source_setup',
     'alert_source_connection',
 ]
@@ -76,6 +77,30 @@ def prometheus_connection_blocker(
         'diagnostic_detail': detail,
         'icon': 'plug-zap',
         'action_label': 'Review Prometheus',
+        'action_url': url_for('prometheus.configuration', cluster_id=cluster.id),
+        'permission': 'settings.manage_integrations',
+    }
+
+
+def prometheus_capability_blocker(
+    cluster: Cluster,
+    *,
+    capability_labels: list[str],
+) -> DependencyBlocker:
+    labels = ', '.join(capability_labels) if capability_labels else 'required storage capabilities'
+    return {
+        'kind': 'prometheus_capability',
+        'stage': 3,
+        'badge': 'Storage capability incomplete',
+        'title': 'Storage Analytics integration contract is not ready',
+        'description': (
+            f'{cluster.name} is connected, but Storage Analytics requires additional '
+            f'capabilities: {labels}. Resolve them at the Prometheus/Thanos source before '
+            'using this page.'
+        ),
+        'diagnostic_detail': None,
+        'icon': 'shield-alert',
+        'action_label': 'Review capability remediation',
         'action_url': url_for('prometheus.configuration', cluster_id=cluster.id),
         'permission': 'settings.manage_integrations',
     }

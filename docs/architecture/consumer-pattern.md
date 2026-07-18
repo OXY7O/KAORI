@@ -114,3 +114,41 @@ Kubernetes analytics
 ## Required usage
 
 New asset domains must consume providers through public consumer facades. Direct imports of provider models, repositories, credentials, clients, or validation services are prohibited outside the provider package and its approved compatibility layer.
+
+## Canonical consumer result
+
+All provider consumers should converge on the contracts in
+`app/integrations/consumer/contracts.py`:
+
+- `ConsumerSource` identifies the provider runtime selected for the operation;
+- `ConsumerDiagnostic` carries safe operator guidance plus controlled technical detail;
+- `ConsumerResult` carries the payload, capability requirements, source decision,
+  diagnostics, and operation status.
+
+Consumers own runtime-read gating. Provider validation services own configuration,
+endpoint detection, compatibility mapping, capability discovery, and persistence.
+Analytics owns interpretation of successful canonical data only.
+
+Prometheus/Thanos uses a single consumer because Thanos Query is a
+Prometheus-compatible query surface. The source metadata records whether the
+actual endpoint product is Prometheus or Thanos, while capability evidence—not
+backend version visibility—determines whether a query contract is available.
+
+## Domain capability gates
+
+A domain consumer may define a complete feature contract rather than allowing
+individual queries to fail independently. Storage Analytics establishes the
+initial implementation:
+
+```text
+Storage Analytics
+  -> instant_query
+  -> kubernetes_identity
+  -> pvc_usage
+  -> node_filesystem_identity
+```
+
+If any requirement is not satisfied, the domain is blocked before data queries
+run. Connected-but-incomplete integrations must not be presented as feature
+ready. Provider-specific identity workarounds, including treating
+`instance="IP:port"` as a Kubernetes node name, are prohibited.
