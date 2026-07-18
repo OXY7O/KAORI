@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from typing import Any
 
+from app.alertmanager.capabilities import CAPABILITIES
 from app.alertmanager.repository import count_bindings_by_scope_type, list_instances
+from app.alertmanager.requirements import evaluate_module_readiness
 from app.alertmanager.sanitization import safe_endpoint
 from app.extensions import db
 from app.models.alertmanager import AlertmanagerBinding, AlertmanagerInstance
@@ -55,15 +57,29 @@ def build_inventory_context(
 
 def build_instance_context(instance: AlertmanagerInstance | None = None) -> dict[str, Any]:
     clusters = Cluster.query.order_by(Cluster.name.asc()).all()
+    observed_capabilities = set(instance.capabilities or []) if instance else set()
+    capability_rows = [
+        {
+            'key': capability.key,
+            'label': capability.label,
+            'category': capability.category,
+            'description': capability.description,
+            'required': capability.required,
+            'available': capability.key in observed_capabilities,
+        }
+        for capability in CAPABILITIES
+    ]
     return {
         'instance': instance,
         'bindings': list(instance.bindings) if instance is not None else [],
         'binding_rows': [_binding_row(binding) for binding in instance.bindings] if instance else [],
         'clusters': clusters,
+        'capability_rows': capability_rows,
+        'module_readiness_rows': evaluate_module_readiness(observed_capabilities),
         'stats': {
             'bindings': len(instance.bindings) if instance else 0,
             'ready': bool(instance and instance.readiness_status == 'ready'),
-            'capabilities': len(instance.capabilities or []) if instance else 0,
+            'capabilities': len(observed_capabilities),
         },
     }
 

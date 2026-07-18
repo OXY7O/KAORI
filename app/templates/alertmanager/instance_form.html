@@ -238,6 +238,52 @@
             <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
                 <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
                     <div class="flex items-start gap-3">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="scan-search" class="h-5 w-5"></i></span>
+                        <div>
+                            <h2 class="text-lg font-bold text-content-primary">Compatibility & Capability Matrix</h2>
+                            <p class="mt-1 text-sm leading-6 text-content-secondary">Validation checks provider APIs and observed alert metadata, then maps them to KAORI feature readiness.</p>
+                        </div>
+                    </div>
+                </header>
+                <div class="grid gap-6 p-5 sm:p-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(320px,0.7fr)]">
+                    <div class="overflow-hidden rounded-xl border border-outline-subtle">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full text-left text-sm">
+                                <thead class="bg-surface-hover text-[10px] font-bold uppercase tracking-[0.12em] text-content-tertiary">
+                                    <tr><th class="px-4 py-3">Capability</th><th class="px-4 py-3">Category</th><th class="px-4 py-3">Required</th><th class="px-4 py-3">Status</th></tr>
+                                </thead>
+                                <tbody class="divide-y divide-outline-subtle">
+                                    {% for row in capability_rows %}
+                                        <tr>
+                                            <td class="px-4 py-3"><p class="font-bold text-content-primary">{{ row.label }}</p><p class="mt-1 text-xs text-content-secondary">{{ row.description }}</p></td>
+                                            <td class="px-4 py-3 text-content-secondary">{{ row.category|title }}</td>
+                                            <td class="px-4 py-3 text-content-secondary">{{ 'Yes' if row.required else 'No' }}</td>
+                                            <td class="px-4 py-3">{{ status_badge('ready' if row.available else ('blocked' if row.required else 'not_configured')) }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="rounded-xl border border-brand-outline bg-kaori-soft p-4">
+                            <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-kaori-primary">Detected profile</p>
+                            <p class="mt-2 font-bold text-content-primary">{{ instance.capability_profile or 'Validation required' }}</p>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">Runtime code consumes capabilities, not hard-coded version comparisons.</p>
+                        </div>
+                        {% for row in module_readiness_rows %}
+                            <div class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
+                                <div class="flex items-center justify-between gap-3"><p class="font-bold text-content-primary">{{ row.label }}</p>{{ status_badge(row.status) }}</div>
+                                {% if row.missing_required %}<p class="mt-2 text-xs leading-5 text-content-secondary">Missing required: {{ row.missing_required|join(', ') }}</p>{% elif row.missing_optional %}<p class="mt-2 text-xs leading-5 text-content-secondary">Optional metadata not observed: {{ row.missing_optional|join(', ') }}</p>{% else %}<p class="mt-2 text-xs leading-5 text-content-secondary">All declared requirements are available.</p>{% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </section>
+
+            <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+                <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+                    <div class="flex items-start gap-3">
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="link-2" class="h-5 w-5"></i></span>
                         <div>
                             <h2 class="text-lg font-bold text-content-primary">Asset Bindings</h2>

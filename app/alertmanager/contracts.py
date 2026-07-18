@@ -27,6 +27,24 @@ class AlertQuery:
 
 
 @dataclass(frozen=True, slots=True)
+class ValidationStep:
+    key: str
+    label: str
+    status: str
+    detail: str
+    response_time_ms: int | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            'key': self.key,
+            'label': self.label,
+            'status': self.status,
+            'detail': self.detail,
+            'response_time_ms': self.response_time_ms,
+        }
+
+
+@dataclass(frozen=True, slots=True)
 class ValidationResult:
     connected: bool
     label: str
@@ -36,6 +54,9 @@ class ValidationResult:
     readiness_status: str | None = None
     compatibility_profile: str | None = None
     capabilities: tuple[str, ...] = ()
+    capability_profile: str | None = None
+    validation_steps: tuple[ValidationStep, ...] = ()
+    module_readiness: tuple[dict[str, Any], ...] = ()
     error: str | None = None
     reason: str | None = None
     failure_code: str | None = None
@@ -53,6 +74,9 @@ class ValidationResult:
             'readiness_status': self.readiness_status,
             'compatibility_profile': self.compatibility_profile,
             'capabilities': list(self.capabilities),
+            'capability_profile': self.capability_profile,
+            'validation_steps': [step.to_dict() for step in self.validation_steps],
+            'module_readiness': list(self.module_readiness),
             'error': self.error,
             'reason': self.reason,
             'failure_code': self.failure_code,

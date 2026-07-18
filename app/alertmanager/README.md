@@ -325,3 +325,32 @@ not own Alertmanager configuration.
 6. Keep all SQLAlchemy models in `app/models/`.
 7. Keep Alertmanager authoritative for routing, inhibition, silences, receivers,
    and notification delivery.
+
+## Compatibility and Capability Validation
+
+Alertmanager validation follows the same architectural principle used by the Prometheus integration, but probes APIs and observed alert metadata rather than Prometheus metric names.
+
+The validation layers are:
+
+1. **Connectivity and status** — endpoint, authentication, TLS, response time, and `/api/v2/status`.
+2. **Provider API capability** — readable Alerts API and Silences API.
+3. **Observed payload capability** — labels, `alertname`, severity, fingerprint, timestamps, receiver, annotations, runbook URL, generator URL, and silence matchers.
+4. **Compatibility profile** — maps the detected runtime version to a versioned profile under `app/alertmanager/profiles/`.
+5. **KAORI module readiness** — evaluates which KAORI features are ready, degraded, or unavailable from the observed capabilities.
+
+Runtime consumers must check capability keys instead of comparing version strings. Adding support for another Alertmanager runtime line should primarily require a new profile module, not branching throughout services or analytics.
+
+### Compatibility files
+
+| File | Responsibility |
+|---|---|
+| `capabilities.py` | Canonical provider and payload capability catalog. |
+| `probes.py` | Discovers metadata capabilities from sampled alerts and silences. Empty data means metadata is not observed, not necessarily unsupported. |
+| `requirements.py` | Maps capability requirements to KAORI modules such as Alert Inventory, Kubernetes Alerts, Alert Intelligence, Recommendations, and Runbook Integration. |
+| `profiles/base.py` | Immutable profile contract. |
+| `profiles/alertmanager_v025.py` | Legacy Alertmanager 0.25–0.26 profile and known limitations. |
+| `profiles/alertmanager_v033.py` | Current Alertmanager 0.27–0.33 profile. |
+| `profiles/__init__.py` | Profile registry and version resolver. |
+| `validation.py` | Executes API probes, discovers payload capabilities, resolves profiles, evaluates module readiness, and persists the verified capability set. |
+
+Capability discovery is evidence-based. When Alertmanager currently has no active alerts, KAORI can verify the Alerts API but cannot claim that optional metadata such as `runbook_url` or `receiver_metadata` was observed. The UI therefore shows **Not observed** rather than treating every absent optional field as an integration failure.
