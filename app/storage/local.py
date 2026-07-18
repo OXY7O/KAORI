@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import mimetypes
 import shutil
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Mapping
 
 from app.storage.base import ArtifactStat, StoredArtifact
 

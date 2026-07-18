@@ -16,11 +16,11 @@ from flask.typing import ResponseReturnValue
 from flask_login import current_user, login_required
 
 from app.notifications.service import (
-    record_operational_activity,
     get_navigation_notification_context,
     get_notification_activity_context,
-    mark_notification_read,
     mark_all_notifications_read,
+    mark_notification_read,
+    record_operational_activity,
 )
 from app.rbac.decorators import permission_required
 from app.retention.presentation import build_activity_retention_context
@@ -181,9 +181,7 @@ def preview_activity_retention() -> ResponseReturnValue:
             action_icon='archive',
         )
     except Exception as exc:
-        current_app.logger.exception(
-            'Could not generate operational activity retention preview.'
-        )
+        current_app.logger.exception('Could not generate operational activity retention preview.')
         return render_template(
             'components/navigation/_quick_sync_result.html',
             toast_oob=True,

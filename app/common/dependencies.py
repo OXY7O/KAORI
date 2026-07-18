@@ -93,9 +93,7 @@ def alert_source_setup_blocker(
 
     if normalized_source == 'alertmanager':
         title = 'Alertmanager setup required'
-        description = (
-            f'Alertmanager is not configured for {cluster.name}. Configure it to load alert routing and lifecycle context.'
-        )
+        description = f'Alertmanager is not configured for {cluster.name}. Configure it to load alert routing and lifecycle context.'
         badge = 'Alertmanager required'
         action_label = 'Configure Alertmanager'
         action_url = url_for(
@@ -104,9 +102,7 @@ def alert_source_setup_blocker(
         )
     else:
         title = 'Alert source setup required'
-        description = (
-            f'No alert source is configured for {cluster.name}. Configure Alertmanager or Prometheus to load alert data.'
-        )
+        description = f'No alert source is configured for {cluster.name}. Configure Alertmanager or Prometheus to load alert data.'
         badge = 'Alert source required'
         action_label = 'Configure Alertmanager'
         action_url = url_for(
@@ -138,9 +134,7 @@ def alert_source_connection_blocker(
     source_label = 'Alert source' if normalized_source in {'', 'auto', 'none'} else normalized_source.title()
 
     action_endpoint = (
-        'prometheus.configuration'
-        if normalized_source == 'prometheus'
-        else 'alertmanager.cluster_alertmanager_config'
+        'prometheus.configuration' if normalized_source == 'prometheus' else 'alertmanager.cluster_alertmanager_config'
     )
 
     return {

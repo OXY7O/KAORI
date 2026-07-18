@@ -24,6 +24,7 @@ def permission_required(permission_key: str) -> Callable[[F], F]:
 
     return decorator
 
+
 def any_permission_required(*permission_keys: str) -> Callable[[F], F]:
     def decorator(view_func: F) -> F:
         @wraps(view_func)

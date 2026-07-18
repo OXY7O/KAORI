@@ -5,18 +5,27 @@ from typing import Any
 
 from app.extensions import db
 from app.models.notification import Notification
-
 from app.notifications.constants import ALLOWED_STATUSES, NAVIGATION_NOTIFICATION_LIMIT
 from app.notifications.feedback import (
     build_quick_action_feedback,
+)
+from app.notifications.feedback import (
     pop_quick_action_feedback as _pop_quick_action_feedback,
+)
+from app.notifications.feedback import (
     queue_quick_action_feedback as _queue_quick_action_feedback,
 )
 from app.notifications.normalization import standardize_activity_text
 from app.notifications.queries import (
     get_navigation_notification_context as _get_navigation_notification_context,
+)
+from app.notifications.queries import (
     get_notification_activity_context as _get_notification_activity_context,
+)
+from app.notifications.queries import (
     mark_all_notifications_read as _mark_all_notifications_read,
+)
+from app.notifications.queries import (
     mark_notification_read as _mark_notification_read,
 )
 from app.notifications.writer import persist_notification
@@ -33,16 +42,22 @@ def _normalize_notification_content(
     detail: str | None,
 ) -> tuple[str, str, str, str | None]:
     normalized_status = status if status in ALLOWED_STATUSES else 'info'
-    normalized_title = standardize_activity_text(
-        title,
-        event_type=event_type,
-        status=normalized_status,
-    ) or 'Operational activity'
-    normalized_message = standardize_activity_text(
-        message,
-        event_type=event_type,
-        status=normalized_status,
-    ) or 'The operation was recorded by KAORI.'
+    normalized_title = (
+        standardize_activity_text(
+            title,
+            event_type=event_type,
+            status=normalized_status,
+        )
+        or 'Operational activity'
+    )
+    normalized_message = (
+        standardize_activity_text(
+            message,
+            event_type=event_type,
+            status=normalized_status,
+        )
+        or 'The operation was recorded by KAORI.'
+    )
     normalized_detail = standardize_activity_text(
         detail,
         event_type=event_type,
@@ -63,14 +78,12 @@ def create_notification(
     metadata: dict[str, Any] | None = None,
 ) -> Notification:
     """Create one normalized notification through the domain service."""
-    normalized_status, normalized_title, normalized_message, normalized_detail = (
-        _normalize_notification_content(
-            event_type=event_type,
-            status=status,
-            title=title,
-            message=message,
-            detail=detail,
-        )
+    normalized_status, normalized_title, normalized_message, normalized_detail = _normalize_notification_content(
+        event_type=event_type,
+        status=status,
+        title=title,
+        message=message,
+        detail=detail,
     )
 
     return persist_notification(
@@ -105,14 +118,12 @@ def record_operational_activity(
     failure is logged and retried, but it does not turn the originating operation
     into a user-visible failure.
     """
-    normalized_status, normalized_title, normalized_message, normalized_detail = (
-        _normalize_notification_content(
-            event_type=event_type,
-            status=status,
-            title=title,
-            message=message,
-            detail=detail,
-        )
+    normalized_status, normalized_title, normalized_message, normalized_detail = _normalize_notification_content(
+        event_type=event_type,
+        status=status,
+        title=title,
+        message=message,
+        detail=detail,
     )
 
     notification_saved = True

@@ -80,9 +80,7 @@ def create_app(config_name: str | None = None):
             else 'manual'
         )
         current_locale = (
-            normalize_locale(getattr(current_user, 'locale', 'en-US'))
-            if current_user.is_authenticated
-            else 'en-US'
+            normalize_locale(getattr(current_user, 'locale', 'en-US')) if current_user.is_authenticated else 'en-US'
         )
         current_date_format = (
             normalize_date_format(getattr(current_user, 'date_format', 'day_month_year'))

@@ -5,11 +5,12 @@ import hashlib
 import json
 import logging
 import shutil
+from collections.abc import Iterator
 from dataclasses import asdict
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from tempfile import mkdtemp
-from typing import Any, Iterator
+from typing import Any
 
 from flask import current_app
 from sqlalchemy import or_
@@ -151,11 +152,7 @@ def verify_archive_artifact(archive_id: str) -> dict[str, Any]:
 
     artifact.verified_at = datetime.now(UTC)
     if artifact.status == ARCHIVE_STATUS_FAILED:
-        artifact.status = (
-            ARCHIVE_STATUS_CLEANUP_PARTIAL
-            if artifact.cleanup_deleted_count > 0
-            else ARCHIVE_STATUS_READY
-        )
+        artifact.status = ARCHIVE_STATUS_CLEANUP_PARTIAL if artifact.cleanup_deleted_count > 0 else ARCHIVE_STATUS_READY
     artifact.error_message = None
     db.session.commit()
 
@@ -483,7 +480,9 @@ def _execute_archive(
         logger.exception('Retention archive %s failed.', artifact_id)
         artifact = db.session.get(ArchiveArtifact, artifact_id)
         if artifact is not None:
-            artifact.status = ARCHIVE_STATUS_CLEANUP_PARTIAL if cleanup_started and deleted_count > 0 else ARCHIVE_STATUS_FAILED
+            artifact.status = (
+                ARCHIVE_STATUS_CLEANUP_PARTIAL if cleanup_started and deleted_count > 0 else ARCHIVE_STATUS_FAILED
+            )
             artifact.cleanup_deleted_count = deleted_count
             artifact.error_message = _error_text(exc)
             artifact.completed_at = datetime.now(UTC)
@@ -517,9 +516,7 @@ def _iter_archive_record_ids(data_path: Path) -> Iterator[Any]:
             source = payload.get('source') if isinstance(payload, dict) else None
             record_id = source.get('record_id') if isinstance(source, dict) else None
             if record_id is None:
-                raise RuntimeError(
-                    f'Archive record on line {line_number} does not contain source.record_id.'
-                )
+                raise RuntimeError(f'Archive record on line {line_number} does not contain source.record_id.')
             yield record_id
 
 
@@ -602,7 +599,9 @@ def _build_archive_file_stem(
 
 
 def _build_archive_object_prefix(artifact: ArchiveArtifact) -> str:
-    generated_at = artifact.created_at.astimezone(UTC) if artifact.created_at.tzinfo else artifact.created_at.replace(tzinfo=UTC)
+    generated_at = (
+        artifact.created_at.astimezone(UTC) if artifact.created_at.tzinfo else artifact.created_at.replace(tzinfo=UTC)
+    )
     root_prefix = str(current_app.config.get('ARCHIVE_OBJECT_PREFIX', 'archives') or 'archives').strip().strip('/')
     return '/'.join([root_prefix, artifact.domain, generated_at.strftime('%Y'), generated_at.strftime('%m')])
 

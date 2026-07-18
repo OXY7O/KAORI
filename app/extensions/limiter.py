@@ -63,11 +63,15 @@ def register_rate_limit_handlers(app: Flask) -> None:
             )
             return redirect(url_for('auth.login'))
 
-        if request.endpoint in {
-            'kubernetes_operations.request_secret_reveal',
-            'kubernetes_operations.reauthenticate_secret_reveal',
-            'kubernetes_operations.reveal_secret_value',
-        } and current_user.is_authenticated:
+        if (
+            request.endpoint
+            in {
+                'kubernetes_operations.request_secret_reveal',
+                'kubernetes_operations.reauthenticate_secret_reveal',
+                'kubernetes_operations.reveal_secret_value',
+            }
+            and current_user.is_authenticated
+        ):
             from app.notifications.service import record_operational_activity
 
             record_operational_activity(

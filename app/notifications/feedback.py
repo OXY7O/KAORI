@@ -6,6 +6,7 @@ from flask import has_request_context, session
 
 from app.notifications.constants import ALLOWED_STATUSES, QUICK_ACTION_FEEDBACK_SESSION_KEY
 
+
 def build_quick_action_feedback(
     *,
     status: str,
@@ -54,5 +55,3 @@ def pop_quick_action_feedback() -> dict[str, Any] | None:
         session.modified = True
 
     return feedback
-
-
