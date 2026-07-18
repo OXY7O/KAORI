@@ -2,7 +2,7 @@
 
 ## General Settings
 
-`/settings/general` is a per-user workspace available to every authenticated KAORI account. It uses query-backed tabs so additional preference domains can be added without creating a long settings page or separate sidebar entries.
+`/settings/general` is a per-user workspace available to every authenticated KAORI account. It uses query-backed HTMX tabs so Time Zone, Regional Format, and System Information switch inside `#general-settings-page` without a full-page reload. Normal links remain the progressive-enhancement fallback.
 
 Current tabs:
 
@@ -14,7 +14,7 @@ The former standalone `/settings/time-locale` and `/settings/system-info` pages 
 
 ## Save and notification contract
 
-- Timezone and regional-format forms use HTMX and replace the General Settings workspace without a full page reload.
+- General tab navigation and the timezone/regional-format forms use HTMX and replace the General Settings workspace without a full-page reload.
 - Successful saves create a personal `user_preference` notification for the authenticated user.
 - Preference saves do not use Flask flash messages or operational toast feedback.
 - The response triggers `kaori:notifications-changed`, allowing the top Notification Center to refresh immediately.
@@ -47,7 +47,7 @@ The former standalone `/settings/time-locale` and `/settings/system-info` pages 
 
 ## Account & Authentication contract
 
-`/settings/account` is organized into `profile`, `activity`, and `credentials` tabs. Information panels in the Activity and Credential tabs use native `<details>` elements and remain closed by default so the workspace can grow without creating a permanently long page.
+`/settings/account` is organized into `profile`, `activity`, and `credentials` query-backed HTMX tabs. Tab navigation replaces `#account-authentication-page` without a full-page reload, updates the browser URL, and preserves normal-link fallback. Information panels in the Activity and Credential tabs use native `<details>` elements and remain closed by default so the workspace can grow without creating a permanently long page.
 
 Local Database password changes use HTMX and replace `#account-authentication-page` without a full-page reload. A successful password change:
 

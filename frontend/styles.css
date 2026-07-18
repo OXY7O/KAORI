@@ -232,16 +232,6 @@
     display: none !important;
 }
 
-.sidebar-collapsed .sidebar-expanded-only,
-.sidebar-collapsed .sidebar-menu-chevron,
-.sidebar-collapsed .sidebar-submenu {
-    display: none !important;
-}
-
-.sidebar-collapsed .sidebar-parent-link,
-.sidebar-collapsed .sidebar-brand-card {
-    justify-content: center;
-}
 
 .sidebar-menu > summary {
     list-style: none;
@@ -261,7 +251,7 @@
 }
 
 /* Keep nested navigation readable without making long menus feel oversized. */
-.sidebar-submenu.sidebar-expanded-only {
+.sidebar-submenu {
     margin-top: 0.5rem;
 }
 

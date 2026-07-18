@@ -2,18 +2,18 @@
 <details class="sidebar-menu space-y-1"
          {% if analytics_active %}open{% endif %}>
     <!-- Analytics Parent -->
-    <summary class="{{ 'bg-kaori-primary text-white shadow-lg shadow-kaori-primary/20 ring-1 ring-white/10' if analytics_active else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} sidebar-parent-link group flex cursor-pointer select-none items-center justify-between min-h-11 rounded-lg px-2.5 py-2 text-[12px] font-semibold transition [.sidebar-collapsed_&]:justify-center [.sidebar-collapsed_&]:px-2">
+    <summary class="{{ 'bg-kaori-primary text-white shadow-lg shadow-kaori-primary/20 ring-1 ring-white/10' if analytics_active else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} sidebar-parent-link group flex cursor-pointer select-none items-center justify-between min-h-11 rounded-lg px-2.5 py-2 text-[12px] font-semibold transition">
         <div class="flex min-w-0 items-center gap-2.5">
             <span class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg {{ 'bg-white/15 text-white' if analytics_active else 'bg-white/5 text-brand-foreground-muted group-hover:bg-white/10 group-hover:text-white' }} transition">
                 <i data-lucide="chart-column" class="h-4 w-4"></i>
             </span>
-            <span class="sidebar-expanded-only truncate whitespace-nowrap text-[12px] leading-5">K8s Analytics</span>
+            <span class="truncate whitespace-nowrap text-[12px] leading-5">K8s Analytics</span>
         </div>
         <i data-lucide="chevron-right"
-           class="sidebar-expanded-only sidebar-menu-chevron h-4 w-4 {{ 'text-kaori-accent' if analytics_active else 'text-white/[0.35]' }}"></i>
+           class="sidebar-menu-chevron h-4 w-4 {{ 'text-kaori-accent' if analytics_active else 'text-white/[0.35]' }}"></i>
     </summary>
     <!-- Analytics Sub Menu -->
-    <div class="sidebar-expanded-only sidebar-submenu ml-6 mt-1 space-y-1 border-l border-white/10 pl-3">
+    <div class="sidebar-submenu ml-6 mt-1 space-y-1 border-l border-white/10 pl-3">
         <a href="{{ url_for('analytics.overview') }}"
            class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint == 'analytics.overview' else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] leading-4 transition">
             <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint == 'analytics.overview' else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>

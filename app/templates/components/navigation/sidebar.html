@@ -29,19 +29,19 @@
 ) %}
 {% set can_integrations = current_user.is_authenticated and current_user.has_permission('settings.manage_integrations') %}
 
-<aside class="kubereport-sidebar relative flex h-full min-h-0 w-[250px] shrink-0 flex-col overflow-hidden rounded-2xl border border-brand-outline bg-surface-sidebar text-white shadow-2xl shadow-black/25 transition-[width] duration-200 [.sidebar-collapsed_&]:w-[78px]">
+<aside class="kubereport-sidebar relative flex h-full min-h-0 w-[250px] shrink-0 flex-col overflow-hidden rounded-2xl border border-brand-outline bg-surface-sidebar text-white shadow-2xl shadow-black/25">
     <div class="pointer-events-none absolute -left-24 -top-32 h-72 w-72 rounded-full bg-kaori-primary/20 blur-3xl" aria-hidden="true"></div>
     <div class="pointer-events-none absolute -bottom-36 -right-28 h-72 w-72 rounded-full bg-kaori-accent/10 blur-3xl" aria-hidden="true"></div>
 
     <div class="relative z-10 p-3 pb-2">
-        <div class="sidebar-brand-card flex items-center gap-3 rounded-xl border border-brand-outline bg-white/5 p-2.5 shadow-sm backdrop-blur-xl [.sidebar-collapsed_&]:justify-center [.sidebar-collapsed_&]:gap-0 [.sidebar-collapsed_&]:p-2">
+        <div class="sidebar-brand-card flex items-center gap-3 rounded-xl border border-brand-outline bg-white/5 p-2.5 shadow-sm backdrop-blur-xl">
             <div class="sidebar-brand-icon flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-white/5 shadow-lg shadow-kaori-primary/20">
                 <img src="{{ url_for('static', filename='images/kaori-logo.svg') }}"
                      alt=""
                      aria-hidden="true"
                      class="h-11 w-11 object-contain">
             </div>
-            <div class="sidebar-expanded-only min-w-0 flex-1">
+            <div class="min-w-0 flex-1">
                 <h1 class="truncate text-sm font-extrabold leading-5 tracking-[-0.02em] text-white">KAORI</h1>
                 <p class="truncate text-[10px] font-medium text-brand-foreground-muted">Infrastructure Operations</p>
             </div>
@@ -51,14 +51,14 @@
     <nav class="relative z-10 flex-1 space-y-4 overflow-y-auto overscroll-contain px-3 py-3 [scrollbar-gutter:stable]">
         {% if current_user.is_authenticated %}
             <div class="sidebar-nav-section">
-                <div class="sidebar-expanded-only mb-1.5 px-3 text-[9px] font-extrabold uppercase tracking-[0.18em] text-white/40">Main</div>
+                <div class="mb-1.5 px-3 text-[9px] font-extrabold uppercase tracking-[0.18em] text-white/40">Main</div>
                 <div class="space-y-1">
                     <a href="{{ url_for('welcome.index') }}"
-                       class="{{ 'bg-kaori-primary text-white shadow-lg shadow-kaori-primary/20 ring-1 ring-white/10' if request.endpoint == 'welcome.index' else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} sidebar-parent-link group flex min-h-11 items-center gap-2.5 rounded-lg px-2.5 py-2 text-[12px] font-semibold transition [.sidebar-collapsed_&]:justify-center [.sidebar-collapsed_&]:px-2">
+                       class="{{ 'bg-kaori-primary text-white shadow-lg shadow-kaori-primary/20 ring-1 ring-white/10' if request.endpoint == 'welcome.index' else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} sidebar-parent-link group flex min-h-11 items-center gap-2.5 rounded-lg px-2.5 py-2 text-[12px] font-semibold transition">
                         <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ 'bg-white/15 text-white' if request.endpoint == 'welcome.index' else 'bg-white/5 text-brand-foreground-muted group-hover:bg-white/10 group-hover:text-white' }} transition">
                             <i data-lucide="sparkles" class="h-4 w-4"></i>
                         </span>
-                        <span class="sidebar-expanded-only truncate whitespace-nowrap">Welcome</span>
+                        <span class="truncate whitespace-nowrap">Welcome</span>
                     </a>
                     {% if can_dashboard %}{% include "components/navigation/dashboards_menu.html" %}{% endif %}
                 </div>
@@ -67,15 +67,15 @@
 
         {% if can_clusters or can_inventory or can_operations or can_governance %}
             <div class="sidebar-nav-section">
-                <div class="sidebar-expanded-only mb-1.5 px-3 text-[9px] font-extrabold uppercase tracking-[0.18em] text-white/40">Kubernetes</div>
+                <div class="mb-1.5 px-3 text-[9px] font-extrabold uppercase tracking-[0.18em] text-white/40">Kubernetes</div>
                 <div class="space-y-1">
                     {% if can_clusters %}
                         <a href="{{ url_for('cluster.list_clusters') }}"
-                           class="{{ 'bg-kaori-primary text-white shadow-lg shadow-kaori-primary/20 ring-1 ring-white/10' if request.endpoint and request.endpoint.startswith('cluster.') else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} sidebar-parent-link group flex min-h-11 items-center gap-2.5 rounded-lg px-2.5 py-2 text-[12px] font-semibold transition [.sidebar-collapsed_&]:justify-center [.sidebar-collapsed_&]:px-2">
+                           class="{{ 'bg-kaori-primary text-white shadow-lg shadow-kaori-primary/20 ring-1 ring-white/10' if request.endpoint and request.endpoint.startswith('cluster.') else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} sidebar-parent-link group flex min-h-11 items-center gap-2.5 rounded-lg px-2.5 py-2 text-[12px] font-semibold transition">
                             <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ 'bg-white/15 text-white' if request.endpoint and request.endpoint.startswith('cluster.') else 'bg-white/5 text-brand-foreground-muted group-hover:bg-white/10 group-hover:text-white' }} transition">
                                 <i data-lucide="server" class="h-4 w-4"></i>
                             </span>
-                            <span class="sidebar-expanded-only truncate whitespace-nowrap">K8s Cluster</span>
+                            <span class="truncate whitespace-nowrap">K8s Cluster</span>
                         </a>
                     {% endif %}
                     {% if can_inventory %}{% include "components/navigation/inventory_menu.html" %}{% endif %}
@@ -87,7 +87,7 @@
 
         {% if can_analytics or can_intelligence or can_reports %}
             <div class="sidebar-nav-section">
-                <div class="sidebar-expanded-only mb-1.5 px-3 text-[9px] font-extrabold uppercase tracking-[0.18em] text-white/40">Insights &amp; Reporting</div>
+                <div class="mb-1.5 px-3 text-[9px] font-extrabold uppercase tracking-[0.18em] text-white/40">Insights &amp; Reporting</div>
                 <div class="space-y-1">
                     {% if can_analytics %}{% include "components/navigation/analytics_menu.html" %}{% endif %}
                     {% if can_intelligence %}{% include "components/navigation/intelligence_menu.html" %}{% endif %}
@@ -98,13 +98,13 @@
 
         {% if can_integrations %}
             <div class="sidebar-nav-section">
-                <div class="sidebar-expanded-only mb-1.5 px-3 text-[9px] font-extrabold uppercase tracking-[0.18em] text-white/40">Platform Extensions</div>
+                <div class="mb-1.5 px-3 text-[9px] font-extrabold uppercase tracking-[0.18em] text-white/40">Platform Extensions</div>
                 <div class="space-y-1">{% include "components/navigation/integrations_menu.html" %}</div>
             </div>
         {% endif %}
 
         <div class="sidebar-nav-section">
-            <div class="sidebar-expanded-only mb-1.5 px-3 text-[9px] font-extrabold uppercase tracking-[0.18em] text-white/40">Administration</div>
+            <div class="mb-1.5 px-3 text-[9px] font-extrabold uppercase tracking-[0.18em] text-white/40">Administration</div>
             <div class="space-y-1">
                 {% include "components/navigation/access_management_menu.html" %}
                 {% include "components/navigation/settings_menu.html" %}
@@ -112,15 +112,4 @@
         </div>
     </nav>
 
-    <div class="relative z-10 p-3 pt-2">
-        <button @click="$dispatch('toggle-sidebar')"
-                type="button"
-                class="flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-brand-outline bg-white/5 text-brand-foreground-muted transition hover:bg-white/10 hover:text-white [.sidebar-collapsed_&]:px-0"
-                :title="sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'"
-                aria-label="Toggle sidebar">
-            <i data-lucide="chevrons-left" class="sidebar-toggle-expanded-icon h-4 w-4"></i>
-            <i data-lucide="chevrons-right" class="sidebar-toggle-collapsed-icon h-4 w-4"></i>
-            <span class="sidebar-expanded-only text-[10px] font-bold">Collapse navigation</span>
-        </button>
-    </div>
 </aside>

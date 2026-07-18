@@ -9,7 +9,7 @@ Required visual rules:
 - use semantic Tailwind tokens from `frontend/styles.css`;
 - use the shared shell, layout, content, aside, and introduction macros from `components/page_hero.html`;
 - use a solid `bg-kaori-primary` authenticated hero;
-- Settings and Access heroes use the same `min-h-[15rem]` shell, `min-h-[12rem]` grid, 8/4 desktop layout, title scale, padding, and 12rem minimum context panel;
+- Settings and Access heroes use the shared `min-h-[15.5rem]` and `xl:h-[15.5rem]` shell, 8/4 desktop layout, title scale, and padding. User Management is the top-level reference and Add User is the create/edit/detail reference;
 - do not use gradients or raw hex colors;
 - use violet for product identity and selection;
 - use semantic green/amber/red/slate only for actual state;
@@ -165,3 +165,7 @@ The page shows the current authorization state, a return-to-Welcome action, Acco
 Role lifecycle actions must not use Flask flash messages. Create, clone, update, failed update, blocked delete, and successful delete use the persistent KAORI operational toast and create a Notification-backed Activity Audit record with `module=rbac` metadata.
 
 The legacy `AuditEvent` record remains for successful administrative mutations. Notification persistence is intentionally isolated from the primary mutation transaction so a notification-storage failure does not undo a successfully committed role change.
+
+## Permission authorization flow disclosure
+
+The **How RBAC is applied** panel uses a native `<details open>` disclosure. It is expanded by default so the permission → role → user → server-enforcement flow is immediately visible, while administrators may collapse it to prioritize registry space.

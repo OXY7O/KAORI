@@ -206,14 +206,14 @@ Validate each redesign in:
 - 100% browser zoom
 - loading, empty, error, disabled, and permission states where applicable
 - keyboard focus and visible focus rings
-- collapsed and expanded navigation when the page uses the application shell
+- the fixed expanded navigation used by the application shell
 
 ## Application shell reference
 
 The authenticated application shell uses a floating, rounded navigation model rather than a full-bleed rectangular sidebar.
 
 - Place the application shell on `surface-page` with a compact outer gutter.
-- Use a 250 px expanded sidebar and a 78 px collapsed sidebar at the standard desktop density.
+- Use a fixed 250 px sidebar at the standard desktop density. The user-facing collapse control is not part of the KAORI application-shell contract.
 - The sidebar uses `surface-sidebar` as its foundation. Violet is reserved for the active item, focus state, brand icon, and restrained ambient highlights.
 - Use a 16 px (`rounded-2xl`) outer radius for both the sidebar and main application frame.
 - Keep navigation groups visually separated by compact uppercase labels; do not add decorative dividers between every item.
@@ -238,7 +238,7 @@ The authenticated application shell uses a floating, rounded navigation model ra
 - Use `page_hero.layout_classes()` for the standard 8/4 desktop grid and shared height contract.
 - Use `page_hero.content_classes()` and `page_hero.aside_classes()` for the primary and supporting columns.
 - Use `page_hero.intro(eyebrow_icon, eyebrow_label, leading_icon)` whenever a hero has an eyebrow and a leading icon.
-- The standard Settings and Access hero shell uses `min-h-[15rem]`; its grid and right context panel use a 12rem minimum height. Content may grow naturally when copy or controls require more space.
+- The standard Settings and Access hero shell uses `min-h-[15.5rem]` and a fixed `xl:h-[15.5rem]` desktop contract. The grid uses the same 8/4 split for both top-level workspaces and create/edit/detail workflows. User Management is the top-level reference; Add User is the workflow reference. Below `xl`, the hero returns to natural height for responsive safety.
 - The component owns the outer radius, border, solid brand surface, responsive padding, eyebrow geometry, icon sizing, column width, and horizontal gap.
 - Page templates own only the title, optional role/subtitle, description, notice, badges, and context-panel content.
 - Do not apply manual left margin or padding to compensate for the leading icon.

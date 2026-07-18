@@ -24,7 +24,6 @@ def test_settings_and_access_heroes_use_shared_kaori_contract() -> None:
         'page_hero.layout_classes()',
         'page_hero.content_classes()',
         'page_hero.aside_classes()',
-        'min-h-[12rem]',
         'text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]',
     )
 
@@ -32,6 +31,61 @@ def test_settings_and_access_heroes_use_shared_kaori_contract() -> None:
         source = template_path.read_text(encoding='utf-8')
         missing = [fragment for fragment in required_fragments if fragment not in source]
         assert not missing, f'{template_path} is missing hero contract fragments: {missing}'
+
+
+def test_shared_settings_access_hero_has_fixed_desktop_geometry() -> None:
+    source = Path('app/templates/components/page_hero.html').read_text(encoding='utf-8')
+
+    required_fragments = (
+        'min-h-[15.5rem]',
+        'xl:h-[15.5rem]',
+        'xl:h-full xl:min-h-0 xl:grid-cols-12',
+        'xl:[&>*]:h-full',
+        'xl:[&>*]:min-h-0',
+    )
+    missing = [fragment for fragment in required_fragments if fragment not in source]
+    assert not missing, f'Shared Settings/Access hero geometry is incomplete: {missing}'
+
+    user_hero = Path('app/templates/users/partials/_hero.html').read_text(encoding='utf-8')
+    add_user = Path('app/templates/users/form.html').read_text(encoding='utf-8')
+    assert "page_hero.intro('users-round', 'Access Administration', 'users-round')" in user_hero
+    assert 'page_hero.shell_classes()' in add_user
+
+
+def test_general_and_account_tabs_use_htmx_without_full_page_reload() -> None:
+    contracts = (
+        (
+            Path('app/templates/settings/general/partials/_tabs.html'),
+            '#general-settings-page',
+            ('time-locale', 'regional-format', 'system-information'),
+        ),
+        (
+            Path('app/templates/settings/account/partials/_tabs.html'),
+            '#account-authentication-page',
+            ('profile', 'activity', 'credentials'),
+        ),
+    )
+
+    for template_path, target, tab_names in contracts:
+        source = template_path.read_text(encoding='utf-8')
+        assert source.count(f'hx-target="{target}"') == len(tab_names)
+        assert source.count('hx-swap="outerHTML"') == len(tab_names)
+        assert source.count('hx-push-url="true"') == len(tab_names)
+        for tab_name in tab_names:
+            assert f"tab='{tab_name}'" in source
+            assert 'hx-get=' in source
+
+
+def test_sidebar_collapse_navigation_is_removed() -> None:
+    layout_source = Path('app/templates/layouts/app.html').read_text(encoding='utf-8')
+    sidebar_source = Path('app/templates/components/navigation/sidebar.html').read_text(encoding='utf-8')
+
+    assert 'Collapse navigation' not in sidebar_source
+    assert 'toggle-sidebar' not in sidebar_source
+    assert '@toggle-sidebar.window' not in layout_source
+    assert 'x-data="{ sidebarOpen:' not in layout_source
+    assert 'sidebar-collapsed' not in layout_source
+    assert 'kubereport.sidebarOpen' not in layout_source
 
 
 def test_permission_catalog_uses_section_based_standard_pagination() -> None:
@@ -84,7 +138,9 @@ def test_rbac_ownership_and_authorization_flow_are_explicit() -> None:
     assert '>Role model<' not in roles_source
 
     required_permission_flow_fragments = (
+        '<details open class="group overflow-hidden',
         'How RBAC is applied',
+        'group-open:rotate-180',
         'Permission Catalog',
         'flask seed-rbac',
         'Roles &amp; Access',

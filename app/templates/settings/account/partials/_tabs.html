@@ -2,6 +2,10 @@
      aria-label="Account and authentication sections">
     <div class="flex gap-1 overflow-x-auto" role="tablist">
         <a href="{{ url_for('settings.account', tab='profile') }}"
+           hx-get="{{ url_for('settings.account', tab='profile') }}"
+           hx-target="#account-authentication-page"
+           hx-swap="outerHTML"
+           hx-push-url="true"
            role="tab"
            aria-selected="{{ 'true' if active_tab == 'profile' else 'false' }}"
            class="inline-flex min-w-max items-center gap-2 rounded-t-xl border-x border-t px-4 py-3 text-sm font-semibold transition {{ 'border-outline-default bg-surface-card text-kaori-primary shadow-sm' if active_tab == 'profile' else 'border-transparent text-content-muted hover:border-outline-subtle hover:bg-surface-elevated hover:text-content-primary' }}">
@@ -13,6 +17,10 @@
         </a>
 
         <a href="{{ url_for('settings.account', tab='activity') }}"
+           hx-get="{{ url_for('settings.account', tab='activity') }}"
+           hx-target="#account-authentication-page"
+           hx-swap="outerHTML"
+           hx-push-url="true"
            role="tab"
            aria-selected="{{ 'true' if active_tab == 'activity' else 'false' }}"
            class="inline-flex min-w-max items-center gap-2 rounded-t-xl border-x border-t px-4 py-3 text-sm font-semibold transition {{ 'border-outline-default bg-surface-card text-kaori-primary shadow-sm' if active_tab == 'activity' else 'border-transparent text-content-muted hover:border-outline-subtle hover:bg-surface-elevated hover:text-content-primary' }}">
@@ -24,6 +32,10 @@
         </a>
 
         <a href="{{ url_for('settings.account', tab='credentials') }}"
+           hx-get="{{ url_for('settings.account', tab='credentials') }}"
+           hx-target="#account-authentication-page"
+           hx-swap="outerHTML"
+           hx-push-url="true"
            role="tab"
            aria-selected="{{ 'true' if active_tab == 'credentials' else 'false' }}"
            class="inline-flex min-w-max items-center gap-2 rounded-t-xl border-x border-t px-4 py-3 text-sm font-semibold transition {{ 'border-outline-default bg-surface-card text-kaori-primary shadow-sm' if active_tab == 'credentials' else 'border-transparent text-content-muted hover:border-outline-subtle hover:bg-surface-elevated hover:text-content-primary' }}">
