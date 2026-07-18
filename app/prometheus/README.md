@@ -89,3 +89,9 @@ explicitly require them. A migrated configuration without a capability snapshot
 remains temporarily compatible when its readiness is already `ready`; rerunning
 full validation replaces that compatibility behavior with authoritative
 capability evidence.
+
+## Storage feature-contract validation
+
+Storage readiness is validated with the same PromQL contract used by Storage Analytics. KAORI no longer marks the filesystem capability as misconfigured solely because a bounded `/series` discovery sample does not report a canonical node label. The exact `/var` query, with `/` as fallback, is authoritative.
+
+The Analytics Readiness panel exposes Expected, Observed, Technical Evidence, validation query, possible causes, and remediation. Metric availability remains visible as troubleshooting evidence but does not override a successful feature query contract.

@@ -90,18 +90,18 @@ CAPABILITIES: dict[str, CapabilityDefinition] = {
         expected_signals=('kube_pod_container_resource_requests', 'kube_pod_container_resource_limits'),
     ),
     'pvc_usage': CapabilityDefinition(
-        'pvc_usage', 'PVC Usage Metrics', ('Storage Analytics', 'Storage Forecast'),
+        'pvc_usage', 'PVC Usage Contract', ('Storage Analytics', 'Storage Forecast'),
         'PVC usage, available capacity, and storage forecast are unavailable.', 'Kubelet metrics and Prometheus scrape configuration',
         'Enable kubelet volume statistics scraping and ensure the metrics are forwarded to the configured Prometheus or Thanos Query endpoint.',
         expected_signals=('kubelet_volume_stats_capacity_bytes', 'kubelet_volume_stats_used_bytes', 'kubelet_volume_stats_available_bytes'),
         validation_query='count(kubelet_volume_stats_used_bytes)',
     ),
     'node_filesystem_identity': CapabilityDefinition(
-        'node_filesystem_identity', 'Storage Node Identity Mapping', ('Storage Analytics',),
-        'Filesystem metrics cannot be mapped consistently to Kubernetes node names.', 'node_exporter relabeling or recording rules',
-        'Add a canonical node identity label such as node, nodename, or kubernetes_node to node_filesystem metrics. If only instance="IP:port" exists, add relabeling or a recording rule before exposing the series through Thanos.',
+        'node_filesystem_identity', 'Storage Filesystem Contract', ('Storage Analytics',),
+        'Storage Analytics cannot calculate node filesystem capacity and availability reliably.', 'node_exporter relabeling or recording rules',
+        'Run the validation query against the configured Prometheus or Thanos endpoint. When the metric exists but the contract query returns no canonical node series, review query filters, recording rules, and label transformation before changing the exporter.',
         expected_signals=('node_filesystem_size_bytes{node!=""}', 'node_filesystem_avail_bytes{node!=""}'),
-        validation_query='count by (node) (node_filesystem_size_bytes)',
+        validation_query='node_filesystem_size_bytes{mountpoint="/var",fstype!~"tmpfs|overlay"} or node_filesystem_size_bytes{mountpoint="/",fstype!~"tmpfs|overlay"}',
     ),
     'long_term_history': CapabilityDefinition(
         'long_term_history', 'Long-Term Metric History', ('Forecast', 'Historical reports'),

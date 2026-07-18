@@ -151,25 +151,62 @@
             </div>
         </div>
 
-        <!-- Blocked evidence, intentionally collapsed to keep the right panel concise -->
+        <!-- Feature contract evidence -->
         {% set capability_assessments = summary.get('capability_assessments', []) if summary else [] %}
-        {% set capability_attention = capability_assessments|selectattr('status', 'ne', 'available')|list %}
-        {% if capability_attention %}
+        {% if capability_assessments %}
             <details class="mt-4 overflow-hidden rounded-2xl border border-violet-200 bg-violet-50/50 dark:border-violet-500/25 dark:bg-violet-500/10">
-                <summary class="cursor-pointer px-4 py-3 text-sm font-bold text-slate-950 dark:text-white">Capability remediation · {{ capability_attention|length }} require attention</summary>
+                <summary class="cursor-pointer px-4 py-3 text-sm font-bold text-slate-950 dark:text-white">Feature contract evidence</summary>
                 <div class="space-y-3 border-t border-violet-200 p-4 dark:border-violet-500/25">
-                    {% for item in capability_attention %}
-                        <div class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-950/70">
+                    {% for item in capability_assessments %}
+                        <article class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-950/70">
                             <div class="flex flex-wrap items-start justify-between gap-3">
-                                <div><p class="text-sm font-bold text-slate-950 dark:text-white">{{ item.label }}</p><p class="mt-1 text-xs font-semibold text-amber-700 dark:text-amber-300">{{ item.status|replace('_',' ')|title }}</p></div>
-                                <span class="rounded-md border border-violet-200 bg-violet-50 px-2 py-1 text-[10px] font-bold text-violet-700 dark:border-violet-500/30 dark:bg-violet-500/10 dark:text-violet-300">{{ item.source_owner }}</span>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-bold text-slate-950 dark:text-white">{{ item.label }}</p>
+                                    <p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">Required by {{ item.required_by_display }}</p>
+                                </div>
+                                <span class="rounded-md border px-2 py-1 text-[10px] font-bold {% if item.status == 'available' %}border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300{% elif item.status == 'not_observed' %}border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200{% else %}border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300{% endif %}">{{ item.status_label }}</span>
                             </div>
-                            <p class="mt-3 text-xs leading-5 text-slate-600 dark:text-slate-300"><strong>Evidence:</strong> {{ item.evidence }}</p>
-                            <p class="mt-2 text-xs leading-5 text-slate-600 dark:text-slate-300"><strong>Impact:</strong> {{ item.impact }}</p>
-                            <p class="mt-2 text-xs leading-5 text-slate-600 dark:text-slate-300"><strong>Recommended action:</strong> {{ item.recommendation }}</p>
-                            {% if item.expected_signals %}<p class="mt-2 break-all text-xs leading-5 text-slate-500 dark:text-slate-400"><strong>Expected:</strong> {{ item.expected_signals|join(', ') }}</p>{% endif %}
-                            {% if item.validation_query %}<code class="mt-2 block overflow-x-auto rounded-lg bg-slate-950 px-3 py-2 text-[11px] text-slate-100">{{ item.validation_query }}</code>{% endif %}
-                        </div>
+
+                            <div class="mt-3 grid gap-3 lg:grid-cols-2">
+                                <div class="rounded-xl border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-700 dark:bg-slate-900/60">
+                                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Expected</p>
+                                    <p class="mt-1 text-xs leading-5 text-slate-700 dark:text-slate-200">{{ item.expected }}</p>
+                                </div>
+                                <div class="rounded-xl border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-700 dark:bg-slate-900/60">
+                                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Observed</p>
+                                    <p class="mt-1 text-xs leading-5 text-slate-700 dark:text-slate-200">{{ item.observed }}</p>
+                                </div>
+                            </div>
+
+                            <details class="mt-3 rounded-xl border border-slate-200 dark:border-slate-700">
+                                <summary class="cursor-pointer px-3 py-2.5 text-xs font-bold text-slate-800 dark:text-slate-100">Technical evidence · {{ item.technical_check_count_display }}</summary>
+                                <div class="space-y-2 border-t border-slate-200 p-3 dark:border-slate-700">
+                                    {% for check in item.technical_checks %}
+                                        <div class="flex items-start justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-900/70">
+                                            <div class="min-w-0">
+                                                <p class="break-all text-xs font-semibold text-slate-900 dark:text-slate-100">{{ check.label }}</p>
+                                                <p class="mt-1 text-[11px] leading-5 text-slate-500 dark:text-slate-400">{{ check.evidence }}</p>
+                                            </div>
+                                            <span class="shrink-0 text-[10px] font-bold {% if check.status == 'available' %}text-emerald-700 dark:text-emerald-300{% else %}text-amber-700 dark:text-amber-300{% endif %}">{{ check.status_label }}</span>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </details>
+
+                            {% if item.status != 'available' %}
+                                <div class="mt-3 rounded-xl border border-amber-200 bg-amber-50/60 p-3 dark:border-amber-500/20 dark:bg-amber-500/5">
+                                    <p class="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300">Recommended action</p>
+                                    <p class="mt-1 text-xs leading-5 text-slate-700 dark:text-slate-200">{{ item.recommendation }}</p>
+                                    {% if item.possible_causes %}
+                                        <div class="mt-2 space-y-1">
+                                            {% for cause in item.possible_causes %}<p class="text-xs leading-5 text-slate-600 dark:text-slate-300">• {{ cause }}</p>{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+
+                            {% if item.validation_query %}<code class="mt-3 block overflow-x-auto rounded-lg bg-slate-950 px-3 py-2 text-[11px] text-slate-100">{{ item.validation_query }}</code>{% endif %}
+                        </article>
                     {% endfor %}
                 </div>
             </details>

@@ -96,3 +96,21 @@ Capability keys must be canonical, stable, documented, and provider-domain owned
 A capability is ready only when its complete consumer contract passes. For metrics integrations this includes the query API, metric name, required label schema, identity correlation, and required history. A fallback query based on `instance="IP:port"` must be reported as degraded or misconfigured when the canonical consumer contract requires a Kubernetes node identity.
 
 Every capability status other than `available` must provide impact, observed evidence, source owner, recommended source-side change, expected signal, and—when useful—a validation query. Version is advisory; observed capability is authoritative, including when KAORI connects through Thanos Query and cannot observe the backend Prometheus version.
+
+## Feature-contract validation and technical evidence
+
+Provider validation must determine readiness from the exact feature query contract, not only from metric-name or recent `/series` label discovery. Metric and label discovery remain advisory technical evidence for remediation.
+
+For Storage Analytics, KAORI validates the exact filesystem and PVC queries used by the consumer. A filesystem contract is ready when both capacity and available queries return usable numeric series with a canonical node identity. `/var` is preferred and `/` is accepted as the documented fallback. A recent `/series` sample that omits a label must not override a successful analytics query result.
+
+Every capability assessment should expose presentation-ready fields for:
+
+- feature-contract status;
+- expected result;
+- observed result;
+- exact validation query;
+- technical metric and label checks;
+- evidence-based possible causes;
+- source owner and recommended action.
+
+The primary status answers whether the KAORI feature works. Technical checks explain why it works or where an engineer should investigate. A metric may therefore be available while the feature contract fails because of query filters, label transformation, recording rules, retention, or intermediary visibility.

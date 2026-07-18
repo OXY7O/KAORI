@@ -166,21 +166,48 @@ class PromQLProfileAuditor:
     ) -> list[dict[str, Any]]:
         assessments: list[dict[str, Any]] = []
 
-        def add(key: str, status: str, evidence: str) -> None:
+        def add(
+            key: str,
+            status: str,
+            evidence: str,
+            *,
+            observed: str | None = None,
+            expected: str | None = None,
+            technical_checks: list[dict[str, str]] | None = None,
+            possible_causes: list[str] | None = None,
+        ) -> None:
             item = capability_definition(key)
             if item is None:
                 return
+            status_labels = {
+                'available': 'Ready',
+                'missing': 'Failed',
+                'misconfigured': 'Failed',
+                'not_observed': 'Not Observed',
+                'unsupported': 'Unsupported',
+            }
+            checks = technical_checks or []
+            for check in checks:
+                check.setdefault('status_label', status_labels.get(check.get('status', ''), 'Unknown'))
             assessments.append({
                 'key': item.key,
                 'label': item.label,
                 'status': status,
+                'status_label': status_labels.get(status, status.replace('_', ' ').title()),
                 'required_by': list(item.required_by),
+                'required_by_display': ', '.join(item.required_by),
                 'impact': item.impact,
                 'source_owner': item.source_owner,
                 'recommendation': item.recommendation,
                 'expected_signals': list(item.expected_signals),
+                'expected_signals_display': ', '.join(item.expected_signals),
                 'validation_query': item.validation_query,
                 'evidence': evidence,
+                'observed': observed or evidence,
+                'expected': expected or 'The complete feature query contract returns usable data.',
+                'technical_checks': checks,
+                'technical_check_count_display': f'{len(checks)} technical checks',
+                'possible_causes': possible_causes or [],
             })
 
         add('instant_query', 'available', 'The configured endpoint accepted vector(1).')
@@ -321,51 +348,92 @@ class PromQLProfileAuditor:
             'Request and limit metrics are queryable.' if not missing_resource else f"Missing metrics: {', '.join(missing_resource)}",
         )
 
-        pvc = {'kubelet_volume_stats_capacity_bytes', 'kubelet_volume_stats_used_bytes', 'kubelet_volume_stats_available_bytes'}
-        missing_pvc = sorted(pvc - available_metrics)
+        pvc_metrics = (
+            'kubelet_volume_stats_capacity_bytes',
+            'kubelet_volume_stats_used_bytes',
+            'kubelet_volume_stats_available_bytes',
+        )
+        pvc_checks = [
+            self._technical_metric_check(metric, available_metrics, metric_labels, {'namespace', 'persistentvolumeclaim'})
+            for metric in pvc_metrics
+        ]
+        pvc_contract = self._query_contract(
+            'sum by (namespace, persistentvolumeclaim) (kubelet_volume_stats_used_bytes)',
+            required_labels={'namespace', 'persistentvolumeclaim'},
+        )
+        pvc_missing = [metric for metric in pvc_metrics if metric not in available_metrics]
+        if pvc_contract['passed']:
+            pvc_status = 'available'
+            pvc_evidence = f"Validation query returned {pvc_contract['series_count']} PVC series."
+        elif pvc_missing:
+            pvc_status = 'missing'
+            pvc_evidence = f"Validation query failed because metrics were not found: {', '.join(pvc_missing)}."
+        else:
+            pvc_status = 'not_observed'
+            pvc_evidence = 'PVC metrics are available, but the validation query returned no active PVC series.'
         add(
             'pvc_usage',
-            'available' if not missing_pvc else 'missing',
-            'PVC usage metrics are queryable.' if not missing_pvc else f"Missing metrics: {', '.join(missing_pvc)}",
+            pvc_status,
+            pvc_evidence,
+            observed=pvc_contract['observed'],
+            expected='At least one numeric series grouped by namespace and persistentvolumeclaim when PVCs are active.',
+            technical_checks=pvc_checks + [pvc_contract['technical_check']],
+            possible_causes=[
+                'No active PVC currently exposes kubelet volume statistics.',
+                'Kubelet volume metrics are filtered before reaching the configured query endpoint.',
+                'Namespace or persistentvolumeclaim labels were transformed by relabeling.',
+            ],
         )
 
-        filesystem_metrics = {'node_filesystem_size_bytes', 'node_filesystem_avail_bytes'}
-        filesystem_present = filesystem_metrics.issubset(available_metrics)
-        canonical_labels = {'node', 'nodename', 'kubernetes_node'}
-        labels_by_metric = {
-            metric: metric_labels.get(metric, set())
+        filesystem_metrics = ('node_filesystem_size_bytes', 'node_filesystem_avail_bytes')
+        filesystem_checks = [
+            self._technical_metric_check(metric, available_metrics, metric_labels, {'mountpoint', 'fstype'})
             for metric in filesystem_metrics
-        }
-        missing_identity_metrics = sorted(
-            metric
-            for metric, labels in labels_by_metric.items()
-            if not labels & canonical_labels
-        )
-        observed_labels = set().union(*labels_by_metric.values())
-        if not filesystem_present:
-            node_status = 'missing'
-            node_evidence = 'node_filesystem_size_bytes or node_filesystem_avail_bytes is missing.'
-        elif not missing_identity_metrics:
-            canonical_observed = sorted(observed_labels & canonical_labels)
+        ]
+        size_contract = self._filesystem_contract('node_filesystem_size_bytes')
+        available_contract = self._filesystem_contract('node_filesystem_avail_bytes')
+        filesystem_missing = [metric for metric in filesystem_metrics if metric not in available_metrics]
+        if size_contract['passed'] and available_contract['passed']:
             node_status = 'available'
+            common_nodes = sorted(size_contract['nodes'] & available_contract['nodes'])
             node_evidence = (
-                'Canonical identity labels are present on both filesystem metrics: '
-                f"{', '.join(canonical_observed)}."
+                f"Storage query contract passed. Capacity and available queries returned canonical node series"
+                f" for {len(common_nodes)} shared nodes."
             )
-        elif 'instance' in observed_labels:
+        elif filesystem_missing:
+            node_status = 'missing'
+            node_evidence = f"Storage query contract failed because metrics were not found: {', '.join(filesystem_missing)}."
+        else:
             node_status = 'misconfigured'
             node_evidence = (
-                'Canonical node identity is missing from '
-                f"{', '.join(missing_identity_metrics)}; only instance may be available. "
-                'IP:port values cannot be treated as Kubernetes node names.'
+                'Filesystem metrics are present, but one or more exact Storage Analytics validation queries '
+                'did not return usable canonical node series.'
             )
-        else:
-            node_status = 'not_observed'
-            node_evidence = (
-                'Filesystem metrics exist, but canonical node identity was not observed on '
-                f"{', '.join(missing_identity_metrics)}."
-            )
-        add('node_filesystem_identity', node_status, node_evidence)
+        observed_nodes = sorted(size_contract['nodes'] | available_contract['nodes'])
+        add(
+            'node_filesystem_identity',
+            node_status,
+            node_evidence,
+            observed=(
+                f"Capacity query: {size_contract['series_count']} series; available query: "
+                f"{available_contract['series_count']} series; canonical nodes observed: "
+                f"{', '.join(observed_nodes[:5]) or 'none'}."
+            ),
+            expected=(
+                'Both exact Storage Analytics queries return at least one numeric series with node, '
+                'nodename, or kubernetes_node identity. /var is preferred and / is accepted as fallback.'
+            ),
+            technical_checks=filesystem_checks + [
+                size_contract['technical_check'],
+                available_contract['technical_check'],
+            ],
+            possible_causes=[
+                'The /var and / mountpoint filters do not match the labels exposed by node-exporter.',
+                'A recording rule or metric relabel rule changes the labels used by the analytics query.',
+                'Thanos Query can see the raw metric but not the expected recent series or store block.',
+                'The validator query and the Storage Analytics query profile are out of sync.',
+            ],
+        )
 
         history_ready = bool(retention.get('60d', {}).get('available'))
         add(
@@ -375,6 +443,109 @@ class PromQLProfileAuditor:
         )
 
         return assessments
+
+    def _query_contract(
+        self,
+        expression: str,
+        *,
+        required_labels: set[str] | None = None,
+    ) -> dict[str, Any]:
+        required_labels = required_labels or set()
+        try:
+            response = self.client.query(expression)
+        except PrometheusError as exc:
+            return {
+                'passed': False,
+                'series_count': 0,
+                'observed': f'Validation query failed: {type(exc).__name__}.',
+                'technical_check': {
+                    'label': 'Validation query',
+                    'status': 'misconfigured',
+                    'evidence': f'Provider rejected the query: {type(exc).__name__}.',
+                },
+            }
+        rows = response.get('data', {}).get('result', []) if response.get('status') == 'success' else []
+        valid_rows = [
+            row for row in rows
+            if required_labels.issubset(set((row.get('metric') or {}).keys()))
+        ]
+        passed = bool(valid_rows)
+        return {
+            'passed': passed,
+            'series_count': len(valid_rows),
+            'observed': (
+                f'{len(valid_rows)} usable series returned from {len(rows)} total series.'
+                if rows else 'The validation query returned zero series.'
+            ),
+            'technical_check': {
+                'label': 'Validation query',
+                'status': 'available' if passed else 'misconfigured',
+                'evidence': f'{len(valid_rows)} usable series returned from {len(rows)} total series.',
+            },
+        }
+
+    def _filesystem_contract(self, metric: str) -> dict[str, Any]:
+        canonical_labels = ('node', 'nodename', 'kubernetes_node')
+        expressions = (
+            f'{metric}{{mountpoint="/var", fstype!~"tmpfs|overlay"}}',
+            f'{metric}{{mountpoint="/", fstype!~"tmpfs|overlay"}}',
+        )
+        selected_expression = expressions[0]
+        rows: list[dict[str, Any]] = []
+        for expression in expressions:
+            selected_expression = expression
+            try:
+                response = self.client.query(expression)
+            except PrometheusError:
+                continue
+            rows = response.get('data', {}).get('result', []) if response.get('status') == 'success' else []
+            if rows:
+                break
+        nodes: set[str] = set()
+        usable = 0
+        for row in rows:
+            labels = row.get('metric') or {}
+            identity = next((labels.get(label) for label in canonical_labels if labels.get(label)), None)
+            if identity:
+                nodes.add(str(identity))
+                usable += 1
+        passed = usable > 0
+        return {
+            'passed': passed,
+            'series_count': usable,
+            'nodes': nodes,
+            'technical_check': {
+                'label': f'{metric} analytics query',
+                'status': 'available' if passed else 'misconfigured',
+                'evidence': (
+                    f'{usable} usable series across {len(nodes)} canonical nodes using: {selected_expression}'
+                    if rows else f'Zero series returned using /var and / fallback queries for {metric}.'
+                ),
+            },
+        }
+
+    @staticmethod
+    def _technical_metric_check(
+        metric: str,
+        available_metrics: set[str],
+        metric_labels: dict[str, set[str]],
+        advisory_labels: set[str],
+    ) -> dict[str, str]:
+        if metric not in available_metrics:
+            return {
+                'label': metric,
+                'status': 'missing',
+                'evidence': 'Metric name was not found in the configured query endpoint.',
+            }
+        observed = sorted(metric_labels.get(metric, set()))
+        matched = sorted(advisory_labels & set(observed))
+        return {
+            'label': metric,
+            'status': 'available',
+            'evidence': (
+                f"Metric is available. Advisory labels observed: {', '.join(matched) or 'none in recent /series sample'}."
+            ),
+        }
 
     @staticmethod
     def _module_readiness(domain_summary: dict[str, dict[str, int]]) -> dict[str, dict[str, object]]:
