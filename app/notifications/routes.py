@@ -139,6 +139,66 @@ def activity_retention_panel() -> ResponseReturnValue:
     return _render_activity_retention_panel()
 
 
+@notifications_bp.get('/activity/retention/preview')
+@permission_required('settings.view_operational_activity')
+def preview_activity_retention() -> ResponseReturnValue:
+    try:
+        context = build_activity_retention_context(
+            include_preview=True,
+            archive_page=_retention_request_int('archive_page', 1),
+            archive_per_page=_retention_request_int('archive_per_page', 5),
+            archive_status=request.values.get('archive_status', 'all'),
+            archive_trigger=request.values.get('archive_trigger', 'all'),
+            archive_mode=request.values.get('archive_mode', 'all'),
+            archive_storage=request.values.get('archive_storage', 'all'),
+            archive_search=request.values.get('archive_search', ''),
+        )
+        preview = context.get('preview') or {}
+        record_count = int(preview.get('record_count') or 0)
+        protected_count = int(preview.get('protected_record_count') or 0)
+        estimated_size = str(preview.get('estimated_size_label') or '0 B')
+        record_label = 'record' if record_count == 1 else 'records'
+        protected_label = 'record' if protected_count == 1 else 'records'
+        message = (
+            f'{record_count} {record_label} currently match the archive boundary '
+            f'with an estimated uncompressed payload of {estimated_size}.'
+        )
+        detail = (
+            f'{protected_count} protected {protected_label} remain excluded. '
+            'This preview is read-only; no archive was created and no PostgreSQL row was removed.'
+        )
+        return render_template(
+            'components/navigation/_quick_sync_result.html',
+            toast_oob=True,
+            status='info',
+            title='Retention preview ready',
+            message=message,
+            detail=detail,
+            completed_label='Preview generated just now',
+            notification_saved=False,
+            view_url=url_for('notifications.activity_log') + '#activity-retention',
+            action_label='Retention & Archive',
+            action_icon='archive',
+        )
+    except Exception as exc:
+        current_app.logger.exception(
+            'Could not generate operational activity retention preview.'
+        )
+        return render_template(
+            'components/navigation/_quick_sync_result.html',
+            toast_oob=True,
+            status='error',
+            title='Retention preview failed',
+            message=f'The read-only preview could not be generated because of {type(exc).__name__}.',
+            detail='No archive was created and no PostgreSQL row was removed.',
+            completed_label='Preview failed just now',
+            notification_saved=False,
+            view_url=url_for('notifications.activity_log') + '#activity-retention',
+            action_label='Review retention',
+            action_icon='archive',
+        )
+
+
 @notifications_bp.post('/activity/retention/run')
 @permission_required('settings.manage_operational_activity_retention')
 def run_activity_retention() -> ResponseReturnValue:

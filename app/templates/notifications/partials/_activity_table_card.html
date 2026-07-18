@@ -22,13 +22,13 @@
               hx-push-url="true"
               hx-trigger="change from:select, keyup changed delay:500ms from:input[name='search']"
               hx-indicator="#operational-activity-loading"
-              class="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.75fr)_minmax(0,1fr)_minmax(0,0.75fr)_minmax(16rem,1.35fr)] xl:items-end">
+              class="grid gap-3 lg:grid-cols-[minmax(10rem,1.1fr)_minmax(8rem,0.72fr)_minmax(10rem,1fr)_minmax(8rem,0.72fr)_minmax(15rem,1.35fr)] lg:items-end">
             <input type="hidden" name="page" value="1">
             <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
             <div>
-                <label class="mb-2 block text-sm font-medium text-content-secondary dark:text-slate-300">User</label>
+                <label class="mb-1.5 block text-xs font-semibold text-content-secondary dark:text-slate-300">User</label>
                 <select name="user_id"
-                        class="w-full rounded-xl border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary transition outline-none focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 dark:border-outline-default dark:bg-surface-card dark:text-content-primary dark:focus:border-kaori-primary dark:focus:ring-kaori-primary/10">
+                        class="h-10 w-full rounded-xl border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary transition outline-none focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 dark:border-outline-default dark:bg-surface-card dark:text-content-primary dark:focus:border-kaori-primary dark:focus:ring-kaori-primary/10">
                     <option value="">All Users</option>
                     {% for option in user_options %}
                         <option value="{{ option.id }}"
@@ -37,9 +37,9 @@
                 </select>
             </div>
             <div>
-                <label class="mb-2 block text-sm font-medium text-content-secondary dark:text-slate-300">Status</label>
+                <label class="mb-1.5 block text-xs font-semibold text-content-secondary dark:text-slate-300">Status</label>
                 <select name="status"
-                        class="w-full rounded-xl border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary transition outline-none focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 dark:border-outline-default dark:bg-surface-card dark:text-content-primary dark:focus:border-kaori-primary dark:focus:ring-kaori-primary/10">
+                        class="h-10 w-full rounded-xl border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary transition outline-none focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 dark:border-outline-default dark:bg-surface-card dark:text-content-primary dark:focus:border-kaori-primary dark:focus:ring-kaori-primary/10">
                     {% for value, label in [('all', 'All Status'), ('success', 'Success'), ('warning', 'Warning'), ('error', 'Error'), ('info', 'Information')] %}
                         <option value="{{ value }}"
                                 {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
@@ -47,9 +47,9 @@
                 </select>
             </div>
             <div>
-                <label class="mb-2 block text-sm font-medium text-content-secondary dark:text-slate-300">Activity Type</label>
+                <label class="mb-1.5 block text-xs font-semibold text-content-secondary dark:text-slate-300">Activity Type</label>
                 <select name="event_type"
-                        class="w-full rounded-xl border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary transition outline-none focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 dark:border-outline-default dark:bg-surface-card dark:text-content-primary dark:focus:border-kaori-primary dark:focus:ring-kaori-primary/10">
+                        class="h-10 w-full rounded-xl border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary transition outline-none focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 dark:border-outline-default dark:bg-surface-card dark:text-content-primary dark:focus:border-kaori-primary dark:focus:ring-kaori-primary/10">
                     <option value="all">All Activity Types</option>
                     {% for option in event_types %}
                         <option value="{{ option.value }}"
@@ -58,9 +58,9 @@
                 </select>
             </div>
             <div>
-                <label class="mb-2 block text-sm font-medium text-content-secondary dark:text-slate-300">Read State</label>
+                <label class="mb-1.5 block text-xs font-semibold text-content-secondary dark:text-slate-300">Read State</label>
                 <select name="read_state"
-                        class="w-full rounded-xl border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary transition outline-none focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 dark:border-outline-default dark:bg-surface-card dark:text-content-primary dark:focus:border-kaori-primary dark:focus:ring-kaori-primary/10">
+                        class="h-10 w-full rounded-xl border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary transition outline-none focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 dark:border-outline-default dark:bg-surface-card dark:text-content-primary dark:focus:border-kaori-primary dark:focus:ring-kaori-primary/10">
                     {% for value, label in [('all', 'All States'), ('unread', 'Unread'), ('read', 'Read')] %}
                         <option value="{{ value }}"
                                 {% if filters.read_state == value %}selected{% endif %}>{{ label }}</option>
@@ -68,7 +68,7 @@
                 </select>
             </div>
             <div>
-                <label class="mb-2 block text-sm font-medium text-content-secondary dark:text-slate-300">Search Activity</label>
+                <label class="mb-1.5 block text-xs font-semibold text-content-secondary dark:text-slate-300">Search Activity</label>
                 <div class="relative">
                     <i data-lucide="search"
                        class="absolute left-3 top-3 h-4 w-4 text-content-muted dark:text-content-muted"></i>
@@ -76,7 +76,7 @@
                            name="search"
                            value="{{ filters.search }}"
                            placeholder="Search user, message, detail, or type..."
-                           class="w-full rounded-xl border border-outline-default bg-surface-card py-2 pr-3 pl-10 text-sm text-content-primary transition outline-none placeholder:text-content-muted focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 dark:border-outline-default dark:bg-surface-card dark:text-content-primary dark:placeholder:text-content-muted dark:focus:border-kaori-primary dark:focus:ring-kaori-primary/10">
+                           class="h-10 w-full rounded-xl border border-outline-default bg-surface-card py-2 pr-3 pl-10 text-sm text-content-primary transition outline-none placeholder:text-content-muted focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 dark:border-outline-default dark:bg-surface-card dark:text-content-primary dark:placeholder:text-content-muted dark:focus:border-kaori-primary dark:focus:ring-kaori-primary/10">
                 </div>
             </div>
         </form>
