@@ -151,3 +151,9 @@ Each observation may expose:
 The history UI must not calculate provider health or capability support. It only
 presents immutable runtime evidence already produced by the adapter and shared
 runtime framework.
+
+## Shared runtime overview
+
+The Integrations Overview includes a shared runtime table for every provider that implements the Integration Runtime contract. The table uses the latest immutable observation for health and score, while provider configuration remains authoritative for readiness and capability remediation. Prometheus/Thanos and Alertmanager are the first providers included.
+
+The overview is intentionally diagnostic rather than a second configuration surface. It supports provider, health, and readiness filters; defaults to 5 rows with 5/10/25/50 choices; and links to the provider detail page where configuration and remediation are performed.

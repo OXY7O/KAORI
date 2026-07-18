@@ -207,3 +207,9 @@ selection. Resolver and consumer decisions continue to use canonical current
 runtime state. HTMX refresh of the runtime panel also refreshes the first history
 page out-of-band so the newly persisted observation becomes visible without a
 full page reload.
+
+## Shared integrations overview
+
+The global Integrations Overview may aggregate the latest persisted runtime observation across providers. It must not duplicate provider configuration forms or implement provider-specific validation. Its responsibilities are limited to health/readiness posture, capability-attention counts, observation freshness, filtering, and navigation to the owning provider page.
+
+A target without an observation is shown as `Not Observed`; it must not be inferred as healthy merely because configuration exists. Provider detail pages remain the authoritative location for remediation instructions and evidence.

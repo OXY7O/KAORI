@@ -9,7 +9,16 @@ integrations_bp = Blueprint('integrations', __name__, url_prefix='/integrations'
 @integrations_bp.get('/')
 @permission_required('settings.manage_integrations')
 def overview() -> ResponseReturnValue:
-    return render_template('integrations/overview.html', **build_integrations_overview())
+    context = build_integrations_overview(
+        provider=request.args.get('provider', '').strip(),
+        health=request.args.get('health', '').strip(),
+        readiness=request.args.get('readiness', '').strip(),
+        page=request.args.get('page', 1, type=int) or 1,
+        per_page=request.args.get('per_page', 5, type=int) or 5,
+    )
+    if request.headers.get('HX-Request') == 'true':
+        return render_template('integrations/partials/_runtime_overview.html', **context)
+    return render_template('integrations/overview.html', **context)
 
 
 @integrations_bp.get('/prometheus')

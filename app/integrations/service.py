@@ -6,6 +6,7 @@ from urllib.parse import urlsplit
 from app.cluster.constants import get_environment_label
 from app.integrations.compatibility import get_profile
 from app.models import AlertmanagerConfig, AlertmanagerInstance, Cluster, PrometheusConfig
+from app.models.integration_runtime import IntegrationRuntimeObservation
 
 
 def safe_endpoint(value: str | None) -> str:
@@ -29,7 +30,14 @@ def build_rows() -> list[dict[str, Any]]:
     return rows
 
 
-def build_integrations_overview() -> dict[str, Any]:
+def build_integrations_overview(
+    *,
+    provider: str = "",
+    health: str = "",
+    readiness: str = "",
+    page: int = 1,
+    per_page: int = 5,
+) -> dict[str, Any]:
     rows = build_rows()
     prometheus_rows = [row for row in rows if row['key'] == 'prometheus']
     alertmanager_instances = AlertmanagerInstance.query.all()
@@ -50,11 +58,38 @@ def build_integrations_overview() -> dict[str, Any]:
         'attention': max(configured - ready, 0),
         'blocked': blocked,
     }
+    runtime_rows = _runtime_overview_rows()
+    filtered_runtime_rows = runtime_rows
+    if provider:
+        filtered_runtime_rows = [row for row in filtered_runtime_rows if row['provider'] == provider]
+    if health:
+        filtered_runtime_rows = [row for row in filtered_runtime_rows if row['health_status'] == health]
+    if readiness:
+        filtered_runtime_rows = [row for row in filtered_runtime_rows if row['readiness'] == readiness]
+    page_rows, runtime_pagination = _paginate(filtered_runtime_rows, page=page, per_page=per_page)
+    runtime_stats = {
+        'total': len(runtime_rows),
+        'healthy': sum(1 for row in runtime_rows if row['health_status'] == 'healthy'),
+        'degraded': sum(1 for row in runtime_rows if row['health_status'] == 'degraded'),
+        'unhealthy': sum(1 for row in runtime_rows if row['health_status'] == 'unhealthy'),
+        'not_observed': sum(1 for row in runtime_rows if row['health_status'] == 'not_observed'),
+        'capability_attention': sum(1 for row in runtime_rows if row['capability_attention'] > 0),
+    }
     return {
         'rows': rows,
         'stats': stats,
         'catalog': _catalog(rows),
         'coverage': _coverage(rows),
+        'runtime_rows': page_rows,
+        'runtime_stats': runtime_stats,
+        'runtime_pagination': runtime_pagination,
+        'selected_provider': provider,
+        'selected_health': health,
+        'selected_readiness': readiness,
+        'provider_options': [
+            {'value': 'prometheus', 'label': 'Prometheus / Thanos'},
+            {'value': 'alertmanager', 'label': 'Alertmanager'},
+        ],
     }
 
 
@@ -269,3 +304,62 @@ def _paginate(
         'next_page': page + 1,
         'allowed_per_page': allowed_per_page,
     }
+
+
+def _runtime_overview_rows() -> list[dict[str, Any]]:
+    latest: dict[tuple[str, str], IntegrationRuntimeObservation] = {}
+    observations = IntegrationRuntimeObservation.query.order_by(
+        IntegrationRuntimeObservation.observed_at.desc(),
+        IntegrationRuntimeObservation.id.desc(),
+    ).all()
+    for observation in observations:
+        latest.setdefault((observation.provider, observation.instance_id), observation)
+
+    rows: list[dict[str, Any]] = []
+    for config in PrometheusConfig.query.join(Cluster).order_by(Cluster.name.asc()).all():
+        observation = latest.get(('prometheus', str(config.id)))
+        assessments = ((config.capabilities or {}).get('assessments') or [])
+        attention = sum(1 for item in assessments if item.get('status') != 'available')
+        rows.append({
+            'provider': 'prometheus',
+            'provider_label': 'Prometheus / Thanos',
+            'instance_id': str(config.id),
+            'instance_name': f'{config.cluster.name} metrics',
+            'scope_label': config.cluster.name,
+            'endpoint_product': (config.endpoint_product or 'prometheus').replace('_', ' ').title(),
+            'health_status': observation.health_status if observation else 'not_observed',
+            'health_score': observation.health_score if observation else None,
+            'readiness': config.readiness_status or 'validation_required',
+            'observed_at': observation.observed_at if observation else config.last_checked_at,
+            'latency_ms': observation.latency_ms if observation else config.last_response_time_ms,
+            'capability_profile': config.capability_profile or config.query_profile,
+            'capability_attention': attention,
+            'message': (observation.message if observation else None) or config.validation_message or config.last_error,
+            'detail_endpoint': 'prometheus.configuration',
+            'detail_kwargs': {'cluster_id': config.cluster_id},
+        })
+
+    for instance in AlertmanagerInstance.query.order_by(AlertmanagerInstance.name.asc()).all():
+        observation = latest.get(('alertmanager', str(instance.id)))
+        rows.append({
+            'provider': 'alertmanager',
+            'provider_label': 'Alertmanager',
+            'instance_id': str(instance.id),
+            'instance_name': instance.name,
+            'scope_label': f'{len(instance.bindings)} asset binding(s)',
+            'endpoint_product': 'Alertmanager',
+            'health_status': observation.health_status if observation else 'not_observed',
+            'health_score': observation.health_score if observation else None,
+            'readiness': instance.readiness_status or 'validation_required',
+            'observed_at': observation.observed_at if observation else instance.last_checked_at,
+            'latency_ms': observation.latency_ms if observation else instance.last_response_time_ms,
+            'capability_profile': instance.capability_profile,
+            'capability_attention': 0 if instance.capabilities else 1,
+            'message': (observation.message if observation else None) or instance.validation_message or instance.last_error,
+            'detail_endpoint': 'alertmanager.instance_detail',
+            'detail_kwargs': {'instance_id': instance.id},
+        })
+
+    health_order = {'unhealthy': 0, 'degraded': 1, 'not_observed': 2, 'healthy': 3}
+    rows.sort(key=lambda row: (health_order.get(row['health_status'], 2), row['provider_label'], row['instance_name'].lower()))
+    return rows
