@@ -50,7 +50,7 @@
         {% endif %}
     {% endfor %}
     <div class="space-y-6" x-data="{ search: '', selected: [], expanded: {}, sync() { this.selected = Array.from(document.querySelectorAll('[data-role-permission]:checked')).map((item) => ({ id: item.value, label: item.dataset.label, module: item.dataset.module })); }, toggleModule(moduleName) { const items = Array.from(document.querySelectorAll(`[data-role-permission][data-module='${moduleName}']`)).filter((item) => !item.disabled); const shouldSelect = items.some((item) => !item.checked); items.forEach((item) => { item.checked = shouldSelect; }); this.sync(); }, moduleSelected(moduleName) { const items = Array.from(document.querySelectorAll(`[data-role-permission][data-module='${moduleName}']`)); return items.length > 0 && items.every((item) => item.checked); }, toggleExpanded(moduleName) { this.expanded[moduleName] = !this.expanded[moduleName]; }, isExpanded(moduleName) { return this.search.trim() !== '' || this.expanded[moduleName] !== false; } }" x-init="
-        {% for module_name in permissions_by_module.keys() %}expanded[{{ module_name|tojson }}] = true;{% endfor %}
+        {% for module_name in permissions_by_module.keys() %}expanded[{{ module_name|tojson|forceescape }}] = true;{% endfor %}
         sync()">
         <section class="relative overflow-hidden rounded-2xl border border-brand-outline bg-kaori-primary p-5 text-brand-foreground shadow-sm lg:p-6">
             <div class="relative grid gap-5 xl:grid-cols-12 xl:items-stretch">
@@ -288,10 +288,10 @@
                 <div class="space-y-4 bg-surface-subtle p-5">
                     {% for module_name, module_permissions in permissions_by_module.items() %}
                         <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card"
-                                 x-show="search.trim() === '' || {{ ((module_name ~ ' ' ~ (module_permissions|map(attribute='key') |join(' ')))|lower)|tojson }}.includes(search.toLowerCase())">
+                                 x-show="search.trim() === '' || {{ ((module_name ~ ' ' ~ (module_permissions|map(attribute='key') |join(' ')))|lower)|tojson|forceescape }}.includes(search.toLowerCase())">
                             <div class="flex items-center justify-between gap-3 px-4 py-3">
                                 <button type="button"
-                                        @click="toggleExpanded({{ module_name|tojson }})"
+                                        @click="toggleExpanded({{ module_name|tojson|forceescape }})"
                                         class="flex min-w-0 flex-1 items-center gap-3 text-left">
                                     <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ module_icon(module_name) |trim }}" class="h-4 w-4"></i></span>
                                     <span class="min-w-0">
@@ -302,27 +302,27 @@
                                 <div class="flex items-center gap-2">
                                     {% if not read_only %}
                                         <button type="button"
-                                                @click="toggleModule({{ module_name|tojson }})"
+                                                @click="toggleModule({{ module_name|tojson|forceescape }})"
                                                 class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary">
                                             <i data-lucide="list-checks" class="h-3.5 w-3.5"></i>
-                                            <span x-text="moduleSelected({{ module_name|tojson }}) ? 'Clear module' : 'Select module'"></span>
+                                            <span x-text="moduleSelected({{ module_name|tojson|forceescape }}) ? 'Clear module' : 'Select module'"></span>
                                         </button>
                                     {% endif %}
                                     <button type="button"
-                                            @click="toggleExpanded({{ module_name|tojson }})"
+                                            @click="toggleExpanded({{ module_name|tojson|forceescape }})"
                                             class="flex h-9 w-9 items-center justify-center rounded-lg border border-outline-default text-content-muted">
                                         <i data-lucide="chevron-down"
                                            class="h-4 w-4 transition-transform"
-                                           :class="isExpanded({{ module_name|tojson }}) ? 'rotate-180' : ''"></i>
+                                           :class="isExpanded({{ module_name|tojson|forceescape }}) ? 'rotate-180' : ''"></i>
                                     </button>
                                 </div>
                             </div>
-                            <div x-show="isExpanded({{ module_name|tojson }})"
+                            <div x-show="isExpanded({{ module_name|tojson|forceescape }})"
                                  x-collapse
                                  class="grid gap-2 border-t border-outline-default bg-surface-subtle p-4 sm:grid-cols-2 xl:grid-cols-3">
                                 {% for permission in module_permissions %}
                                     <label class="group flex min-h-20 items-start gap-3 rounded-xl border border-outline-default bg-surface-card p-3 transition {{ 'cursor-default' if read_only else 'cursor-pointer hover:border-brand-outline hover:bg-kaori-soft' }}"
-                                           x-show="search.trim() === '' || {{ ((permission.key ~ ' ' ~ (permission.description or '') ~ ' ' ~ permission.action)|lower)|tojson }}.includes(search.toLowerCase())">
+                                           x-show="search.trim() === '' || {{ ((permission.key ~ ' ' ~ (permission.description or '') ~ ' ' ~ permission.action)|lower)|tojson|forceescape }}.includes(search.toLowerCase())">
                                         <input type="checkbox"
                                                name="permission_ids"
                                                value="{{ permission.id }}"
