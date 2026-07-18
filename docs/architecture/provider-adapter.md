@@ -92,3 +92,7 @@ Every adapter should test:
 - health-factor construction;
 - secret-free diagnostic output; and
 - state reconstruction from persisted observations without a live request.
+
+## Metrics intermediary rule
+
+A provider adapter must identify the runtime endpoint actually contacted by KAORI. For a Thanos Query URL, endpoint identity and version belong to Thanos. Backend Prometheus versions may be unknown. The adapter selects compatibility expectations from endpoint and administrator source-profile context, but feature readiness is determined only by probes against the exact configured endpoint.

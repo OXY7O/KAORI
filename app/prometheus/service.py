@@ -76,6 +76,10 @@ class PrometheusService:
         config.query_validation_summary = None
         config.retention_validation_summary = None
         config.last_validated_at = datetime.now(UTC)
+        config.last_checked_at = config.last_validated_at
+        config.last_response_time_ms = round((time.perf_counter() - started) * 1000)
+        config.last_status = 'connected'
+        config.last_error = None
 
         if resolution.endpoint_compatibility.readiness == 'blocked':
             config.readiness_status = 'blocked'
@@ -126,8 +130,18 @@ class PrometheusService:
             else None
         )
         config.retention_validation_summary = query_audit['retention'] if query_audit else None
+        config.capability_profile = query_audit.get('profile') if query_audit else None
+        config.capabilities = {
+            'available': query_audit.get('available_capabilities', []),
+            'assessments': query_audit.get('capability_assessments', []),
+        } if query_audit else None
+        config.module_readiness = query_audit.get('module_readiness') if query_audit else None
         config.validation_message = self._validation_message(resolution, query_status)
         config.last_validated_at = datetime.now(UTC)
+        config.last_checked_at = config.last_validated_at
+        config.last_response_time_ms = round((time.perf_counter() - started) * 1000)
+        config.last_status = 'connected' if readiness != 'blocked' else 'incompatible'
+        config.last_error = None
         db.session.commit()
 
         return self._result_payload(
@@ -240,6 +254,9 @@ class PrometheusService:
             'retention_validation_summary': config.retention_validation_summary,
             'compatibility_profile': config.compatibility_profile,
             'source_prometheus_major': config.source_prometheus_major,
+            'capability_profile': config.capability_profile,
+            'capabilities': config.capabilities,
+            'module_readiness': config.module_readiness,
             'message': config.validation_message,
             'response_time': round(response_time, 3),
         }
@@ -322,6 +339,13 @@ class PrometheusService:
         config.query_validation_status = 'validation_required'
         config.query_validation_summary = None
         config.retention_validation_summary = None
+        config.capability_profile = None
+        config.capabilities = None
+        config.module_readiness = None
+        config.last_status = None
+        config.last_error = None
+        config.last_response_time_ms = None
+        config.last_checked_at = None
         config.validation_message = (
             'Configuration changed. Test the endpoint, then run full validation before '
             'KAORI uses it for Kubernetes Analytics.'

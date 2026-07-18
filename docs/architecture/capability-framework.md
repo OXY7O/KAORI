@@ -90,3 +90,9 @@ Feature readiness
 ## Registry rule
 
 Capability keys must be canonical, stable, documented, and provider-domain owned. UI labels may change; capability keys must not change casually because resolvers and consumers depend on them.
+
+## Complete contract validation and remediation
+
+A capability is ready only when its complete consumer contract passes. For metrics integrations this includes the query API, metric name, required label schema, identity correlation, and required history. A fallback query based on `instance="IP:port"` must be reported as degraded or misconfigured when the canonical consumer contract requires a Kubernetes node identity.
+
+Every capability status other than `available` must provide impact, observed evidence, source owner, recommended source-side change, expected signal, and—when useful—a validation query. Version is advisory; observed capability is authoritative, including when KAORI connects through Thanos Query and cannot observe the backend Prometheus version.

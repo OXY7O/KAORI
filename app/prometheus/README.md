@@ -54,3 +54,20 @@ Full validation is intentionally broader than a connectivity check, but it must 
 ### Readiness evidence presentation
 
 Full Validation stores a compact `blocked_details` list in `query_validation_summary` for user-facing readiness diagnostics. Each entry records the blocked query key, analytics domain, validation message, and missing metric or label evidence. The Prometheus Configuration page displays this evidence separately from the domain-level summary so operators can identify the exact contract that requires remediation without exposing the full internal audit payload.
+
+## Capability-first runtime validation
+
+KAORI treats the endpoint visible at the configured URL as the runtime endpoint. When the URL points to Thanos Query, `detected_version` is the Thanos version and the Prometheus backend version may remain unobservable. Version and compatibility profiles are advisory; observed query, metric, label, and retention capabilities are authoritative.
+
+Full validation must prove the complete query contract used by Analytics. A metric being present is insufficient when required labels are absent or cannot be correlated with Kubernetes objects. In particular, filesystem metrics that expose only `instance="IP:port"` are recorded as `Storage Node Identity Mapping: Misconfigured`; Storage Analytics must not silently claim full readiness. Operators must provide a canonical `node`, `nodename`, or `kubernetes_node` label through scrape relabeling or recording rules.
+
+Each unavailable capability exposes:
+
+- status and observed evidence;
+- affected KAORI modules;
+- operational impact;
+- expected metrics, labels, API, or payload fields;
+- source owner;
+- concrete remediation and an optional validation query.
+
+Prometheus is the second provider using the shared Integration Runtime Framework. Manual Full Validation and scheduled monitoring use the same runtime adapter, health scoring, immutable observations, and history model.

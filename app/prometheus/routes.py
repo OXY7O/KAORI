@@ -9,6 +9,10 @@ from flask_login import current_user
 from app.cluster.service import get_cluster_by_id
 from app.common.integration_errors import describe_integration_failure
 from app.models import Cluster
+from app.integrations.runtime.monitoring import refresh_and_record
+from app.integrations.runtime.presentation import runtime_history_view, runtime_state_view
+from app.integrations.runtime.repository import paginate_runtime_history
+from app.prometheus.runtime_adapter import runtime_adapter
 from app.notifications.service import (
     get_navigation_notification_context,
     record_operational_activity,
@@ -170,11 +174,18 @@ def configuration(
         form.timeout.data = config.timeout
         form.verify_ssl.data = config.verify_ssl
 
+    runtime_state = runtime_state_view(runtime_adapter.get_state(config)) if config else None
+    history_rows, history_pagination = (
+        paginate_runtime_history('prometheus', str(config.id), page=1, per_page=5)
+        if config else ([], {'page': 1, 'per_page': 5, 'total_items': 0, 'total_pages': 1, 'start_item': 0, 'end_item': 0, 'has_prev': False, 'has_next': False, 'prev_page': 0, 'next_page': 2, 'allowed_per_page': (5,10,25,50)})
+    )
     return render_template(
         'prometheus/config.html',
         cluster=cluster,
         config=config,
         form=form,
+        runtime_state=runtime_state,
+        runtime_history=runtime_history_view(history_rows, pagination=history_pagination),
     )
 
 
@@ -224,6 +235,7 @@ def test_connection(
                 'prometheus/partials/_validation_response.html',
                 **feedback,
                 config=cluster.prometheus_config,
+                runtime_state=runtime_state_view(runtime_state_obj) if 'runtime_state_obj' in locals() else None,
                 notification_context=get_navigation_notification_context(
                     user_id=current_user.id,
                 ),
@@ -272,6 +284,7 @@ def test_connection(
                 'prometheus/partials/_validation_response.html',
                 **feedback,
                 config=cluster.prometheus_config,
+                runtime_state=runtime_state_view(runtime_state_obj) if 'runtime_state_obj' in locals() else None,
                 notification_context=get_navigation_notification_context(
                     user_id=current_user.id,
                 ),
@@ -312,6 +325,7 @@ def test_connection(
                 'prometheus/partials/_validation_response.html',
                 **feedback,
                 config=cluster.prometheus_config,
+                runtime_state=runtime_state_view(runtime_state_obj) if 'runtime_state_obj' in locals() else None,
                 notification_context=get_navigation_notification_context(
                     user_id=current_user.id,
                 ),
@@ -332,7 +346,7 @@ def validate_integration(
     cluster = _get_cluster_or_404(cluster_id)
 
     try:
-        result = PrometheusService(cluster).validate_integration()
+        result, runtime_state_obj, _observation = refresh_and_record(runtime_adapter, cluster.prometheus_config, trigger_type='manual')
         response_time = result.get('response_time', 0)
         feedback = record_operational_activity(
             user_id=current_user.id,
@@ -366,6 +380,7 @@ def validate_integration(
                 'prometheus/partials/_validation_response.html',
                 **feedback,
                 config=cluster.prometheus_config,
+                runtime_state=runtime_state_view(runtime_state_obj) if 'runtime_state_obj' in locals() else None,
                 notification_context=get_navigation_notification_context(
                     user_id=current_user.id,
                 ),
@@ -418,9 +433,27 @@ def validate_integration(
                 'prometheus/partials/_validation_response.html',
                 **feedback,
                 config=cluster.prometheus_config,
+                runtime_state=runtime_state_view(runtime_state_obj) if 'runtime_state_obj' in locals() else None,
                 notification_context=get_navigation_notification_context(
                     user_id=current_user.id,
                 ),
             )
 
         return jsonify({'success': False, 'error': failure['detail']}), 400
+
+
+@prometheus_bp.get('/cluster/<string:cluster_id>/runtime/history')
+@permission_required('settings.manage_integrations')
+def runtime_history(cluster_id: str) -> ResponseReturnValue:
+    cluster = _get_cluster_or_404(cluster_id)
+    config = cluster.prometheus_config
+    if config is None:
+        abort(404)
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 5, type=int)
+    rows, pagination = paginate_runtime_history('prometheus', str(config.id), page=page, per_page=per_page)
+    return render_template(
+        'prometheus/partials/_runtime_history.html',
+        cluster=cluster, config=config,
+        runtime_history=runtime_history_view(rows, pagination=pagination),
+    )

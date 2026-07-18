@@ -150,6 +150,11 @@
             </div>
         </section>
 
+        {% if config and runtime_state %}
+            {% include 'prometheus/partials/_runtime_panel.html' %}
+            {% include 'prometheus/partials/_runtime_history.html' %}
+        {% endif %}
+
         <div class="prometheus-workspace {% if config and config.endpoint %}prometheus-workspace--split{% endif %}">
             <!-- Connection Settings: primary panel on the left -->
             <form method="POST"

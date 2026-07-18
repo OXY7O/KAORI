@@ -80,6 +80,13 @@ class PrometheusConfig(db.Model):
     query_validation_status: Mapped[str | None] = mapped_column(String(40), nullable=True)
     query_validation_summary: Mapped[dict | None] = mapped_column(db.JSON, nullable=True)
     retention_validation_summary: Mapped[dict | None] = mapped_column(db.JSON, nullable=True)
+    capability_profile: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    capabilities: Mapped[dict | None] = mapped_column(db.JSON, nullable=True)
+    module_readiness: Mapped[dict | None] = mapped_column(db.JSON, nullable=True)
+    last_status: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    last_response_time_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    last_checked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

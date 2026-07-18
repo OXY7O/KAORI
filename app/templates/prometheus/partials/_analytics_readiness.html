@@ -152,6 +152,29 @@
         </div>
 
         <!-- Blocked evidence, intentionally collapsed to keep the right panel concise -->
+        {% set capability_assessments = summary.get('capability_assessments', []) if summary else [] %}
+        {% set capability_attention = capability_assessments|selectattr('status', 'ne', 'available')|list %}
+        {% if capability_attention %}
+            <details class="mt-4 overflow-hidden rounded-2xl border border-violet-200 bg-violet-50/50 dark:border-violet-500/25 dark:bg-violet-500/10">
+                <summary class="cursor-pointer px-4 py-3 text-sm font-bold text-slate-950 dark:text-white">Capability remediation · {{ capability_attention|length }} require attention</summary>
+                <div class="space-y-3 border-t border-violet-200 p-4 dark:border-violet-500/25">
+                    {% for item in capability_attention %}
+                        <div class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-950/70">
+                            <div class="flex flex-wrap items-start justify-between gap-3">
+                                <div><p class="text-sm font-bold text-slate-950 dark:text-white">{{ item.label }}</p><p class="mt-1 text-xs font-semibold text-amber-700 dark:text-amber-300">{{ item.status|replace('_',' ')|title }}</p></div>
+                                <span class="rounded-md border border-violet-200 bg-violet-50 px-2 py-1 text-[10px] font-bold text-violet-700 dark:border-violet-500/30 dark:bg-violet-500/10 dark:text-violet-300">{{ item.source_owner }}</span>
+                            </div>
+                            <p class="mt-3 text-xs leading-5 text-slate-600 dark:text-slate-300"><strong>Evidence:</strong> {{ item.evidence }}</p>
+                            <p class="mt-2 text-xs leading-5 text-slate-600 dark:text-slate-300"><strong>Impact:</strong> {{ item.impact }}</p>
+                            <p class="mt-2 text-xs leading-5 text-slate-600 dark:text-slate-300"><strong>Recommended action:</strong> {{ item.recommendation }}</p>
+                            {% if item.expected_signals %}<p class="mt-2 break-all text-xs leading-5 text-slate-500 dark:text-slate-400"><strong>Expected:</strong> {{ item.expected_signals|join(', ') }}</p>{% endif %}
+                            {% if item.validation_query %}<code class="mt-2 block overflow-x-auto rounded-lg bg-slate-950 px-3 py-2 text-[11px] text-slate-100">{{ item.validation_query }}</code>{% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </details>
+        {% endif %}
+
         {% if blocked_details %}
             <details class="group mt-4 overflow-hidden rounded-2xl border border-amber-200 bg-white dark:border-amber-500/25 dark:bg-slate-950">
                 <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3.5">
