@@ -3539,19 +3539,9 @@ def build_resource_links(
     alertmanager_configured = False
 
     if cluster is not None:
-        alertmanager_config = getattr(
-            cluster,
-            'alertmanager_config',
-            None,
-        )
-
-        if alertmanager_config is not None and getattr(
-            alertmanager_config,
-            'endpoint',
-            None,
-        ):
-            alertmanager_url = alertmanager_config.endpoint
-            alertmanager_configured = True
+        alertmanager_status = get_alertmanager_status(cluster_id=cluster.id)
+        alertmanager_url = alertmanager_status.get('endpoint')
+        alertmanager_configured = bool(alertmanager_status.get('configured') and alertmanager_url)
 
     return {
         'alertmanager': {

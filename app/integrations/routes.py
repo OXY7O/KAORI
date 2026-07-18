@@ -30,5 +30,14 @@ def prometheus() -> ResponseReturnValue:
 @integrations_bp.get('/alertmanager')
 @permission_required('settings.manage_integrations')
 def alertmanager() -> ResponseReturnValue:
-    return render_template('integrations/alertmanager.html', **build_alertmanager_page())
+    context = build_alertmanager_page(
+        query=request.args.get('q', '').strip(),
+        readiness=request.args.get('readiness', '').strip(),
+        deployment_type=request.args.get('deployment_type', '').strip(),
+        page=request.args.get('page', 1, type=int) or 1,
+        per_page=request.args.get('per_page', 5, type=int) or 5,
+    )
+    if request.headers.get('HX-Request') == 'true':
+        return render_template('integrations/alertmanager/partials/_inventory_card.html', **context)
+    return render_template('integrations/alertmanager.html', **context)
 

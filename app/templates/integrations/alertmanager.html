@@ -1,8 +1,83 @@
 {% extends "layouts/app.html" %}
-{% block title %}Alertmanager Integrations · KAORI{% endblock %}
+{% import "components/page_hero.html" as page_hero %}
+{% block title %}Alertmanager Integrations · KAORI{% endblock title %}
 {% block dashboard_content %}
-<div class="space-y-6">
-{% set badge='Alerting integration' %}{% set title='Alertmanager Integrations' %}{% set description='Validate Alertmanager runtime versions, API v2 capability, alert retrieval, silence access, and routing readiness for each Kubernetes cluster.' %}{% include 'integrations/partials/_hero.html' %}
-{% set table_title='Alertmanager Inventory' %}{% set table_description='Review per-cluster Alertmanager bindings and block unsupported versions or missing required API capabilities before KAORI uses them.' %}{% include 'integrations/partials/_table.html' %}
-</div>
-{% endblock %}
+    <div class="space-y-6">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('siren', 'Observability Integration', 'siren') %}
+                        <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">
+                            Alertmanager Integrations
+                        </h1>
+                        <p class="mt-2 max-w-3xl text-sm leading-6 text-brand-foreground-muted">
+                            Register externally managed Alertmanager instances once, validate their API capability, and bind each source to Kubernetes or future infrastructure asset scopes without duplicating provider configuration.
+                        </p>
+                    {% endcall %}
+                    <div class="mt-5 flex flex-wrap gap-2 sm:ml-[4rem] sm:pl-4">
+                        {{ page_hero.meta_label('server-cog', stats.total ~ ' instances') }}
+                        {{ page_hero.meta_label('circle-check-big', stats.ready ~ ' ready') }}
+                        {{ page_hero.meta_label('link-2', stats.bindings ~ ' asset bindings') }}
+                    </div>
+                    <div class="mt-4 sm:ml-[4rem] sm:pl-4">
+                        {{ page_hero.supporting_strip('shield-check', 'Provider boundary', 'Alertmanager remains authoritative for routing, grouping, inhibition, silences, and notification delivery. KAORI provides controlled integration, visibility, and downstream intelligence.') }}
+                    </div>
+                </div>
+                <aside class="{{ page_hero.aside_classes() }}">
+                    <div class="flex h-full flex-col justify-between rounded-xl border border-brand-outline bg-brand-surface p-4 text-brand-foreground backdrop-blur">
+                        <div>
+                            <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-brand-foreground-muted">Integration foundation</p>
+                            <p class="mt-3 text-3xl font-bold leading-none">{{ stats.configured }}</p>
+                            <p class="mt-2 text-sm leading-5 text-brand-foreground-muted">Configured Alertmanager sources</p>
+                        </div>
+                        <a href="{{ url_for('alertmanager.new_instance') }}"
+                           class="mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-kaori-primary shadow-sm transition hover:bg-kaori-soft">
+                            <i data-lucide="plus" class="h-4 w-4" aria-hidden="true"></i>
+                            Register instance
+                        </a>
+                    </div>
+                </aside>
+            </div>
+        </section>
+        <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+            <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
+                        <i data-lucide="network" class="h-5 w-5" aria-hidden="true"></i>
+                    </span>
+                    <div>
+                        <h2 class="text-lg font-bold text-content-primary">Alertmanager Source Overview</h2>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">One provider instance may serve one cluster, many Kubernetes clusters, or future Server, HCI, and Storage scopes.</p>
+                    </div>
+                </div>
+            </header>
+            <div class="grid gap-px bg-outline-subtle md:grid-cols-2 xl:grid-cols-4">
+                {% for item in [
+                    ('Instance Registry', stats.total, 'Reusable provider connections', 'server-cog'),
+                    ('Validated Sources', stats.ready, 'Ready for downstream reads', 'badge-check'),
+                    ('Needs Attention', stats.attention, 'Validation or compatibility review', 'triangle-alert'),
+                    ('Asset Bindings', stats.bindings, 'Scope-to-source mappings', 'link-2')
+                    ] %}
+                    <article class="min-h-[9.5rem] bg-surface-card p-5">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-content-tertiary">{{ item[0] }}</p>
+                                <p class="mt-3 text-2xl font-bold text-content-primary">{{ item[1] }}</p>
+                            </div>
+                            <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="{{ item[3] }}" class="h-4 w-4"></i></span>
+                        </div>
+                        <p class="mt-3 text-xs leading-5 text-content-secondary">{{ item[2] }}</p>
+                    </article>
+                {% endfor %}
+            </div>
+            <div class="border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:px-6">
+                <div class="grid gap-3 text-xs text-content-secondary md:grid-cols-3">
+                    <div><strong class="text-content-primary">Provider:</strong> Alertmanager API v2</div>
+                    <div><strong class="text-content-primary">Consumer:</strong> Scope resolver facade</div>
+                    <div><strong class="text-content-primary">Current binding:</strong> Kubernetes cluster; generic scope contract ready</div>
+                </div>
+            </div>
+        </section>
+        {% include 'integrations/alertmanager/partials/_inventory_card.html' %}
+    </div>
+{% endblock dashboard_content %}

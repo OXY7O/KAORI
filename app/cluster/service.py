@@ -11,7 +11,9 @@ from sqlalchemy import func, or_
 from app.extensions import db
 from app.kubernetes.service import test_cluster_connection
 from app.models import (
+    AlertmanagerBinding,
     AlertmanagerConfig,
+    AlertmanagerInstance,
     Cluster,
     ClusterInventory,
     ClusterStatus,
@@ -315,24 +317,60 @@ def get_alertmanager_summary(
     if not cluster_ids:
         return summary
 
-    configs = AlertmanagerConfig.query.filter(
-        AlertmanagerConfig.cluster_id.in_(
-            cluster_ids,
+    role_rank = {'primary': 0, 'secondary': 1, 'fallback': 2}
+    bindings = (
+        db.session.query(AlertmanagerBinding, AlertmanagerInstance)
+        .join(
+            AlertmanagerInstance,
+            AlertmanagerBinding.alertmanager_instance_id == AlertmanagerInstance.id,
         )
-    ).all()
-
-    for config in configs:
-        summary[config.cluster_id] = {
-            'configured': bool(
-                config.endpoint,
-            ),
-            'connected': config.last_status == 'connected',
-            'status': config.last_status or 'configured',
-            'label': config.display_status,
-            'response_time_ms': config.last_response_time_ms,
-            'last_checked_at': config.last_checked_at,
-            'error': config.last_error,
+        .filter(
+            AlertmanagerBinding.scope_type == 'kubernetes_cluster',
+            AlertmanagerBinding.scope_key.in_(cluster_ids),
+            AlertmanagerBinding.enabled.is_(True),
+            AlertmanagerInstance.enabled.is_(True),
+        )
+        .all()
+    )
+    bindings.sort(
+        key=lambda item: (
+            item[0].scope_key,
+            role_rank.get(item[0].binding_role, 9),
+            item[0].priority,
+            item[0].id,
+        )
+    )
+    for binding, instance in bindings:
+        if binding.scope_key in summary:
+            continue
+        summary[binding.scope_key] = {
+            'configured': bool(instance.endpoint),
+            'connected': instance.last_status == 'connected',
+            'status': instance.last_status or 'configured',
+            'label': instance.display_status,
+            'response_time_ms': instance.last_response_time_ms,
+            'last_checked_at': instance.last_checked_at,
+            'error': instance.last_error,
+            'instance_id': instance.id,
+            'instance_name': instance.name,
         }
+
+    legacy_cluster_ids = [cluster_id for cluster_id in cluster_ids if cluster_id not in summary]
+    if legacy_cluster_ids:
+        configs = AlertmanagerConfig.query.filter(
+            AlertmanagerConfig.cluster_id.in_(legacy_cluster_ids)
+        ).all()
+        for config in configs:
+            summary[config.cluster_id] = {
+                'configured': bool(config.endpoint),
+                'connected': config.last_status == 'connected',
+                'status': config.last_status or 'configured',
+                'label': config.display_status,
+                'response_time_ms': config.last_response_time_ms,
+                'last_checked_at': config.last_checked_at,
+                'error': config.last_error,
+                'legacy_source': True,
+            }
 
     return summary
 

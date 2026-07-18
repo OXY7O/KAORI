@@ -5,7 +5,7 @@ from urllib.parse import urlsplit
 
 from app.cluster.constants import get_environment_label
 from app.integrations.compatibility import get_profile
-from app.models import AlertmanagerConfig, Cluster, PrometheusConfig
+from app.models import AlertmanagerConfig, AlertmanagerInstance, Cluster, PrometheusConfig
 
 
 def safe_endpoint(value: str | None) -> str:
@@ -31,7 +31,25 @@ def build_rows() -> list[dict[str, Any]]:
 
 def build_integrations_overview() -> dict[str, Any]:
     rows = build_rows()
-    stats = _stats(rows)
+    prometheus_rows = [row for row in rows if row['key'] == 'prometheus']
+    alertmanager_instances = AlertmanagerInstance.query.all()
+    total = len(prometheus_rows) + len(alertmanager_instances)
+    configured = sum(1 for row in prometheus_rows if row['configured']) + sum(
+        1 for instance in alertmanager_instances if instance.endpoint
+    )
+    ready = sum(1 for row in prometheus_rows if row['readiness'] == 'ready') + sum(
+        1 for instance in alertmanager_instances if instance.readiness_status == 'ready'
+    )
+    blocked = sum(1 for row in prometheus_rows if row['readiness'] == 'blocked') + sum(
+        1 for instance in alertmanager_instances if instance.readiness_status == 'blocked'
+    )
+    stats = {
+        'total': total,
+        'configured': configured,
+        'ready': ready,
+        'attention': max(configured - ready, 0),
+        'blocked': blocked,
+    }
     return {
         'rows': rows,
         'stats': stats,
@@ -72,42 +90,90 @@ def build_prometheus_page(
     }
 
 
-def build_alertmanager_page() -> dict[str, Any]:
-    rows = [row for row in build_rows() if row['key'] == 'alertmanager']
-    return {'rows': rows, 'stats': _stats(rows)}
+def build_alertmanager_page(
+    *,
+    query: str = '',
+    readiness: str = '',
+    deployment_type: str = '',
+    page: int = 1,
+    per_page: int = 5,
+) -> dict[str, Any]:
+    from app.alertmanager.presentation import build_inventory_context
+
+    return build_inventory_context(
+        query=query,
+        readiness=readiness,
+        deployment_type=deployment_type,
+        page=page,
+        per_page=per_page,
+    )
 
 
 
 def _coverage(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    observability = [row for row in rows if row['category'] == 'Observability']
+    prometheus_rows = [row for row in rows if row['key'] == 'prometheus']
+    alertmanager_instances = AlertmanagerInstance.query.all()
+    observability_total = len(prometheus_rows) + len(alertmanager_instances)
+    observability_configured = sum(1 for row in prometheus_rows if row['configured']) + sum(
+        1 for instance in alertmanager_instances if instance.endpoint
+    )
+    observability_ready = sum(1 for row in prometheus_rows if row['readiness'] == 'ready') + sum(
+        1 for instance in alertmanager_instances if instance.readiness_status == 'ready'
+    )
     return [
-        {'key': 'observability', 'label': 'Observability', 'icon': 'activity',
-         'configured': sum(1 for row in observability if row['configured']),
-         'ready': sum(1 for row in observability if row['readiness'] == 'ready'),
-         'total': len(observability)},
+        {
+            'key': 'observability',
+            'label': 'Observability',
+            'icon': 'activity',
+            'configured': observability_configured,
+            'ready': observability_ready,
+            'total': observability_total,
+        },
         {'key': 'storage', 'label': 'Storage', 'icon': 'database', 'configured': 0, 'ready': 0, 'total': 0},
         {'key': 'security', 'label': 'Security', 'icon': 'shield-check', 'configured': 0, 'ready': 0, 'total': 0},
     ]
 
 
 def _catalog(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    configured_by_key = {
-        key: sum(1 for row in rows if row['key'] == key and row['configured'])
-        for key in ('prometheus', 'alertmanager')
-    }
+    configured_prometheus = sum(1 for row in rows if row['key'] == 'prometheus' and row['configured'])
+    configured_alertmanager = AlertmanagerInstance.query.filter(AlertmanagerInstance.endpoint != '').count()
     return [
-        {'key': 'prometheus', 'name': 'Prometheus', 'category': 'Observability', 'icon': 'activity',
-         'availability': 'available', 'configured': configured_by_key['prometheus'],
-         'description': 'Metrics collection and versioned PromQL validation for connected infrastructure assets.'},
-        {'key': 'alertmanager', 'name': 'Alertmanager', 'category': 'Observability', 'icon': 'siren',
-         'availability': 'available', 'configured': configured_by_key['alertmanager'],
-         'description': 'Alert retrieval, silence capability, routing posture, and API compatibility validation.'},
-        {'key': 's3', 'name': 'S3-compatible Storage', 'category': 'Storage', 'icon': 'database',
-         'availability': 'planned', 'configured': 0,
-         'description': 'Reusable object storage for reports, archives, and long-term operational evidence.'},
-        {'key': 'vault', 'name': 'Vault', 'category': 'Security', 'icon': 'key-round',
-         'availability': 'planned', 'configured': 0,
-         'description': 'External secret and credential management with controlled access and auditability.'},
+        {
+            'key': 'prometheus',
+            'name': 'Prometheus',
+            'category': 'Observability',
+            'icon': 'activity',
+            'availability': 'available',
+            'configured': configured_prometheus,
+            'description': 'Metrics collection and versioned PromQL validation for connected infrastructure assets.',
+        },
+        {
+            'key': 'alertmanager',
+            'name': 'Alertmanager',
+            'category': 'Observability',
+            'icon': 'siren',
+            'availability': 'available',
+            'configured': configured_alertmanager,
+            'description': 'Shared Alertmanager instances, asset bindings, alert retrieval, silence capability, and API compatibility validation.',
+        },
+        {
+            'key': 's3',
+            'name': 'S3-compatible Storage',
+            'category': 'Storage',
+            'icon': 'database',
+            'availability': 'planned',
+            'configured': 0,
+            'description': 'Reusable object storage for reports, archives, and long-term operational evidence.',
+        },
+        {
+            'key': 'vault',
+            'name': 'Vault',
+            'category': 'Security',
+            'icon': 'key-round',
+            'availability': 'planned',
+            'configured': 0,
+            'description': 'External secret and credential management with controlled access and auditability.',
+        },
     ]
 
 def _stats(rows: list[dict[str, Any]]) -> dict[str, int]:

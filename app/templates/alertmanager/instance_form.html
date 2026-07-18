@@ -1,0 +1,377 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% from "integrations/partials/_status_badge.html" import status_badge %}
+{% block title %}{{ instance.name if instance else 'Register Alertmanager Instance' }} · KAORI{% endblock title %}
+{% block dashboard_content %}
+    {% set current_auth_type = instance.auth_type if instance else 'none' %}
+    <div class="space-y-6">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('siren', 'Alertmanager Source', 'server-cog') %}
+                        <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">
+                            {{ instance.name if instance else 'Register Alertmanager Instance' }}
+                        </h1>
+                        <p class="mt-2 max-w-3xl text-sm leading-6 text-brand-foreground-muted">
+                            {% if instance %}
+                                Manage one reusable Alertmanager provider connection, validate API v2 capability, and control which infrastructure scopes may consume it.
+                            {% else %}
+                                Register an existing standalone, shared, cluster-managed, or externally managed Alertmanager deployment before binding it to infrastructure assets.
+                            {% endif %}
+                        </p>
+                    {% endcall %}
+                    <div class="mt-5 flex flex-wrap gap-2 sm:ml-[4rem] sm:pl-4">
+                        {{ page_hero.meta_label('plug-zap', 'Configured' if instance and instance.endpoint else 'New source') }}
+                        {{ page_hero.meta_label('shield-check', (instance.readiness_status or 'validation_required') |replace('_', ' ')|title if instance else 'Validation required') }}
+                        {{ page_hero.meta_label('link-2', (bindings|length|string) ~ ' bindings' if instance else 'Unbound') }}
+                    </div>
+                </div>
+                <aside class="{{ page_hero.aside_classes() }}">
+                    <div class="flex h-full flex-col justify-between rounded-xl border border-brand-outline bg-brand-surface p-4 text-brand-foreground backdrop-blur">
+                        <div>
+                            <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-brand-foreground-muted">Provider ownership</p>
+                            <p class="mt-3 text-sm font-bold">Alertmanager remains authoritative</p>
+                            <p class="mt-2 text-xs leading-5 text-brand-foreground-muted">KAORI reads status, alerts, and silences. Routing and notification delivery remain outside KAORI.</p>
+                        </div>
+                        <a href="{{ url_for('integrations.alertmanager') }}"
+                           class="mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-brand-outline bg-brand-surface-strong px-4 py-2.5 text-sm font-bold text-brand-foreground transition hover:bg-white/20"><i data-lucide="arrow-left" class="h-4 w-4"></i>Back to registry</a>
+                    </div>
+                </aside>
+            </div>
+        </section>
+        {% if instance %}
+            <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+                <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                    <div class="flex items-start gap-3">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="badge-check" class="h-5 w-5"></i></span>
+                        <div>
+                            <h2 class="text-lg font-bold text-content-primary">Validation & Runtime Readiness</h2>
+                            <p class="mt-1 text-sm text-content-secondary">A saved source is not used by analytics while its readiness is Validation Required or Blocked.</p>
+                        </div>
+                    </div>
+                    <button type="button"
+                            hx-post="{{ url_for('alertmanager.validate_instance', instance_id=instance.id) }}"
+                            hx-target="#operational-action-feedback"
+                            hx-swap="innerHTML"
+                            hx-disabled-elt="this"
+                            class="inline-flex items-center justify-center gap-2 rounded-xl bg-kaori-primary px-4 py-2.5 text-sm font-bold text-white transition hover:bg-kaori-primary-hover disabled:cursor-wait disabled:opacity-70">
+                        <i data-lucide="scan-search"
+                           class="h-4 w-4 group-[.htmx-request]:animate-spin"></i>Run full validation
+                    </button>
+                </header>
+                <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-5">
+                    {% for label, value in [
+                        ('Detected Version', instance.detected_version or 'Not detected'),
+                        ('Compatibility', (instance.compatibility_status or 'validation_required')|replace('_', ' ')|title),
+                        ('Readiness', (instance.readiness_status or 'validation_required')|replace('_', ' ')|title),
+                        ('Endpoint Profile', instance.compatibility_profile or 'Not selected'),
+                        ('Capabilities', (instance.capabilities or [])|length|string ~ ' verified')
+                        ] %}
+                        <div class="min-h-[8rem] bg-surface-card p-4">
+                            <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-content-tertiary">{{ label }}</p>
+                            <p class="mt-3 break-words text-sm font-bold text-content-primary">{{ value }}</p>
+                        </div>
+                    {% endfor %}
+                </div>
+                {% if instance.validation_message %}
+                    <div class="border-t border-outline-subtle bg-kaori-soft px-5 py-4 text-sm leading-6 text-kaori-primary sm:px-6">{{ instance.validation_message }}</div>
+                {% endif %}
+            </section>
+        {% endif %}
+        <div class="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+            <form method="post"
+                  class="min-w-0 self-start overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
+                  x-data="{ authType: '{{ current_auth_type }}' }">
+                {% if initial_cluster %}<input type="hidden" name="cluster_id" value="{{ initial_cluster.id }}">{% endif %}
+                <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+                    <div class="flex items-start gap-3">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="settings-2" class="h-5 w-5"></i></span>
+                        <div>
+                            <h2 class="text-lg font-bold text-content-primary">Instance Configuration</h2>
+                            <p class="mt-1 text-sm leading-6 text-content-secondary">Provider identity, endpoint, authentication, TLS behavior, and runtime availability.</p>
+                        </div>
+                    </div>
+                </header>
+                <div class="space-y-6 p-5 sm:p-6">
+                    <section class="space-y-4 rounded-xl border border-outline-subtle bg-surface-hover p-4">
+                        <div>
+                            <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-kaori-primary">Provider Identity</p>
+                            <p class="mt-1 text-xs text-content-secondary">Name the deployment independently from any cluster or asset binding.</p>
+                        </div>
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            <label class="text-sm font-bold text-content-primary">
+                                Instance name
+                                <input name="name"
+                                       required
+                                       value="{{ instance.name if instance else (initial_cluster.name ~ ' Alertmanager' if initial_cluster else '') }}"
+                                       placeholder="Central Alertmanager"
+                                       class="mt-2 w-full rounded-xl border border-outline-default bg-surface-card px-3.5 py-3 text-sm font-normal text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-outline-focus">
+                            </label>
+                            <label class="text-sm font-bold text-content-primary">
+                                Deployment type
+                                <select name="deployment_type"
+                                        class="mt-2 w-full rounded-xl border border-outline-default bg-surface-card px-3.5 py-3 text-sm font-normal text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-outline-focus">
+                                    {% set selected_deployment = instance.deployment_type if instance else ('cluster_managed' if initial_cluster else 'external_managed') %}
+                                    {% for value, label in [('external_managed','External managed'),('standalone','Standalone'),('shared','Shared'),('cluster_managed','Cluster managed')] %}
+                                        <option value="{{ value }}"
+                                                {% if selected_deployment == value %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </label>
+                        </div>
+                        <label class="block text-sm font-bold text-content-primary">
+                            Description<textarea name="description" rows="3" placeholder="Operational ownership and intended source coverage." class="mt-2 w-full rounded-xl border border-outline-default bg-surface-card px-3.5 py-3 text-sm font-normal text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-outline-focus">{{ instance.description if instance and instance.description else '' }}</textarea>
+                        </label>
+                    </section>
+                    <section class="space-y-4 rounded-xl border border-outline-subtle bg-surface-card p-4">
+                        <div>
+                            <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-kaori-primary">Connection Contract</p>
+                            <p class="mt-1 text-xs text-content-secondary">KAORI currently requires Alertmanager API v2 status, alerts, and silences endpoints.</p>
+                        </div>
+                        <label class="block text-sm font-bold text-content-primary">
+                            Endpoint URL
+                            <input type="url"
+                                   name="endpoint"
+                                   required
+                                   value="{{ instance.endpoint if instance else '' }}"
+                                   placeholder="https://alertmanager.example.internal:9093"
+                                   class="mt-2 w-full rounded-xl border border-outline-default bg-surface-card px-3.5 py-3 font-mono text-sm font-normal text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-outline-focus">
+                        </label>
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            <label class="text-sm font-bold text-content-primary">
+                                Authentication
+                                <select name="auth_type"
+                                        x-on:change="authType = $event.target.value"
+                                        class="mt-2 w-full rounded-xl border border-outline-default bg-surface-card px-3.5 py-3 text-sm font-normal text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-outline-focus">
+                                    {% for value, label in [('none','No authentication'),('basic','Basic authentication'),('bearer','Bearer token')] %}
+                                        <option value="{{ value }}"
+                                                {% if current_auth_type == value %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </label>
+                            <label class="text-sm font-bold text-content-primary">
+                                Timeout (seconds)
+                                <input type="number"
+                                       name="timeout"
+                                       min="1"
+                                       max="30"
+                                       value="{{ instance.timeout if instance else 5 }}"
+                                       class="mt-2 w-full rounded-xl border border-outline-default bg-surface-card px-3.5 py-3 text-sm font-normal text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-outline-focus">
+                            </label>
+                        </div>
+                        <div x-show="authType === 'basic'"
+                             x-cloak
+                             class="grid gap-4 sm:grid-cols-2">
+                            <label class="text-sm font-bold text-content-primary">
+                                Username
+                                <input name="username"
+                                       value="{{ instance.username if instance and instance.username else '' }}"
+                                       class="mt-2 w-full rounded-xl border border-outline-default bg-surface-card px-3.5 py-3 text-sm font-normal text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-outline-focus">
+                            </label>
+                            <label class="text-sm font-bold text-content-primary">
+                                Password
+                                <input type="password"
+                                       name="password"
+                                       autocomplete="new-password"
+                                       placeholder="{{ 'Leave blank to keep current password' if instance and instance.password else 'Enter password' }}"
+                                       class="mt-2 w-full rounded-xl border border-outline-default bg-surface-card px-3.5 py-3 text-sm font-normal text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-outline-focus">
+                            </label>
+                        </div>
+                        <div x-show="authType === 'bearer'" x-cloak>
+                            <label class="block text-sm font-bold text-content-primary">
+                                Bearer token
+                                <input type="password"
+                                       name="bearer_token"
+                                       autocomplete="new-password"
+                                       placeholder="{{ 'Leave blank to keep current token' if instance and instance.bearer_token else 'Enter bearer token' }}"
+                                       class="mt-2 w-full rounded-xl border border-outline-default bg-surface-card px-3.5 py-3 text-sm font-normal text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-outline-focus">
+                            </label>
+                        </div>
+                    </section>
+                    <div class="grid gap-3 sm:grid-cols-2">
+                        <label class="flex items-start gap-3 rounded-xl border border-brand-outline bg-kaori-soft p-4">
+                            <input type="checkbox"
+                                   name="verify_ssl"
+                                   value="1"
+                                   {% if not instance or instance.verify_ssl %}checked{% endif %}
+                                   class="mt-0.5 h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-outline-focus">
+                            <span><span class="block text-sm font-bold text-kaori-primary">Verify TLS certificate</span><span class="mt-1 block text-xs leading-5 text-content-secondary">Keep enabled except for explicitly approved internal self-signed endpoints.</span></span>
+                        </label>
+                        <label class="flex items-start gap-3 rounded-xl border border-outline-default bg-surface-hover p-4">
+                            <input type="checkbox"
+                                   name="enabled"
+                                   value="1"
+                                   {% if not instance or instance.enabled %}checked{% endif %}
+                                   class="mt-0.5 h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-outline-focus">
+                            <span><span class="block text-sm font-bold text-content-primary">Runtime source enabled</span><span class="mt-1 block text-xs leading-5 text-content-secondary">Disabled sources are excluded from asset-scope resolution.</span></span>
+                        </label>
+                    </div>
+                </div>
+                <footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                    <p class="text-xs leading-5 text-content-secondary">Saving resets readiness to Validation Required.</p>
+                    <button type="submit"
+                            class="inline-flex items-center justify-center gap-2 rounded-xl bg-kaori-primary px-5 py-2.5 text-sm font-bold text-white transition hover:bg-kaori-primary-hover"><i data-lucide="save" class="h-4 w-4"></i>{{ 'Update instance' if instance else 'Register instance' }}</button>
+                </footer>
+            </form>
+            <aside class="min-w-0 self-start space-y-6">
+                <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+                    <header class="border-b border-outline-subtle px-5 py-4">
+                        <h2 class="font-bold text-content-primary">Source Boundary</h2>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Connection identity is reusable. Bindings control consumption.</p>
+                    </header>
+                    <div class="space-y-3 p-5 text-xs leading-5 text-content-secondary">
+                        <div class="rounded-xl bg-kaori-soft p-3 text-kaori-primary"><strong>Instance:</strong> endpoint, credentials, validation, and provider capability.</div>
+                        <div class="rounded-xl border border-outline-subtle bg-surface-hover p-3"><strong class="text-content-primary">Binding:</strong> asset scope, source role, and priority.</div>
+                        <div class="rounded-xl border border-outline-subtle bg-surface-hover p-3"><strong class="text-content-primary">Analytics:</strong> domain-specific enrichment and interpretation.</div>
+                    </div>
+                </section>
+                {% if initial_cluster %}
+                    <section class="rounded-2xl border border-brand-outline bg-kaori-soft p-5">
+                        <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-kaori-primary">Initial Binding</p>
+                        <p class="mt-2 font-bold text-content-primary">{{ initial_cluster.name }}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">The instance will be mapped as the primary Alertmanager source for this Kubernetes cluster after creation.</p>
+                    </section>
+                {% endif %}
+            </aside>
+        </div>
+        {% if instance %}
+            <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+                <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+                    <div class="flex items-start gap-3">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="link-2" class="h-5 w-5"></i></span>
+                        <div>
+                            <h2 class="text-lg font-bold text-content-primary">Asset Bindings</h2>
+                            <p class="mt-1 text-sm leading-6 text-content-secondary">Map this provider source to Kubernetes clusters now and to Server, HCI, or Storage scope keys as those asset registries are introduced.</p>
+                        </div>
+                    </div>
+                </header>
+                <div class="grid items-start gap-6 p-5 sm:p-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+                    <div class="overflow-hidden rounded-xl border border-outline-subtle">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full text-left text-sm">
+                                <thead class="bg-surface-hover text-[10px] font-bold uppercase tracking-[0.12em] text-content-tertiary">
+                                    <tr>
+                                        <th class="px-4 py-3">Scope</th>
+                                        <th class="px-4 py-3">Role</th>
+                                        <th class="px-4 py-3">Priority</th>
+                                        <th class="px-4 py-3">Status</th>
+                                        <th class="px-4 py-3 text-right">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-outline-subtle">
+                                    {% for row in binding_rows %}
+                                        <tr>
+                                            <td class="px-4 py-3">
+                                                <p class="font-bold text-content-primary">{{ row.scope_label }}</p>
+                                                <p class="mt-1 font-mono text-[11px] text-content-tertiary">{{ row.binding.scope_type }}:{{ row.binding.scope_key }}</p>
+                                            </td>
+                                            <td class="px-4 py-3 text-content-secondary">{{ row.binding.binding_role|title }}</td>
+                                            <td class="px-4 py-3 text-content-secondary">{{ row.binding.priority }}</td>
+                                            <td class="px-4 py-3">{{ status_badge('ready' if row.binding.enabled else 'not_configured') }}</td>
+                                            <td class="px-4 py-3 text-right">
+                                                <form method="post"
+                                                      action="{{ url_for('alertmanager.remove_binding', instance_id=instance.id, binding_id=row.binding.id) }}">
+                                                    <button type="submit"
+                                                            class="rounded-lg border border-red-200 px-3 py-2 text-xs font-bold text-red-700 hover:bg-red-50">Remove</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    {% else %}
+                                        <tr>
+                                            <td colspan="5"
+                                                class="px-5 py-12 text-center text-sm text-content-secondary">This source is not bound to any asset scope.</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <form method="post"
+                          action="{{ url_for('alertmanager.create_binding', instance_id=instance.id) }}"
+                          x-data="{ scopeType: 'kubernetes_cluster' }"
+                          class="self-start space-y-4 rounded-xl border border-brand-outline bg-kaori-soft p-4">
+                        <div>
+                            <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-kaori-primary">Add or Update Binding</p>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">One primary source is allowed per scope; secondary and fallback sources may coexist.</p>
+                        </div>
+                        <label class="block text-xs font-bold text-content-primary">
+                            Scope type
+                            <select name="scope_type"
+                                    x-model="scopeType"
+                                    class="mt-2 w-full rounded-xl border border-outline-default bg-surface-card px-3 py-2.5 text-sm font-normal">
+                                <option value="kubernetes_cluster">Kubernetes cluster</option>
+                                <option value="server">Server</option>
+                                <option value="server_group">Server group</option>
+                                <option value="hci_environment">HCI environment</option>
+                                <option value="storage_service">Storage service</option>
+                                <option value="global">Global scope</option>
+                            </select>
+                        </label>
+                        <label x-show="scopeType === 'kubernetes_cluster'"
+                               class="block text-xs font-bold text-content-primary">
+                            Kubernetes cluster
+                            <select name="cluster_scope_key"
+                                    :disabled="scopeType !== 'kubernetes_cluster'"
+                                    class="mt-2 w-full rounded-xl border border-outline-default bg-surface-card px-3 py-2.5 text-sm font-normal">
+                                <option value="">Select cluster</option>
+                                {% for cluster in clusters %}
+                                    <option value="{{ cluster.id }}">{{ cluster.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label x-show="scopeType !== 'kubernetes_cluster'"
+                               x-cloak
+                               class="block text-xs font-bold text-content-primary">
+                            Scope key
+                            <input name="generic_scope_key"
+                                   :disabled="scopeType === 'kubernetes_cluster'"
+                                   placeholder="Canonical asset or service key"
+                                   class="mt-2 w-full rounded-xl border border-outline-default bg-surface-card px-3 py-2.5 text-sm font-normal">
+                        </label>
+                        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                            <label class="text-xs font-bold text-content-primary">
+                                Source role
+                                <select name="binding_role"
+                                        class="mt-2 w-full rounded-xl border border-outline-default bg-surface-card px-3 py-2.5 text-sm font-normal">
+                                    <option value="primary">Primary</option>
+                                    <option value="secondary">Secondary</option>
+                                    <option value="fallback">Fallback</option>
+                                </select>
+                            </label>
+                            <label class="text-xs font-bold text-content-primary">
+                                Priority
+                                <input type="number"
+                                       name="priority"
+                                       min="1"
+                                       max="1000"
+                                       value="100"
+                                       class="mt-2 w-full rounded-xl border border-outline-default bg-surface-card px-3 py-2.5 text-sm font-normal">
+                            </label>
+                        </div>
+                        <input type="hidden" name="enabled" value="1">
+                        <button type="submit"
+                                class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-kaori-primary px-4 py-2.5 text-sm font-bold text-white hover:bg-kaori-primary-hover"><i data-lucide="link" class="h-4 w-4"></i>Save binding</button>
+                    </form>
+                </div>
+            </section>
+            <details class="group overflow-hidden rounded-2xl border border-red-200 bg-surface-card shadow-sm">
+                <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4">
+                    <div>
+                        <p class="font-bold text-content-primary">Instance lifecycle</p>
+                        <p class="mt-1 text-xs text-content-secondary">Deletion is blocked while asset bindings remain.</p>
+                    </div>
+                    <i data-lucide="chevron-down"
+                       class="h-4 w-4 text-content-tertiary transition group-open:rotate-180"></i>
+                </summary>
+                <div class="border-t border-red-100 bg-red-50/40 p-5">
+                    <form method="post"
+                          action="{{ url_for('alertmanager.delete_instance', instance_id=instance.id) }}">
+                        <button type="submit"
+                                {% if bindings %}disabled{% endif %}
+                                class="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-2.5 text-sm font-bold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"><i data-lucide="trash-2" class="h-4 w-4"></i>Delete instance</button>
+                    </form>
+                </div>
+            </details>
+        {% endif %}
+    </div>
+{% endblock dashboard_content %}

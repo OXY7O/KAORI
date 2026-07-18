@@ -1,4 +1,4 @@
-from app.models.alertmanager import AlertmanagerConfig
+from app.models.alertmanager import AlertmanagerBinding, AlertmanagerConfig, AlertmanagerInstance
 from app.models.archive import ArchiveArtifact
 from app.models.audit import AuditEvent
 from app.models.cluster import Cluster, ClusterStatus
@@ -49,6 +49,8 @@ __all__ = [
     'TLSCertificateUpdateEvent',
     'PrometheusConfig',
     'AlertmanagerConfig',
+    'AlertmanagerInstance',
+    'AlertmanagerBinding',
     'Report',
     'ReportTemplate',
     'ReportSchedule',

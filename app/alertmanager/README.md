@@ -1,263 +1,327 @@
-# Alertmanager Integration
+# Alertmanager Integration Foundation
 
 ## Purpose
 
-`app/alertmanager` is KAORI's integration adapter for connecting to Alertmanager
-instances that already exist outside KAORI. The integration may ultimately point
-to either:
+`app/alertmanager` is KAORI's provider-neutral integration layer for
+Alertmanager deployments that already exist and remain managed outside KAORI.
+It supports the connection lifecycle required for:
 
-- an Alertmanager deployed for one Kubernetes cluster;
-- a shared or standalone Alertmanager serving multiple Kubernetes clusters; or
-- another externally managed Alertmanager instance that KAORI is authorized to
-  observe.
+- an Alertmanager dedicated to one Kubernetes cluster;
+- a standalone Alertmanager;
+- a shared Alertmanager serving multiple Kubernetes clusters;
+- an externally managed Alertmanager; and
+- future bindings for Server, HCI, Storage, MinIO/Object Storage, or other
+  infrastructure asset domains.
 
-Alertmanager remains the authoritative alert routing, grouping, inhibition, and
-silence engine. KAORI does not replace Alertmanager. KAORI uses the integration
-to discover readiness, retrieve alert and silence data, normalize the provider
-payload, centralize visibility, and supply downstream operational analytics and
-intelligence.
+Alertmanager remains authoritative for alert grouping, routing, inhibition,
+silences, receivers, and notification delivery. KAORI does not replace those
+functions. KAORI owns connection configuration, validation, capability
+discovery, safe provider reads, source-to-asset bindings, normalized provider
+records, centralized visibility, operational audit, and downstream consumption
+by analytics or intelligence domains.
 
-The current implementation is read-oriented. It calls Alertmanager API v2 for
-status, alerts, and silences. It does not currently create silences, modify
-routing configuration, or manage Alertmanager lifecycle.
+The current adapter is intentionally read-only. It calls Alertmanager API v2
+for status, alerts, and silences. It does not create silences, modify routing
+configuration, change receiver configuration, or manage the Alertmanager
+process lifecycle.
 
-## Compatibility contracts
+## Implemented architecture
 
-Alertmanager uses two separate compatibility contracts:
-
-- Endpoint/API profile: `alertmanager-api-v2-legacy` or
-  `alertmanager-api-v2-current`.
-- Capability profile: `alert-management-v1`.
-
-Version detection is automatic. KAORI validates:
-
-- `/api/v2/status`;
-- `/api/v2/alerts`; and
-- `/api/v2/silences`.
-
-API v1 is never used. The endpoint profile represents runtime/API
-compatibility. The capability profile represents the alert-management behavior
-required by Kubernetes Alerts & Anomalies, Alert Intelligence, silence
-visibility, and routing posture.
-
-## Current architecture boundary
-
-The package owns the Alertmanager-specific integration contract:
+The integration is now instance-first instead of cluster-owned:
 
 ```text
-Alertmanager endpoint
+Existing Alertmanager deployment
         ↓
-app/alertmanager/client.py
-        ↓
-API/version/capability validation
-        ↓
-provider payload normalization
-        ↓
-consumer domains such as Kubernetes alert analytics
-```
-
-The package must remain separate from Kubernetes interpretation. Generic
-Alertmanager concerns belong here; Kubernetes-specific resource recognition,
-enrichment, and operational scoring belong in the Kubernetes analytics bounded
-context.
-
-### Current implementation limitation
-
-The current persistence model is keyed directly by `cluster_id` through
-`app/models/alertmanager.py`. That means the implementation currently supports
-one cluster-associated configuration, not a first-class standalone/shared
-Alertmanager instance.
-
-This differs from the intended product scope. Supporting a standalone or shared
-Alertmanager requires an instance-first model and explicit asset bindings. The
-models must remain centralized under `app/models/` in accordance with KAORI's
-model ownership rule.
-
-Recommended future model boundary:
-
-```text
 AlertmanagerInstance
-├── endpoint and authentication
-├── compatibility/readiness state
-├── detected version and capabilities
-└── operational metadata
-
+  connection, authentication, TLS, validation, capabilities
+        ↓
 AlertmanagerBinding
-├── alertmanager_instance_id
-├── asset_type
-├── asset_id
-└── binding purpose / priority
+  scope type, scope key, source role, priority
+        ↓
+Consumer facade
+        ↓
+Kubernetes Analytics today
+Server / HCI / Storage analytics later
 ```
 
-This structure allows one Alertmanager instance to serve multiple clusters and
-allows future asset domains to bind to their own Alertmanager instances without
-copying the provider adapter.
+An Alertmanager deployment is registered once. One or more bindings determine
+which infrastructure scopes may consume it.
+
+Examples:
+
+```text
+Central Alertmanager
+├── kubernetes_cluster:cluster-a   primary
+├── kubernetes_cluster:cluster-b   primary
+├── server_group:linux-production  primary
+└── storage_service:minio-prod     primary
+```
+
+`scope_type` and `scope_key` are canonical integration contracts. Kubernetes
+clusters are currently the first scope with a first-class selector in the UI.
+Other scope types are accepted as canonical keys so their future asset
+registries can integrate without redesigning the provider model.
+
+## Provider and asset-domain boundary
+
+```text
+app/alertmanager
+→ understands Alertmanager API, connection, status, alerts, and silences
+
+app/analytics/alerts (current Kubernetes workspace)
+→ understands Kubernetes alert meaning, resource labels, routing posture,
+  ownership, incident readiness, and Prometheus anomaly correlation
+
+future app/server/analytics/alerts
+→ understands Server alert meaning
+
+future app/hci/analytics/alerts
+→ understands HCI alert meaning
+
+future app/<storage-domain>/analytics/alerts
+→ understands Storage/MinIO alert meaning
+```
+
+Generic normalization must never add Kubernetes-only fields such as pod,
+namespace, Deployment, StatefulSet, or PVC as provider-level assumptions. Asset
+interpretation belongs to the consuming bounded context.
+
+## Persistence model
+
+Database models remain centralized in `app/models/alertmanager.py`.
+
+### `AlertmanagerInstance`
+
+Represents one reusable provider connection. It owns:
+
+- instance identity and deployment type;
+- endpoint and authentication mode;
+- TLS verification and timeout;
+- enabled/disabled lifecycle state;
+- detected version;
+- endpoint and capability profiles;
+- readiness and validation state;
+- sanitized runtime health metadata; and
+- one-to-many asset bindings.
+
+### `AlertmanagerBinding`
+
+Maps one instance to an infrastructure scope. It owns:
+
+- `scope_type`;
+- `scope_key`;
+- source role: `primary`, `secondary`, or `fallback`;
+- priority;
+- enabled state; and
+- the instance relationship.
+
+Only one enabled primary Alertmanager source is allowed for a given scope.
+Secondary and fallback bindings may coexist. Runtime resolution orders primary,
+secondary, and fallback sources by role and priority.
+
+### Legacy compatibility model
+
+`AlertmanagerConfig` remains temporarily because existing installations and
+external imports may still use the former one-config-per-cluster model.
+
+Migration `20260718_alertmanager_instances`:
+
+1. creates `alertmanager_instances`;
+2. creates `alertmanager_bindings`;
+3. backfills one instance for every configured legacy cluster Alertmanager;
+4. creates a primary `kubernetes_cluster` binding for that cluster; and
+5. keeps the legacy table for a controlled compatibility window.
+
+New integration pages write only to the instance and binding model. Legacy
+cluster URLs resolve or materialize an instance and redirect to the canonical
+instance page. The legacy table must be removed only in a later migration after
+all external consumers have completed the cutover.
+
+## Compatibility and readiness
+
+KAORI validates the following Alertmanager API v2 operations:
+
+```text
+GET /api/v2/status
+GET /api/v2/alerts
+GET /api/v2/silences
+```
+
+API v1 is not used.
+
+Profiles:
+
+- endpoint profiles: `alertmanager-api-v2-legacy` and
+  `alertmanager-api-v2-current`;
+- capability profile: `alert-management-v1`.
+
+Readiness states:
+
+```text
+validation_required
+ready
+degraded
+blocked
+disabled
+```
+
+Saving connection settings resets readiness to `validation_required`. Runtime
+consumers do not use a disabled, blocked, or unvalidated source. Validation
+persists the detected version, compatibility result, verified capabilities,
+response time, and a sanitized operational message.
 
 ## Runtime flows
 
-### Configuration and validation
+### Register and bind a source
 
 ```text
-Administrator selects an integration target
+Administrator registers one Alertmanager instance
         ↓
-Form values are parsed and normalized
-        ↓
-Configuration is persisted
+KAORI stores connection configuration
         ↓
 Readiness becomes validation_required
         ↓
-KAORI calls /api/v2/status
+Administrator runs full validation
         ↓
-KAORI probes alerts and silences capabilities
+KAORI discovers version and API capabilities
         ↓
-Version/profile/readiness are persisted
+Administrator adds one or more asset bindings
         ↓
-Toast and Activity Audit Log record the operation
+Bound consumers may resolve the source
 ```
 
-### Runtime alert retrieval
+A binding is not required when an instance is first registered. This allows a
+standalone source to be validated before an asset scope is assigned.
+
+### Resolve alerts for an asset
 
 ```text
-Consumer requests alerts for a bound asset
+Consumer requests alerts for scope_type + scope_key
         ↓
-KAORI resolves the Alertmanager configuration
+Binding resolver orders primary / secondary / fallback sources
         ↓
-Readiness gate is checked
+Reader selects the first enabled and usable source
         ↓
 AlertmanagerClient calls /api/v2/alerts
         ↓
-Generic payload normalization is applied
+Generic normalizer produces canonical provider records
         ↓
-Asset-specific analytics enriches the normalized alert
+Consumer domain enriches and interprets the records
 ```
 
-### Runtime silence retrieval
+If a source fails, the consumer facade may try the next bound source. Provider
+fallback is separate from cross-source deduplication or alert correlation;
+those remain analytics/intelligence responsibilities.
 
-```text
-Consumer requests silence context
-        ↓
-KAORI resolves the Alertmanager configuration
-        ↓
-AlertmanagerClient calls /api/v2/silences
-        ↓
-Raw silence payload is returned to the consuming domain
-        ↓
-The consuming domain evaluates matchers and operational impact
+### Kubernetes compatibility flow
+
+Existing Kubernetes Analytics continues to call:
+
+```python
+get_alertmanager_status(cluster_id=...)
+get_alertmanager_alerts(cluster_id=...)
+get_alertmanager_silences(cluster_id=...)
 ```
+
+Those functions are compatibility facades. Internally they resolve a
+`kubernetes_cluster` binding first and only use the legacy cluster configuration
+as a temporary fallback. Kubernetes Analytics does not instantiate the HTTP
+client or query Alertmanager configuration tables directly.
 
 ## File ownership
 
-| File | Responsibility | Notes and boundaries |
+| File | Responsibility | Boundary |
 |---|---|---|
-| `README.md` | Defines the package purpose, file ownership, provider boundary, compatibility contract, and refactor direction. | Keep this document synchronized whenever files are added, removed, renamed, or assigned a new responsibility. |
-| `__init__.py` | Marks `app.alertmanager` as a Python package. | It intentionally contains no runtime registration or side effects. Blueprint registration remains explicit in the application factory. |
-| `client.py` | Implements the low-level Alertmanager HTTP API v2 client. It builds authentication headers, performs GET requests, classifies HTTP/transport failures, parses JSON, and exposes status, alerts, silences, and connection-test operations. | This file must remain provider/API focused. It must not contain database access, Flask request handling, Kubernetes enrichment, UI context construction, or Activity Audit behavior. |
-| `exceptions.py` | Defines the Alertmanager exception hierarchy used to distinguish connection, authentication, and response failures. | Consumers should catch `AlertmanagerError` at integration boundaries and preserve the specific subtype for diagnostics. |
-| `forms.py` | Parses and normalizes Alertmanager configuration submitted by the UI. It owns endpoint normalization, supported authentication mode validation, optional credential cleanup, timeout bounds, and checkbox parsing. | This is a parsing contract, not a persistence or connectivity service. It currently uses a frozen dataclass rather than WTForms. |
-| `metrics.py` | Normalizes raw Alertmanager alert payloads into KAORI dictionaries, including severity, state, timestamps, duration, receiver, labels, annotations, runbook URL, and fingerprint. It also currently detects Kubernetes-style resource labels. | The filename is misleading because the file does not process metrics. Generic normalization should be renamed or moved to `normalizers/alerts.py`; Kubernetes resource detection must move to the Kubernetes alert analytics domain. |
-| `routes.py` | Exposes the cluster-scoped Alertmanager configuration and connection-test HTTP endpoints. It handles permission checks, form submission, redirects/HTMX responses, operational feedback, and rendering. | Routes should remain thin. The current route functions contain workflow orchestration and repeated feedback construction that should move into use-case and presentation modules. |
-| `service.py` | Coordinates configuration persistence, client creation, connection/capability validation, readiness/status updates, runtime alert retrieval, silence retrieval, and configuration-page context. | This file currently mixes repository, validation, runtime reader, status persistence, and presentation-context responsibilities and should be split. |
+| `README.md` | Defines purpose, architecture, model boundary, file ownership, compatibility, migration, and remaining work. | Update whenever files or responsibilities change. |
+| `__init__.py` | Package marker only. | No registration, network calls, or persistence side effects. |
+| `contracts.py` | Pure provider-neutral dataclasses for connection specifications, queries, validation results, and canonical alert records. | Must not import Flask request state or SQLAlchemy models. |
+| `client.py` | Low-level Alertmanager API v2 HTTP client: authentication headers, bounded requests, JSON parsing, status, alerts, silences, and transport error mapping. | No database access, UI context, audit feedback, or asset enrichment. |
+| `exceptions.py` | Alertmanager connection, authentication, and response exception hierarchy. | Preserve specific failure categories at integration boundaries. |
+| `forms.py` | Parses and validates instance and binding input, normalizes endpoints, bounds timeouts/priorities, and preserves omitted credentials. | Input contract only; no database or network operations. |
+| `repository.py` | Query-only persistence access for instances, bindings, scope resolution, and the legacy model. | No commits, HTTP calls, or presentation formatting. |
+| `client_factory.py` | Converts an instance or legacy configuration into a connection specification and `AlertmanagerClient`. | Centralizes credential and transport construction. |
+| `status.py` | Persists sanitized runtime status and validation health fields for instance or legacy sources. | No UI rendering or provider reads. |
+| `sanitization.py` | Removes user info, query strings, and fragments from endpoints before presentation or operator-console links. | Pure security utility; it does not modify the stored connection endpoint. |
+| `validation.py` | Executes status, alerts, and silences probes; discovers version/capability profiles; classifies failure; persists readiness. | One validation use case, no route branching. |
+| `reader.py` | Performs runtime status, alert, and silence reads against one already resolved source. | Returns normalized provider data; does not resolve asset bindings. |
+| `bindings.py` | Creates, updates, deletes, and resolves asset bindings; enforces one primary source per scope. | Owns binding rules, not asset-domain enrichment. |
+| `consumer.py` | Public scope-based consumer facade with source ordering, readiness gating, fallback, and Kubernetes scope compatibility. | Preferred entry point for analytics and future asset domains. |
+| `service.py` | Stable application facade for instance lifecycle, validation, bindings, legacy redirects, and existing cluster-based function signatures. | Routes and consumers should use this facade instead of internal modules. |
+| `presentation.py` | Builds sanitized instance inventory/detail contexts, binding labels, pagination, filters, and UI status summaries. | Must never expose credentials or raw URL query strings. |
+| `notifications.py` | Creates persistent toast and Activity Audit feedback for instance, validation, binding, and lifecycle operations. | Metadata must be sanitized and secret-free. |
+| `routes.py` | Thin HTTP orchestration for instance create/edit/delete, validation, binding management, and legacy cluster redirects. | Permission checks and response selection only; business rules remain in services. |
+| `metrics.py` | Deprecated compatibility wrapper for previous alert-normalization imports. | Do not add behavior; migrate imports to `normalizers/`. |
+| `normalizers/__init__.py` | Exposes the supported generic normalization API. | No asset-specific behavior. |
+| `normalizers/alerts.py` | Converts raw API v2 alert payloads to canonical provider dictionaries, including labels, annotations, severity, state, timestamps, receiver, fingerprint, and source identity. | No Kubernetes resource classification. |
+| `normalizers/silences.py` | Normalizes generic Alertmanager silence records and matcher payloads. | Domain interpretation remains with consumers. |
+| `normalizers/time.py` | Safe Alertmanager timestamp parsing and duration helpers. | Pure utility module. |
 
-## External model and consumer ownership
+## HTTP and UI ownership
 
-The package uses models that remain centralized outside this folder:
-
-- `app/models/alertmanager.py` owns persisted Alertmanager configuration and
-  readiness fields.
-- `app/models/cluster.py` currently owns the one-to-one cluster relationship.
-
-Primary consumers include:
-
-- `app/integrations/` for inventory and configuration visibility;
-- Kubernetes alert analytics for alert, silence, source-health, and routing
-  context; and
-- future Alert Intelligence workflows that consume normalized provider data.
-
-Consumers must not instantiate HTTP requests directly. They must call the
-Alertmanager integration service or a future explicit reader interface.
-
-## Security and data-handling rules
-
-- Never render raw credentials, authorization headers, or TLS traces in inline
-  UI errors.
-- Store low-level diagnostics only in controlled logs or Activity Audit metadata
-  that does not contain secrets.
-- Authentication fields must be cleared when the selected authentication type no
-  longer uses them.
-- The current model stores basic-auth passwords and bearer tokens directly in
-  database text columns. Before production-grade multi-instance expansion,
-  replace direct secret storage with an encrypted-at-rest field or a protected
-  secret reference.
-- Connection validation must use bounded connect/read timeouts.
-- TLS verification must default to enabled.
-- Runtime consumers must respect compatibility/readiness state and must not query
-  an integration marked `validation_required` or `blocked`.
-
-## Refactor review
-
-The review is based on current file size, function size, responsibility count,
-and coupling—not line count alone.
-
-| File | Current size | Review | Priority |
-|---|---:|---|---|
-| `client.py` | ~252 lines, one 236-line class | Cohesive enough for the current read-only API surface. Split only when retries, certificate material, proxies, write operations, or multiple transports are introduced. Prefer injecting a `requests.Session` before adding more request behavior. | Medium / later |
-| `forms.py` | ~154 lines | Small and cohesive. No split required. Add field-level validation errors if the UI needs richer feedback. | Low |
-| `metrics.py` | ~417 lines; `normalize_alertmanager_alert()` ~122 lines | Responsibility and naming are no longer clean. It mixes generic Alertmanager normalization, time formatting, receiver parsing, and Kubernetes resource detection. | High |
-| `routes.py` | ~315 lines; route functions ~177 and ~90 lines | Too much application workflow, repeated Activity Audit payload construction, and response branching inside HTTP handlers. | High |
-| `service.py` | ~450 lines; connection validation ~137 lines | Mixes persistence, factory, validation, health state, runtime retrieval, and page context. This makes testing and standalone-instance migration harder. | High |
-| `exceptions.py` | ~14 lines | Clear and appropriately small. | None |
-
-### Recommended target package
+Canonical routes:
 
 ```text
-app/alertmanager/
-├── README.md
-├── __init__.py
-├── client.py                 # API v2 transport only
-├── exceptions.py
-├── forms.py                  # input parsing
-├── repository.py             # Alertmanager instance/config persistence
-├── client_factory.py         # config -> client
-├── validation.py             # status/capability/profile validation
-├── reader.py                 # alerts and silences runtime reads
-├── status.py                 # readiness and last-check persistence
-├── normalizers/
-│   ├── __init__.py
-│   ├── alerts.py             # provider-neutral alert normalization
-│   └── time.py               # provider timestamp/duration helpers
-├── presentation.py           # integration page context and feedback payloads
-└── routes.py                 # thin HTTP adapter
+GET  /integrations/alertmanager
+GET  /integrations/alertmanager/instances/new
+POST /integrations/alertmanager/instances/new
+GET  /integrations/alertmanager/instances/<instance_id>
+POST /integrations/alertmanager/instances/<instance_id>
+POST /integrations/alertmanager/instances/<instance_id>/validate
+POST /integrations/alertmanager/instances/<instance_id>/bindings
+POST /integrations/alertmanager/instances/<instance_id>/bindings/<binding_id>/delete
+POST /integrations/alertmanager/instances/<instance_id>/delete
 ```
 
-Kubernetes-specific label-to-resource resolution must not remain in this target
-package. It belongs in the Kubernetes alert analytics enrichment layer.
+Legacy cluster routes remain as compatibility redirects:
 
-## Refactor sequence
+```text
+/integrations/alertmanager/cluster/<cluster_id>
+/integrations/alertmanager/cluster/<cluster_id>/test
+```
 
-1. Add tests that freeze the current status, alert, silence, and validation
-   contracts.
-2. Extract generic alert normalization from `metrics.py`; move Kubernetes
-   resource detection to Kubernetes alert enrichment.
-3. Extract repository and client-factory behavior from `service.py` without
-   changing routes.
-4. Extract validation and runtime reader services.
-5. Move Activity Audit/toast payload construction out of `routes.py` and leave
-   routes responsible only for HTTP input/output.
-6. Introduce instance-first Alertmanager persistence plus asset bindings in a
-   dedicated migration.
-7. Preserve current cluster-scoped URLs as compatibility redirects while the UI
-   migrates to instance and binding management.
+The canonical inventory presents instances, not clusters. Cluster Management may
+show a compact binding summary and link into the integration domain, but it does
+not own Alertmanager configuration.
 
-Do not combine the package split and the persistence-model migration in one
-change. Each phase needs independent tests and rollback capability.
+## Security rules
 
-## Non-goals
+- Never render password, bearer token, authorization header, CA material, raw
+  validation response, or URL query string.
+- Endpoint input must use HTTP/HTTPS, include a hostname, use a base path rather than `/api/v2`, and must not embed credentials, query parameters, or fragments.
+- Blank credential input on edit means preserve the existing credential.
+- Changing authentication mode clears credentials that no longer apply.
+- TLS verification defaults to enabled.
+- All network operations use bounded timeout values.
+- Authentication failures are not retried as transport failures.
+- Activity Audit metadata may include instance identity, deployment type,
+  capability status, response time, and sanitized failure class only.
+- The current database columns still store credentials directly. Production
+  hardening must replace them with encrypted-at-rest values or references to a
+  protected secret provider before broad multi-tenant adoption.
 
-`app/alertmanager` must not:
+## Refactor assessment after this foundation change
 
-- replace Alertmanager routing, grouping, inhibition, or notification delivery;
-- become a Kubernetes analytics service;
-- calculate incident readiness or ownership scores;
-- own cross-asset alert correlation;
-- hide provider failures by silently returning healthy state; or
-- place SQLAlchemy models inside the integration package.
+| Area | Current status | Next action |
+|---|---|---|
+| Provider client | Cohesive and read-only. | Add injectable session/retry policy only when required. |
+| Instance and binding persistence | Implemented. | Remove the legacy table after a compatibility release. |
+| Service decomposition | Implemented into repository, factory, validation, reader, binding, consumer, presentation, and notification modules. | Keep `service.py` as a facade; do not move responsibilities back into it. |
+| Generic normalization | Implemented. | Move remaining consumer-side Kubernetes normalization during Analytics refactor. |
+| Integration inventory/configuration | Instance-first and binding-aware. | Add first-class selectors as Server, HCI, and Storage registries are introduced. |
+| Credential storage | Still direct database text. | High-priority security hardening. |
+| Scheduled validation | Manual validation implemented. | Add Celery validation scheduling and cooldown/circuit state later. |
+| Analytics consumer boundary | Existing Kubernetes Analytics uses compatibility facade. | Next project: split the large Kubernetes alert analytics service. |
+
+## Non-negotiable maintenance rules
+
+1. Do not add `cluster_id` ownership back to provider instances.
+2. Do not create separate Alertmanager HTTP adapters for Kubernetes, Server,
+   HCI, or Storage.
+3. Do not add asset-specific branching to generic normalizers.
+4. Do not let analytics import `AlertmanagerClient`, repositories, or database
+   configuration models directly.
+5. Do not delete the legacy model until migration, route, and external import
+   compatibility have been verified in a release.
+6. Keep all SQLAlchemy models in `app/models/`.
+7. Keep Alertmanager authoritative for routing, inhibition, silences, receivers,
+   and notification delivery.

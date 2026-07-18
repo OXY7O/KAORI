@@ -73,6 +73,9 @@ the move.
   request, limit, peak, headroom, placement, and overcommit calculations.
 - Alertmanager is authoritative for Alertmanager alert state, routing result,
   inhibition state, and silence state that its API exposes.
+- Kubernetes alert analytics consumes Alertmanager through the scope-based
+  `app.alertmanager.service`/consumer facade. It must not instantiate
+  `AlertmanagerClient` or read Alertmanager persistence models directly.
 - Inventory data supplies identity and snapshot context only.
 - Avoid live Kubernetes API fallback in analytics pages.
 - Global or "All clusters" views use stored snapshot data; live metric and

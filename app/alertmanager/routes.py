@@ -1,23 +1,33 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import replace
 
 from flask import Blueprint, abort, jsonify, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 
-from app.alertmanager.forms import parse_alertmanager_config_form
+from app.alertmanager.forms import (
+    AlertmanagerBindingForm,
+    parse_alertmanager_binding_form,
+    parse_alertmanager_instance_form,
+)
+from app.alertmanager.notifications import record_instance_activity
+from app.alertmanager.presentation import build_instance_context
 from app.alertmanager.service import (
-    build_alertmanager_config_context,
-    get_alertmanager_config_by_cluster_id,
+    add_alertmanager_binding,
+    create_alertmanager_instance,
+    get_alertmanager_binding,
+    get_alertmanager_instance,
     get_cluster_by_id,
-    save_alertmanager_config,
+    materialize_legacy_cluster_config,
+    remove_alertmanager_binding,
+    remove_alertmanager_instance,
+    save_alertmanager_instance,
     test_alertmanager_connection,
+    validate_alertmanager_instance,
 )
-from app.notifications.service import (
-    get_navigation_notification_context,
-    record_operational_activity,
-)
+from app.notifications.service import get_navigation_notification_context
 from app.rbac.decorators import permission_required
 
 logger = logging.getLogger(__name__)
@@ -29,287 +39,317 @@ alertmanager_bp = Blueprint(
 )
 
 
-@alertmanager_bp.route(
-    '/cluster/<string:cluster_id>',
-    methods=[
-        'GET',
-        'POST',
-    ],
-)
+@alertmanager_bp.route('/instances/new', methods=['GET', 'POST'])
 @permission_required('settings.manage_integrations')
-def cluster_alertmanager_config(
-    cluster_id: str,
-) -> ResponseReturnValue:
-    cluster = get_cluster_by_id(
-        cluster_id,
-    )
-
-    if cluster is None:
-        abort(
-            404,
-        )
+def new_instance() -> ResponseReturnValue:
+    initial_cluster_id = request.values.get('cluster_id', '').strip()
+    initial_cluster = get_cluster_by_id(initial_cluster_id) if initial_cluster_id else None
 
     if request.method == 'POST':
-        form = parse_alertmanager_config_form(
-            request.form,
-        )
-
-        if not form.endpoint:
-            record_operational_activity(
-                user_id=current_user.id,
-                event_type='alertmanager_configuration_create',
+        form = parse_alertmanager_instance_form(request.form)
+        if not form.name and initial_cluster is not None:
+            form = replace(form, name=f'{initial_cluster.name} Alertmanager', deployment_type='cluster_managed')
+        try:
+            initial_binding = (
+                AlertmanagerBindingForm(
+                    scope_type='kubernetes_cluster',
+                    scope_key=initial_cluster.id,
+                    binding_role='primary',
+                    priority=100,
+                    enabled=True,
+                )
+                if initial_cluster is not None
+                else None
+            )
+            instance = create_alertmanager_instance(
+                form=form,
+                initial_binding=initial_binding,
+            )
+        except ValueError as exc:
+            record_instance_activity(
+                user_id=int(current_user.id),
+                instance=None,
+                event_type='alertmanager_instance_create_rejected',
                 status='error',
-                title='Alertmanager configuration not saved',
-                message='Alertmanager endpoint is required.',
-                detail='Provide a valid Alertmanager endpoint before saving the integration.',
-                action_url=url_for('alertmanager.cluster_alertmanager_config', cluster_id=cluster_id),
-                action_label='Review Alertmanager settings',
-                action_icon='siren',
-                metadata={
-                    'cluster_id': cluster.id,
-                    'cluster_name': cluster.name,
-                    'reason': 'missing_endpoint',
-                },
-                queue_feedback=True,
+                title='Alertmanager instance not created',
+                message='KAORI could not create the Alertmanager instance.',
+                detail=str(exc),
+                metadata={'cluster_id': initial_cluster_id or None},
+            )
+        except Exception as exc:  # pragma: no cover - defensive database boundary
+            logger.exception('Alertmanager instance creation failed.')
+            record_instance_activity(
+                user_id=int(current_user.id),
+                instance=None,
+                event_type='alertmanager_instance_create_failed',
+                status='error',
+                title='Alertmanager instance not created',
+                message='KAORI could not save the Alertmanager instance.',
+                detail='Review application logs and database connectivity before retrying.',
+                metadata={'reason': type(exc).__name__},
             )
         else:
-            existing_config = get_alertmanager_config_by_cluster_id(
-                cluster_id,
+            record_instance_activity(
+                user_id=int(current_user.id),
+                instance=instance,
+                event_type='alertmanager_instance_created',
+                status='success',
+                title='Alertmanager instance created',
+                message=f'{instance.name} is now registered as an Alertmanager source.',
+                detail='Run full validation before downstream analytics use this source.',
+                metadata={'initial_cluster_id': initial_cluster_id or None},
             )
-            was_configured = bool(existing_config and existing_config.endpoint)
-            try:
-                saved_config = save_alertmanager_config(
-                    cluster_id=cluster_id,
-                    form=form,
-                )
-            except Exception as exc:
-                logger.exception(
-                    'Alertmanager configuration save failed for cluster %s.',
-                    cluster.id,
-                )
-                record_operational_activity(
-                    user_id=current_user.id,
-                    event_type='alertmanager_configuration_update'
-                    if was_configured
-                    else 'alertmanager_configuration_create',
-                    status='error',
-                    title='Alertmanager configuration not saved',
-                    message=f'KAORI could not save Alertmanager settings for {cluster.name}.',
-                    detail='Review application logs, submitted values, and database connectivity before retrying.',
-                    action_url=url_for('alertmanager.cluster_alertmanager_config', cluster_id=cluster_id),
-                    action_label='Review Alertmanager settings',
-                    action_icon='siren',
-                    metadata={
-                        'cluster_id': cluster.id,
-                        'cluster_name': cluster.name,
-                        'reason': type(exc).__name__,
-                    },
-                    queue_feedback=True,
-                )
-            else:
-                action = request.form.get(
-                    'action',
-                    'save',
-                )
-
-                if action == 'save_test':
-                    result = test_alertmanager_connection(
-                        cluster_id=cluster_id,
-                    )
-
-                    if result.get(
-                        'connected',
-                        False,
-                    ):
-                        record_operational_activity(
-                            user_id=current_user.id,
-                            event_type='alertmanager_configuration_update'
-                            if was_configured
-                            else 'alertmanager_configuration_create',
-                            status='success',
-                            title='Alertmanager saved and verified',
-                            message=f'Alertmanager settings for {cluster.name} were saved and the connection test succeeded.',
-                            detail=f'Alertmanager version {result.get("version") or "unknown"} responded in {result.get("response_time_ms") or 0} ms.',
-                            action_url=url_for('alertmanager.cluster_alertmanager_config', cluster_id=cluster_id),
-                            action_label='View Alertmanager settings',
-                            action_icon='siren',
-                            metadata={
-                                'cluster_id': cluster.id,
-                                'cluster_name': cluster.name,
-                                'endpoint': saved_config.endpoint,
-                                'auth_type': saved_config.auth_type,
-                                'timeout_seconds': saved_config.timeout,
-                                'verify_ssl': saved_config.verify_ssl,
-                                'version': result.get('version') or 'unknown',
-                                'response_time_ms': result.get('response_time_ms') or 0,
-                            },
-                            queue_feedback=True,
-                        )
-                    else:
-                        record_operational_activity(
-                            user_id=current_user.id,
-                            event_type='alertmanager_configuration_update'
-                            if was_configured
-                            else 'alertmanager_configuration_create',
-                            status='warning',
-                            title='Alertmanager saved with warning',
-                            message=f'Alertmanager settings for {cluster.name} were saved, but the connection test failed.',
-                            detail=result.get('error')
-                            or 'Review endpoint reachability, authentication, and TLS settings.',
-                            action_url=url_for('alertmanager.cluster_alertmanager_config', cluster_id=cluster_id),
-                            action_label='Review Alertmanager settings',
-                            action_icon='siren',
-                            metadata={
-                                'cluster_id': cluster.id,
-                                'cluster_name': cluster.name,
-                                'endpoint': saved_config.endpoint,
-                                'auth_type': saved_config.auth_type,
-                                'timeout_seconds': saved_config.timeout,
-                                'verify_ssl': saved_config.verify_ssl,
-                                'test_connected': False,
-                                'reason': result.get('reason') or 'Connection failed',
-                                'failure_code': result.get('failure_code') or 'connection_failed',
-                                'endpoint_host': result.get('endpoint_host'),
-                                'endpoint_port': result.get('endpoint_port'),
-                                'request_path': result.get('request_path'),
-                            },
-                            queue_feedback=True,
-                        )
-                else:
-                    record_operational_activity(
-                        user_id=current_user.id,
-                        event_type='alertmanager_configuration_update'
-                        if was_configured
-                        else 'alertmanager_configuration_create',
-                        status='success',
-                        title='Alertmanager configuration updated' if was_configured else 'Alertmanager configured',
-                        message=f'Alertmanager settings for {cluster.name} were saved successfully.',
-                        detail='KAORI will use the saved endpoint, authentication method, timeout, and TLS verification settings for alert retrieval.',
-                        action_url=url_for('alertmanager.cluster_alertmanager_config', cluster_id=cluster_id),
-                        action_label='View Alertmanager settings',
-                        action_icon='siren',
-                        metadata={
-                            'cluster_id': cluster.id,
-                            'cluster_name': cluster.name,
-                            'endpoint': saved_config.endpoint,
-                            'auth_type': saved_config.auth_type,
-                            'timeout_seconds': saved_config.timeout,
-                            'verify_ssl': saved_config.verify_ssl,
-                        },
-                        queue_feedback=True,
-                    )
-
-                return redirect(
-                    url_for(
-                        'alertmanager.cluster_alertmanager_config',
-                        cluster_id=cluster_id,
-                    )
-                )
-
-    context = build_alertmanager_config_context(
-        cluster_id=cluster_id,
-    )
+            return redirect(url_for('alertmanager.instance_detail', instance_id=instance.id))
 
     return render_template(
-        'alertmanager/config.html',
-        **context,
+        'alertmanager/instance_form.html',
+        **build_instance_context(),
+        initial_cluster=initial_cluster,
     )
 
 
-@alertmanager_bp.route(
-    '/cluster/<string:cluster_id>/test',
-    methods=[
-        'POST',
-    ],
-)
+@alertmanager_bp.route('/instances/<int:instance_id>', methods=['GET', 'POST'])
 @permission_required('settings.manage_integrations')
-def test_cluster_alertmanager(
-    cluster_id: str,
-) -> ResponseReturnValue:
-    cluster = get_cluster_by_id(
-        cluster_id,
+def instance_detail(instance_id: int) -> ResponseReturnValue:
+    instance = get_alertmanager_instance(instance_id)
+    if instance is None:
+        abort(404)
+
+    if request.method == 'POST':
+        form = parse_alertmanager_instance_form(request.form)
+        try:
+            instance = save_alertmanager_instance(form=form, instance=instance)
+        except ValueError as exc:
+            record_instance_activity(
+                user_id=int(current_user.id),
+                instance=instance,
+                event_type='alertmanager_instance_update_rejected',
+                status='error',
+                title='Alertmanager instance not updated',
+                message=f'KAORI could not update {instance.name}.',
+                detail=str(exc),
+            )
+        except Exception as exc:  # pragma: no cover - defensive database boundary
+            logger.exception('Alertmanager instance update failed for %s.', instance_id)
+            record_instance_activity(
+                user_id=int(current_user.id),
+                instance=instance,
+                event_type='alertmanager_instance_update_failed',
+                status='error',
+                title='Alertmanager instance not updated',
+                message=f'KAORI could not update {instance.name}.',
+                detail='Review application logs and database connectivity before retrying.',
+                metadata={'reason': type(exc).__name__},
+            )
+        else:
+            record_instance_activity(
+                user_id=int(current_user.id),
+                instance=instance,
+                event_type='alertmanager_instance_updated',
+                status='success',
+                title='Alertmanager instance updated',
+                message=f'{instance.name} connection settings were saved.',
+                detail='Readiness is now Validation Required until a full validation completes.',
+            )
+        return redirect(url_for('alertmanager.instance_detail', instance_id=instance_id))
+
+    return render_template(
+        'alertmanager/instance_form.html',
+        **build_instance_context(instance),
+        initial_cluster=None,
     )
 
-    if cluster is None:
-        abort(
-            404,
-        )
 
-    result = test_alertmanager_connection(
-        cluster_id=cluster_id,
-    )
+@alertmanager_bp.post('/instances/<int:instance_id>/validate')
+@permission_required('settings.manage_integrations')
+def validate_instance(instance_id: int) -> ResponseReturnValue:
+    instance = get_alertmanager_instance(instance_id)
+    if instance is None:
+        abort(404)
 
-    if result.get('connected', False):
-        feedback = record_operational_activity(
-            user_id=current_user.id,
-            event_type='alertmanager_connection_test',
-            status='success',
-            title='Alertmanager connection verified',
-            message=f'KAORI connected to Alertmanager for {cluster.name}.',
-            detail=f'Alertmanager version {result.get("version") or "unknown"} responded in {result.get("response_time_ms") or 0} ms.',
-            action_url=url_for('alertmanager.cluster_alertmanager_config', cluster_id=cluster_id),
-            action_label='View Alertmanager settings',
-            action_icon='siren',
+    result = validate_alertmanager_instance(instance)
+    if result.get('connected'):
+        feedback = record_instance_activity(
+            user_id=int(current_user.id),
+            instance=instance,
+            event_type='alertmanager_instance_validated',
+            status='success' if result.get('readiness_status') == 'ready' else 'warning',
+            title='Alertmanager validation completed',
+            message=f'{instance.name} responded and its API capability profile was evaluated.',
+            detail=result.get('reason') or 'Alertmanager validation completed.',
             metadata={
-                'cluster_id': cluster.id,
-                'cluster_name': cluster.name,
-                'version': result.get('version') or 'unknown',
-                'response_time_ms': result.get('response_time_ms') or 0,
+                'version': result.get('version'),
+                'response_time_ms': result.get('response_time_ms'),
+                'readiness_status': result.get('readiness_status'),
+                'capabilities': result.get('capabilities', []),
             },
+            queue_feedback=request.headers.get('HX-Request') != 'true',
         )
     else:
-        feedback = record_operational_activity(
-            user_id=current_user.id,
-            event_type='alertmanager_connection_test',
+        feedback = record_instance_activity(
+            user_id=int(current_user.id),
+            instance=instance,
+            event_type='alertmanager_instance_validation_failed',
             status='error',
-            title='Alertmanager connection failed',
-            message=f'KAORI could not connect to Alertmanager for {cluster.name}.',
+            title='Alertmanager validation failed',
+            message=f'KAORI could not validate {instance.name}.',
             detail=result.get('error') or 'Review endpoint reachability, authentication, and TLS settings.',
-            action_url=url_for('alertmanager.cluster_alertmanager_config', cluster_id=cluster_id),
-            action_label='Review Alertmanager settings',
-            action_icon='siren',
             metadata={
-                'cluster_id': cluster.id,
-                'cluster_name': cluster.name,
-                'reason': result.get('reason') or 'Connection failed',
-                'failure_code': result.get('failure_code') or 'connection_failed',
+                'reason': result.get('reason'),
+                'failure_code': result.get('failure_code'),
                 'endpoint_host': result.get('endpoint_host'),
                 'endpoint_port': result.get('endpoint_port'),
                 'request_path': result.get('request_path'),
             },
+            queue_feedback=request.headers.get('HX-Request') != 'true',
         )
 
     if request.headers.get('HX-Request') == 'true':
         return render_template(
             'components/navigation/_quick_sync_result.html',
             **feedback,
-            notification_context=get_navigation_notification_context(
-                user_id=current_user.id,
-            ),
+            notification_context=get_navigation_notification_context(user_id=int(current_user.id)),
         )
+    return redirect(url_for('alertmanager.instance_detail', instance_id=instance_id))
 
+
+@alertmanager_bp.post('/instances/<int:instance_id>/bindings')
+@permission_required('settings.manage_integrations')
+def create_binding(instance_id: int) -> ResponseReturnValue:
+    instance = get_alertmanager_instance(instance_id)
+    if instance is None:
+        abort(404)
+    form = parse_alertmanager_binding_form(request.form)
+    if form.scope_type == 'kubernetes_cluster' and get_cluster_by_id(form.scope_key) is None:
+        error = 'The selected Kubernetes cluster does not exist.'
+    else:
+        error = None
+    try:
+        if error:
+            raise ValueError(error)
+        binding = add_alertmanager_binding(instance=instance, form=form)
+    except ValueError as exc:
+        record_instance_activity(
+            user_id=int(current_user.id),
+            instance=instance,
+            event_type='alertmanager_binding_create_rejected',
+            status='error',
+            title='Alertmanager binding not saved',
+            message=f'KAORI could not bind {instance.name} to the requested scope.',
+            detail=str(exc),
+            metadata={'scope_type': form.scope_type, 'scope_key': form.scope_key},
+        )
+    else:
+        record_instance_activity(
+            user_id=int(current_user.id),
+            instance=instance,
+            event_type='alertmanager_binding_created',
+            status='success',
+            title='Alertmanager binding saved',
+            message=f'{instance.name} is now available to the selected asset scope.',
+            detail=f'{binding.scope_type}:{binding.scope_key} is mapped as {binding.binding_role}.',
+            metadata={
+                'binding_id': binding.id,
+                'scope_type': binding.scope_type,
+                'scope_key': binding.scope_key,
+                'binding_role': binding.binding_role,
+                'priority': binding.priority,
+            },
+        )
+    return redirect(url_for('alertmanager.instance_detail', instance_id=instance_id))
+
+
+@alertmanager_bp.post('/instances/<int:instance_id>/bindings/<int:binding_id>/delete')
+@permission_required('settings.manage_integrations')
+def remove_binding(instance_id: int, binding_id: int) -> ResponseReturnValue:
+    instance = get_alertmanager_instance(instance_id)
+    if instance is None:
+        abort(404)
+    binding = get_alertmanager_binding(binding_id)
+    if binding is None or binding.alertmanager_instance_id != instance_id:
+        abort(404)
+    removed_binding = remove_alertmanager_binding(binding_id)
+    if removed_binding is None:
+        abort(404)
+    record_instance_activity(
+        user_id=int(current_user.id),
+        instance=instance,
+        event_type='alertmanager_binding_deleted',
+        status='success',
+        title='Alertmanager binding removed',
+        message=f'{instance.name} is no longer mapped to the selected asset scope.',
+        detail=f'{binding.scope_type}:{binding.scope_key} was removed.',
+        metadata={
+            'binding_id': binding.id,
+            'scope_type': binding.scope_type,
+            'scope_key': binding.scope_key,
+        },
+    )
+    return redirect(url_for('alertmanager.instance_detail', instance_id=instance_id))
+
+
+@alertmanager_bp.post('/instances/<int:instance_id>/delete')
+@permission_required('settings.manage_integrations')
+def delete_instance(instance_id: int) -> ResponseReturnValue:
+    instance = get_alertmanager_instance(instance_id)
+    if instance is None:
+        abort(404)
+    instance_name = instance.name
+    try:
+        remove_alertmanager_instance(instance)
+    except ValueError as exc:
+        record_instance_activity(
+            user_id=int(current_user.id),
+            instance=instance,
+            event_type='alertmanager_instance_delete_rejected',
+            status='error',
+            title='Alertmanager instance not deleted',
+            message=f'{instance_name} still has active asset bindings.',
+            detail=str(exc),
+        )
+        return redirect(url_for('alertmanager.instance_detail', instance_id=instance_id))
+
+    record_instance_activity(
+        user_id=int(current_user.id),
+        instance=None,
+        event_type='alertmanager_instance_deleted',
+        status='success',
+        title='Alertmanager instance deleted',
+        message=f'{instance_name} was removed from the integration registry.',
+        detail='Historical operational activity remains available in Activity Audit Log.',
+        metadata={'instance_id': instance_id, 'instance_name': instance_name},
+    )
+    return redirect(url_for('integrations.alertmanager'))
+
+
+@alertmanager_bp.route('/cluster/<string:cluster_id>', methods=['GET', 'POST'])
+@permission_required('settings.manage_integrations')
+def cluster_alertmanager_config(cluster_id: str) -> ResponseReturnValue:
+    cluster = get_cluster_by_id(cluster_id)
+    if cluster is None:
+        abort(404)
+    instance = materialize_legacy_cluster_config(cluster_id)
+    if instance is not None:
+        return redirect(url_for('alertmanager.instance_detail', instance_id=instance.id))
+    return redirect(url_for('alertmanager.new_instance', cluster_id=cluster_id))
+
+
+@alertmanager_bp.post('/cluster/<string:cluster_id>/test')
+@permission_required('settings.manage_integrations')
+def test_cluster_alertmanager(cluster_id: str) -> ResponseReturnValue:
+    cluster = get_cluster_by_id(cluster_id)
+    if cluster is None:
+        abort(404)
+    result = test_alertmanager_connection(cluster_id=cluster_id)
+    if request.headers.get('HX-Request') == 'true':
+        return jsonify(result)
     return jsonify(
         {
-            'success': result.get(
-                'connected',
-                False,
-            ),
-            'version': result.get(
-                'version',
-                'unknown',
-            ),
-            'response_time_ms': result.get(
-                'response_time_ms',
-                0,
-            ),
-            'error': result.get(
-                'error',
-            ),
-            'reason': result.get(
-                'reason',
-            ),
-            'failure_code': result.get(
-                'failure_code',
-            ),
+            'success': result.get('connected', False),
+            'version': result.get('version', 'unknown'),
+            'response_time_ms': result.get('response_time_ms', 0),
+            'error': result.get('error'),
+            'reason': result.get('reason'),
+            'failure_code': result.get('failure_code'),
         }
     )

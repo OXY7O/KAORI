@@ -56,3 +56,23 @@ Filtering and pagination are presentation concerns in `app.integrations.service`
 - Alertmanager compatibility validates the direct Alertmanager runtime and API v2 capabilities for alert analytics and alert-management workflows.
 
 Do not reuse a runtime-version field across products. In particular, a Thanos Query version is endpoint evidence for Thanos and never a detected Prometheus version.
+
+## Alertmanager instance inventory
+
+Alertmanager inventory is instance-first. One row represents one reusable
+Alertmanager deployment, not one Kubernetes cluster. Connection configuration,
+validation, detected version, readiness, and capabilities belong to the
+instance. Asset consumption belongs to explicit bindings.
+
+```text
+AlertmanagerInstance
+        ↓
+AlertmanagerBinding(scope_type, scope_key, role, priority)
+        ↓
+Kubernetes / Server / HCI / Storage consumer
+```
+
+The list defaults to 5 items and supports 5, 10, 25, and 50. It may filter by
+query, deployment type, and readiness. Cluster Management may link to a bound
+instance, but must not recreate cluster-owned Alertmanager configuration.
+Legacy cluster URLs are compatibility redirects only.
