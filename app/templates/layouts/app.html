@@ -251,13 +251,13 @@
                 closeButton.innerHTML = '<i data-lucide="x" class="h-4 w-4"></i>'
 
                 const progressTrack = document.createElement('div')
-                progressTrack.className = 'h-1 overflow-hidden bg-kaori-soft/70'
-                progressTrack.innerHTML = '<div class="notification-progress-indeterminate h-full bg-kaori-primary"></div>'
+                progressTrack.className = 'mt-4 h-1.5 overflow-hidden rounded-full bg-kaori-soft/70'
+                progressTrack.innerHTML = '<div class="notification-progress-indeterminate h-full rounded-full bg-kaori-primary"></div>'
 
                 copy.append(heading, description)
                 row.append(iconWrap, copy)
-                content.append(row)
-                card.append(content, closeButton, progressTrack)
+                content.append(row, progressTrack)
+                card.append(content, closeButton)
                 toast.append(card)
                 container.append(toast)
 
