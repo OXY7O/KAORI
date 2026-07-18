@@ -4,6 +4,7 @@ from typing import Any
 from urllib.parse import urlsplit
 
 from app.cluster.constants import get_environment_label
+from app.common.presentation import present_user_datetime
 from app.integrations.compatibility import get_profile
 from app.models import AlertmanagerConfig, AlertmanagerInstance, Cluster, PrometheusConfig
 from app.models.integration_runtime import IntegrationRuntimeObservation
@@ -89,6 +90,18 @@ def build_integrations_overview(
         'provider_options': [
             {'value': 'prometheus', 'label': 'Prometheus / Thanos'},
             {'value': 'alertmanager', 'label': 'Alertmanager'},
+        ],
+        'health_options': [
+            {'value': 'healthy', 'label': 'Healthy'},
+            {'value': 'degraded', 'label': 'Degraded'},
+            {'value': 'unhealthy', 'label': 'Unhealthy'},
+            {'value': 'not_observed', 'label': 'Not observed'},
+        ],
+        'runtime_readiness_options': [
+            {'value': 'ready', 'label': 'Ready'},
+            {'value': 'degraded', 'label': 'Degraded'},
+            {'value': 'blocked', 'label': 'Blocked'},
+            {'value': 'validation_required', 'label': 'Validation required'},
         ],
     }
 
@@ -320,6 +333,8 @@ def _runtime_overview_rows() -> list[dict[str, Any]]:
         observation = latest.get(('prometheus', str(config.id)))
         assessments = ((config.capabilities or {}).get('assessments') or [])
         attention = sum(1 for item in assessments if item.get('status') != 'available')
+        observed_at = observation.observed_at if observation else config.last_checked_at
+        latency_ms = observation.latency_ms if observation else config.last_response_time_ms
         rows.append({
             'provider': 'prometheus',
             'provider_label': 'Prometheus / Thanos',
@@ -330,10 +345,15 @@ def _runtime_overview_rows() -> list[dict[str, Any]]:
             'health_status': observation.health_status if observation else 'not_observed',
             'health_score': observation.health_score if observation else None,
             'readiness': config.readiness_status or 'validation_required',
-            'observed_at': observation.observed_at if observation else config.last_checked_at,
-            'latency_ms': observation.latency_ms if observation else config.last_response_time_ms,
+            'observed_at': observed_at,
+            'observed_at_display': present_user_datetime(observed_at, empty='Not observed'),
+            'latency_ms': latency_ms,
+            'latency_display': f'{latency_ms} ms' if latency_ms is not None else None,
             'capability_profile': config.capability_profile or config.query_profile,
             'capability_attention': attention,
+            'capability_attention_display': (
+                f'{attention} item needs attention' if attention == 1 else f'{attention} items need attention'
+            ),
             'message': (observation.message if observation else None) or config.validation_message or config.last_error,
             'detail_endpoint': 'prometheus.configuration',
             'detail_kwargs': {'cluster_id': config.cluster_id},
@@ -341,6 +361,9 @@ def _runtime_overview_rows() -> list[dict[str, Any]]:
 
     for instance in AlertmanagerInstance.query.order_by(AlertmanagerInstance.name.asc()).all():
         observation = latest.get(('alertmanager', str(instance.id)))
+        observed_at = observation.observed_at if observation else instance.last_checked_at
+        latency_ms = observation.latency_ms if observation else instance.last_response_time_ms
+        capability_attention = 0 if instance.capabilities else 1
         rows.append({
             'provider': 'alertmanager',
             'provider_label': 'Alertmanager',
@@ -351,10 +374,17 @@ def _runtime_overview_rows() -> list[dict[str, Any]]:
             'health_status': observation.health_status if observation else 'not_observed',
             'health_score': observation.health_score if observation else None,
             'readiness': instance.readiness_status or 'validation_required',
-            'observed_at': observation.observed_at if observation else instance.last_checked_at,
-            'latency_ms': observation.latency_ms if observation else instance.last_response_time_ms,
+            'observed_at': observed_at,
+            'observed_at_display': present_user_datetime(observed_at, empty='Not observed'),
+            'latency_ms': latency_ms,
+            'latency_display': f'{latency_ms} ms' if latency_ms is not None else None,
             'capability_profile': instance.capability_profile,
-            'capability_attention': 0 if instance.capabilities else 1,
+            'capability_attention': capability_attention,
+            'capability_attention_display': (
+                f'{capability_attention} item needs attention'
+                if capability_attention == 1
+                else f'{capability_attention} items need attention'
+            ),
             'message': (observation.message if observation else None) or instance.validation_message or instance.last_error,
             'detail_endpoint': 'alertmanager.instance_detail',
             'detail_kwargs': {'instance_id': instance.id},

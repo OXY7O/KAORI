@@ -183,3 +183,11 @@ Prometheus-compatible reads are owned by `app/prometheus/consumer.py`.
 internally delegating runtime reads to `PrometheusConsumer`. Validation and
 configuration workflows continue to use the provider service and client because
 they intentionally test capabilities rather than consume validated data.
+
+### Presentation-ready integration view models
+
+Integration templates do not format raw datetimes or derive display labels.
+Services/presenters must supply fields such as `observed_at_display`,
+`latency_display`, and `capability_attention_display`. This keeps full-page and
+HTMX rendering consistent with the authenticated user's timezone, locale, date
+format, and time format.

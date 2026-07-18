@@ -213,3 +213,26 @@ full page reload.
 The global Integrations Overview may aggregate the latest persisted runtime observation across providers. It must not duplicate provider configuration forms or implement provider-specific validation. Its responsibilities are limited to health/readiness posture, capability-attention counts, observation freshness, filtering, and navigation to the owning provider page.
 
 A target without an observation is shown as `Not Observed`; it must not be inferred as healthy merely because configuration exists. Provider detail pages remain the authoritative location for remediation instructions and evidence.
+
+## Presentation boundary
+
+Runtime templates consume presentation-ready view models. They must not format
+raw datetimes, derive user timezone output, pluralize counters, or humanize
+canonical status keys. These transformations belong to the Python presentation
+layer so full-page and HTMX responses use the same representation.
+
+Required pattern:
+
+```text
+Persisted UTC datetime
+        ↓
+Presentation layer applies the authenticated user's timezone and locale
+        ↓
+`observed_at_display`
+        ↓
+Template renders the supplied string
+```
+
+A runtime row may retain the raw value for sorting or internal logic, but the
+Jinja template must render `*_display` fields. Provider adapters and persistence
+remain timezone-neutral; user preferences affect presentation only.
