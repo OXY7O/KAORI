@@ -9,7 +9,7 @@ Required visual rules:
 - use semantic Tailwind tokens from `frontend/styles.css`;
 - use the shared shell, layout, content, aside, and introduction macros from `components/page_hero.html`;
 - use a solid `bg-kaori-primary` authenticated hero;
-- Settings and Access heroes use the shared `min-h-[15.5rem]` and `xl:h-[15.5rem]` shell, 8/4 desktop layout, title scale, and padding. User Management is the top-level reference and Add User is the create/edit/detail reference;
+- Settings and Access heroes use the shared `min-h-[15.5rem]` compact baseline and `lg:min-h-[17.5rem]` desktop baseline with an internal `lg:min-h-[14.5rem]` 8/4 grid. User Management, Roles & Access, and Activity Audit Log are the top-level references; the same shared minimum geometry applies to create/edit/detail workflows so content can grow without clipping;
 - do not use gradients or raw hex colors;
 - use violet for product identity and selection;
 - use semantic green/amber/red/slate only for actual state;
@@ -53,6 +53,7 @@ Role Registry tab
 
 Context rail
   - role assignment flow, not a generic role-model paragraph
+  - the role assignment flow uses native `<details open>` so it is visible by default and may be collapsed
   - default role coverage
   - Permission Catalog boundary
 ```
@@ -83,8 +84,12 @@ Mode must be clear in the hero, supporting notice, field state, permission matri
 
 - group by permission module;
 - show action label, stable permission key, and description;
+- align the Permission Matrix to the same primary content column width as Role Configuration instead of spanning beneath the right-side context rail;
+- render the entire Permission Matrix as a native disclosure that is closed by default in create, edit, and detail modes;
+- render each permission module collapsed by default;
+- provide Expand all / Collapse all in every mode, including read-only Custom Role Detail;
 - allow module select/clear only in editable modes;
-- provide a global Select all / Clear all control for large registries;
+- provide a global Select all / Clear all control for large registries in editable modes;
 - update the global control label and `aria-pressed` state from the effective checkbox selection;
 - show selected permission and module counts;
 - keep system/default detail fully read-only;

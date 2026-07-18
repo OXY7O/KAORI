@@ -44,3 +44,18 @@ def test_role_permission_checkbox_stays_inside_its_card_viewport():
     assert 'function repairDocumentViewport()' in editor_source
     assert "window.scrollTo({ left: 0, top: 0, behavior: 'auto' })" in editor_source
     assert "root.addEventListener('focusin'" in editor_source
+
+
+def test_role_permission_matrix_is_compact_and_closed_by_default():
+    source = Path('app/templates/settings/roles/form.html').read_text(encoding='utf-8')
+
+    assert 'grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]' in source
+    assert 'data-role-permission-matrix' in source
+    tag_start = source.rfind('<details', 0, source.index('data-role-permission-matrix'))
+    tag_end = source.index('>', tag_start)
+    assert ' open' not in source[tag_start:tag_end]
+    assert 'data-role-module-toggle-all' in source
+    assert 'data-role-module-toggle-all-label>Expand all<' in source
+    assert 'data-expanded="false"' in source
+    assert 'data-role-module-content' in source
+    assert '\n                                         hidden' in source

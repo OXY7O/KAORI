@@ -219,7 +219,7 @@ The authenticated application shell uses a floating, rounded navigation model ra
 - Keep navigation groups visually separated by compact uppercase labels; do not add decorative dividers between every item.
 - Active navigation uses a filled violet state with white label and icon. Inactive items use muted on-brand content with a subtle translucent hover surface.
 - Nested navigation remains inside the sidebar and uses a low-contrast vertical guide, compact rows, and a violet accent for the selected child.
-- The collapse control belongs in the sidebar footer so the topbar remains focused on page context, search, operational actions, notifications, theme, and account controls.
+- The authenticated sidebar remains expanded at the standard desktop width. Do not add a collapse-navigation control unless a new navigation contract is explicitly approved.
 - The main application frame uses semantic surface and outline tokens in both light and dark mode. Avoid raw white, slate, blue, or violet utilities when a KAORI token exists.
 
 
@@ -238,7 +238,7 @@ The authenticated application shell uses a floating, rounded navigation model ra
 - Use `page_hero.layout_classes()` for the standard 8/4 desktop grid and shared height contract.
 - Use `page_hero.content_classes()` and `page_hero.aside_classes()` for the primary and supporting columns.
 - Use `page_hero.intro(eyebrow_icon, eyebrow_label, leading_icon)` whenever a hero has an eyebrow and a leading icon.
-- The standard Settings and Access hero shell uses `min-h-[15.5rem]` and a fixed `xl:h-[15.5rem]` desktop contract. The grid uses the same 8/4 split for both top-level workspaces and create/edit/detail workflows. User Management is the top-level reference; Add User is the workflow reference. Below `xl`, the hero returns to natural height for responsive safety.
+- The standard Settings and Access hero shell uses `min-h-[15.5rem]` on compact layouts and a shared `lg:min-h-[17.5rem]` desktop baseline. The internal grid uses `lg:min-h-[14.5rem]` with the same 8/4 split for top-level workspaces and create/edit/detail workflows. User Management, Roles & Access, and Activity Audit Log are the primary height references. The hero uses minimum height rather than a fixed desktop height so wrapped metadata or longer context never gets clipped.
 - The component owns the outer radius, border, solid brand surface, responsive padding, eyebrow geometry, icon sizing, column width, and horizontal gap.
 - Page templates own only the title, optional role/subtitle, description, notice, badges, and context-panel content.
 - Do not apply manual left margin or padding to compensate for the leading icon.

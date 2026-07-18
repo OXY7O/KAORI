@@ -33,18 +33,20 @@ def test_settings_and_access_heroes_use_shared_kaori_contract() -> None:
         assert not missing, f'{template_path} is missing hero contract fragments: {missing}'
 
 
-def test_shared_settings_access_hero_has_fixed_desktop_geometry() -> None:
+def test_shared_settings_access_hero_has_safe_shared_minimum_geometry() -> None:
     source = Path('app/templates/components/page_hero.html').read_text(encoding='utf-8')
 
     required_fragments = (
         'min-h-[15.5rem]',
-        'xl:h-[15.5rem]',
-        'xl:h-full xl:min-h-0 xl:grid-cols-12',
+        'lg:min-h-[17.5rem]',
+        'lg:min-h-[14.5rem]',
+        'xl:grid-cols-12 xl:items-stretch',
+        'xl:self-stretch',
         'xl:[&>*]:h-full',
-        'xl:[&>*]:min-h-0',
     )
     missing = [fragment for fragment in required_fragments if fragment not in source]
     assert not missing, f'Shared Settings/Access hero geometry is incomplete: {missing}'
+    assert 'xl:h-[15.5rem]' not in source
 
     user_hero = Path('app/templates/users/partials/_hero.html').read_text(encoding='utf-8')
     add_user = Path('app/templates/users/form.html').read_text(encoding='utf-8')
@@ -126,7 +128,9 @@ def test_rbac_ownership_and_authorization_flow_are_explicit() -> None:
     permissions_source = Path('app/templates/settings/permissions/index.html').read_text(encoding='utf-8')
 
     required_role_flow_fragments = (
+        '<details open class="group overflow-hidden',
         'Role assignment flow',
+        'group-open:rotate-180',
         'Permission Catalog',
         'Role Composition',
         'User Management',
@@ -228,7 +232,7 @@ def test_role_registry_pagination_uses_role_vocabulary() -> None:
     assert '<span class="text-xs">Rows</span>' not in source
 
 
-def test_role_form_guardrails_and_global_permission_toggle_are_available() -> None:
+def test_role_form_guardrails_and_permission_matrix_disclosures_are_available() -> None:
     source = Path('app/templates/settings/roles/form.html').read_text(encoding='utf-8')
     script = Path('app/static/js/role_permission_editor.js').read_text(encoding='utf-8')
 
@@ -239,12 +243,24 @@ def test_role_form_guardrails_and_global_permission_toggle_are_available() -> No
         'Dependency normalization',
         'Assignment impact',
         'Super Admin boundary',
+        'grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]',
+        'data-role-permission-matrix',
+        'data-role-module-toggle-all',
+        'data-role-module-toggle-all-label',
+        'Expand all',
+        'data-expanded="false"',
+        'data-role-module-content',
+        'hidden',
         'data-role-toggle-all',
         'data-role-toggle-all-label',
         'Select all',
     )
     missing = [fragment for fragment in required_form_fragments if fragment not in source]
-    assert not missing, f'Role editor guardrail/toggle contract is incomplete: {missing}'
+    assert not missing, f'Role editor guardrail/matrix contract is incomplete: {missing}'
+
+    permission_matrix_tag = source[source.index('data-role-permission-matrix') - 180:source.index('data-role-permission-matrix')]
+    assert '<details' in permission_matrix_tag
+    assert ' open' not in permission_matrix_tag
 
     required_script_fragments = (
         "root.querySelector('[data-role-toggle-all]')",
@@ -252,6 +268,11 @@ def test_role_form_guardrails_and_global_permission_toggle_are_available() -> No
         "toggleAllButton?.addEventListener('click'",
         "toggleAllLabel.textContent = allSelected ? 'Clear all' : 'Select all'",
         "toggleAllButton.setAttribute('aria-pressed'",
+        "root.querySelector('[data-role-module-toggle-all]')",
+        "root.querySelector('[data-role-module-toggle-all-label]')",
+        "moduleToggleAllButton?.addEventListener('click'",
+        "moduleToggleAllLabel.textContent = allExpanded ? 'Collapse all' : 'Expand all'",
+        'setModuleExpanded(section, false)',
     )
     missing_script = [fragment for fragment in required_script_fragments if fragment not in script]
-    assert not missing_script, f'Global permission toggle implementation is incomplete: {missing_script}'
+    assert not missing_script, f'Global permission controls are incomplete: {missing_script}'

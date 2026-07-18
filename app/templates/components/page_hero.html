@@ -1,17 +1,17 @@
 {% macro shell_classes() -%}
-relative min-h-[15.5rem] overflow-hidden rounded-2xl border border-brand-outline bg-kaori-primary p-5 text-brand-foreground shadow-sm lg:p-6 xl:h-[15.5rem]
+relative min-h-[15.5rem] overflow-hidden rounded-2xl border border-brand-outline bg-kaori-primary p-5 text-brand-foreground shadow-sm lg:min-h-[17.5rem] lg:p-6
 {%- endmacro %}
 
 {% macro layout_classes() -%}
-relative grid min-h-[12rem] gap-5 xl:h-full xl:min-h-0 xl:grid-cols-12 xl:items-stretch
+relative grid min-h-[12rem] gap-5 lg:min-h-[14.5rem] xl:grid-cols-12 xl:items-stretch
 {%- endmacro %}
 
 {% macro content_classes() -%}
-flex min-w-0 flex-col justify-center xl:col-span-8 xl:h-full
+flex min-w-0 flex-col justify-center xl:col-span-8 xl:self-stretch
 {%- endmacro %}
 
 {% macro aside_classes() -%}
-min-w-0 xl:col-span-4 xl:h-full xl:[&>*]:h-full xl:[&>*]:min-h-0
+min-w-0 self-stretch xl:col-span-4 xl:[&>*]:h-full
 {%- endmacro %}
 
 {% macro eyebrow(icon, label) -%}

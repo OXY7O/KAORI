@@ -17,6 +17,8 @@
         const selectedModuleCount = root.querySelector('[data-role-selected-module-count]')
         const toggleAllButton = root.querySelector('[data-role-toggle-all]')
         const toggleAllLabel = root.querySelector('[data-role-toggle-all-label]')
+        const moduleToggleAllButton = root.querySelector('[data-role-module-toggle-all]')
+        const moduleToggleAllLabel = root.querySelector('[data-role-module-toggle-all-label]')
         const moduleSections = Array.from(root.querySelectorAll('[data-role-module-section]'))
 
         const permissionInputs = () => Array.from(root.querySelectorAll('[data-role-permission]'))
@@ -29,6 +31,23 @@
 
         function moduleInputs(section) {
             return Array.from(section.querySelectorAll('[data-role-permission]'))
+        }
+
+        function visibleModuleSections() {
+            return moduleSections.filter((section) => !section.hidden)
+        }
+
+        function syncModuleExpansionAction() {
+            const visibleSections = visibleModuleSections()
+            const allExpanded = visibleSections.length > 0
+                && visibleSections.every((section) => section.dataset.expanded === 'true')
+
+            if (moduleToggleAllLabel) {
+                moduleToggleAllLabel.textContent = allExpanded ? 'Collapse all' : 'Expand all'
+            }
+            if (moduleToggleAllButton) {
+                moduleToggleAllButton.setAttribute('aria-pressed', allExpanded ? 'true' : 'false')
+            }
         }
 
         function setModuleExpanded(section, expanded) {
@@ -49,6 +68,8 @@
             toggles.forEach((toggle) => {
                 toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false')
             })
+
+            syncModuleExpansionAction()
         }
 
         function syncModuleAction(section) {
@@ -74,6 +95,7 @@
             }
 
             moduleSections.forEach(syncModuleAction)
+            syncModuleExpansionAction()
 
             const editableInputs = permissionInputs().filter((input) => !input.disabled)
             const allSelected = editableInputs.length > 0 && editableInputs.every((input) => input.checked)
@@ -110,10 +132,12 @@
                     setModuleExpanded(section, section.dataset.expanded !== 'false')
                 }
             })
+
+            syncModuleExpansionAction()
         }
 
         moduleSections.forEach((section) => {
-            setModuleExpanded(section, true)
+            setModuleExpanded(section, false)
 
             section.querySelectorAll('[data-role-module-toggle]').forEach((button) => {
                 button.addEventListener('click', () => {
@@ -136,6 +160,17 @@
             }
         })
 
+
+        moduleToggleAllButton?.addEventListener('click', () => {
+            const sections = visibleModuleSections()
+            const shouldExpand = sections.some((section) => section.dataset.expanded !== 'true')
+
+            sections.forEach((section) => {
+                setModuleExpanded(section, shouldExpand)
+            })
+
+            syncModuleExpansionAction()
+        })
 
         toggleAllButton?.addEventListener('click', () => {
             const inputs = permissionInputs().filter((input) => !input.disabled)
