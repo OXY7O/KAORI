@@ -161,7 +161,7 @@
             </main>
 
             <aside class="space-y-5 xl:sticky xl:top-6 xl:col-span-4">
-                <details class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm group">
+                <details open class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm group">
                     <summary class="flex items-start gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4 cursor-pointer list-none select-none transition hover:bg-kaori-soft/40 [&::-webkit-details-marker]:hidden">
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                             <i data-lucide="workflow" class="h-5 w-5"></i>
@@ -234,17 +234,25 @@
                     </div>
                 </details>
 
-                <section class="overflow-hidden rounded-xl border border-status-info-border bg-status-info-soft shadow-sm">
-                    <div class="flex items-start gap-3 p-5">
+                <details class="group overflow-hidden rounded-xl border border-status-info-border bg-status-info-soft shadow-sm">
+                    <summary class="flex cursor-pointer list-none items-start gap-3 p-5 transition hover:bg-status-info-soft/70 [&::-webkit-details-marker]:hidden">
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-status-info-border bg-surface-card text-status-info">
                             <i data-lucide="shield-check" class="h-5 w-5"></i>
                         </span>
-                        <div>
+                        <div class="min-w-0">
                             <h2 class="text-sm font-semibold text-status-info-text">Credential boundary</h2>
-                            <p class="mt-1 text-xs leading-5 text-status-info-text">KAORI stores provider metadata and environment-variable names only. LDAP bind passwords, OAuth client secrets, authorization codes, and OAuth tokens are not persisted in provider records.</p>
+                            <p class="mt-1 text-xs leading-5 text-status-info-text">Provider secrets remain outside persisted Identity Provider records.</p>
                         </div>
+                        <span class="ml-auto flex shrink-0 items-center gap-2 pl-3 text-xs font-semibold text-status-info-text">
+                            <span class="group-open:hidden">Details</span>
+                            <span class="hidden group-open:inline">Collapse</span>
+                            <i data-lucide="chevron-down" class="h-4 w-4 transition-transform duration-200 group-open:rotate-180"></i>
+                        </span>
+                    </summary>
+                    <div class="border-t border-status-info-border px-5 py-4">
+                        <p class="text-xs leading-5 text-status-info-text">KAORI stores provider metadata and environment-variable names only. LDAP bind passwords, OAuth client secrets, authorization codes, and OAuth tokens are not persisted in provider records.</p>
                     </div>
-                </section>
+                </details>
             </aside>
         </div>
     </div>

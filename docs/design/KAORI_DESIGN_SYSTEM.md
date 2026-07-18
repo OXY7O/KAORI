@@ -213,13 +213,13 @@ Validate each redesign in:
 The authenticated application shell uses a floating, rounded navigation model rather than a full-bleed rectangular sidebar.
 
 - Place the application shell on `surface-page` with a compact outer gutter.
-- Use a 250 px sidebar at the standard desktop density and a 78 px compact icon rail when collapsed. The navbar control must never remove navigation from the application shell.
+- Use a 250 px sidebar at the standard desktop density when navigation is open. The navbar control may fully hide or restore the sidebar; do not introduce a narrow icon-only rail.
 - The sidebar uses `surface-sidebar` as its foundation. Violet is reserved for the active item, focus state, brand icon, and restrained ambient highlights.
 - Use a 16 px (`rounded-2xl`) outer radius for both the sidebar and main application frame.
 - Keep navigation groups visually separated by compact uppercase labels; do not add decorative dividers between every item.
 - Active navigation uses a filled violet state with white label and icon. Inactive items use muted on-brand content with a subtle translucent hover surface.
 - Nested navigation remains inside the sidebar and uses a low-contrast vertical guide, compact rows, and a violet accent for the selected child.
-- The navbar collapse/expand control persists `kaori.sidebarExpanded` locally. Collapse hides section labels, item labels, chevrons, and nested submenus while preserving parent navigation icons and the KAORI logo.
+- The navbar open/close control persists `kaori.sidebarOpen` locally and toggles the entire 250 px sidebar. The content frame expands into the released space when navigation is closed.
 - The main application frame uses semantic surface and outline tokens in both light and dark mode. Avoid raw white, slate, blue, or violet utilities when a KAORI token exists.
 
 
@@ -625,3 +625,11 @@ ConfigMap and Secret operation selectors use one consistent live-source pattern:
 ## Settings workspace standard
 
 All Settings workspaces use the KAORI Violet Infrastructure visual system. Heroes use the solid primary violet surface, operational context is presented in a right-side posture card where applicable, and primary actions use violet or high-contrast white inside the hero. Main sections use `bg-surface-card`, `border-outline-default`, and `rounded-xl`/`rounded-2xl`; nested information blocks use `bg-surface-subtle` and `rounded-lg`. Form controls use violet focus borders and rings. Text status labels use the global compact rectangular geometry, while semantic green, amber, red, cyan, and slate remain reserved for operational state. Circular geometry remains limited to avatars, state dots, toggles, progress tracks, and decorative hero shapes.
+
+### Settings and Access disclosure hierarchy
+
+- Explanatory workflow panels that help an administrator understand how to complete the current task open by default. Current examples are Identity creation paths, How LDAP provisioning works, and How each provider is used.
+- Consequence, credential, and security-boundary panels stay closed by default so the primary form or registry remains visually dominant. Current examples are Reset impact, Authentication boundary, and Credential boundary.
+- Native `<details>` and `<summary>` are preferred for these disclosure panels. Use a violet icon surface, shared outline tokens, sentence-case labels, `group-open` chevron rotation, and explicit Details/Collapse text.
+- Protected Secret Reveal Protection Posture and Activity Audit Operational Overview use the same overview anatomy as Role & Access Overview: one structural header, four equal metric cells separated by shared outlines, and one lower information strip containing four concise operational boundaries.
+- Activity Audit Log workspace tabs are named Retention and Audit Log. Avoid the ambiguous label Snapshot for the primary audit-record workspace.

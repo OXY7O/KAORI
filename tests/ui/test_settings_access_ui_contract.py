@@ -334,3 +334,93 @@ def test_activity_retention_uses_overview_pattern() -> None:
     assert not missing, f'Activity retention overview is incomplete: {missing}'
     assert 'Lifecycle overview' not in source
     assert 'bg-gradient-to-r' not in source
+
+
+def _details_open_state(source: str, marker: str) -> bool:
+    marker_position = source.index(marker)
+    details_start = source.rfind('<details', 0, marker_position)
+    details_end = source.index('>', details_start)
+    assert details_start >= 0, f'No details element found for {marker}'
+    return ' open' in source[details_start:details_end]
+
+
+def test_access_workflow_disclosures_use_intentional_default_states() -> None:
+    add_user_source = Path('app/templates/users/form.html').read_text(encoding='utf-8')
+    reset_password_source = Path('app/templates/users/reset_password.html').read_text(encoding='utf-8')
+    ldap_source = Path('app/templates/users/external_identities.html').read_text(encoding='utf-8')
+    providers_source = Path('app/templates/users/providers/index.html').read_text(encoding='utf-8')
+
+    assert _details_open_state(add_user_source, 'Identity creation paths')
+    assert not _details_open_state(reset_password_source, 'Reset impact')
+    assert _details_open_state(ldap_source, 'How LDAP provisioning works')
+    assert not _details_open_state(ldap_source, 'Authentication boundary')
+    assert _details_open_state(providers_source, 'How each provider is used')
+    assert not _details_open_state(providers_source, 'Credential boundary')
+
+    for source, marker in (
+        (reset_password_source, 'Reset impact'),
+        (ldap_source, 'Authentication boundary'),
+        (providers_source, 'Credential boundary'),
+    ):
+        marker_position = source.index(marker)
+        detail_fragment = source[source.rfind('<details', 0, marker_position):source.index('</details>', marker_position)]
+        assert 'group-open:rotate-180' in detail_fragment
+        assert 'group-open:hidden' in detail_fragment
+        assert 'group-open:inline' in detail_fragment
+
+
+def test_secret_reveal_protection_posture_uses_access_overview_pattern() -> None:
+    source = Path('app/templates/settings/secret_reveal/index.html').read_text(encoding='utf-8')
+
+    required = (
+        'Protection Posture Overview',
+        'grid gap-px bg-outline-subtle md:grid-cols-2 xl:grid-cols-4',
+        'min-h-[12rem]',
+        'Global Feature',
+        'Protected Clusters',
+        'Enabled Namespaces',
+        'Selected Cluster',
+        'border-t border-outline-subtle bg-surface-hover',
+        'Step-up Authentication',
+        'Independent Approval',
+        'Single Kubeconfig',
+        'Final Authorization',
+    )
+    missing = [fragment for fragment in required if fragment not in source]
+    assert not missing, f'Protected Secret Reveal overview is incomplete: {missing}'
+
+
+def test_activity_audit_workspace_uses_audit_log_tab_and_overview_pattern() -> None:
+    activity_source = Path('app/templates/notifications/activity.html').read_text(encoding='utf-8')
+    overview_source = Path('app/templates/notifications/partials/_activity_summary_cards.html').read_text(encoding='utf-8')
+
+    required_activity = (
+        'openAuditLog()',
+        "activeAuditWorkspaceTab = 'audit-log'",
+        'activity-audit-tab-audit-log',
+        'activity-audit-panel-audit-log',
+        'Audit Log',
+    )
+    missing_activity = [fragment for fragment in required_activity if fragment not in activity_source]
+    assert not missing_activity, f'Activity Audit Log tab contract is incomplete: {missing_activity}'
+    assert 'openAuditSnapshot' not in activity_source
+    assert 'activity-audit-tab-snapshot' not in activity_source
+    assert '>Snapshot<' not in activity_source
+
+    required_overview = (
+        'Operational Overview',
+        'grid gap-px bg-outline-subtle md:grid-cols-2 xl:grid-cols-4',
+        'min-h-[12rem]',
+        'Total Activities',
+        'Need Attention',
+        'Unread Activities',
+        'Success Ratio',
+        'border-t border-outline-subtle bg-surface-hover',
+        'Event Scope',
+        'Review Priority',
+        'Technical Detail',
+        'Audit Boundary',
+    )
+    missing_overview = [fragment for fragment in required_overview if fragment not in overview_source]
+    assert not missing_overview, f'Activity operational overview is incomplete: {missing_overview}'
+    assert 'Activity audit snapshot' not in overview_source

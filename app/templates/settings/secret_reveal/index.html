@@ -40,52 +40,95 @@
         </section>
 
         <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
-            <div class="flex items-start gap-3 border-b border-outline-default bg-surface-hover px-5 py-4 sm:px-6">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
-                    <i data-lucide="scan-eye" class="h-5 w-5"></i>
-                </span>
-                <div>
-                    <h2 class="text-sm font-semibold text-content-primary">Protection posture</h2>
-                    <p class="mt-1 text-sm leading-5 text-content-secondary">A compact view of the controls that govern one-time Secret reveal.</p>
+            <header class="border-b border-outline-default px-5 py-4 lg:px-6">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex min-w-0 items-center gap-3">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
+                            <i data-lucide="scan-eye" class="h-5 w-5"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <h2 class="text-base font-semibold text-content-primary">Protection Posture Overview</h2>
+                            <p class="mt-0.5 text-xs leading-5 text-content-muted">Current feature availability, protected scope, namespace admission, and cluster readiness for one-time Secret reveal.</p>
+                        </div>
+                    </div>
+                    {{ table_label.status_label('Reveal enabled' if global_reveal_enabled else 'Reveal disabled', 'normal' if global_reveal_enabled else 'warning', 'shield-check' if global_reveal_enabled else 'shield-alert') }}
                 </div>
+            </header>
+
+            <div class="grid gap-px bg-outline-subtle md:grid-cols-2 xl:grid-cols-4">
+                <article class="flex min-h-[12rem] flex-col bg-surface-card p-5">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-[0.12em] text-content-muted">Global Feature</p>
+                            <p class="mt-2 text-2xl font-bold tracking-tight {{ 'text-status-normal-text' if global_reveal_enabled else 'text-status-warning-text' }}">{{ 'Enabled' if global_reveal_enabled else 'Disabled' }}</p>
+                        </div>
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl {{ 'bg-status-normal-soft text-status-normal-text' if global_reveal_enabled else 'bg-status-warning-soft text-status-warning-text' }}">
+                            <i data-lucide="{{ 'power' if global_reveal_enabled else 'power-off' }}" class="h-5 w-5"></i>
+                        </span>
+                    </div>
+                    <p class="mt-3 text-sm leading-6 text-content-muted">Application-wide switch controlling whether protected reveal requests may proceed.</p>
+                </article>
+
+                <article class="flex min-h-[12rem] flex-col bg-surface-card p-5">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-[0.12em] text-content-muted">Protected Clusters</p>
+                            <p class="mt-2 text-3xl font-bold tracking-tight text-content-primary">{{ protected_cluster_count }}</p>
+                        </div>
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
+                            <i data-lucide="server-cog" class="h-5 w-5"></i>
+                        </span>
+                    </div>
+                    <p class="mt-3 text-sm leading-6 text-content-muted">Clusters with at least one namespace configured for step-up or approval-controlled reveal.</p>
+                </article>
+
+                <article class="flex min-h-[12rem] flex-col bg-surface-card p-5">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-[0.12em] text-content-muted">Enabled Namespaces</p>
+                            <p class="mt-2 text-3xl font-bold tracking-tight text-content-primary">{{ total_enabled_namespaces }}</p>
+                        </div>
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl {{ 'bg-status-normal-soft text-status-normal-text' if total_enabled_namespaces else 'bg-surface-disabled text-content-muted' }}">
+                            <i data-lucide="boxes" class="h-5 w-5"></i>
+                        </span>
+                    </div>
+                    <p class="mt-3 text-sm leading-6 text-content-muted">Namespaces currently admitted to the protected reveal workflow across all managed clusters.</p>
+                </article>
+
+                <article class="flex min-h-[12rem] flex-col bg-surface-card p-5">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-[0.12em] text-content-muted">Selected Cluster</p>
+                            <p class="mt-2 text-xl font-bold tracking-tight {{ 'text-status-normal-text' if selected_cluster_ready else 'text-status-warning-text' if selected_cluster else 'text-content-muted' }}">{{ 'Ready' if selected_cluster_ready else 'Review required' if selected_cluster else 'Not selected' }}</p>
+                        </div>
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl {{ 'bg-status-normal-soft text-status-normal-text' if selected_cluster_ready else 'bg-status-warning-soft text-status-warning-text' if selected_cluster else 'bg-surface-disabled text-content-muted' }}">
+                            <i data-lucide="{{ 'badge-check' if selected_cluster_ready else 'shield-alert' if selected_cluster else 'circle-dashed' }}" class="h-5 w-5"></i>
+                        </span>
+                    </div>
+                    <p class="mt-3 text-sm leading-6 text-content-muted">{{ selected_cluster.name if selected_cluster else 'Choose a cluster to review its reveal readiness and namespace policy scope.' }}</p>
+                </article>
             </div>
-            <div class="grid gap-3 p-5 sm:grid-cols-2 sm:p-6 xl:grid-cols-4">
-                <article class="rounded-xl border {% if global_reveal_enabled %}border-status-normal-border bg-status-normal-soft/40{% else %}border-status-warning-border bg-status-warning-soft/40{% endif %} p-4">
-                    <div class="flex items-start justify-between gap-3">
-                        <span class="flex h-9 w-9 items-center justify-center rounded-xl {% if global_reveal_enabled %}bg-status-normal-soft text-status-normal-text{% else %}bg-status-warning-soft text-status-warning-text{% endif %}"><i data-lucide="power" class="h-4 w-4"></i></span>
-                        {{ table_label.status_label('Enabled' if global_reveal_enabled else 'Disabled', 'normal' if global_reveal_enabled else 'warning', 'check' if global_reveal_enabled else 'shield-alert') }}
-                    </div>
-                    <p class="mt-4 text-[10px] font-semibold uppercase tracking-wide text-content-muted">Global feature</p>
-                    <p class="mt-1 text-sm font-semibold text-content-primary">Protected reveal availability</p>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Global application switch for controlled reveal.</p>
-                </article>
-                <article class="rounded-xl border border-brand-outline bg-kaori-soft/45 p-4">
-                    <div class="flex items-start justify-between gap-3">
-                        <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="server-cog" class="h-4 w-4"></i></span>
-                        {{ table_label.status_label(protected_cluster_count ~ ' clusters', 'info', 'server') }}
-                    </div>
-                    <p class="mt-4 text-[10px] font-semibold uppercase tracking-wide text-content-muted">Protected clusters</p>
-                    <p class="mt-1 text-sm font-semibold text-content-primary">Cluster-level policy scope</p>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Each cluster stores an independent readiness state.</p>
-                </article>
-                <article class="rounded-xl border {% if total_enabled_namespaces %}border-status-normal-border bg-status-normal-soft/40{% else %}border-outline-default bg-surface-hover{% endif %} p-4">
-                    <div class="flex items-start justify-between gap-3">
-                        <span class="flex h-9 w-9 items-center justify-center rounded-xl {% if total_enabled_namespaces %}bg-status-normal-soft text-status-normal-text{% else %}bg-surface-disabled text-content-muted{% endif %}"><i data-lucide="boxes" class="h-4 w-4"></i></span>
-                        {{ table_label.status_label(total_enabled_namespaces ~ ' enabled', 'normal' if total_enabled_namespaces else 'unknown', 'check' if total_enabled_namespaces else 'minus') }}
-                    </div>
-                    <p class="mt-4 text-[10px] font-semibold uppercase tracking-wide text-content-muted">Enabled namespaces</p>
-                    <p class="mt-1 text-sm font-semibold text-content-primary">Namespace allow list</p>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Only explicitly enabled namespaces can be targeted.</p>
-                </article>
-                <article class="rounded-xl border border-brand-outline bg-kaori-soft/45 p-4">
-                    <div class="flex items-start justify-between gap-3">
-                        <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="key-round" class="h-4 w-4"></i></span>
-                        {{ table_label.status_label('Controlled', 'info', 'shield-check') }}
-                    </div>
-                    <p class="mt-4 text-[10px] font-semibold uppercase tracking-wide text-content-muted">Credential model</p>
-                    <p class="mt-1 text-sm font-semibold text-content-primary">Single cluster kubeconfig</p>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Kubernetes RBAC remains the final permission boundary.</p>
-                </article>
+
+            <div class="border-t border-outline-subtle bg-surface-hover px-5 py-4 lg:px-6">
+                <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                    {% set protection_boundaries = [
+                        ('key-round', 'Step-up Authentication', 'Require credential re-verification before a one-time Secret value can be revealed.'),
+                        ('user-check', 'Independent Approval', 'Use request and approval separation for namespaces that require four-eyes control.'),
+                        ('file-key-2', 'Single Kubeconfig', 'KAORI uses the configured cluster credential; least-privilege Kubernetes RBAC must be enforced externally.'),
+                        ('shield-check', 'Final Authorization', 'Application policy, role permission, namespace admission, and Kubernetes RBAC must all allow the action.')
+                    ] %}
+                    {% for icon, title, description in protection_boundaries %}
+                        <div class="flex items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card p-3.5">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                                <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+                            </span>
+                            <div>
+                                <p class="text-sm font-semibold text-content-primary">{{ title }}</p>
+                                <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ description }}</p>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
             </div>
         </section>
 

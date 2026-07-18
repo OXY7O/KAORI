@@ -1,79 +1,65 @@
 {% set success_ratio = ((summary.success_count / summary.total_count) * 100) | round(0) if summary.total_count > 0 else 0 %}
-<div class="space-y-3">
-    <div class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-            <h2 class="text-lg font-semibold text-content-primary dark:text-white">Activity audit snapshot</h2>
-            <p class="text-sm text-content-muted dark:text-content-muted">Key volume, review, and outcome signals for the current audit workspace.</p>
-        </div>
-        <div class="text-sm text-content-muted dark:text-content-muted">
-            Review focus <span class="font-semibold text-content-secondary dark:text-slate-200">{{ summary.attention_count }} need attention</span>
-        </div>
-    </div>
-    <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm dark:border-outline-default dark:bg-surface-card">
-        <div class="flex flex-col gap-3 border-b border-outline-default px-5 py-4 lg:flex-row lg:items-center lg:justify-between dark:border-outline-default">
-            <div class="flex items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary dark:bg-kaori-soft dark:text-kaori-primary">
+<section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+    <header class="border-b border-outline-default px-5 py-4 lg:px-6">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex min-w-0 items-center gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
                     <i data-lucide="activity" class="h-5 w-5"></i>
                 </span>
-                <div>
-                    <h3 class="text-base font-semibold text-content-primary dark:text-white">Operational overview</h3>
-                    <p class="mt-1 text-sm text-content-muted dark:text-content-muted">Current activity volume, review priority, unread state, and successful outcomes.</p>
+                <div class="min-w-0">
+                    <h2 class="text-base font-semibold text-content-primary">Operational Overview</h2>
+                    <p class="mt-0.5 text-xs leading-5 text-content-muted">Current activity volume, review priority, unread state, and successful execution outcomes.</p>
                 </div>
             </div>
-            <span class="inline-flex self-start items-center gap-1.5 rounded-md bg-emerald-50 px-3 py-1.5 text-[11px] font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-900/40 lg:self-auto">
-                <i data-lucide="check-circle-2" class="h-3.5 w-3.5"></i>
-                {{ summary.success_count }} successful of {{ summary.total_count }}
+            <span class="inline-flex h-8 shrink-0 items-center gap-1.5 self-start rounded-lg border {{ 'border-status-warning-border bg-status-warning-soft text-status-warning-text' if summary.attention_count > 0 else 'border-status-normal-border bg-status-normal-soft text-status-normal-text' }} px-3 text-xs font-semibold sm:self-auto">
+                <i data-lucide="{{ 'triangle-alert' if summary.attention_count > 0 else 'circle-check' }}" class="h-3.5 w-3.5"></i>
+                {{ summary.attention_count ~ ' need attention' if summary.attention_count > 0 else 'No attention items' }}
             </span>
         </div>
-        <div class="grid gap-3 p-5 sm:grid-cols-2 xl:grid-cols-4">
-            <div class="rounded-xl border border-brand-outline bg-kaori-soft/55 p-4 dark:border-brand-outline dark:bg-kaori-soft/70">
+    </header>
+
+    <div class="grid gap-px bg-outline-subtle md:grid-cols-2 xl:grid-cols-4">
+        {% set activity_metrics = [
+            ('list-checks', 'Total Activities', summary.total_count, 'All operational and administrative events currently available in this audit workspace.', 'bg-kaori-soft text-kaori-primary'),
+            ('triangle-alert' if summary.attention_count > 0 else 'circle-check', 'Need Attention', summary.attention_count, 'Warning, error, or follow-up events that should be reviewed first.', 'bg-status-warning-soft text-status-warning-text' if summary.attention_count > 0 else 'bg-status-normal-soft text-status-normal-text'),
+            ('mail', 'Unread Activities', summary.unread_count, 'Events that have not yet been acknowledged through the administrative review workflow.', 'bg-status-info-soft text-status-info-text'),
+            ('badge-check', 'Success Ratio', (success_ratio | int) ~ '%', 'Share of recorded activity events that completed with a successful operational outcome.', 'bg-status-normal-soft text-status-normal-text')
+        ] %}
+        {% for icon, label, value, description, tone in activity_metrics %}
+            <article class="flex min-h-[12rem] flex-col bg-surface-card p-5">
                 <div class="flex items-start justify-between gap-3">
-                    <div class="min-w-0">
-                        <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted dark:text-content-muted">Total activities</p>
-                        <p class="mt-2 text-2xl font-bold tracking-tight text-content-primary dark:text-white">{{ summary.total_count }}</p>
-                        <p class="mt-1 text-xs text-content-muted dark:text-content-muted">Recorded in the audit workspace</p>
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.12em] text-content-muted">{{ label }}</p>
+                        <p class="mt-2 text-3xl font-bold tracking-tight text-content-primary">{{ value }}</p>
                     </div>
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-kaori-primary ring-1 ring-inset ring-brand-outline dark:bg-surface-card dark:text-kaori-primary dark:ring-brand-outline">
-                        <i data-lucide="list-checks" class="h-4 w-4"></i>
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl {{ tone }}">
+                        <i data-lucide="{{ icon }}" class="h-5 w-5"></i>
                     </span>
                 </div>
-            </div>
-            <div class="rounded-xl border {% if summary.attention_count > 0 %}border-amber-200 bg-amber-50/70 dark:border-amber-900/40 dark:bg-amber-500/10{% else %}border-emerald-200 bg-emerald-50/70 dark:border-emerald-900/40 dark:bg-emerald-500/10{% endif %} p-4">
-                <div class="flex items-start justify-between gap-3">
-                    <div class="min-w-0">
-                        <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted dark:text-content-muted">Need attention</p>
-                        <p class="mt-2 text-2xl font-bold tracking-tight {% if summary.attention_count > 0 %}text-amber-700 dark:text-amber-300{% else %}text-emerald-700 dark:text-emerald-300{% endif %}">{{ summary.attention_count }}</p>
-                        <p class="mt-1 text-xs text-content-muted dark:text-content-muted">Warning, error, or follow-up</p>
-                    </div>
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl {% if summary.attention_count > 0 %}bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300{% else %}bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300{% endif %}">
-                        <i data-lucide="{% if summary.attention_count > 0 %}triangle-alert{% else %}circle-check{% endif %}" class="h-4 w-4"></i>
+                <p class="mt-3 text-sm leading-6 text-content-muted">{{ description }}</p>
+            </article>
+        {% endfor %}
+    </div>
+
+    <div class="border-t border-outline-subtle bg-surface-hover px-5 py-4 lg:px-6">
+        <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            {% set audit_flow = [
+                ('layers-3', 'Event Scope', 'Cross-user actions, background jobs, lifecycle operations, and administrative outcomes are normalized into one audit stream.'),
+                ('scan-search', 'Review Priority', 'Unread and attention-required records remain the first operational review queue.'),
+                ('file-search-2', 'Technical Detail', 'Each row exposes normalized context while the detail drawer retains the full recorded metadata.'),
+                ('shield-check', 'Audit Boundary', 'Login events and personal notifications remain in their dedicated views; this workspace covers operational activity.')
+            ] %}
+            {% for icon, title, description in audit_flow %}
+                <div class="flex items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card p-3.5">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                        <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
                     </span>
-                </div>
-            </div>
-            <div class="rounded-xl border border-brand-outline bg-white p-4 dark:border-brand-outline dark:bg-surface-card">
-                <div class="flex items-start justify-between gap-3">
-                    <div class="min-w-0">
-                        <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted dark:text-content-muted">Unread activities</p>
-                        <p class="mt-2 text-2xl font-bold tracking-tight text-kaori-primary dark:text-kaori-primary">{{ summary.unread_count }}</p>
-                        <p class="mt-1 text-xs text-content-muted dark:text-content-muted">Items not yet reviewed</p>
+                    <div>
+                        <p class="text-sm font-semibold text-content-primary">{{ title }}</p>
+                        <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ description }}</p>
                     </div>
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary dark:bg-kaori-soft dark:text-kaori-primary">
-                        <i data-lucide="mail" class="h-4 w-4"></i>
-                    </span>
                 </div>
-            </div>
-            <div class="rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-900/40 dark:bg-emerald-500/10">
-                <div class="flex items-start justify-between gap-3">
-                    <div class="min-w-0">
-                        <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted dark:text-content-muted">Success ratio</p>
-                        <p class="mt-2 text-2xl font-bold tracking-tight text-emerald-700 dark:text-emerald-300">{{ success_ratio | int }}%</p>
-                        <p class="mt-1 text-xs text-content-muted dark:text-content-muted">Successful operational outcomes</p>
-                    </div>
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
-                        <i data-lucide="check-circle-2" class="h-4 w-4"></i>
-                    </span>
-                </div>
-            </div>
+            {% endfor %}
         </div>
-    </section>
-</div>
+    </div>
+</section>

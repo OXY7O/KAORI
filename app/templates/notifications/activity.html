@@ -3,7 +3,7 @@
 {% block title %}Activity Audit Log{% endblock title %}
 {% block dashboard_content %}
     <div class="space-y-6"
-         x-data="{ activeAuditWorkspaceTab: 'retention', openAuditSnapshot() { this.activeAuditWorkspaceTab = 'snapshot'; this.$nextTick(() => document.getElementById('operational-activity-table')?.scrollIntoView({ behavior: 'smooth', block: 'start' })); } }">
+         x-data="{ activeAuditWorkspaceTab: 'retention', openAuditLog() { this.activeAuditWorkspaceTab = 'audit-log'; this.$nextTick(() => document.getElementById('operational-activity-table')?.scrollIntoView({ behavior: 'smooth', block: 'start' })); } }">
         {% import "components/page_hero.html" as page_hero %}
         {% import "components/table_label.html" as table_label %}
         <section class="{{ page_hero.shell_classes() }}">
@@ -47,7 +47,7 @@
                                 <p class="mt-1 text-base font-bold text-brand-foreground">{{ summary.unread_count }}</p>
                             </div>
                             <button type="button"
-                                @click="openAuditSnapshot()"
+                                @click="openAuditLog()"
                                 class="inline-flex items-center justify-center gap-1.5 rounded-lg bg-white px-3 py-2.5 text-[10px] font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft">
                             <i data-lucide="list-filter" class="h-3.5 w-3.5"></i>
                             Review
@@ -76,16 +76,16 @@
                     </button>
                     <button type="button"
                             role="tab"
-                            id="activity-audit-tab-snapshot"
-                            aria-controls="activity-audit-panel-snapshot"
-                            :aria-selected="activeAuditWorkspaceTab === 'snapshot' ? 'true' : 'false'"
-                            @click="activeAuditWorkspaceTab = 'snapshot'"
+                            id="activity-audit-tab-audit-log"
+                            aria-controls="activity-audit-panel-audit-log"
+                            :aria-selected="activeAuditWorkspaceTab === 'audit-log' ? 'true' : 'false'"
+                            @click="activeAuditWorkspaceTab = 'audit-log'"
                             class="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-t-xl border px-4 py-2.5 text-sm font-semibold transition"
-                            :class="activeAuditWorkspaceTab === 'snapshot'
+                            :class="activeAuditWorkspaceTab === 'audit-log'
                                 ? 'border-outline-default border-b-surface-card bg-surface-card text-kaori-primary -mb-px dark:border-outline-default dark:border-b-surface-card dark:bg-surface-card dark:text-kaori-primary'
                                 : 'border-transparent text-content-muted hover:bg-kaori-soft hover:text-kaori-primary dark:text-content-muted dark:hover:bg-kaori-soft dark:hover:text-kaori-primary'">
                         <i data-lucide="activity" class="h-4 w-4"></i>
-                        Snapshot
+                        Audit Log
                     </button>
                 </div>
             </nav>
@@ -96,10 +96,10 @@
                      x-show="activeAuditWorkspaceTab === 'retention'">
                     {% include "notifications/partials/_activity_retention.html" %}
                 </div>
-                <div id="activity-audit-panel-snapshot"
+                <div id="activity-audit-panel-audit-log"
                      role="tabpanel"
-                     aria-labelledby="activity-audit-tab-snapshot"
-                     x-show="activeAuditWorkspaceTab === 'snapshot'"
+                     aria-labelledby="activity-audit-tab-audit-log"
+                     x-show="activeAuditWorkspaceTab === 'audit-log'"
                      style="display: none;">
                     <div class="space-y-6">
                         {% include "notifications/partials/_activity_summary_cards.html" %}
