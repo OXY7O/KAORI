@@ -232,6 +232,24 @@
     display: none !important;
 }
 
+.sidebar-collapsed .sidebar-expanded-only,
+.sidebar-collapsed .sidebar-menu-chevron,
+.sidebar-collapsed .sidebar-submenu {
+    display: none !important;
+}
+
+.sidebar-collapsed .sidebar-parent-link,
+.sidebar-collapsed .sidebar-brand-card {
+    justify-content: center;
+}
+
+.sidebar-collapsed .kubereport-sidebar nav {
+    padding-inline: 0.5rem;
+}
+
+.sidebar-collapsed .sidebar-nav-section + .sidebar-nav-section {
+    margin-top: 0.5rem;
+}
 
 .sidebar-menu > summary {
     list-style: none;
@@ -251,7 +269,7 @@
 }
 
 /* Keep nested navigation readable without making long menus feel oversized. */
-.sidebar-submenu {
+.sidebar-submenu.sidebar-expanded-only {
     margin-top: 0.5rem;
 }
 

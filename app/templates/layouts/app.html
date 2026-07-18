@@ -15,11 +15,16 @@
         <script>
             ;(function () {
                 const theme = localStorage.getItem('theme')
+                const savedSidebarState = localStorage.getItem('kaori.sidebarExpanded')
+                    ?? localStorage.getItem('kaori.sidebarOpen')
 
                 if (theme === 'dark') {
                     document.documentElement.classList.add('dark')
                 }
 
+                if (savedSidebarState === 'false') {
+                    document.documentElement.classList.add('sidebar-collapsed')
+                }
             })()
         </script>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -33,8 +38,17 @@
     </head>
     <body class="h-full overflow-hidden bg-surface-page font-sans text-content-primary antialiased transition-colors duration-300">
         <div class="flex h-full min-h-0 gap-2 overflow-hidden bg-surface-page p-2"
-             x-data="{ sidebarOpen: localStorage.getItem('kaori.sidebarOpen') !== 'false', toggleSidebar() { this.sidebarOpen = !this.sidebarOpen; localStorage.setItem('kaori.sidebarOpen', this.sidebarOpen ? 'true' : 'false'); } }"
-             @keydown.escape.window="if (window.innerWidth < 1024 && sidebarOpen) { toggleSidebar() }">
+             x-data="{
+                 sidebarExpanded: (localStorage.getItem('kaori.sidebarExpanded') || localStorage.getItem('kaori.sidebarOpen') || 'true') !== 'false',
+                 toggleSidebar() {
+                     this.sidebarExpanded = !this.sidebarExpanded
+                     localStorage.setItem('kaori.sidebarExpanded', this.sidebarExpanded ? 'true' : 'false')
+                     localStorage.removeItem('kaori.sidebarOpen')
+                     document.documentElement.classList.toggle('sidebar-collapsed', !this.sidebarExpanded)
+                 }
+             }"
+             x-init="document.documentElement.classList.toggle('sidebar-collapsed', !sidebarExpanded)"
+             @keydown.escape.window="if (window.innerWidth < 1024 && sidebarExpanded) { toggleSidebar() }">
             {% include "components/navigation/sidebar.html" %}
             <div class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
                 {% include "components/navigation/navbar.html" %}

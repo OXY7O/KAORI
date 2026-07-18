@@ -36,18 +36,18 @@
             <button @click="toggleSidebar()"
                     type="button"
                     class="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-outline-default bg-surface-card text-content-secondary shadow-sm transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
-                    :title="sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'"
-                    :aria-label="sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'"
-                    :aria-expanded="sidebarOpen.toString()"
+                    :title="sidebarExpanded ? 'Collapse navigation' : 'Expand navigation'"
+                    :aria-label="sidebarExpanded ? 'Collapse navigation' : 'Expand navigation'"
+                    :aria-expanded="sidebarExpanded.toString()"
                     aria-controls="app-sidebar">
                 <span x-cloak
-                      x-show="sidebarOpen"
+                      x-show="sidebarExpanded"
                       class="inline-flex h-5 w-5 items-center justify-center"
                       aria-hidden="true">
                     <i data-lucide="panel-left-close" class="h-4.5 w-4.5"></i>
                 </span>
                 <span x-cloak
-                      x-show="!sidebarOpen"
+                      x-show="!sidebarExpanded"
                       class="inline-flex h-5 w-5 items-center justify-center"
                       aria-hidden="true">
                     <i data-lucide="panel-left-open" class="h-4.5 w-4.5"></i>

@@ -78,20 +78,46 @@ def test_general_and_account_tabs_use_htmx_without_full_page_reload() -> None:
             assert 'hx-get=' in source
 
 
-def test_sidebar_open_close_control_has_shared_state() -> None:
+def test_sidebar_collapse_control_keeps_compact_navigation_visible() -> None:
     layout_source = Path('app/templates/layouts/app.html').read_text(encoding='utf-8')
     sidebar_source = Path('app/templates/components/navigation/sidebar.html').read_text(encoding='utf-8')
     navbar_source = Path('app/templates/components/navigation/navbar.html').read_text(encoding='utf-8')
+    styles_source = Path('frontend/styles.css').read_text(encoding='utf-8')
 
-    assert "sidebarOpen: localStorage.getItem('kaori.sidebarOpen') !== 'false'" in layout_source
+    assert "sidebarExpanded:" in layout_source
     assert 'toggleSidebar() {' in layout_source
-    assert "localStorage.setItem('kaori.sidebarOpen'" in layout_source
+    assert "localStorage.setItem('kaori.sidebarExpanded'" in layout_source
+    assert "document.documentElement.classList.toggle('sidebar-collapsed'" in layout_source
     assert '@click="toggleSidebar()"' in navbar_source
-    assert ':aria-expanded="sidebarOpen.toString()"' in navbar_source
+    assert ':aria-expanded="sidebarExpanded.toString()"' in navbar_source
     assert 'id="app-sidebar"' in sidebar_source
-    assert 'x-show="sidebarOpen"' in sidebar_source
-    assert 'sidebar-collapsed' not in layout_source
-    assert 'w-[78px]' not in sidebar_source
+    assert 'x-show=' not in sidebar_source
+    assert '[.sidebar-collapsed_&]:w-[78px]' in sidebar_source
+    assert 'sidebar-expanded-only' in sidebar_source
+    assert '.sidebar-collapsed .sidebar-expanded-only' in styles_source
+
+
+def test_sidebar_parent_menus_keep_icons_in_compact_mode() -> None:
+    menu_names = (
+        'access_management_menu.html',
+        'analytics_menu.html',
+        'dashboards_menu.html',
+        'governance_menu.html',
+        'integrations_menu.html',
+        'intelligence_menu.html',
+        'inventory_menu.html',
+        'kubernetes_operations_menu.html',
+        'reports_menu.html',
+        'settings_menu.html',
+    )
+
+    for menu_name in menu_names:
+        source = Path('app/templates/components/navigation', menu_name).read_text(encoding='utf-8')
+        assert 'sidebar-expanded-only' in source
+        assert '[.sidebar-collapsed_&]:justify-center' in source
+        assert 'sidebar-submenu' in source
+        assert "@click=\"if (!sidebarExpanded)" in source
+        assert 'aria-label=' in source
 
 
 def test_permission_catalog_uses_section_based_standard_pagination() -> None:

@@ -213,13 +213,13 @@ Validate each redesign in:
 The authenticated application shell uses a floating, rounded navigation model rather than a full-bleed rectangular sidebar.
 
 - Place the application shell on `surface-page` with a compact outer gutter.
-- Use a 250 px sidebar at the standard desktop density when navigation is open. The navbar control may fully hide or restore the sidebar; do not introduce a narrow icon-only rail.
+- Use a 250 px sidebar at the standard desktop density and a 78 px compact icon rail when collapsed. The navbar control must never remove navigation from the application shell.
 - The sidebar uses `surface-sidebar` as its foundation. Violet is reserved for the active item, focus state, brand icon, and restrained ambient highlights.
 - Use a 16 px (`rounded-2xl`) outer radius for both the sidebar and main application frame.
 - Keep navigation groups visually separated by compact uppercase labels; do not add decorative dividers between every item.
 - Active navigation uses a filled violet state with white label and icon. Inactive items use muted on-brand content with a subtle translucent hover surface.
 - Nested navigation remains inside the sidebar and uses a low-contrast vertical guide, compact rows, and a violet accent for the selected child.
-- The navbar open/close control persists `kaori.sidebarOpen` locally and toggles the entire 250 px sidebar. The content frame expands into the released space when navigation is closed.
+- The navbar collapse/expand control persists `kaori.sidebarExpanded` locally. Collapse hides section labels, item labels, chevrons, and nested submenus while preserving parent navigation icons and the KAORI logo.
 - The main application frame uses semantic surface and outline tokens in both light and dark mode. Avoid raw white, slate, blue, or violet utilities when a KAORI token exists.
 
 
