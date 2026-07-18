@@ -442,9 +442,9 @@ archive_search=retention.archive_filters.search) %}
                                     {% if archive.verified_at %}
                                         <p class="mt-2 text-[10px] text-emerald-600 dark:text-emerald-300">Checksum verified</p>
                                     {% endif %}
-                                    {% if archive.error_message %}
-                                        <p class="mt-2 max-w-xs text-[10px] leading-4 text-rose-600 dark:text-rose-300"
-                                           title="{{ archive.error_message }}">{{ archive.error_message|truncate(90) }}</p>
+                                    {% if archive.error_summary %}
+                                        <p class="mt-2 max-w-xs text-[10px] font-semibold leading-4 text-rose-600 dark:text-rose-300">{{ archive.error_summary }}</p>
+                                        <p class="mt-1 max-w-xs text-[10px] leading-4 text-content-muted dark:text-content-muted">Full technical detail is available in Activity Audit Log.</p>
                                     {% endif %}
                                 </td>
                                 <td class="px-4 py-3 text-content-secondary dark:text-slate-300">

@@ -22,7 +22,7 @@
               hx-push-url="true"
               hx-trigger="change from:select, keyup changed delay:500ms from:input[name='search']"
               hx-indicator="#operational-activity-loading"
-              class="grid gap-3 lg:grid-cols-[minmax(10rem,1.1fr)_minmax(8rem,0.72fr)_minmax(10rem,1fr)_minmax(8rem,0.72fr)_minmax(15rem,1.35fr)] lg:items-end">
+              class="grid gap-3 lg:grid-cols-[minmax(10rem,1.1fr)_minmax(8rem,0.72fr)_minmax(10rem,1fr)_minmax(8rem,0.72fr)_minmax(15rem,1.35fr)_auto] lg:items-end">
             <input type="hidden" name="page" value="1">
             <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
             <div>
@@ -78,6 +78,17 @@
                            placeholder="Search user, message, detail, or type..."
                            class="h-10 w-full rounded-xl border border-outline-default bg-surface-card py-2 pr-3 pl-10 text-sm text-content-primary transition outline-none placeholder:text-content-muted focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 dark:border-outline-default dark:bg-surface-card dark:text-content-primary dark:placeholder:text-content-muted dark:focus:border-kaori-primary dark:focus:ring-kaori-primary/10">
                 </div>
+            </div>
+            <div>
+                <span class="mb-1.5 block text-xs font-semibold text-transparent" aria-hidden="true">Refresh</span>
+                <button type="submit"
+                        title="Refresh activity table"
+                        aria-label="Refresh activity table"
+                        hx-disabled-elt="this"
+                        class="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-brand-outline bg-kaori-soft px-3.5 text-sm font-semibold text-kaori-primary transition hover:border-kaori-primary hover:bg-kaori-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-70 dark:border-brand-outline dark:bg-kaori-soft dark:text-kaori-primary">
+                    <i data-lucide="refresh-cw" class="h-4 w-4"></i>
+                    <span class="lg:hidden xl:inline">Refresh</span>
+                </button>
             </div>
         </form>
     </div>
