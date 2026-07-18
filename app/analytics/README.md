@@ -426,3 +426,15 @@ Capacity Analytics is now capability-gated through `PrometheusConsumer`. Worker 
 ## Utilization capability contract
 
 Utilization Analytics consumes Prometheus or Thanos only through `PrometheusConsumer` and requires instant query, range query, Kubernetes identity, utilization metrics, and canonical filesystem node identity. Node drill-down storage must use a canonical Kubernetes node label; `instance=IP:port` is not a supported identity fallback. Integration validation must report missing metrics or label remediation before the page is considered ready. Presentation strings introduced while touching Utilization templates are prepared in Python rather than formatted in Jinja.
+
+
+## Workload Analytics capability contract
+
+Workload Analytics uses `PrometheusConsumer` and requires `instant_query`, `range_query`,
+`kubernetes_identity`, `workload_metrics`, and `resource_requests_limits`. Namespace,
+ResourceQuota, pod ownership, QoS, placement, requests/limits, and usage labels must pass
+validation before the feature is available. Provider-specific fallback logic must not be
+implemented in the analytics layer.
+
+Templates touched by this feature consume presentation-ready counters, status metadata,
+latency labels, and posture values from Python rather than deriving them in Jinja.

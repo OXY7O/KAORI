@@ -25,7 +25,10 @@ from app.analytics.common.params import (
 from app.analytics.common.payloads import get_empty_workload_payload
 from app.analytics.utilization.service import UtilizationService
 from app.analytics.workload import queries
-from app.common.dependencies import prometheus_connection_blocker
+from app.common.dependencies import (
+    prometheus_capability_blocker,
+    prometheus_connection_blocker,
+)
 from app.intelligence.recommendation_engine import (
     build_workload_actionable_recommendations,
     count_actionable_recommendations,
@@ -211,11 +214,53 @@ def filter_workload_rows(
 
 
 class WorkloadAnalysisService(AnalyticsBaseService):
+    REQUIRED_CAPABILITIES = (
+        'instant_query',
+        'range_query',
+        'kubernetes_identity',
+        'workload_metrics',
+        'resource_requests_limits',
+    )
+
     def __init__(
         self,
         utilization_service: UtilizationService,
     ) -> None:
         self.utilization_service = utilization_service
+        self.consumer = utilization_service.prometheus.consumer
+
+    def requirements(self):
+        return self.consumer.requirements(self.REQUIRED_CAPABILITIES)
+
+    def get_prometheus_result(
+        self,
+        query: str,
+    ) -> list[dict[str, Any]]:
+        response = self.consumer.query(
+            query,
+            required_capabilities=self.REQUIRED_CAPABILITIES,
+        )
+        data = response.get('data', {}) if isinstance(response, dict) else {}
+        result = data.get('result', []) if isinstance(data, dict) else []
+        return result if isinstance(result, list) else []
+
+    def get_prometheus_status(self) -> dict[str, Any]:
+        response = self.consumer.status()
+        payload = response.payload if isinstance(response.payload, dict) else {}
+        response_time = payload.get('response_time_ms')
+        return {
+            'connected': response.ok,
+            'response_time_ms': response_time,
+            'response_time_display': f'{response_time} ms' if response_time is not None else 'No response',
+            'label': 'Prometheus Connected' if response.ok else 'Prometheus Unavailable',
+            'description': (
+                'Integration runtime and workload capability contract are available.'
+                if response.ok
+                else (response.diagnostics[0].message if response.diagnostics else 'Prometheus is unavailable.')
+            ),
+            'tone': 'normal' if response.ok else 'critical',
+            'icon': 'circle-check' if response.ok else 'circle-x',
+        }
 
     def get_all_namespace_options(
         self,
@@ -1812,6 +1857,7 @@ def get_workload_analysis_context(
 ) -> dict[str, Any]:
     _, cluster, utilization_service, context = build_analysis_utilization_context(
         query_args=query_args,
+        check_prometheus_connection=False,
     )
 
     workload_service: WorkloadAnalysisService | None = None
@@ -1916,6 +1962,18 @@ def get_workload_analysis_context(
             'recommendation_cards': [],
             'recommendation_count': 0,
             'governance_findings': [],
+            'workload_count_display': '0 workloads',
+            'recommendation_count_display': '0 actionable',
+            'finding_count_display': '0 findings',
+            'workload_posture': {
+                'value': 'Pending',
+                'description': 'Workload posture is available after integration requirements pass.',
+                'tone': 'info',
+                'icon': 'clock-3',
+            },
+            'prometheus_status_tone': 'critical',
+            'prometheus_status_icon': 'circle-x',
+            'prometheus_response_time_display': 'No response',
         }
     )
 
@@ -1927,6 +1985,22 @@ def get_workload_analysis_context(
             )
         )
 
+        return context
+
+    requirement_result = workload_service.requirements()
+    if not requirement_result.ok:
+        missing = list((requirement_result.payload or {}).get('missing_capabilities') or [])
+        context['dependency_blocker'] = prometheus_capability_blocker(
+            cluster,
+            feature_label='Workload Analytics',
+            missing_capabilities=missing,
+        )
+        context.update(
+            get_empty_workload_payload(
+                selected_namespace=selected_namespace,
+                selected_time_range=selected_time_range,
+            )
+        )
         return context
 
     try:
@@ -2153,9 +2227,43 @@ def get_workload_analysis_context(
             actionable_recommendations,
         )
 
+        critical_finding_count = sum(
+            1 for item in governance_findings if item.get('severity') == 'critical'
+        )
+        warning_finding_count = sum(
+            1 for item in governance_findings if item.get('severity') == 'warning'
+        )
+        if critical_finding_count:
+            workload_posture = {
+                'value': 'Critical',
+                'description': 'Critical findings need immediate review.',
+                'tone': 'critical',
+                'icon': 'shield-alert',
+            }
+        elif warning_finding_count:
+            workload_posture = {
+                'value': 'Watch',
+                'description': 'Review quota, limits, and QoS posture.',
+                'tone': 'warning',
+                'icon': 'triangle-alert',
+            }
+        else:
+            workload_posture = {
+                'value': 'Healthy',
+                'description': 'Workload signals are stable.',
+                'tone': 'normal',
+                'icon': 'circle-check',
+            }
+
         context.update(
             {
-                'selected_namespace': selected_namespace,
+                'workload_count_display': f'{len(workload_mapping_all_rows)} workloads',
+                'recommendation_count_display': f'{recommendation_count} actionable',
+                'finding_count_display': f'{len(governance_findings)} findings',
+                'workload_posture': workload_posture,
+                'prometheus_status_tone': prometheus_status.get('tone', 'critical'),
+                'prometheus_status_icon': prometheus_status.get('icon', 'circle-x'),
+                'prometheus_response_time_display': prometheus_status.get('response_time_display', 'No response'),
                 'namespace_options': namespace_options,
                 'tenant_quota_summary': tenant_quota_summary,
                 'tenant_quota_rows': tenant_quota_all_rows,

@@ -233,6 +233,51 @@ class PromQLProfileAuditor:
             utilization_evidence = 'CPU, memory, pod, readiness, pressure, and node identity contracts are queryable.'
         add('utilization_metrics', utilization_status, utilization_evidence)
 
+        workload_metrics = {
+            'kube_namespace_status_phase',
+            'kube_resourcequota',
+            'kube_pod_owner',
+            'kube_pod_status_qos_class',
+            'kube_pod_info',
+            'kube_pod_container_resource_requests',
+            'kube_pod_container_resource_limits',
+            'container_cpu_usage_seconds_total',
+            'container_memory_working_set_bytes',
+        }
+        missing_workload = sorted(workload_metrics - available_metrics)
+        workload_label_requirements = {
+            'kube_namespace_status_phase': {'namespace', 'phase'},
+            'kube_resourcequota': {'namespace', 'resource', 'type'},
+            'kube_pod_owner': {'namespace', 'pod', 'owner_kind', 'owner_name'},
+            'kube_pod_status_qos_class': {'namespace', 'pod', 'qos_class'},
+            'kube_pod_info': {'namespace', 'pod', 'node'},
+            'kube_pod_container_resource_requests': {'namespace', 'pod', 'container', 'resource', 'unit'},
+            'kube_pod_container_resource_limits': {'namespace', 'pod', 'container', 'resource', 'unit'},
+            'container_cpu_usage_seconds_total': {'namespace', 'pod', 'container'},
+            'container_memory_working_set_bytes': {'namespace', 'pod', 'container'},
+        }
+        invalid_workload_labels = sorted(
+            metric
+            for metric, required_labels in workload_label_requirements.items()
+            if metric in available_metrics
+            and not required_labels.issubset(metric_labels.get(metric, set()))
+        )
+        if missing_workload:
+            workload_status = 'missing'
+            workload_evidence = f"Missing metrics: {', '.join(missing_workload)}"
+        elif invalid_workload_labels:
+            workload_status = 'misconfigured'
+            workload_evidence = (
+                'Required workload identity and governance labels are incomplete on: '
+                f"{', '.join(invalid_workload_labels)}."
+            )
+        else:
+            workload_status = 'available'
+            workload_evidence = (
+                'Namespace, quota, ownership, QoS, placement, request/limit, and usage contracts are queryable.'
+            )
+        add('workload_metrics', workload_status, workload_evidence)
+
         capacity_metrics = {
             'kube_node_status_allocatable',
             'container_cpu_usage_seconds_total',
