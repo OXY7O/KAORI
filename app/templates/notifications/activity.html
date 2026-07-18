@@ -2,7 +2,8 @@
 {% set page_title = "Activity Audit Log" %}
 {% block title %}Activity Audit Log{% endblock title %}
 {% block dashboard_content %}
-    <div class="space-y-6">
+    <div class="space-y-6"
+         x-data="{ activeAuditWorkspaceTab: 'retention', openAuditSnapshot() { this.activeAuditWorkspaceTab = 'snapshot'; this.$nextTick(() => document.getElementById('operational-activity-table')?.scrollIntoView({ behavior: 'smooth', block: 'start' })); } }">
         {% import "components/page_hero.html" as page_hero %}
         {% import "components/table_label.html" as table_label %}
         <section class="relative overflow-hidden rounded-2xl border border-brand-outline bg-kaori-primary p-5 text-brand-foreground shadow-sm lg:p-6">
@@ -45,17 +46,18 @@
                                 <p class="text-[9px] font-semibold uppercase tracking-wide text-brand-foreground-muted">Unread</p>
                                 <p class="mt-1 text-base font-bold text-brand-foreground">{{ summary.unread_count }}</p>
                             </div>
-                            <a href="#operational-activity-content" class="inline-flex items-center justify-center gap-1.5 rounded-lg bg-white px-3 py-2.5 text-[10px] font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft">
-                                <i data-lucide="list-filter" class="h-3.5 w-3.5"></i>
-                                Review
-                            </a>
+                            <button type="button"
+                                @click="openAuditSnapshot()"
+                                class="inline-flex items-center justify-center gap-1.5 rounded-lg bg-white px-3 py-2.5 text-[10px] font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft">
+                            <i data-lucide="list-filter" class="h-3.5 w-3.5"></i>
+                            Review
+                        </button>
                         </div>
                     </div>
                 </aside>
             </div>
         </section>
-        <section x-data="{ activeAuditWorkspaceTab: 'retention' }"
-                 class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm dark:border-outline-default dark:bg-surface-card">
+        <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm dark:border-outline-default dark:bg-surface-card">
             <nav class="border-b border-outline-default bg-surface-subtle px-5 pt-4 dark:border-outline-default dark:bg-surface-card/40"
                  aria-label="Activity audit workspace sections">
                 <div class="flex gap-2 overflow-x-auto" role="tablist">
@@ -99,11 +101,13 @@
                      aria-labelledby="activity-audit-tab-snapshot"
                      x-show="activeAuditWorkspaceTab === 'snapshot'"
                      style="display: none;">
-                    {% include "notifications/partials/_activity_summary_cards.html" %}
+                    <div class="space-y-6">
+                        {% include "notifications/partials/_activity_summary_cards.html" %}
+                        {% include "notifications/partials/_activity_table_card.html" %}
+                    </div>
                 </div>
             </div>
         </section>
-        {% include "notifications/partials/_activity_table_card.html" %}
         <div class="rounded-xl border border-outline-default bg-surface-subtle px-5 py-4 text-xs leading-5 text-content-muted">
             Operational Activity is an administrative audit workspace. Personal notifications remain available from the topbar, while login events and security-sensitive administration remain in their dedicated audit views.
         </div>
