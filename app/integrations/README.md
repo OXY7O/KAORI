@@ -157,3 +157,29 @@ runtime framework.
 The Integrations Overview includes a shared runtime table for every provider that implements the Integration Runtime contract. The table uses the latest immutable observation for health and score, while provider configuration remains authoritative for readiness and capability remediation. Prometheus/Thanos and Alertmanager are the first providers included.
 
 The overview is intentionally diagnostic rather than a second configuration surface. It supports provider, health, and readiness filters; defaults to 5 rows with 5/10/25/50 choices; and links to the provider detail page where configuration and remediation are performed.
+
+## Consumer facade standard
+
+Provider configuration, validation, runtime monitoring, and analytics reads are
+separate responsibilities. Asset analytics must not instantiate provider HTTP
+clients directly. It consumes provider data through a canonical consumer facade:
+
+```text
+asset analytics
+    -> provider consumer facade
+    -> readiness and capability gate
+    -> provider client
+    -> normalized result and diagnostics
+```
+
+The shared contract lives in `app/integrations/consumer/`. Every consumer result
+identifies the selected provider source, required capabilities, safe diagnostics,
+and whether the operation completed. Low-level error detail is retained for
+controlled toast and Activity Audit usage; it must not be rendered directly in
+inline analytics blockers.
+
+Prometheus-compatible reads are owned by `app/prometheus/consumer.py`.
+`PrometheusService` remains a compatibility facade for existing analytics while
+internally delegating runtime reads to `PrometheusConsumer`. Validation and
+configuration workflows continue to use the provider service and client because
+they intentionally test capabilities rather than consume validated data.
