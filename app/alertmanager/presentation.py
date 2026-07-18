@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.alertmanager.capabilities import CAPABILITIES
+from app.alertmanager.capabilities import CAPABILITIES, CAPABILITY_BY_KEY
 from app.alertmanager.repository import count_bindings_by_scope_type, list_instances
 from app.alertmanager.requirements import evaluate_module_readiness
+from app.alertmanager.resolver import AlertmanagerSourceResolution, resolve_alertmanager_sources
 from app.alertmanager.sanitization import safe_endpoint
 from app.extensions import db
 from app.models.alertmanager import AlertmanagerBinding, AlertmanagerInstance
@@ -76,6 +77,7 @@ def build_instance_context(instance: AlertmanagerInstance | None = None) -> dict
         'clusters': clusters,
         'capability_rows': capability_rows,
         'module_readiness_rows': evaluate_module_readiness(observed_capabilities),
+        'source_resolution_rows': _source_resolution_rows(instance) if instance else [],
         'stats': {
             'bindings': len(instance.bindings) if instance else 0,
             'ready': bool(instance and instance.readiness_status == 'ready'),
@@ -151,3 +153,71 @@ def _paginate(
         'next_page': page + 1,
         'allowed_per_page': allowed,
     }
+
+
+def _source_resolution_rows(instance: AlertmanagerInstance) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    seen_scopes: set[tuple[str, str]] = set()
+    for binding in instance.bindings:
+        scope = (binding.scope_type, binding.scope_key)
+        if scope in seen_scopes:
+            continue
+        seen_scopes.add(scope)
+        alerts_resolution = resolve_alertmanager_sources(
+            scope_type=binding.scope_type,
+            scope_key=binding.scope_key,
+            required_capabilities=('alerts_v2',),
+        )
+        silences_resolution = resolve_alertmanager_sources(
+            scope_type=binding.scope_type,
+            scope_key=binding.scope_key,
+            required_capabilities=('silences_v2',),
+        )
+        rows.append({
+            'scope_type': binding.scope_type,
+            'scope_type_label': binding.scope_type.replace('_', ' ').title(),
+            'scope_key': binding.scope_key,
+            'scope_label': _scope_label(binding.scope_type, binding.scope_key),
+            'alerts': _resolution_view(alerts_resolution, current_instance_id=instance.id),
+            'silences': _resolution_view(silences_resolution, current_instance_id=instance.id),
+        })
+    return rows
+
+
+def _resolution_view(
+    resolution: AlertmanagerSourceResolution,
+    *,
+    current_instance_id: int,
+) -> dict[str, Any]:
+    selected = resolution.selected
+    return {
+        'selected_instance_id': selected.instance.id if selected else None,
+        'selected_instance_name': selected.instance.name if selected else None,
+        'selected_role': selected.binding.binding_role if selected else None,
+        'selected_operational_state': selected.operational_state if selected else 'unavailable',
+        'current_instance_selected': bool(selected and selected.instance.id == current_instance_id),
+        'required_capabilities': [
+            CAPABILITY_BY_KEY[key].label if key in CAPABILITY_BY_KEY else key
+            for key in resolution.required_capabilities
+        ],
+        'candidates': [
+            {
+                **candidate.to_dict(),
+                'is_selected': bool(selected and candidate.binding.id == selected.binding.id),
+                'is_current_instance': candidate.instance.id == current_instance_id,
+                'missing_capability_labels': [
+                    CAPABILITY_BY_KEY[key].label if key in CAPABILITY_BY_KEY else key
+                    for key in candidate.missing_capabilities
+                ],
+            }
+            for candidate in resolution.candidates
+        ],
+    }
+
+
+def _scope_label(scope_type: str, scope_key: str) -> str:
+    if scope_type == 'kubernetes_cluster':
+        cluster = db.session.get(Cluster, scope_key)
+        if cluster is not None:
+            return cluster.name
+    return scope_key

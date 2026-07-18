@@ -284,6 +284,82 @@
             <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
                 <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
                     <div class="flex items-start gap-3">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="route" class="h-5 w-5"></i></span>
+                        <div>
+                            <h2 class="text-lg font-bold text-content-primary">Effective Source Resolution</h2>
+                            <p class="mt-1 text-sm leading-6 text-content-secondary">See which bound source KAORI will use for alerts and silences, including capability gates, runtime health, and fallback decisions.</p>
+                        </div>
+                    </div>
+                </header>
+                <div class="space-y-5 p-5 sm:p-6">
+                    {% for scope in source_resolution_rows %}
+                        <article class="overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card">
+                            <div class="flex flex-col gap-3 border-b border-outline-subtle bg-surface-hover px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <p class="font-bold text-content-primary">{{ scope.scope_label }}</p>
+                                        <span class="rounded-full border border-outline-default bg-surface-card px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.1em] text-content-secondary">{{ scope.scope_type_label }}</span>
+                                    </div>
+                                    <p class="mt-1 font-mono text-[11px] text-content-tertiary">{{ scope.scope_type }}:{{ scope.scope_key }}</p>
+                                </div>
+                                <p class="text-xs text-content-secondary">Resolver evaluates every enabled binding for this scope.</p>
+                            </div>
+                            <div class="grid gap-4 p-4 xl:grid-cols-2">
+                                {% for consumer_key, consumer_label, resolution in [('alerts', 'Alert retrieval', scope.alerts), ('silences', 'Silence retrieval', scope.silences)] %}
+                                    <section class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
+                                        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                            <div>
+                                                <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-content-tertiary">{{ consumer_label }}</p>
+                                                <p class="mt-2 font-bold text-content-primary">{{ resolution.selected_instance_name or 'No eligible source' }}</p>
+                                                <p class="mt-1 text-xs text-content-secondary">Requires {{ resolution.required_capabilities|join(', ') }}</p>
+                                            </div>
+                                            {% if resolution.selected_instance_id %}
+                                                <span class="rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.1em] {{ 'bg-emerald-100 text-emerald-700' if resolution.current_instance_selected else 'bg-kaori-soft text-kaori-primary' }}">
+                                                    {{ 'This instance is effective' if resolution.current_instance_selected else 'Another source is effective' }}
+                                                </span>
+                                            {% else %}
+                                                <span class="rounded-full bg-red-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.1em] text-red-700">Unavailable</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="mt-4 space-y-2">
+                                            {% for candidate in resolution.candidates %}
+                                                <div class="rounded-xl border p-3 {{ 'border-emerald-200 bg-emerald-50' if candidate.is_selected else ('border-red-200 bg-red-50' if not candidate.eligible else 'border-outline-subtle bg-surface-card') }}">
+                                                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                                        <div class="min-w-0">
+                                                            <div class="flex flex-wrap items-center gap-2">
+                                                                <p class="truncate text-sm font-bold text-content-primary">{{ candidate.instance_name }}</p>
+                                                                {% if candidate.is_current_instance %}<span class="rounded-full bg-kaori-soft px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em] text-kaori-primary">Current</span>{% endif %}
+                                                                {% if candidate.is_selected %}<span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em] text-emerald-700">Selected</span>{% endif %}
+                                                            </div>
+                                                            <p class="mt-1 text-[11px] text-content-secondary">{{ candidate.binding_role|title }} · Priority {{ candidate.priority }} · {{ candidate.operational_state|replace('_', ' ')|title }}</p>
+                                                        </div>
+                                                        <span class="rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.1em] {{ 'bg-emerald-100 text-emerald-700' if candidate.eligible else 'bg-red-100 text-red-700' }}">{{ 'Eligible' if candidate.eligible else 'Skipped' }}</span>
+                                                    </div>
+                                                    <p class="mt-2 text-xs leading-5 text-content-secondary">{{ candidate.decision_reason }}</p>
+                                                    {% if candidate.missing_capability_labels %}
+                                                        <p class="mt-2 text-xs font-semibold text-red-700">Missing: {{ candidate.missing_capability_labels|join(', ') }}</p>
+                                                    {% endif %}
+                                                </div>
+                                            {% else %}
+                                                <div class="rounded-xl border border-dashed border-outline-default bg-surface-card px-4 py-6 text-center text-sm text-content-secondary">No enabled bindings are available for this scope.</div>
+                                            {% endfor %}
+                                        </div>
+                                    </section>
+                                {% endfor %}
+                            </div>
+                        </article>
+                    {% else %}
+                        <div class="rounded-xl border border-dashed border-outline-default bg-surface-hover px-5 py-10 text-center">
+                            <p class="font-bold text-content-primary">No source resolution is available yet.</p>
+                            <p class="mt-2 text-sm text-content-secondary">Add an asset binding to evaluate effective sources, capability mismatches, and fallback order.</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+                <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+                    <div class="flex items-start gap-3">
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="link-2" class="h-5 w-5"></i></span>
                         <div>
                             <h2 class="text-lg font-bold text-content-primary">Asset Bindings</h2>

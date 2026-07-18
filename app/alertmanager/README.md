@@ -371,3 +371,7 @@ A healthy secondary source is preferred over an unhealthy primary source. A sour
 The resolver does not execute HTTP requests and does not perform cross-source alert deduplication. It produces a deterministic ordered candidate list and a decision trace. `consumer.py` attempts candidates in that order and records whether runtime fallback was used.
 
 New asset analytics must call the consumer facade or `resolve_alertmanager_sources()`; they must not query `AlertmanagerBinding`, inspect credentials, or instantiate the provider client directly.
+
+## Effective source resolution presentation
+
+The instance detail page exposes the resolver decision for every bound scope. Alert retrieval and silence retrieval are evaluated independently because they require different capabilities (`alerts_v2` and `silences_v2`). The presentation layer shows the effective instance, current-instance participation, role, priority, operational state, eligibility, missing capabilities, and the resolver decision reason for every candidate. This is diagnostic presentation only; source selection remains owned by `resolver.py` and provider execution/fallback remains owned by `consumer.py`.

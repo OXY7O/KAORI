@@ -177,3 +177,34 @@ def test_unobserved_capabilities_remain_compatible_during_cutover(app) -> None:
     assert resolution.selected is not None
     assert resolution.selected.instance.id == source.id
     assert resolution.selected.capability_state == 'unknown'
+
+
+def test_instance_context_exposes_effective_source_decision_trace(app) -> None:
+    from app.alertmanager.presentation import build_instance_context
+
+    cluster = _cluster()
+    primary = _instance('Context Primary', role='primary', cluster_id=cluster.id)
+    secondary = _instance('Context Secondary', role='secondary', cluster_id=cluster.id)
+
+    primary.readiness_status = 'ready'
+    primary.last_status = 'connected'
+    primary.capabilities = ['alerts_v2']
+    secondary.readiness_status = 'ready'
+    secondary.last_status = 'connected'
+    secondary.capabilities = ['alerts_v2', 'silences_v2']
+    db.session.commit()
+
+    context = build_instance_context(primary)
+    scope = context['source_resolution_rows'][0]
+
+    assert scope['scope_label'] == cluster.name
+    assert scope['alerts']['selected_instance_id'] == primary.id
+    assert scope['alerts']['current_instance_selected'] is True
+    assert scope['silences']['selected_instance_id'] == secondary.id
+    primary_silence_candidate = next(
+        item
+        for item in scope['silences']['candidates']
+        if item['instance_id'] == primary.id
+    )
+    assert primary_silence_candidate['eligible'] is False
+    assert primary_silence_candidate['missing_capability_labels'] == ['Silences API']
