@@ -4,6 +4,7 @@ from app.models.audit import AuditEvent
 from app.models.cluster import Cluster, ClusterStatus
 from app.models.governance import TLSCertificateInventory, TLSCertificateUpdateEvent
 from app.models.identity import ExternalIdentityLink, IdentityProvider
+from app.models.integration_runtime import IntegrationRuntimeObservation
 from app.models.inventory import (
     ClusterInventory,
     ConfigurationInventory,
@@ -17,7 +18,7 @@ from app.models.inventory import (
     WorkloadInventory,
 )
 from app.models.notification import Notification
-from app.models.prometheus import PrometheusConfig
+from app.models.prometheus import PrometheusBinding, PrometheusConfig, PrometheusInstance
 from app.models.rbac import Permission, Role, RolePermission
 from app.models.report import Report, ReportSchedule, ReportScheduleRun, ReportTemplate
 from app.models.secret_reveal import SecretRevealNamespacePolicy, SecretRevealRequest
@@ -27,6 +28,7 @@ __all__ = [
     'ArchiveArtifact',
     'AuditEvent',
     'IdentityProvider',
+    'IntegrationRuntimeObservation',
     'ExternalIdentityLink',
     'ClusterStatus',
     'Cluster',
@@ -48,6 +50,8 @@ __all__ = [
     'TLSCertificateInventory',
     'TLSCertificateUpdateEvent',
     'PrometheusConfig',
+    'PrometheusInstance',
+    'PrometheusBinding',
     'AlertmanagerConfig',
     'AlertmanagerInstance',
     'AlertmanagerBinding',
@@ -59,5 +63,3 @@ __all__ = [
     'SecretRevealRequest',
 ]
 
-from app.models.integration_runtime import IntegrationRuntimeObservation
-__all__.append('IntegrationRuntimeObservation')

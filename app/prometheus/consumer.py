@@ -3,9 +3,10 @@ from __future__ import annotations
 from typing import Any
 
 from app.integrations.consumer import ConsumerDiagnostic, ConsumerResult, ConsumerSource
-from app.models import Cluster, PrometheusConfig
+from app.models import Cluster
 from app.prometheus.client import PrometheusClient
 from app.prometheus.exceptions import PrometheusError
+from app.prometheus.repository import resolve_instance_for_cluster
 
 DEFAULT_QUERY_CAPABILITIES = ('instant_query',)
 DEFAULT_RANGE_CAPABILITIES = ('range_query',)
@@ -21,9 +22,9 @@ class PrometheusConsumer:
 
     def __init__(self, cluster: Cluster) -> None:
         self.cluster = cluster
-        config = PrometheusConfig.query.filter_by(cluster_id=cluster.id).first()
+        config = resolve_instance_for_cluster(cluster.id)
         if config is None:
-            raise PrometheusError('Prometheus configuration not found')
+            raise PrometheusError('No Prometheus runtime is bound to the selected Kubernetes cluster')
         self.config = config
         self.client = PrometheusClient(config)
 

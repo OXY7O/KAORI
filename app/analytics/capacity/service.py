@@ -64,7 +64,7 @@ def get_capacity_page_context(
     query_args: Mapping[str, Any],
 ) -> dict[str, Any]:
     clusters = Cluster.query.order_by(
-        Cluster.name,
+        Cluster.created_at.asc(), Cluster.id.asc(),
     ).all()
 
     selected_time_range = get_selected_time_range(

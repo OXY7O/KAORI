@@ -159,7 +159,7 @@ def get_cluster_by_id(
 
 def get_inventory_clusters() -> list[Cluster]:
     return Cluster.query.order_by(
-        Cluster.name,
+        Cluster.created_at.asc(), Cluster.id.asc(),
     ).all()
 
 
@@ -1183,7 +1183,7 @@ SERVICE_TYPE_DESCRIPTIONS = {
 
 def get_inventory_cluster_summary() -> tuple[list[Cluster], dict[str, dict[str, Any]]]:
     clusters = Cluster.query.order_by(
-        Cluster.name,
+        Cluster.created_at.asc(), Cluster.id.asc(),
     ).all()
 
     cluster_ids = [cluster.id for cluster in clusters]

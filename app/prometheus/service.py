@@ -12,12 +12,13 @@ from app.integrations.compatibility import (
     evaluate_compatibility,
     get_profile,
 )
-from app.models import Cluster, PrometheusConfig
+from app.models import Cluster, PrometheusBinding, PrometheusConfig, PrometheusInstance
 from app.prometheus.client import PrometheusClient
 from app.prometheus.consumer import PrometheusConsumer
 from app.prometheus.exceptions import PrometheusError
 from app.prometheus.forms import PrometheusConfigForm
 from app.prometheus.query_profiles.audit import PromQLProfileAuditor
+from app.prometheus.repository import KUBERNETES_CLUSTER_SCOPE, resolve_instance_for_cluster
 
 
 @dataclass(frozen=True)
@@ -38,9 +39,11 @@ class PrometheusCompatibilityResolution:
 class PrometheusService:
     def __init__(self, cluster: Cluster) -> None:
         self.cluster = cluster
-        config = PrometheusConfig.query.filter_by(cluster_id=cluster.id).first()
+        config = resolve_instance_for_cluster(cluster.id)
+        if config is None:
+            config = PrometheusConfig.query.filter_by(cluster_id=cluster.id).first()
         if not config:
-            raise PrometheusError('Prometheus configuration not found')
+            raise PrometheusError('No Prometheus runtime is bound to the selected Kubernetes cluster')
         self.client = PrometheusClient(config)
         self.consumer = PrometheusConsumer(cluster)
 
@@ -351,5 +354,35 @@ class PrometheusService:
             'KAORI uses it for Kubernetes Analytics.'
         )
         config.last_validated_at = None
+        PrometheusService._sync_runtime_instance(cluster, config)
         db.session.commit()
         return config
+    @staticmethod
+    def _sync_runtime_instance(cluster: Cluster, config: PrometheusConfig) -> PrometheusInstance:
+        """Mirror the legacy cluster form into a standalone runtime plus explicit binding."""
+        instance = resolve_instance_for_cluster(cluster.id)
+        if instance is None:
+            instance = PrometheusInstance(name=f'{cluster.name} Prometheus', endpoint=config.endpoint)
+            db.session.add(instance)
+            db.session.flush()
+            db.session.add(PrometheusBinding(
+                prometheus_instance_id=instance.id,
+                scope_type=KUBERNETES_CLUSTER_SCOPE,
+                scope_key=cluster.id,
+                binding_role='primary',
+                priority=100,
+                enabled=True,
+            ))
+        fields = (
+            'endpoint', 'auth_type', 'username', 'password', 'bearer_token', 'timeout',
+            'verify_ssl', 'version_detection_mode', 'endpoint_product', 'source_prometheus_major',
+            'detected_version', 'compatibility_status', 'compatibility_profile', 'readiness_status',
+            'validation_message', 'last_validated_at', 'query_profile', 'query_validation_status',
+            'query_validation_summary', 'retention_validation_summary', 'capability_profile',
+            'capabilities', 'module_readiness', 'last_status', 'last_error',
+            'last_response_time_ms', 'last_checked_at',
+        )
+        for field in fields:
+            setattr(instance, field, getattr(config, field, None))
+        return instance
+

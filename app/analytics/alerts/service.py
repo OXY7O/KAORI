@@ -208,7 +208,7 @@ def paginate_items(
 
 def get_clusters_for_filter() -> list[Cluster]:
     return Cluster.query.order_by(
-        Cluster.name,
+        Cluster.created_at.asc(), Cluster.id.asc(),
     ).all()
 
 

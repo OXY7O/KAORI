@@ -5,17 +5,27 @@ from typing import Any
 
 from app.integrations.runtime.contracts import CapabilitySnapshot, DiagnosticResult, HealthFactor, RuntimeState
 from app.integrations.runtime.scoring import calculate_health
-from app.models.prometheus import PrometheusConfig
+from app.models.prometheus import PrometheusConfig, PrometheusInstance
+from app.prometheus.repository import resolve_instance_for_cluster
 from app.prometheus.service import PrometheusService
 
 
 class PrometheusRuntimeAdapter:
     provider = 'prometheus'
 
-    def refresh(self, instance: PrometheusConfig) -> dict[str, Any]:
-        return PrometheusService(instance.cluster).validate_integration()
+    def refresh(self, instance: PrometheusConfig | PrometheusInstance) -> dict[str, Any]:
+        cluster = getattr(instance, 'cluster', None)
+        if cluster is None:
+            binding = next((item for item in instance.bindings if item.scope_type == 'kubernetes_cluster' and item.enabled), None)
+            if binding is None:
+                raise ValueError('Prometheus runtime has no enabled Kubernetes cluster binding.')
+            from app.models import Cluster
+            cluster = Cluster.query.get(binding.scope_key)
+        return PrometheusService(cluster).validate_integration()
 
-    def get_state(self, instance: PrometheusConfig, *, validation_result: dict[str, Any] | None = None) -> RuntimeState:
+    def get_state(self, instance: PrometheusConfig | PrometheusInstance, *, validation_result: dict[str, Any] | None = None) -> RuntimeState:
+        if isinstance(instance, PrometheusConfig):
+            instance = resolve_instance_for_cluster(instance.cluster_id) or instance
         now = datetime.now(UTC)
         assessments = ((instance.capabilities or {}).get('assessments') or [])
         contract_summary = ((instance.query_validation_summary or {}).get('feature_contract_summary') or {})
@@ -35,13 +45,13 @@ class PrometheusRuntimeAdapter:
                 'capability_assessments': assessments,
                 'feature_contract_summary': contract_summary,
                 'binding_type': 'kubernetes_cluster',
-                'cluster_id': str(instance.cluster_id),
+                'cluster_id': str(getattr(instance, 'cluster_id', '') or next((b.scope_key for b in getattr(instance, 'bindings', []) if b.scope_type == 'kubernetes_cluster' and b.enabled), '')), 
             },
         )
         return RuntimeState(
             provider=self.provider,
             instance_id=str(instance.id),
-            instance_name=f'{instance.cluster.name} metrics',
+            instance_name=getattr(instance, 'name', None) or f'{instance.cluster.name} metrics',
             observed_at=instance.last_checked_at or instance.last_validated_at or now,
             readiness=instance.readiness_status or 'validation_required',
             health=health,

@@ -11,7 +11,7 @@ from app.prometheus.service import PrometheusService
 
 def get_utilization_clusters() -> list[Cluster]:
     return Cluster.query.order_by(
-        Cluster.name,
+        Cluster.created_at.asc(), Cluster.id.asc(),
     ).all()
 
 

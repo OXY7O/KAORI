@@ -320,7 +320,7 @@ def build_topology_page_context(
         depth=depth,
     )
 
-    clusters = Cluster.query.order_by(Cluster.name.asc()).all()
+    clusters = Cluster.query.order_by(Cluster.created_at.asc(), Cluster.id.asc()).all()
     namespace_rows = NamespaceInventory.query.order_by(
         NamespaceInventory.cluster_id.asc(),
         NamespaceInventory.namespace.asc(),
@@ -360,7 +360,7 @@ def build_topology_graph(
     scope = filters['scope']
     depth = filters['depth']
 
-    cluster_query = Cluster.query.order_by(Cluster.name.asc())
+    cluster_query = Cluster.query.order_by(Cluster.created_at.asc(), Cluster.id.asc())
     if cluster_id:
         cluster_query = cluster_query.filter(Cluster.id == cluster_id)
     clusters = cluster_query.all()

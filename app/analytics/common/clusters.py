@@ -18,6 +18,7 @@ def get_selected_cluster(
             return cluster
 
     if clusters:
-        return clusters[0]
+        # Deterministic fallback: the first registered cluster, never the first alphabetically.
+        return min(clusters, key=lambda item: (item.created_at, item.id))
 
     return None

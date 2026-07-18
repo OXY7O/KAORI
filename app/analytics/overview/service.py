@@ -243,7 +243,7 @@ def _utc_now_display() -> str:
 def _get_clusters_for_filter() -> list[dict[str, Any]]:
     try:
         clusters = db.session.scalars(
-            select(Cluster).order_by(Cluster.name.asc()),
+            select(Cluster).order_by(Cluster.created_at.asc(), Cluster.id.asc()),
         ).all()
 
         return [_normalize_cluster(cluster) for cluster in clusters]

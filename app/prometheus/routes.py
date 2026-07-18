@@ -19,6 +19,7 @@ from app.notifications.service import (
 )
 from app.prometheus.exceptions import PrometheusError
 from app.prometheus.forms import PrometheusConfigForm
+from app.prometheus.repository import resolve_instance_for_cluster
 from app.prometheus.runtime_adapter import runtime_adapter
 from app.prometheus.service import PrometheusService
 from app.rbac.decorators import permission_required
@@ -64,6 +65,10 @@ def _get_cluster_or_404(
     return cluster
 
 
+def _runtime_source(cluster):
+    return resolve_instance_for_cluster(cluster.id) or cluster.prometheus_config
+
+
 @prometheus_bp.route(
     '/cluster/<string:cluster_id>',
     methods=[
@@ -79,7 +84,7 @@ def configuration(
         cluster_id,
     )
 
-    config = cluster.prometheus_config
+    config = _runtime_source(cluster)
 
     form = PrometheusConfigForm()
 
@@ -262,7 +267,7 @@ def test_connection(
                     empty='Not validated yet',
                 ),
                 runtime_state=(
-                    _runtime_view(cluster, runtime_adapter.get_state(cluster.prometheus_config))
+                    _runtime_view(cluster, runtime_adapter.get_state(_runtime_source(cluster)))
                     if cluster.prometheus_config else None
                 ),
                 notification_context=get_navigation_notification_context(
@@ -273,7 +278,7 @@ def test_connection(
         return jsonify(result)
 
     except PrometheusError as exc:
-        config = cluster.prometheus_config
+        config = _runtime_source(cluster)
         failure = describe_integration_failure(
             exc,
             service_name='Prometheus',
@@ -318,7 +323,7 @@ def test_connection(
                     empty='Not validated yet',
                 ),
                 runtime_state=(
-                    _runtime_view(cluster, runtime_adapter.get_state(cluster.prometheus_config))
+                    _runtime_view(cluster, runtime_adapter.get_state(_runtime_source(cluster)))
                     if cluster.prometheus_config else None
                 ),
                 notification_context=get_navigation_notification_context(
@@ -366,7 +371,7 @@ def test_connection(
                     empty='Not validated yet',
                 ),
                 runtime_state=(
-                    _runtime_view(cluster, runtime_adapter.get_state(cluster.prometheus_config))
+                    _runtime_view(cluster, runtime_adapter.get_state(_runtime_source(cluster)))
                     if cluster.prometheus_config else None
                 ),
                 notification_context=get_navigation_notification_context(
@@ -389,7 +394,7 @@ def validate_integration(
     cluster = _get_cluster_or_404(cluster_id)
 
     try:
-        result, runtime_state_obj, _observation = refresh_and_record(runtime_adapter, cluster.prometheus_config, trigger_type='manual')
+        result, runtime_state_obj, _observation = refresh_and_record(runtime_adapter, _runtime_source(cluster), trigger_type='manual')
         response_time = result.get('response_time', 0)
         feedback = record_operational_activity(
             user_id=current_user.id,
@@ -428,7 +433,7 @@ def validate_integration(
                     empty='Not validated yet',
                 ),
                 runtime_state=(
-                    _runtime_view(cluster, runtime_adapter.get_state(cluster.prometheus_config))
+                    _runtime_view(cluster, runtime_adapter.get_state(_runtime_source(cluster)))
                     if cluster.prometheus_config else None
                 ),
                 notification_context=get_navigation_notification_context(
@@ -439,7 +444,7 @@ def validate_integration(
         return jsonify(result)
 
     except PrometheusError as exc:
-        config = cluster.prometheus_config
+        config = _runtime_source(cluster)
         failure = describe_integration_failure(
             exc,
             service_name='Prometheus',
@@ -488,7 +493,7 @@ def validate_integration(
                     empty='Not validated yet',
                 ),
                 runtime_state=(
-                    _runtime_view(cluster, runtime_adapter.get_state(cluster.prometheus_config))
+                    _runtime_view(cluster, runtime_adapter.get_state(_runtime_source(cluster)))
                     if cluster.prometheus_config else None
                 ),
                 notification_context=get_navigation_notification_context(
@@ -503,7 +508,7 @@ def validate_integration(
 @permission_required('settings.manage_integrations')
 def runtime_history(cluster_id: str) -> ResponseReturnValue:
     cluster = _get_cluster_or_404(cluster_id)
-    config = cluster.prometheus_config
+    config = _runtime_source(cluster)
     if config is None:
         abort(404)
     page = request.args.get('page', 1, type=int)
