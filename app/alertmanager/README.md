@@ -424,3 +424,15 @@ health scoring, refresh orchestration, and template-safe presentation.
 The complete cross-domain standards are listed in
 `docs/architecture/README.md` and must be reviewed before adding another
 provider or changing consumer behavior.
+
+## Runtime observation history
+
+The Alertmanager instance detail page renders the shared runtime observation
+history after the live runtime panel. The table defaults to 5 records and supports
+5, 10, 25, and 50 through HTMX pagination.
+
+A manual runtime refresh persists a new observation and updates both the runtime
+panel and the history section in the same HTMX response. Rows show health, score,
+latency, trigger source, capability snapshot, recovery/degradation transitions,
+and capability drift. These are presentation diagnostics only; resolver ordering
+and consumer fallback remain unchanged.

@@ -133,3 +133,21 @@ Celery Beat invokes `app.integrations.runtime.tasks.refresh_integration_runtime`
 using the same provider adapter and orchestration path as HTMX manual refresh.
 The default interval is five minutes and can be controlled with
 `INTEGRATION_RUNTIME_MONITORING_*` environment variables.
+
+## Runtime history presentation
+
+Provider detail pages may render shared runtime history through the provider-neutral
+history repository and presentation mapper. The standard view defaults to 5 rows
+with 5, 10, 25, and 50 options and uses HTMX for pagination and refresh.
+
+Each observation may expose:
+
+- health and score at the observation time;
+- manual or scheduled trigger source;
+- latency and readiness;
+- recovery, degradation, and unhealthy transition markers; and
+- capability additions or removals compared with the immediately older snapshot.
+
+The history UI must not calculate provider health or capability support. It only
+presents immutable runtime evidence already produced by the adapter and shared
+runtime framework.

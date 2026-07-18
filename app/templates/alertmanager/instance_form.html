@@ -41,6 +41,7 @@
         </section>
         {% if instance %}
             {% include "alertmanager/partials/_runtime_panel.html" %}
+            {% include "alertmanager/partials/_runtime_history.html" %}
         {% endif %}
         <div class="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
             <form method="post"

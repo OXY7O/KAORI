@@ -184,3 +184,26 @@ must execute the same adapter orchestration and append an immutable runtime
 observation. This provides validation history, health trend input, capability
 change evidence, and a stable data source for the shared Integrations dashboard.
 Provider credentials and configuration are never copied into the observation.
+
+## Runtime history user interface
+
+The shared runtime history is operational evidence, not an editable event log.
+Provider detail pages show the latest observations in reverse chronological order
+and default to 5 rows with 5, 10, 25, and 50 page-size options.
+
+The presentation layer compares each observation with the immediately older
+observation to derive display-only markers:
+
+```text
+Healthy after Degraded/Unhealthy → Recovered
+Healthy to Degraded             → Degraded
+Any state to Unhealthy          → Became unhealthy
+Unhealthy to Degraded           → Improving
+Capability added or removed     → Capability drift
+```
+
+These markers do not modify persisted observations and must not influence source
+selection. Resolver and consumer decisions continue to use canonical current
+runtime state. HTMX refresh of the runtime panel also refreshes the first history
+page out-of-band so the newly persisted observation becomes visible without a
+full page reload.

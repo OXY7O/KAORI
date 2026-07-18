@@ -9,7 +9,8 @@ from app.alertmanager.resolver import AlertmanagerSourceResolution, resolve_aler
 from app.alertmanager.runtime_adapter import runtime_adapter
 from app.alertmanager.sanitization import safe_endpoint
 from app.extensions import db
-from app.integrations.runtime.presentation import runtime_state_view
+from app.integrations.runtime.presentation import runtime_history_view, runtime_state_view
+from app.integrations.runtime.repository import paginate_runtime_history
 from app.models.alertmanager import AlertmanagerBinding, AlertmanagerInstance
 from app.models.cluster import Cluster
 
@@ -81,6 +82,7 @@ def build_instance_context(instance: AlertmanagerInstance | None = None) -> dict
         'module_readiness_rows': evaluate_module_readiness(observed_capabilities),
         'source_resolution_rows': _source_resolution_rows(instance) if instance else [],
         'runtime_state': runtime_state_view(runtime_adapter.get_state(instance)) if instance else None,
+        'runtime_history': build_runtime_history_context(instance) if instance else None,
         'stats': {
             'bindings': len(instance.bindings) if instance else 0,
             'ready': bool(instance and instance.readiness_status == 'ready'),
@@ -224,3 +226,18 @@ def _scope_label(scope_type: str, scope_key: str) -> str:
         if cluster is not None:
             return cluster.name
     return scope_key
+
+
+def build_runtime_history_context(
+    instance: AlertmanagerInstance,
+    *,
+    page: int = 1,
+    per_page: int = 5,
+) -> dict[str, object]:
+    rows, pagination = paginate_runtime_history(
+        'alertmanager',
+        str(instance.id),
+        page=page,
+        per_page=per_page,
+    )
+    return runtime_history_view(rows, pagination=pagination)

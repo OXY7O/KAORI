@@ -13,7 +13,7 @@ from app.alertmanager.forms import (
     parse_alertmanager_instance_form,
 )
 from app.alertmanager.notifications import record_instance_activity
-from app.alertmanager.presentation import build_instance_context
+from app.alertmanager.presentation import build_instance_context, build_runtime_history_context
 from app.alertmanager.runtime_adapter import runtime_adapter
 from app.alertmanager.service import (
     add_alertmanager_binding,
@@ -28,8 +28,8 @@ from app.alertmanager.service import (
     test_alertmanager_connection,
     validate_alertmanager_instance,
 )
-from app.integrations.runtime.presentation import runtime_state_view
 from app.integrations.runtime.monitoring import refresh_and_record as refresh_provider_runtime
+from app.integrations.runtime.presentation import runtime_state_view
 from app.notifications.service import get_navigation_notification_context
 from app.rbac.decorators import permission_required
 
@@ -190,9 +190,29 @@ def refresh_runtime(instance_id: int) -> ResponseReturnValue:
         queue_feedback=False,
     )
     return render_template(
-        'alertmanager/partials/_runtime_panel.html',
+        'alertmanager/partials/_runtime_refresh_response.html',
         instance=instance,
         runtime_state=runtime_state_view(state),
+        runtime_history=build_runtime_history_context(instance),
+    )
+
+
+@alertmanager_bp.get('/instances/<int:instance_id>/runtime/history')
+@permission_required('settings.manage_integrations')
+def runtime_history(instance_id: int) -> ResponseReturnValue:
+    instance = get_alertmanager_instance(instance_id)
+    if instance is None:
+        abort(404)
+    page = request.args.get('page', default=1, type=int) or 1
+    per_page = request.args.get('per_page', default=5, type=int) or 5
+    return render_template(
+        'alertmanager/partials/_runtime_history.html',
+        instance=instance,
+        runtime_history=build_runtime_history_context(
+            instance,
+            page=page,
+            per_page=per_page,
+        ),
     )
 
 
