@@ -4,7 +4,6 @@ from typing import Any
 
 from app.alertmanager.contracts import AlertQuery
 from app.alertmanager.reader import read_alerts, read_silences
-from app.alertmanager.repository import get_legacy_config_by_cluster_id
 from app.alertmanager.resolver import AlertmanagerSourceResolution, resolve_alertmanager_sources
 from app.alertmanager.sanitization import safe_endpoint
 
@@ -40,21 +39,6 @@ def list_alerts_for_scope(
                 errors=errors,
             )
         errors.append(f'{source.name}: {result.get("error") or "Unavailable"}')
-
-    if scope_type == KUBERNETES_CLUSTER_SCOPE and not resolution.candidates:
-        legacy = get_legacy_config_by_cluster_id(scope_key)
-        if legacy is not None and legacy.endpoint:
-            result = read_alerts(
-                legacy,
-                source_name='Legacy cluster Alertmanager',
-                query=query,
-                canonical_instance_id=None,
-            )
-            result['legacy_source'] = True
-            result['resolved_scope_type'] = scope_type
-            result['resolved_scope_key'] = scope_key
-            result['source_resolution'] = resolution.to_dict()
-            return result
 
     rejected = [
         f'{candidate.instance.name}: {candidate.decision_reason}'
@@ -102,18 +86,6 @@ def list_silences_for_scope(
             )
         errors.append(f'{source.name}: {result.get("error") or "Unavailable"}')
 
-    if scope_type == KUBERNETES_CLUSTER_SCOPE and not resolution.candidates:
-        legacy = get_legacy_config_by_cluster_id(scope_key)
-        if legacy is not None and legacy.endpoint:
-            result = read_silences(
-                legacy,
-                source_name='Legacy cluster Alertmanager',
-                canonical_instance_id=None,
-            )
-            result['legacy_source'] = True
-            result['source_resolution'] = resolution.to_dict()
-            return result
-
     rejected = [
         f'{candidate.instance.name}: {candidate.decision_reason}'
         for candidate in resolution.candidates
@@ -149,24 +121,6 @@ def get_scope_status(*, scope_type: str, scope_key: str) -> dict[str, Any]:
             'legacy_source': False,
             'source_resolution': resolution.to_dict(),
         }
-
-    if scope_type == KUBERNETES_CLUSTER_SCOPE and not resolution.candidates:
-        legacy = get_legacy_config_by_cluster_id(scope_key)
-        if legacy is not None and legacy.endpoint:
-            return {
-                'configured': True,
-                'connected': legacy.last_status == 'connected',
-                'label': legacy.display_status,
-                'response_time_ms': legacy.last_response_time_ms,
-                'last_checked_at': legacy.last_checked_at,
-                'error': legacy.last_error,
-                'instance_id': None,
-                'instance_name': 'Legacy cluster Alertmanager',
-                'endpoint': safe_endpoint(legacy.endpoint),
-                'source_count': 1,
-                'legacy_source': True,
-                'source_resolution': resolution.to_dict(),
-            }
 
     return {
         'configured': bool(resolution.candidates),
