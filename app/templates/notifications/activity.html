@@ -54,8 +54,55 @@
                 </aside>
             </div>
         </section>
-        {% include "notifications/partials/_activity_retention.html" %}
-        {% include "notifications/partials/_activity_summary_cards.html" %}
+        <section x-data="{ activeAuditWorkspaceTab: 'retention' }"
+                 class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm dark:border-outline-default dark:bg-surface-card">
+            <nav class="border-b border-outline-default bg-surface-subtle px-5 pt-4 dark:border-outline-default dark:bg-surface-card/40"
+                 aria-label="Activity audit workspace sections">
+                <div class="flex gap-2 overflow-x-auto" role="tablist">
+                    <button type="button"
+                            role="tab"
+                            id="activity-audit-tab-retention"
+                            aria-controls="activity-audit-panel-retention"
+                            :aria-selected="activeAuditWorkspaceTab === 'retention' ? 'true' : 'false'"
+                            @click="activeAuditWorkspaceTab = 'retention'"
+                            class="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-t-xl border px-4 py-2.5 text-sm font-semibold transition"
+                            :class="activeAuditWorkspaceTab === 'retention'
+                                ? 'border-outline-default border-b-surface-card bg-surface-card text-kaori-primary -mb-px dark:border-outline-default dark:border-b-surface-card dark:bg-surface-card dark:text-kaori-primary'
+                                : 'border-transparent text-content-muted hover:bg-kaori-soft hover:text-kaori-primary dark:text-content-muted dark:hover:bg-kaori-soft dark:hover:text-kaori-primary'">
+                        <i data-lucide="archive" class="h-4 w-4"></i>
+                        Retention
+                    </button>
+                    <button type="button"
+                            role="tab"
+                            id="activity-audit-tab-snapshot"
+                            aria-controls="activity-audit-panel-snapshot"
+                            :aria-selected="activeAuditWorkspaceTab === 'snapshot' ? 'true' : 'false'"
+                            @click="activeAuditWorkspaceTab = 'snapshot'"
+                            class="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-t-xl border px-4 py-2.5 text-sm font-semibold transition"
+                            :class="activeAuditWorkspaceTab === 'snapshot'
+                                ? 'border-outline-default border-b-surface-card bg-surface-card text-kaori-primary -mb-px dark:border-outline-default dark:border-b-surface-card dark:bg-surface-card dark:text-kaori-primary'
+                                : 'border-transparent text-content-muted hover:bg-kaori-soft hover:text-kaori-primary dark:text-content-muted dark:hover:bg-kaori-soft dark:hover:text-kaori-primary'">
+                        <i data-lucide="activity" class="h-4 w-4"></i>
+                        Snapshot
+                    </button>
+                </div>
+            </nav>
+            <div class="p-5 lg:p-6">
+                <div id="activity-audit-panel-retention"
+                     role="tabpanel"
+                     aria-labelledby="activity-audit-tab-retention"
+                     x-show="activeAuditWorkspaceTab === 'retention'">
+                    {% include "notifications/partials/_activity_retention.html" %}
+                </div>
+                <div id="activity-audit-panel-snapshot"
+                     role="tabpanel"
+                     aria-labelledby="activity-audit-tab-snapshot"
+                     x-show="activeAuditWorkspaceTab === 'snapshot'"
+                     style="display: none;">
+                    {% include "notifications/partials/_activity_summary_cards.html" %}
+                </div>
+            </div>
+        </section>
         {% include "notifications/partials/_activity_table_card.html" %}
         <div class="rounded-xl border border-outline-default bg-surface-subtle px-5 py-4 text-xs leading-5 text-content-muted">
             Operational Activity is an administrative audit workspace. Personal notifications remain available from the topbar, while login events and security-sensitive administration remain in their dedicated audit views.
