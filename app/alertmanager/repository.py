@@ -38,6 +38,24 @@ def get_binding(binding_id: int) -> AlertmanagerBinding | None:
     return db.session.get(AlertmanagerBinding, binding_id)
 
 
+def list_bindings_for_scope(
+    *,
+    scope_type: str,
+    scope_key: str,
+) -> list[AlertmanagerBinding]:
+    statement = (
+        select(AlertmanagerBinding)
+        .join(AlertmanagerBinding.instance)
+        .where(
+            AlertmanagerBinding.scope_type == scope_type,
+            AlertmanagerBinding.scope_key == scope_key,
+            AlertmanagerBinding.enabled.is_(True),
+            AlertmanagerInstance.enabled.is_(True),
+        )
+    )
+    return list(db.session.execute(statement).scalars().all())
+
+
 def find_binding(
     *,
     instance_id: int,
@@ -57,18 +75,10 @@ def resolve_instances_for_scope(
     scope_type: str,
     scope_key: str,
 ) -> list[AlertmanagerInstance]:
+    # Compatibility helper. New consumers should use
+    # alertmanager.resolver.resolve_alertmanager_sources().
     role_order = {'primary': 0, 'secondary': 1, 'fallback': 2}
-    statement = (
-        select(AlertmanagerBinding)
-        .join(AlertmanagerBinding.instance)
-        .where(
-            AlertmanagerBinding.scope_type == scope_type,
-            AlertmanagerBinding.scope_key == scope_key,
-            AlertmanagerBinding.enabled.is_(True),
-            AlertmanagerInstance.enabled.is_(True),
-        )
-    )
-    bindings = list(db.session.execute(statement).scalars().all())
+    bindings = list_bindings_for_scope(scope_type=scope_type, scope_key=scope_key)
     bindings.sort(
         key=lambda item: (
             role_order.get(item.binding_role, 9),

@@ -24,6 +24,7 @@ from app.alertmanager.repository import (
     list_bindings_for_instance,
     list_instances,
 )
+from app.alertmanager.resolver import AlertmanagerSourceResolution, resolve_alertmanager_sources
 from app.alertmanager.validation import validate_source
 from app.extensions import db
 from app.models.alertmanager import AlertmanagerBinding, AlertmanagerConfig, AlertmanagerInstance
@@ -40,6 +41,19 @@ def get_alertmanager_instance(instance_id: int) -> AlertmanagerInstance | None:
 
 def list_alertmanager_instances() -> list[AlertmanagerInstance]:
     return list_instances()
+
+
+def resolve_alertmanager_scope_sources(
+    *,
+    scope_type: str,
+    scope_key: str,
+    required_capabilities: tuple[str, ...] = (),
+) -> AlertmanagerSourceResolution:
+    return resolve_alertmanager_sources(
+        scope_type=scope_type,
+        scope_key=scope_key,
+        required_capabilities=required_capabilities,
+    )
 
 
 def save_alertmanager_instance(

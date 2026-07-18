@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from app.alertmanager.forms import AlertmanagerBindingForm
 from app.alertmanager.repository import find_binding, get_binding, resolve_instances_for_scope
+from app.alertmanager.resolver import resolve_alertmanager_sources
 from app.extensions import db
 from app.models.alertmanager import AlertmanagerBinding, AlertmanagerInstance
 
@@ -60,8 +61,19 @@ def delete_binding(binding_id: int) -> AlertmanagerBinding | None:
     return binding
 
 
-def resolve_sources(*, scope_type: str, scope_key: str) -> list[AlertmanagerInstance]:
-    return resolve_instances_for_scope(scope_type=scope_type, scope_key=scope_key)
+def resolve_sources(
+    *,
+    scope_type: str,
+    scope_key: str,
+    required_capabilities: tuple[str, ...] = (),
+) -> list[AlertmanagerInstance]:
+    """Return ordered eligible instances while preserving the legacy list contract."""
+    resolution = resolve_alertmanager_sources(
+        scope_type=scope_type,
+        scope_key=scope_key,
+        required_capabilities=required_capabilities,
+    )
+    return [candidate.instance for candidate in resolution.eligible_candidates]
 
 
 def _ensure_primary_available(*, instance_id: int, scope_type: str, scope_key: str) -> None:

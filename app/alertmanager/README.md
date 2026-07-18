@@ -245,6 +245,7 @@ client or query Alertmanager configuration tables directly.
 | `validation.py` | Executes status, alerts, and silences probes; discovers version/capability profiles; classifies failure; persists readiness. | One validation use case, no route branching. |
 | `reader.py` | Performs runtime status, alert, and silence reads against one already resolved source. | Returns normalized provider data; does not resolve asset bindings. |
 | `bindings.py` | Creates, updates, deletes, and resolves asset bindings; enforces one primary source per scope. | Owns binding rules, not asset-domain enrichment. |
+| `resolver.py` | Ranks bound sources by required capabilities, readiness, runtime health, role, and priority, and emits a deterministic decision trace. | Pure selection logic over persisted state; no HTTP requests or cross-source deduplication. |
 | `consumer.py` | Public scope-based consumer facade with source ordering, readiness gating, fallback, and Kubernetes scope compatibility. | Preferred entry point for analytics and future asset domains. |
 | `service.py` | Stable application facade for instance lifecycle, validation, bindings, legacy redirects, and existing cluster-based function signatures. | Routes and consumers should use this facade instead of internal modules. |
 | `presentation.py` | Builds sanitized instance inventory/detail contexts, binding labels, pagination, filters, and UI status summaries. | Must never expose credentials or raw URL query strings. |
@@ -354,3 +355,19 @@ Runtime consumers must check capability keys instead of comparing version string
 | `validation.py` | Executes API probes, discovers payload capabilities, resolves profiles, evaluates module readiness, and persists the verified capability set. |
 
 Capability discovery is evidence-based. When Alertmanager currently has no active alerts, KAORI can verify the Alerts API but cannot claim that optional metadata such as `runbook_url` or `receiver_metadata` was observed. The UI therefore shows **Not observed** rather than treating every absent optional field as an integration failure.
+
+## Capability-aware source resolution
+
+`resolver.py` is the selection boundary between asset consumers and bound Alertmanager instances. Consumers provide a scope and the capabilities needed for the operation. The resolver evaluates every enabled binding using:
+
+1. required capability availability;
+2. persisted readiness state;
+3. latest runtime health;
+4. binding role (`primary`, `secondary`, `fallback`);
+5. configured priority.
+
+A healthy secondary source is preferred over an unhealthy primary source. A source that was positively validated and exposes the requested capabilities is preferred over a source whose capability state has not yet been observed. Instances migrated before capability probing remain selectable as `unknown` during the compatibility window, but rank below positively verified sources.
+
+The resolver does not execute HTTP requests and does not perform cross-source alert deduplication. It produces a deterministic ordered candidate list and a decision trace. `consumer.py` attempts candidates in that order and records whether runtime fallback was used.
+
+New asset analytics must call the consumer facade or `resolve_alertmanager_sources()`; they must not query `AlertmanagerBinding`, inspect credentials, or instantiate the provider client directly.

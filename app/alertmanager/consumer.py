@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.alertmanager.bindings import resolve_sources
 from app.alertmanager.contracts import AlertQuery
 from app.alertmanager.reader import read_alerts, read_silences
 from app.alertmanager.repository import get_legacy_config_by_cluster_id
+from app.alertmanager.resolver import AlertmanagerSourceResolution, resolve_alertmanager_sources
 from app.alertmanager.sanitization import safe_endpoint
 
 KUBERNETES_CLUSTER_SCOPE = 'kubernetes_cluster'
@@ -16,10 +16,16 @@ def list_alerts_for_scope(
     scope_type: str,
     scope_key: str,
     query: AlertQuery | None = None,
+    required_capabilities: tuple[str, ...] = ('alerts_v2',),
 ) -> dict[str, Any]:
-    sources = resolve_sources(scope_type=scope_type, scope_key=scope_key)
+    resolution = resolve_alertmanager_sources(
+        scope_type=scope_type,
+        scope_key=scope_key,
+        required_capabilities=required_capabilities,
+    )
     errors: list[str] = []
-    for source in sources:
+    for candidate in resolution.eligible_candidates:
+        source = candidate.instance
         result = read_alerts(
             source,
             source_name=source.name,
@@ -27,14 +33,15 @@ def list_alerts_for_scope(
             canonical_instance_id=source.id,
         )
         if result.get('connected'):
-            result['resolved_scope_type'] = scope_type
-            result['resolved_scope_key'] = scope_key
-            result['fallback_used'] = bool(errors)
-            result['source_errors'] = errors
-            return result
+            return _decorate_result(
+                result,
+                resolution=resolution,
+                selected_instance_id=source.id,
+                errors=errors,
+            )
         errors.append(f'{source.name}: {result.get("error") or "Unavailable"}')
 
-    if scope_type == KUBERNETES_CLUSTER_SCOPE and not sources:
+    if scope_type == KUBERNETES_CLUSTER_SCOPE and not resolution.candidates:
         legacy = get_legacy_config_by_cluster_id(scope_key)
         if legacy is not None and legacy.endpoint:
             result = read_alerts(
@@ -46,16 +53,24 @@ def list_alerts_for_scope(
             result['legacy_source'] = True
             result['resolved_scope_type'] = scope_type
             result['resolved_scope_key'] = scope_key
+            result['source_resolution'] = resolution.to_dict()
             return result
 
+    rejected = [
+        f'{candidate.instance.name}: {candidate.decision_reason}'
+        for candidate in resolution.candidates
+        if not candidate.eligible
+    ]
+    all_errors = [*errors, *rejected]
     return {
         'source': 'alertmanager',
         'connected': False,
         'alerts': [],
-        'error': '; '.join(errors) if errors else 'No Alertmanager source is bound to this scope.',
-        'source_errors': errors,
+        'error': '; '.join(all_errors) if all_errors else 'No Alertmanager source is bound to this scope.',
+        'source_errors': all_errors,
         'resolved_scope_type': scope_type,
         'resolved_scope_key': scope_key,
+        'source_resolution': resolution.to_dict(),
     }
 
 
@@ -63,24 +78,31 @@ def list_silences_for_scope(
     *,
     scope_type: str,
     scope_key: str,
+    required_capabilities: tuple[str, ...] = ('silences_v2',),
 ) -> dict[str, Any]:
-    sources = resolve_sources(scope_type=scope_type, scope_key=scope_key)
+    resolution = resolve_alertmanager_sources(
+        scope_type=scope_type,
+        scope_key=scope_key,
+        required_capabilities=required_capabilities,
+    )
     errors: list[str] = []
-    for source in sources:
+    for candidate in resolution.eligible_candidates:
+        source = candidate.instance
         result = read_silences(
             source,
             source_name=source.name,
             canonical_instance_id=source.id,
         )
         if result.get('connected'):
-            result['resolved_scope_type'] = scope_type
-            result['resolved_scope_key'] = scope_key
-            result['fallback_used'] = bool(errors)
-            result['source_errors'] = errors
-            return result
+            return _decorate_result(
+                result,
+                resolution=resolution,
+                selected_instance_id=source.id,
+                errors=errors,
+            )
         errors.append(f'{source.name}: {result.get("error") or "Unavailable"}')
 
-    if scope_type == KUBERNETES_CLUSTER_SCOPE and not sources:
+    if scope_type == KUBERNETES_CLUSTER_SCOPE and not resolution.candidates:
         legacy = get_legacy_config_by_cluster_id(scope_key)
         if legacy is not None and legacy.endpoint:
             result = read_silences(
@@ -89,21 +111,30 @@ def list_silences_for_scope(
                 canonical_instance_id=None,
             )
             result['legacy_source'] = True
+            result['source_resolution'] = resolution.to_dict()
             return result
 
+    rejected = [
+        f'{candidate.instance.name}: {candidate.decision_reason}'
+        for candidate in resolution.candidates
+        if not candidate.eligible
+    ]
+    all_errors = [*errors, *rejected]
     return {
         'source': 'alertmanager',
         'connected': False,
         'silences': [],
-        'error': '; '.join(errors) if errors else 'No Alertmanager source is bound to this scope.',
-        'source_errors': errors,
+        'error': '; '.join(all_errors) if all_errors else 'No Alertmanager source is bound to this scope.',
+        'source_errors': all_errors,
+        'source_resolution': resolution.to_dict(),
     }
 
 
 def get_scope_status(*, scope_type: str, scope_key: str) -> dict[str, Any]:
-    sources = resolve_sources(scope_type=scope_type, scope_key=scope_key)
-    if sources:
-        primary = sources[0]
+    resolution = resolve_alertmanager_sources(scope_type=scope_type, scope_key=scope_key)
+    selected = resolution.selected
+    if selected is not None:
+        primary = selected.instance
         return {
             'configured': bool(primary.endpoint),
             'connected': primary.last_status == 'connected',
@@ -114,11 +145,12 @@ def get_scope_status(*, scope_type: str, scope_key: str) -> dict[str, Any]:
             'instance_id': primary.id,
             'instance_name': primary.name,
             'endpoint': safe_endpoint(primary.endpoint),
-            'source_count': len(sources),
+            'source_count': len(resolution.eligible_candidates),
             'legacy_source': False,
+            'source_resolution': resolution.to_dict(),
         }
 
-    if scope_type == KUBERNETES_CLUSTER_SCOPE:
+    if scope_type == KUBERNETES_CLUSTER_SCOPE and not resolution.candidates:
         legacy = get_legacy_config_by_cluster_id(scope_key)
         if legacy is not None and legacy.endpoint:
             return {
@@ -133,18 +165,55 @@ def get_scope_status(*, scope_type: str, scope_key: str) -> dict[str, Any]:
                 'endpoint': safe_endpoint(legacy.endpoint),
                 'source_count': 1,
                 'legacy_source': True,
+                'source_resolution': resolution.to_dict(),
             }
 
     return {
-        'configured': False,
+        'configured': bool(resolution.candidates),
         'connected': False,
-        'label': 'Not Configured',
+        'label': 'Unavailable' if resolution.candidates else 'Not Configured',
         'response_time_ms': None,
         'last_checked_at': None,
-        'error': None,
+        'error': _resolution_error(resolution),
         'instance_id': None,
         'instance_name': None,
         'endpoint': None,
         'source_count': 0,
         'legacy_source': False,
+        'source_resolution': resolution.to_dict(),
     }
+
+
+def _decorate_result(
+    result: dict[str, Any],
+    *,
+    resolution: AlertmanagerSourceResolution,
+    selected_instance_id: int,
+    errors: list[str],
+) -> dict[str, Any]:
+    selected_index = next(
+        (
+            index
+            for index, candidate in enumerate(resolution.eligible_candidates)
+            if candidate.instance.id == selected_instance_id
+        ),
+        0,
+    )
+    result['resolved_scope_type'] = resolution.scope_type
+    result['resolved_scope_key'] = resolution.scope_key
+    result['fallback_used'] = selected_index > 0 or bool(errors)
+    result['source_errors'] = errors
+    result['source_resolution'] = resolution.to_dict()
+    selected = next(
+        (candidate for candidate in resolution.eligible_candidates if candidate.instance.id == selected_instance_id),
+        None,
+    )
+    result['selected_source'] = selected.to_dict() if selected is not None else None
+    return result
+
+
+def _resolution_error(resolution: AlertmanagerSourceResolution) -> str | None:
+    if not resolution.candidates:
+        return None
+    reasons = [candidate.decision_reason for candidate in resolution.candidates if not candidate.eligible]
+    return '; '.join(reasons) if reasons else 'No eligible Alertmanager source is currently available.'
