@@ -322,9 +322,9 @@
                 </div>
                 <footer class="flex flex-col gap-3 border-t border-outline-default px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                     <div class="flex items-center gap-3 text-sm text-content-muted">
-                        <span>Showing <strong class="text-content-primary" x-text="start()"></strong>–<strong class="text-content-primary" x-text="end()"></strong> of <strong class="text-content-primary" x-text="filtered().length"></strong></span>
+                        <span>Showing <strong class="text-content-primary" x-text="start()"></strong>–<strong class="text-content-primary" x-text="end()"></strong> of <strong class="text-content-primary" x-text="filtered().length"></strong> roles</span>
                         <label class="inline-flex items-center gap-2">
-                            <span class="text-xs">Rows</span>
+                            <span class="sr-only">Roles per page</span>
                             <select x-model.number="perPage"
                                     @change="resetPage()"
                                     class="h-9 rounded-lg border border-outline-default bg-surface-card px-2 text-sm font-medium text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
@@ -430,7 +430,7 @@
                         <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="table-properties" class="h-5 w-5"></i></span>
                         <div>
                             <h2 class="text-base font-bold text-content-primary">Role-Permission Mapping Matrix</h2>
-                            <p class="mt-0.5 text-sm text-content-muted">Live mapping generated from the current role registry. New custom roles appear automatically after creation.</p>
+                            <p class="mt-0.5 text-sm text-content-muted">Compare permission coverage across a focused set of roles. New custom roles appear automatically after creation.</p>
                         </div>
                     </div>
                     <div class="flex flex-wrap items-center gap-2 text-xs font-semibold text-content-muted">
@@ -439,63 +439,132 @@
                     </div>
                 </div>
             </header>
-            <div class="overflow-x-auto">
-                <table class="min-w-max border-separate border-spacing-0 text-left text-sm">
-                    <thead>
-                        <tr>
-                            <th class="sticky left-0 z-20 min-w-[300px] border-b border-r border-outline-default bg-surface-hover px-5 py-4 text-xs font-semibold uppercase tracking-[0.12em] text-content-muted">Permission contract</th>
-                            {% for role in roles %}
-                                <th class="min-w-[180px] border-b border-r border-outline-default bg-surface-hover px-4 py-3 align-top last:border-r-0">
-                                    <a href="{{ url_for('settings.role_detail', role_id=role.id) }}" class="group block">
-                                        <span class="block text-sm font-bold text-content-primary group-hover:text-kaori-primary">{{ role.display_name }}</span>
-                                        <span class="mt-1 block font-mono text-[10px] font-semibold text-content-muted">{{ role.name }}</span>
-                                        <span class="mt-2 inline-flex rounded-md border px-2 py-1 text-[10px] font-semibold {{ 'border-brand-outline bg-kaori-soft text-kaori-primary' if role.is_system else ('border-status-normal-border bg-status-normal-soft text-status-normal-text' if role.is_active else 'border-outline-default bg-surface-subtle text-content-muted') }}">
-                                            {{ 'Default · Locked' if role.is_system else ('Custom · Active' if role.is_active else 'Custom · Inactive') }}
-                                        </span>
-                                    </a>
-                                </th>
-                            {% endfor %}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for module_name, module_permissions in permissions_by_module.items() %}
-                            <tr>
-                                <th colspan="{{ total_roles + 1 }}" class="border-b border-outline-default bg-kaori-soft px-5 py-3 text-xs font-bold uppercase tracking-[0.12em] text-kaori-primary">
-                                    {{ module_label(module_name) }} · {{ module_permissions|length }} permissions
-                                </th>
-                            </tr>
-                            {% for permission in module_permissions %}
-                                <tr class="group hover:bg-surface-hover">
-                                    <th class="sticky left-0 z-10 border-b border-r border-outline-default bg-surface-card px-5 py-3 group-hover:bg-surface-hover">
-                                        <span class="block text-sm font-semibold text-content-primary">{{ action_label(permission.action) }}</span>
-                                        <span class="mt-1 block font-mono text-[11px] font-semibold text-content-muted">{{ permission.key }}</span>
-                                    </th>
-                                    {% for role in roles %}
-                                        {% set mapped = permission.key in role_permission_keys.get(role.id, []) %}
-                                        <td class="border-b border-r border-outline-default px-4 py-3 text-center last:border-r-0">
-                                            {% if mapped %}
-                                                <span class="mx-auto flex h-8 w-8 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary" title="Mapped to {{ role.display_name }}">
-                                                    <i data-lucide="check" class="h-4 w-4"></i>
-                                                </span>
-                                            {% else %}
-                                                <span class="mx-auto flex h-8 w-8 items-center justify-center rounded-lg border border-outline-subtle bg-surface-subtle text-content-disabled" title="Not mapped to {{ role.display_name }}">
-                                                    <i data-lucide="minus" class="h-4 w-4"></i>
-                                                </span>
-                                            {% endif %}
-                                        </td>
-                                    {% endfor %}
-                                </tr>
-                            {% endfor %}
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            <footer class="border-t border-outline-default bg-surface-hover px-5 py-4 lg:px-6">
-                <div class="flex flex-col gap-2 text-xs leading-5 text-content-muted sm:flex-row sm:items-center sm:justify-between">
-                    <p>Matrix columns are generated from active database role records; rows are generated from the backend Permission Catalog.</p>
-                    <p class="font-semibold text-content-secondary">Super Admin is intentionally excluded.</p>
+            <div data-role-matrix>
+                <div class="grid gap-3 border-b border-outline-default bg-surface-hover px-5 py-4 lg:grid-cols-[minmax(0,1fr)_180px_auto] lg:items-center lg:px-6">
+                    <label class="relative min-w-0">
+                        <span class="sr-only">Search matrix roles</span>
+                        <i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"></i>
+                        <input type="search"
+                               data-role-matrix-search
+                               placeholder="Search role name or key..."
+                               class="h-10 w-full rounded-lg border border-outline-default bg-surface-card pl-9 pr-3 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-muted focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                    </label>
+                    <label>
+                        <span class="sr-only">Filter matrix role type</span>
+                        <select data-role-matrix-type
+                                class="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                            <option value="all">All role types</option>
+                            <option value="system">Default roles</option>
+                            <option value="custom">Custom roles</option>
+                        </select>
+                    </label>
+                    <div class="flex flex-wrap items-center gap-2 text-xs font-semibold text-content-muted lg:justify-end">
+                        <span class="inline-flex items-center gap-1.5"><span class="flex h-6 w-6 items-center justify-center rounded-md border border-brand-outline bg-kaori-soft text-kaori-primary"><i data-lucide="check" class="h-3.5 w-3.5"></i></span>Mapped</span>
+                        <span class="inline-flex items-center gap-1.5"><span class="flex h-6 w-6 items-center justify-center rounded-md border border-outline-subtle bg-surface-subtle text-content-disabled"><i data-lucide="minus" class="h-3.5 w-3.5"></i></span>Not mapped</span>
+                    </div>
                 </div>
-            </footer>
+                <div data-role-matrix-table class="max-h-[68vh] overflow-auto">
+                    <table class="min-w-max border-separate border-spacing-0 text-left text-sm">
+                        <thead>
+                            <tr>
+                                <th class="sticky left-0 top-0 z-30 min-w-[260px] border-b border-r border-outline-default bg-surface-hover px-4 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-content-muted">Permission contract</th>
+                                {% for role in roles %}
+                                    <th data-role-matrix-role
+                                        data-role-id="{{ role.id }}"
+                                        data-role-type="{{ 'system' if role.is_system else 'custom' }}"
+                                        data-role-search="{{ ((role.display_name or '') ~ ' ' ~ (role.name or '') ~ ' ' ~ (role.description or ''))|lower|e }}"
+                                        class="sticky top-0 z-20 w-[136px] min-w-[136px] max-w-[136px] border-b border-r border-outline-default bg-surface-hover px-3 py-3 align-top last:border-r-0">
+                                        <a href="{{ url_for('settings.role_detail', role_id=role.id) }}"
+                                           title="{{ role.display_name }} · {{ role.name }}"
+                                           class="group block min-w-0">
+                                            <span class="flex items-start gap-2">
+                                                <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg {{ 'bg-kaori-soft text-kaori-primary' if role.is_system else 'bg-status-info-soft text-status-info-text' }}">
+                                                    <i data-lucide="{{ 'shield-check' if role.is_system else 'user-cog' }}" class="h-3.5 w-3.5"></i>
+                                                </span>
+                                                <span class="min-w-0">
+                                                    <span class="line-clamp-2 block text-xs font-bold leading-4 text-content-primary group-hover:text-kaori-primary">{{ role.display_name }}</span>
+                                                    <span class="mt-1 block text-[10px] font-semibold {{ 'text-kaori-primary' if role.is_system else ('text-status-normal-text' if role.is_active else 'text-content-muted') }}">
+                                                        {{ 'Default' if role.is_system else ('Custom · Active' if role.is_active else 'Custom · Inactive') }}
+                                                    </span>
+                                                </span>
+                                            </span>
+                                        </a>
+                                    </th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for module_name, module_permissions in permissions_by_module.items() %}
+                                <tr>
+                                    <th data-role-matrix-colspan
+                                        colspan="{{ total_roles + 1 }}"
+                                        class="border-b border-outline-default bg-kaori-soft px-4 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-kaori-primary">
+                                        {{ module_label(module_name) }} · {{ module_permissions|length }} permissions
+                                    </th>
+                                </tr>
+                                {% for permission in module_permissions %}
+                                    <tr class="group hover:bg-surface-hover">
+                                        <th class="sticky left-0 z-10 min-w-[260px] border-b border-r border-outline-default bg-surface-card px-4 py-2.5 group-hover:bg-surface-hover">
+                                            <span class="block text-sm font-semibold text-content-primary">{{ action_label(permission.action) }}</span>
+                                            <span class="mt-0.5 block font-mono text-[10px] font-semibold text-content-muted">{{ permission.key }}</span>
+                                        </th>
+                                        {% for role in roles %}
+                                            {% set mapped = permission.key in role_permission_keys.get(role.id, []) %}
+                                            <td data-role-matrix-cell
+                                                data-role-id="{{ role.id }}"
+                                                class="w-[136px] min-w-[136px] max-w-[136px] border-b border-r border-outline-default px-2 py-2.5 text-center last:border-r-0">
+                                                {% if mapped %}
+                                                    <span class="mx-auto flex h-7 w-7 items-center justify-center rounded-md border border-brand-outline bg-kaori-soft text-kaori-primary" title="Mapped to {{ role.display_name }}">
+                                                        <i data-lucide="check" class="h-3.5 w-3.5"></i>
+                                                    </span>
+                                                {% else %}
+                                                    <span class="mx-auto flex h-7 w-7 items-center justify-center rounded-md border border-outline-subtle bg-surface-subtle text-content-disabled" title="Not mapped to {{ role.display_name }}">
+                                                        <i data-lucide="minus" class="h-3.5 w-3.5"></i>
+                                                    </span>
+                                                {% endif %}
+                                            </td>
+                                        {% endfor %}
+                                    </tr>
+                                {% endfor %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div data-role-matrix-empty hidden class="px-5 py-12 text-center">
+                    <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-surface-subtle text-content-muted"><i data-lucide="search-x" class="h-6 w-6"></i></span>
+                    <h3 class="mt-3 text-sm font-bold text-content-primary">No matching roles</h3>
+                    <p class="mt-1 text-sm text-content-muted">Adjust the role search or type filter.</p>
+                </div>
+                <footer class="flex flex-col gap-3 border-t border-outline-default bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between lg:px-6">
+                    <div class="flex flex-wrap items-center gap-3 text-sm text-content-muted">
+                        <span>Showing <strong data-role-matrix-start class="text-content-primary">0</strong>–<strong data-role-matrix-end class="text-content-primary">0</strong> of <strong data-role-matrix-total class="text-content-primary">0</strong> roles</span>
+                        <label class="inline-flex items-center gap-2">
+                            <span class="text-xs">Roles</span>
+                            <select data-role-matrix-page-size
+                                    class="h-9 rounded-lg border border-outline-default bg-surface-card px-2 text-sm font-medium text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                                <option value="5" selected>5</option>
+                                <option value="10">10</option>
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="mr-1 hidden text-xs font-semibold text-content-muted lg:inline">Super Admin is intentionally excluded.</span>
+                        <button type="button"
+                                data-role-matrix-previous
+                                class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-secondary transition hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50">
+                            <i data-lucide="chevron-left" class="h-4 w-4"></i>Previous
+                        </button>
+                        <span class="min-w-20 text-center text-sm font-semibold text-content-muted">Page <span data-role-matrix-page>1</span> / <span data-role-matrix-pages>1</span></span>
+                        <button type="button"
+                                data-role-matrix-next
+                                class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-secondary transition hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50">
+                            Next<i data-lucide="chevron-right" class="h-4 w-4"></i>
+                        </button>
+                    </div>
+                </footer>
+            </div>
         </section>
     </div>
     <script defer src="{{ url_for('static', filename='js/role_access_tabs.js') }}"></script>

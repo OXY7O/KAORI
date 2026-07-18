@@ -35,15 +35,18 @@ View tabs
   - Role Registry is the default tab
   - Role-Permission Matrix is a second tab on the same page
   - the matrix is generated from current database roles and backend permission sections
-  - new custom roles appear as matrix columns after the next page render
+  - new custom roles appear automatically after the next page render
+  - role columns are paginated at 5 by default with 5/10/25/50 choices so the matrix remains readable as role count grows
+  - matrix role search and default/custom filtering operate on columns without changing the permission registry rows
+  - the permission column and matrix header remain sticky inside a bounded scroll workspace
   - Super Admin is excluded because it is not a normal role
 
 Role Registry tab
   - search
   - type filter
   - status filter
-  - default 5 rows
-  - 5/10/25/50 row choices
+  - default 5 roles
+  - 5/10/25/50 role choices
   - expandable role summary
   - permission preview
   - lifecycle actions

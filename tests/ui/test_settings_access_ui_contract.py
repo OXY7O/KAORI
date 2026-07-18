@@ -189,6 +189,17 @@ def test_roles_page_has_dynamic_registry_and_mapping_matrix_tabs() -> None:
         'data-role-access-panel="registry"',
         'data-role-access-panel="matrix"',
         'Role-Permission Mapping Matrix',
+        'data-role-matrix',
+        'data-role-matrix-search',
+        'data-role-matrix-type',
+        'data-role-matrix-page-size',
+        'data-role-matrix-role',
+        'data-role-matrix-cell',
+        'max-h-[68vh]',
+        'w-[136px]',
+        'Showing <strong data-role-matrix-start',
+        'of <strong data-role-matrix-total',
+        'roles</span>',
         '{% for role in roles %}',
         '{% for module_name, module_permissions in permissions_by_module.items() %}',
         'permission.key in role_permission_keys.get(role.id, [])',
@@ -202,6 +213,19 @@ def test_roles_page_has_dynamic_registry_and_mapping_matrix_tabs() -> None:
     assert "window.location.hash === '#role-permission-matrix'" in script
     assert "panel.hidden = panel.dataset.roleAccessPanel !== targetName" in script
     assert "button.setAttribute('aria-selected'" in script
+    assert "const MATRIX_SELECTOR = '[data-role-matrix]'" in script
+    assert 'function filteredRoles()' in script
+    assert 'visibleRoles = filtered.slice' in script
+    assert 'cell.hidden = !visibleRoleIds.has' in script
+    assert 'cell.colSpan = Math.max(1, visibleRoles.length + 1)' in script
+
+
+def test_role_registry_pagination_uses_role_vocabulary() -> None:
+    source = Path('app/templates/settings/roles/index.html').read_text(encoding='utf-8')
+
+    assert 'x-text="filtered().length"></strong> roles</span>' in source
+    assert '<span class="sr-only">Roles per page</span>' in source
+    assert '<span class="text-xs">Rows</span>' not in source
 
 
 def test_role_form_guardrails_and_global_permission_toggle_are_available() -> None:
