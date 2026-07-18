@@ -81,6 +81,8 @@ Mode must be clear in the hero, supporting notice, field state, permission matri
 - preserve selection when validation fails;
 - scope all checkbox, search, count, and module operations to the current role editor root;
 - keep checkbox submission functional without Alpine.js or another CDN dependency;
+- keep each native checkbox positioned inside its own `relative` permission card; do not use a document-level `sr-only` checkbox that can move the whole application viewport when Firefox focuses it;
+- restore document scroll origin defensively after permission focus/change while preserving the internal `<main>` scroll container;
 - use `app/static/js/role_permission_editor.js` for progressive enhancement only;
 - never clear and recreate every role-permission link for a small change; update relationship rows differentially;
 - roll back failed role updates and render a visible error instead of returning an unhandled blank response.

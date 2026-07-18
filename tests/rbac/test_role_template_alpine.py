@@ -31,3 +31,16 @@ def test_role_permission_editor_does_not_depend_on_inline_alpine_state():
     assert 'x-data="{ search:' not in source
     assert '@change="sync()"' not in source
     assert 'document.querySelectorAll(`[data-role-permission]' not in source
+
+
+def test_role_permission_checkbox_stays_inside_its_card_viewport():
+    template_source = Path('app/templates/settings/roles/form.html').read_text(encoding='utf-8')
+    editor_source = Path('app/static/js/role_permission_editor.js').read_text(encoding='utf-8')
+
+    assert 'group relative flex min-h-20' in template_source
+    assert 'class="peer sr-only"' not in template_source
+    assert 'peer absolute left-3 top-3 z-10 h-8 w-8' in template_source
+    assert 'peer-focus-visible:ring-2' in template_source
+    assert 'function repairDocumentViewport()' in editor_source
+    assert "window.scrollTo({ left: 0, top: 0, behavior: 'auto' })" in editor_source
+    assert "root.addEventListener('focusin'" in editor_source

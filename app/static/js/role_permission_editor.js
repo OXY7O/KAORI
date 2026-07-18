@@ -19,6 +19,12 @@
 
         const permissionInputs = () => Array.from(root.querySelectorAll('[data-role-permission]'))
 
+        function repairDocumentViewport() {
+            if (window.scrollX !== 0 || window.scrollY !== 0) {
+                window.scrollTo({ left: 0, top: 0, behavior: 'auto' })
+            }
+        }
+
         function moduleInputs(section) {
             return Array.from(section.querySelectorAll('[data-role-permission]'))
         }
@@ -119,9 +125,16 @@
             }
         })
 
+        root.addEventListener('focusin', (event) => {
+            if (event.target instanceof HTMLInputElement && event.target.matches('[data-role-permission]')) {
+                requestAnimationFrame(repairDocumentViewport)
+            }
+        })
+
         root.addEventListener('change', (event) => {
             if (event.target instanceof HTMLInputElement && event.target.matches('[data-role-permission]')) {
                 syncSummary()
+                requestAnimationFrame(repairDocumentViewport)
             }
         })
 
