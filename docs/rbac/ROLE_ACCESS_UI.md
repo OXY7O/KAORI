@@ -84,9 +84,10 @@ Mode must be clear in the hero, supporting notice, field state, permission matri
 
 - group by permission module;
 - show action label, stable permission key, and description;
+- place Role Configuration, Permission Matrix, and the final action card in one independent primary-column stack so the matrix starts immediately below Role Configuration and never waits for the taller right-side context rail;
 - align the Permission Matrix to the same primary content column width as Role Configuration instead of spanning beneath the right-side context rail;
-- render the entire Permission Matrix as a native disclosure that is closed by default in create, edit, and detail modes;
-- render each permission module collapsed by default;
+- render the Permission Matrix as a solid, always-visible KAORI Violet card; do not wrap the outer matrix in a disclosure;
+- keep each permission module collapsed by default so the solid matrix remains compact;
 - provide Expand all / Collapse all in every mode, including read-only Custom Role Detail;
 - allow module select/clear only in editable modes;
 - provide a global Select all / Clear all control for large registries in editable modes;

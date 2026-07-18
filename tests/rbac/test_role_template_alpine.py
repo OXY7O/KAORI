@@ -46,16 +46,25 @@ def test_role_permission_checkbox_stays_inside_its_card_viewport():
     assert "root.addEventListener('focusin'" in editor_source
 
 
-def test_role_permission_matrix_is_compact_and_closed_by_default():
+def test_role_permission_matrix_is_solid_and_modules_are_closed_by_default():
     source = Path('app/templates/settings/roles/form.html').read_text(encoding='utf-8')
 
     assert 'grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_360px]' in source
+    assert 'class="min-w-0 self-start space-y-6"' in source
     assert 'data-role-permission-matrix' in source
-    tag_start = source.rfind('<details', 0, source.index('data-role-permission-matrix'))
-    tag_end = source.index('>', tag_start)
-    assert ' open' not in source[tag_start:tag_end]
+
+    matrix_position = source.index('data-role-permission-matrix')
+    matrix_tag_start = source.rfind('<section', 0, matrix_position)
+    matrix_tag_end = source.index('>', matrix_position)
+    assert matrix_tag_start >= 0
+    assert '<details' not in source[matrix_tag_start:matrix_tag_end]
+    assert '<summary' not in source[matrix_tag_start:source.index('data-role-module-toggle-all')]
+    assert 'RBAC scope' in source[matrix_tag_start:source.index('data-role-module-toggle-all')]
+
+    assert source.index('Role configuration') < matrix_position < source.index('<aside class="self-start space-y-5">')
     assert 'data-role-module-toggle-all' in source
     assert 'data-role-module-toggle-all-label>Expand all<' in source
     assert 'data-expanded="false"' in source
     assert 'data-role-module-content' in source
-    assert '\n                                         hidden' in source
+    module_content_position = source.index('data-role-module-content')
+    assert 'hidden' in source[module_content_position:module_content_position + 180]
