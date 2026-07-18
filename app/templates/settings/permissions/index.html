@@ -31,35 +31,44 @@
              init() {
                  this.modules.forEach((name) => { this.expanded[name] = true; });
              },
-             filtered() {
+             matches(permission) {
                  const term = this.search.trim().toLowerCase();
-                 return this.permissions.filter((permission) => {
-                     const queryMatch = !term || permission.search.includes(term);
-                     const moduleMatch = this.moduleFilter === 'all' || permission.module === this.moduleFilter;
-                     return queryMatch && moduleMatch;
-                 });
+                 const queryMatch = !term || permission.search.includes(term);
+                 const moduleMatch = this.moduleFilter === 'all' || permission.module === this.moduleFilter;
+                 return queryMatch && moduleMatch;
+             },
+             filteredPermissions() {
+                 return this.permissions.filter((permission) => this.matches(permission));
+             },
+             filteredModules() {
+                 return this.modules.filter((moduleName) =>
+                     this.permissions.some((permission) => permission.module === moduleName && this.matches(permission))
+                 );
              },
              pages() {
-                 return Math.max(1, Math.ceil(this.filtered().length / this.perPage));
+                 return Math.max(1, Math.ceil(this.filteredModules().length / this.perPage));
              },
-             pageItems() {
+             pageModules() {
                  const start = (this.page - 1) * this.perPage;
-                 return this.filtered().slice(start, start + this.perPage);
+                 return this.filteredModules().slice(start, start + this.perPage);
              },
              visible(permissionKey) {
-                 return this.pageItems().some((permission) => permission.key === permissionKey);
+                 const permission = this.permissions.find((item) => item.key === permissionKey);
+                 return Boolean(permission)
+                     && this.pageModules().includes(permission.module)
+                     && this.matches(permission);
              },
              visibleInModule(moduleName) {
-                 return this.pageItems().some((permission) => permission.module === moduleName);
+                 return this.pageModules().includes(moduleName);
              },
              moduleFilteredCount(moduleName) {
-                 return this.filtered().filter((permission) => permission.module === moduleName).length;
+                 return this.filteredPermissions().filter((permission) => permission.module === moduleName).length;
              },
              start() {
-                 return this.filtered().length ? ((this.page - 1) * this.perPage) + 1 : 0;
+                 return this.filteredModules().length ? ((this.page - 1) * this.perPage) + 1 : 0;
              },
              end() {
-                 return Math.min(this.page * this.perPage, this.filtered().length);
+                 return Math.min(this.page * this.perPage, this.filteredModules().length);
              },
              resetPage() {
                  this.page = 1;
@@ -222,7 +231,7 @@
                             </div>
                         </section>
                     {% endfor %}
-                    <div x-show="filtered().length === 0"
+                    <div x-show="filteredModules().length === 0"
                          x-cloak
                          class="px-5 py-12 text-center">
                         <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-surface-subtle text-content-muted"><i data-lucide="search-x" class="h-6 w-6"></i></span>
@@ -232,9 +241,9 @@
                 </div>
                 <footer class="flex flex-col gap-3 border-t border-outline-default px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                     <div class="flex items-center gap-3 text-sm text-content-muted">
-                        <span>Showing <strong class="text-content-primary" x-text="start()"></strong>–<strong class="text-content-primary" x-text="end()"></strong> of <strong class="text-content-primary" x-text="filtered().length"></strong></span>
+                        <span>Showing sections <strong class="text-content-primary" x-text="start()"></strong>–<strong class="text-content-primary" x-text="end()"></strong> of <strong class="text-content-primary" x-text="filteredModules().length"></strong></span>
                         <label class="inline-flex items-center gap-2">
-                            <span class="text-xs">Rows</span>
+                            <span class="text-xs">Sections</span>
                             <select x-model.number="perPage"
                                     @change="resetPage()"
                                     class="h-9 rounded-lg border border-outline-default bg-surface-card px-2 text-sm font-medium text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">

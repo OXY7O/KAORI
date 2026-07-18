@@ -92,12 +92,14 @@ Permission Catalog is read-only and should answer:
 
 It must not offer rename, delete, inline edit, or direct role mutation controls.
 
-The registry uses the global KAORI pagination contract because permission volume is expected to grow:
+The registry uses the global KAORI pagination contract because permission volume is expected to grow. Its pagination unit is the top-level permission section/module, not individual permission cards:
 
-- default `5` permission cards per page;
-- selectable `5`, `10`, `25`, and `50`;
+- default `5` module sections per page;
+- selectable `5`, `10`, `25`, and `50` sections;
+- every visible module keeps all matching permission cards together on the same page;
+- a module is never split across two pages;
 - search and module filters reset to page 1;
-- pagination operates on effective filtered permissions while retaining module grouping;
+- search may reduce the permission cards shown inside a module, while pagination continues to count the matching modules;
 - empty filtered results show an explicit no-match state;
 - the authorization boundary explanation is presented in a violet distinction block.
 

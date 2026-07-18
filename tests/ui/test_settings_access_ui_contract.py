@@ -35,25 +35,33 @@ def test_settings_and_access_heroes_use_shared_kaori_contract() -> None:
         assert not missing, f'{template_path} is missing hero contract fragments: {missing}'
 
 
-def test_permission_catalog_uses_standard_pagination() -> None:
+def test_permission_catalog_uses_section_based_standard_pagination() -> None:
     source = Path('app/templates/settings/permissions/index.html').read_text(encoding='utf-8')
 
     required_fragments = (
         'page: 1',
         'perPage: 5',
+        'filteredModules()',
+        'pageModules()',
+        'this.filteredModules().length / this.perPage',
+        'this.pageModules().includes(moduleName)',
+        'this.pageModules().includes(permission.module)',
         'x-model.number="perPage"',
         '<option value="5">5</option>',
         '<option value="10">10</option>',
         '<option value="25">25</option>',
         '<option value="50">50</option>',
-        'Showing <strong',
+        'Showing sections <strong',
+        '<span class="text-xs">Sections</span>',
         'Previous',
         'Next',
         'No matching permissions',
     )
 
     missing = [fragment for fragment in required_fragments if fragment not in source]
-    assert not missing, f'Permission Catalog pagination is incomplete: {missing}'
+    assert not missing, f'Permission Catalog section pagination is incomplete: {missing}'
+    assert 'this.filtered().length / this.perPage' not in source
+    assert 'pageItems()' not in source
 
 
 def test_rbac_boundary_descriptions_use_violet_distinction_blocks() -> None:
