@@ -114,3 +114,11 @@ Every capability assessment should expose presentation-ready fields for:
 - source owner and recommended action.
 
 The primary status answers whether the KAORI feature works. Technical checks explain why it works or where an engineer should investigate. A metric may therefore be available while the feature contract fails because of query filters, label transformation, recording rules, retention, or intermediary visibility.
+
+## Analytics feature-query contracts
+
+Analytics readiness is authoritative only when KAORI executes the exact query expressions from the versioned PromQL query registry used by the Analytics services. Metric-name and recent `/series` discovery remain advisory technical evidence and must not override a successful registered query.
+
+A Prometheus aggregate vector with an empty label set, for example `{} 4` returned by `count(...)`, is a valid successful result when the value is finite and satisfies the contract. Label validation must use a separate query that preserves the required labels.
+
+Every Analytics contract exposes presentation-ready `Expected`, `Observed`, exact validation query, response-series count, numeric result evidence, and evidence-based remediation. Empty results are classified as `Not Observed` for contracts where absence of active objects or alerts is valid.

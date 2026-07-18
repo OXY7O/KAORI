@@ -8,6 +8,7 @@ from typing import Any
 from app.prometheus.capabilities import definition as capability_definition
 from app.prometheus.exceptions import PrometheusError
 from app.prometheus.query_profiles import PROFILE_KEY, list_queries
+from app.prometheus.query_profiles.feature_contracts import evaluate_feature_contracts
 
 
 @dataclass(frozen=True)
@@ -89,6 +90,9 @@ class PromQLProfileAuditor:
         capability_assessments = self._capability_assessments(
             available_metrics, metric_label_cache, retention, blocked_details
         )
+        feature_contracts = evaluate_feature_contracts(self.client, sample_namespace=sample_namespace) if execute_queries else []
+        if feature_contracts:
+            self._reconcile_capabilities_from_contracts(capability_assessments, feature_contracts)
         module_readiness = self._module_readiness(domain_summary)
         core_domains = {'app.prometheus', 'app.analytics.capacity', 'app.analytics.utilization'}
         critical_blocked = sum(
@@ -109,9 +113,58 @@ class PromQLProfileAuditor:
                 item['key'] for item in capability_assessments if item['status'] == 'available'
             ),
             'module_readiness': module_readiness,
+            'feature_contracts': feature_contracts,
             'retention': retention,
             'results': [asdict(item) for item in results],
         }
+
+
+    @staticmethod
+    def _reconcile_capabilities_from_contracts(
+        assessments: list[dict[str, Any]],
+        contracts: list[dict[str, Any]],
+    ) -> None:
+        """Make feature-query evidence authoritative over advisory metric discovery."""
+        by_key = {item['key']: item for item in assessments}
+        by_contract = {item['key']: item for item in contracts}
+        mapping = {
+            'capacity_metrics': ('capacity.cpu', 'capacity.memory', 'capacity.worker'),
+            'utilization_metrics': ('utilization.cpu', 'utilization.memory'),
+            'node_filesystem_identity': ('storage.filesystem',),
+            'pvc_usage': ('storage.pvc',),
+            'workload_metrics': ('workload.namespace', 'workload.owner', 'workload.qos'),
+        }
+        for capability_key, contract_keys in mapping.items():
+            assessment = by_key.get(capability_key)
+            selected = [by_contract[key] for key in contract_keys if key in by_contract]
+            if assessment is None or not selected:
+                continue
+            failed = [item for item in selected if item['status'] == 'failed']
+            ready = [item for item in selected if item['status'] == 'ready']
+            not_observed = [item for item in selected if item['status'] == 'not_observed']
+            if failed:
+                assessment['status'] = 'misconfigured'
+                assessment['status_label'] = 'Failed'
+            elif ready:
+                assessment['status'] = 'available'
+                assessment['status_label'] = 'Ready'
+            elif not_observed:
+                assessment['status'] = 'not_observed'
+                assessment['status_label'] = 'Not Observed'
+            assessment['evidence'] = ' '.join(item['observed'] for item in selected)
+            assessment['observed'] = assessment['evidence']
+            assessment['expected'] = ' '.join(item['expected'] for item in selected)
+            assessment['technical_checks'] = [
+                check
+                for item in selected
+                for check in item['technical_checks']
+            ]
+            assessment['technical_check_count_display'] = (
+                f"{len(assessment['technical_checks'])} technical checks"
+            )
+            assessment['recommendation'] = ' '.join(
+                item['recommendation'] for item in selected if item['status'] != 'ready'
+            ) or 'No remediation is required. The exact registered Analytics queries passed.'
 
     def validate_retention(self, horizons: Iterable[str]) -> dict[str, dict[str, Any]]:
         output: dict[str, dict[str, Any]] = {}
@@ -580,6 +633,7 @@ class PromQLProfileAuditor:
             output.append({
                 'key': result.key,
                 'domain': definition.domain,
+                'domain_label': definition.domain.replace('app.analytics.', '').replace('app.', '').replace('.', ' ').replace('_', ' ').title(),
                 'message': result.message,
                 'missing_metrics': list(result.missing_metrics),
                 'missing_labels': list(result.missing_labels),
