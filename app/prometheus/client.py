@@ -5,7 +5,7 @@ from typing import Any
 import requests
 from requests.auth import HTTPBasicAuth
 
-from app.models import PrometheusConfig
+from app.models.prometheus import PrometheusInstance
 from app.prometheus.exceptions import (
     PrometheusAuthenticationError,
     PrometheusConnectionError,
@@ -16,7 +16,7 @@ from app.prometheus.exceptions import (
 class PrometheusClient:
     def __init__(
         self,
-        config: PrometheusConfig,
+        config: PrometheusInstance,
     ) -> None:
         self.config = config
         self.base_url = config.endpoint.rstrip('/')

@@ -5,15 +5,14 @@ from typing import Any
 
 from app.integrations.runtime.contracts import CapabilitySnapshot, DiagnosticResult, HealthFactor, RuntimeState
 from app.integrations.runtime.scoring import calculate_health
-from app.models.prometheus import PrometheusConfig, PrometheusInstance
-from app.prometheus.repository import resolve_instance_for_cluster
+from app.models.prometheus import PrometheusInstance
 from app.prometheus.service import PrometheusService
 
 
 class PrometheusRuntimeAdapter:
     provider = 'prometheus'
 
-    def refresh(self, instance: PrometheusConfig | PrometheusInstance) -> dict[str, Any]:
+    def refresh(self, instance: PrometheusInstance) -> dict[str, Any]:
         cluster = getattr(instance, 'cluster', None)
         if cluster is None:
             binding = next((item for item in instance.bindings if item.scope_type == 'kubernetes_cluster' and item.enabled), None)
@@ -23,9 +22,7 @@ class PrometheusRuntimeAdapter:
             cluster = Cluster.query.get(binding.scope_key)
         return PrometheusService(cluster).validate_integration()
 
-    def get_state(self, instance: PrometheusConfig | PrometheusInstance, *, validation_result: dict[str, Any] | None = None) -> RuntimeState:
-        if isinstance(instance, PrometheusConfig):
-            instance = resolve_instance_for_cluster(instance.cluster_id) or instance
+    def get_state(self, instance: PrometheusInstance, *, validation_result: dict[str, Any] | None = None) -> RuntimeState:
         now = datetime.now(UTC)
         assessments = ((instance.capabilities or {}).get('assessments') or [])
         contract_summary = ((instance.query_validation_summary or {}).get('feature_contract_summary') or {})
@@ -64,7 +61,7 @@ class PrometheusRuntimeAdapter:
         )
 
     @staticmethod
-    def _diagnostics(instance: PrometheusConfig, assessments: list[dict[str, Any]]) -> tuple[DiagnosticResult, ...]:
+    def _diagnostics(instance: PrometheusInstance, assessments: list[dict[str, Any]]) -> tuple[DiagnosticResult, ...]:
         rows = [
             DiagnosticResult(
                 key='endpoint', label='Metrics endpoint', category='connectivity',
@@ -88,7 +85,7 @@ class PrometheusRuntimeAdapter:
 
     @staticmethod
     def _factors(
-        instance: PrometheusConfig,
+        instance: PrometheusInstance,
         assessments: list[dict[str, Any]],
         contract_summary: dict[str, Any],
     ) -> tuple[HealthFactor, ...]:

@@ -13,7 +13,7 @@ from app.integrations.compatibility import (
     get_profile,
 )
 from app.integrations.lifecycle import bind_instance, ensure_canonical_instance
-from app.models import Cluster, PrometheusBinding, PrometheusConfig, PrometheusInstance
+from app.models import Cluster, PrometheusInstance
 from app.prometheus.client import PrometheusClient
 from app.prometheus.consumer import PrometheusConsumer
 from app.prometheus.exceptions import PrometheusError
@@ -41,8 +41,6 @@ class PrometheusService:
     def __init__(self, cluster: Cluster) -> None:
         self.cluster = cluster
         config = resolve_instance_for_cluster(cluster.id)
-        if config is None:
-            config = PrometheusConfig.query.filter_by(cluster_id=cluster.id).first()
         if not config:
             raise PrometheusError('No Prometheus runtime is bound to the selected Kubernetes cluster')
         self.client = PrometheusClient(config)
@@ -208,7 +206,7 @@ class PrometheusService:
 
     @staticmethod
     def _store_identity(
-        config: PrometheusConfig,
+        config: PrometheusInstance,
         resolution: PrometheusCompatibilityResolution,
     ) -> None:
         config.endpoint_product = resolution.endpoint_product
@@ -241,7 +239,7 @@ class PrometheusService:
 
     @staticmethod
     def _result_payload(
-        config: PrometheusConfig,
+        config: PrometheusInstance,
         *,
         response_time: float,
     ) -> dict[str, Any]:
@@ -285,8 +283,8 @@ class PrometheusService:
             )
 
     @staticmethod
-    def save_config(cluster: Cluster, form: PrometheusConfigForm) -> PrometheusConfig:
-        config = cluster.prometheus_config
+    def save_config(cluster: Cluster, form: PrometheusConfigForm) -> PrometheusInstance:
+        config = resolve_instance_for_cluster(cluster.id)
         endpoint = form.endpoint.data
         auth_type = form.auth_type.data
         timeout = form.timeout.data
@@ -303,9 +301,12 @@ class PrometheusService:
             raise PrometheusError('Timeout is required')
 
         if not config:
-            config = PrometheusConfig()
-            config.cluster_id = cluster.id
+            config = PrometheusInstance(
+                name=f'{cluster.name} Prometheus [{cluster.id}]',
+                endpoint=endpoint,
+            )
             db.session.add(config)
+            db.session.flush()
 
         config.endpoint = endpoint
         config.auth_type = auth_type
@@ -355,37 +356,7 @@ class PrometheusService:
             'KAORI uses it for Kubernetes Analytics.'
         )
         config.last_validated_at = None
-        PrometheusService._sync_runtime_instance(cluster, config)
-        db.session.commit()
-        return config
-    @staticmethod
-    def _sync_runtime_instance(cluster: Cluster, config: PrometheusConfig) -> PrometheusInstance:
-        """Mirror the legacy cluster form into a standalone runtime plus explicit binding."""
-        instance = resolve_instance_for_cluster(cluster.id)
-        if instance is None:
-            instance = PrometheusInstance(name=f'{cluster.name} Prometheus', endpoint=config.endpoint)
-            db.session.add(instance)
-            db.session.flush()
-            db.session.add(PrometheusBinding(
-                prometheus_instance_id=instance.id,
-                scope_type=KUBERNETES_CLUSTER_SCOPE,
-                scope_key=cluster.id,
-                binding_role='primary',
-                priority=100,
-                enabled=True,
-            ))
-        fields = (
-            'endpoint', 'auth_type', 'username', 'password', 'bearer_token', 'timeout',
-            'verify_ssl', 'version_detection_mode', 'endpoint_product', 'source_prometheus_major',
-            'detected_version', 'compatibility_status', 'compatibility_profile', 'readiness_status',
-            'validation_message', 'last_validated_at', 'query_profile', 'query_validation_status',
-            'query_validation_summary', 'retention_validation_summary', 'capability_profile',
-            'capabilities', 'module_readiness', 'last_status', 'last_error',
-            'last_response_time_ms', 'last_checked_at',
-        )
-        for field in fields:
-            setattr(instance, field, getattr(config, field, None))
-        canonical = ensure_canonical_instance(instance, provider_type='prometheus')
+        canonical = ensure_canonical_instance(config, provider_type='prometheus')
         bind_instance(
             canonical,
             asset_type=KUBERNETES_CLUSTER_SCOPE,
@@ -395,5 +366,6 @@ class PrometheusService:
                 'forecast', 'top_consumers', 'alert_metrics',
             ],
         )
-        return instance
+        db.session.commit()
+        return config
 

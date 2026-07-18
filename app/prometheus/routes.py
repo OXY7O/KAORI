@@ -66,7 +66,7 @@ def _get_cluster_or_404(
 
 
 def _runtime_source(cluster):
-    return resolve_instance_for_cluster(cluster.id) or cluster.prometheus_config
+    return resolve_instance_for_cluster(cluster.id)
 
 
 @prometheus_bp.route(
@@ -261,14 +261,14 @@ def test_connection(
             return render_template(
                 'prometheus/partials/_validation_response.html',
                 **feedback,
-                config=cluster.prometheus_config,
+                config=resolve_instance_for_cluster(cluster.id),
                 config_last_validated_at_display=present_user_datetime(
-                    cluster.prometheus_config.last_validated_at if cluster.prometheus_config else None,
+                    resolve_instance_for_cluster(cluster.id).last_validated_at if resolve_instance_for_cluster(cluster.id) else None,
                     empty='Not validated yet',
                 ),
                 runtime_state=(
                     _runtime_view(cluster, runtime_adapter.get_state(_runtime_source(cluster)))
-                    if cluster.prometheus_config else None
+                    if resolve_instance_for_cluster(cluster.id) else None
                 ),
                 notification_context=get_navigation_notification_context(
                     user_id=current_user.id,
@@ -317,14 +317,14 @@ def test_connection(
             return render_template(
                 'prometheus/partials/_validation_response.html',
                 **feedback,
-                config=cluster.prometheus_config,
+                config=resolve_instance_for_cluster(cluster.id),
                 config_last_validated_at_display=present_user_datetime(
-                    cluster.prometheus_config.last_validated_at if cluster.prometheus_config else None,
+                    resolve_instance_for_cluster(cluster.id).last_validated_at if resolve_instance_for_cluster(cluster.id) else None,
                     empty='Not validated yet',
                 ),
                 runtime_state=(
                     _runtime_view(cluster, runtime_adapter.get_state(_runtime_source(cluster)))
-                    if cluster.prometheus_config else None
+                    if resolve_instance_for_cluster(cluster.id) else None
                 ),
                 notification_context=get_navigation_notification_context(
                     user_id=current_user.id,
@@ -365,14 +365,14 @@ def test_connection(
             return render_template(
                 'prometheus/partials/_validation_response.html',
                 **feedback,
-                config=cluster.prometheus_config,
+                config=resolve_instance_for_cluster(cluster.id),
                 config_last_validated_at_display=present_user_datetime(
-                    cluster.prometheus_config.last_validated_at if cluster.prometheus_config else None,
+                    resolve_instance_for_cluster(cluster.id).last_validated_at if resolve_instance_for_cluster(cluster.id) else None,
                     empty='Not validated yet',
                 ),
                 runtime_state=(
                     _runtime_view(cluster, runtime_adapter.get_state(_runtime_source(cluster)))
-                    if cluster.prometheus_config else None
+                    if resolve_instance_for_cluster(cluster.id) else None
                 ),
                 notification_context=get_navigation_notification_context(
                     user_id=current_user.id,
@@ -427,14 +427,14 @@ def validate_integration(
             return render_template(
                 'prometheus/partials/_validation_response.html',
                 **feedback,
-                config=cluster.prometheus_config,
+                config=resolve_instance_for_cluster(cluster.id),
                 config_last_validated_at_display=present_user_datetime(
-                    cluster.prometheus_config.last_validated_at if cluster.prometheus_config else None,
+                    resolve_instance_for_cluster(cluster.id).last_validated_at if resolve_instance_for_cluster(cluster.id) else None,
                     empty='Not validated yet',
                 ),
                 runtime_state=(
                     _runtime_view(cluster, runtime_adapter.get_state(_runtime_source(cluster)))
-                    if cluster.prometheus_config else None
+                    if resolve_instance_for_cluster(cluster.id) else None
                 ),
                 notification_context=get_navigation_notification_context(
                     user_id=current_user.id,
@@ -487,14 +487,14 @@ def validate_integration(
             return render_template(
                 'prometheus/partials/_validation_response.html',
                 **feedback,
-                config=cluster.prometheus_config,
+                config=resolve_instance_for_cluster(cluster.id),
                 config_last_validated_at_display=present_user_datetime(
-                    cluster.prometheus_config.last_validated_at if cluster.prometheus_config else None,
+                    resolve_instance_for_cluster(cluster.id).last_validated_at if resolve_instance_for_cluster(cluster.id) else None,
                     empty='Not validated yet',
                 ),
                 runtime_state=(
                     _runtime_view(cluster, runtime_adapter.get_state(_runtime_source(cluster)))
-                    if cluster.prometheus_config else None
+                    if resolve_instance_for_cluster(cluster.id) else None
                 ),
                 notification_context=get_navigation_notification_context(
                     user_id=current_user.id,

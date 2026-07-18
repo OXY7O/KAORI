@@ -6,8 +6,9 @@ from urllib.parse import urlsplit
 from app.cluster.constants import get_environment_label
 from app.common.presentation import present_user_datetime
 from app.integrations.compatibility import get_profile
-from app.models import AlertmanagerConfig, AlertmanagerInstance, Cluster, PrometheusConfig
+from app.models import AlertmanagerInstance, Cluster, PrometheusInstance
 from app.models.integration_runtime import IntegrationRuntimeObservation
+from app.prometheus.repository import resolve_instance_for_cluster
 
 
 def safe_endpoint(value: str | None) -> str:
@@ -20,14 +21,20 @@ def safe_endpoint(value: str | None) -> str:
     return f'{parsed.scheme or "http"}://{host}{port}{path}'
 
 
+def _alertmanager_for_cluster(cluster_id: str):
+    from app.alertmanager.resolver import resolve_alertmanager_sources
+
+    resolution = resolve_alertmanager_sources(scope_type='kubernetes_cluster', scope_key=cluster_id)
+    selected = resolution.selected
+    return selected.instance if selected else None
+
+
 def build_rows() -> list[dict[str, Any]]:
     clusters = Cluster.query.order_by(Cluster.name.asc()).all()
-    prometheus = {item.cluster_id: item for item in PrometheusConfig.query.all()}
-    alertmanager = {item.cluster_id: item for item in AlertmanagerConfig.query.all()}
     rows: list[dict[str, Any]] = []
     for cluster in clusters:
-        rows.append(_row('prometheus', 'Prometheus', cluster, prometheus.get(cluster.id)))
-        rows.append(_row('alertmanager', 'Alertmanager', cluster, alertmanager.get(cluster.id)))
+        rows.append(_row('prometheus', 'Prometheus', cluster, resolve_instance_for_cluster(cluster.id)))
+        rows.append(_row('alertmanager', 'Alertmanager', cluster, _alertmanager_for_cluster(cluster.id)))
     return rows
 
 
@@ -329,34 +336,36 @@ def _runtime_overview_rows() -> list[dict[str, Any]]:
         latest.setdefault((observation.provider, observation.instance_id), observation)
 
     rows: list[dict[str, Any]] = []
-    for config in PrometheusConfig.query.join(Cluster).order_by(Cluster.name.asc()).all():
-        observation = latest.get(('prometheus', str(config.id)))
-        assessments = ((config.capabilities or {}).get('assessments') or [])
+    for instance in PrometheusInstance.query.order_by(PrometheusInstance.name.asc()).all():
+        observation = latest.get(('prometheus', str(instance.id)))
+        assessments = ((instance.capabilities or {}).get('assessments') or [])
         attention = sum(1 for item in assessments if item.get('status') != 'available')
-        observed_at = observation.observed_at if observation else config.last_checked_at
-        latency_ms = observation.latency_ms if observation else config.last_response_time_ms
+        observed_at = observation.observed_at if observation else instance.last_checked_at
+        latency_ms = observation.latency_ms if observation else instance.last_response_time_ms
+        enabled_bindings = [binding for binding in instance.bindings if binding.enabled]
+        primary_binding = next((binding for binding in enabled_bindings if binding.binding_role == 'primary'), None)
         rows.append({
             'provider': 'prometheus',
             'provider_label': 'Prometheus / Thanos',
-            'instance_id': str(config.id),
-            'instance_name': f'{config.cluster.name} metrics',
-            'scope_label': config.cluster.name,
-            'endpoint_product': (config.endpoint_product or 'prometheus').replace('_', ' ').title(),
+            'instance_id': str(instance.id),
+            'instance_name': instance.name,
+            'scope_label': f'{len(enabled_bindings)} asset binding(s)',
+            'endpoint_product': (instance.endpoint_product or 'prometheus').replace('_', ' ').title(),
             'health_status': observation.health_status if observation else 'not_observed',
             'health_score': observation.health_score if observation else None,
-            'readiness': config.readiness_status or 'validation_required',
+            'readiness': instance.readiness_status or 'validation_required',
             'observed_at': observed_at,
             'observed_at_display': present_user_datetime(observed_at, empty='Not observed'),
             'latency_ms': latency_ms,
             'latency_display': f'{latency_ms} ms' if latency_ms is not None else None,
-            'capability_profile': config.capability_profile or config.query_profile,
+            'capability_profile': instance.capability_profile or instance.query_profile,
             'capability_attention': attention,
             'capability_attention_display': (
                 f'{attention} item needs attention' if attention == 1 else f'{attention} items need attention'
             ),
-            'message': (observation.message if observation else None) or config.validation_message or config.last_error,
+            'message': (observation.message if observation else None) or instance.validation_message or instance.last_error,
             'detail_endpoint': 'prometheus.configuration',
-            'detail_kwargs': {'cluster_id': config.cluster_id},
+            'detail_kwargs': {'cluster_id': primary_binding.scope_key} if primary_binding else {},
         })
 
     for instance in AlertmanagerInstance.query.order_by(AlertmanagerInstance.name.asc()).all():
