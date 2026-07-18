@@ -17,6 +17,7 @@ from flask import (
 )
 from flask_login import current_user, login_required
 from sqlalchemy import func
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.auth.forms import ChangePasswordForm
 from app.common.timezone import (
@@ -540,25 +541,37 @@ def edit_role(role_id: int):
         elif role_slug_exists(slug, exclude_role_id=role.id):
             form.name.errors.append('A role with this slug already exists.')
         else:
-            role.name = slug
-            role.display_name = (form.display_name.data or role.display_name).strip()
-            role.description = (form.description.data or '').strip() or None
-            role.is_active = bool(form.is_active.data)
-            effective_permission_ids = replace_role_permissions(role, selected_permission_ids)
-            record_admin_event(
-                actor=cast(User, current_user),
-                action='role.updated',
-                target=role,
-                summary=f'Updated role {role.display_name}.',
-                metadata={
-                    'role_slug': role.name,
-                    'permission_count': len(effective_permission_ids),
-                    'is_active': role.is_active,
-                },
-            )
-            db.session.commit()
-            flash('Custom role updated successfully.', 'success')
-            return redirect(url_for('settings.roles'))
+            try:
+                role.name = slug
+                role.display_name = (form.display_name.data or role.display_name).strip()
+                role.description = (form.description.data or '').strip() or None
+                role.is_active = bool(form.is_active.data)
+                effective_permission_ids = replace_role_permissions(role, selected_permission_ids)
+                record_admin_event(
+                    actor=cast(User, current_user),
+                    action='role.updated',
+                    target=role,
+                    summary=f'Updated role {role.display_name}.',
+                    metadata={
+                        'role_slug': role.name,
+                        'permission_count': len(effective_permission_ids),
+                        'is_active': role.is_active,
+                    },
+                )
+                db.session.commit()
+            except (SQLAlchemyError, ValueError):
+                db.session.rollback()
+                current_app.logger.exception(
+                    'Failed to update custom role %s with submitted permissions.',
+                    role_id,
+                )
+                flash(
+                    'The custom role could not be updated. No role changes were saved. Review the selection and try again.',
+                    'danger',
+                )
+            else:
+                flash('Custom role updated successfully.', 'success')
+                return redirect(url_for('settings.roles'))
 
     selected_permission_ids = expand_permission_ids(selected_permission_ids)
     return render_template(

@@ -170,13 +170,23 @@ def replace_role_permissions(role: Role, permission_ids: Iterable[int]) -> set[i
         raise ValueError('System role permissions are code-owned and cannot be replaced.')
 
     selected_ids = expand_permission_ids(permission_ids)
-    role.role_permissions.clear()
-    db.session.flush()
-    for permission_id in sorted(selected_ids):
-        role_permission = RolePermission()
-        role_permission.role_id = role.id
-        role_permission.permission_id = permission_id
-        db.session.add(role_permission)
+    existing_by_permission_id = {
+        role_permission.permission_id: role_permission
+        for role_permission in role.role_permissions
+    }
+
+    for permission_id, role_permission in existing_by_permission_id.items():
+        if permission_id not in selected_ids:
+            db.session.delete(role_permission)
+
+    for permission_id in sorted(selected_ids - set(existing_by_permission_id)):
+        db.session.add(
+            RolePermission(
+                role_id=role.id,
+                permission_id=permission_id,
+            )
+        )
+
     return selected_ids
 
 

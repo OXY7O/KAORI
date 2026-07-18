@@ -49,9 +49,7 @@
             {% set selected_module_ns.count = selected_module_ns.count + 1 %}
         {% endif %}
     {% endfor %}
-    <div class="space-y-6" x-data="{ search: '', selected: [], expanded: {}, sync() { this.selected = Array.from(document.querySelectorAll('[data-role-permission]:checked')).map((item) => ({ id: item.value, label: item.dataset.label, module: item.dataset.module })); }, toggleModule(moduleName) { const items = Array.from(document.querySelectorAll(`[data-role-permission][data-module='${moduleName}']`)).filter((item) => !item.disabled); const shouldSelect = items.some((item) => !item.checked); items.forEach((item) => { item.checked = shouldSelect; }); this.sync(); }, moduleSelected(moduleName) { const items = Array.from(document.querySelectorAll(`[data-role-permission][data-module='${moduleName}']`)); return items.length > 0 && items.every((item) => item.checked); }, toggleExpanded(moduleName) { this.expanded[moduleName] = !this.expanded[moduleName]; }, isExpanded(moduleName) { return this.search.trim() !== '' || this.expanded[moduleName] !== false; } }" x-init="
-        {% for module_name in permissions_by_module.keys() %}expanded[{{ module_name|tojson|forceescape }}] = true;{% endfor %}
-        sync()">
+    <div class="space-y-6" data-role-permission-editor>
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
@@ -222,14 +220,14 @@
                             <div class="rounded-xl border border-outline-default bg-surface-subtle p-3">
                                 <dt class="text-[11px] font-semibold uppercase tracking-[0.12em] text-content-muted">Permissions</dt>
                                 <dd class="mt-1 text-2xl font-bold text-content-primary"
-                                    x-text="selected.length">
+                                    data-role-selected-count>
                                     {{ selected_count }}
                                 </dd>
                             </div>
                             <div class="rounded-xl border border-outline-default bg-surface-subtle p-3">
                                 <dt class="text-[11px] font-semibold uppercase tracking-[0.12em] text-content-muted">Modules</dt>
                                 <dd class="mt-1 text-2xl font-bold text-content-primary"
-                                    x-text="new Set(selected.map((item) => item.module)).size">
+                                    data-role-selected-module-count>
                                     {{ selected_module_ns.count }}
                                 </dd>
                             </div>
@@ -278,7 +276,7 @@
                             <span class="sr-only">Search permissions</span>
                             <i data-lucide="search"
                                class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"></i>
-                            <input x-model="search"
+                            <input data-role-permission-search
                                    type="search"
                                    placeholder="Search permissions..."
                                    class="h-10 w-full rounded-lg border border-outline-default bg-surface-card pl-9 pr-3 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-muted focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
@@ -288,10 +286,12 @@
                 <div class="space-y-4 bg-surface-subtle p-5">
                     {% for module_name, module_permissions in permissions_by_module.items() %}
                         <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card"
-                                 x-show="search.trim() === '' || {{ ((module_name ~ ' ' ~ (module_permissions|map(attribute='key') |join(' ')))|lower)|tojson|forceescape }}.includes(search.toLowerCase())">
+                                 data-role-module-section
+                                 data-module="{{ module_name }}"
+                                 data-search="{{ (module_name ~ ' ' ~ (module_permissions|map(attribute='key') |join(' ')))|lower }}">
                             <div class="flex items-center justify-between gap-3 px-4 py-3">
                                 <button type="button"
-                                        @click="toggleExpanded({{ module_name|tojson|forceescape }})"
+                                        data-role-module-toggle
                                         class="flex min-w-0 flex-1 items-center gap-3 text-left">
                                     <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ module_icon(module_name) |trim }}" class="h-4 w-4"></i></span>
                                     <span class="min-w-0">
@@ -302,34 +302,34 @@
                                 <div class="flex items-center gap-2">
                                     {% if not read_only %}
                                         <button type="button"
-                                                @click="toggleModule({{ module_name|tojson|forceescape }})"
+                                                data-role-module-select
                                                 class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary">
                                             <i data-lucide="list-checks" class="h-3.5 w-3.5"></i>
-                                            <span x-text="moduleSelected({{ module_name|tojson|forceescape }}) ? 'Clear module' : 'Select module'"></span>
+                                            <span data-role-module-select-label>Select module</span>
                                         </button>
                                     {% endif %}
                                     <button type="button"
-                                            @click="toggleExpanded({{ module_name|tojson|forceescape }})"
-                                            class="flex h-9 w-9 items-center justify-center rounded-lg border border-outline-default text-content-muted">
+                                            data-role-module-toggle
+                                            class="flex h-9 w-9 items-center justify-center rounded-lg border border-outline-default text-content-muted"
+                                            aria-expanded="true">
                                         <i data-lucide="chevron-down"
-                                           class="h-4 w-4 transition-transform"
-                                           :class="isExpanded({{ module_name|tojson|forceescape }}) ? 'rotate-180' : ''"></i>
+                                           data-role-module-chevron
+                                           class="h-4 w-4 rotate-180 transition-transform"></i>
                                     </button>
                                 </div>
                             </div>
-                            <div x-show="isExpanded({{ module_name|tojson|forceescape }})"
-                                 x-collapse
+                            <div data-role-module-content
                                  class="grid gap-2 border-t border-outline-default bg-surface-subtle p-4 sm:grid-cols-2 xl:grid-cols-3">
                                 {% for permission in module_permissions %}
                                     <label class="group flex min-h-20 items-start gap-3 rounded-xl border border-outline-default bg-surface-card p-3 transition {{ 'cursor-default' if read_only else 'cursor-pointer hover:border-brand-outline hover:bg-kaori-soft' }}"
-                                           x-show="search.trim() === '' || {{ ((permission.key ~ ' ' ~ (permission.description or '') ~ ' ' ~ permission.action)|lower)|tojson|forceescape }}.includes(search.toLowerCase())">
+                                           data-role-permission-card
+                                           data-search="{{ (module_name ~ ' ' ~ permission.key ~ ' ' ~ (permission.description or '') ~ ' ' ~ permission.action)|lower }}">
                                         <input type="checkbox"
                                                name="permission_ids"
                                                value="{{ permission.id }}"
                                                data-role-permission
                                                data-module="{{ module_name }}"
                                                data-label="{{ module_label(module_name) |trim }} · {{ permission_label(permission) |trim }}"
-                                               @change="sync()"
                                                class="peer sr-only"
                                                {% if permission.id in selected_permission_ids %}checked{% endif %}
                                                {% if read_only %}disabled{% endif %}>
@@ -379,4 +379,6 @@
             </section>
         </form>
     </div>
+    <script defer
+            src="{{ url_for('static', filename='js/role_permission_editor.js') }}"></script>
 {% endblock dashboard_content %}

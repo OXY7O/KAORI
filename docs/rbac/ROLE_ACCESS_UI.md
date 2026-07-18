@@ -78,7 +78,12 @@ Mode must be clear in the hero, supporting notice, field state, permission matri
 - show selected permission and module counts;
 - keep system/default detail fully read-only;
 - explain automatic view-permission prerequisites;
-- preserve selection when validation fails.
+- preserve selection when validation fails;
+- scope all checkbox, search, count, and module operations to the current role editor root;
+- keep checkbox submission functional without Alpine.js or another CDN dependency;
+- use `app/static/js/role_permission_editor.js` for progressive enhancement only;
+- never clear and recreate every role-permission link for a small change; update relationship rows differentially;
+- roll back failed role updates and render a visible error instead of returning an unhandled blank response.
 
 ## 6. Permission Catalog
 

@@ -124,3 +124,35 @@ def test_role_delete_blockers_include_users_and_identity_providers(app) -> None:
 
 def test_normalize_role_slug() -> None:
     assert normalize_role_slug('  Support-Operator / L2  ') == 'support_operator_l2'
+
+
+def test_replace_role_permissions_updates_links_differentially(app) -> None:
+    seed_default_rbac()
+    role = Role(
+        name='differential_role',
+        display_name='Differential Role',
+        is_system=False,
+        is_active=True,
+    )
+    db.session.add(role)
+    db.session.flush()
+
+    view_users = Permission.query.filter_by(key='users.view').one()
+    manage_users = Permission.query.filter_by(key='users.manage').one()
+    view_reports = Permission.query.filter_by(key='reports.view').one()
+
+    replace_role_permissions(role, [view_users.id, view_reports.id])
+    db.session.commit()
+    existing_link_id = next(
+        link.id for link in role.role_permissions if link.permission_id == view_users.id
+    )
+
+    replace_role_permissions(role, [view_users.id, manage_users.id])
+    db.session.commit()
+    db.session.expire_all()
+
+    role = Role.query.filter_by(name='differential_role').one()
+    assert role.permission_keys() == {'users.view', 'users.manage'}
+    assert next(
+        link.id for link in role.role_permissions if link.permission_id == view_users.id
+    ) == existing_link_id
