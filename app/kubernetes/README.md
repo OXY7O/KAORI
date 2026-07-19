@@ -34,3 +34,7 @@ The pinned Kubernetes Python client uses `response_types_map` for low-level
 `ApiClient.call_api()` deserialization. Do not pass the legacy `response_type`
 keyword. Live API services should narrow generated response unions to the expected
 model before reading `items`, `data`, or `metadata`.
+
+## Integration workspace
+
+The Kubernetes integration UI is organized into Connection & Contract, Compatibility & Capabilities, Runtime & History, and Inventory & Lifecycle domains. The registry and detail workspace opt into the KAORI semantic color contract. Deleting a Kubernetes connection requires `clusters.manage`, opens a KAORI Violet confirmation modal, uses the existing cluster lifecycle service, and records success or failure through persistent notification and Activity Audit Log.

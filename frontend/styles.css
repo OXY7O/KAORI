@@ -232,7 +232,7 @@
 
 /*
  * KAORI integration semantic rollout.
- * Alertmanager and Prometheus opt into this scope first so the new palette
+ * Alertmanager, Prometheus, and Kubernetes opt into this scope so the new palette
  * can be validated without changing unrelated workspaces in the same patch.
  */
 .kaori-integration-semantic {

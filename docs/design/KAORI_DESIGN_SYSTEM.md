@@ -656,3 +656,7 @@ All Settings workspaces use the KAORI Violet Infrastructure visual system. Heroe
 - Native `<details>` and `<summary>` are preferred for these disclosure panels. Use a violet icon surface, shared outline tokens, sentence-case labels, `group-open` chevron rotation, and explicit Details/Collapse text.
 - Protected Secret Reveal Protection Posture and Activity Audit Operational Overview use the same overview anatomy as Role & Access Overview: one structural header, four equal metric cells separated by shared outlines, and one lower information strip containing four concise operational boundaries.
 - Activity Audit Log workspace tabs are named Retention and Audit Log. Avoid the ambiguous label Snapshot for the primary audit-record workspace.
+
+### Kubernetes integration rollout
+
+The Kubernetes Integration landing and detail workspaces use the same semantic contract as Alertmanager and Prometheus. Violet identifies KAORI navigation, selection, primary actions, metadata, and focus. Readiness, runtime health, compatibility fallback, blocked APIs, and destructive lifecycle actions use the appropriate semantic family. Kubernetes remains authoritative for live resources; KAORI stores canonical connection context, normalized inventory, runtime evidence, correlation, governance, and audit history.
