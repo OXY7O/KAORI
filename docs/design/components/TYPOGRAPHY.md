@@ -261,10 +261,12 @@ Before accepting a new page or component, verify:
 9. Does the hierarchy remain readable on mobile?
 10. Has any recurring exception been documented?
 
-## Enforced Content Heading Rule
+## Control Labels and Compact Card Titles
 
-Static content headings use Title Case in source text. CSS `capitalize` is not the default because it can corrupt acronyms, identifiers, and provider names. Hero eyebrows and compact category markers may remain uppercase when the component explicitly defines that treatment.
+Human-readable UI control labels and compact card titles use **Title Case**, including:
 
-Semibold is the default title emphasis. Bold is reserved for deliberate high-emphasis metrics or exceptional hero treatment. Ordinary headings, card titles, modal titles, drawer titles, table block titles, form section titles, and expandable titles use semibold.
+- Search and filter field labels, such as `Search Instance`.
+- Metric or posture card titles, such as `Binding, Capability, and Runtime Aware`.
+- Short authority or ownership statements used as card titles, such as `Alertmanager Remains Authoritative`.
 
-Arbitrary font sizes are not permitted outside documented shared components. The approved content scale is `text-xs`, `text-sm`, `text-base`, `text-lg`, `text-xl`, `text-2xl`, and `text-3xl`. The compact semantic label may use 10 px through the shared label component.
+Sentence case remains correct for explanatory prose, helper text, descriptions, error details, and complete sentences. Technical identifiers preserve their canonical casing.
