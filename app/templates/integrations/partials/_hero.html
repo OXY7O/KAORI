@@ -6,23 +6,33 @@
                 <h1 class="{{ page_hero.title_classes() }}">{{ title }}</h1>
                 <p class="mt-2 {{ page_hero.description_classes() }}">{{ description }}</p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
+                    {{ page_hero.meta_label('package-search', '3 available providers') }}
                     {{ page_hero.meta_label('plug-zap', stats.configured ~ ' configured targets') }}
-                    {{ page_hero.meta_label('circle-check-big', stats.ready ~ ' ready integrations') }}
-                    {{ page_hero.meta_label('triangle-alert', stats.attention ~ ' need attention') }}
+                    {{ page_hero.meta_label('scan-search', 'Automatic discovery') }}
                 </div>
             {% endcall %}
         </div>
-        <aside class="{{ page_hero.aside_classes() }}" aria-label="Integration navigation">
+
+        <aside class="{{ page_hero.aside_classes() }}" aria-label="Integration overview actions">
             <div class="flex h-full min-h-[12rem] flex-col justify-between rounded-xl border border-brand-outline bg-brand-surface-strong p-4 backdrop-blur-md">
                 <div>
                     <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Integration workspace</p>
-                    <h2 class="mt-1 text-base font-semibold text-brand-foreground">Open a provider registry</h2>
-                    <p class="mt-2 text-xs leading-5 text-brand-foreground-muted">Manage connection contracts, capability discovery, runtime health, and governed scope bindings.</p>
+                    <h2 class="mt-1 text-base font-semibold text-brand-foreground">Manage the provider ecosystem</h2>
+                    <p class="mt-2 text-xs leading-5 text-brand-foreground-muted">Choose a supported provider, register its connection, and review operational readiness from one landing page.</p>
                 </div>
-                <div class="mt-4 grid gap-2 sm:grid-cols-3 xl:grid-cols-1">
-                    <a href="{{ url_for('integrations.kubernetes') }}" class="{{ page_hero.primary_action_classes() }}"><i data-lucide="box" class="h-4 w-4"></i>Kubernetes</a>
-                    <a href="{{ url_for('integrations.prometheus') }}" class="{{ page_hero.secondary_action_classes() }}"><i data-lucide="activity" class="h-4 w-4"></i>Prometheus</a>
-                    <a href="{{ url_for('integrations.alertmanager') }}" class="{{ page_hero.secondary_action_classes() }}"><i data-lucide="bell-ring" class="h-4 w-4"></i>Alertmanager</a>
+                <div class="mt-4 {{ page_hero.action_group_classes() }} xl:flex-col xl:items-stretch">
+                    <a href="#provider-catalog" class="{{ page_hero.primary_action_classes() }}">
+                        <i data-lucide="package-search" class="h-4 w-4" aria-hidden="true"></i>
+                        Browse Providers
+                    </a>
+                    <button type="button"
+                            hx-get="{{ url_for('integrations.overview', provider=selected_provider, health=selected_health, readiness=selected_readiness, per_page=runtime_pagination.per_page) }}"
+                            hx-target="#integration-runtime-overview"
+                            hx-swap="outerHTML"
+                            class="{{ page_hero.secondary_action_classes() }}">
+                        <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
+                        Refresh Status
+                    </button>
                 </div>
             </div>
         </aside>
