@@ -4,14 +4,10 @@
 
 `app/alertmanager` is KAORI's provider-neutral integration layer for
 Alertmanager deployments that already exist and remain managed outside KAORI.
-It supports the connection lifecycle required for:
-
-- an Alertmanager dedicated to one Kubernetes cluster;
-- a standalone Alertmanager;
-- a shared Alertmanager serving multiple Kubernetes clusters;
-- an externally managed Alertmanager; and
-- future bindings for Server, HCI, Storage, MinIO/Object Storage, or other
-  infrastructure asset domains.
+It supports a reusable connection lifecycle across infrastructure assets,
+services, operational domains, and workflows. A registered connection may be
+standalone, externally managed, shared, or managed for a specific operational
+scope. Governed bindings determine where the connection is eligible for use.
 
 Alertmanager remains authoritative for alert grouping, routing, inhibition,
 silences, receivers, and notification delivery. KAORI does not replace those
@@ -40,8 +36,7 @@ AlertmanagerBinding
         ↓
 Consumer facade
         ↓
-Kubernetes Analytics today
-Server / HCI / Storage analytics later
+Operational analytics, governance, automation, and intelligence workflows
 ```
 
 An Alertmanager deployment is registered once. One or more bindings determine
@@ -57,34 +52,25 @@ Central Alertmanager
 └── storage_service:minio-prod     primary
 ```
 
-`scope_type` and `scope_key` are canonical integration contracts. Kubernetes
-clusters are currently the first scope with a first-class selector in the UI.
-Other scope types are accepted as canonical keys so their future asset
-registries can integrate without redesigning the provider model.
+`scope_type` and `scope_key` are canonical integration contracts. Managed
+clusters use a first-class selector, while other infrastructure assets,
+services, platform environments, and global operational contexts use canonical
+keys without changing the provider model.
 
-## Provider and asset-domain boundary
+## Provider and operational-domain boundary
 
 ```text
 app/alertmanager
 → understands Alertmanager API, connection, status, alerts, and silences
 
-app/analytics/alerts (current Kubernetes workspace)
-→ understands Kubernetes alert meaning, resource labels, routing posture,
-  ownership, incident readiness, and Prometheus anomaly correlation
-
-future app/server/analytics/alerts
-→ understands Server alert meaning
-
-future app/hci/analytics/alerts
-→ understands HCI alert meaning
-
-future app/<storage-domain>/analytics/alerts
-→ understands Storage/MinIO alert meaning
+consumer domains
+→ interpret canonical alert records for their own assets, services, ownership,
+  governance, incident readiness, automation, and correlation requirements
 ```
 
-Generic normalization must never add Kubernetes-only fields such as pod,
-namespace, Deployment, StatefulSet, or PVC as provider-level assumptions. Asset
-interpretation belongs to the consuming bounded context.
+Generic normalization must not add consumer-specific resource fields or
+operational assumptions at the provider layer. Asset and service interpretation
+belongs to the consuming bounded context.
 
 ## Persistence model
 
@@ -170,22 +156,64 @@ consumers do not use a disabled, blocked, or unvalidated source. Validation
 persists the detected version, compatibility result, verified capabilities,
 response time, and a sanitized operational message.
 
+## Registration contract
+
+The Register Alertmanager Instance page uses a mandatory two-step pre-save
+contract:
+
+```text
+Administrator completes the connection form
+        ↓
+Administrator clicks Test Connection
+        ↓
+KAORI calls GET /api/v2/status without creating a database record
+        ↓
+Successful test issues a short-lived signed registration proof
+        ↓
+Register Instance becomes available
+        ↓
+Any form change invalidates the proof and disables Register Instance
+        ↓
+Registration verifies the proof and repeats the reachability probe
+        ↓
+Only a successful recheck may create the instance
+```
+
+The proof is bound to the authenticated user and a fingerprint of the submitted
+form. It contains no raw endpoint, password, bearer token, or other submitted
+value. The proof expires after ten minutes. Test success and failure are shown
+through persistent operational toast notifications and written to Activity
+Audit Log; the form does not render duplicate inline success or error panels.
+
+Connection testing and Full Validation are separate contracts:
+
+- **Test Connection** verifies configuration completeness, endpoint
+  reachability, authentication, TLS negotiation, and `/api/v2/status`.
+- **Register Instance** persists the reusable connection identity only after a
+  successful test and defensive pre-save recheck.
+- **Full Validation** runs from the saved instance workspace and establishes
+  capabilities, compatibility profile, readiness, and diagnostic evidence.
+- **Scope Binding** controls where the validated connection is eligible for
+  primary, secondary, or fallback resolution.
+
 ## Runtime flows
 
 ### Register and bind a source
 
 ```text
-Administrator registers one Alertmanager instance
+Administrator completes the registration form
         ↓
-KAORI stores connection configuration
+Test Connection succeeds and unlocks registration
+        ↓
+KAORI rechecks reachability and stores the connection identity
         ↓
 Readiness becomes validation_required
         ↓
-Administrator runs full validation
+Administrator runs Full Validation
         ↓
 KAORI discovers version and API capabilities
         ↓
-Administrator adds one or more asset bindings
+Administrator adds one or more scope bindings
         ↓
 Bound consumers may resolve the source
 ```
@@ -246,9 +274,10 @@ client or query Alertmanager configuration tables directly.
 | `reader.py` | Performs runtime status, alert, and silence reads against one already resolved source. | Returns normalized provider data; does not resolve asset bindings. |
 | `bindings.py` | Creates, updates, deletes, and resolves asset bindings; enforces one primary source per scope. | Owns binding rules, not asset-domain enrichment. |
 | `resolver.py` | Ranks bound sources by required capabilities, readiness, runtime health, role, and priority, and emits a deterministic decision trace. | Pure selection logic over persisted state; no HTTP requests or cross-source deduplication. |
-| `consumer.py` | Public scope-based consumer facade with source ordering, readiness gating, fallback, and Kubernetes scope compatibility. | Preferred entry point for analytics and future asset domains. |
+| `consumer.py` | Public scope-based consumer facade with source ordering, readiness gating, fallback, and Kubernetes scope compatibility. | Preferred entry point for all bound operational consumer domains. |
 | `service.py` | Stable application facade for instance lifecycle, validation, bindings, legacy redirects, and existing cluster-based function signatures. | Routes and consumers should use this facade instead of internal modules. |
 | `presentation.py` | Builds sanitized instance inventory/detail contexts, binding labels, pagination, filters, and UI status summaries. | Must never expose credentials or raw URL query strings. |
+| `registration.py` | Issues and verifies short-lived, user-bound registration proofs for successfully tested draft forms. | Tokens contain only a signed form fingerprint and never raw credentials or submitted connection values. |
 | `notifications.py` | Creates persistent toast and Activity Audit feedback for instance, validation, binding, and lifecycle operations. | Metadata must be sanitized and secret-free. |
 | `routes.py` | Thin HTTP orchestration for instance create/edit/delete, validation, binding management, and legacy cluster redirects. | Permission checks and response selection only; business rules remain in services. |
 | `metrics.py` | Deprecated compatibility wrapper for previous alert-normalization imports. | Do not add behavior; migrate imports to `normalizers/`. |
@@ -264,6 +293,7 @@ Canonical routes:
 ```text
 GET  /integrations/alertmanager
 GET  /integrations/alertmanager/instances/new
+POST /integrations/alertmanager/instances/test-connection
 POST /integrations/alertmanager/instances/new
 GET  /integrations/alertmanager/instances/<instance_id>
 POST /integrations/alertmanager/instances/<instance_id>
@@ -378,7 +408,7 @@ The instance detail page exposes the resolver decision for every bound scope. Al
 
 ## Shared integration runtime adapter
 
-`runtime_adapter.py` implements the provider-neutral Integration Runtime contract. It translates Alertmanager validation output and persisted instance observations into diagnostics, weighted health factors, a capability snapshot, and a runtime state. The HTMX runtime refresh endpoint updates only the runtime panel and records a sanitized audit event. Alertmanager-specific HTTP and capability logic stays in this package; health contracts and scoring remain under `app/integrations/runtime/` for reuse by Prometheus and future providers.
+`runtime_adapter.py` implements the provider-neutral Integration Runtime contract. It translates Alertmanager validation output and persisted instance observations into diagnostics, weighted health factors, a capability snapshot, and a runtime state. The HTMX runtime refresh endpoint updates only the runtime panel and records a sanitized audit event. Alertmanager-specific HTTP and capability logic stays in this package; health contracts and scoring remain under `app/integrations/runtime/` for reuse by Prometheus and other integration providers.
 
 
 ## Simplified source-selection flow

@@ -14,6 +14,8 @@ RUNTIME_PANEL = Path('app/templates/alertmanager/partials/_runtime_panel.html')
 RUNTIME_RESPONSE = Path('app/templates/alertmanager/partials/_runtime_refresh_response.html')
 FEEDBACK_OOB = Path('app/templates/alertmanager/partials/_operation_feedback_oob.html')
 ROUTES = Path('app/alertmanager/routes.py')
+REGISTRATION = Path('app/alertmanager/registration.py')
+ALERTMANAGER_README = Path('app/alertmanager/README.md')
 LEGACY_CONFIG = Path('app/templates/alertmanager/config.html')
 
 
@@ -152,7 +154,10 @@ def test_register_alertmanager_instance_matches_informative_form_contract() -> N
         'Test Connection',
         'Register Instance',
         'focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20',
-        'Registration repeats the reachability probe and only saves when it passes.',
+        'Register Instance becomes available only after the submitted values pass reachability verification.',
+        'name="connection_test_proof"',
+        'x-bind:disabled="!connectionVerified"',
+        'x-on:alertmanager-connection-tested.window',
         'absolute inset-x-0 bottom-0 h-1',
         "alertmanager/partials/_delete_confirmation_modal.html",
         'data-alertmanager-delete-button',
@@ -167,6 +172,8 @@ def test_register_alertmanager_instance_matches_informative_form_contract() -> N
         'focus:border-kaori-primary focus:ring-2 focus:ring-outline-focus',
         'Runtime source enabled',
         'Disabled sources are excluded from asset-scope resolution',
+        'Instance not registered',
+        'Connection not tested',
     )
     found = [fragment for fragment in forbidden_fragments if fragment in source]
     assert not found, f'Register Alertmanager form still contains legacy UI patterns: {found}'
@@ -242,24 +249,63 @@ def test_manage_alertmanager_detail_is_domain_tabbed_and_informative() -> None:
     for fragment in ('#configuration', '#validation', '#scope'):
         assert fragment in routes
 
-def test_alertmanager_connection_test_result_is_semantic_and_separate_from_validation() -> None:
-    source = Path(
+def test_alertmanager_connection_test_feedback_is_toast_only_and_unlocks_registration() -> None:
+    partial = Path(
         'app/templates/alertmanager/partials/_connection_test_result.html'
     ).read_text(encoding='utf-8')
+    form = INSTANCE_FORM.read_text(encoding='utf-8')
+    routes = ROUTES.read_text(encoding='utf-8')
+    registration = REGISTRATION.read_text(encoding='utf-8')
+    documentation = ALERTMANAGER_README.read_text(encoding='utf-8')
 
-    required_fragments = (
-        'Reachable',
-        'Not reachable',
-        'Response time',
-        'Cluster status',
-        'Register Instance repeats the same status probe and only saves when it passes.',
-        'API capabilities, compatibility profile, runtime readiness, and scope eligibility',
-        "alertmanager/partials/_operation_feedback_oob.html",
+    assert "alertmanager/partials/_operation_feedback_oob.html" in partial
+    for forbidden in ('Reachable', 'Not reachable', 'Response time', 'Cluster status'):
+        assert forbidden not in partial
+
+    required_form_fragments = (
+        'class="hidden" aria-hidden="true"',
+        'name="connection_test_proof"',
+        'x-bind:disabled="!connectionVerified"',
+        'x-on:alertmanager-connection-tested.window',
+        'invalidateConnectionTest($event)',
+        'Register Instance becomes available only after the submitted values pass reachability verification.',
     )
-    missing = [fragment for fragment in required_fragments if fragment not in source]
-    assert not missing, f'Connection test result contract is incomplete: {missing}'
-    assert 'rounded-full' not in source
-    assert 'font-mono' not in source
+    missing = [fragment for fragment in required_form_fragments if fragment not in form]
+    assert not missing, f'Registration gating UI is incomplete: {missing}'
+    assert 'Instance not registered' not in form
+    assert 'Connection not tested' not in form
+
+    required_route_fragments = (
+        'verify_registration_proof(',
+        'issue_registration_proof(',
+        "'alertmanager-connection-tested'",
+        "'registration_stage': 'connection_test_proof'",
+        "'registration_stage': 'pre_save_recheck'",
+    )
+    missing = [fragment for fragment in required_route_fragments if fragment not in routes]
+    assert not missing, f'Registration route contract is incomplete: {missing}'
+
+    required_proof_fragments = (
+        'REGISTRATION_PROOF_MAX_AGE_SECONDS = 600',
+        'URLSafeTimedSerializer',
+        '_form_fingerprint(form)',
+        'hashlib.sha256',
+        'It never',
+    )
+    missing = [fragment for fragment in required_proof_fragments if fragment not in registration]
+    assert not missing, f'Registration proof contract is incomplete: {missing}'
+
+    required_doc_fragments = (
+        '## Registration contract',
+        'Administrator clicks Test Connection',
+        'Register Instance becomes available',
+        'Any form change invalidates the proof',
+        'the form does not render duplicate inline success or error panels',
+        'POST /integrations/alertmanager/instances/test-connection',
+        '`registration.py`',
+    )
+    missing = [fragment for fragment in required_doc_fragments if fragment not in documentation]
+    assert not missing, f'Alertmanager registration documentation is incomplete: {missing}'
 
 
 def test_alertmanager_delete_actions_use_kaori_confirmation_modal() -> None:

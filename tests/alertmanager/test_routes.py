@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 
 import pytest
@@ -174,13 +175,13 @@ def test_draft_connection_test_uses_submitted_settings_without_creating_instance
     )
 
     assert response.status_code == 200
-    assert b'Connection verified' in response.data
-    assert b'Reachable' in response.data
-    assert b'0.33.1' in response.data
-    assert b'18 ms' in response.data
-    assert b'Full Validation' in response.data
     assert b'data-quick-action-toast' in response.data
     assert b'Saved to notifications' in response.data
+    assert b'Reachable' not in response.data
+    assert b'Response time' not in response.data
+    trigger = json.loads(response.headers['HX-Trigger'])['alertmanager-connection-tested']
+    assert trigger['connected'] is True
+    assert trigger['proof']
     assert observed == {
         'endpoint': 'https://alertmanager.example.test:9093',
         'auth_type': 'none',
@@ -198,7 +199,20 @@ def test_registration_rejects_unreachable_connection_before_database_save(app, m
     db.session.add(user)
     db.session.commit()
 
+    observed = {'calls': 0}
+
     def fake_test(_form):
+        observed['calls'] += 1
+        if observed['calls'] == 1:
+            return {
+                'connected': True,
+                'label': 'Connection verified',
+                'response_time_ms': 10,
+                'version': '0.33.1',
+                'cluster_status': 'ready',
+                'reason': 'The Alertmanager status API responded successfully.',
+                'request_path': '/api/v2/status',
+            }
         return {
             'connected': False,
             'label': 'Connection failed',
@@ -211,28 +225,40 @@ def test_registration_rejects_unreachable_connection_before_database_save(app, m
 
     monkeypatch.setattr('app.alertmanager.routes.test_alertmanager_form_connection', fake_test)
 
+    payload = {
+        'name': 'Rejected Alertmanager',
+        'deployment_type': 'shared',
+        'endpoint': 'https://alertmanager.example.test:9093',
+        'auth_type': 'none',
+        'timeout': '5',
+        'verify_ssl': '1',
+        'enabled': '1',
+    }
     client = app.test_client()
     _login(client, user.id)
+    tested = client.post(
+        '/integrations/alertmanager/instances/test-connection',
+        data=payload,
+        headers={'HX-Request': 'true'},
+    )
+    proof = json.loads(tested.headers['HX-Trigger'])['alertmanager-connection-tested']['proof']
+
     response = client.post(
         '/integrations/alertmanager/instances/new',
-        data={
-            'name': 'Rejected Alertmanager',
-            'deployment_type': 'shared',
-            'endpoint': 'https://alertmanager.example.test:9093',
-            'auth_type': 'none',
-            'timeout': '5',
-            'verify_ssl': '1',
-            'enabled': '1',
-        },
+        data={**payload, 'connection_test_proof': proof},
     )
 
     assert response.status_code == 200
-    assert b'Connection verification must pass before registration' in response.data
-    assert b'Connection failed' in response.data
+    assert b'Instance not registered' not in response.data
+    assert b'Connection failed' not in response.data
     assert db.session.query(AlertmanagerInstance).count() == 0
-    notification = db.session.query(Notification).one()
-    assert notification.event_type == 'alertmanager_instance_create_rejected'
-    assert notification.status == 'error'
+    notifications = db.session.query(Notification).order_by(Notification.id.asc()).all()
+    assert [item.event_type for item in notifications] == [
+        'alertmanager_connection_test',
+        'alertmanager_instance_create_rejected',
+    ]
+    assert notifications[-1].status == 'error'
+    assert notifications[-1].metadata_json['registration_stage'] == 'pre_save_recheck'
 
 
 def test_registration_rechecks_reachability_then_redirects_to_full_validation_page(app, monkeypatch) -> None:
@@ -257,19 +283,27 @@ def test_registration_rechecks_reachability_then_redirects_to_full_validation_pa
 
     monkeypatch.setattr('app.alertmanager.routes.test_alertmanager_form_connection', fake_test)
 
+    payload = {
+        'name': 'Verified Alertmanager',
+        'deployment_type': 'shared',
+        'endpoint': 'https://alertmanager.example.test:9093/',
+        'auth_type': 'none',
+        'timeout': '5',
+        'verify_ssl': '1',
+        'enabled': '1',
+    }
     client = app.test_client()
     _login(client, user.id)
+    tested = client.post(
+        '/integrations/alertmanager/instances/test-connection',
+        data=payload,
+        headers={'HX-Request': 'true'},
+    )
+    proof = json.loads(tested.headers['HX-Trigger'])['alertmanager-connection-tested']['proof']
+
     response = client.post(
         '/integrations/alertmanager/instances/new',
-        data={
-            'name': 'Verified Alertmanager',
-            'deployment_type': 'shared',
-            'endpoint': 'https://alertmanager.example.test:9093/',
-            'auth_type': 'none',
-            'timeout': '5',
-            'verify_ssl': '1',
-            'enabled': '1',
-        },
+        data={**payload, 'connection_test_proof': proof},
     )
 
     assert response.status_code == 302
@@ -278,11 +312,50 @@ def test_registration_rechecks_reachability_then_redirects_to_full_validation_pa
         f'/integrations/alertmanager/instances/{instance.id}'
     )
     assert observed == {
-        'calls': 1,
+        'calls': 2,
         'endpoint': 'https://alertmanager.example.test:9093',
     }
+    notifications = db.session.query(Notification).order_by(Notification.id.asc()).all()
+    assert [item.event_type for item in notifications] == [
+        'alertmanager_connection_test',
+        'alertmanager_instance_created',
+    ]
+    assert notifications[-1].status == 'success'
+    assert notifications[-1].metadata_json['connection_response_time_ms'] == 12
+
+
+def test_registration_requires_successful_test_proof_before_network_recheck(app, monkeypatch) -> None:
+    user = User(username='proof-required', email='proof-required@example.test', is_super_admin=True)
+    db.session.add(user)
+    db.session.commit()
+
+    def unexpected_test(_form):
+        raise AssertionError('Registration must reject before performing the network recheck.')
+
+    monkeypatch.setattr('app.alertmanager.routes.test_alertmanager_form_connection', unexpected_test)
+
+    client = app.test_client()
+    _login(client, user.id)
+    response = client.post(
+        '/integrations/alertmanager/instances/new',
+        data={
+            'name': 'Untested Alertmanager',
+            'deployment_type': 'standalone',
+            'endpoint': 'https://alertmanager.example.test:9093',
+            'auth_type': 'none',
+            'timeout': '5',
+            'verify_ssl': '1',
+            'enabled': '1',
+        },
+    )
+
+    assert response.status_code == 200
+    assert b'Instance not registered' not in response.data
+    assert b'alertmanager-connection-test-result' in response.data
+    assert b'disabled x-bind:disabled="!connectionVerified"' in response.data
+    assert db.session.query(AlertmanagerInstance).count() == 0
     notification = db.session.query(Notification).one()
-    assert notification.event_type == 'alertmanager_instance_created'
-    assert notification.status == 'success'
-    assert notification.metadata_json['connection_response_time_ms'] == 12
+    assert notification.event_type == 'alertmanager_instance_create_rejected'
+    assert notification.title == 'Connection test required'
+    assert notification.metadata_json['registration_stage'] == 'connection_test_proof'
 
