@@ -1,343 +1,97 @@
+{% from "integrations/partials/_status_badge.html" import status_badge %}
+{% import "components/table_label.html" as table_label %}
 {% set compatibility_status = config.compatibility_status or 'validation_required' %}
 {% set readiness_status = config.readiness_status or 'validation_required' %}
 {% set query_status = config.query_validation_status or 'validation_required' %}
 {% set summary = config.query_validation_summary or {} %}
 {% set domain_summary = summary.get('domain_summary', {}) if summary else {} %}
 {% set blocked_details = summary.get('blocked_details', []) if summary else [] %}
+{% set feature_contracts = summary.get('feature_contracts', []) if summary else [] %}
 {% set query_count = summary.get('query_count', 0) if summary else 0 %}
 {% set ready_count = summary.get('ready_count', 0) if summary else 0 %}
 {% set coverage_percent = ((ready_count * 100 / query_count)|round|int) if query_count else 0 %}
+{% set issue_count = namespace(value=0) %}
+{% for domain, item in domain_summary.items() %}{% if item.get('blocked_count', 0) or item.get('deprecated_count', 0) %}{% set issue_count.value = issue_count.value + 1 %}{% endif %}{% endfor %}
 <section id="prometheus-analytics-readiness"
-         class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950"
+         class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
          {% if oob|default(false) %}hx-swap-oob="outerHTML"{% endif %}>
-    <header class="border-b border-slate-200 bg-slate-50/70 px-5 py-5 dark:border-slate-800 dark:bg-slate-900/50">
-        <div class="flex items-start justify-between gap-4">
-            <div class="flex min-w-0 items-start gap-3">
-                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-sm dark:bg-white dark:text-slate-950">
-                    <i data-lucide="chart-no-axes-combined" class="h-5 w-5"></i>
-                </span>
-                <div class="min-w-0">
-                    <p class="text-xs font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-300">Kubernetes Analytics</p>
-                    <h2 class="mt-1 text-xl font-bold text-slate-950 dark:text-white">Analytics Readiness</h2>
-                    <p class="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">
-                        Current compatibility and query-contract posture for this metrics source.
-                    </p>
-                </div>
-            </div>
+    <header class="border-b border-outline-subtle px-5 py-4">
+        <div class="flex items-start gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="chart-no-axes-combined" class="h-5 w-5"></i></span>
+            <div><h2 class="text-base font-semibold text-content-primary">Analytics Readiness</h2><p class="mt-1 text-sm leading-6 text-content-secondary">Compatibility, PromQL contract coverage, metric capability evidence, and affected operational domains.</p></div>
         </div>
     </header>
 
-    <div class="p-5">
-        <!-- Overall posture -->
-        <div class="rounded-2xl border p-4 {% if readiness_status == 'ready' %}border-emerald-200 bg-emerald-50/70 dark:border-emerald-500/20 dark:bg-emerald-500/10{% elif readiness_status in ['degraded', 'validation_required'] %}border-amber-200 bg-amber-50/70 dark:border-amber-500/25 dark:bg-amber-500/10{% else %}border-red-200 bg-red-50/70 dark:border-red-500/20 dark:bg-red-500/10{% endif %}">
-            <div class="flex items-start justify-between gap-4">
-                <div class="flex min-w-0 items-start gap-3">
-                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-700">
-                        {% if readiness_status == 'ready' %}
-                            <i data-lucide="circle-check-big" class="h-5 w-5 text-emerald-600 dark:text-emerald-300"></i>
-                        {% elif readiness_status in ['degraded', 'validation_required'] %}
-                            <i data-lucide="triangle-alert" class="h-5 w-5 text-amber-600 dark:text-amber-300"></i>
-                        {% else %}
-                            <i data-lucide="circle-x" class="h-5 w-5 text-red-600 dark:text-red-300"></i>
-                        {% endif %}
-                    </span>
-                    <div class="min-w-0">
-                        <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Overall status</p>
-                        <p class="mt-1 text-lg font-bold text-slate-950 dark:text-white">{{ readiness_status|replace('_', ' ')|title }}</p>
-                        <p class="mt-1 text-xs leading-5 text-slate-600 dark:text-slate-300">
-                            {{ config.validation_message or 'Run full validation before KAORI enables this endpoint for Kubernetes Analytics.' }}
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- PromQL coverage -->
-        <div class="mt-4 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/50">
-            <div class="flex items-end justify-between gap-4">
-                <div>
-                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">PromQL contract coverage</p>
-                    <p class="mt-1 text-sm font-bold text-slate-950 dark:text-white">
-                        {% if query_count %}{{ ready_count }} of {{ query_count }} checks ready{% else %}Validation has not been completed{% endif %}
-                    </p>
-                </div>
-                <span class="text-2xl font-bold text-slate-950 dark:text-white">{{ coverage_percent }}%</span>
-            </div>
-            <div class="mt-3 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                <div class="h-full rounded-full {% if coverage_percent == 100 %}bg-emerald-500{% elif coverage_percent > 0 %}bg-blue-600{% else %}bg-slate-300 dark:bg-slate-700{% endif %}"
-                     style="width: {{ coverage_percent }}%"></div>
-            </div>
-        </div>
-
-        <!-- Validation snapshot -->
-        <div class="mt-4 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800">
-            {% set snapshot_rows = [
-                ('Endpoint', 'route' if (config.endpoint_product or 'prometheus') == 'thanos' else 'activity', 'Thanos Query' if (config.endpoint_product or 'prometheus') == 'thanos' else 'Direct Prometheus', config.detected_version or 'Version not detected'),
-                ('Compatibility', 'shield-check', compatibility_status|replace('_', ' ')|title, config.compatibility_profile or 'Profile pending'),
-                ('PromQL validation', 'braces', query_status|replace('_', ' ')|title, (ready_count|string) ~ ' ready checks' if query_count else 'Full validation pending'),
-                ('Historical coverage', 'history', 'Validated' if config.retention_validation_summary else 'Pending', '24h / 7d / 30d / 60d windows')
-            ] %}
-            {% for label, icon, value, detail in snapshot_rows %}
-                <div class="flex items-center gap-3 bg-white px-4 py-3.5 {% if not loop.last %}border-b border-slate-200 dark:border-slate-800{% endif %} dark:bg-slate-950">
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300">
-                        <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
-                    </span>
-                    <div class="min-w-0 flex-1">
-                        <p class="text-xs font-semibold text-slate-500 dark:text-slate-400">{{ label }}</p>
-                        <p class="mt-0.5 truncate text-sm font-bold text-slate-950 dark:text-white">{{ value }}</p>
-                    </div>
-                    <p class="w-1/3 text-right text-xs leading-5 text-slate-500 dark:text-slate-400">{{ detail }}</p>
-                </div>
-            {% endfor %}
-        </div>
-
-        <!-- Affected domains -->
-        {% set issue_count = namespace(value=0) %}
-        {% for domain, item in domain_summary.items() %}
-            {% if item.get('blocked_count', 0) or item.get('deprecated_count', 0) %}
-                {% set issue_count.value = issue_count.value + 1 %}
-            {% endif %}
-        {% endfor %}
-
-        <div class="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-900/50">
-            <div class="flex items-start justify-between gap-3">
-                <div>
-                    <p class="text-sm font-bold text-slate-950 dark:text-white">Status impact</p>
-                    <p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
-                        Domains currently preventing a fully ready analytics posture.
-                    </p>
-                </div>
-                <span class="inline-flex shrink-0 rounded-md px-2.5 py-1 text-[11px] font-bold {% if issue_count.value %}bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300{% else %}bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300{% endif %}">
-                    {{ issue_count.value }} affected
-                </span>
-            </div>
-
-            <div class="mt-3 space-y-2">
-                {% for domain, item in domain_summary.items() %}
-                    {% if item.get('blocked_count', 0) or item.get('deprecated_count', 0) %}
-                        <div class="flex items-start justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3.5 py-3 dark:border-slate-700 dark:bg-slate-950/70">
-                            <div class="min-w-0">
-                                <p class="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
-                                    {{ domain|replace('app.analytics.', '')|replace('app.', '')|replace('.', ' ')|replace('_', ' ')|title }}
-                                </p>
-                                <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                                    {{ item.get('ready_count', 0) }} of {{ item.get('query_count', 0) }} checks ready
-                                </p>
-                            </div>
-                            <div class="flex shrink-0 flex-wrap justify-end gap-1.5">
-                                {% if item.get('blocked_count', 0) %}
-                                    <span class="rounded-md bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">
-                                        {{ item.get('blocked_count', 0) }} blocked
-                                    </span>
-                                {% endif %}
-                                {% if item.get('deprecated_count', 0) %}
-                                    <span class="rounded-md bg-slate-200 px-2 py-1 text-[10px] font-bold text-slate-700 dark:bg-slate-700 dark:text-slate-200">
-                                        {{ item.get('deprecated_count', 0) }} deprecated
-                                    </span>
-                                {% endif %}
-                            </div>
-                        </div>
-                    {% endif %}
-                {% endfor %}
-
-                {% if issue_count.value == 0 %}
-                    <div class="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50/70 px-3.5 py-3 dark:border-emerald-500/20 dark:bg-emerald-500/5">
-                        <i data-lucide="circle-check" class="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-300"></i>
-                        <p class="text-sm leading-6 text-emerald-800 dark:text-emerald-200">
-                            No blocked or deprecated analytics domains were reported by the latest validation.
-                        </p>
-                    </div>
-                {% endif %}
-            </div>
-        </div>
-
-        <!-- Analytics query contracts -->
-        {% set feature_contracts = summary.get('feature_contracts', []) if summary else [] %}
-        {% if feature_contracts %}
-            <details class="mt-4 overflow-hidden rounded-2xl border border-violet-200 bg-white dark:border-violet-500/25 dark:bg-slate-950" open>
-                <summary class="cursor-pointer px-4 py-3 text-sm font-bold text-slate-950 dark:text-white">Analytics query contract evidence</summary>
-                <div class="space-y-3 border-t border-violet-200 p-4 dark:border-violet-500/25">
-                    {% for item in feature_contracts %}
-                        <article class="rounded-xl border border-slate-200 bg-slate-50/50 p-4 dark:border-slate-700 dark:bg-slate-900/45">
-                            <div class="flex flex-wrap items-start justify-between gap-3">
-                                <div>
-                                    <p class="text-xs font-semibold text-violet-700 dark:text-violet-300">{{ item.feature }}</p>
-                                    <p class="mt-1 text-sm font-bold text-slate-950 dark:text-white">{{ item.label }}</p>
-                                </div>
-                                <span class="rounded-md border px-2 py-1 text-[10px] font-bold {% if item.status == 'ready' %}border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300{% elif item.status == 'not_observed' %}border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200{% else %}border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300{% endif %}">{{ item.status_label }}</span>
-                            </div>
-                            <div class="mt-3 grid gap-3 lg:grid-cols-2">
-                                <div class="rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-950/70">
-                                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Expected</p>
-                                    <p class="mt-1 text-xs leading-5 text-slate-700 dark:text-slate-200">{{ item.expected }}</p>
-                                </div>
-                                <div class="rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-950/70">
-                                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Observed</p>
-                                    <p class="mt-1 text-xs leading-5 text-slate-700 dark:text-slate-200">{{ item.observed }}</p>
-                                </div>
-                            </div>
-                            <details class="mt-3 rounded-xl border border-slate-200 dark:border-slate-700">
-                                <summary class="cursor-pointer px-3 py-2.5 text-xs font-bold text-slate-800 dark:text-slate-100">Technical detail · {{ item.technical_check_count_display }}</summary>
-                                <div class="space-y-3 border-t border-slate-200 p-3 dark:border-slate-700">
-                                    {% for check in item.technical_checks %}
-                                        <div class="rounded-lg bg-white p-3 dark:bg-slate-950/70">
-                                            <div class="flex items-start justify-between gap-3">
-                                                <p class="break-all text-xs font-semibold text-slate-900 dark:text-slate-100">{{ check.label }}</p>
-                                                <span class="text-[10px] font-bold {% if check.status == 'ready' %}text-emerald-700 dark:text-emerald-300{% elif check.status == 'not_observed' %}text-slate-600 dark:text-slate-300{% else %}text-red-700 dark:text-red-300{% endif %}">{{ check.status_label }}</span>
-                                            </div>
-                                            <p class="mt-1 text-[11px] leading-5 text-slate-500 dark:text-slate-400">{{ check.evidence }} · {{ check.series_count_display }}</p>
-                                            {% if check.error_detail %}
-                                                <div class="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 dark:border-red-500/25 dark:bg-red-500/10">
-                                                    <p class="text-[10px] font-bold uppercase tracking-wider text-red-700 dark:text-red-300">Endpoint response</p>
-                                                    <p class="mt-1 break-words text-[11px] leading-5 text-red-800 dark:text-red-200">{{ check.error_detail }}</p>
-                                                </div>
-                                            {% endif %}
-                                            <code class="mt-2 block overflow-x-auto rounded-lg bg-slate-950 px-3 py-2 text-[11px] text-slate-100">{{ check.query }}</code>
-                                        </div>
-                                    {% endfor %}
-                                </div>
-                            </details>
-                            {% if item.status != 'ready' %}
-                                <div class="mt-3 rounded-xl border border-amber-200 bg-amber-50/60 p-3 dark:border-amber-500/20 dark:bg-amber-500/5">
-                                    <p class="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300">Recommended action</p>
-                                    <p class="mt-1 text-xs leading-5 text-slate-700 dark:text-slate-200">{{ item.recommendation }}</p>
-                                </div>
-                            {% endif %}
-                        </article>
-                    {% endfor %}
-                </div>
-            </details>
-        {% endif %}
-
-        <!-- Feature contract evidence -->
-        {% set capability_assessments = summary.get('capability_assessments', []) if summary else [] %}
-        {% if capability_assessments %}
-            <details class="mt-4 overflow-hidden rounded-2xl border border-violet-200 bg-violet-50/50 dark:border-violet-500/25 dark:bg-violet-500/10">
-                <summary class="cursor-pointer px-4 py-3 text-sm font-bold text-slate-950 dark:text-white">Feature contract evidence</summary>
-                <div class="space-y-3 border-t border-violet-200 p-4 dark:border-violet-500/25">
-                    {% for item in capability_assessments %}
-                        <article class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-950/70">
-                            <div class="flex flex-wrap items-start justify-between gap-3">
-                                <div class="min-w-0">
-                                    <p class="text-sm font-bold text-slate-950 dark:text-white">{{ item.label }}</p>
-                                    <p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">Required by {{ item.required_by_display }}</p>
-                                </div>
-                                <span class="rounded-md border px-2 py-1 text-[10px] font-bold {% if item.status == 'available' %}border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300{% elif item.status == 'not_observed' %}border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200{% else %}border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300{% endif %}">{{ item.status_label }}</span>
-                            </div>
-
-                            <div class="mt-3 grid gap-3 lg:grid-cols-2">
-                                <div class="rounded-xl border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-700 dark:bg-slate-900/60">
-                                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Expected</p>
-                                    <p class="mt-1 text-xs leading-5 text-slate-700 dark:text-slate-200">{{ item.expected }}</p>
-                                </div>
-                                <div class="rounded-xl border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-700 dark:bg-slate-900/60">
-                                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Observed</p>
-                                    <p class="mt-1 text-xs leading-5 text-slate-700 dark:text-slate-200">{{ item.observed }}</p>
-                                </div>
-                            </div>
-
-                            <details class="mt-3 rounded-xl border border-slate-200 dark:border-slate-700">
-                                <summary class="cursor-pointer px-3 py-2.5 text-xs font-bold text-slate-800 dark:text-slate-100">Technical evidence · {{ item.technical_check_count_display }}</summary>
-                                <div class="space-y-2 border-t border-slate-200 p-3 dark:border-slate-700">
-                                    {% for check in item.technical_checks %}
-                                        <div class="flex items-start justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-900/70">
-                                            <div class="min-w-0">
-                                                <p class="break-all text-xs font-semibold text-slate-900 dark:text-slate-100">{{ check.label }}</p>
-                                                <p class="mt-1 text-[11px] leading-5 text-slate-500 dark:text-slate-400">{{ check.evidence }}</p>
-                                            </div>
-                                            <span class="shrink-0 text-[10px] font-bold {% if check.status == 'available' %}text-emerald-700 dark:text-emerald-300{% else %}text-amber-700 dark:text-amber-300{% endif %}">{{ check.status_label }}</span>
-                                        </div>
-                                    {% endfor %}
-                                </div>
-                            </details>
-
-                            {% if item.status != 'available' %}
-                                <div class="mt-3 rounded-xl border border-amber-200 bg-amber-50/60 p-3 dark:border-amber-500/20 dark:bg-amber-500/5">
-                                    <p class="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300">Recommended action</p>
-                                    <p class="mt-1 text-xs leading-5 text-slate-700 dark:text-slate-200">{{ item.recommendation }}</p>
-                                    {% if item.possible_causes %}
-                                        <div class="mt-2 space-y-1">
-                                            {% for cause in item.possible_causes %}<p class="text-xs leading-5 text-slate-600 dark:text-slate-300">• {{ cause }}</p>{% endfor %}
-                                        </div>
-                                    {% endif %}
-                                </div>
-                            {% endif %}
-
-                            {% if item.validation_query %}<code class="mt-3 block overflow-x-auto rounded-lg bg-slate-950 px-3 py-2 text-[11px] text-slate-100">{{ item.validation_query }}</code>{% endif %}
-                        </article>
-                    {% endfor %}
-                </div>
-            </details>
-        {% endif %}
-
-        {% if blocked_details %}
-            <details class="group mt-4 overflow-hidden rounded-2xl border border-amber-200 bg-white dark:border-amber-500/25 dark:bg-slate-950">
-                <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3.5">
-                    <div class="flex min-w-0 items-center gap-3">
-                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
-                            <i data-lucide="list-alerts" class="h-4 w-4"></i>
-                        </span>
-                        <div class="min-w-0">
-                            <p class="text-sm font-bold text-slate-950 dark:text-white">Blocked validation evidence</p>
-                            <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Inspect the specific metric or label contract requiring remediation.</p>
-                        </div>
-                    </div>
-                    <div class="flex shrink-0 items-center gap-2">
-                        <span class="rounded-md bg-amber-100 px-2.5 py-1 text-[11px] font-bold text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">{{ blocked_details|length }}</span>
-                        <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400 transition group-open:rotate-180"></i>
-                    </div>
-                </summary>
-
-                <div class="border-t border-amber-200 bg-amber-50/35 p-3 dark:border-amber-500/20 dark:bg-amber-500/5">
-                    <div class="space-y-2">
-                        {% for item in blocked_details[:8] %}
-                            <article class="rounded-xl border border-slate-200 bg-white px-3.5 py-3 dark:border-slate-700 dark:bg-slate-950/70">
-                                <div class="flex items-start justify-between gap-3">
-                                    <div class="min-w-0">
-                                        <p class="break-all text-sm font-semibold text-slate-950 dark:text-white">{{ item.get('key', 'Unknown check') }}</p>
-                                        <p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
-                                            {{ item.get('domain_label', item.get('domain', 'Unknown domain')) }} · {{ item.get('message', 'Validation check blocked.') }}
-                                        </p>
-                                        {% if item.get('execution_error') %}
-                                            <p class="mt-2 break-words text-[11px] leading-5 text-red-700 dark:text-red-300">{{ item.get('execution_error') }}</p>
-                                        {% endif %}
-                                        {% if item.get('executed_expression') %}
-                                            <code class="mt-2 block overflow-x-auto rounded-lg bg-slate-950 px-3 py-2 text-[11px] text-slate-100">{{ item.get('executed_expression') }}</code>
-                                        {% endif %}
-                                    </div>
-                                    <span class="shrink-0 rounded-md bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">Blocked</span>
-                                </div>
-
-                                {% if item.get('missing_metrics') or item.get('missing_labels') %}
-                                    <div class="mt-2.5 flex flex-wrap gap-1.5">
-                                        {% for metric in item.get('missing_metrics', []) %}
-                                            <span class="rounded-lg border border-red-200 bg-red-50 px-2 py-1 font-mono text-[10px] font-semibold text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300">Metric: {{ metric }}</span>
-                                        {% endfor %}
-                                        {% for label in item.get('missing_labels', []) %}
-                                            <span class="rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 font-mono text-[10px] font-semibold text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300">Label: {{ label }}</span>
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                            </article>
-                        {% endfor %}
-                    </div>
-
-                    {% if blocked_details|length > 8 %}
-                        <p class="mt-3 text-xs font-medium text-slate-500 dark:text-slate-400">
-                            Showing 8 of {{ blocked_details|length }} blocked checks. The complete evidence remains stored in the latest validation result.
-                        </p>
-                    {% endif %}
-                </div>
-            </details>
-        {% endif %}
+    <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
+        <div class="bg-surface-card p-4"><p class="text-xs font-semibold text-content-muted">Overall readiness</p><div class="mt-2">{{ status_badge(readiness_status) }}</div><p class="mt-2 text-xs leading-5 text-content-secondary">{{ config.validation_message or 'Run Full Validation before Analytics uses this source.' }}</p></div>
+        <div class="bg-surface-card p-4"><p class="text-xs font-semibold text-content-muted">Compatibility</p><div class="mt-2">{{ status_badge(compatibility_status) }}</div><p class="mt-2 text-xs leading-5 text-content-secondary">{{ config.compatibility_profile or 'Compatibility profile pending.' }}</p></div>
+        <div class="bg-surface-card p-4"><p class="text-xs font-semibold text-content-muted">PromQL contracts</p><div class="mt-2">{{ status_badge(query_status) }}</div><p class="mt-2 text-xs leading-5 text-content-secondary">{{ ready_count }} of {{ query_count }} checks ready.</p></div>
+        <div class="bg-surface-card p-4"><p class="text-xs font-semibold text-content-muted">Affected domains</p><p class="mt-2 text-2xl font-semibold text-content-primary">{{ issue_count.value }}</p><p class="mt-1 text-xs leading-5 text-content-secondary">Domains requiring configuration or query-contract remediation.</p></div>
     </div>
 
-    <footer class="border-t border-slate-200 bg-slate-50/70 px-5 py-3.5 dark:border-slate-800 dark:bg-slate-900/50">
-        <div class="flex flex-col gap-1 text-xs text-slate-500 dark:text-slate-400 sm:flex-row sm:items-center sm:justify-between">
-            <span>Readiness changes only after a completed full validation.</span>
-            <span class="font-medium">
-                {{ config_last_validated_at_display }}
-            </span>
-        </div>
-    </footer>
+    <div class="grid gap-4 border-t border-outline-subtle p-5 xl:grid-cols-12">
+        <section class="rounded-xl border border-outline-subtle bg-surface-hover p-4 xl:col-span-4">
+            <div class="flex items-start justify-between gap-3"><div><h3 class="text-sm font-semibold text-content-primary">Contract Coverage</h3><p class="mt-1 text-xs leading-5 text-content-muted">Exact PromQL checks executed by the current query profile.</p></div><span class="text-xl font-semibold text-content-primary">{{ coverage_percent }}%</span></div>
+            <div class="mt-4 grid grid-cols-2 gap-2">
+                <div class="rounded-lg bg-status-normal-soft p-3"><p class="text-xs font-semibold text-status-normal-text">Ready checks</p><p class="mt-1 text-lg font-semibold text-content-primary">{{ ready_count }}</p></div>
+                <div class="rounded-lg {% if query_count - ready_count > 0 %}bg-status-warning-soft{% else %}bg-status-unknown-soft{% endif %} p-3"><p class="text-xs font-semibold {% if query_count - ready_count > 0 %}text-status-warning-text{% else %}text-status-unknown-text{% endif %}">Needs review</p><p class="mt-1 text-lg font-semibold text-content-primary">{{ query_count - ready_count }}</p></div>
+            </div>
+            <dl class="mt-4 space-y-3 text-xs">
+                <div class="flex items-start justify-between gap-3"><dt class="text-content-muted">Endpoint</dt><dd class="text-right font-semibold text-content-primary">{{ 'Thanos Query' if (config.endpoint_product or 'prometheus') == 'thanos' else 'Direct Prometheus' }}</dd></div>
+                <div class="flex items-start justify-between gap-3"><dt class="text-content-muted">Detected version</dt><dd class="text-right font-semibold text-content-primary">{{ config.detected_version or 'Not detected' }}</dd></div>
+                <div class="flex items-start justify-between gap-3"><dt class="text-content-muted">Query profile</dt><dd class="max-w-[60%] text-right font-semibold text-content-primary">{{ config.query_profile or 'Not assigned' }}</dd></div>
+                <div class="flex items-start justify-between gap-3"><dt class="text-content-muted">Historical coverage</dt><dd class="text-right font-semibold text-content-primary">{{ 'Validated' if config.retention_validation_summary else 'Pending' }}</dd></div>
+            </dl>
+        </section>
+
+        <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card xl:col-span-8">
+            <header class="flex items-center justify-between gap-3 border-b border-outline-subtle px-4 py-3"><div><h3 class="text-sm font-semibold text-content-primary">Operational Domain Readiness</h3><p class="mt-1 text-xs leading-5 text-content-muted">Which Analytics domains are ready, degraded, or blocked by the current query contract.</p></div>{{ table_label.metadata_label(domain_summary|length ~ ' domains', 'boxes') }}</header>
+            {% if domain_summary %}
+                <div class="divide-y divide-outline-subtle">
+                    {% for domain, item in domain_summary.items() %}
+                        {% set blocked = item.get('blocked_count', 0) %}
+                        {% set deprecated = item.get('deprecated_count', 0) %}
+                        {% set domain_status = 'blocked' if blocked else ('degraded' if deprecated else 'ready') %}
+                        <div class="flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+                            <div class="min-w-0"><p class="truncate text-sm font-semibold text-content-primary">{{ domain|replace('app.analytics.', '')|replace('app.', '')|replace('.', ' ')|replace('_', ' ')|title }}</p><p class="mt-1 text-xs text-content-muted">{{ item.get('ready_count', 0) }} of {{ item.get('query_count', 0) }} checks ready</p></div>
+                            <div class="flex shrink-0 flex-wrap items-center gap-2">{{ status_badge(domain_status) }}{% if blocked %}{{ table_label.status_label(blocked ~ ' blocked', 'critical', 'circle-x') }}{% endif %}{% if deprecated %}{{ table_label.status_label(deprecated ~ ' deprecated', 'unknown', 'history') }}{% endif %}</div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="p-4 text-sm text-content-muted">Run Full Validation to calculate domain readiness.</div>
+            {% endif %}
+        </section>
+    </div>
+
+    {% if feature_contracts %}
+        <details class="group border-t border-outline-subtle">
+            <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 [&::-webkit-details-marker]:hidden"><div><p class="text-sm font-semibold text-content-primary">Analytics Query Contract Evidence</p><p class="mt-1 text-xs leading-5 text-content-muted">Expected metrics, observed evidence, technical checks, and recommended remediation.</p></div><div class="flex items-center gap-2">{{ table_label.metadata_label(feature_contracts|length ~ ' contracts', 'braces') }}<i data-lucide="chevron-down" class="h-4 w-4 text-content-muted transition group-open:rotate-180"></i></div></summary>
+            <div class="grid gap-3 border-t border-outline-subtle bg-surface-hover p-4 lg:grid-cols-2">
+                {% for item in feature_contracts %}
+                    {% set state = item.status or 'not_observed' %}
+                    {% set mapped = 'ready' if state == 'available' else ('blocked' if state in ['missing', 'unsupported'] else ('degraded' if state in ['misconfigured', 'deprecated'] else 'not_observed')) %}
+                    <article class="rounded-xl border border-outline-default bg-surface-card p-4">
+                        <div class="flex items-start justify-between gap-3"><div><h4 class="text-sm font-semibold text-content-primary">{{ item.label or item.key|replace('_', ' ')|title }}</h4><p class="mt-1 text-xs leading-5 text-content-muted">Required by {{ item.required_by_display or 'one or more Analytics consumers' }}</p></div>{{ status_badge(mapped, item.status_label or state|replace('_', ' ')|title) }}</div>
+                        <div class="mt-3 grid gap-3 sm:grid-cols-2"><div class="rounded-lg bg-surface-hover p-3"><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Expected</p><p class="mt-1 text-xs leading-5 text-content-secondary">{{ item.expected or 'Contract-specific metric and label evidence.' }}</p></div><div class="rounded-lg bg-surface-hover p-3"><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Observed</p><p class="mt-1 text-xs leading-5 text-content-secondary">{{ item.observed or 'No evidence recorded.' }}</p></div></div>
+                        {% if state != 'available' %}<div class="mt-3 rounded-lg border border-status-warning-border bg-status-warning-soft p-3"><p class="text-xs font-semibold text-status-warning-text">Recommended action</p><p class="mt-1 text-xs leading-5 text-content-secondary">{{ item.recommendation or 'Review the metric pipeline and rerun Full Validation.' }}</p></div>{% endif %}
+                        {% if item.validation_query %}<code class="mt-3 block overflow-x-auto rounded-lg bg-status-unknown-soft px-3 py-2 font-sans text-[11px] text-status-unknown-text">{{ item.validation_query }}</code>{% endif %}
+                    </article>
+                {% endfor %}
+            </div>
+        </details>
+    {% endif %}
+
+    {% if blocked_details %}
+        <details class="group border-t border-outline-subtle">
+            <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 [&::-webkit-details-marker]:hidden"><div><p class="text-sm font-semibold text-content-primary">Blocked Validation Evidence</p><p class="mt-1 text-xs leading-5 text-content-muted">Specific metric, label, or query contracts that require remediation.</p></div><div class="flex items-center gap-2">{{ table_label.status_label(blocked_details|length ~ ' blocked', 'critical', 'list-alerts') }}<i data-lucide="chevron-down" class="h-4 w-4 text-content-muted transition group-open:rotate-180"></i></div></summary>
+            <div class="space-y-3 border-t border-outline-subtle bg-status-critical-soft p-4">
+                {% for item in blocked_details[:8] %}
+                    <article class="rounded-xl border border-status-critical-border bg-surface-card p-4"><div class="flex items-start justify-between gap-3"><div><p class="text-sm font-semibold text-content-primary">{{ item.get('key', 'Unknown check') }}</p><p class="mt-1 text-xs leading-5 text-content-secondary">{{ item.get('domain_label', item.get('domain', 'Unknown domain')) }} · {{ item.get('message', 'Validation check blocked.') }}</p></div>{{ status_badge('blocked') }}</div>{% if item.get('execution_error') %}<p class="mt-2 text-xs leading-5 text-status-critical-text">{{ item.get('execution_error') }}</p>{% endif %}{% if item.get('missing_metrics') or item.get('missing_labels') %}<div class="mt-3 flex flex-wrap gap-1.5">{% for metric in item.get('missing_metrics', []) %}{{ table_label.status_label('Metric: ' ~ metric, 'critical', 'activity') }}{% endfor %}{% for label in item.get('missing_labels', []) %}{{ table_label.status_label('Label: ' ~ label, 'warning', 'tag') }}{% endfor %}</div>{% endif %}</article>
+                {% endfor %}
+            </div>
+        </details>
+    {% endif %}
+
+    <footer class="flex flex-col gap-1 border-t border-outline-subtle bg-surface-hover px-5 py-3.5 text-xs text-content-muted sm:flex-row sm:items-center sm:justify-between"><span>Readiness changes only after a completed Full Validation.</span><span class="font-medium text-content-secondary">{{ config_last_validated_at_display }}</span></footer>
 </section>

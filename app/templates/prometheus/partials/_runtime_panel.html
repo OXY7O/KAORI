@@ -1,17 +1,38 @@
+{% import "components/table_label.html" as table_label %}
 {% from "integrations/partials/_status_badge.html" import status_badge %}
-<section id="prometheus-runtime-panel"{% if runtime_oob|default(false) %} hx-swap-oob="outerHTML"{% endif %} class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
-  <header class="flex items-start justify-between gap-4 border-b border-outline-subtle px-5 py-4">
-    <div><h2 class="text-lg font-bold text-content-primary">Prometheus Runtime</h2><p class="mt-1 text-sm text-content-secondary">Endpoint health, Analytics query-contract readiness, and observed capability coverage{% if runtime_state.binding_label %} for {{ runtime_state.binding_label }}{% endif %}.</p></div>
-    <button type="button" hx-post="{{ runtime_state.refresh_url }}" hx-target="#operational-action-feedback" hx-swap="innerHTML" hx-disabled-elt="this" class="inline-flex items-center gap-2 rounded-xl bg-kaori-primary px-4 py-2.5 text-sm font-bold text-white hover:bg-kaori-primary-hover"><i data-lucide="refresh-cw" class="h-4 w-4"></i>Refresh runtime</button>
-  </header>
-  <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-5">
-    {% for label, value in [('Health', runtime_state.health_status_label),('Score', runtime_state.health_score_display),('Readiness', runtime_state.readiness_label),('Latency', runtime_state.latency_display),('Capabilities', runtime_state.capability_count_display)] %}
-      <div class="bg-surface-card p-4"><p class="text-[10px] font-bold uppercase tracking-[0.12em] text-content-tertiary">{{ label }}</p><p class="mt-3 text-sm font-bold text-content-primary">{{ value }}</p></div>
-    {% endfor %}
-  </div>
-  <div class="divide-y divide-outline-subtle border-t border-outline-subtle">
-    {% for step in runtime_state.diagnostics[:6] %}
-      <div class="flex items-start justify-between gap-4 px-5 py-3"><div><p class="text-sm font-bold text-content-primary">{{ step.label }}</p><p class="mt-1 text-xs leading-5 text-content-secondary">{{ step.detail }}</p>{% if step.recommendation %}<p class="mt-1 text-xs font-semibold text-amber-700">{{ step.recommendation }}</p>{% endif %}</div>{{ status_badge('ready' if step.status == 'success' else ('blocked' if step.status == 'failed' else 'validation_required')) }}</div>
-    {% endfor %}
-  </div>
+<section id="prometheus-runtime-panel"{% if runtime_oob|default(false) %} hx-swap-oob="outerHTML"{% endif %} class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 lg:flex-row lg:items-start lg:justify-between">
+        <div class="flex items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="activity" class="h-5 w-5"></i></span><div><h2 class="text-base font-semibold text-content-primary">Runtime Health &amp; Diagnostics</h2><p class="mt-1 text-sm leading-6 text-content-secondary">Current endpoint health, query-contract readiness, latency, and capability evidence.</p></div></div>
+        {% if runtime_state.refresh_url %}<form method="post" action="{{ runtime_state.refresh_url }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="inline-flex h-10 items-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white hover:bg-kaori-primary-hover"><i data-lucide="refresh-cw" class="h-4 w-4"></i>Refresh Runtime</button></form>{% endif %}
+    </header>
+
+    <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
+        <div class="bg-surface-card p-4"><p class="text-xs font-semibold text-content-muted">Health</p><div class="mt-2 flex items-center justify-between gap-3">{{ status_badge('ready' if runtime_state.health_status == 'healthy' else ('degraded' if runtime_state.health_status == 'degraded' else ('blocked' if runtime_state.health_status == 'unhealthy' else 'not_observed')), runtime_state.health_status_label) }}<span class="text-sm font-semibold text-content-primary">{{ runtime_state.health_score_display }}</span></div></div>
+        <div class="bg-surface-card p-4"><p class="text-xs font-semibold text-content-muted">Readiness</p><div class="mt-2">{{ status_badge(runtime_state.readiness) }}</div></div>
+        <div class="bg-surface-card p-4"><p class="text-xs font-semibold text-content-muted">Response evidence</p><p class="mt-2 text-sm font-semibold text-content-primary">{{ runtime_state.latency_display }}</p><p class="mt-1 text-xs text-content-muted">{{ runtime_state.observed_at_display }}</p></div>
+        <div class="bg-surface-card p-4"><p class="text-xs font-semibold text-content-muted">Capability context</p><p class="mt-2 text-sm font-semibold text-content-primary">{{ runtime_state.capability_profile or runtime_state.compatibility_profile or 'Not established' }}</p><p class="mt-1 text-xs text-content-muted">{{ runtime_state.capability_count_display }}</p></div>
+    </div>
+
+    <div class="grid gap-4 border-t border-outline-subtle p-5 xl:grid-cols-12">
+        <section class="rounded-xl border border-outline-subtle bg-surface-hover p-4 xl:col-span-4">
+            <div class="flex items-start justify-between gap-3"><div><h3 class="text-sm font-semibold text-content-primary">Health Interpretation</h3><p class="mt-1 text-xs leading-5 text-content-muted">Weighted runtime evidence from the latest observation.</p></div><span class="text-xl font-semibold text-content-primary">{{ runtime_state.health_score }}<span class="text-xs text-content-muted">/100</span></span></div>
+            <p class="mt-4 text-sm font-semibold text-content-primary">{{ runtime_state.health_summary }}</p>
+            <p class="mt-1 text-xs leading-5 text-content-secondary">Readiness remains governed by configuration and Full Validation; health reflects current runtime evidence.</p>
+            <div class="mt-4 grid grid-cols-3 gap-2 text-center">
+                <div class="rounded-lg bg-status-critical-soft px-2 py-2"><p class="text-xs font-semibold text-status-critical-text">0–59</p><p class="mt-0.5 text-[10px] text-content-muted">Critical</p></div>
+                <div class="rounded-lg bg-status-warning-soft px-2 py-2"><p class="text-xs font-semibold text-status-warning-text">60–84</p><p class="mt-0.5 text-[10px] text-content-muted">Attention</p></div>
+                <div class="rounded-lg bg-status-normal-soft px-2 py-2"><p class="text-xs font-semibold text-status-normal-text">85–100</p><p class="mt-0.5 text-[10px] text-content-muted">Healthy</p></div>
+            </div>
+            {% if runtime_state.factors %}<div class="mt-4 space-y-2">{% for factor in runtime_state.factors %}{% set factor_status = 'ready' if factor.status == 'success' else ('blocked' if factor.status == 'failed' else ('degraded' if factor.status == 'warning' else 'not_observed')) %}<div class="flex items-start justify-between gap-3 rounded-lg border border-outline-subtle bg-surface-card px-3 py-2.5"><div><p class="text-xs font-semibold text-content-primary">{{ factor.label }}</p>{% if factor.detail %}<p class="mt-0.5 line-clamp-2 text-[10px] leading-4 text-content-muted">{{ factor.detail }}</p>{% endif %}</div>{{ status_badge(factor_status, factor.score ~ '/100') }}</div>{% endfor %}</div>{% endif %}
+        </section>
+
+        <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card xl:col-span-8">
+            <header class="flex items-center justify-between gap-3 border-b border-outline-subtle px-4 py-3"><div><h3 class="text-sm font-semibold text-content-primary">Diagnostic Pipeline</h3><p class="mt-1 text-xs leading-5 text-content-muted">Ordered checks with technical evidence and corrective guidance.</p></div>{{ table_label.metadata_label(runtime_state.diagnostics|length ~ ' checks', 'list-checks') }}</header>
+            {% if runtime_state.diagnostics %}
+                <div class="overflow-x-auto"><table class="min-w-[760px] w-full text-left text-sm"><thead class="bg-surface-hover text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted"><tr><th class="px-4 py-3">Check</th><th class="px-4 py-3">Status</th><th class="px-4 py-3">Evidence</th><th class="px-4 py-3">Duration</th><th class="px-4 py-3">Next action</th></tr></thead><tbody class="divide-y divide-outline-subtle">{% for step in runtime_state.diagnostics %}{% set step_status = 'ready' if step.status == 'success' else ('blocked' if step.status == 'failed' else ('degraded' if step.status == 'warning' else 'validation_required')) %}<tr class="align-top"><td class="px-4 py-3"><p class="font-semibold text-content-primary">{{ step.label }}</p><p class="mt-1 text-xs text-content-muted">{{ step.category|replace('_', ' ')|title }}</p></td><td class="px-4 py-3">{{ status_badge(step_status, step.status|title) }}</td><td class="px-4 py-3 text-xs leading-5 text-content-secondary">{{ step.detail or 'No evidence recorded.' }}</td><td class="px-4 py-3 text-xs text-content-secondary">{{ step.duration_ms ~ ' ms' if step.duration_ms is not none else '—' }}</td><td class="px-4 py-3 text-xs leading-5 text-content-secondary">{{ step.recommendation or 'No action required.' }}</td></tr>{% endfor %}</tbody></table></div>
+            {% else %}
+                <div class="p-4"><p class="text-sm text-content-muted">No diagnostic evidence has been recorded. Run Full Validation.</p></div>
+            {% endif %}
+        </section>
+    </div>
 </section>

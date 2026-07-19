@@ -70,12 +70,12 @@ Each unavailable capability exposes:
 - source owner;
 - concrete remediation and an optional validation query.
 
-Prometheus is the second provider using the shared Integration Runtime Framework. Manual Full Validation and scheduled monitoring use the same runtime adapter, health scoring, immutable observations, and history model.
+Prometheus is the second provider using the shared Integration Runtime Framework. Manual Full Validation and scheduled monitoring use the same runtime adapter, health scoring, rolling 100-record observation retention, and history model.
 
 ## Consumer boundary
 
 `app/prometheus/consumer.py` is the canonical read boundary for Kubernetes
-Analytics and future asset consumers. It accepts a cluster context, resolves the
+Analytics and other authorized operational consumers. It accepts a cluster context, resolves the
 configured Prometheus or Thanos Query endpoint, checks integration readiness and
 required capabilities, and only then executes the query.
 
@@ -108,3 +108,17 @@ Runtime view models own route URLs and binding labels. Prometheus templates must
 Full Validation executes registered PromQL checks independently. A rejected query is stored as contract evidence and must not abort the complete validation run. Runtime-bound query templates containing placeholders such as `__TIME_RANGE__` and `__TIME_STEP__` are marked deferred during instant validation rather than being sent to the endpoint unchanged.
 
 HTTP error evidence includes the Prometheus-compatible endpoint error type and message when available. Analytics Readiness technical detail displays the exact registered query, response-series count, and endpoint rejection detail.
+
+## KAORI Violet integration workspace contract
+
+Prometheus uses the same provider-neutral workspace concept as Alertmanager while retaining metrics-specific terminology and operations.
+
+- The landing page contains a standardized KAORI hero, integration overview, HTMX connection registry, readiness filters, scope coverage, and registration action.
+- The instance detail page is divided into `Configuration`, `Validation & Capabilities`, `Runtime & History`, and `Scope & Resolution` domains.
+- Configuration establishes endpoint identity, authentication, TLS, timeout, and compatibility-detection behavior.
+- Test Connection verifies endpoint reachability and identity. Full Validation evaluates API compatibility, metric/label contracts, PromQL execution, retention evidence, capability readiness, and dependent operational domains.
+- Runtime evidence uses the shared health model and rolling 100-record retention. Scope bindings determine which operational consumers may resolve the connection.
+- Prometheus and Thanos remain authoritative for scraping, rules, query execution, retention, federation, and historical storage. KAORI provides validation, governance, correlation, runtime evidence, and controlled source resolution.
+
+Alertmanager and Prometheus opt into the `kaori-integration-semantic` scope. Within this scope, Primary Violet is limited to navigation, primary action, focus, selection, and KAORI identity. Operational state uses Normal, Info, Warning, Critical, or Neutral. Compact labels are rectangular and borderless; semantic border tokens are reserved for panels, callouts, dialogs, and controls.
+

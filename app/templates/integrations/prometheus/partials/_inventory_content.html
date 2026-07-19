@@ -1,89 +1,95 @@
+{% import "components/table_label.html" as table_label %}
 {% from "integrations/partials/_status_badge.html" import status_badge %}
+{% if rows %}
 <div class="overflow-x-auto">
-  <table class="min-w-[1120px] w-full text-left text-sm text-slate-900 dark:text-slate-100">
-    <thead>
-      <tr class="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-600 dark:border-slate-700 dark:bg-slate-700/40 dark:text-slate-300">
-        <th class="px-5 py-4">Cluster</th>
-        <th class="px-5 py-4">Environment</th>
-        <th class="px-5 py-4">Endpoint</th>
-        <th class="px-5 py-4">Runtime Version</th>
-        <th class="px-5 py-4">Profile</th>
-        <th class="px-5 py-4">Compatibility</th>
-        <th class="px-5 py-4">Readiness</th>
-        <th class="px-5 py-4 text-right">Action</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for row in rows %}
-      <tr class="border-t border-slate-200 transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-700/30">
-        <td class="px-5 py-4 align-middle">
-          <div class="flex max-w-[240px] items-center gap-2">
-            <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300"><i data-lucide="server" class="h-4 w-4"></i></span>
-            <span class="truncate font-semibold" title="{{ row.cluster.name }}">{{ row.cluster.name }}</span>
-          </div>
-        </td>
-        <td class="px-5 py-4 align-middle">
-          {% set environment_key = (row.environment or '')|lower %}
-          {% if environment_key == 'prd' %}
-            <span class="inline-flex rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-700 ring-1 ring-inset ring-red-200 dark:bg-red-500/10 dark:text-red-300 dark:ring-red-400/20">Production</span>
-          {% elif environment_key == 'stg' %}
-            <span class="inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/20">Staging</span>
-          {% elif environment_key == 'dev' %}
-            <span class="inline-flex rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-400/20">Development</span>
-          {% else %}
-            <span class="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 ring-1 ring-inset ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-600">{{ row.environment_label }}</span>
-          {% endif %}
-        </td>
-        <td class="px-5 py-4 align-middle">
-          <span class="inline-flex max-w-[260px] items-center rounded-full bg-cyan-50 px-2.5 py-1 font-mono text-xs font-medium text-cyan-800 ring-1 ring-inset ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-400/25" title="{{ row.endpoint }}">
-            <span class="truncate">{{ row.endpoint }}</span>
-          </span>
-        </td>
-        <td class="px-5 py-4 align-middle">
-          <div class="font-semibold text-slate-800 dark:text-slate-100">{{ row.version or 'Not detected' }}</div>
-          <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ 'Thanos Query' if row.endpoint_product == 'thanos' else 'Direct Prometheus' }}</div>
-        </td>
-        <td class="px-5 py-4 align-middle">
-          {% if row.profile %}
-            <span class="inline-flex max-w-[250px] rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700 ring-1 ring-inset ring-indigo-200 dark:bg-indigo-500/10 dark:text-indigo-300 dark:ring-indigo-500/25" title="{{ row.profile }}"><span class="truncate">{{ row.profile }}</span></span>
-            {% if row.source_prometheus_major and row.source_prometheus_major != row.profile %}<div class="mt-1 text-xs text-slate-500 dark:text-slate-400">Source: {{ row.source_prometheus_major }}</div>{% endif %}
-          {% else %}
-            <span class="text-xs text-slate-500">Not matched</span>
-          {% endif %}
-        </td>
-        <td class="px-5 py-4 align-middle">{{ status_badge(row.compatibility) }}</td>
-        <td class="px-5 py-4 align-middle">{{ status_badge(row.readiness) }}</td>
-        <td class="px-5 py-4 text-right align-middle">
-          <a href="{{ url_for('prometheus.configuration', cluster_id=row.cluster.id) }}" class="inline-flex whitespace-nowrap items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-blue-500/50 dark:hover:bg-blue-500/10 dark:hover:text-blue-300">
-            <i data-lucide="settings-2" class="h-4 w-4"></i>{{ 'Configure' if not row.configured else 'Manage' }}
-          </a>
-        </td>
-      </tr>
-      {% else %}
-      <tr><td colspan="8" class="p-0">{% set empty_state_icon='activity' %}{% set empty_state_title='No Prometheus integrations found' %}{% set empty_state_description='Adjust the active filters or configure Prometheus for a connected cluster.' %}{% set empty_state_min_height='min-h-[190px]' %}{% include 'components/states/_empty_state.html' %}</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+    <table class="min-w-[1080px] w-full text-left text-sm">
+        <thead class="border-b border-outline-subtle bg-surface-hover text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">
+            <tr>
+                <th class="px-5 py-3.5 sm:px-6">Connection</th>
+                <th class="px-4 py-3.5">Endpoint</th>
+                <th class="px-4 py-3.5">Runtime</th>
+                <th class="px-4 py-3.5">Compatibility</th>
+                <th class="px-4 py-3.5">Readiness</th>
+                <th class="px-4 py-3.5">Bindings</th>
+                <th class="px-4 py-3.5">Last validated</th>
+                <th class="px-5 py-3.5 text-right sm:px-6">Action</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-outline-subtle">
+            {% for row in rows %}
+                <tr class="transition hover:bg-surface-hover">
+                    <td class="px-5 py-4 align-top sm:px-6">
+                        <div class="flex max-w-[250px] items-start gap-3">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="activity" class="h-4 w-4"></i></span>
+                            <div class="min-w-0">
+                                <p class="truncate font-semibold text-content-primary" title="{{ row.name }}">{{ row.name }}</p>
+                                <p class="mt-1 line-clamp-2 text-xs leading-5 text-content-muted">{{ row.description or 'Reusable metrics connection' }}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-4 py-4 align-top">
+                        <p class="max-w-[250px] truncate font-sans text-sm font-normal text-content-secondary" title="{{ row.endpoint }}">{{ row.endpoint }}</p>
+                        <div class="mt-2">{{ table_label.metadata_label((row.endpoint_product or 'prometheus')|replace('_', ' ')|title, 'server-cog') }}</div>
+                    </td>
+                    <td class="px-4 py-4 align-top">
+                        <p class="font-semibold text-content-primary">{{ row.version or 'Not detected' }}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ row.capability_profile or row.query_profile or 'Capability profile pending' }}</p>
+                    </td>
+                    <td class="px-4 py-4 align-top">
+                        {{ status_badge(row.compatibility) }}
+                        <p class="mt-2 max-w-[210px] text-xs leading-5 text-content-muted">{{ row.profile or 'Run Full Validation to establish compatibility.' }}</p>
+                    </td>
+                    <td class="px-4 py-4 align-top">{{ status_badge(row.readiness) }}</td>
+                    <td class="px-4 py-4 align-top">
+                        <p class="font-semibold text-content-primary">{{ row.binding_count }}</p>
+                        {% for cluster in row.bound_clusters[:2] %}<p class="mt-1 max-w-[170px] truncate text-xs text-content-muted" title="{{ cluster.name }}">{{ cluster.name }}</p>{% endfor %}
+                        {% if row.binding_count > 2 %}<p class="mt-1 text-xs font-semibold text-kaori-primary-dark">+{{ row.binding_count - 2 }} more</p>{% endif %}
+                    </td>
+                    <td class="px-4 py-4 align-top text-sm text-content-secondary">{{ row.validated_at }}</td>
+                    <td class="px-5 py-4 text-right align-top sm:px-6">
+                        <a href="{{ url_for('prometheus.instance_detail', instance_id=row.instance_id) }}" class="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-kaori-primary-dark transition hover:border-kaori-primary hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus/20">
+                            <i data-lucide="settings-2" class="h-3.5 w-3.5"></i>Manage
+                        </a>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
-<div class="flex flex-col gap-4 border-t border-slate-200 bg-slate-50 px-6 py-4 text-sm text-slate-500 lg:flex-row lg:items-center lg:justify-between dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
-  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-    <div>Showing <span class="font-semibold text-slate-700 dark:text-slate-200">{{ pagination.start_item }}</span> - <span class="font-semibold text-slate-700 dark:text-slate-200">{{ pagination.end_item }}</span> of <span class="font-semibold text-slate-700 dark:text-slate-200">{{ pagination.total_items }}</span> {{ 'integration' if pagination.total_items == 1 else 'integrations' }}</div>
-    <form hx-get="{{ url_for('integrations.prometheus') }}" hx-target="#prometheus-inventory-content" hx-swap="innerHTML" hx-indicator="#prometheus-inventory-loading" class="flex items-center gap-2">
-      <input type="hidden" name="page" value="1"><input type="hidden" name="compatibility" value="{{ selected_compatibility }}"><input type="hidden" name="environment" value="{{ selected_environment }}"><input type="hidden" name="readiness" value="{{ selected_readiness }}">
-      <select name="per_page" aria-label="Rows per page" onchange="this.form.requestSubmit()" class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
-        {% for option in pagination.allowed_per_page %}<option value="{{ option }}" {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>{% endfor %}
-      </select>
-    </form>
-  </div>
-  <div class="flex flex-wrap items-center gap-2">
-    {% if pagination.has_prev %}
-      {% set prev_url=url_for('integrations.prometheus', compatibility=selected_compatibility, environment=selected_environment, readiness=selected_readiness, page=pagination.prev_page, per_page=pagination.per_page) %}
-      <a href="{{ prev_url }}" hx-get="{{ prev_url }}" hx-target="#prometheus-inventory-content" hx-swap="innerHTML" hx-indicator="#prometheus-inventory-loading" class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
-    {% else %}<span class="inline-flex cursor-not-allowed items-center gap-2 rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-sm font-medium text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-600"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>{% endif %}
-    <span class="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">Page {{ pagination.page }} / {{ pagination.total_pages }}</span>
-    {% if pagination.has_next %}
-      {% set next_url=url_for('integrations.prometheus', compatibility=selected_compatibility, environment=selected_environment, readiness=selected_readiness, page=pagination.next_page, per_page=pagination.per_page) %}
-      <a href="{{ next_url }}" hx-get="{{ next_url }}" hx-target="#prometheus-inventory-content" hx-swap="innerHTML" hx-indicator="#prometheus-inventory-loading" class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
-    {% else %}<span class="inline-flex cursor-not-allowed items-center gap-2 rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-sm font-medium text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-600">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>{% endif %}
-  </div>
+<div class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-hover px-5 py-3.5 text-sm sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+    <div class="flex flex-wrap items-center gap-2 text-content-muted">
+        <span>Showing <strong class="font-semibold text-content-primary">{{ pagination.start_item }}–{{ pagination.end_item }}</strong> of <strong class="font-semibold text-content-primary">{{ pagination.total_items }}</strong> connections</span>
+        <form hx-get="{{ url_for('integrations.prometheus') }}" hx-target="#prometheus-inventory-content" hx-swap="innerHTML" hx-indicator="#prometheus-inventory-loading" class="inline-flex items-center">
+            <input type="hidden" name="page" value="1">
+            <input type="hidden" name="compatibility" value="{{ selected_compatibility }}">
+            <input type="hidden" name="environment" value="{{ selected_environment }}">
+            <input type="hidden" name="readiness" value="{{ selected_readiness }}">
+            <select name="per_page" aria-label="Connections per page" onchange="this.form.requestSubmit()" class="h-9 w-20 rounded-lg border border-outline-default bg-surface-card px-2.5 text-sm font-medium text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                {% for option in pagination.allowed_per_page %}<option value="{{ option }}" {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>{% endfor %}
+            </select>
+        </form>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+        {% set base_args = {'compatibility': selected_compatibility, 'environment': selected_environment, 'readiness': selected_readiness, 'per_page': pagination.per_page} %}
+        {% if pagination.has_prev %}
+            {% set prev_url = url_for('integrations.prometheus', page=pagination.prev_page, **base_args) %}
+            <a href="{{ prev_url }}" hx-get="{{ prev_url }}" hx-target="#prometheus-inventory-content" hx-swap="innerHTML" hx-indicator="#prometheus-inventory-loading" class="inline-flex h-9 items-center gap-1 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary hover:bg-surface-hover"><i data-lucide="chevron-left" class="h-3.5 w-3.5"></i>Previous</a>
+        {% else %}
+            <span class="inline-flex h-9 cursor-not-allowed items-center gap-1 rounded-lg bg-status-unknown-soft px-3 text-xs font-semibold text-status-unknown-text opacity-70"><i data-lucide="chevron-left" class="h-3.5 w-3.5"></i>Previous</span>
+        {% endif %}
+        <span class="inline-flex h-9 items-center rounded-lg bg-kaori-soft px-3 text-xs font-semibold text-kaori-primary-dark">Page {{ pagination.page }} / {{ pagination.total_pages }}</span>
+        {% if pagination.has_next %}
+            {% set next_url = url_for('integrations.prometheus', page=pagination.next_page, **base_args) %}
+            <a href="{{ next_url }}" hx-get="{{ next_url }}" hx-target="#prometheus-inventory-content" hx-swap="innerHTML" hx-indicator="#prometheus-inventory-loading" class="inline-flex h-9 items-center gap-1 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary hover:bg-surface-hover">Next<i data-lucide="chevron-right" class="h-3.5 w-3.5"></i></a>
+        {% else %}
+            <span class="inline-flex h-9 cursor-not-allowed items-center gap-1 rounded-lg bg-status-unknown-soft px-3 text-xs font-semibold text-status-unknown-text opacity-70">Next<i data-lucide="chevron-right" class="h-3.5 w-3.5"></i></span>
+        {% endif %}
+    </div>
 </div>
+{% else %}
+    {% set empty_state_icon='activity' %}
+    {% set empty_state_title='No Prometheus connections found' %}
+    {% set empty_state_description='Adjust the active filters or register a reusable metrics connection.' %}
+    {% set empty_state_min_height='min-h-[210px]' %}
+    {% include 'components/states/_empty_state.html' %}
+{% endif %}

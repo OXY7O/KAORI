@@ -12,6 +12,7 @@
     --kaori-brand-primary-hover: #6d28d9;
     --kaori-brand-primary-dark: #5b21b6;
     --kaori-brand-accent: #a78bfa;
+    --kaori-brand-border: #c4b5fd;
     --kaori-brand-soft: #ede9fe;
     --kaori-brand-foreground: #ffffff;
     --kaori-brand-foreground-muted: #ddd6fe;
@@ -86,6 +87,7 @@
     --kaori-brand-primary-hover: #9f7aea;
     --kaori-brand-primary-dark: #7c3aed;
     --kaori-brand-accent: #b9a2ff;
+    --kaori-brand-border: #7c3aed;
     --kaori-brand-soft: rgba(139, 92, 246, 0.14);
     --kaori-brand-foreground: #ffffff;
     --kaori-brand-foreground-muted: #ddd6fe;
@@ -160,6 +162,7 @@
     --color-kaori-primary-hover: var(--kaori-brand-primary-hover);
     --color-kaori-primary-dark: var(--kaori-brand-primary-dark);
     --color-kaori-accent: var(--kaori-brand-accent);
+    --color-kaori-border: var(--kaori-brand-border);
     --color-kaori-soft: var(--kaori-brand-soft);
     --color-brand-foreground: var(--kaori-brand-foreground);
     --color-brand-foreground-muted: var(--kaori-brand-foreground-muted);
@@ -225,6 +228,117 @@
     --color-status-pending-soft: var(--kaori-status-pending-soft);
     --color-status-pending-border: var(--kaori-status-pending-border);
     --color-status-pending-text: var(--kaori-status-pending-text);
+}
+
+/*
+ * KAORI integration semantic rollout.
+ * Alertmanager and Prometheus opt into this scope first so the new palette
+ * can be validated without changing unrelated workspaces in the same patch.
+ */
+.kaori-integration-semantic {
+    --kaori-brand-primary: #7c3aed;
+    --kaori-brand-primary-hover: #6d28d9;
+    --kaori-brand-primary-dark: #6d28d9;
+    --kaori-brand-border: #c4b5fd;
+    --kaori-brand-soft: #f5f3ff;
+    --kaori-outline-focus: #7c3aed;
+
+    --kaori-status-normal: #059669;
+    --kaori-status-normal-soft: #ecfdf5;
+    --kaori-status-normal-border: #a7f3d0;
+    --kaori-status-normal-text: #047857;
+
+    --kaori-status-info: #2563eb;
+    --kaori-status-info-soft: #eff6ff;
+    --kaori-status-info-border: #bfdbfe;
+    --kaori-status-info-text: #1d4ed8;
+
+    --kaori-status-warning: #d97706;
+    --kaori-status-warning-soft: #fffbeb;
+    --kaori-status-warning-border: #fde68a;
+    --kaori-status-warning-text: #b45309;
+
+    --kaori-status-critical: #dc2626;
+    --kaori-status-critical-soft: #fef2f2;
+    --kaori-status-critical-border: #fecaca;
+    --kaori-status-critical-text: #b91c1c;
+
+    --kaori-status-unknown: #64748b;
+    --kaori-status-unknown-soft: #f8fafc;
+    --kaori-status-unknown-border: #cbd5e1;
+    --kaori-status-unknown-text: #475569;
+
+    --kaori-status-disabled: #64748b;
+    --kaori-status-disabled-soft: #f8fafc;
+    --kaori-status-disabled-border: #cbd5e1;
+    --kaori-status-disabled-text: #475569;
+
+    --kaori-status-maintenance: #7c3aed;
+    --kaori-status-maintenance-soft: #f5f3ff;
+    --kaori-status-maintenance-border: #c4b5fd;
+    --kaori-status-maintenance-text: #6d28d9;
+
+    --kaori-status-pending: #2563eb;
+    --kaori-status-pending-soft: #eff6ff;
+    --kaori-status-pending-border: #bfdbfe;
+    --kaori-status-pending-text: #1d4ed8;
+}
+
+.dark .kaori-integration-semantic {
+    --kaori-brand-primary: #8b5cf6;
+    --kaori-brand-primary-hover: #a78bfa;
+    --kaori-brand-primary-dark: #a78bfa;
+    --kaori-brand-border: rgba(196, 181, 253, 0.42);
+    --kaori-brand-soft: rgba(124, 58, 237, 0.16);
+    --kaori-outline-focus: #a78bfa;
+
+    --kaori-status-normal: #34d399;
+    --kaori-status-normal-soft: rgba(5, 150, 105, 0.18);
+    --kaori-status-normal-border: rgba(167, 243, 208, 0.34);
+    --kaori-status-normal-text: #a7f3d0;
+
+    --kaori-status-info: #60a5fa;
+    --kaori-status-info-soft: rgba(37, 99, 235, 0.18);
+    --kaori-status-info-border: rgba(191, 219, 254, 0.32);
+    --kaori-status-info-text: #bfdbfe;
+
+    --kaori-status-warning: #f59e0b;
+    --kaori-status-warning-soft: rgba(217, 119, 6, 0.18);
+    --kaori-status-warning-border: rgba(253, 230, 138, 0.34);
+    --kaori-status-warning-text: #fde68a;
+
+    --kaori-status-critical: #f87171;
+    --kaori-status-critical-soft: rgba(220, 38, 38, 0.18);
+    --kaori-status-critical-border: rgba(254, 202, 202, 0.32);
+    --kaori-status-critical-text: #fecaca;
+
+    --kaori-status-unknown: #94a3b8;
+    --kaori-status-unknown-soft: rgba(100, 116, 139, 0.18);
+    --kaori-status-unknown-border: rgba(203, 213, 225, 0.3);
+    --kaori-status-unknown-text: #cbd5e1;
+
+    --kaori-status-disabled: #94a3b8;
+    --kaori-status-disabled-soft: rgba(100, 116, 139, 0.18);
+    --kaori-status-disabled-border: rgba(203, 213, 225, 0.3);
+    --kaori-status-disabled-text: #cbd5e1;
+
+    --kaori-status-maintenance: #a78bfa;
+    --kaori-status-maintenance-soft: rgba(124, 58, 237, 0.18);
+    --kaori-status-maintenance-border: rgba(196, 181, 253, 0.32);
+    --kaori-status-maintenance-text: #ddd6fe;
+
+    --kaori-status-pending: #60a5fa;
+    --kaori-status-pending-soft: rgba(37, 99, 235, 0.18);
+    --kaori-status-pending-border: rgba(191, 219, 254, 0.32);
+    --kaori-status-pending-text: #bfdbfe;
+}
+
+/* New semantic labels are intentionally borderless. Border tokens remain
+ * available for semantic panels, callouts, dialogs, and destructive controls. */
+.kaori-integration-semantic .kaori-semantic-label,
+.kaori-integration-semantic .kaori-context-label {
+    border-width: 0;
+    box-shadow: none;
 }
 
 /* Global application shell behavior compiled through Tailwind. */

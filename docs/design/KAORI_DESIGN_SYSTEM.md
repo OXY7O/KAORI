@@ -108,7 +108,7 @@ Hero hierarchy:
 - Hero description: minimum 15 px with 24 px line height.
 - Eyebrow, title, secondary identity, description, supporting notice, and capability badges must start on one authoritative text-column edge. Use the shared two-column hero intro grid; do not align elements using manual `ml-*`, `pl-*`, arbitrary pixel offsets, or duplicated margin calculations.
 
-Use a monospace family for endpoints, resource identifiers, IP addresses, namespaces, queries, hashes, and similar technical values.
+Use the application sans-serif family for endpoints, resource identifiers, IP addresses, namespaces, and hashes when they appear in forms, tables, cards, or operational summaries. Monospace is reserved for dedicated code blocks, query editors, payload editors, and copyable technical evidence where character alignment is part of the task.
 
 ## Spacing and density
 
@@ -125,7 +125,8 @@ KAORI uses a restrained three-level radius scale for authenticated operational i
 - Compact controls, navigation rows, and icon surfaces: 8 px (`rounded-lg`)
 - Standard cards, topbar controls, brand cards, and dropdowns: 12 px (`rounded-xl`)
 - Sidebar frame, main application frame, hero, and large grouped surfaces: 16 px (`rounded-2xl`)
-- Pills, badges, avatars, status dots, and toggles: full radius only where the shape has semantic purpose
+- Avatars, status dots, toggles, and progress tracks: full radius only where the shape has semantic purpose
+- Status and metadata labels: compact 6 px rectangular radius (`rounded-md`), never pill-shaped
 
 Avoid `rounded-3xl` and arbitrary radii above 16 px in the authenticated application shell. Larger promotional radii may be used only on isolated marketing or authentication compositions when explicitly approved. Do not nest multiple large rounded wrappers around the same content hierarchy.
 
@@ -355,15 +356,37 @@ The Kubernetes Inventory Overview follows the authenticated operational overview
 - Loading bars use a solid violet fill; gradients are prohibited.
 - Pagination, per-page selectors, and secondary actions use the standard 8 px control radius and semantic surface tokens.
 
+## Semantic color and label contract
+
+Alertmanager and Prometheus are the first rollout domains for the final KAORI semantic palette. The same contract will be expanded only after these workspaces are validated.
+
+| Family | Strong / icon | Text | Soft background | Border reference |
+| --- | --- | --- | --- | --- |
+| Primary Violet | `#7C3AED` | `#6D28D9` | `#F5F3FF` | `#C4B5FD` |
+| Info | `#2563EB` | `#1D4ED8` | `#EFF6FF` | `#BFDBFE` |
+| Normal | `#059669` | `#047857` | `#ECFDF5` | `#A7F3D0` |
+| Warning | `#D97706` | `#B45309` | `#FFFBEB` | `#FDE68A` |
+| Critical | `#DC2626` | `#B91C1C` | `#FEF2F2` | `#FECACA` |
+| Neutral | `#64748B` | `#475569` | `#F8FAFC` | `#CBD5E1` |
+
+Usage rules:
+
+- Violet is reserved for active navigation, primary actions, focus state, selected state, and KAORI identity.
+- Health, readiness, validation outcome, risk, connectivity, and destructive state use their semantic family; they must not be represented as violet merely to match the brand.
+- Border-reference colors remain available for semantic panels, callouts, dialogs, destructive controls, and other containers that require separation.
+- Compact status and metadata labels are borderless. Their soft background, semantic text, and optional semantic icon provide the state distinction.
+- Do not apply status colors to decorative icons, ordinary metadata, environment names, provider names, or neutral counts.
+
 ## Table label sizing
 
 `app/templates/components/table_label.html` is the authoritative implementation for compact labels inside operational tables.
 
-- Status labels use `table_label.status_label()` and remain pill-shaped because they communicate dynamic state.
-- Metadata labels use `table_label.metadata_label()` and use a 6 px rectangular radius.
-- Standard table label geometry is 24 px minimum height, 8 px horizontal padding, 2 px vertical padding, 10 px semibold text, 16 px line height, 4 px internal gap, and a 12 px icon.
-- Do not create page-specific table badge sizes. Cluster health, inventory state, sync state, integration readiness, TLS exceptions, and risk hints must consume the shared compact size.
-- Timestamp text is not a badge; render the timestamp separately at 11 px and place the compact state label below it when needed.
+- Status labels use `table_label.status_label()` or the shared integration `status_badge()` macro and use the semantic family matching the operational state.
+- Metadata labels use `table_label.metadata_label()` and use Primary Violet because they describe identity or context rather than health.
+- Status and metadata labels use a 6 px rectangular radius and no visible border in the Alertmanager and Prometheus rollout scope.
+- Standard label geometry is 24 px minimum height, 8 px horizontal padding, 2 px vertical padding, 10 px semibold text, 16 px line height, 4 px internal gap, and a 12 px icon.
+- Do not create page-specific badge sizes. Integration health, readiness, compatibility, runtime state, source role, and contextual metadata consume the shared compact size.
+- Timestamp text is not a label; render the timestamp separately and place the compact state label beside or below it only when needed.
 
 ## Kubernetes topology reference
 

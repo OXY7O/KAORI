@@ -1,9 +1,10 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
+{% from "integrations/partials/_status_badge.html" import status_badge %}
 {% block title %}Alertmanager Integrations · KAORI{% endblock title %}
 {% block dashboard_content %}
     {% set posture_status = 'Healthy' if stats.total > 0 and stats.configured == stats.total and stats.ready == stats.configured else ('Attention' if stats.total > 0 else 'Not configured') %}
-    <div class="space-y-6">
+    <div class="kaori-integration-semantic space-y-6">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
@@ -31,13 +32,7 @@
                                     <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Integration posture</p>
                                     <p class="mt-1 text-sm font-semibold text-brand-foreground">Connection readiness and bindings</p>
                                 </div>
-                                <span class="inline-flex min-h-6 shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1 text-[10px] font-semibold
-                                             {% if posture_status == 'Healthy' %}border-status-normal-border bg-status-normal-soft text-status-normal-text
-                                             {% elif posture_status == 'Attention' %}border-status-warning-border bg-status-warning-soft text-status-warning-text
-                                             {% else %}border-status-unknown-border bg-status-unknown-soft text-status-unknown-text{% endif %}">
-                                    <i data-lucide="{% if posture_status == 'Healthy' %}circle-check{% elif posture_status == 'Attention' %}triangle-alert{% else %}circle-help{% endif %}" class="h-3 w-3" aria-hidden="true"></i>
-                                    {{ posture_status }}
-                                </span>
+                                {{ status_badge('healthy' if posture_status == 'Healthy' else ('degraded' if posture_status == 'Attention' else 'not_configured'), posture_status) }}
                             </div>
                             <p class="mt-2 text-xs leading-5 text-brand-foreground-muted">Review validated connections and governed scope coverage from one integration workspace.</p>
                         </div>
@@ -65,7 +60,7 @@
                             </div>
 
                             <a href="{{ url_for('alertmanager.new_instance') }}"
-                               class="mt-2 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-white/80 bg-white px-4 text-sm font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft hover:text-kaori-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80">
+                               class="mt-2 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-white/80 bg-white px-4 text-sm font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80">
                                 <i data-lucide="plus" class="h-4 w-4" aria-hidden="true"></i>
                                 Register Instance
                             </a>

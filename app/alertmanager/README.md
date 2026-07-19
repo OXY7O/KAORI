@@ -255,11 +255,16 @@ capability discovery, and latency factors. The UI interprets the score as:
 85–100 healthy
 ```
 
-The runtime workspace displays the score as a health bar, exposes each weighted
-factor, and renders the diagnostic pipeline as full-width technical checks with
-status, evidence, duration, and remediation guidance. Runtime history uses the
-global KAORI pagination contract: default `5` observations with `5`, `10`, `25`,
-and `50` as supported page sizes.
+The runtime workspace uses a compact two-domain layout. **Health Interpretation**
+combines the score, semantic posture, threshold bar, and weighted factors in one
+operator card. **Diagnostic Pipeline** presents ordered checks as a technical
+sequence with evidence, duration, and remediation guidance without reserving
+unused vertical space.
+
+Runtime history uses the global KAORI pagination contract: default `5`
+observations with `5`, `10`, `25`, and `50` as supported page sizes. KAORI keeps
+a rolling maximum of **100 observations per provider instance**. The observation
+write and removal of records beyond that limit occur in the same transaction.
 
 ## Scope binding contract
 
@@ -547,10 +552,24 @@ provider or changing consumer behavior.
 
 The Alertmanager instance detail page renders the shared runtime observation
 history after the live runtime panel. The table defaults to 5 records and supports
-5, 10, 25, and 50 through HTMX pagination.
+5, 10, 25, and 50 through HTMX pagination. The summary and page-size selector are
+kept together on the left side of the standard KAORI Violet pagination footer.
 
 A manual runtime refresh persists a new observation and updates both the runtime
 panel and the history section in the same HTMX response. Rows show health, score,
 latency, trigger source, capability snapshot, recovery/degradation transitions,
-and capability drift. These are presentation diagnostics only; resolver ordering
-and consumer fallback remain unchanged.
+and capability drift. KAORI retains the latest 100 records for this Alertmanager
+instance and deletes older records during the next successful runtime write.
+Retained records remain append-only presentation evidence; resolver ordering and
+consumer fallback remain unchanged.
+
+## KAORI Violet semantic presentation contract
+
+Alertmanager is part of the first semantic-color rollout together with Prometheus.
+
+- Primary Violet is used only for KAORI identity, active navigation, primary actions, focus state, and selected state.
+- Operational status uses the matching Normal, Info, Warning, Critical, or Neutral family.
+- Status and metadata labels are compact, rectangular, and borderless. Border-reference colors are retained for semantic panels, callouts, confirmation dialogs, and destructive controls.
+- Alertmanager templates use the application sans-serif family for endpoints, scope keys, identifiers, and runtime evidence. Monospace remains limited to dedicated code or payload contexts.
+- Landing, registration, instance detail, validation, runtime history, scope binding, and effective-source resolution must remain inside the shared `kaori-integration-semantic` presentation scope.
+

@@ -202,11 +202,21 @@ def instance_detail(instance_id: int) -> ResponseReturnValue:
     rows, pagination = paginate_runtime_history(
         'prometheus', str(instance.id), page=page, per_page=per_page,
     )
+    state = runtime_adapter.get_state(instance)
+    runtime_state = runtime_state_view(
+        state,
+        actions={
+            'refresh_url': url_for('prometheus.instance_validate', instance_id=instance.id),
+            'configuration_url': url_for('prometheus.edit_instance', instance_id=instance.id),
+            'history_url': url_for('prometheus.instance_runtime_history', instance_id=instance.id),
+        },
+    )
     return render_template(
         'prometheus/instance_detail.html',
         instance=instance,
         bindings=bindings,
         clusters_by_id=clusters_by_id,
+        runtime_state=runtime_state,
         runtime_history=runtime_history_view(rows, pagination=pagination),
     )
 

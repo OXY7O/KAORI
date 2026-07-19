@@ -1,5 +1,5 @@
 {% macro status_label(text, tone='info', icon=None) -%}
-    <span class="inline-flex min-h-6 items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-semibold leading-4
+    <span class="kaori-semantic-label inline-flex min-h-6 items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-semibold leading-4
         {% if tone == 'normal' %}border-status-normal-border bg-status-normal-soft text-status-normal-text
         {% elif tone == 'warning' %}border-status-warning-border bg-status-warning-soft text-status-warning-text
         {% elif tone == 'critical' %}border-status-critical-border bg-status-critical-soft text-status-critical-text
@@ -8,14 +8,14 @@
         {% elif tone == 'maintenance' %}border-status-maintenance-border bg-status-maintenance-soft text-status-maintenance-text
         {% elif tone == 'pending' %}border-status-pending-border bg-status-pending-soft text-status-pending-text
         {% else %}border-status-info-border bg-status-info-soft text-status-info-text{% endif %}">
-        {% if icon %}<i data-lucide="{{ icon }}" class="h-3 w-3 shrink-0" aria-hidden="true"></i>{% endif %}
+        {% if icon %}<i data-lucide="{{ icon }}" class="h-3 w-3 shrink-0 {% if tone == 'normal' %}text-status-normal{% elif tone == 'warning' %}text-status-warning{% elif tone == 'critical' %}text-status-critical{% elif tone == 'unknown' %}text-status-unknown{% elif tone == 'disabled' %}text-status-disabled{% elif tone == 'maintenance' %}text-status-maintenance{% elif tone == 'pending' %}text-status-pending{% else %}text-status-info{% endif %}" aria-hidden="true"></i>{% endif %}
         <span>{{ text }}</span>
     </span>
 {%- endmacro %}
 
 {% macro metadata_label(text, icon=None) -%}
-    <span class="inline-flex min-h-6 items-center gap-1 rounded-md border border-outline-default bg-kaori-soft px-2 py-0.5 text-[10px] font-semibold leading-4 text-kaori-primary">
-        {% if icon %}<i data-lucide="{{ icon }}" class="h-3 w-3 shrink-0" aria-hidden="true"></i>{% endif %}
+    <span class="kaori-semantic-label inline-flex min-h-6 items-center gap-1 rounded-md border border-outline-default bg-kaori-soft px-2 py-0.5 text-[10px] font-semibold leading-4 text-kaori-primary-dark">
+        {% if icon %}<i data-lucide="{{ icon }}" class="h-3 w-3 shrink-0 text-kaori-primary" aria-hidden="true"></i>{% endif %}
         <span>{{ text }}</span>
     </span>
 {%- endmacro %}

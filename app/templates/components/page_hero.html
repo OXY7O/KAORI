@@ -15,7 +15,7 @@ min-w-0 xl:col-span-5 xl:self-stretch xl:[&>*]:h-full
 {%- endmacro %}
 
 {% macro eyebrow(icon, label) -%}
-    <div class="inline-flex min-h-8 w-fit items-center gap-2 rounded-lg border border-brand-outline bg-brand-surface px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-brand-foreground backdrop-blur">
+    <div class="kaori-context-label inline-flex min-h-8 w-fit items-center gap-2 rounded-lg border border-brand-outline bg-brand-surface px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-brand-foreground backdrop-blur">
         <i data-lucide="{{ icon }}" class="h-4 w-4 shrink-0" aria-hidden="true"></i>
         <span>{{ label }}</span>
     </div>
@@ -39,7 +39,7 @@ min-w-0 xl:col-span-5 xl:self-stretch xl:[&>*]:h-full
 
 
 {% macro meta_label(icon, label, value_id=None, suffix='') -%}
-    <span class="inline-flex min-h-8 items-center gap-2 rounded-md border border-brand-outline bg-brand-surface px-3 py-1.5 text-[11px] font-bold text-brand-foreground backdrop-blur">
+    <span class="kaori-context-label inline-flex min-h-8 items-center gap-2 rounded-md border border-brand-outline bg-brand-surface px-3 py-1.5 text-[11px] font-bold text-brand-foreground backdrop-blur">
         <i data-lucide="{{ icon }}" class="h-4 w-4 shrink-0" aria-hidden="true"></i>
         <span>{% if value_id %}<span id="{{ value_id }}">{{ label }}</span>{{ suffix }}{% else %}{{ label }}{% endif %}</span>
     </span>

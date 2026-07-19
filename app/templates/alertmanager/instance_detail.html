@@ -16,7 +16,7 @@
         'storage_service': 'Infrastructure service',
         'global': 'Global operational scope'
     } %}
-    <div class="space-y-6"
+    <div class="kaori-integration-semantic space-y-6"
          x-data="{
              activeTab: ['configuration', 'validation', 'runtime', 'scope'].includes(window.location.hash.replace('#', '')) ? window.location.hash.replace('#', '') : 'configuration',
              setTab(tab, moveToWorkspace = false) {
@@ -48,10 +48,7 @@
                                 <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Connection posture</p>
                                 <h2 class="mt-1 text-base font-semibold text-brand-foreground">Readiness &amp; operational coverage</h2>
                             </div>
-                            <span class="inline-flex min-h-6 shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1 text-[10px] font-semibold {% if source_posture == 'Ready' %}border-status-normal-border bg-status-normal-soft text-status-normal-text{% elif source_posture == 'Attention' %}border-status-warning-border bg-status-warning-soft text-status-warning-text{% else %}border-status-info-border bg-status-info-soft text-status-info-text{% endif %}">
-                                <i data-lucide="{% if source_posture == 'Ready' %}circle-check{% elif source_posture == 'Attention' %}triangle-alert{% else %}badge-check{% endif %}" class="h-3 w-3" aria-hidden="true"></i>
-                                {{ source_posture }}
-                            </span>
+                            {{ status_badge('ready' if source_posture == 'Ready' else ('degraded' if source_posture == 'Attention' else ('validation_required' if source_posture == 'Configured' else 'not_configured')), source_posture) }}
                         </div>
                         <div class="mt-4 grid grid-cols-2 gap-2">
                             <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5">
@@ -102,7 +99,7 @@
                                 :class="activeTab === '{{ tab_key }}' ? 'border-outline-default border-b-surface-card bg-surface-card text-kaori-primary -mb-px' : 'border-transparent text-content-muted hover:bg-kaori-soft hover:text-kaori-primary'">
                             <i data-lucide="{{ tab_icon }}" class="h-4 w-4"></i>
                             <span>{{ tab_label }}</span>
-                            <span class="rounded-md border px-2 py-0.5 text-[10px] font-semibold"
+                            <span class="kaori-semantic-label rounded-md border px-2 py-0.5 text-[10px] font-semibold"
                                   :class="activeTab === '{{ tab_key }}' ? 'border-brand-outline bg-kaori-soft text-kaori-primary' : 'border-outline-subtle bg-surface-card text-content-muted'">{{ tab_badge }}</span>
                         </button>
                     {% endfor %}

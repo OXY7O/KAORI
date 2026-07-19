@@ -1,17 +1,123 @@
 {% extends "layouts/app.html" %}
-{% block title %}Prometheus Integrations · KAORI{% endblock %}
+{% import "components/page_hero.html" as page_hero %}
+{% from "integrations/partials/_status_badge.html" import status_badge %}
+{% block title %}Prometheus Integrations · KAORI{% endblock title %}
 {% block dashboard_content %}
-<div class="space-y-6">
-  <section class="rounded-2xl border border-border-soft bg-surface-card p-6 shadow-sm">
-    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-      <div>
-        <p class="text-xs font-bold uppercase tracking-[0.18em] text-primary">Integrations · Prometheus</p>
-        <h1 class="mt-2 text-2xl font-bold text-content-primary">Prometheus Runtime Instances</h1>
-        <p class="mt-2 max-w-3xl text-sm text-content-secondary">Manage standalone Prometheus or Thanos runtimes, compatibility profiles, metric capabilities, Kubernetes bindings, and validation history.</p>
-      </div>
-      <a href="{{ url_for('prometheus.new_instance') }}" class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-white hover:bg-primary-strong"><i data-lucide="plus" class="h-4 w-4"></i>Add Prometheus</a>
-    </div>
-  </section>
-  {% include 'integrations/prometheus/partials/_instance_inventory.html' %}
+{% set posture_status = 'healthy' if stats.total > 0 and stats.ready == stats.configured else ('degraded' if stats.total > 0 else 'not_configured') %}
+<div class="kaori-integration-semantic space-y-6">
+    <section class="{{ page_hero.shell_classes() }}">
+        <div class="{{ page_hero.layout_classes() }}">
+            <div class="{{ page_hero.content_classes() }}">
+                {% call page_hero.intro('activity', 'Operational Integration', 'chart-no-axes-combined') %}
+                    <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">Prometheus Integrations</h1>
+                    <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">
+                        Register, validate, and govern metrics connections and their operational scope bindings.
+                    </p>
+                    <div class="mt-5 flex flex-wrap gap-2">
+                        {{ page_hero.meta_label('server-cog', stats.total ~ ' registered connections') }}
+                        {{ page_hero.meta_label('circle-check-big', stats.ready ~ ' ready sources') }}
+                        {{ page_hero.meta_label('link-2', stats.bindings ~ ' scope bindings') }}
+                    </div>
+                {% endcall %}
+            </div>
+
+            <aside class="{{ page_hero.aside_classes() }}" aria-label="Prometheus integration posture">
+                <div class="flex h-full min-h-[12rem] flex-col justify-between rounded-xl border border-brand-outline bg-brand-surface-strong p-4 backdrop-blur-md">
+                    <div>
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Integration posture</p>
+                                <p class="mt-1 text-sm font-semibold text-brand-foreground">Metrics readiness and scope coverage</p>
+                            </div>
+                            {{ status_badge(posture_status) }}
+                        </div>
+                        <p class="mt-2 text-xs leading-5 text-brand-foreground-muted">Review validated metrics sources, query contracts, and governed scope coverage from one workspace.</p>
+                    </div>
+
+                    <div class="mt-4">
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5">
+                                <div class="flex items-center justify-between gap-2 text-brand-foreground">
+                                    <span class="flex items-center gap-2 text-[11px] font-semibold"><i data-lucide="badge-check" class="h-3.5 w-3.5"></i>Ready</span>
+                                    <span class="text-base font-semibold leading-none">{{ stats.ready }} / {{ stats.configured }}</span>
+                                </div>
+                            </div>
+                            <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5">
+                                <div class="flex items-center justify-between gap-2 text-brand-foreground">
+                                    <span class="flex items-center gap-2 text-[11px] font-semibold"><i data-lucide="link-2" class="h-3.5 w-3.5"></i>Bindings</span>
+                                    <span class="text-base font-semibold leading-none">{{ stats.bindings }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <a href="{{ url_for('prometheus.new_instance') }}"
+                           class="mt-2 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-white/80 bg-white px-4 text-sm font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80">
+                            <i data-lucide="plus" class="h-4 w-4"></i>
+                            Register Connection
+                        </a>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </section>
+
+    <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+        <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:px-6 lg:flex-row lg:items-start lg:justify-between">
+            <div class="flex items-start gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
+                    <i data-lucide="chart-spline" class="h-5 w-5"></i>
+                </span>
+                <div>
+                    <h2 class="text-lg font-semibold text-content-primary">Prometheus Integration Overview</h2>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">Each metrics connection is registered once, validated against its observed API and metric contracts, then associated with governed operational scopes.</p>
+                </div>
+            </div>
+            <a href="{{ url_for('prometheus.instances') }}" class="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-kaori-primary hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus/20">
+                <i data-lucide="waypoints" class="h-3.5 w-3.5"></i>
+                Instances & Bindings
+            </a>
+        </header>
+
+        <div class="grid gap-4 p-5 sm:grid-cols-2 sm:p-6 xl:grid-cols-4">
+            {% for item in [
+                ('Registered Connections', stats.total, 'Reusable metrics endpoints', 'server-cog'),
+                ('Validated Connections', stats.ready, 'Ready for operational use', 'badge-check'),
+                ('Needs Attention', stats.attention, 'Validation or runtime review', 'triangle-alert'),
+                ('Uncovered Scopes', uncovered_clusters|length, 'Clusters without an eligible source', 'unlink')
+            ] %}
+                <article class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">{{ item[0] }}</p>
+                            <p class="mt-2 text-2xl font-semibold text-content-primary">{{ item[1] }}</p>
+                        </div>
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                            <i data-lucide="{{ item[3] }}" class="h-4 w-4"></i>
+                        </span>
+                    </div>
+                    <p class="mt-2 text-xs leading-5 text-content-secondary">{{ item[2] }}</p>
+                </article>
+            {% endfor %}
+        </div>
+
+        <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle md:grid-cols-3">
+            <div class="bg-surface-card px-5 py-4 sm:px-6">
+                <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Integration Contract</p>
+                <p class="mt-1.5 text-sm font-semibold text-content-primary">Prometheus-compatible HTTP API</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Endpoint identity, query APIs, metric signals, and retention evidence are validated before use.</p>
+            </div>
+            <div class="bg-surface-card px-5 py-4 sm:px-6">
+                <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Usage Resolution</p>
+                <p class="mt-1.5 text-sm font-semibold text-content-primary">Binding, capability, and runtime aware</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">KAORI selects an eligible metrics source for each bound operational consumer.</p>
+            </div>
+            <div class="bg-surface-card px-5 py-4 sm:px-6">
+                <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Authority Boundary</p>
+                <p class="mt-1.5 text-sm font-semibold text-content-primary">The metrics platform remains authoritative</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Scraping, recording rules, retention, federation, and historical storage remain managed by the connected platform.</p>
+            </div>
+        </div>
+    </section>
+
+    {% include 'integrations/prometheus/partials/_instance_inventory.html' %}
 </div>
-{% endblock %}
+{% endblock dashboard_content %}

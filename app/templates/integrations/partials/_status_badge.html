@@ -1,18 +1,43 @@
-{% macro status_badge(value, label=None) -%}
+{% macro status_badge(value, label=None, icon=None) -%}
 {% set key = value or 'not_configured' %}
 {% set tone = {
-  'ready':'bg-emerald-100 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/20',
-  'compatible':'bg-emerald-100 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/20',
-  'compatible_with_warnings':'bg-amber-100 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/20',
-  'healthy':'bg-emerald-100 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/20',
-  'unhealthy':'bg-red-100 text-red-700 ring-red-200 dark:bg-red-500/10 dark:text-red-300 dark:ring-red-400/20',
-  'not_observed':'bg-slate-100 text-slate-600 ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-600',
-  'degraded':'bg-amber-100 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/20',
-  'blocked':'bg-red-100 text-red-700 ring-red-200 dark:bg-red-500/10 dark:text-red-300 dark:ring-red-400/20',
-  'unsupported_version':'bg-red-100 text-red-700 ring-red-200 dark:bg-red-500/10 dark:text-red-300 dark:ring-red-400/20',
-  'capability_mismatch':'bg-red-100 text-red-700 ring-red-200 dark:bg-red-500/10 dark:text-red-300 dark:ring-red-400/20',
-  'validation_required':'bg-blue-100 text-blue-700 ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-400/20',
-  'not_configured':'bg-slate-100 text-slate-600 ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-600'
-}.get(key, 'bg-slate-100 text-slate-600 ring-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-600') %}
-<span class="inline-flex items-center rounded-md px-2.5 py-1 text-xs font-semibold ring-1 ring-inset {{ tone }}">{{ label or (key|replace('_',' ')|title) }}</span>
+  'ready':'normal',
+  'compatible':'normal',
+  'healthy':'normal',
+  'connected':'normal',
+  'enabled':'normal',
+  'compatible_with_warnings':'warning',
+  'degraded':'warning',
+  'warning':'warning',
+  'unhealthy':'critical',
+  'blocked':'critical',
+  'unsupported_version':'critical',
+  'capability_mismatch':'critical',
+  'failed':'critical',
+  'error':'critical',
+  'validation_required':'info',
+  'pending':'info',
+  'not_observed':'unknown',
+  'disabled':'disabled',
+  'not_configured':'unknown',
+  'version_unknown':'unknown'
+}.get(key, 'unknown') %}
+{% set icon_name = icon or {
+  'normal':'circle-check',
+  'warning':'triangle-alert',
+  'critical':'circle-x',
+  'info':'info',
+  'disabled':'circle-off',
+  'unknown':'circle-help'
+}.get(tone, 'circle-help') %}
+<span class="kaori-semantic-label inline-flex min-h-6 items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-semibold leading-4
+  {% if tone == 'normal' %}border-status-normal-border bg-status-normal-soft text-status-normal-text
+  {% elif tone == 'warning' %}border-status-warning-border bg-status-warning-soft text-status-warning-text
+  {% elif tone == 'critical' %}border-status-critical-border bg-status-critical-soft text-status-critical-text
+  {% elif tone == 'info' %}border-status-info-border bg-status-info-soft text-status-info-text
+  {% elif tone == 'disabled' %}border-status-disabled-border bg-status-disabled-soft text-status-disabled-text
+  {% else %}border-status-unknown-border bg-status-unknown-soft text-status-unknown-text{% endif %}">
+  <i data-lucide="{{ icon_name }}" class="h-3 w-3 shrink-0 {% if tone == 'normal' %}text-status-normal{% elif tone == 'warning' %}text-status-warning{% elif tone == 'critical' %}text-status-critical{% elif tone == 'info' %}text-status-info{% elif tone == 'disabled' %}text-status-disabled{% else %}text-status-unknown{% endif %}" aria-hidden="true"></i>
+  <span>{{ label or (key|replace('_',' ')|title) }}</span>
+</span>
 {%- endmacro %}

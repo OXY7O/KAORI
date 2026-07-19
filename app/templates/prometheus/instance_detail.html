@@ -1,50 +1,173 @@
 {% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "components/table_label.html" as table_label %}
 {% from "integrations/partials/_status_badge.html" import status_badge %}
-{% block title %}{{ instance.name }} · Prometheus Runtime · KAORI{% endblock %}
+{% block title %}{{ instance.name }} · Prometheus Integration · KAORI{% endblock title %}
 {% block dashboard_content %}
-<div class="space-y-6">
-  <section class="rounded-xl border border-kaori-primary/20 bg-surface-card p-6 shadow-sm">
-    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-      <div class="min-w-0">
-        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-kaori-primary">Standalone metrics runtime</p>
-        <div class="mt-1 flex flex-wrap items-center gap-2">
-          <h1 class="text-2xl font-bold text-content-primary">{{ instance.name }}</h1>
-          {{ status_badge(instance.readiness_status or 'validation_required') }}
+{% set readiness = instance.readiness_status or 'validation_required' %}
+{% set source_posture = 'Ready' if readiness == 'ready' else ('Attention' if readiness in ['degraded', 'blocked'] else 'Configured') %}
+<div class="kaori-integration-semantic space-y-6"
+     x-data="{
+        activeTab: ['configuration', 'validation', 'runtime', 'scope'].includes(window.location.hash.replace('#', '')) ? window.location.hash.replace('#', '') : 'configuration',
+        setTab(tab) { this.activeTab = tab; window.history.replaceState(null, '', '#' + tab); }
+     }">
+    <section class="{{ page_hero.shell_classes() }}">
+        <div class="{{ page_hero.layout_classes() }}">
+            <div class="{{ page_hero.content_classes() }}">
+                {% call page_hero.intro('activity', 'Metrics Integration', 'chart-spline') %}
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">{{ instance.name }}</h1>
+                    </div>
+                    <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">Manage configuration, capability validation, runtime evidence, and operational scope bindings.</p>
+                    <div class="mt-5 flex flex-wrap gap-2">
+                        {{ page_hero.meta_label('server-cog', (instance.endpoint_product or 'Prometheus compatible')|replace('_', ' ')|title) }}
+                        {{ page_hero.meta_label('badge-check', instance.compatibility_profile or 'Profile not assigned') }}
+                        {{ page_hero.meta_label('link-2', bindings|length ~ ' scope bindings') }}
+                    </div>
+                {% endcall %}
+            </div>
+            <aside class="{{ page_hero.aside_classes() }}" aria-label="Prometheus source posture">
+                <div class="flex h-full min-h-[12rem] flex-col justify-between rounded-xl border border-brand-outline bg-brand-surface-strong p-4 backdrop-blur-md">
+                    <div>
+                        <div class="flex items-start justify-between gap-3">
+                            <div><p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Source posture</p><p class="mt-1 text-sm font-semibold text-brand-foreground">Validation and runtime evidence</p></div>
+                            {{ status_badge(readiness) }}
+                        </div>
+                        <p class="mt-2 text-xs leading-5 text-brand-foreground-muted">{{ instance.validation_message or 'Run Full Validation to establish compatibility, query contracts, and module readiness.' }}</p>
+                    </div>
+                    <div class="mt-4 grid grid-cols-2 gap-2">
+                        <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5"><p class="text-[10px] font-semibold text-brand-foreground-muted">Runtime health</p><p class="mt-1 text-sm font-semibold text-brand-foreground">{{ runtime_state.health_status_label }}</p></div>
+                        <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5"><p class="text-[10px] font-semibold text-brand-foreground-muted">Capabilities</p><p class="mt-1 text-sm font-semibold text-brand-foreground">{{ runtime_state.capability_count }}</p></div>
+                    </div>
+                </div>
+            </aside>
         </div>
-        <p class="mt-2 break-all font-mono text-xs text-content-muted">{{ instance.endpoint }}</p>
-      </div>
-      <div class="flex flex-wrap gap-2">
-        <form method="post" action="{{ url_for('prometheus.instance_test', instance_id=instance.id) }}">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button class="inline-flex items-center gap-2 rounded-lg border border-outline-default bg-surface-subtle px-4 py-2.5 text-sm font-semibold text-content-secondary hover:border-kaori-primary/40 hover:text-kaori-primary"><i data-lucide="plug-zap" class="h-4 w-4"></i>Test connection</button>
-        </form>
-        <form method="post" action="{{ url_for('prometheus.instance_validate', instance_id=instance.id) }}">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button class="inline-flex items-center gap-2 rounded-lg bg-kaori-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-kaori-primary-hover"><i data-lucide="scan-line" class="h-4 w-4"></i>Run full validation</button>
-        </form>
-        <a href="{{ url_for('prometheus.instances') }}" class="inline-flex items-center gap-2 rounded-lg border border-outline-default px-4 py-2.5 text-sm font-semibold text-content-secondary"><i data-lucide="arrow-left" class="h-4 w-4"></i>Back</a>
-      </div>
-    </div>
-  </section>
+    </section>
 
-  <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-    <div class="rounded-xl border border-outline-default bg-surface-card p-4"><p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Product</p><p class="mt-2 text-sm font-bold text-content-primary">{{ (instance.endpoint_product or 'Prometheus compatible')|replace('_',' ')|title }}</p></div>
-    <div class="rounded-xl border border-outline-default bg-surface-card p-4"><p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Detected version</p><p class="mt-2 text-sm font-bold text-content-primary">{{ instance.detected_version or 'Not detected' }}</p></div>
-    <div class="rounded-xl border border-outline-default bg-surface-card p-4"><p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Compatibility profile</p><p class="mt-2 text-sm font-bold text-content-primary">{{ instance.compatibility_profile or 'Not assigned' }}</p></div>
-    <div class="rounded-xl border border-outline-default bg-surface-card p-4"><p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Asset bindings</p><p class="mt-2 text-sm font-bold text-content-primary">{{ bindings|length }}</p></div>
-  </section>
+    <section id="prometheus-detail-tabs" class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+        <nav class="overflow-x-auto border-b border-outline-subtle px-3 pt-3 sm:px-5" aria-label="Prometheus instance domains">
+            <div class="flex min-w-max gap-1">
+                {% for tab, label, icon in [
+                    ('configuration', 'Configuration', 'settings-2'),
+                    ('validation', 'Validation & Capabilities', 'badge-check'),
+                    ('runtime', 'Runtime & History', 'activity'),
+                    ('scope', 'Scope & Resolution', 'waypoints')
+                ] %}
+                    <button type="button" @click="setTab('{{ tab }}')" :class="activeTab === '{{ tab }}' ? 'bg-kaori-soft text-kaori-primary-dark' : 'text-content-secondary hover:bg-surface-hover hover:text-content-primary'" class="inline-flex h-10 items-center gap-2 rounded-lg px-3.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus/20">
+                        <i data-lucide="{{ icon }}" class="h-4 w-4"></i>{{ label }}
+                    </button>
+                {% endfor %}
+            </div>
+        </nav>
 
-  {% if not bindings %}
-  <section class="rounded-xl border border-kaori-primary/20 bg-kaori-primary-soft/40 p-5">
-    <div class="flex items-start gap-3"><i data-lucide="info" class="mt-0.5 h-5 w-5 text-kaori-primary"></i><div><h2 class="text-sm font-bold text-content-primary">Runtime is standalone</h2><p class="mt-1 text-sm text-content-secondary">Connection testing and runtime validation are available without an asset binding. Kubernetes Analytics remains unavailable until this runtime is mapped to a cluster.</p><a href="{{ url_for('prometheus.instances') }}" class="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-kaori-primary"><i data-lucide="waypoints" class="h-4 w-4"></i>Manage asset bindings</a></div></div>
-  </section>
-  {% else %}
-  <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <header class="border-b border-outline-subtle px-5 py-4"><h2 class="text-base font-bold text-content-primary">Bound Kubernetes assets</h2><p class="mt-1 text-sm text-content-secondary">These mappings authorize cluster-scoped Analytics consumers to resolve this runtime.</p></header>
-    <div class="overflow-x-auto"><table class="min-w-full text-left text-sm"><thead class="border-b border-outline-subtle bg-surface-subtle text-xs uppercase tracking-wide text-content-muted"><tr><th class="px-5 py-3">Cluster</th><th class="px-4 py-3">Role</th><th class="px-4 py-3">Priority</th><th class="px-4 py-3">Status</th><th class="px-4 py-3 text-right">Configuration</th></tr></thead><tbody class="divide-y divide-outline-subtle">{% for binding in bindings %}{% set cluster = clusters_by_id.get(binding.asset_key) %}<tr><td class="px-5 py-4"><p class="font-semibold text-content-primary">{{ cluster.name if cluster else binding.asset_key }}</p><p class="text-xs text-content-muted">{{ binding.asset_key }}</p></td><td class="px-4 py-4">{{ binding.binding_role|title }}</td><td class="px-4 py-4">{{ binding.priority }}</td><td class="px-4 py-4">{{ status_badge('ready' if binding.enabled else 'disabled') }}</td><td class="px-4 py-4 text-right">{% if cluster %}<a href="{{ url_for('prometheus.configuration', cluster_id=cluster.id) }}" class="text-sm font-semibold text-kaori-primary">Open cluster settings</a>{% else %}<span class="text-xs text-content-muted">Asset unavailable</span>{% endif %}</td></tr>{% endfor %}</tbody></table></div>
-  </section>
-  {% endif %}
+        <div class="p-4 sm:p-5">
+            <div x-show="activeTab === 'configuration'" x-cloak>
+                <div class="grid gap-5 xl:grid-cols-12">
+                    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card xl:col-span-8">
+                        <header class="flex items-start justify-between gap-4 border-b border-outline-subtle px-5 py-4">
+                            <div><h2 class="text-base font-semibold text-content-primary">Connection Contract</h2><p class="mt-1 text-sm leading-6 text-content-secondary">Identity and access settings used by every metrics query, validation, and runtime observation.</p></div>
+                            <a href="{{ url_for('prometheus.edit_instance', instance_id=instance.id) }}" class="inline-flex h-9 shrink-0 items-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white hover:bg-kaori-primary-hover"><i data-lucide="pencil" class="h-3.5 w-3.5"></i>Edit</a>
+                        </header>
+                        <dl class="grid gap-px bg-outline-subtle sm:grid-cols-2">
+                            {% for label, value in [
+                                ('Endpoint', instance.endpoint),
+                                ('Authentication', (instance.auth_type or 'none')|replace('_', ' ')|title),
+                                ('Compatibility detection', (instance.version_detection_mode or 'automatic')|replace('_', ' ')|title),
+                                ('Source Prometheus major', instance.source_prometheus_major or 'Automatic discovery'),
+                                ('Request timeout', instance.timeout ~ ' seconds'),
+                                ('TLS verification', 'Enabled' if instance.verify_ssl else 'Disabled'),
+                                ('Resolver use', 'Enabled' if instance.enabled else 'Disabled'),
+                                ('Last checked', runtime_state.observed_at_display)
+                            ] %}
+                                <div class="bg-surface-card px-5 py-4"><dt class="text-xs font-semibold text-content-muted">{{ label }}</dt><dd class="mt-1.5 break-words font-sans text-sm font-medium text-content-primary">{{ value }}</dd></div>
+                            {% endfor %}
+                        </dl>
+                    </section>
+                    <aside class="space-y-4 xl:col-span-4">
+                        <section class="rounded-xl border border-status-info-border bg-status-info-soft p-4">
+                            <div class="flex items-start gap-3"><i data-lucide="workflow" class="mt-0.5 h-4 w-4 shrink-0 text-status-info"></i><div><h2 class="text-sm font-semibold text-status-info-text">Change impact</h2><p class="mt-1 text-xs leading-5 text-content-secondary">Saving endpoint, access, compatibility, or TLS settings resets readiness. Run Test Connection and Full Validation again before relying on the source.</p></div></div>
+                        </section>
+                        <section class="rounded-xl border border-outline-default bg-surface-card p-4">
+                            <h2 class="text-sm font-semibold text-content-primary">Operational flow</h2>
+                            <div class="mt-3 space-y-3 text-xs leading-5 text-content-secondary">
+                                <p><strong class="font-semibold text-content-primary">Configure</strong> establishes identity and access.</p>
+                                <p><strong class="font-semibold text-content-primary">Validate</strong> establishes compatibility and capability evidence.</p>
+                                <p><strong class="font-semibold text-content-primary">Observe</strong> records runtime health and drift.</p>
+                                <p><strong class="font-semibold text-content-primary">Bind</strong> authorizes operational consumers to resolve this source.</p>
+                            </div>
+                        </section>
+                    </aside>
+                </div>
+            </div>
 
-  {% include 'prometheus/partials/_runtime_history.html' %}
+            <div x-show="activeTab === 'validation'" x-cloak class="space-y-5">
+                <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
+                    <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 lg:flex-row lg:items-start lg:justify-between">
+                        <div><h2 class="text-base font-semibold text-content-primary">Compatibility &amp; Capability Contract</h2><p class="mt-1 text-sm leading-6 text-content-secondary">Technical evidence for API compatibility, metric signals, query contracts, retention, and dependent module readiness.</p></div>
+                        <div class="flex flex-wrap gap-2">
+                            <form method="post" action="{{ url_for('prometheus.instance_test', instance_id=instance.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="inline-flex h-10 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary hover:border-kaori-primary hover:text-kaori-primary-dark"><i data-lucide="plug-zap" class="h-4 w-4"></i>Test Connection</button></form>
+                            <form method="post" action="{{ url_for('prometheus.instance_validate', instance_id=instance.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="inline-flex h-10 items-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white hover:bg-kaori-primary-hover"><i data-lucide="scan-line" class="h-4 w-4"></i>Run Full Validation</button></form>
+                        </div>
+                    </header>
+                    <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
+                        <div class="bg-surface-card p-4"><p class="text-xs font-semibold text-content-muted">Readiness</p><div class="mt-2">{{ status_badge(readiness) }}</div></div>
+                        <div class="bg-surface-card p-4"><p class="text-xs font-semibold text-content-muted">Compatibility</p><div class="mt-2">{{ status_badge(instance.compatibility_status or 'validation_required') }}</div></div>
+                        <div class="bg-surface-card p-4"><p class="text-xs font-semibold text-content-muted">Query contracts</p><div class="mt-2">{{ status_badge(instance.query_validation_status or 'validation_required') }}</div></div>
+                        <div class="bg-surface-card p-4"><p class="text-xs font-semibold text-content-muted">Capability profile</p><p class="mt-2 text-sm font-semibold text-content-primary">{{ instance.capability_profile or 'Not established' }}</p></div>
+                    </div>
+                    {% set assessments = (instance.capabilities or {}).get('assessments', []) %}
+                    {% if assessments %}
+                        <div class="overflow-x-auto border-t border-outline-subtle">
+                            <table class="min-w-[960px] w-full text-left text-sm">
+                                <thead class="bg-surface-hover text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted"><tr><th class="px-5 py-3">Capability</th><th class="px-4 py-3">Status</th><th class="px-4 py-3">Technical evidence</th><th class="px-4 py-3">Operational impact</th><th class="px-5 py-3">Recommended action</th></tr></thead>
+                                <tbody class="divide-y divide-outline-subtle">
+                                    {% for item in assessments %}
+                                        {% set state = item.status or 'unknown' %}
+                                        <tr class="align-top">
+                                            <td class="px-5 py-4"><p class="font-semibold text-content-primary">{{ item.label or item.key|replace('_', ' ')|title }}</p><p class="mt-1 text-xs text-content-muted">{{ item.source_owner or 'Prometheus-compatible metrics pipeline' }}</p></td>
+                                            <td class="px-4 py-4">{{ status_badge('ready' if state == 'available' else ('blocked' if state in ['missing', 'unsupported'] else ('degraded' if state == 'misconfigured' else 'validation_required')), state|replace('_', ' ')|title) }}</td>
+                                            <td class="px-4 py-4 text-xs leading-5 text-content-secondary">{{ item.evidence or 'No technical evidence recorded.' }}</td>
+                                            <td class="px-4 py-4 text-xs leading-5 text-content-secondary">{{ item.impact or 'Review dependent operational consumers.' }}</td>
+                                            <td class="px-5 py-4 text-xs leading-5 text-content-secondary">{{ item.recommendation or 'No action required.' }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="border-t border-outline-subtle p-5"><div class="rounded-lg border border-status-info-border bg-status-info-soft p-4"><p class="text-sm font-semibold text-status-info-text">Capability evidence not available</p><p class="mt-1 text-xs leading-5 text-content-secondary">Run Full Validation to populate API, metric, query, retention, and module readiness evidence.</p></div></div>
+                    {% endif %}
+                </section>
+            </div>
+
+            <div x-show="activeTab === 'runtime'" x-cloak class="space-y-5">
+                {% include 'prometheus/partials/_runtime_panel.html' %}
+                {% include 'prometheus/partials/_runtime_history.html' %}
+            </div>
+
+            <div x-show="activeTab === 'scope'" x-cloak class="space-y-5">
+                <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
+                    <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 lg:flex-row lg:items-start lg:justify-between">
+                        <div><h2 class="text-base font-semibold text-content-primary">Scope Bindings</h2><p class="mt-1 text-sm leading-6 text-content-secondary">Bindings authorize cluster-scoped metrics consumers to resolve this reusable connection by role and priority.</p></div>
+                        <a href="{{ url_for('prometheus.instances') }}" class="inline-flex h-10 items-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white hover:bg-kaori-primary-hover"><i data-lucide="waypoints" class="h-4 w-4"></i>Manage Bindings</a>
+                    </header>
+                    {% if bindings %}
+                        <div class="overflow-x-auto"><table class="min-w-[760px] w-full text-left text-sm"><thead class="border-b border-outline-subtle bg-surface-hover text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted"><tr><th class="px-5 py-3.5">Managed cluster</th><th class="px-4 py-3.5">Role</th><th class="px-4 py-3.5">Priority</th><th class="px-4 py-3.5">Status</th><th class="px-5 py-3.5 text-right">Configuration</th></tr></thead><tbody class="divide-y divide-outline-subtle">{% for binding in bindings %}{% set cluster = clusters_by_id.get(binding.asset_key) %}<tr class="hover:bg-surface-hover"><td class="px-5 py-4"><p class="font-semibold text-content-primary">{{ cluster.name if cluster else binding.asset_key }}</p><p class="mt-1 max-w-[320px] truncate font-sans text-xs text-content-muted" title="{{ binding.asset_key }}">{{ binding.asset_key }}</p></td><td class="px-4 py-4">{{ table_label.metadata_label(binding.binding_role|title, 'route') }}</td><td class="px-4 py-4 font-medium text-content-primary">{{ binding.priority }}</td><td class="px-4 py-4">{{ status_badge('ready' if binding.enabled else 'disabled') }}</td><td class="px-5 py-4 text-right">{% if cluster %}<a href="{{ url_for('prometheus.configuration', cluster_id=cluster.id) }}" class="text-sm font-semibold text-kaori-primary-dark hover:underline">Open cluster settings</a>{% else %}<span class="text-xs text-content-muted">Scope unavailable</span>{% endif %}</td></tr>{% endfor %}</tbody></table></div>
+                    {% else %}
+                        <div class="p-5"><div class="rounded-lg border border-status-warning-border bg-status-warning-soft p-4"><p class="text-sm font-semibold text-status-warning-text">No scope binding</p><p class="mt-1 text-xs leading-5 text-content-secondary">The connection can be tested and validated, but operational consumers cannot resolve it until a binding is created.</p></div></div>
+                    {% endif %}
+                </section>
+                <section class="grid gap-4 md:grid-cols-3">
+                    {% for title, text, icon in [
+                        ('Binding', 'Defines the operational scope allowed to use this source.', 'link-2'),
+                        ('Eligibility', 'Readiness, required capabilities, enabled state, and runtime health gate selection.', 'shield-check'),
+                        ('Resolution', 'Role and lower numeric priority determine preference among eligible sources.', 'route')
+                    ] %}
+                        <article class="rounded-xl border border-outline-default bg-surface-card p-4"><span class="flex h-9 w-9 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span><h3 class="mt-3 text-sm font-semibold text-content-primary">{{ title }}</h3><p class="mt-1 text-xs leading-5 text-content-muted">{{ text }}</p></article>
+                    {% endfor %}
+                </section>
+            </div>
+        </div>
+    </section>
 </div>
-{% endblock %}
+{% endblock dashboard_content %}

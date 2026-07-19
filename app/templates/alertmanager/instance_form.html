@@ -16,7 +16,7 @@
         'storage_service': 'Infrastructure service',
         'global': 'Global operational scope'
     } %}
-    <div class="space-y-6">
+    <div class="kaori-integration-semantic space-y-6">
         {% set hero_readiness = (instance.readiness_status or 'validation_required') if instance else 'draft' %}
         {% set source_posture = 'Ready' if hero_readiness == 'ready' else ('Attention' if hero_readiness in ['degraded', 'blocked'] else ('Configured' if instance else 'Draft')) %}
         <section class="{{ page_hero.shell_classes() }}">
@@ -52,14 +52,7 @@
                                 <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">{{ 'Connection posture' if instance else 'Registration posture' }}</p>
                                 <h2 class="mt-1 text-base font-semibold text-brand-foreground">{{ 'Readiness & scope coverage' if instance else 'Pre-save requirements' }}</h2>
                             </div>
-                            <span class="inline-flex min-h-6 shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1 text-[10px] font-semibold
-                                         {% if source_posture == 'Ready' %}border-status-normal-border bg-status-normal-soft text-status-normal-text
-                                         {% elif source_posture == 'Attention' %}border-status-warning-border bg-status-warning-soft text-status-warning-text
-                                         {% elif source_posture == 'Configured' %}border-status-info-border bg-status-info-soft text-status-info-text
-                                         {% else %}border-white/30 bg-white/10 text-brand-foreground{% endif %}">
-                                <i data-lucide="{% if source_posture == 'Ready' %}circle-check{% elif source_posture == 'Attention' %}triangle-alert{% elif source_posture == 'Configured' %}badge-check{% else %}file-pen-line{% endif %}" class="h-3 w-3" aria-hidden="true"></i>
-                                {{ source_posture }}
-                            </span>
+                            {{ status_badge('ready' if source_posture == 'Ready' else ('degraded' if source_posture == 'Attention' else ('validation_required' if source_posture == 'Configured' else 'not_configured')), source_posture) }}
                         </div>
 
                         {% if instance %}
@@ -326,13 +319,13 @@
                         </summary>
                         <div class="divide-y divide-outline-subtle">
                             <article class="p-4">
-                                <div class="flex items-start gap-3"><div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary"><i data-lucide="id-card" class="h-4 w-4"></i></div><div><div class="flex flex-wrap items-center gap-2"><h3 class="text-sm font-semibold text-content-primary">Reusable connection identity</h3><span class="inline-flex rounded-md border border-brand-outline bg-kaori-soft px-2 py-0.5 text-[11px] font-semibold text-kaori-primary">Created here</span></div><p class="mt-1.5 text-xs leading-5 text-content-muted">KAORI stores one integration identity containing the endpoint, access method, security behavior, ownership context, and lifecycle state.</p></div></div>
+                                <div class="flex items-start gap-3"><div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary"><i data-lucide="id-card" class="h-4 w-4"></i></div><div><div class="flex flex-wrap items-center gap-2"><h3 class="text-sm font-semibold text-content-primary">Reusable connection identity</h3><span class="kaori-semantic-label inline-flex rounded-md border border-brand-outline bg-kaori-soft px-2 py-0.5 text-[11px] font-semibold text-kaori-primary-dark">Created here</span></div><p class="mt-1.5 text-xs leading-5 text-content-muted">KAORI stores one integration identity containing the endpoint, access method, security behavior, ownership context, and lifecycle state.</p></div></div>
                             </article>
                             <article class="p-4">
-                                <div class="flex items-start gap-3"><div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-elevated text-content-secondary"><i data-lucide="plug-zap" class="h-4 w-4"></i></div><div><div class="flex flex-wrap items-center gap-2"><h3 class="text-sm font-semibold text-content-primary">Reachability test</h3><span class="inline-flex rounded-md border border-outline-default bg-surface-hover px-2 py-0.5 text-[11px] font-semibold text-content-secondary">Before save</span></div><p class="mt-1.5 text-xs leading-5 text-content-muted">Test Connection confirms that the submitted endpoint can be reached with the selected authentication and TLS settings. No database record or capability profile is created.</p></div></div>
+                                <div class="flex items-start gap-3"><div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-elevated text-content-secondary"><i data-lucide="plug-zap" class="h-4 w-4"></i></div><div><div class="flex flex-wrap items-center gap-2"><h3 class="text-sm font-semibold text-content-primary">Reachability test</h3><span class="kaori-semantic-label inline-flex rounded-md border border-outline-default bg-surface-hover px-2 py-0.5 text-[11px] font-semibold text-content-secondary">Before save</span></div><p class="mt-1.5 text-xs leading-5 text-content-muted">Test Connection confirms that the submitted endpoint can be reached with the selected authentication and TLS settings. No database record or capability profile is created.</p></div></div>
                             </article>
                             <article class="p-4">
-                                <div class="flex items-start gap-3"><div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-elevated text-content-secondary"><i data-lucide="scan-search" class="h-4 w-4"></i></div><div><div class="flex flex-wrap items-center gap-2"><h3 class="text-sm font-semibold text-content-primary">Validation and scope assignment</h3><span class="inline-flex rounded-md border border-outline-default bg-surface-hover px-2 py-0.5 text-[11px] font-semibold text-content-secondary">After save</span></div><p class="mt-1.5 text-xs leading-5 text-content-muted">The instance page performs full capability validation and then lets you bind the source to one or more operational scopes with primary, secondary, or fallback roles.</p></div></div>
+                                <div class="flex items-start gap-3"><div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-elevated text-content-secondary"><i data-lucide="scan-search" class="h-4 w-4"></i></div><div><div class="flex flex-wrap items-center gap-2"><h3 class="text-sm font-semibold text-content-primary">Validation and scope assignment</h3><span class="kaori-semantic-label inline-flex rounded-md border border-outline-default bg-surface-hover px-2 py-0.5 text-[11px] font-semibold text-content-secondary">After save</span></div><p class="mt-1.5 text-xs leading-5 text-content-muted">The instance page performs full capability validation and then lets you bind the source to one or more operational scopes with primary, secondary, or fallback roles.</p></div></div>
                             </article>
                         </div>
                     </details>
@@ -488,7 +481,7 @@
                                         </div>
                                         <div class="mt-4 space-y-2">
                                             {% for candidate in resolution.candidates %}
-                                                <div class="rounded-xl border p-3 {{ 'border-emerald-200 bg-emerald-50' if candidate.is_selected else ('border-red-200 bg-red-50' if not candidate.eligible else 'border-outline-subtle bg-surface-card') }}">
+                                                <div class="rounded-xl border p-3 {{ 'border-status-normal-border bg-status-normal-soft' if candidate.is_selected else ('border-status-critical-border bg-status-critical-soft' if not candidate.eligible else 'border-outline-subtle bg-surface-card') }}">
                                                     <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                                         <div class="min-w-0">
                                                             <div class="flex flex-wrap items-center gap-2">
@@ -506,7 +499,7 @@
                                                     </div>
                                                     <p class="mt-2 text-xs leading-5 text-content-secondary">{{ candidate.decision_reason }}</p>
                                                     {% if candidate.missing_capability_labels %}
-                                                        <p class="mt-2 text-xs font-semibold text-red-700">Missing: {{ candidate.missing_capability_labels|join(', ') }}</p>
+                                                        <p class="mt-2 text-xs font-semibold text-status-critical-text">Missing: {{ candidate.missing_capability_labels|join(', ') }}</p>
                                                     {% endif %}
                                                 </div>
                                             {% else %}

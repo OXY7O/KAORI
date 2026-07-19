@@ -260,6 +260,7 @@ def build_prometheus_page(
             'ready': sum(1 for row in all_rows if row['readiness'] == 'ready'),
             'attention': sum(1 for row in all_rows if row['readiness'] != 'ready'),
             'blocked': sum(1 for row in all_rows if row['readiness'] == 'blocked'),
+            'bindings': sum(row['binding_count'] for row in all_rows),
         },
         'pagination': pagination,
         'uncovered_clusters': sorted(uncovered, key=lambda cluster: cluster.name.lower()),
