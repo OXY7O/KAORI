@@ -15,14 +15,14 @@
     <div class="relative grid gap-5 xl:grid-cols-12 xl:items-stretch">
         <div class="flex min-w-0 flex-col justify-center xl:col-span-7">
             {% call page_hero.intro('globe-2', 'Kubernetes ingress inventory', 'route') %}
-                <h1 class="text-2xl font-semibold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">Ingress Inventory</h1>
+                <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">Ingress Inventory</h1>
                 <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">
                     Review published hosts, TLS configuration, ingress classes, controller addresses, and backend routing declarations.
                 </p>
                 <div class="mt-5 flex flex-wrap gap-2">
-                    {{ page_hero.meta_label('route', total_ingresses ~ ' ingresses tracked') }}
-                    {{ page_hero.meta_label('shield-check', tls_enabled ~ ' TLS enabled') }}
-                    {{ page_hero.meta_label('globe-2', inventory.total_hosts ~ ' published hosts') }}
+                    {{ page_hero.meta_label('route', total_ingresses ~ ' Ingresses Tracked') }}
+                    {{ page_hero.meta_label('shield-check', tls_enabled ~ ' TLS Enabled') }}
+                    {{ page_hero.meta_label('globe-2', inventory.total_hosts ~ ' Published Hosts') }}
                 </div>
             {% endcall %}
         </div>
@@ -32,7 +32,7 @@
                 <div class="flex items-start justify-between gap-4">
                     <div>
                         <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Ingress posture</p>
-                        <h2 class="mt-1 text-base font-semibold text-brand-foreground">TLS Exposure Context</h2>
+                        <h2 class="mt-1 text-base font-semibold text-brand-foreground">TLS exposure context</h2>
                     </div>
                     {{ table_label.status_label(posture_label, posture_tone, posture_icon) }}
                 </div>
@@ -41,17 +41,17 @@
                     <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5">
                         <div class="flex items-center gap-2 text-brand-foreground">
                             <i data-lucide="shield-check" class="h-3.5 w-3.5"></i>
-                            <p class="text-xs font-semibold">TLS enabled</p>
+                            <p class="text-[11px] font-semibold">TLS enabled</p>
                         </div>
-                        <p class="mt-1.5 text-xl font-semibold leading-none text-brand-foreground">{{ tls_enabled }}</p>
+                        <p class="mt-1.5 text-xl font-bold leading-none text-brand-foreground">{{ tls_enabled }}</p>
                         <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">{{ tls_percentage|int }}% of tracked Ingresses</p>
                     </div>
                     <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5">
                         <div class="flex items-center gap-2 text-brand-foreground">
                             <i data-lucide="shield-off" class="h-3.5 w-3.5"></i>
-                            <p class="text-xs font-semibold">No TLS</p>
+                            <p class="text-[11px] font-semibold">No TLS</p>
                         </div>
-                        <p class="mt-1.5 text-xl font-semibold leading-none text-brand-foreground">{{ no_tls }}</p>
+                        <p class="mt-1.5 text-xl font-bold leading-none text-brand-foreground">{{ no_tls }}</p>
                         <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Ingresses requiring review</p>
                     </div>
                 </div>

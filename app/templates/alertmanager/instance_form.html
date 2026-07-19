@@ -36,21 +36,21 @@
                         <div class="mt-5 flex flex-wrap gap-2">
                             {% if instance %}
                                 {{ page_hero.meta_label('shield-check', hero_readiness|replace('_', ' ')|title) }}
-                                {{ page_hero.meta_label('link-2', (bindings|length|string) ~ ' scope bindings') }}
+                                {{ page_hero.meta_label('link-2', (bindings|length|string) ~ ' Scope Bindings') }}
                             {% else %}
-                                {{ page_hero.meta_label('file-pen-line', 'Draft connection') }}
-                                {{ page_hero.meta_label('plug-zap', 'Reachability required') }}
+                                {{ page_hero.meta_label('file-pen-line', 'Draft Connection') }}
+                                {{ page_hero.meta_label('plug-zap', 'Reachability Required') }}
                             {% endif %}
                         </div>
                     {% endcall %}
                 </div>
 
                 <aside class="{{ page_hero.aside_classes() }}" aria-label="Alertmanager registration posture">
-                    <div class="flex h-full min-h-[12rem] flex-col rounded-xl border border-brand-outline bg-brand-surface-strong p-4 backdrop-blur-md">
+                    <div class="{{ page_hero.context_panel_classes() }}">
                         <div class="flex items-start justify-between gap-4">
                             <div>
-                                <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">{{ 'Connection posture' if instance else 'Registration posture' }}</p>
-                                <h2 class="mt-1 text-base font-semibold text-brand-foreground">{{ 'Readiness & scope coverage' if instance else 'Pre-save requirements' }}</h2>
+                                <p class="{{ page_hero.context_panel_eyebrow_classes() }}">{{ 'Connection posture' if instance else 'Registration posture' }}</p>
+                                <h2 class="{{ page_hero.context_panel_title_classes() }}">{{ 'Readiness & scope coverage' if instance else 'Pre-save requirements' }}</h2>
                             </div>
                             {{ status_badge('ready' if source_posture == 'Ready' else ('degraded' if source_posture == 'Attention' else ('validation_required' if source_posture == 'Configured' else 'not_configured')), source_posture) }}
                         </div>
@@ -210,7 +210,7 @@
                             <div>
                                 <label for="alertmanager-endpoint" class="mb-1.5 block text-sm font-semibold text-content-primary">Endpoint URL</label>
                                 <input id="alertmanager-endpoint" type="url" name="endpoint" required value="{{ instance.endpoint if instance else (submitted_form.endpoint if submitted_form else '') }}" placeholder="https://alertmanager.example.internal:9093" class="{{ field_classes }}">
-                                <p class="mt-1.5 text-xs leading-5 text-content-muted">Use the base URL reachable from the KAORI runtime. Do not append <span class="font-medium text-kaori-primary">/api/v2</span> or embed credentials in the URL.</p>
+                                <p class="mt-1.5 text-xs leading-5 text-content-muted">Use the base URL reachable from the KAORI application runtime. Do not append <span class="font-medium text-kaori-primary">/api/v2</span> or embed credentials in the URL.</p>
                             </div>
                             <div class="mt-4 grid gap-4 lg:grid-cols-2">
                                 <div>

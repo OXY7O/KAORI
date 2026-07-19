@@ -11,19 +11,19 @@
         <div class="{{ page_hero.layout_classes() }}">
             <div class="{{ page_hero.content_classes() }}">
                 {% call page_hero.intro('waypoints', 'Metrics Integration', 'chart-spline') %}
-                    <h1 class="text-2xl font-semibold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">Prometheus Instances & Bindings</h1>
+                    <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">Prometheus Instances & Bindings</h1>
                     <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">Govern reusable metrics connections and the cluster scopes allowed to resolve them.</p>
                     <div class="mt-5 flex flex-wrap gap-2">
-                        {{ page_hero.meta_label('server-cog', rows|length ~ ' registered connections') }}
-                        {{ page_hero.meta_label('link-2', total_bindings.value ~ ' scope bindings') }}
-                        {{ page_hero.meta_label('database-zap', clusters|length ~ ' managed clusters') }}
+                        {{ page_hero.meta_label('server-cog', rows|length ~ ' Registered Connections') }}
+                        {{ page_hero.meta_label('link-2', total_bindings.value ~ ' Scope Bindings') }}
+                        {{ page_hero.meta_label('database-zap', clusters|length ~ ' Managed Clusters') }}
                     </div>
                 {% endcall %}
             </div>
             <aside class="{{ page_hero.aside_classes() }}" aria-label="Prometheus binding workflow">
-                <div class="flex h-full min-h-[12rem] flex-col justify-between rounded-xl border border-brand-outline bg-brand-surface-strong p-4 backdrop-blur-md">
+                <div class="{{ page_hero.context_panel_classes() }}">
                     <div>
-                        <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Binding workflow</p>
+                        <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Binding workflow</p>
                         <p class="mt-1 text-sm font-semibold text-brand-foreground">Connection identity and governed usage</p>
                         <p class="mt-2 text-xs leading-5 text-brand-foreground-muted">Validate each source first, then assign role and priority for every cluster scope that may use it.</p>
                     </div>
@@ -40,7 +40,7 @@
         <div class="flex items-start gap-3">
             <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-status-info"><i data-lucide="workflow" class="h-4 w-4"></i></span>
             <div>
-                <h2 class="text-sm font-semibold text-status-info-text">How Bindings Participate in Source Resolution</h2>
+                <h2 class="text-sm font-semibold text-status-info-text">How bindings participate in source resolution</h2>
                 <p class="mt-1 text-xs leading-5 text-content-secondary">A binding authorizes one connection for one managed cluster. Readiness, required capabilities, enabled state, role, priority, and runtime health determine whether the source is eligible for metrics consumers.</p>
             </div>
         </div>
@@ -119,7 +119,7 @@
         {% else %}
             <section class="rounded-xl border border-outline-default bg-surface-card px-6 py-12 text-center shadow-sm">
                 <span class="mx-auto flex h-11 w-11 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="activity" class="h-5 w-5"></i></span>
-                <h2 class="mt-3 text-base font-semibold text-content-primary">No Prometheus Connection Registered</h2>
+                <h2 class="mt-3 text-base font-semibold text-content-primary">No Prometheus connection registered</h2>
                 <p class="mt-1 text-sm text-content-secondary">Register a reusable metrics connection, validate its contract, then create governed scope bindings.</p>
                 <a href="{{ url_for('prometheus.new_instance') }}" class="mt-4 inline-flex h-10 items-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white hover:bg-kaori-primary-hover"><i data-lucide="plus" class="h-4 w-4"></i>Register Connection</a>
             </section>

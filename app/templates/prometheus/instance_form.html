@@ -7,7 +7,7 @@
         <div class="{{ page_hero.layout_classes() }}">
             <div class="{{ page_hero.content_classes() }}">
                 {% call page_hero.intro('activity', 'Metrics Integration', 'chart-spline') %}
-                    <h1 class="text-2xl font-semibold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">
+                    <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">
                         {{ 'Edit Prometheus Connection' if instance else 'Register Prometheus Connection' }}
                     </h1>
                     <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">
@@ -16,14 +16,14 @@
                     <div class="mt-5 flex flex-wrap gap-2">
                         {{ page_hero.meta_label('database-zap', 'Prometheus-compatible API') }}
                         {{ page_hero.meta_label('shield-check', 'Capability-aware validation') }}
-                        {{ page_hero.meta_label('link-2', 'Governed scope binding') }}
+                        {{ page_hero.meta_label('link-2', 'Governed Scope Binding') }}
                     </div>
                 {% endcall %}
             </div>
             <aside class="{{ page_hero.aside_classes() }}" aria-label="Prometheus connection workflow">
-                <div class="flex h-full min-h-[12rem] flex-col justify-between rounded-xl border border-brand-outline bg-brand-surface-strong p-4 backdrop-blur-md">
+                <div class="{{ page_hero.context_panel_classes() }}">
                     <div>
-                        <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Connection workflow</p>
+                        <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Connection workflow</p>
                         <p class="mt-1 text-sm font-semibold text-brand-foreground">{{ 'Revalidate after changes' if instance else 'Register before validation' }}</p>
                         <p class="mt-2 text-xs leading-5 text-brand-foreground-muted">Connection settings establish identity and access. Full Validation establishes API, query, metric, retention, and module readiness contracts.</p>
                     </div>

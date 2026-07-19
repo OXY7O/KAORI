@@ -11,7 +11,7 @@
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('fingerprint', 'Identity Administration', 'shield-user') %}
-                        <h1 class="text-2xl font-semibold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">
+                        <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">
                             Identity Providers
                         </h1>
                         <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">
@@ -26,9 +26,9 @@
                 </div>
 
                 <div class="{{ page_hero.aside_classes() }}">
-                    <div class="flex h-full min-h-[12rem] flex-col justify-between rounded-xl border border-brand-outline bg-brand-surface p-4 backdrop-blur">
+                    <div class="{{ page_hero.context_panel_classes() }}">
                         <div>
-                            <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-brand-foreground-muted">Provider administration</p>
+                            <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Provider administration</p>
                             <p class="mt-2 text-sm font-semibold leading-5 text-brand-foreground">Add a provider, validate its live integration, then expose it only when the runtime configuration is ready.</p>
                         </div>
                         <div class="mt-5 grid gap-2 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
@@ -53,7 +53,7 @@
                 <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
                     <header class="flex flex-col gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                            <h2 class="text-base font-semibold text-content-primary">Configured Providers</h2>
+                            <h2 class="text-base font-semibold text-content-primary">Configured providers</h2>
                             <p class="mt-1 text-xs leading-5 text-content-muted">Review provider type, administrative state, provisioning model, and available actions.</p>
                         </div>
                         <div class="flex flex-wrap gap-2 text-xs font-semibold">
@@ -144,7 +144,7 @@
                                             <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl border border-outline-subtle bg-surface-elevated text-kaori-primary">
                                                 <i data-lucide="fingerprint" class="h-6 w-6"></i>
                                             </span>
-                                            <h3 class="mt-4 text-sm font-semibold text-content-primary">No External Provider Configured</h3>
+                                            <h3 class="mt-4 text-sm font-semibold text-content-primary">No external provider configured</h3>
                                             <p class="mx-auto mt-1 max-w-lg text-xs leading-5 text-content-muted">Add LDAP, Google, or GitHub when the corresponding directory or SSO application is ready.</p>
                                             <a href="{{ url_for('users.create_provider') }}"
                                                class="mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover">
@@ -167,7 +167,7 @@
                             <i data-lucide="workflow" class="h-5 w-5"></i>
                         </span>
                         <div class="min-w-0">
-                            <h2 class="text-base font-semibold text-content-primary">How Each Provider Is Used</h2>
+                            <h2 class="text-base font-semibold text-content-primary">How each provider is used</h2>
                             <p class="mt-1 text-xs leading-5 text-content-muted">Authentication and provisioning behavior differs by provider type.</p>
                         </div>
                     
@@ -207,7 +207,7 @@
                             <i data-lucide="list-checks" class="h-5 w-5"></i>
                         </span>
                         <div class="min-w-0">
-                            <h2 class="text-sm font-semibold text-content-primary">Activation Sequence</h2>
+                            <h2 class="text-sm font-semibold text-content-primary">Activation sequence</h2>
                             <p class="mt-1 text-xs leading-5 text-content-muted">Use the same controlled sequence for every provider.</p>
                         </div>
                     
@@ -240,7 +240,7 @@
                             <i data-lucide="shield-check" class="h-5 w-5"></i>
                         </span>
                         <div class="min-w-0">
-                            <h2 class="text-sm font-semibold text-status-info-text">Credential Boundary</h2>
+                            <h2 class="text-sm font-semibold text-status-info-text">Credential boundary</h2>
                             <p class="mt-1 text-xs leading-5 text-status-info-text">Provider secrets remain outside persisted Identity Provider records.</p>
                         </div>
                         <span class="ml-auto flex shrink-0 items-center gap-2 pl-3 text-xs font-semibold text-status-info-text">

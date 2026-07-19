@@ -45,7 +45,15 @@
           <td class="px-5 py-4">{{ status_badge(row.readiness) }}</td>
           <td class="px-5 py-4"><p class="text-sm font-medium text-content-primary">{{ row.capability_profile or 'Not observed' }}</p><p class="mt-1 text-xs {% if row.capability_attention %}text-warning{% else %}text-content-muted{% endif %}">{{ row.capability_attention_display }}</p></td>
           <td class="px-5 py-4 text-content-secondary">{{ row.observed_at_display }}{% if row.latency_display %}<p class="mt-1 text-xs text-content-muted">{{ row.latency_display }}</p>{% endif %}</td>
-          <td class="px-5 py-4 text-right"><a href="{{ url_for(row.detail_endpoint, **row.detail_kwargs) }}" class="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-primary/25 px-3 text-xs font-semibold text-primary hover:bg-primary-soft">Open <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i></a></td>
+          <td class="px-5 py-4 text-right">
+              {% set detail_endpoint = row.detail_endpoint %}
+              {% set detail_kwargs = row.detail_kwargs or {} %}
+              {% if row.provider == 'prometheus' and detail_endpoint == 'prometheus.configuration' and not detail_kwargs.get('cluster_id') %}
+                {% set detail_endpoint = 'prometheus.instance_detail' %}
+                {% set detail_kwargs = {'instance_id': row.instance_id} %}
+              {% endif %}
+              <a href="{{ url_for(detail_endpoint, **detail_kwargs) }}" class="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-primary/25 px-3 text-xs font-semibold text-primary hover:bg-primary-soft">Open <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i></a>
+            </td>
         </tr>
       {% else %}<tr><td colspan="6" class="px-5 py-10 text-center text-sm text-content-muted">No integration runtime targets match the selected filters.</td></tr>{% endfor %}
       </tbody>

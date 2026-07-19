@@ -24,23 +24,23 @@
                             Review the code-backed permission contracts used by route guards, navigation visibility, custom roles, and administrative workflows.
                         </p>
                         <div class="mt-5 flex flex-wrap gap-2">
-                            {{ page_hero.meta_label('key-round', total_permissions ~ ' permissions') }}
-                            {{ page_hero.meta_label('boxes', total_modules ~ ' modules') }}
-                            {{ page_hero.meta_label('git-branch', assignment_count ~ ' role assignments') }}
+                            {{ page_hero.meta_label('key-round', total_permissions ~ ' Permissions') }}
+                            {{ page_hero.meta_label('boxes', total_modules ~ ' Modules') }}
+                            {{ page_hero.meta_label('git-branch', assignment_count ~ ' Role Assignments') }}
                         </div>
                     {% endcall %}
                 </div>
                 <aside class="{{ page_hero.aside_classes() }}"
                        aria-label="Permission registry policy">
-                    <div class="flex h-full min-h-[12rem] flex-col rounded-xl border border-brand-outline bg-brand-surface-strong p-4 backdrop-blur-md">
+                    <div class="{{ page_hero.context_panel_classes() }}">
                         <div class="flex items-start justify-between gap-3">
                             <div>
-                                <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Registry policy</p>
-                                <h2 class="mt-1 text-base font-semibold text-brand-foreground">Read-only, code-owned</h2>
+                                <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Registry policy</p>
+                                <h2 class="{{ page_hero.context_panel_title_classes() }}">Read-only, code-owned</h2>
                             </div>
                             <span class="flex h-10 w-10 items-center justify-center rounded-lg border border-brand-outline bg-brand-surface text-brand-foreground"><i data-lucide="lock-keyhole" class="h-5 w-5"></i></span>
                         </div>
-                        <p class="mt-2 text-sm leading-5 text-brand-foreground-muted">Permission keys are KAORI contracts. Access administrators assign them to roles; they do not create or rename keys from the UI.</p>
+                        <p class="mt-2 text-sm leading-5 text-brand-foreground-muted">Permission keys are application contracts. Access administrators assign them to roles; they do not create or rename keys from the UI.</p>
                         <a href="{{ url_for('settings.roles') }}"
                            class="mt-auto inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-brand-outline bg-brand-surface px-3 py-2 text-sm font-semibold text-brand-foreground hover:bg-brand-surface-strong">
                             <i data-lucide="arrow-left" class="h-4 w-4"></i>Back to Roles &amp; Access
@@ -69,8 +69,8 @@
             </header>
             <div class="grid gap-px bg-outline-subtle md:grid-cols-2 xl:grid-cols-4">
                 {% set metrics = [
-                                    ('key-round', 'Permission Contracts', total_permissions, 'Atomic KAORI capabilities registered by the backend.', 'bg-kaori-soft text-kaori-primary'),
-                                    ('boxes', 'Control Modules', total_modules, 'KAORI domains used to organize permission ownership.', 'bg-status-info-soft text-status-info-text'),
+                                    ('key-round', 'Permission Contracts', total_permissions, 'Atomic application capabilities registered by the backend.', 'bg-kaori-soft text-kaori-primary'),
+                                    ('boxes', 'Control Modules', total_modules, 'Application domains used to organize permission ownership.', 'bg-status-info-soft text-status-info-text'),
                                     ('shield-check', 'Role Mappings', assignment_count, 'Current permission-to-role links across default and custom roles.', 'bg-status-normal-soft text-status-normal-text'),
                                     ('database-zap', 'Synchronization', 'seed-rbac', 'The backend registry is synchronized to the database through the RBAC seed command.', 'bg-status-warning-soft text-status-warning-text')
                                 ] %}
@@ -91,7 +91,7 @@
             </div>
             <div class="border-t border-outline-subtle bg-surface-hover px-5 py-4 lg:px-6">
                 <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                    {% set registry_boundaries = [('code-xml', 'Backend Ownership', 'Permission keys are defined in KAORI code, not created from the UI.'), ('refresh-cw', 'Seed Synchronization', 'seed-rbac creates missing records and converges protected default mappings.'), ('layers-3', 'Role Consumption', 'Roles & Access selects registry keys and packages them into reusable profiles.'), ('shield-check', 'Authoritative Enforcement', 'Route and service permission checks remain the security boundary.')] %}
+                    {% set registry_boundaries = [('code-xml', 'Backend Ownership', 'Permission keys are defined in application code, not created from the UI.'), ('refresh-cw', 'Seed Synchronization', 'seed-rbac creates missing records and converges protected default mappings.'), ('layers-3', 'Role Consumption', 'Roles & Access selects registry keys and packages them into reusable profiles.'), ('shield-check', 'Authoritative Enforcement', 'Route and service permission checks remain the security boundary.')] %}
                     {% for icon, title, description in registry_boundaries %}
                         <div class="flex items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card p-3.5">
                             <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">

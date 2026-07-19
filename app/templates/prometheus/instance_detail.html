@@ -16,21 +16,21 @@
             <div class="{{ page_hero.content_classes() }}">
                 {% call page_hero.intro('activity', 'Metrics Integration', 'chart-spline') %}
                     <div class="flex flex-wrap items-center gap-2">
-                        <h1 class="text-2xl font-semibold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">{{ instance.name }}</h1>
+                        <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">{{ instance.name }}</h1>
                     </div>
                     <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">Manage configuration, capability validation, runtime evidence, and operational scope bindings.</p>
                     <div class="mt-5 flex flex-wrap gap-2">
-                        {{ page_hero.meta_label('server-cog', (instance.endpoint_product or 'Prometheus compatible')|replace('_', ' ')|title) }}
-                        {{ page_hero.meta_label('badge-check', instance.compatibility_profile or 'Profile not assigned') }}
-                        {{ page_hero.meta_label('link-2', bindings|length ~ ' scope bindings') }}
+                        {{ page_hero.meta_label('server-cog', (instance.endpoint_product or 'Prometheus Compatible')|replace('_', ' ')|title) }}
+                        {{ page_hero.meta_label('badge-check', instance.compatibility_profile or 'Profile Not Assigned') }}
+                        {{ page_hero.meta_label('link-2', bindings|length ~ ' Scope Bindings') }}
                     </div>
                 {% endcall %}
             </div>
             <aside class="{{ page_hero.aside_classes() }}" aria-label="Prometheus source posture">
-                <div class="flex h-full min-h-[12rem] flex-col justify-between rounded-xl border border-brand-outline bg-brand-surface-strong p-4 backdrop-blur-md">
+                <div class="{{ page_hero.context_panel_classes() }}">
                     <div>
                         <div class="flex items-start justify-between gap-3">
-                            <div><p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Source posture</p><p class="mt-1 text-sm font-semibold text-brand-foreground">Validation and runtime evidence</p></div>
+                            <div><p class="{{ page_hero.context_panel_eyebrow_classes() }}">Source posture</p><p class="mt-1 text-sm font-semibold text-brand-foreground">Validation and runtime evidence</p></div>
                             {{ status_badge(readiness) }}
                         </div>
                         <p class="mt-2 text-xs leading-5 text-brand-foreground-muted">{{ instance.validation_message or 'Run Validation to establish compatibility, query contracts, and module readiness.' }}</p>
@@ -73,7 +73,7 @@
                                 ('Endpoint', instance.endpoint),
                                 ('Authentication', (instance.auth_type or 'none')|replace('_', ' ')|title),
                                 ('Compatibility detection', (instance.version_detection_mode or 'automatic')|replace('_', ' ')|title),
-                                ('Source Prometheus major', instance.source_prometheus_major or 'Automatic discovery'),
+                                ('Source Prometheus major', instance.source_prometheus_major or 'Automatic Discovery'),
                                 ('Request timeout', instance.timeout ~ ' seconds'),
                                 ('TLS verification', 'Enabled' if instance.verify_ssl else 'Disabled'),
                                 ('Resolver use', 'Enabled' if instance.enabled else 'Disabled'),
@@ -85,10 +85,10 @@
                     </section>
                     <aside class="space-y-4 xl:col-span-4">
                         <section class="rounded-xl border border-status-info-border bg-status-info-soft p-4">
-                            <div class="flex items-start gap-3"><i data-lucide="workflow" class="mt-0.5 h-4 w-4 shrink-0 text-status-info"></i><div><h2 class="text-sm font-semibold text-status-info-text">Change Impact</h2><p class="mt-1 text-xs leading-5 text-content-secondary">Saving endpoint, access, compatibility, or TLS settings resets readiness. Run Test Connection and Full Validation again before relying on the source.</p></div></div>
+                            <div class="flex items-start gap-3"><i data-lucide="workflow" class="mt-0.5 h-4 w-4 shrink-0 text-status-info"></i><div><h2 class="text-sm font-semibold text-status-info-text">Change impact</h2><p class="mt-1 text-xs leading-5 text-content-secondary">Saving endpoint, access, compatibility, or TLS settings resets readiness. Run Test Connection and Full Validation again before relying on the source.</p></div></div>
                         </section>
                         <section class="rounded-xl border border-outline-default bg-surface-card p-4">
-                            <h2 class="text-sm font-semibold text-content-primary">Operational Flow</h2>
+                            <h2 class="text-sm font-semibold text-content-primary">Operational flow</h2>
                             <div class="mt-3 space-y-3 text-xs leading-5 text-content-secondary">
                                 <p><strong class="font-semibold text-content-primary">Configure</strong> establishes identity and access.</p>
                                 <p><strong class="font-semibold text-content-primary">Validate</strong> establishes compatibility and capability evidence.</p>

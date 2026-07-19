@@ -7,7 +7,7 @@
         <section class="{{ page_hero.shell_classes() }}">
     <div class="{{ page_hero.layout_classes() }}">
         <div class="{{ page_hero.content_classes() }}">{% call page_hero.intro('layout-template', 'Reporting templates', 'layout-template') %}<h1 class="{{ page_hero.title_classes() }}">{{ payload.page_title }}</h1><p class="mt-2 {{ page_hero.description_classes() }}">{{ payload.page_subtitle }}</p><div class="{{ page_hero.metadata_row_classes() }}">{{ page_hero.meta_label('shield-check', 'Protected base templates') }}{{ page_hero.meta_label('copy-plus', 'Custom templates') }}{{ page_hero.meta_label('file-text', 'Reusable sections') }}</div>{% endcall %}</div>
-        <aside class="{{ page_hero.aside_classes() }}" aria-label="Template actions"><div class="flex h-full min-h-[12rem] flex-col justify-between rounded-xl border border-brand-outline bg-brand-surface-strong p-4 backdrop-blur-md"><div><p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Template governance</p><h2 class="mt-1 text-base font-semibold text-brand-foreground">Safe Customization</h2><p class="mt-2 text-xs leading-5 text-brand-foreground-muted">Preserve protected defaults while creating reusable custom report definitions.</p></div><div class="mt-4 grid grid-cols-2 gap-2"><a href="{{ url_for('reports.generated_reports') }}" class="{{ page_hero.secondary_action_classes() }}">Generated</a><a href="{{ url_for('reports.generate_report') }}" class="{{ page_hero.primary_action_classes() }}">Generate</a></div></div></aside>
+        <aside class="{{ page_hero.aside_classes() }}" aria-label="Template actions"><div class="{{ page_hero.context_panel_classes() }}"><div><p class="{{ page_hero.context_panel_eyebrow_classes() }}">Template governance</p><h2 class="{{ page_hero.context_panel_title_classes() }}">Safe customization</h2><p class="mt-2 text-xs leading-5 text-brand-foreground-muted">Preserve protected defaults while creating reusable custom report definitions.</p></div><div class="mt-4 grid grid-cols-2 gap-2"><a href="{{ url_for('reports.generated_reports') }}" class="{{ page_hero.secondary_action_classes() }}">Generated</a><a href="{{ url_for('reports.generate_report') }}" class="{{ page_hero.primary_action_classes() }}">Generate</a></div></div></aside>
     </div>
 </section>
         <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -25,7 +25,7 @@
                         </div>
                         <div class="min-w-0">
                             <p class="text-sm font-semibold text-content-secondary dark:text-content-secondary">{{ card.label }}</p>
-                            <p class="mt-2 text-3xl font-semibold tracking-tight text-content-primary text-content-primary">{{ card.value }}</p>
+                            <p class="mt-2 text-3xl font-bold tracking-tight text-content-primary text-content-primary">{{ card.value }}</p>
                             <p class="mt-1 text-sm text-content-muted dark:text-content-muted">{{ card.caption }}</p>
                         </div>
                     </div>
@@ -80,7 +80,7 @@
                                     <i data-lucide="list-filter" class="h-[18px] w-[18px]"></i>
                                 </span>
                                 <div class="min-w-0">
-                                    <h2 class="text-base font-semibold text-content-primary">Template Filters</h2>
+                                    <h2 class="text-base font-semibold text-content-primary text-content-primary">Template Filters</h2>
                                     <p class="text-xs text-content-muted dark:text-content-muted">Filter templates by type, status, or keyword without reloading the page.</p>
                                 </div>
                             </div>
@@ -165,7 +165,7 @@
                                             </div>
                                             <div class="min-w-0">
                                                 <div class="flex flex-wrap items-center gap-2">
-                                                    <h3 class="text-base font-semibold text-content-primary">{{ template.name }}</h3>
+                                                    <h3 class="text-base font-semibold text-content-primary text-content-primary">{{ template.name }}</h3>
                                                     <span class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold ring-1 ring-inset {{ status_class }}">
                                                         <i data-lucide="{% if template.source == 'system' %}shield-check{% else %}pencil-ruler{% endif %}"
                                                            class="h-3.5 w-3.5"></i>
@@ -263,7 +263,7 @@
                                 <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-kaori-soft text-content-muted bg-kaori-soft dark:text-content-secondary">
                                     <i data-lucide="search-x" class="h-6 w-6"></i>
                                 </div>
-                                <h3 class="mt-4 text-base font-semibold text-content-primary">No Templates Matched the Selected Filters</h3>
+                                <h3 class="mt-4 text-base font-semibold text-content-primary text-content-primary">No templates matched the selected filters</h3>
                                 <p class="mt-1 text-sm text-content-muted dark:text-content-muted">Clear filters or search with a different report type or template keyword.</p>
                             </div>
                         {% endfor %}
@@ -340,7 +340,7 @@
                                 <i data-lucide="pencil-ruler" class="h-4 w-4"></i>
                             </div>
                             <div>
-                                <h2 class="text-base font-semibold text-content-primary">
+                                <h2 class="text-base font-semibold text-content-primary text-content-primary">
                                     {% if payload.edit_template %}
                                         Edit Custom Template
                                     {% else %}
@@ -411,7 +411,7 @@
                                     <div data-template-section-group="{{ report_type }}"
                                          class="space-y-2 {% if form.report_type != report_type %}hidden{% endif %}">
                                         {% for option in options %}
-                                            <label class="flex gap-3 rounded-xl border border-outline-default bg-surface-subtle p-3 text-sm transition hover:border-brand-outline dark:border-outline-default">
+                                            <label class="flex gap-3 rounded-xl border border-outline-default bg-surface-subtle p-3 text-sm transition hover:border-brand-outline dark:border-outline-default bg-surface-subtle hover:border-brand-outline">
                                                 <input type="checkbox"
                                                        name="sections"
                                                        value="{{ option.value }}"

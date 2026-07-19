@@ -87,7 +87,7 @@
                         ('configuration', 'Configuration', 'settings-2', instance.deployment_type|replace('_', ' ')|title),
                         ('validation', 'Validation & Capabilities', 'scan-search', readiness|replace('_', ' ')|title),
                         ('runtime', 'Runtime & History', 'activity', runtime_state.health_status_label),
-                        ('scope', 'Scope & Resolution', 'route', (bindings|length|string) ~ ' bindings')
+                        ('scope', 'Scope & Resolution', 'route', (bindings|length|string) ~ ' Bindings')
                     ] %}
                         <button type="button"
                                 role="tab"

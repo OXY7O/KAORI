@@ -10,7 +10,7 @@
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('network', 'Identity Administration', 'contact-round') %}
-                        <h1 class="text-2xl font-semibold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">
+                        <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">
                             LDAP Directory Provisioning
                         </h1>
                         <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">
@@ -25,9 +25,9 @@
                 </div>
 
                 <aside class="{{ page_hero.aside_classes() }}">
-                    <div class="flex h-full min-h-[12rem] flex-col justify-between rounded-xl border border-brand-outline bg-brand-surface-strong p-4 backdrop-blur-md">
+                    <div class="{{ page_hero.context_panel_classes() }}">
                         <div>
-                            <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Directory boundary</p>
+                            <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Directory boundary</p>
                             <p class="mt-1 text-sm font-semibold text-brand-foreground">Provider configuration controls discovery</p>
                             <p class="mt-1 text-xs leading-5 text-brand-foreground-muted">
                                 Only enabled LDAP providers are available. Bind credentials remain environment-managed and user passwords never enter this workflow.
@@ -59,8 +59,8 @@
                         </span>
                         <div class="min-w-0">
                             <div class="flex flex-wrap items-center gap-2">
-                                <h2 class="text-base font-semibold text-content-primary">Directory Identity Search</h2>
-                                <span class="rounded-md bg-kaori-soft px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-kaori-primary">Step 1</span>
+                                <h2 class="text-base font-semibold text-content-primary">Directory identity search</h2>
+                                <span class="rounded-md bg-kaori-soft px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-kaori-primary">Step 1</span>
                             </div>
                             <p class="mt-1 text-xs leading-5 text-content-muted">
                                 Select an enabled provider and search using a username, email address, or display name.
@@ -115,8 +115,8 @@
                             </span>
                             <div>
                                 <div class="flex flex-wrap items-center gap-2">
-                                    <h2 class="text-base font-semibold text-content-primary">Directory Search Results</h2>
-                                    <span class="rounded-md bg-kaori-soft px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-kaori-primary">Step 2</span>
+                                    <h2 class="text-base font-semibold text-content-primary">Directory search results</h2>
+                                    <span class="rounded-md bg-kaori-soft px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-kaori-primary">Step 2</span>
                                 </div>
                                 <p class="mt-1 text-xs leading-5 text-content-muted">
                                     Review the directory identity, assign a KAORI role, and choose its initial lifecycle state.
@@ -159,7 +159,7 @@
                                             <p class="mt-1 text-xs leading-5 text-content-secondary">
                                                 {{ identity.username }}{% if identity.email %} · {{ identity.email }}{% endif %}
                                             </p>
-                                            <p class="mt-1 truncate font-mono text-xs leading-5 text-content-tertiary" title="{{ identity.distinguished_name }}">
+                                            <p class="mt-1 truncate font-mono text-[11px] leading-5 text-content-tertiary" title="{{ identity.distinguished_name }}">
                                                 {{ identity.distinguished_name }}
                                             </p>
                                         </div>
@@ -200,7 +200,7 @@
                                     <i data-lucide="{{ 'server-off' if not has_ldap_providers else 'user-round-search' }}" class="h-6 w-6"></i>
                                 </span>
                                 {% if not has_ldap_providers %}
-                                    <h3 class="mt-4 text-sm font-semibold text-content-primary">No Enabled LDAP Provider</h3>
+                                    <h3 class="mt-4 text-sm font-semibold text-content-primary">No enabled LDAP provider</h3>
                                     <p class="mx-auto mt-1 max-w-lg text-xs leading-5 text-content-muted">
                                         Configure and enable an LDAP provider before directory identities can be discovered.
                                     </p>
@@ -210,12 +210,12 @@
                                         Open Providers
                                     </a>
                                 {% elif search_form.query.data %}
-                                    <h3 class="mt-4 text-sm font-semibold text-content-primary">No Matching Directory Identity</h3>
+                                    <h3 class="mt-4 text-sm font-semibold text-content-primary">No matching directory identity</h3>
                                     <p class="mx-auto mt-1 max-w-lg text-xs leading-5 text-content-muted">
                                         Try a different username, email address, or display name. The search remains scoped to the selected LDAP provider.
                                     </p>
                                 {% else %}
-                                    <h3 class="mt-4 text-sm font-semibold text-content-primary">Search the Directory to Begin</h3>
+                                    <h3 class="mt-4 text-sm font-semibold text-content-primary">Search the directory to begin</h3>
                                     <p class="mx-auto mt-1 max-w-lg text-xs leading-5 text-content-muted">
                                         Select an enabled LDAP provider and search for the identity that should receive KAORI access.
                                     </p>
@@ -233,7 +233,7 @@
                             <i data-lucide="workflow" class="h-5 w-5"></i>
                         </span>
                         <div class="min-w-0">
-                            <h2 class="text-base font-semibold text-content-primary">How LDAP Provisioning Works</h2>
+                            <h2 class="text-base font-semibold text-content-primary">How LDAP provisioning works</h2>
                             <p class="mt-1 text-xs leading-5 text-content-muted">Use this workflow for controlled, administrator-approved directory access.</p>
                         </div>
                     
@@ -244,28 +244,28 @@
                         </span></summary>
                     <div class="grid gap-4 p-5">
                         <div class="flex items-start gap-3">
-                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-xs font-semibold text-kaori-primary">1</span>
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-xs font-bold text-kaori-primary">1</span>
                             <div>
                                 <p class="text-sm font-semibold text-content-primary">Prepare the provider</p>
                                 <p class="mt-1 text-xs leading-5 text-content-muted">Configure the server, Base DN, bind identity, secret environment reference, search filter, and TLS mode.</p>
                             </div>
                         </div>
                         <div class="flex items-start gap-3">
-                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-xs font-semibold text-kaori-primary">2</span>
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-xs font-bold text-kaori-primary">2</span>
                             <div>
                                 <p class="text-sm font-semibold text-content-primary">Find one identity</p>
                                 <p class="mt-1 text-xs leading-5 text-content-muted">Select the intended directory and search using identity metadata. KAORI reads matching directory entries only.</p>
                             </div>
                         </div>
                         <div class="flex items-start gap-3">
-                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-xs font-semibold text-kaori-primary">3</span>
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-xs font-bold text-kaori-primary">3</span>
                             <div>
                                 <p class="text-sm font-semibold text-content-primary">Assign KAORI access</p>
                                 <p class="mt-1 text-xs leading-5 text-content-muted">Choose the application role and decide whether the projected account becomes active immediately.</p>
                             </div>
                         </div>
                         <div class="flex items-start gap-3">
-                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-xs font-semibold text-kaori-primary">4</span>
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-xs font-bold text-kaori-primary">4</span>
                             <div>
                                 <p class="text-sm font-semibold text-content-primary">Provision and authenticate</p>
                                 <p class="mt-1 text-xs leading-5 text-content-muted">KAORI stores the identity link and authorization state. The user continues signing in with LDAP-managed credentials.</p>
@@ -280,7 +280,7 @@
                             <i data-lucide="shield-check" class="h-5 w-5"></i>
                         </span>
                         <div class="min-w-0">
-                            <h2 class="text-sm font-semibold text-status-info-text">Authentication Boundary</h2>
+                            <h2 class="text-sm font-semibold text-status-info-text">Authentication boundary</h2>
                             <p class="mt-1 text-xs leading-5 text-status-info-text">LDAP remains the authoritative credential source after the user is provisioned into KAORI.</p>
                         </div>
                         <span class="ml-auto flex shrink-0 items-center gap-2 pl-3 text-xs font-semibold text-status-info-text">
@@ -302,7 +302,7 @@
                             <i data-lucide="list-checks" class="h-5 w-5"></i>
                         </span>
                         <div class="min-w-0">
-                            <h2 class="text-sm font-semibold text-content-primary">Before Searching</h2>
+                            <h2 class="text-sm font-semibold text-content-primary">Before searching</h2>
                             <p class="mt-1 text-xs leading-5 text-content-muted">Confirm the directory integration is operational.</p>
                         </div>
                     

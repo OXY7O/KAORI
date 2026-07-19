@@ -7,7 +7,7 @@
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('user-cog', 'Access Administration', 'user-plus' if mode == 'create' else 'pencil-line') %}
-                        <h1 class="text-2xl font-semibold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">
+                        <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">
                             {{ 'Add User' if mode == 'create' else 'Edit User' }}
                         </h1>
                         <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">
@@ -28,9 +28,9 @@
                     {% endcall %}
                 </div>
                 <aside class="{{ page_hero.aside_classes() }}">
-                    <div class="flex h-full min-h-[12rem] flex-col justify-between rounded-xl border border-brand-outline bg-brand-surface p-4 backdrop-blur">
+                    <div class="{{ page_hero.context_panel_classes() }}">
                         <div>
-                            <p class="text-xs font-semibold uppercase tracking-widest text-brand-foreground-muted">
+                            <p class="{{ page_hero.context_panel_eyebrow_classes() }}">
                                 {{ 'Account creation paths' if mode == 'create' else 'Administrative update' }}
                             </p>
                             <p class="mt-2 text-sm font-semibold leading-6 text-brand-foreground">
@@ -72,7 +72,7 @@
                                 <i data-lucide="triangle-alert" class="h-4 w-4"></i>
                             </div>
                             <div>
-                                <h3 class="text-sm font-semibold text-status-critical-text">Validation Error</h3>
+                                <h3 class="text-sm font-semibold text-status-critical-text">Validation error</h3>
                                 <ul class="mt-2 list-disc space-y-1 pl-5 text-xs leading-5 text-status-critical-text">
                                     {% for field, errors in form.errors.items() %}
                                         {% for error in errors %}<li>{{ error }}</li>{% endfor %}
@@ -134,7 +134,7 @@
                                         <div class="min-w-0">
                                             <div class="flex flex-wrap items-center gap-2">
                                                 <h4 class="text-sm font-semibold text-kaori-strong">Local Database</h4>
-                                                <span class="inline-flex rounded-md border border-brand-outline bg-surface-card px-2 py-0.5 text-xs font-semibold text-kaori-primary">Created on this page</span>
+                                                <span class="inline-flex rounded-md border border-brand-outline bg-surface-card px-2 py-0.5 text-[11px] font-semibold text-kaori-primary">Created on this page</span>
                                             </div>
                                             <p class="mt-1.5 text-xs leading-5 text-kaori-primary">
                                                 KAORI owns this account credential. LDAP identities must use Directory Provisioning; Google and GitHub identities use an existing identity link or controlled JIT.
@@ -164,7 +164,7 @@
                                             <p class="text-xs font-semibold uppercase tracking-widest text-kaori-primary">Authoritative provider</p>
                                             <div class="mt-1 flex flex-wrap items-center gap-2">
                                                 <h4 class="text-sm font-semibold text-kaori-strong">{{ identity_context.provider_name }}</h4>
-                                                <span class="inline-flex rounded-md border border-brand-outline bg-surface-card px-2 py-0.5 text-xs font-semibold text-kaori-primary">{{ identity_context.type_label }}</span>
+                                                <span class="inline-flex rounded-md border border-brand-outline bg-surface-card px-2 py-0.5 text-[11px] font-semibold text-kaori-primary">{{ identity_context.type_label }}</span>
                                             </div>
                                             <p class="mt-1.5 text-xs leading-5 text-kaori-primary">
                                                 Identity-source ownership is read-only here. Change provider configuration from Identity Providers, not from the user profile.
@@ -192,22 +192,22 @@
                             {% if user.auth_source != 'database' %}
                                 <div class="mt-4 grid gap-3 rounded-lg border border-outline-subtle bg-surface-card p-4 sm:grid-cols-2">
                                     <div>
-                                        <p class="text-xs font-semibold uppercase tracking-widest text-content-muted">External username</p>
+                                        <p class="text-[11px] font-semibold uppercase tracking-widest text-content-muted">External username</p>
                                         <p class="mt-1 break-all text-sm font-semibold text-content-primary">{{ identity_context.external_username or user.username }}</p>
                                     </div>
                                     <div>
-                                        <p class="text-xs font-semibold uppercase tracking-widest text-content-muted">Stable external subject</p>
+                                        <p class="text-[11px] font-semibold uppercase tracking-widest text-content-muted">Stable external subject</p>
                                         <p class="mt-1 break-all font-mono text-xs font-semibold text-content-secondary" title="{{ identity_context.subject or '' }}">{{ identity_context.subject or 'Not recorded' }}</p>
                                     </div>
                                     {% if identity_context.provider_key %}
                                         <div>
-                                            <p class="text-xs font-semibold uppercase tracking-widest text-content-muted">Provider key</p>
+                                            <p class="text-[11px] font-semibold uppercase tracking-widest text-content-muted">Provider key</p>
                                             <p class="mt-1 font-mono text-xs font-semibold text-content-secondary">{{ identity_context.provider_key }}</p>
                                         </div>
                                     {% endif %}
                                     {% if identity_context.distinguished_name %}
                                         <div>
-                                            <p class="text-xs font-semibold uppercase tracking-widest text-content-muted">Directory DN</p>
+                                            <p class="text-[11px] font-semibold uppercase tracking-widest text-content-muted">Directory DN</p>
                                             <p class="mt-1 break-all font-mono text-xs leading-5 text-content-secondary" title="{{ identity_context.distinguished_name }}">{{ identity_context.distinguished_name }}</p>
                                         </div>
                                     {% endif %}
@@ -354,7 +354,7 @@
                                 <i data-lucide="waypoints" class="h-4 w-4"></i>
                             </div>
                             <div>
-                                <h2 class="text-sm font-semibold text-content-primary">Identity Creation Paths</h2>
+                                <h2 class="text-sm font-semibold text-content-primary">Identity creation paths</h2>
                                 <p class="mt-0.5 text-xs leading-5 text-content-muted">
                                     Each provider owns a different account-admission workflow.
                                 </p>
@@ -376,7 +376,7 @@
                                 <div class="min-w-0">
                                     <div class="flex flex-wrap items-center gap-2">
                                         <h3 class="text-sm font-semibold text-content-primary">Local Database</h3>
-                                        <span class="inline-flex rounded-md border border-brand-outline bg-kaori-soft px-2 py-0.5 text-xs font-semibold text-kaori-primary">Create here</span>
+                                        <span class="inline-flex rounded-md border border-brand-outline bg-kaori-soft px-2 py-0.5 text-[11px] font-semibold text-kaori-primary">Create here</span>
                                     </div>
                                     <p class="mt-1.5 text-xs leading-5 text-content-muted">
                                         KAORI stores the password hash and manages password reset. This form creates the local account directly.
@@ -393,7 +393,7 @@
                                 <div class="min-w-0">
                                     <div class="flex flex-wrap items-center gap-2">
                                         <h3 class="text-sm font-semibold text-content-primary">LDAP / Active Directory</h3>
-                                        <span class="inline-flex rounded-md border border-outline-default bg-surface-hover px-2 py-0.5 text-xs font-semibold text-content-secondary">Directory Provisioning</span>
+                                        <span class="inline-flex rounded-md border border-outline-default bg-surface-hover px-2 py-0.5 text-[11px] font-semibold text-content-secondary">Directory Provisioning</span>
                                     </div>
                                     <p class="mt-1.5 text-xs leading-5 text-content-muted">
                                         Search the configured directory, select the authoritative identity, assign a KAORI role, then provision it. LDAP keeps password ownership.
@@ -410,7 +410,7 @@
                                 <div class="min-w-0">
                                     <div class="flex flex-wrap items-center gap-2">
                                         <h3 class="text-sm font-semibold text-content-primary">Google OpenID Connect</h3>
-                                        <span class="inline-flex rounded-md border border-outline-default bg-surface-hover px-2 py-0.5 text-xs font-semibold text-content-secondary">SSO admission</span>
+                                        <span class="inline-flex rounded-md border border-outline-default bg-surface-hover px-2 py-0.5 text-[11px] font-semibold text-content-secondary">SSO admission</span>
                                     </div>
                                     <p class="mt-1.5 text-xs leading-5 text-content-muted">
                                         Google authenticates the user. KAORI accepts an existing identity link or creates an admitted user through controlled domain-restricted JIT.
@@ -427,7 +427,7 @@
                                 <div class="min-w-0">
                                     <div class="flex flex-wrap items-center gap-2">
                                         <h3 class="text-sm font-semibold text-content-primary">GitHub OAuth</h3>
-                                        <span class="inline-flex rounded-md border border-outline-default bg-surface-hover px-2 py-0.5 text-xs font-semibold text-content-secondary">SSO admission</span>
+                                        <span class="inline-flex rounded-md border border-outline-default bg-surface-hover px-2 py-0.5 text-[11px] font-semibold text-content-secondary">SSO admission</span>
                                     </div>
                                     <p class="mt-1.5 text-xs leading-5 text-content-muted">
                                         GitHub authenticates the user. Controlled JIT requires an allowed login or immutable numeric GitHub user ID.
@@ -458,7 +458,7 @@
                                 <i data-lucide="shield-check" class="h-4 w-4"></i>
                             </div>
                             <div>
-                                <h2 class="text-sm font-semibold text-content-primary">Administrative Boundary</h2>
+                                <h2 class="text-sm font-semibold text-content-primary">Administrative boundary</h2>
                                 <p class="mt-0.5 text-xs leading-5 text-content-muted">
                                     Authentication source and authorization remain separate controls.
                                 </p>
@@ -495,7 +495,7 @@
                                 <i data-lucide="{{ identity_context.icon }}" class="h-4 w-4"></i>
                             </div>
                             <div>
-                                <h2 class="text-sm font-semibold text-content-primary">Current Identity Source</h2>
+                                <h2 class="text-sm font-semibold text-content-primary">Current identity source</h2>
                                 <p class="mt-0.5 text-xs leading-5 text-content-muted">Provider ownership and account-admission context for this user.</p>
                             </div>
                         </div>
@@ -510,7 +510,7 @@
                                 <div class="min-w-0">
                                     <div class="flex flex-wrap items-center gap-2">
                                         <h3 class="text-sm font-semibold text-kaori-strong">{{ identity_context.provider_name }}</h3>
-                                        <span class="inline-flex rounded-md border {{ 'border-status-normal-border bg-status-normal-soft text-status-normal-text' if identity_context.provider_enabled else 'border-status-warning-border bg-status-warning-soft text-status-warning-text' }} px-2 py-0.5 text-xs font-semibold">{{ 'Provider ready' if identity_context.provider_enabled else 'Provider disabled' }}</span>
+                                        <span class="inline-flex rounded-md border {{ 'border-status-normal-border bg-status-normal-soft text-status-normal-text' if identity_context.provider_enabled else 'border-status-warning-border bg-status-warning-soft text-status-warning-text' }} px-2 py-0.5 text-[11px] font-semibold">{{ 'Provider ready' if identity_context.provider_enabled else 'Provider disabled' }}</span>
                                     </div>
                                     <p class="mt-1.5 text-xs leading-5 text-kaori-primary">{{ identity_context.credential_detail }}</p>
                                 </div>
@@ -568,7 +568,7 @@
                                 <i data-lucide="sliders-horizontal" class="h-4 w-4"></i>
                             </div>
                             <div>
-                                <h2 class="text-sm font-semibold text-content-primary">Editable Administrative Controls</h2>
+                                <h2 class="text-sm font-semibold text-content-primary">Editable administrative controls</h2>
                                 <p class="mt-0.5 text-xs leading-5 text-content-muted">Changes remain local to KAORI and are written to Activity Audit Log.</p>
                             </div>
                         </div>
@@ -600,7 +600,7 @@
                                 <i data-lucide="user-round-cog" class="h-4 w-4"></i>
                             </div>
                             <div>
-                                <h2 class="text-sm font-semibold text-status-warning-text">Editing Your Own Profile</h2>
+                                <h2 class="text-sm font-semibold text-status-warning-text">Editing your own profile</h2>
                                 <p class="mt-1 text-xs leading-5 text-status-warning-text">Profile metadata may be updated, but your own role, active state, and Super Admin flag cannot be changed from User Management.</p>
                             </div>
                         </div>

@@ -7,17 +7,17 @@
                 <p class="mt-2 {{ page_hero.description_classes() }}">{{ description }}</p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
                     {{ page_hero.meta_label('package-search', '3 available providers') }}
-                    {{ page_hero.meta_label('plug-zap', stats.configured ~ ' configured targets') }}
-                    {{ page_hero.meta_label('scan-search', 'Automatic discovery') }}
+                    {{ page_hero.meta_label('plug-zap', stats.configured ~ ' Configured Targets') }}
+                    {{ page_hero.meta_label('scan-search', 'Automatic Discovery') }}
                 </div>
             {% endcall %}
         </div>
 
         <aside class="{{ page_hero.aside_classes() }}" aria-label="Integration overview actions">
-            <div class="flex h-full min-h-[12rem] flex-col justify-between rounded-xl border border-brand-outline bg-brand-surface-strong p-4 backdrop-blur-md">
+            <div class="{{ page_hero.context_panel_classes() }}">
                 <div>
-                    <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Integration workspace</p>
-                    <h2 class="mt-1 text-base font-semibold text-brand-foreground">Manage the Provider Ecosystem</h2>
+                    <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Integration workspace</p>
+                    <h2 class="{{ page_hero.context_panel_title_classes() }}">Manage the provider ecosystem</h2>
                     <p class="mt-2 text-xs leading-5 text-brand-foreground-muted">Choose a supported provider, register its connection, and review operational readiness from one landing page.</p>
                 </div>
                 <div class="mt-4 {{ page_hero.action_group_classes() }} xl:flex-col xl:items-stretch">

@@ -15,24 +15,24 @@
             <div class="relative grid gap-5 xl:grid-cols-12 xl:items-stretch">
                 <div class="flex min-w-0 flex-col justify-center xl:col-span-7">
                     {% call page_hero.intro('key-round', 'Kubernetes TLS Secret', 'shield-check') %}
-                        <h1 class="break-words text-2xl font-semibold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">{{ record.secret_name }}</h1>
+                        <h1 class="break-words text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">{{ record.secret_name }}</h1>
                         <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">Certificate metadata, expiry posture, SAN coverage, Ingress usage, and controlled update context.</p>
                         <div class="mt-5 flex flex-wrap gap-2">
                             {{ page_hero.meta_label('building-2', record.cluster.name if record.cluster else record.cluster_id) }}
-                            {{ page_hero.meta_label('folder-tree', record.namespace ~ ' namespace') }}
-                            {{ page_hero.meta_label('globe-2', ((record.dns_names or [])|length) ~ ' SAN entries') }}
+                            {{ page_hero.meta_label('folder-tree', record.namespace ~ ' Namespace') }}
+                            {{ page_hero.meta_label('globe-2', ((record.dns_names or [])|length) ~ ' SAN Entries') }}
                         </div>
                     {% endcall %}
                 </div>
                 <aside class="xl:col-span-5" aria-label="Certificate posture">
                     <div class="flex h-full min-h-[13rem] flex-col rounded-xl border border-brand-outline bg-brand-surface-strong p-4">
                         <div class="flex items-start justify-between gap-4">
-                            <div><p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Certificate posture</p><h2 class="mt-1 text-base font-semibold text-brand-foreground">Validity and Identity</h2></div>
+                            <div><p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Certificate posture</p><h2 class="mt-1 text-base font-semibold text-brand-foreground">Validity and identity</h2></div>
                             {{ table_label.status_label(hero_status_label, hero_status_tone, 'shield-check' if hero_status_tone == 'normal' else 'triangle-alert') }}
                         </div>
                         <div class="mt-3 grid grid-cols-2 gap-2">
-                            <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5"><div class="flex items-center gap-2 text-brand-foreground"><i data-lucide="calendar-clock" class="h-3.5 w-3.5"></i><p class="text-xs font-semibold">Days remaining</p></div><p class="mt-1.5 text-sm font-semibold text-brand-foreground">{{ record.days_remaining if record.days_remaining is not none else 'N/A' }}</p><p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">{{ record.not_after|user_date('Expiry unavailable') }}</p></div>
-                            <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5"><div class="flex items-center gap-2 text-brand-foreground"><i data-lucide="globe-2" class="h-3.5 w-3.5"></i><p class="text-xs font-semibold">SAN coverage</p></div><p class="mt-1.5 text-sm font-semibold text-brand-foreground">{{ (record.dns_names or [])|length }} names</p><p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">{{ (record.used_by or [])|length }} Ingress references</p></div>
+                            <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5"><div class="flex items-center gap-2 text-brand-foreground"><i data-lucide="calendar-clock" class="h-3.5 w-3.5"></i><p class="text-[11px] font-semibold">Days remaining</p></div><p class="mt-1.5 text-sm font-semibold text-brand-foreground">{{ record.days_remaining if record.days_remaining is not none else 'N/A' }}</p><p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">{{ record.not_after|user_date('Expiry unavailable') }}</p></div>
+                            <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5"><div class="flex items-center gap-2 text-brand-foreground"><i data-lucide="globe-2" class="h-3.5 w-3.5"></i><p class="text-[11px] font-semibold">SAN coverage</p></div><p class="mt-1.5 text-sm font-semibold text-brand-foreground">{{ (record.dns_names or [])|length }} names</p><p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">{{ (record.used_by or [])|length }} Ingress references</p></div>
                         </div>
                         <div class="mt-3 grid grid-cols-2 gap-2">
                             <a href="{{ url_for('governance.tls_certificates') }}" class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-brand-outline bg-surface-card px-3 text-xs font-semibold text-kaori-primary transition hover:bg-kaori-soft"><i data-lucide="arrow-left" class="h-4 w-4"></i>Back</a>
@@ -50,7 +50,7 @@
                     </div>
                     <div>
                         <p class="text-xs font-medium text-content-muted">Common Name</p>
-                        <p class="mt-1 max-w-[14rem] truncate text-sm font-semibold text-content-primary">{{ record.common_name or 'N/A' }}</p>
+                        <p class="mt-1 max-w-[14rem] truncate text-sm font-bold text-content-primary">{{ record.common_name or 'N/A' }}</p>
                     </div>
                 </div>
             </div>
@@ -61,7 +61,7 @@
                     </div>
                     <div>
                         <p class="text-xs font-medium text-content-muted">Valid from</p>
-                        <p class="mt-1 text-sm font-semibold text-content-primary">{{ record.not_before|user_date('N/A') }}</p>
+                        <p class="mt-1 text-sm font-bold text-content-primary">{{ record.not_before|user_date('N/A') }}</p>
                     </div>
                 </div>
             </div>
@@ -72,7 +72,7 @@
                     </div>
                     <div>
                         <p class="text-xs font-medium text-content-muted">Ingress references</p>
-                        <p class="mt-1 text-sm font-semibold text-content-primary">{{ (record.used_by or [])|length }} consumers</p>
+                        <p class="mt-1 text-sm font-bold text-content-primary">{{ (record.used_by or [])|length }} consumers</p>
                     </div>
                 </div>
             </div>
@@ -83,7 +83,7 @@
                     </div>
                     <div class="min-w-0">
                         <p class="text-xs font-medium text-content-muted">SHA-256 fingerprint</p>
-                        <p class="mt-1 max-w-[14rem] truncate font-mono text-xs font-semibold text-content-primary">{{ record.fingerprint_sha256 or 'N/A' }}</p>
+                        <p class="mt-1 max-w-[14rem] truncate font-mono text-xs font-bold text-content-primary">{{ record.fingerprint_sha256 or 'N/A' }}</p>
                     </div>
                 </div>
             </div>
@@ -129,7 +129,7 @@
                                     </div>
                                     <div class="grid grid-cols-[5.5rem_minmax(0,1fr)] items-start gap-3 text-xs leading-5">
                                         <span class="text-content-muted">SHA-256</span>
-                                        <span class="min-w-0 break-all text-right font-mono text-xs text-content-primary">{{ record.fingerprint_sha256 or 'N/A' }}</span>
+                                        <span class="min-w-0 break-all text-right font-mono text-[11px] text-content-primary">{{ record.fingerprint_sha256 or 'N/A' }}</span>
                                     </div>
                                 {% endcall %}
                             </div>
@@ -244,7 +244,7 @@
                             <div class="flex items-end justify-between gap-4">
                                 <div>
                                     <p class="text-xs text-brand-foreground-muted">Remaining validity</p>
-                                    <p class="mt-1 text-3xl font-semibold">{{ record.days_remaining if record.days_remaining is not none else 'N/A' }}
+                                    <p class="mt-1 text-3xl font-bold">{{ record.days_remaining if record.days_remaining is not none else 'N/A' }}
                                         {% if record.days_remaining is not none %}<span class="ml-1 text-base font-medium">days</span>{% endif %}
                                     </p>
                                 </div>
@@ -285,12 +285,12 @@
                             <i data-lucide="rotate-cw" class="h-5 w-5"></i>
                         </div>
                         <div>
-                            <h2 class="text-base font-semibold text-content-primary">Rotate TLS Secret</h2>
+                            <h2 class="text-base font-bold text-content-primary">Rotate TLS Secret</h2>
                             <p class="mt-1 text-sm leading-6 text-content-muted">Governance identifies certificate posture. The controlled replacement workflow is performed under Kubernetes Operations.</p>
                         </div>
                     </div>
                     <a href="{{ url_for('kubernetes_operations.tls_secret_rotate', certificate_id=record.id) }}"
-                       class="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-kaori-primary-hover">
+                       class="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-kaori-primary-hover">
                         <i data-lucide="key-round" class="h-4 w-4"></i>
                         Open TLS rotation workflow
                     </a>

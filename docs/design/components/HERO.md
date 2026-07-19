@@ -294,3 +294,14 @@ Do not copy their utility strings into page templates.
 
 
 Primary hero actions use a white surface with KAORI Violet text and a natural soft-violet hover state.
+
+## Full-Application Audit Guardrail
+
+The July 2026 full audit requires every Hero right-side panel rendered through
+`page_hero.aside_classes()` to use `page_hero.context_panel_classes()` for its
+outer panel geometry. Page-specific content may vary, but local copies of the
+panel surface, border, minimum height, and padding are not allowed.
+
+Human-readable metadata fragments use Title Case. Technical identifiers retain
+their canonical casing and must not be passed through a mechanical whole-string
+Title Case transformation.
