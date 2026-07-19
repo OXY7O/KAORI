@@ -8,7 +8,9 @@ from app.alertmanager.runtime_adapter import runtime_adapter as alertmanager_run
 from app.extensions import db
 from app.models.alertmanager import AlertmanagerInstance
 from app.models.prometheus import PrometheusInstance
+from app.models.integration import KubernetesConnection
 from app.prometheus.runtime_adapter import runtime_adapter as prometheus_runtime_adapter
+from app.integrations.runtime.kubernetes_adapter import runtime_adapter as kubernetes_runtime_adapter
 
 from .monitoring import refresh_and_record
 
@@ -19,6 +21,7 @@ logger = logging.getLogger(__name__)
 def refresh_integration_runtime(self) -> dict[str, object]:
     results: dict[str, object] = {'refreshed': 0, 'failed': 0, 'providers': {}}
     providers = (
+        ('kubernetes', kubernetes_runtime_adapter, KubernetesConnection.query.order_by(KubernetesConnection.id.asc()).all()),
         ('alertmanager', alertmanager_runtime_adapter, AlertmanagerInstance.query.filter_by(enabled=True).order_by(AlertmanagerInstance.id.asc()).all()),
         ('prometheus', prometheus_runtime_adapter, PrometheusInstance.query.filter_by(enabled=True).order_by(PrometheusInstance.id.asc()).all()),
     )

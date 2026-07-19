@@ -68,21 +68,10 @@
             </div>
         {% endif %}
 
-        {% if can_clusters or can_inventory or can_operations or can_governance %}
+        {% if can_inventory or can_operations or can_governance %}
             <div class="sidebar-nav-section">
                 <div class="sidebar-expanded-only mb-1.5 px-3 text-[9px] font-extrabold uppercase tracking-[0.18em] text-white/40">Kubernetes</div>
                 <div class="space-y-1">
-                    {% if can_clusters %}
-                        <a href="{{ url_for('cluster.list_clusters') }}"
-                           title="K8s Cluster"
-                           aria-label="K8s Cluster"
-                           class="{{ 'bg-kaori-primary text-white shadow-lg shadow-kaori-primary/20 ring-1 ring-white/10' if request.endpoint and request.endpoint.startswith('cluster.') else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} sidebar-parent-link group flex min-h-11 items-center gap-2.5 rounded-lg px-2.5 py-2 text-[12px] font-semibold transition [.sidebar-collapsed_&]:justify-center [.sidebar-collapsed_&]:px-2">
-                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ 'bg-white/15 text-white' if request.endpoint and request.endpoint.startswith('cluster.') else 'bg-white/5 text-brand-foreground-muted group-hover:bg-white/10 group-hover:text-white' }} transition">
-                                <i data-lucide="server" class="h-4 w-4"></i>
-                            </span>
-                            <span class="sidebar-expanded-only truncate whitespace-nowrap">K8s Cluster</span>
-                        </a>
-                    {% endif %}
                     {% if can_inventory %}{% include "components/navigation/inventory_menu.html" %}{% endif %}
                     {% if can_operations %}{% include "components/navigation/kubernetes_operations_menu.html" %}{% endif %}
                     {% if can_governance %}{% include "components/navigation/governance_menu.html" %}{% endif %}

@@ -1,0 +1,8 @@
+{% from "integrations/partials/_status_badge.html" import status_badge %}
+<section id="kubernetes-runtime-history" class="overflow-hidden rounded-2xl border border-border-soft bg-surface-card">
+  <div class="border-b border-border-soft px-5 py-4"><h2 class="font-semibold text-content-primary">Runtime history</h2><p class="mt-1 text-sm text-content-muted">Latest validation and scheduled runtime observations.</p></div>
+  <div class="divide-y divide-border-soft">
+  {% set rows = history.rows if history is defined else runtime_history %}
+  {% for row in rows %}<div class="grid gap-3 px-5 py-4 md:grid-cols-[1fr_auto_auto]"><div><p class="font-medium text-content-primary">{{ row.observed_at_display if row.observed_at_display is defined else row.observed_at }}</p><p class="mt-1 text-sm text-content-secondary">{{ row.message or 'Runtime observation recorded.' }}</p></div><div class="text-sm text-content-secondary">{{ row.health_score_display if row.health_score_display is defined else row.health_score ~ '/100' }}</div><div>{{ status_badge(row.health_status) if status_badge is defined else row.health_status }}</div></div>{% else %}<div class="px-5 py-10 text-center text-content-muted">No runtime observations recorded yet.</div>{% endfor %}
+  </div>
+</section>

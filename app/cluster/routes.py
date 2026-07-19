@@ -102,10 +102,8 @@ def _render_operational_toast(
 @cluster_bp.route('/')
 @permission_required('clusters.view')
 def list_clusters() -> ResponseReturnValue:
-    return render_template(
-        'cluster/index.html',
-        **_build_cluster_context_from_request(),
-    )
+    # Compatibility route: Kubernetes lifecycle now lives under Integrations.
+    return redirect(url_for('integrations.kubernetes', **request.args))
 
 
 @cluster_bp.route('/table')
@@ -148,7 +146,7 @@ def _render_sync_snapshot(
             title=snapshot.get('title') or 'Kubernetes sync finished',
             message=snapshot.get('message') or 'The background synchronization task has finished.',
             detail=snapshot.get('detail'),
-            view_url=url_for('cluster.list_clusters'),
+            view_url=url_for('integrations.kubernetes'),
             total_count=snapshot.get('total_count', 0),
             synced_count=snapshot.get('synced_count', 0),
             failed_count=snapshot.get('failed_count', 0),
@@ -174,7 +172,7 @@ def _render_enqueue_error(
             title='Kubernetes sync could not start',
             message=message,
             detail=detail,
-            view_url=url_for('cluster.list_clusters'),
+            view_url=url_for('integrations.kubernetes'),
             total_count=None,
             synced_count=0,
             failed_count=0,
@@ -196,7 +194,7 @@ def _render_enqueue_error(
 def sync_all_clusters() -> ResponseReturnValue:
     started_at = perf_counter()
     is_htmx = request.headers.get('HX-Request') == 'true'
-    view_url = url_for('cluster.list_clusters')
+    view_url = url_for('integrations.kubernetes')
     total_count = Cluster.query.count()
 
     if total_count == 0:
@@ -458,7 +456,7 @@ def individual_sync_status(task_id: str) -> ResponseReturnValue:
         title=snapshot['title'],
         message=snapshot['message'],
         detail=snapshot.get('detail'),
-        view_url=url_for('cluster.list_clusters'),
+        view_url=url_for('integrations.kubernetes'),
         action_label='View clusters',
         action_icon='server',
         total_count=None,
@@ -488,7 +486,7 @@ def dismiss_sync_all_status(task_id: str) -> ResponseReturnValue:
     try:
         snapshot = build_cluster_sync_snapshot(task_id)
         if snapshot['is_active']:
-            return ('', 409) if is_htmx else redirect(url_for('cluster.list_clusters'))
+            return ('', 409) if is_htmx else redirect(url_for('integrations.kubernetes'))
 
         dismiss_cluster_sync_result(
             task_id=task_id,
@@ -510,7 +508,7 @@ def dismiss_sync_all_status(task_id: str) -> ResponseReturnValue:
     if is_htmx:
         return ''
 
-    return redirect(request.referrer or url_for('cluster.list_clusters'))
+    return redirect(request.referrer or url_for('integrations.kubernetes'))
 
 
 @cluster_bp.route('/sync-all/status/<string:task_id>')
@@ -625,7 +623,7 @@ def add_cluster() -> ResponseReturnValue:
                 title='Cluster added',
                 message=f'{cluster.name} is now registered in KAORI.',
                 detail='The cluster is ready for connection testing, inventory synchronization, and observability integration setup.',
-                action_url=url_for('cluster.list_clusters'),
+                action_url=url_for('integrations.kubernetes'),
                 action_label='View clusters',
                 action_icon='server',
                 metadata={
@@ -639,7 +637,7 @@ def add_cluster() -> ResponseReturnValue:
 
             return redirect(
                 url_for(
-                    'cluster.list_clusters',
+                    'integrations.kubernetes',
                 )
             )
 
@@ -750,7 +748,7 @@ def test_cluster(cluster_id: str) -> ResponseReturnValue:
             title='Cluster connection verified',
             message=f'KAORI connected to {cluster.name} successfully.',
             detail=f'Kubernetes API access is available and {result.get("node_count", 0)} node(s) were reported.',
-            action_url=url_for('cluster.list_clusters'),
+            action_url=url_for('integrations.kubernetes'),
             action_label='View clusters',
             action_icon='server',
             metadata={
@@ -791,7 +789,7 @@ def test_cluster(cluster_id: str) -> ResponseReturnValue:
         return f'{table_html}{_render_operational_toast(feedback, toast_oob=True)}'
 
     queue_quick_action_feedback(feedback)
-    return redirect(request.referrer or url_for('cluster.list_clusters'))
+    return redirect(request.referrer or url_for('integrations.kubernetes'))
 
 
 @cluster_bp.route(
@@ -840,7 +838,7 @@ def edit_cluster(cluster_id: str) -> ResponseReturnValue:
                 title='Cluster updated',
                 message=f'{cluster.name} configuration was updated successfully.',
                 detail='Cluster identity and Kubernetes API TLS settings now use the saved values. Protected Secret Reveal policy is managed separately under Settings.',
-                action_url=url_for('cluster.list_clusters'),
+                action_url=url_for('integrations.kubernetes'),
                 action_label='View clusters',
                 action_icon='server',
                 metadata={
@@ -857,7 +855,7 @@ def edit_cluster(cluster_id: str) -> ResponseReturnValue:
 
             return redirect(
                 url_for(
-                    'cluster.list_clusters',
+                    'integrations.kubernetes',
                 )
             )
 
@@ -964,7 +962,7 @@ def delete_cluster_route(cluster_id: str) -> ResponseReturnValue:
             title='Cluster deletion failed',
             message=f'{cluster_name} could not be deleted.',
             detail='The database rejected the delete operation. Review dependent records and application logs before retrying.',
-            action_url=url_for('cluster.list_clusters'),
+            action_url=url_for('integrations.kubernetes'),
             action_label='View clusters',
             action_icon='server',
             metadata={
@@ -982,7 +980,7 @@ def delete_cluster_route(cluster_id: str) -> ResponseReturnValue:
             title='Cluster deleted',
             message=f'{cluster_name} was removed from KAORI.',
             detail='Stored cluster registration, inventory, and associated observability configuration were removed according to database relationships.',
-            action_url=url_for('cluster.list_clusters'),
+            action_url=url_for('integrations.kubernetes'),
             action_label='View clusters',
             action_icon='server',
             metadata={
@@ -996,6 +994,6 @@ def delete_cluster_route(cluster_id: str) -> ResponseReturnValue:
 
     return redirect(
         url_for(
-            'cluster.list_clusters',
+            'integrations.kubernetes',
         )
     )

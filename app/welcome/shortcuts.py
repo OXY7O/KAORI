@@ -101,7 +101,7 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         'icon': 'server-cog',
         'scope': 'Compute',
         'group': 'operations',
-        'targets': (('clusters.view', 'cluster.list_clusters'),),
+        'targets': (('clusters.view', 'integrations.kubernetes'),),
     },
     {
         'title': 'Kubernetes Operations',

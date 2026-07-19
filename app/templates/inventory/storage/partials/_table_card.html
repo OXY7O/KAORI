@@ -5,7 +5,7 @@
                 <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="hard-drive" class="h-5 w-5"></i></span>
                 <div><h2 class="text-lg font-semibold text-content-primary">Storage Inventory</h2><p class="mt-1 text-sm leading-6 text-content-muted">StorageClass, PersistentVolume, and PersistentVolumeClaim metadata and bindings.</p></div>
             </div>
-            <a href="{{ url_for('cluster.list_clusters') }}" class="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary"><i data-lucide="external-link" class="h-4 w-4"></i>Open Cluster List</a>
+            <a href="{{ url_for('integrations.kubernetes') }}" class="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary"><i data-lucide="external-link" class="h-4 w-4"></i>Open Cluster List</a>
         </div>
         <div id="storage-table-loading" class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-kaori-soft"><div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div></div>
     </header>

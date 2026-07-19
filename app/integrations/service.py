@@ -51,14 +51,15 @@ def build_integrations_overview(
     rows = build_rows()
     prometheus_rows = [row for row in rows if row['key'] == 'prometheus']
     alertmanager_instances = AlertmanagerInstance.query.all()
-    total = len(prometheus_rows) + len(alertmanager_instances)
-    configured = sum(1 for row in prometheus_rows if row['configured']) + sum(
+    kubernetes_connections = KubernetesConnection.query.all()
+    total = len(kubernetes_connections) + len(prometheus_rows) + len(alertmanager_instances)
+    configured = len(kubernetes_connections) + sum(1 for row in prometheus_rows if row['configured']) + sum(
         1 for instance in alertmanager_instances if instance.endpoint
     )
-    ready = sum(1 for row in prometheus_rows if row['readiness'] == 'ready') + sum(
+    ready = sum(1 for connection in kubernetes_connections if connection.readiness_status == 'ready') + sum(1 for row in prometheus_rows if row['readiness'] == 'ready') + sum(
         1 for instance in alertmanager_instances if instance.readiness_status == 'ready'
     )
-    blocked = sum(1 for row in prometheus_rows if row['readiness'] == 'blocked') + sum(
+    blocked = sum(1 for connection in kubernetes_connections if connection.readiness_status == 'blocked') + sum(1 for row in prometheus_rows if row['readiness'] == 'blocked') + sum(
         1 for instance in alertmanager_instances if instance.readiness_status == 'blocked'
     )
     stats = {
@@ -152,6 +153,51 @@ def build_kubernetes_page(*, page: int = 1, per_page: int = 5) -> dict[str, Any]
             'attention': sum(1 for row in rows if row['readiness'] != 'ready'),
             'bindings': sum(row['binding_count'] for row in rows),
         },
+    }
+
+
+def build_kubernetes_detail(cluster_id: str) -> dict[str, Any] | None:
+    from app.integrations.runtime.kubernetes_adapter import runtime_adapter
+    from app.integrations.runtime.presentation import runtime_state_view
+    from app.integrations.runtime.repository import list_runtime_history
+
+    connection = (
+        KubernetesConnection.query
+        .filter_by(cluster_id=cluster_id)
+        .first()
+    )
+    if connection is None:
+        return None
+    cluster = connection.cluster
+    discovery = connection.discovery_summary or cluster.kubernetes_api_discovery_summary or {}
+    features = discovery.get('features') or {}
+    feature_rows = []
+    for key, value in sorted(features.items()):
+        selected = value.get('selected_api') or {}
+        feature_rows.append({
+            'key': key,
+            'status': value.get('status') or 'unknown',
+            'api_version': (
+                f"{selected.get('group')}/{selected.get('version')}"
+                if selected.get('group')
+                else selected.get('version')
+            ) or 'Not selected',
+            'resource': selected.get('resource') or '-',
+            'stability': selected.get('stability') or '-',
+            'message': value.get('message') or '',
+        })
+    state = runtime_adapter.get_state(connection)
+    return {
+        'connection': connection,
+        'cluster': cluster,
+        'canonical': connection.integration_instance,
+        'runtime_state': runtime_state_view(state),
+        'runtime_history': list_runtime_history('kubernetes', str(connection.id), limit=5),
+        'feature_rows': feature_rows,
+        'blocked_features': discovery.get('blocked_features') or [],
+        'legacy_features': discovery.get('legacy_features') or [],
+        'selected_adapters': discovery.get('selected_adapters') or {},
+        'capability_scope': next((binding.capability_scope or [] for binding in connection.integration_instance.bindings if binding.asset_type == 'kubernetes_cluster' and binding.asset_key == cluster.id), []),
     }
 
 def build_prometheus_page(

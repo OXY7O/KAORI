@@ -3,7 +3,7 @@ from flask import Flask
 from app.commands.admin import bootstrap_admin, reset_admin_password
 from app.commands.rbac import seed_rbac
 from app.commands.reports import run_report_schedules
-from app.commands.integrations import audit_integration_legacy, factory_reset_integrations, reconcile_integration_legacy
+from app.commands.integrations import refresh_integration_runtime_command
 from app.commands.retention import archive_retention
 
 
@@ -13,6 +13,4 @@ def register_commands(app: Flask) -> None:
     app.cli.add_command(seed_rbac)
     app.cli.add_command(run_report_schedules)
     app.cli.add_command(archive_retention)
-    app.cli.add_command(audit_integration_legacy)
-    app.cli.add_command(reconcile_integration_legacy)
-    app.cli.add_command(factory_reset_integrations)
+    app.cli.add_command(refresh_integration_runtime_command)
