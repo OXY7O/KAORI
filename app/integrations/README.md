@@ -123,11 +123,17 @@ the requested operation.
 
 ## Runtime persistence and monitoring
 
-Every manual or scheduled runtime refresh must persist one immutable
+Every manual or scheduled runtime refresh must append one
 `IntegrationRuntimeObservation`. The shared record stores provider identity,
 readiness, health score, diagnostics, compatibility, and the capability
 snapshot observed during that run. Provider configuration remains in the
 provider-owned model; historical runtime evidence remains in the shared model.
+
+Runtime persistence uses rolling per-instance retention. The shared repository
+keeps the latest **100 observations for each provider and provider-native instance
+ID** and deletes older rows in the same transaction as the new observation. This
+also prunes legacy rows that do not yet carry a canonical integration-instance
+foreign key.
 
 Celery Beat invokes `app.integrations.runtime.tasks.refresh_integration_runtime`
 using the same provider adapter and orchestration path as HTMX manual refresh.
@@ -138,7 +144,9 @@ The default interval is five minutes and can be controlled with
 
 Provider detail pages may render shared runtime history through the provider-neutral
 history repository and presentation mapper. The standard view defaults to 5 rows
-with 5, 10, 25, and 50 options and uses HTMX for pagination and refresh.
+with 5, 10, 25, and 50 options and uses HTMX for pagination and refresh. Pagination
+must keep the result summary and page-size selector together on the left, with page
+navigation grouped on the right.
 
 Each observation may expose:
 
@@ -149,12 +157,12 @@ Each observation may expose:
 - capability additions or removals compared with the immediately older snapshot.
 
 The history UI must not calculate provider health or capability support. It only
-presents immutable runtime evidence already produced by the adapter and shared
-runtime framework.
+presents retained append-only runtime evidence already produced by the adapter and
+shared runtime framework.
 
 ## Shared runtime overview
 
-The Integrations Overview includes a shared runtime table for every provider that implements the Integration Runtime contract. The table uses the latest immutable observation for health and score, while provider configuration remains authoritative for readiness and capability remediation. Prometheus/Thanos and Alertmanager are the first providers included.
+The Integrations Overview includes a shared runtime table for every provider that implements the Integration Runtime contract. The table uses the latest retained observation for health and score, while provider configuration remains authoritative for readiness and capability remediation. Prometheus/Thanos and Alertmanager are the first providers included.
 
 The overview is intentionally diagnostic rather than a second configuration surface. It supports provider, health, and readiness filters; defaults to 5 rows with 5/10/25/50 choices; and links to the provider detail page where configuration and remediation are performed.
 

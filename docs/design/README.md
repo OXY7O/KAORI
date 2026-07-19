@@ -26,3 +26,5 @@ Use this test before adding documentation:
 - Applies to one reusable component → component standard.
 - Applies to several modules with the same structure → page pattern.
 - Mentions a provider, object type, route, column, metric, or domain action → module specification.
+
+- [`components/PAGINATION.md`](components/PAGINATION.md)

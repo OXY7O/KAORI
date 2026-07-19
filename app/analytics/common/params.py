@@ -108,7 +108,7 @@ def get_positive_int_arg(
 def get_per_page_arg(
     query_args: Mapping[str, Any],
     name: str,
-    default: int = 10,
+    default: int = 5,
 ) -> int:
     value = get_positive_int_arg(
         query_args=query_args,

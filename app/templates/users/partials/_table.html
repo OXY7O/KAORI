@@ -204,7 +204,7 @@
             <input type="hidden" name="status" value="{{ filters.status }}">
             <input type="hidden" name="auth_source" value="{{ filters.auth_source }}">
             <input type="hidden" name="role_id" value="{{ filters.role_id or 'all' }}">
-            <span class="font-medium">Viewing {{ pagination.start_item }} - {{ pagination.end_item }} of {{ pagination.total_items }} matching user accounts</span>
+            <span class="font-medium">Showing {{ pagination.start_item }}–{{ pagination.end_item }} of {{ pagination.total_items }} {{ 'user' if pagination.total_items == 1 else 'users' }}</span>
             <select name="per_page"
                     aria-label="Rows per page"
                     class="h-9 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-secondary transition focus:border-outline-focus focus:outline-none focus:ring-2 focus:ring-outline-focus/20 text-content-primary">

@@ -387,7 +387,7 @@ class AnalyticsBaseService:
         page: int,
         per_page: int,
         allowed_per_page: list[int],
-        default_per_page: int = 10,
+        default_per_page: int = 5,
     ) -> dict[str, Any]:
         if per_page not in allowed_per_page:
             per_page = default_per_page

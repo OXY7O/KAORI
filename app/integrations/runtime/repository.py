@@ -7,8 +7,15 @@ from app.models.integration_runtime import IntegrationRuntimeObservation
 
 from .contracts import RuntimeState
 
+MAX_RUNTIME_OBSERVATIONS_PER_INSTANCE = 100
 
-def persist_runtime_state(state: RuntimeState, *, trigger_type: str, integration_instance_id: int | None = None) -> IntegrationRuntimeObservation:
+
+def persist_runtime_state(
+    state: RuntimeState,
+    *,
+    trigger_type: str,
+    integration_instance_id: int | None = None,
+) -> IntegrationRuntimeObservation:
     row = IntegrationRuntimeObservation(
         integration_instance_id=integration_instance_id,
         provider=state.provider,
@@ -42,8 +49,58 @@ def persist_runtime_state(state: RuntimeState, *, trigger_type: str, integration
         observed_at=state.observed_at,
     )
     db.session.add(row)
+    db.session.flush()
+    prune_runtime_history(
+        state.provider,
+        state.instance_id,
+        keep=MAX_RUNTIME_OBSERVATIONS_PER_INSTANCE,
+    )
     db.session.commit()
     return row
+
+
+def prune_runtime_history(
+    provider: str,
+    instance_id: str,
+    *,
+    keep: int = MAX_RUNTIME_OBSERVATIONS_PER_INSTANCE,
+) -> int:
+    """Delete runtime observations beyond the rolling per-instance retention limit.
+
+    Retention is scoped by provider and provider-native instance ID so legacy rows
+    without a canonical integration_instance_id are pruned consistently as well.
+    The caller owns the transaction; persist_runtime_state commits the insert and
+    pruning operation together.
+    """
+    keep = max(int(keep), 1)
+    stale_ids = [
+        row_id
+        for (row_id,) in (
+            IntegrationRuntimeObservation.query.with_entities(
+                IntegrationRuntimeObservation.id,
+            )
+            .filter(
+                IntegrationRuntimeObservation.provider == provider,
+                IntegrationRuntimeObservation.instance_id == str(instance_id),
+            )
+            .order_by(
+                IntegrationRuntimeObservation.observed_at.desc(),
+                IntegrationRuntimeObservation.id.desc(),
+            )
+            .offset(keep)
+            .all()
+        )
+    ]
+    if not stale_ids:
+        return 0
+
+    deleted = (
+        IntegrationRuntimeObservation.query.filter(
+            IntegrationRuntimeObservation.id.in_(stale_ids),
+        )
+        .delete(synchronize_session=False)
+    )
+    return int(deleted or 0)
 
 
 def list_runtime_history(
@@ -106,4 +163,5 @@ def paginate_runtime_history(
         'prev_page': page - 1,
         'next_page': page + 1,
         'allowed_per_page': allowed_per_page,
+        'retention_limit': MAX_RUNTIME_OBSERVATIONS_PER_INSTANCE,
     }

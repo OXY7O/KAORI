@@ -3,7 +3,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 HERO_COMPONENT = ROOT / "app/templates/components/page_hero.html"
-DESIGN_SYSTEM = ROOT / "docs/design/KAORI_DESIGN_SYSTEM.md"
+DESIGN_SYSTEM = ROOT / "docs/design/components/HERO.md"
 
 
 def test_shared_hero_owns_final_geometry_and_typography_contract():

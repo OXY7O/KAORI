@@ -1703,7 +1703,7 @@ class WorkloadAnalysisService(AnalyticsBaseService):
             page=page,
             per_page=per_page,
             allowed_per_page=ALLOWED_PER_PAGE_VALUES,
-            default_per_page=10,
+            default_per_page=5,
         )
 
     def get_governance_findings(

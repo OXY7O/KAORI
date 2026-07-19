@@ -180,16 +180,23 @@ Alertmanager is the first adapter. Prometheus should become the second adapter a
 ## Runtime evidence and scheduled monitoring
 
 A refresh is not only a UI action. Both manual HTMX refresh and Celery Beat
-must execute the same adapter orchestration and append an immutable runtime
-observation. This provides validation history, health trend input, capability
-change evidence, and a stable data source for the shared Integrations dashboard.
-Provider credentials and configuration are never copied into the observation.
+must execute the same adapter orchestration and append a runtime observation.
+This provides validation history, health trend input, capability change evidence,
+and a stable data source for the shared Integrations dashboard. Provider
+credentials and configuration are never copied into the observation.
+
+The runtime repository applies rolling retention after each append. It keeps the
+latest **100 observations per provider and provider-native instance ID**, then
+removes older rows in the same database transaction. Retained observations are
+not edited in place.
 
 ## Runtime history user interface
 
-The shared runtime history is operational evidence, not an editable event log.
-Provider detail pages show the latest observations in reverse chronological order
-and default to 5 rows with 5, 10, 25, and 50 page-size options.
+The shared runtime history is rolling operational evidence, not an editable event
+log. Provider detail pages show the latest observations in reverse chronological
+order and default to 5 rows with 5, 10, 25, and 50 page-size options. The footer
+keeps the summary and page-size selector together on the left and navigation on
+the right.
 
 The presentation layer compares each observation with the immediately older
 observation to derive display-only markers:

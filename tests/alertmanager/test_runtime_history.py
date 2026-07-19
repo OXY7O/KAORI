@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -103,3 +103,66 @@ def test_runtime_history_view_uses_oldest_row_as_baseline(app):
     assert len(view['rows']) == 1
     assert view['rows'][0]['capability_changed'] is False
     assert view['rows'][0]['transition'] is None
+
+
+def test_runtime_history_retains_only_latest_100_records_per_instance(app):
+    base = datetime.now(UTC) - timedelta(hours=2)
+    rows = [
+        IntegrationRuntimeObservation(
+            provider='alertmanager',
+            instance_id='retained-instance',
+            instance_name='Retained AM',
+            trigger_type='scheduled',
+            readiness='ready',
+            health_status='healthy',
+            health_score=90,
+            capability_snapshot={'capabilities': ['alerts_v2']},
+            diagnostics=[],
+            observed_at=base + timedelta(minutes=index),
+        )
+        for index in range(100)
+    ]
+    unrelated = IntegrationRuntimeObservation(
+        provider='alertmanager',
+        instance_id='other-instance',
+        instance_name='Other AM',
+        trigger_type='scheduled',
+        readiness='ready',
+        health_status='healthy',
+        health_score=90,
+        capability_snapshot={'capabilities': ['alerts_v2']},
+        diagnostics=[],
+        observed_at=base,
+    )
+    db.session.add_all([*rows, unrelated])
+    db.session.commit()
+    oldest_id = rows[0].id
+
+    newest_state = RuntimeState(
+        provider='alertmanager',
+        instance_id='retained-instance',
+        instance_name='Retained AM',
+        observed_at=base + timedelta(minutes=101),
+        readiness='ready',
+        health=HealthState('healthy', 97),
+        diagnostics=(),
+        snapshot=CapabilitySnapshot(
+            'v033',
+            'current',
+            ('alerts_v2', 'silences_v2'),
+            base + timedelta(minutes=101),
+        ),
+    )
+    newest = persist_runtime_state(newest_state, trigger_type='manual')
+
+    retained_query = IntegrationRuntimeObservation.query.filter_by(
+        provider='alertmanager',
+        instance_id='retained-instance',
+    )
+    assert retained_query.count() == 100
+    assert db.session.get(IntegrationRuntimeObservation, oldest_id) is None
+    assert db.session.get(IntegrationRuntimeObservation, newest.id) is not None
+    assert IntegrationRuntimeObservation.query.filter_by(
+        provider='alertmanager',
+        instance_id='other-instance',
+    ).count() == 1
