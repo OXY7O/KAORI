@@ -1,3 +1,4 @@
+{% import "components/pagination.html" as pagination_ui %}
 <div class="overflow-x-auto">
     <table class="w-full table-fixed text-content-primary" style="min-width: 980px">
         <colgroup>
@@ -123,7 +124,7 @@
             <select name="per_page"
                     aria-label="Rows per page"
                     onchange="this.form.requestSubmit()"
-                    class="rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm font-medium text-content-primary outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10">
+                    class="{{ pagination_ui.page_size_classes() }}">
                 {% for option in namespace_per_page_options %}
                     <option value="{{ option }}" {% if namespace_pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
                 {% endfor %}
@@ -140,11 +141,11 @@
                hx-swap="innerHTML"
                hx-push-url="true"
                hx-indicator="#secret-reveal-namespace-loading"
-               class="inline-flex items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm font-medium text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft/60 hover:text-kaori-primary">
+               class="{{ pagination_ui.navigation_classes(disabled=false) }}">
                 <i data-lucide="chevron-left" class="h-4 w-4"></i>Previous
             </a>
         {% else %}
-            <span class="inline-flex cursor-not-allowed items-center gap-2 rounded-lg border border-outline-default bg-surface-disabled px-3 py-2 text-sm font-medium text-content-muted"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
+            <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
         {% endif %}
         <span class="inline-flex items-center rounded-lg border border-brand-outline bg-kaori-soft/70 px-3 py-2 text-sm font-semibold text-kaori-primary">Page {{ namespace_pagination.page }} / {{ namespace_pagination.total_pages }}</span>
         {% if namespace_pagination.has_next %}
@@ -156,11 +157,11 @@
                hx-swap="innerHTML"
                hx-push-url="true"
                hx-indicator="#secret-reveal-namespace-loading"
-               class="inline-flex items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm font-medium text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft/60 hover:text-kaori-primary">
+               class="{{ pagination_ui.navigation_classes(disabled=false) }}">
                 Next<i data-lucide="chevron-right" class="h-4 w-4"></i>
             </a>
         {% else %}
-            <span class="inline-flex cursor-not-allowed items-center gap-2 rounded-lg border border-outline-default bg-surface-disabled px-3 py-2 text-sm font-medium text-content-muted">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
+            <span class="{{ pagination_ui.navigation_classes(disabled=true) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
         {% endif %}
     </div>
 </div>

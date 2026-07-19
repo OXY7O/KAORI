@@ -1,3 +1,4 @@
+{% import "components/pagination.html" as pagination_ui %}
 {% set dynamic_workload_type_options = workload_mapping_payload.workload_type_options if workload_mapping_payload.workload_type_options else workload_mapping_rows|map(attribute='type')|unique|list %}
 {% set dynamic_resource_status_options = workload_mapping_payload.resource_status_options if workload_mapping_payload.resource_status_options else workload_mapping_rows|map(attribute='resource_status.label')|unique|list %}
 {% set dynamic_qos_options = workload_mapping_payload.qos_options if workload_mapping_payload.qos_options else workload_mapping_rows|map(attribute='qos.label')|unique|list %}
@@ -378,7 +379,7 @@
  value="{{ selected_workload_risk }}" />
  <input type="hidden" name="workload_page" value="1" />
  <select name="workload_per_page"
- class="rounded-xl border border-outline-default bg-surface-card px-3 py-2 text-sm font-semibold text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/10 ">
+ class="{{ pagination_ui.page_size_classes() }}">
  {% for value in allowed_per_page_values %}
  <option value="{{ value }}"
  {% if workload_pagination.per_page == value %}selected{% endif %}>
@@ -420,7 +421,9 @@
  hx-target="#workload-resource-mapping"
  hx-swap="outerHTML"
  hx-indicator="#workload-refresh-indicator"
- class="{% if workload_pagination.has_previous %}text-content-secondary hover:bg-surface-hover dark:hover:bg-surface-hover{% else %}pointer-events-none text-content-secondary {% endif %} rounded-xl border border-outline-default px-3 py-2 text-sm font-semibold ">
+ class="{{ pagination_ui.navigation_classes(disabled=true) }}">
+<i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>
+
  Previous
  </a>
  <span class="rounded-xl border border-outline-default px-3 py-2 text-sm font-semibold text-content-secondary ">
@@ -431,9 +434,11 @@
  hx-target="#workload-resource-mapping"
  hx-swap="outerHTML"
  hx-indicator="#workload-refresh-indicator"
- class="{% if workload_pagination.has_next %}text-content-secondary hover:bg-surface-hover dark:hover:bg-surface-hover{% else %}pointer-events-none text-content-secondary {% endif %} rounded-xl border border-outline-default px-3 py-2 text-sm font-semibold ">
+ class="{{ pagination_ui.navigation_classes(disabled=true) }}">
  Next
- </a>
+ 
+<i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i>
+</a>
  </div>
  </div>
  </div>

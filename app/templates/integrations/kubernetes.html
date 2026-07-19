@@ -1,3 +1,4 @@
+{% import "components/pagination.html" as pagination_ui %}
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
 {% from "integrations/partials/_status_badge.html" import status_badge %}
@@ -105,8 +106,12 @@
       </table>
     </div>
     <footer class="flex flex-col gap-3 border-t border-outline-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-      <div class="flex items-center gap-3 text-xs text-content-muted"><span>Showing {{ pagination.start_item }}–{{ pagination.end_item }} of {{ pagination.total_items }} connections</span><select class="h-9 w-20 rounded-lg border border-outline-default bg-surface-card px-2 text-sm font-medium text-content-primary focus:border-outline-focus focus:outline-none focus:ring-2 focus:ring-outline-focus/20" onchange="window.location.href='{{ url_for('integrations.kubernetes') }}?page=1&per_page='+this.value">{% for size in [5,10,25,50] %}<option value="{{ size }}" {% if pagination.per_page == size %}selected{% endif %}>{{ size }}</option>{% endfor %}</select></div>
-      <div class="flex items-center gap-2"><a class="inline-flex h-9 items-center rounded-lg border border-outline-default px-3 text-xs font-semibold {% if not pagination.has_prev %}pointer-events-none opacity-50{% else %}text-content-secondary hover:border-outline-focus hover:text-kaori-primary{% endif %}" href="{{ url_for('integrations.kubernetes', page=pagination.prev_page, per_page=pagination.per_page) }}">Previous</a><span class="rounded-lg bg-kaori-soft px-3 py-2 text-xs font-semibold text-kaori-primary">Page {{ pagination.page }} / {{ pagination.total_pages }}</span><a class="inline-flex h-9 items-center rounded-lg border border-outline-default px-3 text-xs font-semibold {% if not pagination.has_next %}pointer-events-none opacity-50{% else %}text-content-secondary hover:border-outline-focus hover:text-kaori-primary{% endif %}" href="{{ url_for('integrations.kubernetes', page=pagination.next_page, per_page=pagination.per_page) }}">Next</a></div>
+      <div class="flex items-center gap-3 text-xs text-content-muted"><span>Showing {{ pagination.start_item }}–{{ pagination.end_item }} of {{ pagination.total_items }} connections</span><select class="{{ pagination_ui.page_size_classes() }}" onchange="window.location.href='{{ url_for('integrations.kubernetes') }}?page=1&per_page='+this.value">{% for size in [5,10,25,50] %}<option value="{{ size }}" {% if pagination.per_page == size %}selected{% endif %}>{{ size }}</option>{% endfor %}</select></div>
+      <div class="flex items-center gap-2"><a class="{{ pagination_ui.navigation_classes(disabled=true) }}" href="{{ url_for('integrations.kubernetes', page=pagination.prev_page, per_page=pagination.per_page) }}">
+<i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>
+Previous</a><span class="rounded-lg bg-kaori-soft px-3 py-2 text-xs font-semibold text-kaori-primary">Page {{ pagination.page }} / {{ pagination.total_pages }}</span><a class="{{ pagination_ui.navigation_classes(disabled=true) }}" href="{{ url_for('integrations.kubernetes', page=pagination.next_page, per_page=pagination.per_page) }}">Next
+<i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i>
+</a></div>
     </footer>
   </section>
   {% include 'integrations/kubernetes/partials/_delete_modal.html' %}

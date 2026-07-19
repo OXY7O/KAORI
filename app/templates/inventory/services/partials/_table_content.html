@@ -1,3 +1,4 @@
+{% import "components/pagination.html" as pagination_ui %}
 {% import "components/table_label.html" as table_label %}
 <div class="overflow-x-auto">
     <table class="min-w-[1080px] w-full text-left text-xs text-content-secondary">
@@ -82,7 +83,7 @@
             <input type="hidden" name="namespace" value="{{ selected_namespace }}">
             <input type="hidden" name="type" value="{{ selected_type }}">
             <input type="hidden" name="search" value="{{ search }}">
-            <select name="per_page" aria-label="Rows per page" onchange="this.form.requestSubmit()" class="h-9 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+            <select name="per_page" aria-label="Rows per page" onchange="this.form.requestSubmit()" class="{{ pagination_ui.page_size_classes() }}">
                 {% for size in pagination.allowed_per_page %}<option value="{{ size }}" {% if pagination.per_page == size %}selected{% endif %}>{{ size }}</option>{% endfor %}
             </select>
         </form>
@@ -90,16 +91,16 @@
     <div class="flex flex-wrap items-center gap-2">
         {% if pagination.has_prev %}
             {% set prev_url = url_for('inventory.services', cluster_id=selected_cluster_id, namespace=selected_namespace, type=selected_type, search=search, page=pagination.prev_page, per_page=pagination.per_page, partial_mode='table_content') %}
-            <a href="{{ prev_url }}" hx-get="{{ prev_url }}" hx-target="#services-table-content" hx-swap="innerHTML" hx-indicator="#services-table-loading" class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
+            <a href="{{ prev_url }}" hx-get="{{ prev_url }}" hx-target="#services-table-content" hx-swap="innerHTML" hx-indicator="#services-table-loading" class="{{ pagination_ui.navigation_classes(disabled=false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
         {% else %}
-            <span class="inline-flex h-9 cursor-not-allowed items-center gap-1.5 rounded-lg border border-outline-subtle bg-surface-hover px-3 font-semibold text-content-disabled"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
+            <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
         {% endif %}
         <span class="inline-flex h-9 items-center rounded-lg border border-outline-default bg-surface-card px-3 font-semibold text-content-primary">Page {{ pagination.page }} / {{ pagination.total_pages }}</span>
         {% if pagination.has_next %}
             {% set next_url = url_for('inventory.services', cluster_id=selected_cluster_id, namespace=selected_namespace, type=selected_type, search=search, page=pagination.next_page, per_page=pagination.per_page, partial_mode='table_content') %}
-            <a href="{{ next_url }}" hx-get="{{ next_url }}" hx-target="#services-table-content" hx-swap="innerHTML" hx-indicator="#services-table-loading" class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
+            <a href="{{ next_url }}" hx-get="{{ next_url }}" hx-target="#services-table-content" hx-swap="innerHTML" hx-indicator="#services-table-loading" class="{{ pagination_ui.navigation_classes(disabled=false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
         {% else %}
-            <span class="inline-flex h-9 cursor-not-allowed items-center gap-1.5 rounded-lg border border-outline-subtle bg-surface-hover px-3 font-semibold text-content-disabled">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
+            <span class="{{ pagination_ui.navigation_classes(disabled=true) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
         {% endif %}
     </div>
 </footer>

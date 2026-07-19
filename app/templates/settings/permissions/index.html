@@ -1,3 +1,4 @@
+{% import "components/pagination.html" as pagination_ui %}
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
 {% block title %}Permission Catalog{% endblock title %}
@@ -226,7 +227,7 @@
                         <button type="button"
                                 @click="page = Math.max(1, page - 1)"
                                 :disabled="page <= 1"
-                                class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-secondary transition hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50">
+                                class="{{ pagination_ui.navigation_classes(disabled=true) }}">
                             <i data-lucide="chevron-left" class="h-4 w-4"></i>Previous
                         </button>
                         <span class="min-w-20 text-center text-sm font-semibold text-content-muted">Page <span x-text="page"></span> / <span x-text="pages()"></span></span>

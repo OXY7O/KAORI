@@ -1,3 +1,4 @@
+{% import "components/pagination.html" as pagination_ui %}
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
 {% block title %}Generated Reports{% endblock title %}
@@ -483,7 +484,7 @@
                     <span>{{ payload.pagination.label }}</span>
                     <select name="per_page"
                             aria-label="Reports per page"
-                            class="rounded-lg border border-outline-default bg-white px-2 py-1 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
+                            class="{{ pagination_ui.page_size_classes() }}">
                         {% for option in payload.filter_options.per_page_options %}
                             <option value="{{ option.value }}"
                                     {% if payload.selected_filters.per_page == option.value %}selected{% endif %}>{{ option.label }}</option>
@@ -503,14 +504,14 @@
                                hx-push-url="true"
                                hx-indicator="#reports-table-loading"
                                hx-on::after-swap="if (window.lucide) { window.lucide.createIcons(); }"
-                               class="inline-flex items-center gap-2 rounded-xl border border-outline-default bg-white px-3 py-2 text-sm font-semibold text-content-secondary shadow-sm transition hover:border-brand-outline hover:text-kaori-primary dark:border-outline-default bg-surface-subtle dark:text-content-secondary hover:border-brand-outline dark:hover:text-kaori-primary">
+                               class="{{ pagination_ui.navigation_classes(disabled=false) }}">
                                 <i data-lucide="chevron-left" class="h-4 w-4"></i>
                                 Previous
                             </a>
                         {% else %}
                             <button type="button"
                                     disabled
-                                    class="inline-flex items-center gap-2 rounded-xl border border-outline-default bg-surface-subtle px-3 py-2 text-sm font-semibold text-content-muted dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
+                                    class="{{ pagination_ui.navigation_classes(disabled=true) }}">
                                 <i data-lucide="chevron-left" class="h-4 w-4"></i>
                                 Previous
                             </button>
@@ -525,14 +526,14 @@
                                hx-push-url="true"
                                hx-indicator="#reports-table-loading"
                                hx-on::after-swap="if (window.lucide) { window.lucide.createIcons(); }"
-                               class="inline-flex items-center gap-2 rounded-xl border border-outline-default bg-white px-3 py-2 text-sm font-semibold text-content-secondary shadow-sm transition hover:border-brand-outline hover:text-kaori-primary dark:border-outline-default bg-surface-subtle dark:text-content-secondary hover:border-brand-outline dark:hover:text-kaori-primary">
+                               class="{{ pagination_ui.navigation_classes(disabled=false) }}">
                                 Next
                                 <i data-lucide="chevron-right" class="h-4 w-4"></i>
                             </a>
                         {% else %}
                             <button type="button"
                                     disabled
-                                    class="inline-flex items-center gap-2 rounded-xl border border-outline-default bg-surface-subtle px-3 py-2 text-sm font-semibold text-content-muted dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
+                                    class="{{ pagination_ui.navigation_classes(disabled=true) }}">
                                 Next
                                 <i data-lucide="chevron-right" class="h-4 w-4"></i>
                             </button>

@@ -1,3 +1,4 @@
+{% import "components/pagination.html" as pagination_ui %}
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
 {% block title %}Roles & Access{% endblock title %}
@@ -339,7 +340,7 @@
                         <button type="button"
                                 @click="page = Math.max(1, page - 1)"
                                 :disabled="page <= 1"
-                                class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-secondary transition hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50">
+                                class="{{ pagination_ui.navigation_classes(disabled=true) }}">
                             <i data-lucide="chevron-left" class="h-4 w-4"></i>Previous
                         </button>
                         <span class="min-w-20 text-center text-sm font-semibold text-content-muted">Page <span x-text="page"></span> / <span x-text="pages()"></span></span>
@@ -556,13 +557,13 @@
                         <span class="mr-1 hidden text-xs font-semibold text-content-muted lg:inline">Super Admin is intentionally excluded.</span>
                         <button type="button"
                                 data-role-matrix-previous
-                                class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-secondary transition hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50">
+                                class="{{ pagination_ui.navigation_classes(disabled=true) }}">
                             <i data-lucide="chevron-left" class="h-4 w-4"></i>Previous
                         </button>
                         <span class="min-w-20 text-center text-sm font-semibold text-content-muted">Page <span data-role-matrix-page>1</span> / <span data-role-matrix-pages>1</span></span>
                         <button type="button"
                                 data-role-matrix-next
-                                class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-secondary transition hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50">
+                                class="{{ pagination_ui.navigation_classes(disabled=true) }}">
                             Next<i data-lucide="chevron-right" class="h-4 w-4"></i>
                         </button>
                     </div>

@@ -1,3 +1,4 @@
+{% import "components/pagination.html" as pagination_ui %}
 {% import "components/table_label.html" as table_label %}
 {% set scope_type_labels = {
     'kubernetes_cluster': 'Managed cluster',
@@ -105,7 +106,7 @@
             <select name="per_page"
                     aria-label="Rows per page"
                     onchange="this.form.requestSubmit()"
-                    class="h-9 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                    class="{{ pagination_ui.page_size_classes() }}">
                 {% for value in pagination.allowed_per_page %}
                     <option value="{{ value }}" {% if pagination.per_page == value %}selected{% endif %}>{{ value }}</option>
                 {% endfor %}
@@ -122,12 +123,12 @@
                hx-swap="innerHTML"
                hx-push-url="true"
                hx-indicator="#alertmanager-inventory-loading"
-               class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary">
+               class="{{ pagination_ui.navigation_classes(disabled=false) }}">
                 <i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>
                 Previous
             </a>
         {% else %}
-            <span class="inline-flex h-9 cursor-not-allowed items-center gap-1.5 rounded-lg border border-outline-subtle bg-surface-hover px-3 font-semibold text-content-disabled">
+            <span class="{{ pagination_ui.navigation_classes(disabled=true) }}">
                 <i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>
                 Previous
             </span>
@@ -143,12 +144,12 @@
                hx-swap="innerHTML"
                hx-push-url="true"
                hx-indicator="#alertmanager-inventory-loading"
-               class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary">
+               class="{{ pagination_ui.navigation_classes(disabled=false) }}">
                 Next
                 <i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i>
             </a>
         {% else %}
-            <span class="inline-flex h-9 cursor-not-allowed items-center gap-1.5 rounded-lg border border-outline-subtle bg-surface-hover px-3 font-semibold text-content-disabled">
+            <span class="{{ pagination_ui.navigation_classes(disabled=true) }}">
                 Next
                 <i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i>
             </span>

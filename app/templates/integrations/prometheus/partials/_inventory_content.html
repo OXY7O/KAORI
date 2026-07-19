@@ -1,3 +1,4 @@
+{% import "components/pagination.html" as pagination_ui %}
 {% import "components/table_label.html" as table_label %}
 {% from "integrations/partials/_status_badge.html" import status_badge %}
 {% if rows %}
@@ -64,7 +65,7 @@
             <input type="hidden" name="compatibility" value="{{ selected_compatibility }}">
             <input type="hidden" name="environment" value="{{ selected_environment }}">
             <input type="hidden" name="readiness" value="{{ selected_readiness }}">
-            <select name="per_page" aria-label="Connections per page" onchange="this.form.requestSubmit()" class="h-9 w-20 rounded-lg border border-outline-default bg-surface-card px-2.5 text-sm font-medium text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+            <select name="per_page" aria-label="Connections per page" onchange="this.form.requestSubmit()" class="{{ pagination_ui.page_size_classes() }}">
                 {% for option in pagination.allowed_per_page %}<option value="{{ option }}" {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>{% endfor %}
             </select>
         </form>
@@ -73,16 +74,16 @@
         {% set base_args = {'compatibility': selected_compatibility, 'environment': selected_environment, 'readiness': selected_readiness, 'per_page': pagination.per_page} %}
         {% if pagination.has_prev %}
             {% set prev_url = url_for('integrations.prometheus', page=pagination.prev_page, **base_args) %}
-            <a href="{{ prev_url }}" hx-get="{{ prev_url }}" hx-target="#prometheus-inventory-content" hx-swap="innerHTML" hx-indicator="#prometheus-inventory-loading" class="inline-flex h-9 items-center gap-1 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary hover:bg-surface-hover"><i data-lucide="chevron-left" class="h-3.5 w-3.5"></i>Previous</a>
+            <a href="{{ prev_url }}" hx-get="{{ prev_url }}" hx-target="#prometheus-inventory-content" hx-swap="innerHTML" hx-indicator="#prometheus-inventory-loading" class="{{ pagination_ui.navigation_classes(disabled=false) }}"><i data-lucide="chevron-left" class="h-3.5 w-3.5"></i>Previous</a>
         {% else %}
-            <span class="inline-flex h-9 cursor-not-allowed items-center gap-1 rounded-lg bg-status-unknown-soft px-3 text-xs font-semibold text-status-unknown-text opacity-70"><i data-lucide="chevron-left" class="h-3.5 w-3.5"></i>Previous</span>
+            <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"><i data-lucide="chevron-left" class="h-3.5 w-3.5"></i>Previous</span>
         {% endif %}
         <span class="inline-flex h-9 items-center rounded-lg bg-kaori-soft px-3 text-xs font-semibold text-kaori-primary-dark">Page {{ pagination.page }} / {{ pagination.total_pages }}</span>
         {% if pagination.has_next %}
             {% set next_url = url_for('integrations.prometheus', page=pagination.next_page, **base_args) %}
-            <a href="{{ next_url }}" hx-get="{{ next_url }}" hx-target="#prometheus-inventory-content" hx-swap="innerHTML" hx-indicator="#prometheus-inventory-loading" class="inline-flex h-9 items-center gap-1 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary hover:bg-surface-hover">Next<i data-lucide="chevron-right" class="h-3.5 w-3.5"></i></a>
+            <a href="{{ next_url }}" hx-get="{{ next_url }}" hx-target="#prometheus-inventory-content" hx-swap="innerHTML" hx-indicator="#prometheus-inventory-loading" class="{{ pagination_ui.navigation_classes(disabled=false) }}">Next<i data-lucide="chevron-right" class="h-3.5 w-3.5"></i></a>
         {% else %}
-            <span class="inline-flex h-9 cursor-not-allowed items-center gap-1 rounded-lg bg-status-unknown-soft px-3 text-xs font-semibold text-status-unknown-text opacity-70">Next<i data-lucide="chevron-right" class="h-3.5 w-3.5"></i></span>
+            <span class="{{ pagination_ui.navigation_classes(disabled=true) }}">Next<i data-lucide="chevron-right" class="h-3.5 w-3.5"></i></span>
         {% endif %}
     </div>
 </div>

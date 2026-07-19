@@ -1,3 +1,4 @@
+{% import "components/pagination.html" as pagination_ui %}
 {% import "components/table_label.html" as table_label %}
 <section id="dashboard-cluster-health-section" class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
     <div class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
@@ -132,13 +133,13 @@
                 {% set next_url = url_for('kubernetes_dashboard.section', section='cluster_health', cluster_id=dashboard.selected_cluster_id or '', cluster_health_page=dashboard.cluster_health_pagination.next_page) %}
                 <button type="button"
                         {% if dashboard.cluster_health_pagination.has_prev %}hx-get="{{ prev_url }}" hx-target="#dashboard-cluster-health-section" hx-swap="outerHTML" hx-indicator="#dashboard-loading-bar"{% else %}disabled{% endif %}
-                        class="inline-flex items-center gap-1.5 rounded-lg border border-outline-default px-3 py-2 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card {% if dashboard.cluster_health_pagination.has_prev %}bg-surface-card text-content-secondary hover:border-outline-focus hover:text-kaori-primary{% else %}cursor-not-allowed bg-surface-hover text-content-disabled{% endif %}">
+                        class="{{ pagination_ui.navigation_classes(disabled=true) }}">
                     <i data-lucide="chevron-left" class="h-4 w-4"></i>
                     Previous
                 </button>
                 <button type="button"
                         {% if dashboard.cluster_health_pagination.has_next %}hx-get="{{ next_url }}" hx-target="#dashboard-cluster-health-section" hx-swap="outerHTML" hx-indicator="#dashboard-loading-bar"{% else %}disabled{% endif %}
-                        class="inline-flex items-center gap-1.5 rounded-lg border border-outline-default px-3 py-2 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card {% if dashboard.cluster_health_pagination.has_next %}bg-surface-card text-content-secondary hover:border-outline-focus hover:text-kaori-primary{% else %}cursor-not-allowed bg-surface-hover text-content-disabled{% endif %}">
+                        class="{{ pagination_ui.navigation_classes(disabled=true) }}">
                     Next
                     <i data-lucide="chevron-right" class="h-4 w-4"></i>
                 </button>

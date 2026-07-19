@@ -1,3 +1,4 @@
+{% import "components/pagination.html" as pagination_ui %}
 {% from 'inventory/components/_detail_macros.html' import detail_card, detail_row, detail_tip %}
 {% import 'components/detail_object.html' as detail_object %}
 {% import 'components/table_label.html' as table_label %}
@@ -297,7 +298,7 @@
                 <input type="hidden" name="search" value="{{ payload.filters.search }}">
                 <select name="per_page"
                         onchange="this.form.requestSubmit()"
-                        class="h-10 rounded-lg border border-outline-default bg-surface-card px-3 text-left text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                        class="{{ pagination_ui.page_size_classes() }}">
                     {% for option in payload.pagination.allowed_per_page %}
                         <option value="{{ option }}"
                                 {% if payload.pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
@@ -313,12 +314,12 @@
                    hx-target="#tls-certificates-table-card"
                    hx-swap="outerHTML"
                    hx-indicator="#tls-certificates-table-loading"
-                   class="inline-flex h-10 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-kaori-primary transition hover:bg-kaori-soft">
+                   class="{{ pagination_ui.navigation_classes(disabled=false) }}">
                     <i data-lucide="chevron-left" class="h-4 w-4"></i>
                     Previous
                 </a>
             {% else %}
-                <span class="inline-flex h-10 cursor-not-allowed items-center gap-2 rounded-lg border border-outline-default bg-surface-disabled px-3 text-sm font-medium text-content-disabled">
+                <span class="{{ pagination_ui.navigation_classes(disabled=true) }}">
                     <i data-lucide="chevron-left" class="h-4 w-4"></i>
                     Previous
                 </span>
@@ -333,12 +334,12 @@
                    hx-target="#tls-certificates-table-card"
                    hx-swap="outerHTML"
                    hx-indicator="#tls-certificates-table-loading"
-                   class="inline-flex h-10 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-kaori-primary transition hover:bg-kaori-soft">
+                   class="{{ pagination_ui.navigation_classes(disabled=false) }}">
                     Next
                     <i data-lucide="chevron-right" class="h-4 w-4"></i>
                 </a>
             {% else %}
-                <span class="inline-flex h-10 cursor-not-allowed items-center gap-2 rounded-lg border border-outline-default bg-surface-disabled px-3 text-sm font-medium text-content-disabled">
+                <span class="{{ pagination_ui.navigation_classes(disabled=true) }}">
                     Next
                     <i data-lucide="chevron-right" class="h-4 w-4"></i>
                 </span>

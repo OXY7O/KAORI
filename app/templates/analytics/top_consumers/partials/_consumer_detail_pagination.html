@@ -1,3 +1,4 @@
+{% import "components/pagination.html" as pagination_ui %}
 {% set payload = consumer_payload %}
 {% set pagination = payload.pagination %}
 {% set current_page = pagination.current_page | default(pagination.page | default(1), true) %}
@@ -40,7 +41,7 @@
  </span>
  <select name="per_page"
  onchange="this.form.requestSubmit()"
- class="rounded-xl border border-outline-strong bg-surface-card px-3 py-2 text-sm font-semibold text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/10 ">
+ class="{{ pagination_ui.page_size_classes() }}">
  {% for value in allowed_per_page_values %}
  <option value="{{ value }}" {% if per_page == value %}selected{% endif %}>{{ value }}</option>
  {% endfor %}
@@ -55,12 +56,12 @@
  hx-target="#consumer-detail-section"
  hx-swap="outerHTML"
  hx-indicator="#top-consumers-refresh-indicator"
- class="inline-flex items-center gap-2 rounded-xl border border-outline-default px-4 py-2 text-sm font-semibold text-content-secondary shadow-sm transition hover:bg-surface-subtle dark:hover:bg-surface-hover">
+ class="{{ pagination_ui.navigation_classes(disabled=false) }}">
  <i data-lucide="chevron-left" class="h-4 w-4"></i>
  Previous
  </a>
  {% else %}
- <span class="inline-flex cursor-not-allowed items-center gap-2 rounded-xl border border-outline-default px-4 py-2 text-sm font-semibold text-content-muted ">
+ <span class="{{ pagination_ui.navigation_classes(disabled=true) }}">
  <i data-lucide="chevron-left" class="h-4 w-4"></i>
  Previous
  </span>
@@ -76,12 +77,12 @@
  hx-target="#consumer-detail-section"
  hx-swap="outerHTML"
  hx-indicator="#top-consumers-refresh-indicator"
- class="inline-flex items-center gap-2 rounded-xl bg-kaori-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-kaori-primary-dark bg-kaori-primary hover:bg-kaori-primary-dark">
+ class="{{ pagination_ui.navigation_classes(disabled=false) }}">
  Next
  <i data-lucide="chevron-right" class="h-4 w-4"></i>
  </a>
  {% else %}
- <span class="inline-flex cursor-not-allowed items-center gap-2 rounded-xl border border-outline-default px-4 py-2 text-sm font-semibold text-content-muted ">
+ <span class="{{ pagination_ui.navigation_classes(disabled=true) }}">
  Next
  <i data-lucide="chevron-right" class="h-4 w-4"></i>
  </span>

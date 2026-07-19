@@ -1,3 +1,4 @@
+{% import "components/pagination.html" as pagination_ui %}
     <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-outline-subtle text-left text-sm">
             <thead class="bg-surface-hover text-[11px] font-semibold uppercase tracking-[0.12em] text-content-muted">
@@ -207,7 +208,7 @@
             <span class="font-medium">Showing {{ pagination.start_item }}–{{ pagination.end_item }} of {{ pagination.total_items }} {{ 'user' if pagination.total_items == 1 else 'users' }}</span>
             <select name="per_page"
                     aria-label="Rows per page"
-                    class="h-9 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-secondary transition focus:border-outline-focus focus:outline-none focus:ring-2 focus:ring-outline-focus/20 text-content-primary">
+                    class="{{ pagination_ui.page_size_classes() }}">
                 {% for option in per_page_options %}
                     <option value="{{ option }}"
                             {% if filters.per_page == option %}selected{% endif %}>{{ option }}</option>
@@ -221,7 +222,7 @@
                hx-swap="outerHTML settle:150ms"
                hx-push-url="true"
                hx-indicator="#users-refresh-indicator"
-               class="inline-flex h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-bold text-content-muted transition hover:border-outline-focus hover:text-kaori-primary {{ 'pointer-events-none opacity-50' if not pagination.has_prev else '' }}">
+               class="{{ pagination_ui.navigation_classes(disabled=true) }}">
                 <i data-lucide="chevron-left" class="h-4 w-4"></i>
                 Previous
             </a>
@@ -232,7 +233,7 @@
                hx-swap="outerHTML settle:150ms"
                hx-push-url="true"
                hx-indicator="#users-refresh-indicator"
-               class="inline-flex h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-bold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary {{ 'pointer-events-none opacity-50' if not pagination.has_next else '' }}">
+               class="{{ pagination_ui.navigation_classes(disabled=true) }}">
                 Next
                 <i data-lucide="chevron-right" class="h-4 w-4"></i>
             </a>

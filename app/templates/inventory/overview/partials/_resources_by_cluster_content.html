@@ -1,3 +1,4 @@
+{% import "components/pagination.html" as pagination_ui %}
 {% from "components/table_label.html" import status_label %}
 <div class="overflow-x-auto">
     <table class="min-w-full divide-y divide-outline-subtle text-sm">
@@ -113,7 +114,7 @@
             <select id="cluster_per_page"
                     name="cluster_per_page"
                     onchange="this.form.requestSubmit()"
-                    class="h-9 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                    class="{{ pagination_ui.page_size_classes() }}">
                 {% for option in overview.resources_pagination.allowed_per_page %}
                     <option value="{{ option }}" {% if overview.resources_pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
                 {% endfor %}
@@ -129,12 +130,12 @@
                hx-target="#resources-by-cluster-content"
                hx-swap="innerHTML"
                hx-indicator="#resources-by-cluster-loading"
-               class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary">
+               class="{{ pagination_ui.navigation_classes(disabled=false) }}">
                 <i data-lucide="chevron-left" class="h-4 w-4"></i>
                 Previous
             </a>
         {% else %}
-            <span class="inline-flex h-9 cursor-not-allowed items-center gap-1.5 rounded-lg border border-outline-subtle bg-surface-hover px-3 font-semibold text-content-disabled">
+            <span class="{{ pagination_ui.navigation_classes(disabled=true) }}">
                 <i data-lucide="chevron-left" class="h-4 w-4"></i>
                 Previous
             </span>
@@ -151,12 +152,12 @@
                hx-target="#resources-by-cluster-content"
                hx-swap="innerHTML"
                hx-indicator="#resources-by-cluster-loading"
-               class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary">
+               class="{{ pagination_ui.navigation_classes(disabled=false) }}">
                 Next
                 <i data-lucide="chevron-right" class="h-4 w-4"></i>
             </a>
         {% else %}
-            <span class="inline-flex h-9 cursor-not-allowed items-center gap-1.5 rounded-lg border border-outline-subtle bg-surface-hover px-3 font-semibold text-content-disabled">
+            <span class="{{ pagination_ui.navigation_classes(disabled=true) }}">
                 Next
                 <i data-lucide="chevron-right" class="h-4 w-4"></i>
             </span>

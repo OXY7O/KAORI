@@ -1,3 +1,4 @@
+{% import "components/pagination.html" as pagination_ui %}
 {% extends "layouts/app.html" %}
 {% block title %}{{ payload.page_title }}{% endblock title %}
 {% block dashboard_content %}
@@ -479,7 +480,7 @@
  <input type="hidden" name="q" value="{{ payload.filters.q }}">
  <span>{{ payload.pagination.label }}</span>
  <select name="per_page"
- class="rounded-lg border border-outline-default bg-surface-card px-2 py-1.5 text-sm font-semibold text-content-secondary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
+ class="{{ pagination_ui.page_size_classes() }}">
  {% for option in payload.filter_options.per_page %}
  <option value="{{ option }}"
  {% if payload.pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
@@ -508,7 +509,7 @@
  hx-push-url="true"
  hx-sync="#recommendation-catalog:replace"
  hx-indicator="#recommendation-filter-loading"
- class="inline-flex items-center gap-2 rounded-xl border border-outline-default px-3 py-2 text-sm font-semibold {{ 'pointer-events-none opacity-50' if not payload.pagination.has_next else 'text-content-secondary hover:bg-kaori-soft' }} ">
+ class="{{ pagination_ui.navigation_classes(disabled=true) }}">
  Next
  <i data-lucide="chevron-right" class="h-4 w-4"></i>
  </a>

@@ -1,3 +1,4 @@
+{% import "components/pagination.html" as pagination_ui %}
 {% macro context_label(item) -%}
     <span class="inline-flex max-w-full items-center gap-1 rounded-md px-2 py-1 text-[9px] font-bold leading-none ring-1 ring-inset {% if item.tone == 'emerald' %}bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-900/40 {% elif item.tone == 'amber' %}bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-900/40 {% elif item.tone == 'indigo' %}bg-indigo-50 text-indigo-700 ring-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-300 dark:ring-indigo-900/40 {% else %}bg-kaori-soft text-kaori-primary ring-brand-outline dark:bg-kaori-soft dark:text-kaori-primary dark:ring-brand-outline{% endif %}">
         <span class="font-semibold">{{ item.label }}:</span>
@@ -347,7 +348,7 @@
             <select name="per_page"
                     aria-label="Activities per page"
                     onchange="this.form.requestSubmit()"
-                    class="rounded-xl border border-outline-default bg-surface-card px-3 py-2 text-sm font-medium text-content-primary outline-none transition focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/10 dark:border-outline-default dark:bg-surface-card dark:text-content-primary dark:focus:border-kaori-primary dark:focus:ring-kaori-primary/10">
+                    class="{{ pagination_ui.page_size_classes() }}">
                 {% for option in pagination.allowed_per_page %}
                     <option value="{{ option }}"
                             {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
@@ -364,12 +365,12 @@
                hx-swap="innerHTML"
                hx-push-url="true"
                hx-indicator="#operational-activity-loading"
-               class="inline-flex items-center gap-2 rounded-xl border border-outline-default bg-surface-card px-3 py-2 text-sm font-medium text-content-secondary transition hover:bg-surface-subtle dark:border-outline-default dark:bg-surface-card dark:text-slate-200 dark:hover:bg-slate-700">
+               class="{{ pagination_ui.navigation_classes(disabled=false) }}">
                 <i data-lucide="chevron-left" class="h-4 w-4"></i>
                 Previous
             </a>
         {% else %}
-            <span class="inline-flex cursor-not-allowed items-center gap-2 rounded-xl border border-outline-default bg-surface-subtle px-3 py-2 text-sm font-medium text-content-muted dark:border-outline-default dark:bg-surface-card dark:text-content-secondary">
+            <span class="{{ pagination_ui.navigation_classes(disabled=true) }}">
                 <i data-lucide="chevron-left" class="h-4 w-4"></i>
                 Previous
             </span>
@@ -385,12 +386,12 @@
                hx-swap="innerHTML"
                hx-push-url="true"
                hx-indicator="#operational-activity-loading"
-               class="inline-flex items-center gap-2 rounded-xl border border-outline-default bg-surface-card px-3 py-2 text-sm font-medium text-content-secondary transition hover:bg-surface-subtle dark:border-outline-default dark:bg-surface-card dark:text-slate-200 dark:hover:bg-slate-700">
+               class="{{ pagination_ui.navigation_classes(disabled=false) }}">
                 Next
                 <i data-lucide="chevron-right" class="h-4 w-4"></i>
             </a>
         {% else %}
-            <span class="inline-flex cursor-not-allowed items-center gap-2 rounded-xl border border-outline-default bg-surface-subtle px-3 py-2 text-sm font-medium text-content-muted dark:border-outline-default dark:bg-surface-card dark:text-content-secondary">
+            <span class="{{ pagination_ui.navigation_classes(disabled=true) }}">
                 Next
                 <i data-lucide="chevron-right" class="h-4 w-4"></i>
             </span>

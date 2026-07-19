@@ -81,3 +81,48 @@ On narrow screens, groups may wrap. The resource summary and page-size selector 
 ## Approved exceptions
 
 Static dashboard snapshots and intentionally bounded preview lists may omit the page-size selector. Their limits must be documented in the owning module and they must not masquerade as a full operational registry.
+
+## Shared component contract
+
+All new and migrated pagination controls must import:
+
+```jinja
+{% import "components/pagination.html" as pagination_ui %}
+```
+
+The shared helpers are authoritative:
+
+- `pagination_ui.navigation_classes(disabled=false)` for active Previous and Next controls.
+- `pagination_ui.navigation_classes(disabled=true)` for disabled Previous and Next controls.
+- `pagination_ui.current_page_classes()` for the active page indicator.
+- `pagination_ui.page_size_classes()` for the Rows per page selector.
+
+Page templates may retain their route, HTMX, query-state, and accessibility attributes, but must not create provider- or module-specific visual classes for pagination navigation.
+
+## Previous and Next control contract
+
+Active controls use:
+
+- neutral card background;
+- soft neutral border;
+- secondary content text;
+- Chevron Left or Chevron Right icon;
+- `cursor-pointer`;
+- Violet-soft hover background;
+- Strong Violet hover text;
+- Violet focus ring;
+- `36px` minimum height;
+- `rounded-md` geometry.
+
+Disabled controls use the same geometry and label placement, with:
+
+- muted surface and text;
+- `cursor-not-allowed`;
+- no hover behavior;
+- reduced visual emphasis without disappearing.
+
+Previous and Next are navigation controls. They must never use solid Primary Violet, success, warning, critical, or provider-specific colors.
+
+## Enforcement
+
+Creating local Previous/Next style strings in a new template is not permitted. Extend the shared pagination component when a reusable capability is missing. Route parameters and HTMX state remain owned by the calling template.
