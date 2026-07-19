@@ -64,17 +64,35 @@ def build_instance_context(instance: AlertmanagerInstance | None = None) -> dict
     clusters = Cluster.query.order_by(Cluster.created_at.asc(), Cluster.id.asc()).all()
     bindings = list_bindings_for_instance(instance.id) if instance else []
     observed_capabilities = set(instance.capabilities or []) if instance else set()
-    capability_rows = [
-        {
+    capability_rows = []
+    for capability in CAPABILITIES:
+        available = capability.key in observed_capabilities
+        capability_rows.append({
             'key': capability.key,
             'label': capability.label,
             'category': capability.category,
             'description': capability.description,
             'required': capability.required,
-            'available': capability.key in observed_capabilities,
-        }
-        for capability in CAPABILITIES
-    ]
+            'available': available,
+            'status_label': 'Observed' if available else ('Required missing' if capability.required else 'Not observed'),
+            'status_tone': 'normal' if available else ('critical' if capability.required else 'warning'),
+            'status_icon': 'circle-check' if available else ('octagon-alert' if capability.required else 'triangle-alert'),
+            'probe': capability.probe,
+            'success_criteria': capability.success_criteria,
+            'configuration_guidance': capability.configuration_guidance,
+            'impact': capability.impact,
+            'remediation': list(capability.remediation),
+            'evidence': (
+                'Observed during the latest Full Validation.'
+                if available
+                else 'Not observed in the latest Full Validation evidence.'
+            ),
+            'next_action': (
+                'No immediate change is required. Revalidate after connection, proxy, authentication, or alert payload changes.'
+                if available
+                else capability.remediation[0] if capability.remediation else 'Review the integration configuration and rerun Full Validation.'
+            ),
+        })
     return {
         'instance': instance,
         'bindings': bindings,
@@ -82,6 +100,12 @@ def build_instance_context(instance: AlertmanagerInstance | None = None) -> dict
         'clusters': clusters,
         'capability_rows': capability_rows,
         'module_readiness_rows': evaluate_module_readiness(observed_capabilities),
+        'capability_summary': {
+            'total': len(CAPABILITIES),
+            'observed': len(observed_capabilities.intersection(CAPABILITY_BY_KEY)),
+            'required_missing': sum(1 for capability in CAPABILITIES if capability.required and capability.key not in observed_capabilities),
+            'optional_missing': sum(1 for capability in CAPABILITIES if not capability.required and capability.key not in observed_capabilities),
+        },
         'source_resolution_rows': _source_resolution_rows(instance) if instance else [],
         'runtime_state': runtime_state_view(runtime_adapter.get_state(instance)) if instance else None,
         'runtime_history': build_runtime_history_context(instance) if instance else None,

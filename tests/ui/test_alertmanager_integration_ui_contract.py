@@ -12,6 +12,7 @@ DETAIL_RUNTIME = Path('app/templates/alertmanager/partials/_detail_runtime.html'
 DETAIL_SCOPE = Path('app/templates/alertmanager/partials/_detail_scope.html')
 RUNTIME_PANEL = Path('app/templates/alertmanager/partials/_runtime_panel.html')
 RUNTIME_RESPONSE = Path('app/templates/alertmanager/partials/_runtime_refresh_response.html')
+RUNTIME_HISTORY = Path('app/templates/alertmanager/partials/_runtime_history.html')
 FEEDBACK_OOB = Path('app/templates/alertmanager/partials/_operation_feedback_oob.html')
 ROUTES = Path('app/alertmanager/routes.py')
 REGISTRATION = Path('app/alertmanager/registration.py')
@@ -82,20 +83,34 @@ def test_alertmanager_instance_hero_uses_the_same_geometry() -> None:
 
 def test_alertmanager_runtime_panel_uses_semantic_kaori_statuses_and_htmx_indicator() -> None:
     source = RUNTIME_PANEL.read_text(encoding='utf-8')
+    history = RUNTIME_HISTORY.read_text(encoding='utf-8')
 
     required_fragments = (
         'components/table_label.html',
         'table_label.status_label',
         'id="alertmanager-runtime-loading"',
         'hx-indicator="#alertmanager-runtime-loading"',
-        'sm:grid-cols-2 xl:grid-cols-3',
-        'latest persisted runtime observation',
-        'Latest observed source condition',
-        'Validated integration capability contract',
+        'xl:grid-cols-6',
+        'Health Interpretation',
+        'role="progressbar"',
+        'Weighted health factors',
         'Diagnostic Pipeline',
+        'md:grid-cols-2',
+        'Recommended fixing',
     )
     missing = [fragment for fragment in required_fragments if fragment not in source]
     assert not missing, f'Alertmanager runtime panel contract is incomplete: {missing}'
+
+    required_history_fragments = (
+        'id="alertmanager-history-loading"',
+        'Items per page',
+        'aria-label="Runtime observations per page"',
+        'hx-trigger="change"',
+        'h-10 w-20 rounded-lg',
+        'Page {{ runtime_history.pagination.page }} / {{ runtime_history.pagination.total_pages }}',
+    )
+    missing = [fragment for fragment in required_history_fragments if fragment not in history]
+    assert not missing, f'Alertmanager runtime history pagination contract is incomplete: {missing}'
 
 
 
@@ -220,9 +235,9 @@ def test_manage_alertmanager_detail_is_domain_tabbed_and_informative() -> None:
         'Readiness versus health',
         'How monitoring works',
         'Resolver correlation',
-        'What a binding does',
-        'Selection order',
-        'Operational flow',
+        'Binding purpose',
+        'Validation guardrails',
+        'Resolver correlation',
         'Effective Source Resolution',
         'Instance Lifecycle &amp; Deletion',
     )
@@ -248,6 +263,55 @@ def test_manage_alertmanager_detail_is_domain_tabbed_and_informative() -> None:
     routes = ROUTES.read_text(encoding='utf-8')
     for fragment in ('#configuration', '#validation', '#scope'):
         assert fragment in routes
+
+def test_alertmanager_validation_and_scope_workspaces_are_actionable() -> None:
+    validation = DETAIL_VALIDATION_CONTENT.read_text(encoding='utf-8')
+    scope = DETAIL_SCOPE.read_text(encoding='utf-8')
+    documentation = ALERTMANAGER_README.read_text(encoding='utf-8')
+    bindings = Path('app/alertmanager/bindings.py').read_text(encoding='utf-8')
+
+    required_validation_fragments = (
+        'Capability technical detail',
+        'Technical probe',
+        'Success criteria',
+        'Required configuration',
+        'Operational impact',
+        'Recommended action',
+        'Operational domain readiness',
+        'Blocking gaps',
+        'Enrichment gaps',
+    )
+    missing = [fragment for fragment in required_validation_fragments if fragment not in validation]
+    assert not missing, f'Capability remediation workspace is incomplete: {missing}'
+
+    required_scope_fragments = (
+        'Create Binding',
+        "hx-post=\"{{ url_for('alertmanager.create_binding', instance_id=instance.id) }}\"",
+        'hx-target="#alertmanager-scope-workspace"',
+        'hx-swap="outerHTML"',
+        'id="alertmanager-binding-loading"',
+        'Duplicate instance-to-scope mappings are rejected.',
+        'Existing mappings are rejected rather than overwritten silently.',
+        'Pre-save validation',
+        'binding_feedback',
+    )
+    missing = [fragment for fragment in required_scope_fragments if fragment not in scope]
+    assert not missing, f'Binding HTMX and validation contract is incomplete: {missing}'
+    assert 'Add or Update Binding' not in scope
+
+    assert 'already bound to the selected scope' in bindings
+    assert 'already has a primary Alertmanager binding through {provider.name}' in bindings
+
+    required_doc_fragments = (
+        '## Validation diagnostics contract',
+        '## Runtime health and history contract',
+        '## Scope binding contract',
+        'duplicate submissions are rejected as **already exists**',
+        'without a full-page reload',
+    )
+    missing = [fragment for fragment in required_doc_fragments if fragment not in documentation]
+    assert not missing, f'Alertmanager operational documentation is incomplete: {missing}'
+
 
 def test_alertmanager_connection_test_feedback_is_toast_only_and_unlocks_registration() -> None:
     partial = Path(

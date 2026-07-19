@@ -1,8 +1,8 @@
 {% from "integrations/partials/_status_badge.html" import status_badge %}
-<section id="alertmanager-runtime-history"{% if runtime_history_oob %} hx-swap-oob="outerHTML"{% endif %} class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+<section id="alertmanager-runtime-history"{% if runtime_history_oob %} hx-swap-oob="outerHTML"{% endif %} class="relative overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <header class="relative flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div class="flex items-start gap-3">
-            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                 <i data-lucide="history" class="h-5 w-5"></i>
             </span>
             <div>
@@ -15,10 +15,12 @@
                 hx-target="#alertmanager-runtime-history"
                 hx-swap="outerHTML"
                 hx-disabled-elt="this"
-                class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 py-2 text-sm font-semibold text-content-primary transition hover:border-outline-strong hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-wait disabled:opacity-70">
+                hx-indicator="#alertmanager-history-loading"
+                class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 py-2 text-sm font-semibold text-content-primary transition hover:border-outline-strong hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-wait disabled:opacity-70">
             <i data-lucide="refresh-cw" class="h-4 w-4"></i>Refresh history
         </button>
     </header>
+    <div id="alertmanager-history-loading" class="htmx-indicator pointer-events-none absolute inset-x-0 top-0 z-10 h-1 overflow-hidden bg-kaori-soft"><div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div></div>
 
     {% if runtime_history.rows %}
         <div class="grid gap-px border-b border-outline-subtle bg-outline-subtle sm:grid-cols-4">
@@ -98,13 +100,17 @@
             </p>
             <div class="flex flex-wrap items-center gap-2">
                 <label class="flex items-center gap-2 text-xs font-semibold text-content-secondary">
-                    Rows
+                    Items per page
                     <select name="per_page"
+                            aria-label="Runtime observations per page"
                             hx-get="{{ url_for('alertmanager.runtime_history', instance_id=instance.id) }}"
+                            hx-trigger="change"
                             hx-target="#alertmanager-runtime-history"
                             hx-swap="outerHTML"
                             hx-include="this"
-                            class="rounded-lg border border-outline-default bg-surface-card px-2.5 py-2 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                            hx-disabled-elt="this"
+                            hx-indicator="#alertmanager-history-loading"
+                            class="h-10 w-20 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-normal text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20 disabled:cursor-wait disabled:opacity-70">
                         {% for option in runtime_history.pagination.allowed_per_page %}
                             <option value="{{ option }}" {% if option == runtime_history.pagination.per_page %}selected{% endif %}>{{ option }}</option>
                         {% endfor %}
@@ -114,15 +120,17 @@
                         {% if runtime_history.pagination.has_prev %}hx-get="{{ url_for('alertmanager.runtime_history', instance_id=instance.id, page=runtime_history.pagination.prev_page, per_page=runtime_history.pagination.per_page) }}"{% else %}disabled{% endif %}
                         hx-target="#alertmanager-runtime-history"
                         hx-swap="outerHTML"
-                        class="inline-flex min-h-10 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-primary transition hover:border-outline-strong hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-not-allowed disabled:opacity-40">
+                        hx-indicator="#alertmanager-history-loading"
+                        class="inline-flex h-10 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-primary transition hover:border-outline-strong hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-not-allowed disabled:opacity-40">
                     Previous
                 </button>
-                <span class="inline-flex min-h-10 items-center rounded-lg border border-outline-default bg-surface-hover px-3 text-sm font-semibold text-content-secondary">{{ runtime_history.pagination.page }} / {{ runtime_history.pagination.total_pages }}</span>
+                <span class="inline-flex h-10 items-center rounded-lg border border-outline-default bg-surface-hover px-3 text-sm font-semibold text-content-secondary">Page {{ runtime_history.pagination.page }} / {{ runtime_history.pagination.total_pages }}</span>
                 <button type="button"
                         {% if runtime_history.pagination.has_next %}hx-get="{{ url_for('alertmanager.runtime_history', instance_id=instance.id, page=runtime_history.pagination.next_page, per_page=runtime_history.pagination.per_page) }}"{% else %}disabled{% endif %}
                         hx-target="#alertmanager-runtime-history"
                         hx-swap="outerHTML"
-                        class="inline-flex min-h-10 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-primary transition hover:border-outline-strong hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-not-allowed disabled:opacity-40">
+                        hx-indicator="#alertmanager-history-loading"
+                        class="inline-flex h-10 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-primary transition hover:border-outline-strong hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-not-allowed disabled:opacity-40">
                     Next
                 </button>
             </div>

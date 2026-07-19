@@ -16,33 +16,41 @@ def create_or_update_binding(
     form: AlertmanagerBindingForm,
     commit: bool = True,
 ) -> IntegrationBinding:
-    if not form.scope_key:
-        raise ValueError('Binding scope is required.')
+    scope_key = str(form.scope_key or '').strip()
+    if not scope_key:
+        raise ValueError('Select or enter an operational scope before saving the binding.')
+    if len(scope_key) > 255:
+        raise ValueError('The operational scope key must be 255 characters or fewer.')
+
+    existing = find_binding(
+        instance_id=instance.id,
+        scope_type=form.scope_type,
+        scope_key=scope_key,
+    )
+    if existing is not None:
+        raise ValueError(
+            'This Alertmanager instance is already bound to the selected scope. '
+            'Remove the existing binding before creating a replacement.'
+        )
+
     if form.binding_role == 'primary':
         _ensure_primary_available(
             instance_id=instance.id,
             scope_type=form.scope_type,
-            scope_key=form.scope_key,
+            scope_key=scope_key,
         )
 
     canonical = ensure_canonical_instance(instance, provider_type='alertmanager')
-    binding = find_binding(
-        instance_id=instance.id,
-        scope_type=form.scope_type,
-        scope_key=form.scope_key,
+    binding = IntegrationBinding(
+        integration_instance_id=canonical.id,
+        asset_type=form.scope_type,
+        asset_key=scope_key,
+        binding_role=form.binding_role,
+        priority=form.priority,
+        enabled=form.enabled,
+        capability_scope=DEFAULT_CAPABILITIES,
     )
-    if binding is None:
-        binding = IntegrationBinding(
-            integration_instance_id=canonical.id,
-            asset_type=form.scope_type,
-            asset_key=str(form.scope_key),
-            binding_role=form.binding_role,
-        )
-        db.session.add(binding)
-
-    binding.priority = form.priority
-    binding.enabled = form.enabled
-    binding.capability_scope = DEFAULT_CAPABILITIES
+    db.session.add(binding)
     if commit:
         try:
             db.session.commit()
@@ -87,6 +95,6 @@ def _ensure_primary_available(*, instance_id: int, scope_type: str, scope_key: s
         ).first()
         if provider is not None and provider.id != instance_id:
             raise ValueError(
-                'This scope already has a primary Alertmanager binding. '
-                'Use secondary/fallback or remove the existing primary binding first.'
+                f'This scope already has a primary Alertmanager binding through {provider.name}. '
+                'Choose secondary or fallback, or remove the existing primary binding first.'
             )

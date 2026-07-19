@@ -196,6 +196,94 @@ Connection testing and Full Validation are separate contracts:
 - **Scope Binding** controls where the validated connection is eligible for
   primary, secondary, or fallback resolution.
 
+## Validation diagnostics contract
+
+The **Validation & Capabilities** workspace is the technical source of truth for
+what KAORI observed and what an operator must change when a capability is not
+available. Every capability definition includes:
+
+- the API request or payload inspection used as evidence;
+- explicit success criteria;
+- required connection, proxy, authentication, TLS, or alert-payload setup;
+- operational impact when the capability is missing;
+- ordered remediation steps; and
+- the dependent KAORI operational domains affected by the result.
+
+API capability checks treat a successful HTTP 2xx JSON response as valid even
+when the returned collection is empty. Metadata capabilities are sample-based:
+when there are no representative active alerts or silences, metadata may be
+reported as **Not observed**. Operators should create or trigger controlled
+representative data, rerun Full Validation, and remove temporary test objects
+when the evidence has been collected.
+
+When the documented external success criteria pass but KAORI still reports a
+missing capability, treat the issue as an adapter/probe mismatch. Capture only a
+sanitized response shape, compare it with `app/alertmanager/probes.py` and the
+provider-neutral normalizer, adjust capability discovery without adding
+product-specific UI branches, and add a regression fixture before revalidation.
+
+The technical workflow is:
+
+```text
+Run Full Validation
+        ↓
+Review required capability failures
+        ↓
+Apply endpoint / authentication / TLS / proxy / payload fixes
+        ↓
+Rerun Full Validation
+        ↓
+Review operational-domain readiness
+        ↓
+Refresh Runtime
+        ↓
+Confirm Effective Source Resolution
+```
+
+## Runtime health and history contract
+
+Runtime health is separate from validation readiness. Readiness describes the
+saved connection and capability contract. Runtime health describes the latest
+observed operational condition.
+
+The health score is a weighted result of connectivity, readiness, provider API,
+capability discovery, and latency factors. The UI interprets the score as:
+
+```text
+0–59   critical
+60–84  attention required
+85–100 healthy
+```
+
+The runtime workspace displays the score as a health bar, exposes each weighted
+factor, and renders the diagnostic pipeline as full-width technical checks with
+status, evidence, duration, and remediation guidance. Runtime history uses the
+global KAORI pagination contract: default `5` observations with `5`, `10`, `25`,
+and `50` as supported page sizes.
+
+## Scope binding contract
+
+Scope binding creation uses HTMX and updates the Scope & Resolution workspace
+without a full-page reload. Every create, rejection, and unexpected failure
+produces a persistent notification, toast feedback, and Activity Audit Log
+record.
+
+Binding validation rules are explicit:
+
+- scope type and canonical scope key are required;
+- a managed-cluster scope must reference an existing KAORI cluster;
+- one Alertmanager instance cannot be bound to the same scope more than once;
+- only one enabled primary Alertmanager source is allowed for one scope;
+- priority must be between `1` and `1000`; lower values are preferred within the
+  same source role; and
+- duplicate submissions are rejected as **already exists** rather than silently
+  updating the existing binding.
+
+The create form does not act as an implicit edit form. To replace an existing
+mapping, remove the current binding through the confirmation modal and create
+the replacement with the intended role and priority. This keeps lifecycle and
+audit semantics explicit.
+
 ## Runtime flows
 
 ### Register and bind a source
@@ -272,7 +360,7 @@ client or query Alertmanager configuration tables directly.
 | `sanitization.py` | Removes user info, query strings, and fragments from endpoints before presentation or operator-console links. | Pure security utility; it does not modify the stored connection endpoint. |
 | `validation.py` | Executes status, alerts, and silences probes; discovers version/capability profiles; classifies failure; persists readiness. | One validation use case, no route branching. |
 | `reader.py` | Performs runtime status, alert, and silence reads against one already resolved source. | Returns normalized provider data; does not resolve asset bindings. |
-| `bindings.py` | Creates, updates, deletes, and resolves asset bindings; enforces one primary source per scope. | Owns binding rules, not asset-domain enrichment. |
+| `bindings.py` | Creates, deletes, and resolves scope bindings; rejects duplicate instance-to-scope mappings and enforces one primary source per scope. | Owns binding rules, not asset-domain enrichment. |
 | `resolver.py` | Ranks bound sources by required capabilities, readiness, runtime health, role, and priority, and emits a deterministic decision trace. | Pure selection logic over persisted state; no HTTP requests or cross-source deduplication. |
 | `consumer.py` | Public scope-based consumer facade with source ordering, readiness gating, fallback, and Kubernetes scope compatibility. | Preferred entry point for all bound operational consumer domains. |
 | `service.py` | Stable application facade for instance lifecycle, validation, bindings, legacy redirects, and existing cluster-based function signatures. | Routes and consumers should use this facade instead of internal modules. |

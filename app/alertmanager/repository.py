@@ -66,12 +66,16 @@ def find_binding(*, instance_id: int, scope_type: str, scope_key: str) -> Integr
     instance = get_instance(instance_id)
     if instance is None or instance.integration_instance_id is None:
         return None
-    statement = select(IntegrationBinding).where(
-        IntegrationBinding.integration_instance_id == instance.integration_instance_id,
-        IntegrationBinding.asset_type == scope_type,
-        IntegrationBinding.asset_key == str(scope_key),
+    statement = (
+        select(IntegrationBinding)
+        .where(
+            IntegrationBinding.integration_instance_id == instance.integration_instance_id,
+            IntegrationBinding.asset_type == scope_type,
+            IntegrationBinding.asset_key == str(scope_key),
+        )
+        .order_by(IntegrationBinding.id.asc())
     )
-    return db.session.execute(statement).scalar_one_or_none()
+    return db.session.execute(statement).scalars().first()
 
 
 def provider_instance_for_binding(binding: IntegrationBinding) -> AlertmanagerInstance | None:

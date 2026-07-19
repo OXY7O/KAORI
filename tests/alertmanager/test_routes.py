@@ -14,6 +14,7 @@ from app.extensions import db  # noqa: E402
 from app.models import Cluster, User  # noqa: E402
 from app.models.alertmanager import AlertmanagerInstance  # noqa: E402
 from app.models.notification import Notification  # noqa: E402
+from app.models.integration import IntegrationBinding  # noqa: E402
 
 
 @pytest.fixture
@@ -109,6 +110,113 @@ def test_instance_inventory_detail_and_legacy_cluster_redirect(app) -> None:
     legacy = client.get(f'/integrations/alertmanager/cluster/{cluster.id}')
     assert legacy.status_code == 302
     assert legacy.headers['Location'].endswith(f'/integrations/alertmanager/instances/{instance.id}')
+
+
+def test_scope_binding_save_uses_htmx_and_rejects_duplicate_scope(app) -> None:
+    user = User(username='binding-admin', email='binding-admin@example.test', is_super_admin=True)
+    cluster = Cluster(name='Development Cluster', environment='development', kubeconfig='apiVersion: v1\nclusters: []')
+    db.session.add_all([user, cluster])
+    db.session.flush()
+    instance = save_alertmanager_instance(
+        form=AlertmanagerInstanceForm(
+            name='Development Alertmanager',
+            description='Development source.',
+            deployment_type='shared',
+            endpoint='http://alertmanager-dev:9093',
+            auth_type='none',
+            username=None,
+            password=None,
+            bearer_token=None,
+            timeout=5,
+            verify_ssl=True,
+            enabled=True,
+        )
+    )
+    db.session.commit()
+
+    client = app.test_client()
+    _login(client, user.id)
+    payload = {
+        'scope_type': 'kubernetes_cluster',
+        'cluster_scope_key': cluster.id,
+        'binding_role': 'primary',
+        'priority': '100',
+        'enabled': '1',
+    }
+
+    created = client.post(
+        f'/integrations/alertmanager/instances/{instance.id}/bindings',
+        data=payload,
+        headers={'HX-Request': 'true'},
+    )
+    assert created.status_code == 200
+    assert b'id="alertmanager-scope-workspace"' in created.data
+    assert b'data-quick-action-toast' in created.data
+    assert b'Development Cluster' in created.data
+    assert db.session.query(IntegrationBinding).count() == 1
+
+    duplicate = client.post(
+        f'/integrations/alertmanager/instances/{instance.id}/bindings',
+        data=payload,
+        headers={'HX-Request': 'true'},
+    )
+    assert duplicate.status_code == 200
+    assert b'already bound to the selected scope' in duplicate.data
+    assert db.session.query(IntegrationBinding).count() == 1
+
+    notifications = db.session.query(Notification).order_by(Notification.id.asc()).all()
+    assert [item.event_type for item in notifications] == [
+        'alertmanager_binding_created',
+        'alertmanager_binding_create_rejected',
+    ]
+    assert notifications[-1].status == 'error'
+
+
+def test_primary_binding_conflict_identifies_existing_source(app) -> None:
+    user = User(username='primary-admin', email='primary-admin@example.test', is_super_admin=True)
+    cluster = Cluster(name='Shared Cluster', environment='production', kubeconfig='apiVersion: v1\nclusters: []')
+    db.session.add_all([user, cluster])
+    db.session.flush()
+
+    first = save_alertmanager_instance(
+        form=AlertmanagerInstanceForm(
+            name='Primary Alertmanager', description=None, deployment_type='shared',
+            endpoint='http://primary-alertmanager:9093', auth_type='none', username=None,
+            password=None, bearer_token=None, timeout=5, verify_ssl=True, enabled=True,
+        )
+    )
+    second = save_alertmanager_instance(
+        form=AlertmanagerInstanceForm(
+            name='Secondary Alertmanager', description=None, deployment_type='shared',
+            endpoint='http://secondary-alertmanager:9093', auth_type='none', username=None,
+            password=None, bearer_token=None, timeout=5, verify_ssl=True, enabled=True,
+        )
+    )
+    add_alertmanager_binding(
+        instance=first,
+        form=AlertmanagerBindingForm(
+            scope_type='kubernetes_cluster', scope_key=cluster.id,
+            binding_role='primary', priority=100, enabled=True,
+        ),
+    )
+
+    client = app.test_client()
+    _login(client, user.id)
+    response = client.post(
+        f'/integrations/alertmanager/instances/{second.id}/bindings',
+        data={
+            'scope_type': 'kubernetes_cluster',
+            'cluster_scope_key': cluster.id,
+            'binding_role': 'primary',
+            'priority': '100',
+            'enabled': '1',
+        },
+        headers={'HX-Request': 'true'},
+    )
+
+    assert response.status_code == 200
+    assert b'already has a primary Alertmanager binding through Primary Alertmanager' in response.data
+    assert db.session.query(IntegrationBinding).count() == 1
 
 
 def test_new_instance_page_prefills_cluster_binding_context(app) -> None:

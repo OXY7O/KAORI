@@ -470,8 +470,9 @@ def create_binding(instance_id: int) -> ResponseReturnValue:
     if instance is None:
         abort(404)
     form = parse_alertmanager_binding_form(request.form)
+    is_htmx = request.headers.get('HX-Request') == 'true'
     if form.scope_type == 'kubernetes_cluster' and get_cluster_by_id(form.scope_key) is None:
-        error = 'The selected Kubernetes cluster does not exist.'
+        error = 'Select a managed cluster that still exists in KAORI inventory.'
     else:
         error = None
     try:
@@ -479,7 +480,7 @@ def create_binding(instance_id: int) -> ResponseReturnValue:
             raise ValueError(error)
         binding = add_alertmanager_binding(instance=instance, form=form)
     except ValueError as exc:
-        record_instance_activity(
+        feedback = record_instance_activity(
             user_id=int(current_user.id),
             instance=instance,
             event_type='alertmanager_binding_create_rejected',
@@ -487,11 +488,17 @@ def create_binding(instance_id: int) -> ResponseReturnValue:
             title='Alertmanager binding not saved',
             message=f'KAORI could not bind {instance.name} to the requested scope.',
             detail=str(exc),
-            metadata={'scope_type': form.scope_type, 'scope_key': form.scope_key},
+            metadata={
+                'scope_type': form.scope_type,
+                'scope_key': form.scope_key,
+                'binding_role': form.binding_role,
+                'priority': form.priority,
+            },
+            queue_feedback=not is_htmx,
         )
     except Exception as exc:  # pragma: no cover - defensive database boundary
         logger.exception('Alertmanager binding creation failed for instance %s.', instance_id)
-        record_instance_activity(
+        feedback = record_instance_activity(
             user_id=int(current_user.id),
             instance=instance,
             event_type='alertmanager_binding_create_failed',
@@ -502,18 +509,21 @@ def create_binding(instance_id: int) -> ResponseReturnValue:
             metadata={
                 'scope_type': form.scope_type,
                 'scope_key': form.scope_key,
+                'binding_role': form.binding_role,
+                'priority': form.priority,
                 'reason': type(exc).__name__,
             },
+            queue_feedback=not is_htmx,
         )
     else:
-        record_instance_activity(
+        feedback = record_instance_activity(
             user_id=int(current_user.id),
             instance=instance,
             event_type='alertmanager_binding_created',
             status='success',
             title='Alertmanager binding saved',
             message=f'{instance.name} is now available to the selected operational scope.',
-            detail=f'{binding.asset_type}:{binding.asset_key} is mapped as {binding.binding_role}.',
+            detail=f'{binding.asset_type}:{binding.asset_key} is mapped as {binding.binding_role} with priority {binding.priority}.',
             metadata={
                 'binding_id': binding.id,
                 'scope_type': binding.asset_type,
@@ -521,6 +531,16 @@ def create_binding(instance_id: int) -> ResponseReturnValue:
                 'binding_role': binding.binding_role,
                 'priority': binding.priority,
             },
+            queue_feedback=not is_htmx,
+        )
+
+    if is_htmx:
+        context = build_instance_context(instance)
+        return render_template(
+            'alertmanager/partials/_detail_scope.html',
+            **context,
+            binding_feedback=feedback,
+            notification_context=get_navigation_notification_context(user_id=int(current_user.id)),
         )
     return redirect(url_for('alertmanager.instance_detail', instance_id=instance_id) + '#scope')
 

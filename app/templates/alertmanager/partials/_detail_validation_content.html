@@ -1,21 +1,121 @@
-<section id="alertmanager-validation-workspace" class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-        <div class="flex items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="scan-search" class="h-5 w-5"></i></span><div><h2 class="text-base font-semibold text-content-primary">Compatibility &amp; Capability Matrix</h2><p class="mt-1 text-sm leading-6 text-content-secondary">Validation evidence is the capability contract used by readiness checks and source resolution.</p></div></div>
-        <form method="post" action="{{ url_for('alertmanager.validate_instance', instance_id=instance.id) }}" hx-post="{{ url_for('alertmanager.validate_instance', instance_id=instance.id) }}" hx-target="#alertmanager-validation-workspace" hx-swap="outerHTML" hx-disabled-elt="button" hx-indicator="#alertmanager-validation-loading">
+{% import "components/table_label.html" as table_label %}
+<section id="alertmanager-validation-workspace" class="relative overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <header class="relative flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <div class="flex items-start gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="scan-search" class="h-5 w-5"></i></span>
+            <div>
+                <h2 class="text-base font-semibold text-content-primary">Compatibility &amp; Capability Matrix</h2>
+                <p class="mt-1 text-sm leading-6 text-content-secondary">Technical evidence, acceptance criteria, operational impact, and remediation guidance for every validated capability.</p>
+            </div>
+        </div>
+        <form method="post"
+              action="{{ url_for('alertmanager.validate_instance', instance_id=instance.id) }}"
+              hx-post="{{ url_for('alertmanager.validate_instance', instance_id=instance.id) }}"
+              hx-target="#alertmanager-validation-workspace"
+              hx-swap="outerHTML"
+              hx-disabled-elt="button"
+              hx-indicator="#alertmanager-validation-loading">
             {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-            <button type="submit" class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-70"><i data-lucide="scan-line" class="h-4 w-4"></i>Run Full Validation</button>
+            <button type="submit" class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-70">
+                <i data-lucide="scan-line" class="h-4 w-4"></i>Run Full Validation
+            </button>
         </form>
     </header>
-    <div id="alertmanager-validation-loading" class="htmx-indicator h-1 overflow-hidden bg-kaori-soft"><div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div></div>
-    <div class="grid gap-5 p-5 xl:grid-cols-[minmax(0,1.3fr)_minmax(320px,0.7fr)]">
-        <div class="overflow-hidden rounded-xl border border-outline-subtle">
-            <div class="overflow-x-auto"><table class="min-w-full text-left text-sm"><thead class="bg-surface-hover text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted"><tr><th class="px-4 py-3">Capability</th><th class="px-4 py-3">Category</th><th class="px-4 py-3">Required</th><th class="px-4 py-3">Status</th></tr></thead><tbody class="divide-y divide-outline-subtle bg-surface-card">{% for row in capability_rows %}<tr class="align-top"><td class="px-4 py-3"><p class="font-semibold text-content-primary">{{ row.label }}</p><p class="mt-1 text-xs leading-5 text-content-secondary">{{ row.description }}</p></td><td class="px-4 py-3 text-content-secondary">{{ row.category|title }}</td><td class="px-4 py-3 text-content-secondary">{{ 'Yes' if row.required else 'No' }}</td><td class="px-4 py-3">{{ status_badge('ready' if row.available else ('blocked' if row.required else 'not_configured')) }}</td></tr>{% endfor %}</tbody></table></div>
-        </div>
-        <div class="space-y-3">
-            <div class="rounded-xl border border-brand-outline bg-kaori-soft p-4"><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-kaori-primary">Detected profile</p><p class="mt-2 text-sm font-semibold text-content-primary">{{ instance.capability_profile or 'Validation required' }}</p><p class="mt-1 text-xs leading-5 text-content-secondary">Profiles are derived from observed capabilities instead of hard-coded product assumptions.</p></div>
-            {% for row in module_readiness_rows %}<div class="rounded-xl border border-outline-subtle bg-surface-hover p-4"><div class="flex items-center justify-between gap-3"><p class="text-sm font-semibold text-content-primary">{{ row.label }}</p>{{ status_badge(row.status) }}</div>{% if row.missing_required %}<p class="mt-2 text-xs leading-5 text-content-secondary">Missing required: {{ row.missing_required|join(', ') }}</p>{% elif row.missing_optional %}<p class="mt-2 text-xs leading-5 text-content-secondary">Optional metadata not observed: {{ row.missing_optional|join(', ') }}</p>{% else %}<p class="mt-2 text-xs leading-5 text-content-secondary">All declared requirements are available.</p>{% endif %}</div>{% endfor %}
-            <div class="rounded-xl border border-outline-subtle bg-surface-card p-4"><p class="text-sm font-semibold text-content-primary">How to interpret results</p><p class="mt-2 text-xs leading-5 text-content-secondary"><strong class="font-semibold">Required missing</strong> blocks the related operational domain. <strong class="font-semibold">Optional missing</strong> may reduce metadata depth without blocking core usage.</p></div>
-        </div>
+
+    <div id="alertmanager-validation-loading" class="htmx-indicator pointer-events-none absolute inset-x-0 top-0 z-10 h-1 overflow-hidden bg-kaori-soft">
+        <div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div>
+    </div>
+
+    <div class="grid gap-px border-b border-outline-subtle bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
+        <div class="bg-surface-card p-4"><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Detected Profile</p><p class="mt-2 break-words text-sm font-semibold text-content-primary">{{ instance.capability_profile or 'Validation required' }}</p><p class="mt-1 text-xs leading-5 text-content-secondary">Derived from observed API and payload evidence.</p></div>
+        <div class="bg-surface-card p-4"><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Observed</p><p class="mt-2 text-sm font-semibold text-content-primary">{{ capability_summary.observed }} / {{ capability_summary.total }}</p><p class="mt-1 text-xs leading-5 text-content-secondary">Capabilities detected in the latest validation.</p></div>
+        <div class="bg-surface-card p-4"><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Required Missing</p><p class="mt-2 text-sm font-semibold {% if capability_summary.required_missing %}text-status-critical-text{% else %}text-status-normal-text{% endif %}">{{ capability_summary.required_missing }}</p><p class="mt-1 text-xs leading-5 text-content-secondary">Blocks one or more dependent operational domains.</p></div>
+        <div class="bg-surface-card p-4"><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Optional Gaps</p><p class="mt-2 text-sm font-semibold {% if capability_summary.optional_missing %}text-status-warning-text{% else %}text-status-normal-text{% endif %}">{{ capability_summary.optional_missing }}</p><p class="mt-1 text-xs leading-5 text-content-secondary">Reduces metadata depth without necessarily blocking use.</p></div>
+    </div>
+
+    <div class="grid items-start gap-5 p-5 sm:p-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(320px,0.7fr)]">
+        <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+            <header class="border-b border-outline-subtle bg-surface-hover px-4 py-3">
+                <p class="text-sm font-semibold text-content-primary">Capability technical detail</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Expand a row to see the exact probe, success criteria, required configuration, impact, and fixing steps.</p>
+            </header>
+            <div class="divide-y divide-outline-subtle">
+                {% for row in capability_rows %}
+                    <details class="group">
+                        <summary class="flex cursor-pointer list-none flex-col gap-3 px-4 py-4 transition hover:bg-surface-hover sm:flex-row sm:items-start sm:justify-between [&::-webkit-details-marker]:hidden">
+                            <div class="min-w-0">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <p class="text-sm font-semibold text-content-primary">{{ row.label }}</p>
+                                    {{ table_label.metadata_label(row.category|title, 'braces') }}
+                                    {% if row.required %}{{ table_label.status_label('Required', 'info', 'shield-check') }}{% else %}{{ table_label.status_label('Optional', 'unknown', 'circle-dashed') }}{% endif %}
+                                </div>
+                                <p class="mt-2 text-xs leading-5 text-content-secondary">{{ row.description }}</p>
+                            </div>
+                            <div class="flex shrink-0 items-center gap-2">
+                                {{ table_label.status_label(row.status_label, row.status_tone, row.status_icon) }}
+                                <i data-lucide="chevron-down" class="h-4 w-4 text-content-muted transition group-open:rotate-180"></i>
+                            </div>
+                        </summary>
+                        <div class="border-t border-outline-subtle bg-surface-hover p-4">
+                            <div class="grid gap-3 md:grid-cols-2">
+                                <div class="rounded-lg border border-outline-subtle bg-surface-card p-3"><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Latest evidence</p><p class="mt-2 text-xs leading-5 text-content-secondary">{{ row.evidence }}</p></div>
+                                <div class="rounded-lg border border-outline-subtle bg-surface-card p-3"><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Technical probe</p><p class="mt-2 text-xs font-semibold leading-5 text-content-primary">{{ row.probe }}</p></div>
+                                <div class="rounded-lg border border-outline-subtle bg-surface-card p-3 md:col-span-2"><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Success criteria</p><p class="mt-2 text-xs leading-5 text-content-secondary">{{ row.success_criteria }}</p></div>
+                                <div class="rounded-lg border border-brand-outline bg-kaori-soft p-3"><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-kaori-primary">Required configuration</p><p class="mt-2 text-xs leading-5 text-content-secondary">{{ row.configuration_guidance }}</p></div>
+                                <div class="rounded-lg border border-outline-subtle bg-surface-card p-3"><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Operational impact</p><p class="mt-2 text-xs leading-5 text-content-secondary">{{ row.impact }}</p></div>
+                            </div>
+                            <div class="mt-3 rounded-lg border {% if row.available %}border-status-normal-border bg-status-normal-soft{% elif row.required %}border-status-critical-border bg-status-critical-soft{% else %}border-status-warning-border bg-status-warning-soft{% endif %} p-3">
+                                <p class="text-xs font-semibold {% if row.available %}text-status-normal-text{% elif row.required %}text-status-critical-text{% else %}text-status-warning-text{% endif %}">Recommended action</p>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ row.next_action }}</p>
+                                {% if not row.available and row.remediation %}
+                                    <ol class="mt-3 space-y-2">
+                                        {% for step in row.remediation %}
+                                            <li class="flex items-start gap-2 text-xs leading-5 text-content-secondary"><span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-outline-default bg-surface-card text-[10px] font-semibold text-kaori-primary">{{ loop.index }}</span><span>{{ step }}</span></li>
+                                        {% endfor %}
+                                    </ol>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </details>
+                {% endfor %}
+            </div>
+        </section>
+
+        <aside class="space-y-4">
+            <div class="rounded-xl border border-brand-outline bg-kaori-soft p-4">
+                <div class="flex items-start gap-3"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-surface-card text-kaori-primary"><i data-lucide="workflow" class="h-4 w-4"></i></span><div><p class="text-sm font-semibold text-content-primary">How KAORI uses this evidence</p><p class="mt-1 text-xs leading-5 text-content-secondary">Readiness and source resolution consume the latest capability snapshot. Fix required gaps first, rerun Full Validation, refresh runtime, then confirm the effective source.</p></div></div>
+            </div>
+            <details class="group overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+                <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-4 [&::-webkit-details-marker]:hidden"><div><p class="text-sm font-semibold text-content-primary">When the external criteria already pass</p><p class="mt-1 text-xs leading-5 text-content-secondary">Use this boundary when Alertmanager returns the expected data but KAORI still marks the capability as missing.</p></div><i data-lucide="chevron-down" class="h-4 w-4 text-content-muted transition group-open:rotate-180"></i></summary>
+                <div class="border-t border-outline-subtle bg-surface-hover p-4"><ol class="space-y-2">{% for step in [
+                    'Capture a sanitized response shape from the documented probe without credentials, tokens, personal data, or unrelated alert content.',
+                    'Compare the observed field path with the capability discovery rules in app/alertmanager/probes.py and the relevant normalizer.',
+                    'Adjust the provider-neutral probe or compatibility profile instead of adding product-specific branching in the UI.',
+                    'Add a regression fixture for the observed payload shape, rerun Full Validation, then confirm module readiness and source resolution.'
+                ] %}<li class="flex items-start gap-2 text-xs leading-5 text-content-secondary"><span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-outline-default bg-surface-card text-[10px] font-semibold text-kaori-primary">{{ loop.index }}</span><span>{{ step }}</span></li>{% endfor %}</ol></div>
+            </details>
+            <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+                <header class="border-b border-outline-subtle bg-surface-hover px-4 py-3"><p class="text-sm font-semibold text-content-primary">Operational domain readiness</p><p class="mt-1 text-xs leading-5 text-content-secondary">Shows which KAORI functions can safely use this connection.</p></header>
+                <div class="divide-y divide-outline-subtle">
+                    {% for row in module_readiness_rows %}
+                        {% set module_tone = 'normal' if row.status == 'ready' else ('warning' if row.status == 'degraded' else 'critical') %}
+                        {% set module_icon = 'circle-check' if row.status == 'ready' else ('triangle-alert' if row.status == 'degraded' else 'octagon-alert') %}
+                        <details class="group">
+                            <summary class="flex cursor-pointer list-none items-start justify-between gap-3 px-4 py-4 transition hover:bg-surface-hover [&::-webkit-details-marker]:hidden">
+                                <div><p class="text-sm font-semibold text-content-primary">{{ row.label }}</p><p class="mt-1 text-xs leading-5 text-content-secondary">{{ row.description }}</p></div>
+                                <div class="flex shrink-0 items-center gap-2">{{ table_label.status_label(row.status|title, module_tone, module_icon) }}<i data-lucide="chevron-down" class="h-4 w-4 text-content-muted transition group-open:rotate-180"></i></div>
+                            </summary>
+                            <div class="space-y-3 border-t border-outline-subtle bg-surface-hover p-4">
+                                <div><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Required capabilities</p><p class="mt-1 text-xs leading-5 text-content-secondary">{{ row.required_capability_labels|join(', ') }}</p></div>
+                                {% if row.optional_capability_labels %}<div><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Optional enrichment</p><p class="mt-1 text-xs leading-5 text-content-secondary">{{ row.optional_capability_labels|join(', ') }}</p></div>{% endif %}
+                                {% if row.missing_required_labels %}<div class="rounded-lg border border-status-critical-border bg-status-critical-soft p-3"><p class="text-xs font-semibold text-status-critical-text">Blocking gaps</p><p class="mt-1 text-xs leading-5 text-content-secondary">{{ row.missing_required_labels|join(', ') }}</p></div>{% elif row.missing_optional_labels %}<div class="rounded-lg border border-status-warning-border bg-status-warning-soft p-3"><p class="text-xs font-semibold text-status-warning-text">Enrichment gaps</p><p class="mt-1 text-xs leading-5 text-content-secondary">{{ row.missing_optional_labels|join(', ') }}</p></div>{% endif %}
+                                <div><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-kaori-primary">What to do</p><p class="mt-1 text-xs leading-5 text-content-secondary">{{ row.operator_guidance }}</p></div>
+                            </div>
+                        </details>
+                    {% endfor %}
+                </div>
+            </section>
+        </aside>
     </div>
 </section>
 {% if validation_feedback is defined and validation_feedback %}
