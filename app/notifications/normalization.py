@@ -51,7 +51,7 @@ def activity_failure_message(event_type: str, text: str) -> str:
     ):
         return 'KAORI could not reach the configured endpoint. Review the endpoint, network route, service availability, and firewall access.'
     if any(token in normalized for token in ('integrityerror', 'operationalerror', 'sqlalchemy', 'database')):
-        return 'KAORI could not complete the database operation. Review database availability and the application logs before retrying.'
+        return 'KAORI could not complete the database operation. Review database availability and KAORI logs before retrying.'
     if 'kubernetes' in event_type or event_type.startswith('cluster_'):
         return 'The Kubernetes operation could not be completed. Review API reachability, kubeconfig credentials, TLS settings, and cluster compatibility.'
     if event_type.startswith('prometheus_'):
@@ -62,7 +62,7 @@ def activity_failure_message(event_type: str, text: str) -> str:
         return 'The activity retention operation could not be completed safely. Review the retention status and worker logs before retrying.'
 
     return (
-        'The operation could not be completed. Review the related configuration and application logs, then try again.'
+        'The operation could not be completed. Review the related configuration and KAORI logs, then try again.'
     )
 
 

@@ -348,7 +348,7 @@ def sync_single_cluster_task(
             'status': 'error',
             'title': 'Cluster inventory sync failed',
             'message': f'{cluster_name} inventory could not be refreshed.',
-            'detail': 'Review Kubernetes API compatibility, cluster credentials, TLS settings, and application logs before retrying.',
+            'detail': 'Review Kubernetes API compatibility, cluster credentials, TLS settings, and KAORI logs before retrying.',
             'finished_at': _now_iso(),
             'duration_seconds': round(perf_counter() - started_timer, 1),
             'error_type': type(exc).__name__,

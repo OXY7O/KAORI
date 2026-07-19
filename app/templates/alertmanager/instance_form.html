@@ -23,7 +23,7 @@
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('siren', 'Alertmanager Integration', 'server-cog') %}
-                        <h1 class="text-2xl font-semibold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">
+                        <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">
                             {{ instance.name if instance else 'Register Alertmanager Instance' }}
                         </h1>
                         <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">
@@ -60,7 +60,7 @@
                                 <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5">
                                     <div class="flex items-center gap-2 text-brand-foreground">
                                         <i data-lucide="shield-check" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                        <p class="text-xs font-semibold">Readiness</p>
+                                        <p class="text-[11px] font-semibold">Readiness</p>
                                     </div>
                                     <p class="mt-1.5 truncate text-sm font-semibold leading-5 text-brand-foreground">{{ hero_readiness|replace('_', ' ')|title }}</p>
                                     <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Established by Full Validation</p>
@@ -68,7 +68,7 @@
                                 <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5">
                                     <div class="flex items-center gap-2 text-brand-foreground">
                                         <i data-lucide="link-2" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                        <p class="text-xs font-semibold">Scope bindings</p>
+                                        <p class="text-[11px] font-semibold">Scope bindings</p>
                                     </div>
                                     <p class="mt-1.5 text-xl font-semibold leading-none text-brand-foreground">{{ bindings|length }}</p>
                                     <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Contexts eligible to use this source</p>
@@ -99,7 +99,7 @@
                                 <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5">
                                     <div class="flex items-center gap-2 text-brand-foreground">
                                         <i data-lucide="plug-zap" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                        <p class="text-xs font-semibold">Before save</p>
+                                        <p class="text-[11px] font-semibold">Before save</p>
                                     </div>
                                     <p class="mt-1.5 text-sm font-semibold leading-5 text-brand-foreground">Test connection</p>
                                     <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Registration repeats the probe</p>
@@ -107,7 +107,7 @@
                                 <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5">
                                     <div class="flex items-center gap-2 text-brand-foreground">
                                         <i data-lucide="scan-search" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                        <p class="text-xs font-semibold">After save</p>
+                                        <p class="text-[11px] font-semibold">After save</p>
                                     </div>
                                     <p class="mt-1.5 text-sm font-semibold leading-5 text-brand-foreground">Full Validation</p>
                                     <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Then assign scope bindings</p>
@@ -210,7 +210,7 @@
                             <div>
                                 <label for="alertmanager-endpoint" class="mb-1.5 block text-sm font-semibold text-content-primary">Endpoint URL</label>
                                 <input id="alertmanager-endpoint" type="url" name="endpoint" required value="{{ instance.endpoint if instance else (submitted_form.endpoint if submitted_form else '') }}" placeholder="https://alertmanager.example.internal:9093" class="{{ field_classes }}">
-                                <p class="mt-1.5 text-xs leading-5 text-content-muted">Use the base URL reachable from the KAORI application runtime. Do not append <span class="font-medium text-kaori-primary">/api/v2</span> or embed credentials in the URL.</p>
+                                <p class="mt-1.5 text-xs leading-5 text-content-muted">Use the base URL reachable from the KAORI runtime. Do not append <span class="font-medium text-kaori-primary">/api/v2</span> or embed credentials in the URL.</p>
                             </div>
                             <div class="mt-4 grid gap-4 lg:grid-cols-2">
                                 <div>
@@ -319,13 +319,13 @@
                         </summary>
                         <div class="divide-y divide-outline-subtle">
                             <article class="p-4">
-                                <div class="flex items-start gap-3"><div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary"><i data-lucide="id-card" class="h-4 w-4"></i></div><div><div class="flex flex-wrap items-center gap-2"><h3 class="text-sm font-semibold text-content-primary">Reusable Connection Identity</h3><span class="kaori-semantic-label inline-flex rounded-md border border-brand-outline bg-kaori-soft px-2 py-0.5 text-xs font-semibold text-kaori-primary-dark">Created here</span></div><p class="mt-1.5 text-xs leading-5 text-content-muted">KAORI stores one integration identity containing the endpoint, access method, security behavior, ownership context, and lifecycle state.</p></div></div>
+                                <div class="flex items-start gap-3"><div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary"><i data-lucide="id-card" class="h-4 w-4"></i></div><div><div class="flex flex-wrap items-center gap-2"><h3 class="text-sm font-semibold text-content-primary">Reusable connection identity</h3><span class="kaori-semantic-label inline-flex rounded-md border border-brand-outline bg-kaori-soft px-2 py-0.5 text-[11px] font-semibold text-kaori-primary-dark">Created here</span></div><p class="mt-1.5 text-xs leading-5 text-content-muted">KAORI stores one integration identity containing the endpoint, access method, security behavior, ownership context, and lifecycle state.</p></div></div>
                             </article>
                             <article class="p-4">
-                                <div class="flex items-start gap-3"><div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-elevated text-content-secondary"><i data-lucide="plug-zap" class="h-4 w-4"></i></div><div><div class="flex flex-wrap items-center gap-2"><h3 class="text-sm font-semibold text-content-primary">Reachability Test</h3><span class="kaori-semantic-label inline-flex rounded-md border border-outline-default bg-surface-hover px-2 py-0.5 text-xs font-semibold text-content-secondary">Before save</span></div><p class="mt-1.5 text-xs leading-5 text-content-muted">Test Connection confirms that the submitted endpoint can be reached with the selected authentication and TLS settings. No database record or capability profile is created.</p></div></div>
+                                <div class="flex items-start gap-3"><div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-elevated text-content-secondary"><i data-lucide="plug-zap" class="h-4 w-4"></i></div><div><div class="flex flex-wrap items-center gap-2"><h3 class="text-sm font-semibold text-content-primary">Reachability test</h3><span class="kaori-semantic-label inline-flex rounded-md border border-outline-default bg-surface-hover px-2 py-0.5 text-[11px] font-semibold text-content-secondary">Before save</span></div><p class="mt-1.5 text-xs leading-5 text-content-muted">Test Connection confirms that the submitted endpoint can be reached with the selected authentication and TLS settings. No database record or capability profile is created.</p></div></div>
                             </article>
                             <article class="p-4">
-                                <div class="flex items-start gap-3"><div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-elevated text-content-secondary"><i data-lucide="scan-search" class="h-4 w-4"></i></div><div><div class="flex flex-wrap items-center gap-2"><h3 class="text-sm font-semibold text-content-primary">Validation and Scope Assignment</h3><span class="kaori-semantic-label inline-flex rounded-md border border-outline-default bg-surface-hover px-2 py-0.5 text-xs font-semibold text-content-secondary">After save</span></div><p class="mt-1.5 text-xs leading-5 text-content-muted">The instance page performs full capability validation and then lets you bind the source to one or more operational scopes with primary, secondary, or fallback roles.</p></div></div>
+                                <div class="flex items-start gap-3"><div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-elevated text-content-secondary"><i data-lucide="scan-search" class="h-4 w-4"></i></div><div><div class="flex flex-wrap items-center gap-2"><h3 class="text-sm font-semibold text-content-primary">Validation and scope assignment</h3><span class="kaori-semantic-label inline-flex rounded-md border border-outline-default bg-surface-hover px-2 py-0.5 text-[11px] font-semibold text-content-secondary">After save</span></div><p class="mt-1.5 text-xs leading-5 text-content-muted">The instance page performs full capability validation and then lets you bind the source to one or more operational scopes with primary, secondary, or fallback roles.</p></div></div>
                             </article>
                         </div>
                     </details>
@@ -396,7 +396,7 @@
                     <div class="flex items-start gap-3">
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="scan-search" class="h-5 w-5"></i></span>
                         <div>
-                            <h2 class="text-lg font-semibold text-content-primary">Compatibility &amp; Capability Matrix</h2>
+                            <h2 class="text-lg font-bold text-content-primary">Compatibility &amp; Capability Matrix</h2>
                             <p class="mt-1 text-sm leading-6 text-content-secondary">Validation checks exposed APIs and observed alert metadata, then maps them to KAORI capability readiness.</p>
                         </div>
                     </div>
@@ -411,7 +411,7 @@
                                 <tbody class="divide-y divide-outline-subtle">
                                     {% for row in capability_rows %}
                                         <tr>
-                                            <td class="px-4 py-3"><p class="font-semibold text-content-primary">{{ row.label }}</p><p class="mt-1 text-xs text-content-secondary">{{ row.description }}</p></td>
+                                            <td class="px-4 py-3"><p class="font-bold text-content-primary">{{ row.label }}</p><p class="mt-1 text-xs text-content-secondary">{{ row.description }}</p></td>
                                             <td class="px-4 py-3 text-content-secondary">{{ row.category|title }}</td>
                                             <td class="px-4 py-3 text-content-secondary">{{ 'Yes' if row.required else 'No' }}</td>
                                             <td class="px-4 py-3">{{ status_badge('ready' if row.available else ('blocked' if row.required else 'not_configured')) }}</td>
@@ -423,13 +423,13 @@
                     </div>
                     <div class="space-y-3">
                         <div class="rounded-xl border border-brand-outline bg-kaori-soft p-4">
-                            <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-kaori-primary">Detected profile</p>
-                            <p class="mt-2 font-semibold text-content-primary">{{ instance.capability_profile or 'Validation required' }}</p>
+                            <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-kaori-primary">Detected profile</p>
+                            <p class="mt-2 font-bold text-content-primary">{{ instance.capability_profile or 'Validation required' }}</p>
                             <p class="mt-1 text-xs leading-5 text-content-secondary">KAORI uses detected capabilities at runtime instead of hard-coded product or version assumptions.</p>
                         </div>
                         {% for row in module_readiness_rows %}
                             <div class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
-                                <div class="flex items-center justify-between gap-3"><p class="font-semibold text-content-primary">{{ row.label }}</p>{{ status_badge(row.status) }}</div>
+                                <div class="flex items-center justify-between gap-3"><p class="font-bold text-content-primary">{{ row.label }}</p>{{ status_badge(row.status) }}</div>
                                 {% if row.missing_required %}<p class="mt-2 text-xs leading-5 text-content-secondary">Missing required: {{ row.missing_required|join(', ') }}</p>{% elif row.missing_optional %}<p class="mt-2 text-xs leading-5 text-content-secondary">Optional metadata not observed: {{ row.missing_optional|join(', ') }}</p>{% else %}<p class="mt-2 text-xs leading-5 text-content-secondary">All declared requirements are available.</p>{% endif %}
                             </div>
                         {% endfor %}
@@ -442,7 +442,7 @@
                     <div class="flex items-start gap-3">
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="route" class="h-5 w-5"></i></span>
                         <div>
-                            <h2 class="text-lg font-semibold text-content-primary">Effective Source Resolution</h2>
+                            <h2 class="text-lg font-bold text-content-primary">Effective Source Resolution</h2>
                             <p class="mt-1 text-sm leading-6 text-content-secondary">See which connection KAORI selects for each bound operational context, including capability gates, runtime health, and fallback decisions.</p>
                         </div>
                     </div>
@@ -453,10 +453,10 @@
                             <div class="flex flex-col gap-3 border-b border-outline-subtle bg-surface-hover px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
                                     <div class="flex flex-wrap items-center gap-2">
-                                        <p class="font-semibold text-content-primary">{{ scope.scope_label }}</p>
+                                        <p class="font-bold text-content-primary">{{ scope.scope_label }}</p>
                                         {{ table_label.metadata_label(scope_type_labels.get(scope.scope_type, scope.scope_type_label), 'boxes') }}
                                     </div>
-                                    <p class="mt-1 text-xs text-content-tertiary">{{ scope.scope_type }}:{{ scope.scope_key }}</p>
+                                    <p class="mt-1 text-[11px] text-content-tertiary">{{ scope.scope_type }}:{{ scope.scope_key }}</p>
                                 </div>
                                 <p class="text-xs text-content-secondary">Resolver evaluates every enabled binding for this operational context.</p>
                             </div>
@@ -465,8 +465,8 @@
                                     <section class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
                                         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                             <div>
-                                                <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-tertiary">{{ consumer_label }}</p>
-                                                <p class="mt-2 font-semibold text-content-primary">{{ resolution.selected_instance_name or 'No eligible source' }}</p>
+                                                <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-content-tertiary">{{ consumer_label }}</p>
+                                                <p class="mt-2 font-bold text-content-primary">{{ resolution.selected_instance_name or 'No eligible source' }}</p>
                                                 <p class="mt-1 text-xs text-content-secondary">Requires {{ resolution.required_capabilities|join(', ') }}</p>
                                             </div>
                                             {% if resolution.selected_instance_id %}
@@ -485,11 +485,11 @@
                                                     <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                                         <div class="min-w-0">
                                                             <div class="flex flex-wrap items-center gap-2">
-                                                                <p class="truncate text-sm font-semibold text-content-primary">{{ candidate.instance_name }}</p>
+                                                                <p class="truncate text-sm font-bold text-content-primary">{{ candidate.instance_name }}</p>
                                                                 {% if candidate.is_current_instance %}{{ table_label.metadata_label('Current', 'server-cog') }}{% endif %}
                                                                 {% if candidate.is_selected %}{{ table_label.status_label('Selected', 'normal', 'circle-check') }}{% endif %}
                                                             </div>
-                                                            <p class="mt-1 text-xs text-content-secondary">{{ candidate.binding_role|title }} · Priority {{ candidate.priority }} · {{ candidate.operational_state|replace('_', ' ')|title }}</p>
+                                                            <p class="mt-1 text-[11px] text-content-secondary">{{ candidate.binding_role|title }} · Priority {{ candidate.priority }} · {{ candidate.operational_state|replace('_', ' ')|title }}</p>
                                                         </div>
                                                         {% if candidate.eligible %}
                                                             {{ table_label.status_label('Eligible', 'normal', 'circle-check') }}
@@ -512,7 +512,7 @@
                         </article>
                     {% else %}
                         <div class="rounded-xl border border-dashed border-outline-default bg-surface-hover px-5 py-10 text-center">
-                            <p class="font-semibold text-content-primary">No source resolution is available yet.</p>
+                            <p class="font-bold text-content-primary">No source resolution is available yet.</p>
                             <p class="mt-2 text-sm text-content-secondary">Add a scope binding to evaluate eligible sources, capability mismatches, and fallback order.</p>
                         </div>
                     {% endfor %}
@@ -524,7 +524,7 @@
                     <div class="flex items-start gap-3">
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="link-2" class="h-5 w-5"></i></span>
                         <div>
-                            <h2 class="text-lg font-semibold text-content-primary">Scope Bindings</h2>
+                            <h2 class="text-lg font-bold text-content-primary">Scope Bindings</h2>
                             <p class="mt-1 text-sm leading-6 text-content-secondary">Associate this source with multiple infrastructure assets, services, operational domains, workflows, or global contexts through canonical bindings.</p>
                         </div>
                     </div>
@@ -546,8 +546,8 @@
                                     {% for row in binding_rows %}
                                         <tr>
                                             <td class="px-4 py-3">
-                                                <p class="font-semibold text-content-primary">{{ row.scope_label }}</p>
-                                                <p class="mt-1 text-xs text-content-tertiary">{{ scope_type_labels.get(row.binding.asset_type, row.binding.asset_type|replace('_', ' ')|title) }} · {{ row.binding.asset_key }}</p>
+                                                <p class="font-bold text-content-primary">{{ row.scope_label }}</p>
+                                                <p class="mt-1 text-[11px] text-content-tertiary">{{ scope_type_labels.get(row.binding.asset_type, row.binding.asset_type|replace('_', ' ')|title) }} · {{ row.binding.asset_key }}</p>
                                             </td>
                                             <td class="px-4 py-3 text-content-secondary">{{ row.binding.binding_role|title }}</td>
                                             <td class="px-4 py-3 text-content-secondary">{{ row.binding.priority }}</td>
@@ -581,10 +581,10 @@
                           x-data="{ scopeType: 'kubernetes_cluster' }"
                           class="self-start space-y-4 rounded-xl border border-brand-outline bg-kaori-soft p-4">
                         <div>
-                            <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-kaori-primary">Add or Update Binding</p>
+                            <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-kaori-primary">Add or Update Binding</p>
                             <p class="mt-1 text-xs leading-5 text-content-secondary">One primary source is allowed per scope; secondary and fallback sources may coexist.</p>
                         </div>
-                        <label class="block text-xs font-semibold text-content-primary">
+                        <label class="block text-xs font-bold text-content-primary">
                             Scope type
                             <select name="scope_type"
                                     x-model="scopeType"
@@ -598,7 +598,7 @@
                             </select>
                         </label>
                         <label x-show="scopeType === 'kubernetes_cluster'"
-                               class="block text-xs font-semibold text-content-primary">
+                               class="block text-xs font-bold text-content-primary">
                             Managed cluster
                             <select name="cluster_scope_key"
                                     :disabled="scopeType !== 'kubernetes_cluster'"
@@ -611,7 +611,7 @@
                         </label>
                         <label x-show="scopeType !== 'kubernetes_cluster'"
                                x-cloak
-                               class="block text-xs font-semibold text-content-primary">
+                               class="block text-xs font-bold text-content-primary">
                             Scope key
                             <input name="generic_scope_key"
                                    :disabled="scopeType === 'kubernetes_cluster'"
@@ -619,7 +619,7 @@
                                    class="mt-2 w-full rounded-xl border border-outline-default bg-surface-card px-3 py-2.5 text-sm font-normal">
                         </label>
                         <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-                            <label class="text-xs font-semibold text-content-primary">
+                            <label class="text-xs font-bold text-content-primary">
                                 Source role
                                 <select name="binding_role"
                                         class="mt-2 w-full rounded-xl border border-outline-default bg-surface-card px-3 py-2.5 text-sm font-normal">
@@ -628,7 +628,7 @@
                                     <option value="fallback">Fallback</option>
                                 </select>
                             </label>
-                            <label class="text-xs font-semibold text-content-primary">
+                            <label class="text-xs font-bold text-content-primary">
                                 Priority
                                 <input type="number"
                                        name="priority"
@@ -640,7 +640,7 @@
                         </div>
                         <input type="hidden" name="enabled" value="1">
                         <button type="submit"
-                                class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-kaori-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-kaori-primary-hover cursor-pointer disabled:cursor-not-allowed"><i data-lucide="link" class="h-4 w-4"></i>Save Binding</button>
+                                class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-kaori-primary px-4 py-2.5 text-sm font-bold text-white hover:bg-kaori-primary-hover cursor-pointer disabled:cursor-not-allowed"><i data-lucide="link" class="h-4 w-4"></i>Save Binding</button>
                     </form>
                 </div>
             </section>

@@ -13,6 +13,10 @@ KAORI UI documentation is organized into four layers:
 
 A reference implementation demonstrates a contract; its domain-specific content is never a global rule.
 
+## Product wording
+
+Use **KAORI** directly whenever the product is the subject or object of user-facing copy. Do not substitute generic wording such as *the application*, *this platform*, or *the system* unless the text refers to a genuinely generic or external technical object. See `docs/design/components/PRODUCT_WORDING.md`.
+
 ## Design direction
 
 The visual concept is **KAORI Violet Infrastructure**: a modern enterprise operations interface with a violet brand identity, neutral operational surfaces, restrained elevation, and conventional infrastructure status semantics.

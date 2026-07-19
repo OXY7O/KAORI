@@ -52,7 +52,7 @@ def build_event_context(
         'event_icon': 'history',
         'event_tone': 'slate',
         'source_label': 'Administrative action',
-        'source_detail': 'KAORI web application',
+        'source_detail': 'KAORI web runtime',
     }
 
     if event_type.startswith('cluster_'):

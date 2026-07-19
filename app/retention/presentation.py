@@ -319,12 +319,12 @@ def _build_storage_context(
             status = "ready"
             status_label = "Ready"
             status_tone = "emerald"
-            detail = "The local archive directory is available to the application."
+            detail = "The local archive directory is available to KAORI."
         else:
             status = "unavailable"
             status_label = "Unavailable"
             status_tone = "rose"
-            detail = "The local archive directory is not available to the application."
+            detail = "The local archive directory is not available to KAORI."
     elif not profile.s3_bucket:
         status = "incomplete"
         status_label = "Incomplete"
@@ -427,7 +427,7 @@ def _inspect_retention_worker() -> dict[str, Any]:
             "tone": "rose",
             "count": 0,
             "queue_ready": False,
-            "detail": "Celery is not initialized in the web application.",
+            "detail": "Celery is not initialized in the KAORI web runtime.",
             "worker_names": [],
         }
 

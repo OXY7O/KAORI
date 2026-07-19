@@ -146,7 +146,7 @@ def new_instance() -> ResponseReturnValue:
                         status='error',
                         title='Alertmanager instance not created',
                         message='KAORI could not save the Alertmanager instance.',
-                        detail='Review application logs and database connectivity before retrying.',
+                        detail='Review KAORI logs and database connectivity before retrying.',
                         metadata={
                             'reason': type(exc).__name__,
                             'submitted_name': form.name or 'Draft Alertmanager connection',
@@ -281,7 +281,7 @@ def instance_detail(instance_id: int) -> ResponseReturnValue:
                 status='error',
                 title='Alertmanager instance not updated',
                 message=f'KAORI could not update {instance.name}.',
-                detail='Review application logs and database connectivity before retrying.',
+                detail='Review KAORI logs and database connectivity before retrying.',
                 metadata={'reason': type(exc).__name__},
             )
         else:
@@ -408,7 +408,7 @@ def validate_instance(instance_id: int) -> ResponseReturnValue:
             status='error',
             title='Alertmanager validation failed',
             message=f'KAORI could not validate {instance.name}.',
-            detail='Review endpoint reachability, authentication, TLS settings, and application logs before retrying.',
+            detail='Review endpoint reachability, authentication, TLS settings, and KAORI logs before retrying.',
             metadata={
                 'reason': type(exc).__name__,
             },
@@ -505,7 +505,7 @@ def create_binding(instance_id: int) -> ResponseReturnValue:
             status='error',
             title='Alertmanager binding not saved',
             message=f'KAORI could not bind {instance.name} to the requested scope.',
-            detail='Review application logs and database connectivity before retrying the binding operation.',
+            detail='Review KAORI logs and database connectivity before retrying the binding operation.',
             metadata={
                 'scope_type': form.scope_type,
                 'scope_key': form.scope_key,
@@ -570,7 +570,7 @@ def remove_binding(instance_id: int, binding_id: int) -> ResponseReturnValue:
             status='error',
             title='Alertmanager binding not removed',
             message=f'KAORI could not remove the selected binding from {instance.name}.',
-            detail='Review application logs and database connectivity before retrying the binding removal.',
+            detail='Review KAORI logs and database connectivity before retrying the binding removal.',
             metadata={**binding_metadata, 'reason': type(exc).__name__},
         )
     else:
@@ -618,7 +618,7 @@ def delete_instance(instance_id: int) -> ResponseReturnValue:
             status='error',
             title='Alertmanager instance not deleted',
             message=f'KAORI could not delete {instance_name}.',
-            detail='Review application logs and database connectivity before retrying the deletion.',
+            detail='Review KAORI logs and database connectivity before retrying the deletion.',
             metadata={'reason': type(exc).__name__},
         )
         return redirect(url_for('alertmanager.instance_detail', instance_id=instance_id) + '#scope')
@@ -662,7 +662,7 @@ def test_cluster_alertmanager(cluster_id: str) -> ResponseReturnValue:
         result = {
             'connected': False,
             'error': 'KAORI could not complete the Alertmanager connection test.',
-            'reason': 'Review endpoint reachability, authentication, TLS settings, scope bindings, and application logs.',
+            'reason': 'Review endpoint reachability, authentication, TLS settings, scope bindings, and KAORI logs.',
             'failure_code': type(exc).__name__,
         }
     connected = bool(result.get('connected'))
