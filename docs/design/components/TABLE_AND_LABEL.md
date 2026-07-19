@@ -93,16 +93,20 @@ Supporting text:
 - one line;
 - suitable for cluster, namespace, provider, type, email, or stable secondary identity.
 
-Icons are 16–18 px and must carry meaning. Do not add an icon to every cell or use decorative icons that do not improve interpretation.
+Icons are optional and must carry meaning. Do not add an icon to every cell or use decorative icons that do not improve interpretation. When a title cell contains two text lines, use a 40 px icon container with an 18 px icon so the visual weight matches the combined title and supporting line. For a single text line, use a 32 px container with a 16 px icon. The icon remains vertically centered against the complete text group, not only the first line.
 
-## 8. Row data
+## 8. Row data and typography
+
+All table content uses the same application font family. A table must not mix unrelated font families, monospace text, or arbitrary font sizes unless a technical value explicitly requires monospace presentation. The default body value is 14 px with regular or medium weight. Visual hierarchy is created only through the approved levels: 14 px semibold for a primary resource title, 14 px regular/medium for ordinary values, 12 px muted for supporting context, 11–12 px semibold for column headers, and 10 px semibold for compact labels.
 
 Two patterns are permitted:
 
 - text-only for direct values;
 - icon + text when the icon adds operational meaning.
 
-Use one pattern consistently within a column. Technical detail that would make the row dense belongs in an expandable row, drawer, modal, or detail page.
+Use one pattern consistently within a column when it improves scanning, but do not force every row value to begin with an icon. Icon use is contextual: identity, security, time, provider, and externally linked values may benefit from an icon; ordinary counts, names, timestamps, versions, and direct values usually remain text-only. Labels are also contextual rather than mandatory. Use a label only when the value represents a compact status, state, category, severity, or metadata token that benefits from visual distinction. Plain operational data remains plain text.
+
+Technical detail that would make the row dense belongs in an expandable row, drawer, modal, or detail page.
 
 Rows use a soft divider and a very subtle Violet-mist hover. Do not apply a shadow to each row.
 
@@ -144,7 +148,11 @@ Standard:
 
 Examples: `Open`, `View Details`, `Edit`, `Retry Sync`, `Run Now`, `Approve`, `Deny`, and `Archive`.
 
-A destructive action uses the same geometry and differs through Critical semantic color and its icon. Show at most two row actions. Put additional actions in a `More` menu. Icon-only controls require both `title` and `aria-label`.
+All ordinary non-CRUD table actions share one neutral utility appearance and the same hover, focus, disabled, and active behavior. Do not assign different colors to `Open`, `View Details`, `Manage`, `Retry`, `Validate`, or similar routine controls merely to distinguish their labels.
+
+CRUD actions may use semantic treatment when needed: `Create` normally belongs at block or page level; `Edit` may remain neutral or use the standard mutation treatment; `Delete` uses Critical styling. The geometry must remain consistent across all variants.
+
+Two visible row actions remain the preferred default because they preserve scanability. More than two are permitted when all actions are high-frequency, labels remain at most two words, the row has enough width without wrapping, the action group does not dominate the data, and the result remains visually balanced at supported desktop widths. Otherwise, move secondary actions into a `More` menu. Icon-only controls require both `title` and `aria-label`.
 
 ## 11. Filter bar
 
@@ -216,10 +224,15 @@ A table is compliant when:
 - the header, loading bar, filters, table, state, and pagination use the required order;
 - column headings are Title Case and not force-uppercase;
 - all columns are left aligned except the final action column;
-- resource titles and supporting text use the standard hierarchy;
-- semantic labels use the compact rectangular contract;
-- visible row actions are compact, no more than two, and no more than two words each;
+- resource titles and supporting text use the standard hierarchy, with a larger icon container when two text lines are present;
+- icons and semantic labels are used only when they improve meaning; semantic labels use the compact rectangular contract;
+- visible row actions are compact, normally limited to two, use no more than two words each, and exceed two only when the documented fit and usability conditions are satisfied;
 - filters have standard labels, fields, hover/focus states, and responsive layout;
 - long detail is not forced into a row;
 - the table defaults to five rows and uses the global pagination component;
 - HTMX changes only the intended region and preserves relevant state.
+
+
+## 18. Design judgment and exceptions
+
+The table standard is a consistency system, not a requirement to decorate every value. Designers and implementers must prioritize scanability, information density, and semantic meaning. When choosing between icon + text, label, or plain text, use the least visually heavy representation that still communicates the value correctly. Any exception must preserve the shared typography scale, alignment, spacing, interaction states, and accessibility contract.

@@ -71,6 +71,10 @@ def test_table_standard_documents_required_contracts():
         "Pagination",
         "Accessibility",
         "maximum: two words",
+        "same application font family",
+        "More than two are permitted",
+        "Labels are also contextual rather than mandatory",
+        "All ordinary non-CRUD table actions share one neutral utility appearance",
     )
     for phrase in required:
         assert phrase in text
@@ -81,3 +85,9 @@ def test_table_audit_report_exists_and_records_scope():
     assert "53 template files" in text
     assert "57 table elements" in text
     assert "31 table templates" in text
+
+
+def test_title_cell_scales_icon_for_two_line_content():
+    text = TABLE_COMPONENT.read_text(encoding="utf-8")
+    assert "'h-10 w-10' if supporting_text else 'h-8 w-8'" in text
+    assert "'h-[18px] w-[18px]' if supporting_text else 'h-4 w-4'" in text

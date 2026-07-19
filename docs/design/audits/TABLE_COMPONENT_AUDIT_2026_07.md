@@ -52,3 +52,10 @@ New tables must use the shared component immediately. Existing tables should be 
 - Full shared-component adoption: in progress by module.
 - Loading-bar placement: requires targeted module migration.
 - Accessibility completion: requires targeted module migration.
+
+
+## Guidance addendum: contextual density and action flexibility
+
+The standard was refined after design review to avoid over-standardizing decoration. Two-line resource title cells now use a larger icon container, while single-line cells retain the compact icon geometry. Table typography is constrained to one application font family and an approved size hierarchy. Icons and compact labels are explicitly optional and must be chosen for semantic value rather than applied to every cell.
+
+The preferred action count remains two, but a row may expose more than two actions when the controls fit without wrapping, remain high-frequency and concise, and do not overpower the row data. All ordinary non-CRUD actions use the same neutral utility color and interaction behavior; CRUD actions may use semantic variants while preserving identical geometry.

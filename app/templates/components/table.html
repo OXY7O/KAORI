@@ -72,8 +72,8 @@ px-4 py-3 align-middle {{ 'text-right' if action else 'text-left' }}
 {% macro title_cell(name, supporting_text='', icon='') -%}
 <div class="flex min-w-0 items-center gap-2.5">
     {% if icon %}
-        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary" aria-hidden="true">
-            <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+        <span class="flex {{ 'h-10 w-10' if supporting_text else 'h-8 w-8' }} shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary" aria-hidden="true">
+            <i data-lucide="{{ icon }}" class="{{ 'h-[18px] w-[18px]' if supporting_text else 'h-4 w-4' }}"></i>
         </span>
     {% endif %}
     <div class="min-w-0">
