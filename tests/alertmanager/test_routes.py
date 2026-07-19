@@ -12,6 +12,7 @@ from app.alertmanager.service import add_alertmanager_binding, save_alertmanager
 from app.extensions import db  # noqa: E402
 from app.models import Cluster, User  # noqa: E402
 from app.models.alertmanager import AlertmanagerInstance  # noqa: E402
+from app.models.notification import Notification  # noqa: E402
 
 
 @pytest.fixture
@@ -173,9 +174,15 @@ def test_draft_connection_test_uses_submitted_settings_without_creating_instance
     assert b'0.33.1' in response.data
     assert b'18 ms' in response.data
     assert b'Full Validation' in response.data
+    assert b'data-quick-action-toast' in response.data
+    assert b'Saved to notifications' in response.data
     assert observed == {
         'endpoint': 'https://alertmanager.example.test:9093',
         'auth_type': 'none',
         'verify_ssl': True,
     }
     assert db.session.query(AlertmanagerInstance).count() == 0
+    notification = db.session.query(Notification).one()
+    assert notification.event_type == 'alertmanager_connection_test'
+    assert notification.status == 'success'
+    assert notification.metadata_json['submitted_name'] == 'Draft Alertmanager'

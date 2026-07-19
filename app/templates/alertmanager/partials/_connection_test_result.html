@@ -50,3 +50,5 @@
         </div>
     </div>
 </article>
+{% set operation_feedback = connection_feedback if connection_feedback is defined else none %}
+{% include 'alertmanager/partials/_operation_feedback_oob.html' %}

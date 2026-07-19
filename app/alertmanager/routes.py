@@ -126,7 +126,7 @@ def test_new_instance_connection() -> ResponseReturnValue:
     result = test_alertmanager_form_connection(form)
 
     if result.get('connected'):
-        record_instance_activity(
+        feedback = record_instance_activity(
             user_id=int(current_user.id),
             instance=None,
             event_type='alertmanager_connection_test',
@@ -143,11 +143,12 @@ def test_new_instance_connection() -> ResponseReturnValue:
                 'response_time_ms': result.get('response_time_ms'),
                 'request_path': result.get('request_path'),
                 'draft_connection': True,
+                'submitted_name': form.name or 'Draft Alertmanager connection',
             },
             queue_feedback=False,
         )
     else:
-        record_instance_activity(
+        feedback = record_instance_activity(
             user_id=int(current_user.id),
             instance=None,
             event_type='alertmanager_connection_test_failed',
@@ -161,6 +162,7 @@ def test_new_instance_connection() -> ResponseReturnValue:
                 'endpoint_port': result.get('endpoint_port'),
                 'request_path': result.get('request_path'),
                 'draft_connection': True,
+                'submitted_name': form.name or 'Draft Alertmanager connection',
             },
             queue_feedback=False,
         )
@@ -168,6 +170,8 @@ def test_new_instance_connection() -> ResponseReturnValue:
     return render_template(
         'alertmanager/partials/_connection_test_result.html',
         connection_test=result,
+        connection_feedback=feedback,
+        notification_context=get_navigation_notification_context(user_id=int(current_user.id)),
     )
 
 
@@ -230,30 +234,65 @@ def refresh_runtime(instance_id: int) -> ResponseReturnValue:
     if instance is None:
         abort(404)
 
-    result, state, _observation = refresh_provider_runtime(runtime_adapter, instance, trigger_type="manual")
-    record_instance_activity(
-        user_id=int(current_user.id),
-        instance=instance,
-        event_type='alertmanager_runtime_refreshed' if result.connected else 'alertmanager_runtime_refresh_failed',
-        status='success' if state.health.status == 'healthy' else ('warning' if state.health.status == 'degraded' else 'error'),
-        title='Alertmanager runtime refreshed',
-        message=f'{instance.name} runtime health is {state.health.status}.',
-        detail=result.reason or state.message,
-        metadata={
-            'health_status': state.health.status,
-            'health_score': state.health.score,
-            'readiness_status': state.readiness,
-            'latency_ms': state.latency_ms,
-            'capability_profile': state.snapshot.profile,
-            'capability_count': len(state.snapshot.capabilities),
-        },
-        queue_feedback=False,
-    )
+    try:
+        result, state, _observation = refresh_provider_runtime(
+            runtime_adapter,
+            instance,
+            trigger_type='manual',
+        )
+    except Exception as exc:  # pragma: no cover - defensive runtime persistence boundary
+        logger.exception('Alertmanager runtime refresh failed for %s.', instance_id)
+        state = runtime_adapter.get_state(instance)
+        feedback = record_instance_activity(
+            user_id=int(current_user.id),
+            instance=instance,
+            event_type='alertmanager_runtime_refresh_failed',
+            status='error',
+            title='Alertmanager runtime refresh failed',
+            message=f'KAORI could not refresh runtime health for {instance.name}.',
+            detail='Review endpoint reachability, integration credentials, and runtime observation storage before retrying.',
+            metadata={
+                'reason': type(exc).__name__,
+                'health_status': state.health.status,
+                'readiness_status': state.readiness,
+            },
+            queue_feedback=False,
+        )
+    else:
+        refresh_succeeded = bool(result.connected)
+        feedback = record_instance_activity(
+            user_id=int(current_user.id),
+            instance=instance,
+            event_type='alertmanager_runtime_refreshed' if refresh_succeeded else 'alertmanager_runtime_refresh_failed',
+            status=(
+                'success'
+                if refresh_succeeded and state.health.status == 'healthy'
+                else ('warning' if refresh_succeeded and state.health.status == 'degraded' else 'error')
+            ),
+            title='Alertmanager runtime refreshed' if refresh_succeeded else 'Alertmanager runtime refresh failed',
+            message=(
+                f'{instance.name} runtime health is {state.health.status}.'
+                if refresh_succeeded
+                else f'KAORI could not refresh runtime health for {instance.name}.'
+            ),
+            detail=result.reason or state.message,
+            metadata={
+                'health_status': state.health.status,
+                'health_score': state.health.score,
+                'readiness_status': state.readiness,
+                'latency_ms': state.latency_ms,
+                'capability_profile': state.snapshot.profile,
+                'capability_count': len(state.snapshot.capabilities),
+            },
+            queue_feedback=False,
+        )
     return render_template(
         'alertmanager/partials/_runtime_refresh_response.html',
         instance=instance,
         runtime_state=runtime_state_view(state),
         runtime_history=build_runtime_history_context(instance),
+        runtime_feedback=feedback,
+        notification_context=get_navigation_notification_context(user_id=int(current_user.id)),
     )
 
 
@@ -283,25 +322,10 @@ def validate_instance(instance_id: int) -> ResponseReturnValue:
     if instance is None:
         abort(404)
 
-    result = validate_alertmanager_instance(instance)
-    if result.get('connected'):
-        feedback = record_instance_activity(
-            user_id=int(current_user.id),
-            instance=instance,
-            event_type='alertmanager_instance_validated',
-            status='success' if result.get('readiness_status') == 'ready' else 'warning',
-            title='Alertmanager validation completed',
-            message=f'{instance.name} responded and its API capability profile was evaluated.',
-            detail=result.get('reason') or 'Alertmanager validation completed.',
-            metadata={
-                'version': result.get('version'),
-                'response_time_ms': result.get('response_time_ms'),
-                'readiness_status': result.get('readiness_status'),
-                'capabilities': result.get('capabilities', []),
-            },
-            queue_feedback=request.headers.get('HX-Request') != 'true',
-        )
-    else:
+    try:
+        result = validate_alertmanager_instance(instance)
+    except Exception as exc:  # pragma: no cover - defensive validation boundary
+        logger.exception('Alertmanager validation failed for %s.', instance_id)
         feedback = record_instance_activity(
             user_id=int(current_user.id),
             instance=instance,
@@ -309,16 +333,48 @@ def validate_instance(instance_id: int) -> ResponseReturnValue:
             status='error',
             title='Alertmanager validation failed',
             message=f'KAORI could not validate {instance.name}.',
-            detail=result.get('error') or 'Review endpoint reachability, authentication, and TLS settings.',
+            detail='Review endpoint reachability, authentication, TLS settings, and application logs before retrying.',
             metadata={
-                'reason': result.get('reason'),
-                'failure_code': result.get('failure_code'),
-                'endpoint_host': result.get('endpoint_host'),
-                'endpoint_port': result.get('endpoint_port'),
-                'request_path': result.get('request_path'),
+                'reason': type(exc).__name__,
             },
             queue_feedback=request.headers.get('HX-Request') != 'true',
         )
+    else:
+        if result.get('connected'):
+            feedback = record_instance_activity(
+                user_id=int(current_user.id),
+                instance=instance,
+                event_type='alertmanager_instance_validated',
+                status='success' if result.get('readiness_status') == 'ready' else 'warning',
+                title='Alertmanager validation completed',
+                message=f'{instance.name} responded and its API capability profile was evaluated.',
+                detail=result.get('reason') or 'Alertmanager validation completed.',
+                metadata={
+                    'version': result.get('version'),
+                    'response_time_ms': result.get('response_time_ms'),
+                    'readiness_status': result.get('readiness_status'),
+                    'capabilities': result.get('capabilities', []),
+                },
+                queue_feedback=request.headers.get('HX-Request') != 'true',
+            )
+        else:
+            feedback = record_instance_activity(
+                user_id=int(current_user.id),
+                instance=instance,
+                event_type='alertmanager_instance_validation_failed',
+                status='error',
+                title='Alertmanager validation failed',
+                message=f'KAORI could not validate {instance.name}.',
+                detail=result.get('error') or 'Review endpoint reachability, authentication, and TLS settings.',
+                metadata={
+                    'reason': result.get('reason'),
+                    'failure_code': result.get('failure_code'),
+                    'endpoint_host': result.get('endpoint_host'),
+                    'endpoint_port': result.get('endpoint_port'),
+                    'request_path': result.get('request_path'),
+                },
+                queue_feedback=request.headers.get('HX-Request') != 'true',
+            )
 
     if request.headers.get('HX-Request') == 'true':
         return render_template(
@@ -355,6 +411,22 @@ def create_binding(instance_id: int) -> ResponseReturnValue:
             detail=str(exc),
             metadata={'scope_type': form.scope_type, 'scope_key': form.scope_key},
         )
+    except Exception as exc:  # pragma: no cover - defensive database boundary
+        logger.exception('Alertmanager binding creation failed for instance %s.', instance_id)
+        record_instance_activity(
+            user_id=int(current_user.id),
+            instance=instance,
+            event_type='alertmanager_binding_create_failed',
+            status='error',
+            title='Alertmanager binding not saved',
+            message=f'KAORI could not bind {instance.name} to the requested scope.',
+            detail='Review application logs and database connectivity before retrying the binding operation.',
+            metadata={
+                'scope_type': form.scope_type,
+                'scope_key': form.scope_key,
+                'reason': type(exc).__name__,
+            },
+        )
     else:
         record_instance_activity(
             user_id=int(current_user.id),
@@ -384,23 +456,38 @@ def remove_binding(instance_id: int, binding_id: int) -> ResponseReturnValue:
     binding = get_alertmanager_binding(binding_id)
     if binding is None or binding.integration_instance_id != instance.integration_instance_id:
         abort(404)
-    removed_binding = remove_alertmanager_binding(binding_id)
-    if removed_binding is None:
-        abort(404)
-    record_instance_activity(
-        user_id=int(current_user.id),
-        instance=instance,
-        event_type='alertmanager_binding_deleted',
-        status='success',
-        title='Alertmanager binding removed',
-        message=f'{instance.name} is no longer mapped to the selected operational scope.',
-        detail=f'{binding.asset_type}:{binding.asset_key} was removed.',
-        metadata={
-            'binding_id': binding.id,
-            'scope_type': binding.asset_type,
-            'scope_key': binding.asset_key,
-        },
-    )
+    binding_metadata = {
+        'binding_id': binding.id,
+        'scope_type': binding.asset_type,
+        'scope_key': binding.asset_key,
+    }
+    try:
+        removed_binding = remove_alertmanager_binding(binding_id)
+    except Exception as exc:  # pragma: no cover - defensive database boundary
+        logger.exception('Alertmanager binding deletion failed for binding %s.', binding_id)
+        record_instance_activity(
+            user_id=int(current_user.id),
+            instance=instance,
+            event_type='alertmanager_binding_delete_failed',
+            status='error',
+            title='Alertmanager binding not removed',
+            message=f'KAORI could not remove the selected binding from {instance.name}.',
+            detail='Review application logs and database connectivity before retrying the binding removal.',
+            metadata={**binding_metadata, 'reason': type(exc).__name__},
+        )
+    else:
+        if removed_binding is None:
+            abort(404)
+        record_instance_activity(
+            user_id=int(current_user.id),
+            instance=instance,
+            event_type='alertmanager_binding_deleted',
+            status='success',
+            title='Alertmanager binding removed',
+            message=f'{instance.name} is no longer mapped to the selected operational scope.',
+            detail=f'{binding.asset_type}:{binding.asset_key} was removed.',
+            metadata=binding_metadata,
+        )
     return redirect(url_for('alertmanager.instance_detail', instance_id=instance_id))
 
 
@@ -422,6 +509,19 @@ def delete_instance(instance_id: int) -> ResponseReturnValue:
             title='Alertmanager instance not deleted',
             message=f'{instance_name} still has active asset bindings.',
             detail=str(exc),
+        )
+        return redirect(url_for('alertmanager.instance_detail', instance_id=instance_id))
+    except Exception as exc:  # pragma: no cover - defensive database boundary
+        logger.exception('Alertmanager instance deletion failed for %s.', instance_id)
+        record_instance_activity(
+            user_id=int(current_user.id),
+            instance=instance,
+            event_type='alertmanager_instance_delete_failed',
+            status='error',
+            title='Alertmanager instance not deleted',
+            message=f'KAORI could not delete {instance_name}.',
+            detail='Review application logs and database connectivity before retrying the deletion.',
+            metadata={'reason': type(exc).__name__},
         )
         return redirect(url_for('alertmanager.instance_detail', instance_id=instance_id))
 
@@ -456,9 +556,50 @@ def test_cluster_alertmanager(cluster_id: str) -> ResponseReturnValue:
     cluster = get_cluster_by_id(cluster_id)
     if cluster is None:
         abort(404)
-    result = test_alertmanager_connection(cluster_id=cluster_id)
+    instance = materialize_legacy_cluster_config(cluster_id)
+    try:
+        result = test_alertmanager_connection(cluster_id=cluster_id)
+    except Exception as exc:  # pragma: no cover - defensive compatibility boundary
+        logger.exception('Alertmanager compatibility connection test failed for cluster %s.', cluster_id)
+        result = {
+            'connected': False,
+            'error': 'KAORI could not complete the Alertmanager connection test.',
+            'reason': 'Review endpoint reachability, authentication, TLS settings, scope bindings, and application logs.',
+            'failure_code': type(exc).__name__,
+        }
+    connected = bool(result.get('connected'))
+    feedback = record_instance_activity(
+        user_id=int(current_user.id),
+        instance=instance,
+        event_type='alertmanager_connection_test' if connected else 'alertmanager_connection_test_failed',
+        status='success' if connected else 'error',
+        title='Alertmanager connection verified' if connected else 'Alertmanager connection test failed',
+        message=(
+            f'KAORI reached the Alertmanager connection bound to {cluster.name}.'
+            if connected
+            else f'KAORI could not reach an Alertmanager connection for {cluster.name}.'
+        ),
+        detail=(
+            result.get('reason')
+            or result.get('error')
+            or 'Review endpoint reachability, authentication, TLS settings, and scope bindings.'
+        ),
+        metadata={
+            'cluster_id': cluster.id,
+            'cluster_name': cluster.name,
+            'version': result.get('version'),
+            'response_time_ms': result.get('response_time_ms'),
+            'failure_code': result.get('failure_code'),
+            'compatibility_route': True,
+        },
+        queue_feedback=False,
+    )
     if request.headers.get('HX-Request') == 'true':
-        return jsonify(result)
+        return render_template(
+            'components/navigation/_quick_sync_result.html',
+            **feedback,
+            notification_context=get_navigation_notification_context(user_id=int(current_user.id)),
+        )
     return jsonify(
         {
             'success': result.get('connected', False),

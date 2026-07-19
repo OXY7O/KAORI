@@ -1,9 +1,13 @@
+import ast
 from pathlib import Path
 
 
 LANDING = Path('app/templates/integrations/alertmanager.html')
 INSTANCE_FORM = Path('app/templates/alertmanager/instance_form.html')
 RUNTIME_PANEL = Path('app/templates/alertmanager/partials/_runtime_panel.html')
+RUNTIME_RESPONSE = Path('app/templates/alertmanager/partials/_runtime_refresh_response.html')
+FEEDBACK_OOB = Path('app/templates/alertmanager/partials/_operation_feedback_oob.html')
+ROUTES = Path('app/alertmanager/routes.py')
 LEGACY_CONFIG = Path('app/templates/alertmanager/config.html')
 
 
@@ -11,26 +15,26 @@ def test_alertmanager_landing_hero_matches_kaori_violet_geometry() -> None:
     source = LANDING.read_text(encoding='utf-8')
 
     required_fragments = (
-        'rounded-2xl border border-brand-outline bg-kaori-primary p-5',
-        'grid gap-5 xl:grid-cols-12 xl:items-stretch',
-        'flex min-w-0 flex-col justify-center xl:col-span-7',
+        'page_hero.shell_classes()',
+        'page_hero.layout_classes()',
+        'page_hero.content_classes()',
         "page_hero.intro('siren', 'Operational Integration', 'server-cog')",
         'font-medium leading-6 text-brand-foreground-muted sm:text-base',
+        'Register, validate, and govern reusable Alertmanager connections and their operational scope bindings.',
         'page_hero.meta_label',
-        'aside class="xl:col-span-5"',
-        'flex h-full min-h-[13rem] flex-col rounded-xl',
+        'page_hero.aside_classes()',
+        'flex h-full min-h-[12rem] flex-col rounded-xl',
         'Integration posture',
-        'Connection readiness and usage coverage',
+        'Connection readiness and scope coverage',
         'Register Instance',
     )
     missing = [fragment for fragment in required_fragments if fragment not in source]
     assert not missing, f'Alertmanager landing hero contract is incomplete: {missing}'
 
     forbidden_fragments = (
-        'page_hero.shell_classes()',
-        'page_hero.layout_classes()',
         'page_hero.supporting_strip',
         'lg:grid-cols-[minmax(0,1fr)_20rem]',
+        'Connect Alertmanager as a reusable operational source across infrastructure assets, services, domains, and workflows.',
         'bg-gradient-to-r',
         'from-blue-',
         'to-cyan-',
@@ -90,7 +94,7 @@ def test_alertmanager_copy_is_global_and_has_no_future_product_positioning() -> 
     combined = '\n'.join((landing, instance, inventory))
 
     required_fragments = (
-        'infrastructure assets, services, domains, and workflows',
+        'Register, validate, and govern reusable Alertmanager connections',
         'multiple operational contexts through governed bindings',
         'systems, services, and workflows that use them',
         'infrastructure assets, services, operational domains, and workflows',
@@ -160,11 +164,62 @@ def test_alertmanager_connection_test_result_is_semantic_and_separate_from_valid
         'Cluster status',
         'Register the instance, then run Full Validation',
         'API capabilities, compatibility profile, runtime readiness, and scope eligibility',
+        "alertmanager/partials/_operation_feedback_oob.html",
     )
     missing = [fragment for fragment in required_fragments if fragment not in source]
     assert not missing, f'Connection test result contract is incomplete: {missing}'
     assert 'rounded-full' not in source
     assert 'font-mono' not in source
+
+
+def test_alertmanager_htmx_actions_render_persistent_notification_toasts() -> None:
+    runtime_response = RUNTIME_RESPONSE.read_text(encoding='utf-8')
+    feedback_oob = FEEDBACK_OOB.read_text(encoding='utf-8')
+
+    assert 'runtime_feedback' in runtime_response
+    assert "alertmanager/partials/_operation_feedback_oob.html" in runtime_response
+    assert 'toast_oob=true' in feedback_oob
+    assert "components/navigation/_quick_sync_result.html" in feedback_oob
+    assert 'notification_saved=operation_feedback.notification_saved' in feedback_oob
+
+
+def test_every_alertmanager_mutation_route_records_operational_activity() -> None:
+    tree = ast.parse(ROUTES.read_text(encoding='utf-8'))
+    functions = {
+        node.name: node
+        for node in tree.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    }
+    action_functions = (
+        'new_instance',
+        'test_new_instance_connection',
+        'instance_detail',
+        'refresh_runtime',
+        'validate_instance',
+        'create_binding',
+        'remove_binding',
+        'delete_instance',
+        'test_cluster_alertmanager',
+    )
+
+    missing_functions = [name for name in action_functions if name not in functions]
+    assert not missing_functions, f'Alertmanager action routes are missing: {missing_functions}'
+
+    missing_audit_calls = []
+    for name in action_functions:
+        has_activity_call = any(
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id == 'record_instance_activity'
+            for node in ast.walk(functions[name])
+        )
+        if not has_activity_call:
+            missing_audit_calls.append(name)
+
+    assert not missing_audit_calls, (
+        'Every Alertmanager mutation must create persistent notification and Activity Audit feedback: '
+        f'{missing_audit_calls}'
+    )
 
 
 def test_obsolete_cluster_configuration_template_is_removed() -> None:

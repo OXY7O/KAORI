@@ -35,7 +35,8 @@ def build_event_context(
 ) -> dict[str, Any]:
     cluster_name = _string_metadata(metadata, 'cluster_name', 'submitted_name')
     environment = _string_metadata(metadata, 'environment', 'submitted_environment')
-    endpoint = _string_metadata(metadata, 'endpoint', 'server')
+    endpoint = _string_metadata(metadata, 'endpoint', 'endpoint_host', 'server')
+    instance_name = _string_metadata(metadata, 'instance_name', 'submitted_name')
     task_id = _string_metadata(metadata, 'task_id')
     access_action = _string_metadata(metadata, 'access_action')
     auth_source = _string_metadata(metadata, 'authentication_provider', 'auth_source')
@@ -74,7 +75,7 @@ def build_event_context(
         context.update(
             module_label='Alertmanager',
             target_type='Alertmanager',
-            target_name=cluster_name or endpoint or 'Alertmanager integration',
+            target_name=instance_name or cluster_name or endpoint or 'Alertmanager integration',
             event_icon='siren',
             event_tone='rose',
         )
