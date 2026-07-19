@@ -95,24 +95,28 @@ def test_alertmanager_runtime_panel_uses_semantic_kaori_statuses_and_htmx_indica
         'hx-indicator="#alertmanager-runtime-loading"',
         'absolute bottom-2 left-5 right-5 h-1 overflow-hidden rounded-full bg-kaori-soft',
         'notification-progress-indeterminate h-full rounded-full bg-kaori-primary',
-        'sm:grid-cols-2 xl:grid-cols-4',
-        'xl:grid-cols-12',
-        'xl:col-span-5',
-        'xl:col-span-7',
+        'grid gap-3 border-b border-outline-subtle bg-surface-hover',
+        'sm:grid-cols-2 sm:p-5 xl:grid-cols-4',
         'Health Interpretation',
-        'role="progressbar"',
-        'Weighted factors',
+        'aria-label="Alertmanager health score',
+        'stroke-dashoffset="{{ 100 - runtime_state.health_score }}"',
+        'Contributing evidence',
         'Diagnostic Pipeline',
         'Ordered technical checks with evidence, duration, and the next corrective action.',
-        'Recommended fixing',
+        '<th class="w-16 px-4 py-3">Step</th>',
+        '<th class="min-w-64 px-4 py-3">Check</th>',
+        'No action required.',
     )
     missing = [fragment for fragment in required_fragments if fragment not in source]
     assert not missing, f'Alertmanager runtime panel contract is incomplete: {missing}'
 
     forbidden_runtime_fragments = (
         'xl:grid-cols-6',
-        'md:grid-cols-2',
-        'Weighted health factors',
+        'xl:col-span-5',
+        'xl:col-span-7',
+        'role="progressbar"',
+        'Weighted factors',
+        'Recommended fixing',
     )
     found = [fragment for fragment in forbidden_runtime_fragments if fragment in source]
     assert not found, f'Alertmanager runtime panel still uses wasteful legacy geometry: {found}'
@@ -132,7 +136,6 @@ def test_alertmanager_runtime_panel_uses_semantic_kaori_statuses_and_htmx_indica
     assert not missing, f'Alertmanager runtime history pagination contract is incomplete: {missing}'
 
     assert 'Items per page' not in history
-
 
 
 def test_alertmanager_copy_is_global_and_has_no_future_product_positioning() -> None:
@@ -315,15 +318,28 @@ def test_alertmanager_validation_and_scope_workspaces_are_actionable() -> None:
         "hx-post=\"{{ url_for('alertmanager.create_binding', instance_id=instance.id) }}\"",
         'hx-target="#alertmanager-scope-workspace"',
         'hx-swap="outerHTML"',
+        'bg-surface-card shadow-sm xl:col-span-5',
+        '<h3 class="text-base font-semibold text-content-primary">Create Binding</h3>',
+        'Scope identity',
+        'Resolution preference',
+        'mb-1.5 block text-sm font-semibold text-content-primary',
+        'px-3.5 text-sm font-medium text-content-primary',
         'id="alertmanager-binding-loading"',
+        'absolute bottom-2 left-4 right-4 h-1 overflow-hidden rounded-full bg-kaori-soft',
+        'notification-progress-indeterminate h-full rounded-full bg-kaori-primary',
         'Duplicate instance-to-scope mappings are rejected.',
         'Existing mappings are rejected rather than overwritten silently.',
         'Pre-save validation',
+        'Effective source:',
+        'Required capabilities',
+        'Current instance',
         'binding_feedback',
     )
     missing = [fragment for fragment in required_scope_fragments if fragment not in scope]
     assert not missing, f'Binding HTMX and validation contract is incomplete: {missing}'
     assert 'Add or Update Binding' not in scope
+    assert 'class=\"relative self-start overflow-hidden rounded-xl border border-brand-outline bg-kaori-soft\"' not in scope
+    assert 'text-[10px] font-semibold uppercase tracking-[0.12em] text-kaori-primary\">Create Binding' not in scope
 
     assert 'already bound to the selected scope' in bindings
     assert 'already has a primary Alertmanager binding through {provider.name}' in bindings
