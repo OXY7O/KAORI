@@ -264,10 +264,11 @@ def test_manage_alertmanager_detail_is_domain_tabbed_and_informative() -> None:
         'Readiness versus health',
         'How monitoring works',
         'Resolver correlation',
-        'Binding purpose',
-        'Validation guardrails',
-        'Resolver correlation',
+        'Scope &amp; Resolution',
+        'Role and priority set preference',
+        'Readiness and health gate eligibility',
         'Effective Source Resolution',
+        'Resolution evidence',
         'Instance Lifecycle &amp; Deletion',
     )
     missing = [fragment for fragment in required_domain_fragments if fragment not in combined]
@@ -314,25 +315,26 @@ def test_alertmanager_validation_and_scope_workspaces_are_actionable() -> None:
     assert not missing, f'Capability remediation workspace is incomplete: {missing}'
 
     required_scope_fragments = (
+        'Scope &amp; Resolution',
         'Create Binding',
         "hx-post=\"{{ url_for('alertmanager.create_binding', instance_id=instance.id) }}\"",
         'hx-target="#alertmanager-scope-workspace"',
         'hx-swap="outerHTML"',
-        'bg-surface-card shadow-sm xl:col-span-5',
+        'xl:col-span-8',
+        'xl:sticky xl:top-5 xl:col-span-4',
         '<h3 class="text-base font-semibold text-content-primary">Create Binding</h3>',
-        'Scope identity',
-        'Resolution preference',
+        'Authorize this connection for one operational scope.',
         'mb-1.5 block text-sm font-semibold text-content-primary',
         'px-3.5 text-sm font-medium text-content-primary',
         'id="alertmanager-binding-loading"',
         'absolute bottom-2 left-4 right-4 h-1 overflow-hidden rounded-full bg-kaori-soft',
         'notification-progress-indeterminate h-full rounded-full bg-kaori-primary',
         'Duplicate instance-to-scope mappings are rejected.',
-        'Existing mappings are rejected rather than overwritten silently.',
         'Pre-save validation',
-        'Effective source:',
-        'Required capabilities',
-        'Current instance',
+        'Effective Source Resolution',
+        'Resolution evidence',
+        'Required',
+        'Current',
         'binding_feedback',
     )
     missing = [fragment for fragment in required_scope_fragments if fragment not in scope]
