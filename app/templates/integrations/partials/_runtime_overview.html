@@ -3,7 +3,7 @@
 <section id="integration-runtime-overview" class="rounded-2xl border border-border-soft bg-surface-card shadow-sm">
   <div class="flex flex-col gap-3 border-b border-border-soft p-5 lg:flex-row lg:items-center lg:justify-between">
     <div>
-      <p class="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Runtime overview</p>
+      <p class="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Runtime Overview</p>
       <h2 class="mt-1 text-xl font-semibold text-content-primary">Integration Health and Capability Posture</h2>
       <p class="mt-1 text-sm text-content-secondary">Latest persisted observation for every Prometheus/Thanos and Alertmanager target.</p>
     </div>
@@ -36,7 +36,7 @@
 
   <div class="overflow-x-auto">
     <table class="min-w-full divide-y divide-border-soft text-left text-sm">
-      <thead class="bg-surface-muted/70 text-xs text-content-muted"><tr><th class="px-5 py-3">Provider / instance</th><th class="px-5 py-3">Health</th><th class="px-5 py-3">Readiness</th><th class="px-5 py-3">Capability</th><th class="px-5 py-3">Last observed</th><th class="px-5 py-3 text-right">Action</th></tr></thead>
+      <thead class="bg-surface-muted/70 text-xs text-content-muted"><tr><th class="px-5 py-3">Provider / Instance</th><th class="px-5 py-3">Health</th><th class="px-5 py-3">Readiness</th><th class="px-5 py-3">Capability</th><th class="px-5 py-3">Last Observed</th><th class="px-5 py-3 text-right">Action</th></tr></thead>
       <tbody class="divide-y divide-border-soft">
       {% for row in runtime_rows %}
         <tr class="align-top hover:bg-primary-soft/30">
@@ -45,15 +45,7 @@
           <td class="px-5 py-4">{{ status_badge(row.readiness) }}</td>
           <td class="px-5 py-4"><p class="text-sm font-medium text-content-primary">{{ row.capability_profile or 'Not observed' }}</p><p class="mt-1 text-xs {% if row.capability_attention %}text-warning{% else %}text-content-muted{% endif %}">{{ row.capability_attention_display }}</p></td>
           <td class="px-5 py-4 text-content-secondary">{{ row.observed_at_display }}{% if row.latency_display %}<p class="mt-1 text-xs text-content-muted">{{ row.latency_display }}</p>{% endif %}</td>
-          <td class="px-5 py-4 text-right">
-              {% set detail_endpoint = row.detail_endpoint %}
-              {% set detail_kwargs = row.detail_kwargs or {} %}
-              {% if row.provider == 'prometheus' and detail_endpoint == 'prometheus.configuration' and not detail_kwargs.get('cluster_id') %}
-                {% set detail_endpoint = 'prometheus.instance_detail' %}
-                {% set detail_kwargs = {'instance_id': row.instance_id} %}
-              {% endif %}
-              <a href="{{ url_for(detail_endpoint, **detail_kwargs) }}" class="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-primary/25 px-3 text-xs font-semibold text-primary hover:bg-primary-soft">Open <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i></a>
-            </td>
+          <td class="px-5 py-4 text-right"><a href="{{ url_for(row.detail_endpoint, **row.detail_kwargs) }}" class="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-primary/25 px-3 text-xs font-semibold text-primary hover:bg-primary-soft">Open <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i></a></td>
         </tr>
       {% else %}<tr><td colspan="6" class="px-5 py-10 text-center text-sm text-content-muted">No integration runtime targets match the selected filters.</td></tr>{% endfor %}
       </tbody>

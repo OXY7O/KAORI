@@ -24,7 +24,7 @@
                 <div class="{{ page_hero.context_panel_classes() }}">
                     <div>
                         <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Binding workflow</p>
-                        <p class="mt-1 text-sm font-semibold text-brand-foreground">Connection identity and governed usage</p>
+                        <p class="mt-1 text-sm font-semibold text-brand-foreground">Connection Identity and Governed Usage</p>
                         <p class="mt-2 text-xs leading-5 text-brand-foreground-muted">Validate each source first, then assign role and priority for every cluster scope that may use it.</p>
                     </div>
                     <div class="mt-4 grid grid-cols-2 gap-2">
@@ -40,7 +40,7 @@
         <div class="flex items-start gap-3">
             <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-status-info"><i data-lucide="workflow" class="h-4 w-4"></i></span>
             <div>
-                <h2 class="text-sm font-semibold text-status-info-text">How bindings participate in source resolution</h2>
+                <h2 class="text-sm font-semibold text-status-info-text">How Bindings Participate in Source Resolution</h2>
                 <p class="mt-1 text-xs leading-5 text-content-secondary">A binding authorizes one connection for one managed cluster. Readiness, required capabilities, enabled state, role, priority, and runtime health determine whether the source is eligible for metrics consumers.</p>
             </div>
         </div>
@@ -72,7 +72,7 @@
                         </header>
                         <div class="overflow-x-auto">
                             <table class="min-w-[720px] w-full text-left text-sm">
-                                <thead class="border-b border-outline-subtle bg-surface-card text-xs font-semibold text-content-muted"><tr><th class="px-4 py-3">Managed cluster</th><th class="px-4 py-3">Role</th><th class="px-4 py-3">Priority</th><th class="px-4 py-3">Status</th><th class="px-4 py-3 text-right">Action</th></tr></thead>
+                                <thead class="border-b border-outline-subtle bg-surface-card text-xs font-semibold text-content-muted"><tr><th class="px-4 py-3">Managed Cluster</th><th class="px-4 py-3">Role</th><th class="px-4 py-3">Priority</th><th class="px-4 py-3">Status</th><th class="px-4 py-3 text-right">Action</th></tr></thead>
                                 <tbody class="divide-y divide-outline-subtle">
                                     {% for binding in row.bindings %}
                                         <tr class="align-middle transition hover:bg-surface-hover">
@@ -88,7 +88,7 @@
                                             </td>
                                         </tr>
                                     {% else %}
-                                        <tr><td colspan="5" class="px-5 py-10 text-center"><span class="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="link-2-off" class="h-5 w-5"></i></span><p class="mt-3 text-sm font-semibold text-content-primary">No scope bindings</p><p class="mt-1 text-xs leading-5 text-content-secondary">Use Create Binding to authorize this connection for a managed cluster.</p></td></tr>
+                                        <tr><td colspan="5" class="px-5 py-10 text-center"><span class="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="link-2-off" class="h-5 w-5"></i></span><p class="mt-3 text-sm font-semibold text-content-primary">No Scope Bindings</p><p class="mt-1 text-xs leading-5 text-content-secondary">Use Create Binding to authorize this connection for a managed cluster.</p></td></tr>
                                     {% endfor %}
                                 </tbody>
                             </table>
@@ -102,16 +102,16 @@
                         {% if clusters %}
                             <form method="post" action="{{ url_for('prometheus.add_instance_binding', instance_id=row.instance.id) }}" class="space-y-4 p-4">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <label class="block"><span class="mb-1.5 block text-sm font-semibold text-content-primary">Managed cluster</span><select name="cluster_id" required class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">{% for cluster in clusters %}<option value="{{ cluster.id }}">{{ cluster.name }}</option>{% endfor %}</select><span class="mt-1.5 block text-xs leading-5 text-content-muted">Choose the canonical cluster scope allowed to use this source.</span></label>
+                                <label class="block"><span class="mb-1.5 block text-sm font-semibold text-content-primary">Managed Cluster</span><select name="cluster_id" required class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">{% for cluster in clusters %}<option value="{{ cluster.id }}">{{ cluster.name }}</option>{% endfor %}</select><span class="mt-1.5 block text-xs leading-5 text-content-muted">Choose the canonical cluster scope allowed to use this source.</span></label>
                                 <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
-                                    <label class="block"><span class="mb-1.5 block text-sm font-semibold text-content-primary">Source role</span><select name="binding_role" class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20"><option value="primary">Primary</option><option value="secondary">Secondary</option><option value="fallback">Fallback</option></select></label>
+                                    <label class="block"><span class="mb-1.5 block text-sm font-semibold text-content-primary">Source Role</span><select name="binding_role" class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20"><option value="primary">Primary</option><option value="secondary">Secondary</option><option value="fallback">Fallback</option></select></label>
                                     <label class="block"><span class="mb-1.5 block text-sm font-semibold text-content-primary">Priority</span><input name="priority" type="number" value="100" min="1" class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20"></label>
                                 </div>
-                                <details class="rounded-lg bg-kaori-soft p-3"><summary class="cursor-pointer text-xs font-semibold text-kaori-primary-dark">Pre-save validation</summary><ul class="mt-2 space-y-1.5 pl-4 text-xs leading-5 text-content-secondary"><li class="list-disc">The cluster and connection must exist and remain enabled.</li><li class="list-disc">Duplicate mappings and conflicting primary bindings are rejected by the lifecycle layer.</li><li class="list-disc">Role and priority express preference; readiness and capabilities still gate eligibility.</li></ul></details>
+                                <details class="rounded-lg bg-kaori-soft p-3"><summary class="cursor-pointer text-xs font-semibold text-kaori-primary-dark">Pre-save Validation</summary><ul class="mt-2 space-y-1.5 pl-4 text-xs leading-5 text-content-secondary"><li class="list-disc">The cluster and connection must exist and remain enabled.</li><li class="list-disc">Duplicate mappings and conflicting primary bindings are rejected by the lifecycle layer.</li><li class="list-disc">Role and priority express preference; readiness and capabilities still gate eligibility.</li></ul></details>
                                 <button class="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus/20 cursor-pointer disabled:cursor-not-allowed"><i data-lucide="link-2" class="h-4 w-4"></i>Create Binding</button>
                             </form>
                         {% else %}
-                            <div class="p-4"><div class="rounded-lg border border-status-warning-border bg-status-warning-soft p-4"><p class="text-sm font-semibold text-status-warning-text">No managed cluster available</p><p class="mt-1 text-xs leading-5 text-content-secondary">Register a Kubernetes cluster before creating a metrics scope binding.</p></div></div>
+                            <div class="p-4"><div class="rounded-lg border border-status-warning-border bg-status-warning-soft p-4"><p class="text-sm font-semibold text-status-warning-text">No Managed Cluster Available</p><p class="mt-1 text-xs leading-5 text-content-secondary">Register a Kubernetes cluster before creating a metrics scope binding.</p></div></div>
                         {% endif %}
                     </aside>
                 </div>
@@ -119,7 +119,7 @@
         {% else %}
             <section class="rounded-xl border border-outline-default bg-surface-card px-6 py-12 text-center shadow-sm">
                 <span class="mx-auto flex h-11 w-11 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="activity" class="h-5 w-5"></i></span>
-                <h2 class="mt-3 text-base font-semibold text-content-primary">No Prometheus connection registered</h2>
+                <h2 class="mt-3 text-base font-semibold text-content-primary">No Prometheus Connection Registered</h2>
                 <p class="mt-1 text-sm text-content-secondary">Register a reusable metrics connection, validate its contract, then create governed scope bindings.</p>
                 <a href="{{ url_for('prometheus.new_instance') }}" class="mt-4 inline-flex h-10 items-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white hover:bg-kaori-primary-hover"><i data-lucide="plus" class="h-4 w-4"></i>Register Connection</a>
             </section>

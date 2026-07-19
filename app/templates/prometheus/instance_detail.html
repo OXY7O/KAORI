@@ -30,13 +30,13 @@
                 <div class="{{ page_hero.context_panel_classes() }}">
                     <div>
                         <div class="flex items-start justify-between gap-3">
-                            <div><p class="{{ page_hero.context_panel_eyebrow_classes() }}">Source posture</p><p class="mt-1 text-sm font-semibold text-brand-foreground">Validation and runtime evidence</p></div>
+                            <div><p class="{{ page_hero.context_panel_eyebrow_classes() }}">Source posture</p><p class="mt-1 text-sm font-semibold text-brand-foreground">Validation and Runtime Evidence</p></div>
                             {{ status_badge(readiness) }}
                         </div>
                         <p class="mt-2 text-xs leading-5 text-brand-foreground-muted">{{ instance.validation_message or 'Run Validation to establish compatibility, query contracts, and module readiness.' }}</p>
                     </div>
                     <div class="mt-4 grid grid-cols-2 gap-2">
-                        <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5"><p class="text-[10px] font-semibold text-brand-foreground-muted">Runtime health</p><p class="mt-1 text-sm font-semibold text-brand-foreground">{{ runtime_state.health_status_label }}</p></div>
+                        <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5"><p class="text-[10px] font-semibold text-brand-foreground-muted">Runtime Health</p><p class="mt-1 text-sm font-semibold text-brand-foreground">{{ runtime_state.health_status_label }}</p></div>
                         <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5"><p class="text-[10px] font-semibold text-brand-foreground-muted">Capabilities</p><p class="mt-1 text-sm font-semibold text-brand-foreground">{{ runtime_state.capability_count }}</p></div>
                     </div>
                 </div>
@@ -85,10 +85,10 @@
                     </section>
                     <aside class="space-y-4 xl:col-span-4">
                         <section class="rounded-xl border border-status-info-border bg-status-info-soft p-4">
-                            <div class="flex items-start gap-3"><i data-lucide="workflow" class="mt-0.5 h-4 w-4 shrink-0 text-status-info"></i><div><h2 class="text-sm font-semibold text-status-info-text">Change impact</h2><p class="mt-1 text-xs leading-5 text-content-secondary">Saving endpoint, access, compatibility, or TLS settings resets readiness. Run Test Connection and Full Validation again before relying on the source.</p></div></div>
+                            <div class="flex items-start gap-3"><i data-lucide="workflow" class="mt-0.5 h-4 w-4 shrink-0 text-status-info"></i><div><h2 class="text-sm font-semibold text-status-info-text">Change Impact</h2><p class="mt-1 text-xs leading-5 text-content-secondary">Saving endpoint, access, compatibility, or TLS settings resets readiness. Run Test Connection and Full Validation again before relying on the source.</p></div></div>
                         </section>
                         <section class="rounded-xl border border-outline-default bg-surface-card p-4">
-                            <h2 class="text-sm font-semibold text-content-primary">Operational flow</h2>
+                            <h2 class="text-sm font-semibold text-content-primary">Operational Flow</h2>
                             <div class="mt-3 space-y-3 text-xs leading-5 text-content-secondary">
                                 <p><strong class="font-semibold text-content-primary">Configure</strong> establishes identity and access.</p>
                                 <p><strong class="font-semibold text-content-primary">Validate</strong> establishes compatibility and capability evidence.</p>
@@ -112,14 +112,14 @@
                     <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
                         <div class="bg-surface-card p-4"><p class="text-xs font-semibold text-content-muted">Readiness</p><div class="mt-2">{{ status_badge(readiness) }}</div></div>
                         <div class="bg-surface-card p-4"><p class="text-xs font-semibold text-content-muted">Compatibility</p><div class="mt-2">{{ status_badge(instance.compatibility_status or 'validation_required') }}</div></div>
-                        <div class="bg-surface-card p-4"><p class="text-xs font-semibold text-content-muted">Query contracts</p><div class="mt-2">{{ status_badge(instance.query_validation_status or 'validation_required') }}</div></div>
-                        <div class="bg-surface-card p-4"><p class="text-xs font-semibold text-content-muted">Capability profile</p><p class="mt-2 text-sm font-semibold text-content-primary">{{ instance.capability_profile or 'Not established' }}</p></div>
+                        <div class="bg-surface-card p-4"><p class="text-xs font-semibold text-content-muted">Query Contracts</p><div class="mt-2">{{ status_badge(instance.query_validation_status or 'validation_required') }}</div></div>
+                        <div class="bg-surface-card p-4"><p class="text-xs font-semibold text-content-muted">Capability Profile</p><p class="mt-2 text-sm font-semibold text-content-primary">{{ instance.capability_profile or 'Not established' }}</p></div>
                     </div>
                     {% set assessments = (instance.capabilities or {}).get('assessments', []) %}
                     {% if assessments %}
                         <div class="overflow-x-auto border-t border-outline-subtle">
                             <table class="min-w-[960px] w-full text-left text-sm">
-                                <thead class="bg-surface-hover text-xs font-semibold text-content-muted"><tr><th class="px-5 py-3">Capability</th><th class="px-4 py-3">Status</th><th class="px-4 py-3">Technical evidence</th><th class="px-4 py-3">Operational impact</th><th class="px-5 py-3">Recommended action</th></tr></thead>
+                                <thead class="bg-surface-hover text-xs font-semibold text-content-muted"><tr><th class="px-5 py-3">Capability</th><th class="px-4 py-3">Status</th><th class="px-4 py-3">Technical Evidence</th><th class="px-4 py-3">Operational Impact</th><th class="px-5 py-3">Recommended Action</th></tr></thead>
                                 <tbody class="divide-y divide-outline-subtle">
                                     {% for item in assessments %}
                                         {% set state = item.status or 'unknown' %}
@@ -135,7 +135,7 @@
                             </table>
                         </div>
                     {% else %}
-                        <div class="border-t border-outline-subtle p-5"><div class="rounded-lg border border-status-info-border bg-status-info-soft p-4"><p class="text-sm font-semibold text-status-info-text">Capability evidence not available</p><p class="mt-1 text-xs leading-5 text-content-secondary">Run Validation to populate API, metric, query, retention, and module readiness evidence.</p></div></div>
+                        <div class="border-t border-outline-subtle p-5"><div class="rounded-lg border border-status-info-border bg-status-info-soft p-4"><p class="text-sm font-semibold text-status-info-text">Capability Evidence Not Available</p><p class="mt-1 text-xs leading-5 text-content-secondary">Run Validation to populate API, metric, query, retention, and module readiness evidence.</p></div></div>
                     {% endif %}
                 </section>
             </div>
@@ -152,9 +152,9 @@
                         <a href="{{ url_for('prometheus.instances') }}" class="inline-flex h-10 items-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white hover:bg-kaori-primary-hover"><i data-lucide="waypoints" class="h-4 w-4"></i>Manage Bindings</a>
                     </header>
                     {% if bindings %}
-                        <div class="overflow-x-auto"><table class="min-w-[760px] w-full text-left text-sm"><thead class="border-b border-outline-subtle bg-surface-hover text-xs font-semibold text-content-muted"><tr><th class="px-5 py-3.5">Managed cluster</th><th class="px-4 py-3.5">Role</th><th class="px-4 py-3.5">Priority</th><th class="px-4 py-3.5">Status</th><th class="px-5 py-3.5 text-right">Configuration</th></tr></thead><tbody class="divide-y divide-outline-subtle">{% for binding in bindings %}{% set cluster = clusters_by_id.get(binding.asset_key) %}<tr class="hover:bg-surface-hover"><td class="px-5 py-4"><p class="font-semibold text-content-primary">{{ cluster.name if cluster else binding.asset_key }}</p><p class="mt-1 max-w-[320px] truncate font-sans text-xs text-content-muted" title="{{ binding.asset_key }}">{{ binding.asset_key }}</p></td><td class="px-4 py-4">{{ table_label.metadata_label(binding.binding_role|title, 'route') }}</td><td class="px-4 py-4 font-medium text-content-primary">{{ binding.priority }}</td><td class="px-4 py-4">{{ status_badge('ready' if binding.enabled else 'disabled') }}</td><td class="px-5 py-4 text-right">{% if cluster %}<a href="{{ url_for('prometheus.configuration', cluster_id=cluster.id) }}" class="text-sm font-semibold text-kaori-primary-dark hover:underline">Open Settings</a>{% else %}<span class="text-xs text-content-muted">Scope unavailable</span>{% endif %}</td></tr>{% endfor %}</tbody></table></div>
+                        <div class="overflow-x-auto"><table class="min-w-[760px] w-full text-left text-sm"><thead class="border-b border-outline-subtle bg-surface-hover text-xs font-semibold text-content-muted"><tr><th class="px-5 py-3.5">Managed Cluster</th><th class="px-4 py-3.5">Role</th><th class="px-4 py-3.5">Priority</th><th class="px-4 py-3.5">Status</th><th class="px-5 py-3.5 text-right">Configuration</th></tr></thead><tbody class="divide-y divide-outline-subtle">{% for binding in bindings %}{% set cluster = clusters_by_id.get(binding.asset_key) %}<tr class="hover:bg-surface-hover"><td class="px-5 py-4"><p class="font-semibold text-content-primary">{{ cluster.name if cluster else binding.asset_key }}</p><p class="mt-1 max-w-[320px] truncate font-sans text-xs text-content-muted" title="{{ binding.asset_key }}">{{ binding.asset_key }}</p></td><td class="px-4 py-4">{{ table_label.metadata_label(binding.binding_role|title, 'route') }}</td><td class="px-4 py-4 font-medium text-content-primary">{{ binding.priority }}</td><td class="px-4 py-4">{{ status_badge('ready' if binding.enabled else 'disabled') }}</td><td class="px-5 py-4 text-right">{% if cluster %}<a href="{{ url_for('prometheus.configuration', cluster_id=cluster.id) }}" class="text-sm font-semibold text-kaori-primary-dark hover:underline">Open Settings</a>{% else %}<span class="text-xs text-content-muted">Scope unavailable</span>{% endif %}</td></tr>{% endfor %}</tbody></table></div>
                     {% else %}
-                        <div class="p-5"><div class="rounded-lg border border-status-warning-border bg-status-warning-soft p-4"><p class="text-sm font-semibold text-status-warning-text">No scope binding</p><p class="mt-1 text-xs leading-5 text-content-secondary">The connection can be tested and validated, but operational consumers cannot resolve it until a binding is created.</p></div></div>
+                        <div class="p-5"><div class="rounded-lg border border-status-warning-border bg-status-warning-soft p-4"><p class="text-sm font-semibold text-status-warning-text">No Scope Binding</p><p class="mt-1 text-xs leading-5 text-content-secondary">The connection can be tested and validated, but operational consumers cannot resolve it until a binding is created.</p></div></div>
                     {% endif %}
                 </section>
                 <section class="grid gap-4 md:grid-cols-3">

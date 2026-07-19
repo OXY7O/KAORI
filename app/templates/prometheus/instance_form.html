@@ -124,11 +124,11 @@
                     <div class="grid gap-3 md:grid-cols-2">
                         <label class="flex min-h-16 items-start gap-3 rounded-lg border border-outline-subtle bg-surface-hover p-3.5">
                             {{ form.verify_ssl(class_='mt-0.5 h-4 w-4 rounded border-outline-strong text-kaori-primary focus:ring-outline-focus') }}
-                            <span><span class="block text-sm font-semibold text-content-primary">Verify TLS certificate</span><span class="mt-1 block text-xs leading-5 text-content-muted">Reject untrusted or mismatched certificates.</span></span>
+                            <span><span class="block text-sm font-semibold text-content-primary">Verify TLS Certificate</span><span class="mt-1 block text-xs leading-5 text-content-muted">Reject untrusted or mismatched certificates.</span></span>
                         </label>
                         <label class="flex min-h-16 items-start gap-3 rounded-lg border border-outline-subtle bg-surface-hover p-3.5">
                             {{ form.enabled(class_='mt-0.5 h-4 w-4 rounded border-outline-strong text-kaori-primary focus:ring-outline-focus') }}
-                            <span><span class="block text-sm font-semibold text-content-primary">Allow KAORI to use this connection</span><span class="mt-1 block text-xs leading-5 text-content-muted">Disabled connections remain stored but are excluded from scope resolution.</span></span>
+                            <span><span class="block text-sm font-semibold text-content-primary">Allow KAORI to Use This Connection</span><span class="mt-1 block text-xs leading-5 text-content-muted">Disabled connections remain stored but are excluded from scope resolution.</span></span>
                         </label>
                     </div>
                 </section>
@@ -159,11 +159,11 @@
                     {% endfor %}
                 </ol>
                 <div class="mt-5 rounded-lg border border-status-info-border bg-status-info-soft p-3.5">
-                    <div class="flex items-start gap-2.5"><i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0 text-status-info"></i><div><p class="text-sm font-semibold text-status-info-text">Connection versus capability</p><p class="mt-1 text-xs leading-5 text-content-secondary">A reachable endpoint is not automatically ready. KAORI only marks modules ready after their exact metric and query contracts pass.</p></div></div>
+                    <div class="flex items-start gap-2.5"><i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0 text-status-info"></i><div><p class="text-sm font-semibold text-status-info-text">Connection versus Capability</p><p class="mt-1 text-xs leading-5 text-content-secondary">A reachable endpoint is not automatically ready. KAORI only marks modules ready after their exact metric and query contracts pass.</p></div></div>
                 </div>
                 {% if initial_cluster %}
                     <div class="mt-4 rounded-lg border border-outline-subtle bg-surface-hover p-3.5">
-                        <p class="text-xs font-semibold uppercase tracking-[0.12em] text-content-muted">Initial scope binding</p>
+                        <p class="text-xs font-semibold uppercase tracking-[0.12em] text-content-muted">Initial Scope Binding</p>
                         <p class="mt-2 text-sm font-semibold text-content-primary">{{ initial_cluster.name }}</p>
                         <p class="mt-1 text-xs leading-5 text-content-muted">The new connection will be assigned as the primary metrics source for this managed cluster.</p>
                     </div>

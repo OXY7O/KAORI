@@ -93,7 +93,7 @@
                                     {% set transition_status = 'ready' if row.transition.kind == 'recovered' else ('degraded' if row.transition.kind in ['degraded', 'improving'] else 'blocked') %}
                                     {{ status_badge(transition_status, row.transition.label) }}
                                 {% else %}
-                                    <span class="text-xs font-semibold text-content-muted">No state change</span>
+                                    <span class="text-xs font-semibold text-content-muted">No State Change</span>
                                 {% endif %}
                             </td>
                         </tr>
@@ -145,7 +145,7 @@
             <div class="flex items-start gap-3">
                 <i data-lucide="history" class="mt-0.5 h-5 w-5 shrink-0 text-kaori-primary"></i>
                 <div>
-                    <p class="text-sm font-semibold text-content-primary">No runtime observations recorded</p>
+                    <p class="text-sm font-semibold text-content-primary">No Runtime Observations Recorded</p>
                     <p class="mt-1 text-xs leading-5 text-content-secondary">Run Refresh Runtime or wait for scheduled monitoring. The first observation becomes the baseline for health and capability change detection.</p>
                 </div>
             </div>

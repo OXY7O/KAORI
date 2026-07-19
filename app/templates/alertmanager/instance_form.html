@@ -69,7 +69,7 @@
                                 <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5">
                                     <div class="flex items-center gap-2 text-brand-foreground">
                                         <i data-lucide="link-2" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                        <p class="text-[11px] font-semibold">Scope bindings</p>
+                                        <p class="text-[11px] font-semibold">Scope Bindings</p>
                                     </div>
                                     <p class="mt-1.5 text-xl font-semibold leading-none text-brand-foreground">{{ bindings|length }}</p>
                                     <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Contexts eligible to use this source</p>
@@ -100,15 +100,15 @@
                                 <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5">
                                     <div class="flex items-center gap-2 text-brand-foreground">
                                         <i data-lucide="plug-zap" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                        <p class="text-[11px] font-semibold">Before save</p>
+                                        <p class="text-[11px] font-semibold">Before Save</p>
                                     </div>
-                                    <p class="mt-1.5 text-sm font-semibold leading-5 text-brand-foreground">Test connection</p>
+                                    <p class="mt-1.5 text-sm font-semibold leading-5 text-brand-foreground">Test Connection</p>
                                     <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Registration repeats the probe</p>
                                 </div>
                                 <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5">
                                     <div class="flex items-center gap-2 text-brand-foreground">
                                         <i data-lucide="scan-search" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                        <p class="text-[11px] font-semibold">After save</p>
+                                        <p class="text-[11px] font-semibold">After Save</p>
                                     </div>
                                     <p class="mt-1.5 text-sm font-semibold leading-5 text-brand-foreground">Full Validation</p>
                                     <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Then assign scope bindings</p>
@@ -177,12 +177,12 @@
                             </div>
                             <div class="grid gap-4 lg:grid-cols-2">
                                 <div>
-                                    <label for="alertmanager-name" class="mb-1.5 block text-sm font-semibold text-content-primary">Instance name</label>
+                                    <label for="alertmanager-name" class="mb-1.5 block text-sm font-semibold text-content-primary">Instance Name</label>
                                     <input id="alertmanager-name" name="name" required value="{{ instance.name if instance else (submitted_form.name if submitted_form else (initial_cluster.name ~ ' Alertmanager' if initial_cluster else '')) }}" placeholder="Central Alertmanager" class="{{ field_classes }}">
                                     <p class="mt-1.5 text-xs leading-5 text-content-muted">Use a stable operational name that remains meaningful across multiple bindings.</p>
                                 </div>
                                 <div>
-                                    <label for="alertmanager-deployment-type" class="mb-1.5 block text-sm font-semibold text-content-primary">Connection type</label>
+                                    <label for="alertmanager-deployment-type" class="mb-1.5 block text-sm font-semibold text-content-primary">Connection Type</label>
                                     <select id="alertmanager-deployment-type" name="deployment_type" class="{{ field_classes }}">
                                         {% set selected_deployment = instance.deployment_type if instance else (submitted_form.deployment_type if submitted_form else ('cluster_managed' if initial_cluster else 'external_managed')) %}
                                         {% for value, label in [('external_managed','Externally managed'),('standalone','Standalone'),('shared','Shared service'),('cluster_managed','Managed for a specific scope')] %}
@@ -223,7 +223,7 @@
                                     </select>
                                 </div>
                                 <div>
-                                    <label for="alertmanager-timeout" class="mb-1.5 block text-sm font-semibold text-content-primary">Request timeout</label>
+                                    <label for="alertmanager-timeout" class="mb-1.5 block text-sm font-semibold text-content-primary">Request Timeout</label>
                                     <input id="alertmanager-timeout" type="number" name="timeout" min="1" max="30" value="{{ instance.timeout if instance else (submitted_form.timeout if submitted_form else 5) }}" class="{{ field_classes }}">
                                     <p class="mt-1.5 text-xs leading-5 text-content-muted">Allowed range: 1–30 seconds.</p>
                                 </div>
@@ -239,7 +239,7 @@
                                 </div>
                             </div>
                             <div x-show="authType === 'bearer'" x-cloak class="mt-4">
-                                <label for="alertmanager-bearer-token" class="mb-1.5 block text-sm font-semibold text-content-primary">Bearer token</label>
+                                <label for="alertmanager-bearer-token" class="mb-1.5 block text-sm font-semibold text-content-primary">Bearer Token</label>
                                 <input id="alertmanager-bearer-token" type="password" name="bearer_token" autocomplete="new-password" x-bind:required="authType === 'bearer' && {{ 'false' if instance and instance.bearer_token else 'true' }}" placeholder="{{ 'Leave blank to keep the current token' if instance and instance.bearer_token else 'Enter bearer token' }}" class="{{ field_classes }}">
                             </div>
                             {% if not instance %}
@@ -262,11 +262,11 @@
                             <div class="grid gap-3 lg:grid-cols-2">
                                 <label class="flex items-start gap-3 rounded-lg border border-brand-outline bg-kaori-soft p-4 transition hover:border-outline-focus">
                                     <input type="checkbox" name="verify_ssl" value="1" {% if (instance and instance.verify_ssl) or (not instance and (not submitted_form or submitted_form.verify_ssl)) %}checked{% endif %} class="mt-0.5 h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-2 focus:ring-outline-focus/30 focus:ring-offset-2">
-                                    <span><span class="block text-sm font-semibold text-kaori-primary">Verify TLS certificate</span><span class="mt-1 block text-xs leading-5 text-content-muted">Keep enabled for trusted certificates. Disable only for an explicitly approved internal certificate exception.</span></span>
+                                    <span><span class="block text-sm font-semibold text-kaori-primary">Verify TLS Certificate</span><span class="mt-1 block text-xs leading-5 text-content-muted">Keep enabled for trusted certificates. Disable only for an explicitly approved internal certificate exception.</span></span>
                                 </label>
                                 <label class="flex items-start gap-3 rounded-lg border border-outline-default bg-surface-card p-4 transition hover:border-outline-strong">
                                     <input type="checkbox" name="enabled" value="1" {% if (instance and instance.enabled) or (not instance and (not submitted_form or submitted_form.enabled)) %}checked{% endif %} class="mt-0.5 h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-2 focus:ring-outline-focus/30 focus:ring-offset-2">
-                                    <span><span class="block text-sm font-semibold text-content-primary">Allow KAORI to use this connection</span><span class="mt-1 block text-xs leading-5 text-content-muted">When disabled, KAORI keeps the configuration but will not select it for any bound scope. Use this during maintenance or troubleshooting without deleting the instance.</span></span>
+                                    <span><span class="block text-sm font-semibold text-content-primary">Allow KAORI to Use This Connection</span><span class="mt-1 block text-xs leading-5 text-content-muted">When disabled, KAORI keeps the configuration but will not select it for any bound scope. Use this during maintenance or troubleshooting without deleting the instance.</span></span>
                                 </label>
                             </div>
                         </section>
@@ -317,7 +317,7 @@
                         ('Assign Operational Scope', 'Create governed bindings that determine where the source is eligible and whether it acts as a primary, secondary, or fallback connection.')
                     ] %}
                     {{ info_flow.render(
-                        'Alertmanager Scope & Workflow',
+                        'Alertmanager Registration Flow',
                         'How a connection becomes an eligible operational source in KAORI.',
                         alertmanager_registration_flow,
                         icon='waypoints',
@@ -335,10 +335,10 @@
                             <span class="ml-auto flex shrink-0 items-center gap-2 pl-3 text-xs font-semibold text-content-secondary"><span class="group-open:hidden">Details</span><span class="hidden group-open:inline">Collapse</span><i data-lucide="chevron-down" class="h-4 w-4 transition-transform duration-200 group-open:rotate-180"></i></span>
                         </summary>
                         <div class="divide-y divide-outline-subtle text-xs leading-5 text-content-muted">
-                            <article class="p-4"><p class="font-semibold text-content-primary">Externally managed</p><p class="mt-1">Use when another team, service owner, or platform manages the Alertmanager lifecycle and KAORI only consumes the exposed connection.</p></article>
+                            <article class="p-4"><p class="font-semibold text-content-primary">Externally Managed</p><p class="mt-1">Use when another team, service owner, or platform manages the Alertmanager lifecycle and KAORI only consumes the exposed connection.</p></article>
                             <article class="p-4"><p class="font-semibold text-content-primary">Standalone</p><p class="mt-1">Use for a dedicated, independently operated Alertmanager that is not presented as a shared organizational service.</p></article>
-                            <article class="p-4"><p class="font-semibold text-content-primary">Shared service</p><p class="mt-1">Use for a centralized Alertmanager intended to serve infrastructure assets, services, operational domains, and workflows through governed bindings.</p></article>
-                            <article class="p-4"><p class="font-semibold text-content-primary">Managed for a specific scope</p><p class="mt-1">Use when ownership and lifecycle are aligned to one primary operational scope. Governed bindings may still make it eligible elsewhere.</p></article>
+                            <article class="p-4"><p class="font-semibold text-content-primary">Shared Service</p><p class="mt-1">Use for a centralized Alertmanager intended to serve infrastructure assets, services, operational domains, and workflows through governed bindings.</p></article>
+                            <article class="p-4"><p class="font-semibold text-content-primary">Managed for a Specific Scope</p><p class="mt-1">Use when ownership and lifecycle are aligned to one primary operational scope. Governed bindings may still make it eligible elsewhere.</p></article>
                         </div>
                     </details>
 
@@ -348,10 +348,10 @@
                             <span class="ml-auto flex shrink-0 items-center gap-2 pl-3 text-xs font-semibold text-content-secondary"><span class="group-open:hidden">Details</span><span class="hidden group-open:inline">Collapse</span><i data-lucide="chevron-down" class="h-4 w-4 transition-transform duration-200 group-open:rotate-180"></i></span>
                         </summary>
                         <div class="space-y-3 p-4 text-xs leading-5 text-content-muted">
-                            <div class="grid grid-cols-[24px_minmax(0,1fr)] gap-2"><span class="font-semibold text-kaori-primary">01</span><p><strong class="font-semibold text-content-secondary">Connection identity</strong> is the canonical KAORI record for the Alertmanager connection. It is registered once and referenced by bindings.</p></div>
-                            <div class="grid grid-cols-[24px_minmax(0,1fr)] gap-2"><span class="font-semibold text-kaori-primary">02</span><p><strong class="font-semibold text-content-secondary">Connection contract</strong> covers the base URL, authentication, request timeout, TLS verification, and API v2 status reachability.</p></div>
-                            <div class="grid grid-cols-[24px_minmax(0,1fr)] gap-2"><span class="font-semibold text-kaori-primary">03</span><p><strong class="font-semibold text-content-secondary">Capability contract</strong> is established only by Full Validation after registration. It records supported APIs, detected version/profile, and readiness.</p></div>
-                            <div class="grid grid-cols-[24px_minmax(0,1fr)] gap-2"><span class="font-semibold text-kaori-primary">04</span><p><strong class="font-semibold text-content-secondary">Scope bindings</strong> determine where the source is eligible and how resolver priority selects primary, secondary, or fallback connections.</p></div>
+                            <div class="grid grid-cols-[24px_minmax(0,1fr)] gap-2"><span class="font-semibold text-kaori-primary">01</span><p><strong class="font-semibold text-content-secondary">Connection Identity</strong> is the canonical KAORI record for the Alertmanager connection. It is registered once and referenced by bindings.</p></div>
+                            <div class="grid grid-cols-[24px_minmax(0,1fr)] gap-2"><span class="font-semibold text-kaori-primary">02</span><p><strong class="font-semibold text-content-secondary">Connection Contract</strong> covers the base URL, authentication, request timeout, TLS verification, and API v2 status reachability.</p></div>
+                            <div class="grid grid-cols-[24px_minmax(0,1fr)] gap-2"><span class="font-semibold text-kaori-primary">03</span><p><strong class="font-semibold text-content-secondary">Capability Contract</strong> is established only by Full Validation after registration. It records supported APIs, detected version/profile, and readiness.</p></div>
+                            <div class="grid grid-cols-[24px_minmax(0,1fr)] gap-2"><span class="font-semibold text-kaori-primary">04</span><p><strong class="font-semibold text-content-secondary">Scope Bindings</strong> determine where the source is eligible and how resolver priority selects primary, secondary, or fallback connections.</p></div>
                         </div>
                     </details>
 
@@ -361,10 +361,10 @@
                             <span class="ml-auto flex shrink-0 items-center gap-2 pl-3 text-xs font-semibold text-content-secondary"><span class="group-open:hidden">Details</span><span class="hidden group-open:inline">Collapse</span><i data-lucide="chevron-down" class="h-4 w-4 transition-transform duration-200 group-open:rotate-180"></i></span>
                         </summary>
                         <div class="space-y-3 p-4 text-xs leading-5 text-content-muted">
-                            <div class="grid grid-cols-[24px_minmax(0,1fr)] gap-2"><span class="font-semibold text-kaori-primary">01</span><p><strong class="font-semibold text-content-secondary">Open the registered instance</strong> and run Full Validation to establish capability and readiness status.</p></div>
-                            <div class="grid grid-cols-[24px_minmax(0,1fr)] gap-2"><span class="font-semibold text-kaori-primary">02</span><p><strong class="font-semibold text-content-secondary">Review diagnostics</strong> when readiness is degraded or blocked, then correct endpoint, access, or capability issues.</p></div>
-                            <div class="grid grid-cols-[24px_minmax(0,1fr)] gap-2"><span class="font-semibold text-kaori-primary">03</span><p><strong class="font-semibold text-content-secondary">Create scope bindings</strong> and assign the connection role and priority for each operational context.</p></div>
-                            <div class="grid grid-cols-[24px_minmax(0,1fr)] gap-2"><span class="font-semibold text-kaori-primary">04</span><p><strong class="font-semibold text-content-secondary">Keep the connection enabled</strong> when KAORI should consider it during source resolution; disable it temporarily during maintenance.</p></div>
+                            <div class="grid grid-cols-[24px_minmax(0,1fr)] gap-2"><span class="font-semibold text-kaori-primary">01</span><p><strong class="font-semibold text-content-secondary">Open the Registered Instance</strong> and run Full Validation to establish capability and readiness status.</p></div>
+                            <div class="grid grid-cols-[24px_minmax(0,1fr)] gap-2"><span class="font-semibold text-kaori-primary">02</span><p><strong class="font-semibold text-content-secondary">Review Diagnostics</strong> when readiness is degraded or blocked, then correct endpoint, access, or capability issues.</p></div>
+                            <div class="grid grid-cols-[24px_minmax(0,1fr)] gap-2"><span class="font-semibold text-kaori-primary">03</span><p><strong class="font-semibold text-content-secondary">Create Scope Bindings</strong> and assign the connection role and priority for each operational context.</p></div>
+                            <div class="grid grid-cols-[24px_minmax(0,1fr)] gap-2"><span class="font-semibold text-kaori-primary">04</span><p><strong class="font-semibold text-content-secondary">Keep the Connection Enabled</strong> when KAORI should consider it during source resolution; disable it temporarily during maintenance.</p></div>
                         </div>
                     </details>
                 {% else %}
@@ -643,7 +643,7 @@
             <details class="group overflow-hidden rounded-xl border border-status-critical-border bg-surface-card shadow-sm">
                 <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4">
                     <div>
-                        <p class="font-semibold text-content-primary">Instance lifecycle</p>
+                        <p class="font-semibold text-content-primary">Instance Lifecycle</p>
                         <p class="mt-1 text-xs text-content-secondary">Deletion is blocked while scope bindings remain.</p>
                     </div>
                     <i data-lucide="chevron-down"

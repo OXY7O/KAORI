@@ -270,3 +270,19 @@ Human-readable UI control labels and compact card titles use **Title Case**, inc
 - Short authority or ownership statements used as card titles, such as `Alertmanager Remains Authoritative`.
 
 Sentence case remains correct for explanatory prose, helper text, descriptions, error details, and complete sentences. Technical identifiers preserve their canonical casing.
+
+## Integrations Semantic Label Contract
+
+All user-facing semantic labels inside Integrations Overview, Kubernetes, Prometheus, and Alertmanager use Title Case. This includes headings, form labels, filter labels, table headers, compact information titles, and Info Flow titles.
+
+Examples:
+
+- `Instance Name`
+- `Connection Type`
+- `Search Instance`
+- `Runtime and Capability State`
+- `Provider / Instance`
+- `Last Observed`
+- `Alertmanager Registration Flow`
+
+Descriptions, helper text, placeholders, warnings, and operational explanations remain sentence case. Technical identifiers and canonical product or protocol names retain their original casing and must not be transformed mechanically.
