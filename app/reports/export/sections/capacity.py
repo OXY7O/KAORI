@@ -6,6 +6,7 @@ from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import cm
 from reportlab.platypus import Paragraph, Spacer
 
+from app.cluster.constants import get_environment_label
 from app.analytics.capacity.service import CapacityService
 from app.analytics.utilization.service import UtilizationService
 from app.analytics.utilization.service import get_selected_cluster as get_utilization_selected_cluster
@@ -206,14 +207,7 @@ def get_report_capacity_analysis_payload(
                         'Unknown Cluster',
                     )
                 ),
-                'environment': str(
-                    getattr(
-                        cluster,
-                        'environment',
-                        '',
-                    )
-                    or ''
-                ),
+                'environment': get_environment_label(getattr(cluster, 'environment', None), empty=''),
                 'status': str(
                     getattr(
                         cluster,

@@ -675,3 +675,7 @@ The semantic palette is a global application contract, not a domain-specific the
 - Pending maps to Info, disabled/unknown map to Neutral, and maintenance maps to Warning.
 - Compact status and metadata labels are borderless globally. Border-reference colors are reserved for panels, callouts, modal dialogs, inputs, and destructive controls.
 - Provider or feature templates must use shared semantic tokens and label macros instead of introducing raw product-specific color classes.
+
+## Global naming convention
+
+All user-facing environment values use full names such as **Development**, **Staging**, **Production**, **Quality Assurance**, and **User Acceptance Testing**. Abbreviations such as `dev`, `stg`, `prod`, `prd`, `qa`, and `uat` are accepted only as legacy input aliases and must never be rendered. The canonical contract is defined in `docs/standards/NAMING_CONVENTIONS.md`.

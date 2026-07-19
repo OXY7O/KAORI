@@ -290,14 +290,7 @@ def get_report_alerts_anomalies_payload(
                         'Unknown Cluster',
                     )
                 ),
-                'environment': str(
-                    getattr(
-                        selected_cluster,
-                        'environment',
-                        '',
-                    )
-                    or ''
-                ),
+                'environment': get_environment_label(getattr(selected_cluster, 'environment', None), empty=''),
                 'status': str(
                     getattr(
                         selected_cluster,

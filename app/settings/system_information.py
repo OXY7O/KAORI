@@ -1,4 +1,5 @@
 from __future__ import annotations
+from app.cluster.constants import get_environment_label
 
 from collections.abc import Mapping
 from typing import Any
@@ -85,7 +86,7 @@ def build_system_information(config: Mapping[str, Any]) -> dict[str, Any]:
     secret names, database details, and other deployment-sensitive values.
     """
     version = _clean_config_value(config.get('APP_VERSION'), 'Unversioned')
-    environment = _clean_config_value(config.get('APP_ENV'), 'development').title()
+    environment = get_environment_label(_clean_config_value(config.get('APP_ENV'), 'development'))
     build_sha = _clean_config_value(config.get('APP_BUILD_SHA'), 'Not provided')
     build_date = _clean_config_value(config.get('APP_BUILD_DATE'), 'Not provided')
 

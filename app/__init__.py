@@ -9,6 +9,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from app.alertmanager.routes import alertmanager_bp
 from app.analytics.routes import analytics_bp
 from app.auth.routes import auth_bp
+from app.cluster.constants import get_environment_label
 from app.cluster.onboarding import build_cluster_onboarding_context
 from app.cluster.routes import cluster_bp
 from app.commands import register_commands
@@ -122,6 +123,10 @@ def create_app(config_name: str | None = None):
             'date_format': normalize_date_format(getattr(current_user, 'date_format', 'day_month_year')),
             'time_format': normalize_time_format(getattr(current_user, 'time_format', '24h')),
         }
+
+    @app.template_filter('environment_name')
+    def environment_name_filter(value, empty='Not specified'):
+        return get_environment_label(value, empty=empty)
 
     @app.template_filter('user_datetime')
     def user_datetime_filter(value, empty='-', include_seconds=False, include_timezone=True):

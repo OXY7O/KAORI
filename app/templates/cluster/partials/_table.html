@@ -37,9 +37,9 @@
                             hx-indicator="#cluster-table-loading"
                             class="h-11 min-w-44 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                         <option value="all" {% if selected_environment == 'all' %}selected{% endif %}>All environments</option>
-                        <option value="prd" {% if selected_environment == 'prd' %}selected{% endif %}>Production</option>
-                        <option value="stg" {% if selected_environment == 'stg' %}selected{% endif %}>Staging</option>
-                        <option value="dev" {% if selected_environment == 'dev' %}selected{% endif %}>Development</option>
+                        <option value="prd" {% if selected_environment in ['prd', 'prod', 'production'] %}selected{% endif %}>Production</option>
+                        <option value="stg" {% if selected_environment in ['stg', 'stage', 'staging'] %}selected{% endif %}>Staging</option>
+                        <option value="dev" {% if selected_environment in ['dev', 'development'] %}selected{% endif %}>Development</option>
                     </select>
                 </label>
             </div>
@@ -77,8 +77,7 @@
                     {% set prometheus = prometheus_summary.get(cluster.id, {}) %}
                     {% set alertmanager = alertmanager_summary.get(cluster.id, {}) %}
                     {% set cluster_status = (cluster.status or 'unknown')|lower %}
-                    {% set environment_value = cluster.environment or '-' %}
-                    {% set environment_key = environment_value|lower %}
+                    {% set environment_value = cluster.environment|environment_name %}
                     <tr class="align-top transition hover:bg-surface-hover">
                         <td class="px-5 py-4">
                             <div class="flex items-start gap-3">
@@ -119,7 +118,7 @@
                         </td>
 
                         <td class="px-4 py-4 text-left">
-                            {{ metadata_label('Production' if environment_key == 'prd' else 'Staging' if environment_key == 'stg' else 'Development' if environment_key == 'dev' else environment_value) }}
+                            {{ metadata_label(environment_value) }}
                         </td>
 
                         <td class="px-4 py-4 text-left">
