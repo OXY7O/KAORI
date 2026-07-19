@@ -96,6 +96,6 @@ def alertmanager() -> ResponseReturnValue:
         per_page=request.args.get('per_page', 5, type=int) or 5,
     )
     if request.headers.get('HX-Request') == 'true':
-        return render_template('integrations/alertmanager/partials/_inventory_card.html', **context)
+        return render_template('integrations/alertmanager/partials/_inventory_content.html', **context)
     return render_template('integrations/alertmanager.html', **context)
 
