@@ -1,0 +1,50 @@
+{% extends "layouts/app.html" %}
+{% from "integrations/partials/_status_badge.html" import status_badge %}
+{% block title %}{{ instance.name }} · Prometheus Runtime · KAORI{% endblock %}
+{% block dashboard_content %}
+<div class="space-y-6">
+  <section class="rounded-xl border border-kaori-primary/20 bg-surface-card p-6 shadow-sm">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div class="min-w-0">
+        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-kaori-primary">Standalone metrics runtime</p>
+        <div class="mt-1 flex flex-wrap items-center gap-2">
+          <h1 class="text-2xl font-bold text-content-primary">{{ instance.name }}</h1>
+          {{ status_badge(instance.readiness_status or 'validation_required') }}
+        </div>
+        <p class="mt-2 break-all font-mono text-xs text-content-muted">{{ instance.endpoint }}</p>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <form method="post" action="{{ url_for('prometheus.instance_test', instance_id=instance.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="inline-flex items-center gap-2 rounded-lg border border-outline-default bg-surface-subtle px-4 py-2.5 text-sm font-semibold text-content-secondary hover:border-kaori-primary/40 hover:text-kaori-primary"><i data-lucide="plug-zap" class="h-4 w-4"></i>Test connection</button>
+        </form>
+        <form method="post" action="{{ url_for('prometheus.instance_validate', instance_id=instance.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="inline-flex items-center gap-2 rounded-lg bg-kaori-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-kaori-primary-hover"><i data-lucide="scan-line" class="h-4 w-4"></i>Run full validation</button>
+        </form>
+        <a href="{{ url_for('prometheus.instances') }}" class="inline-flex items-center gap-2 rounded-lg border border-outline-default px-4 py-2.5 text-sm font-semibold text-content-secondary"><i data-lucide="arrow-left" class="h-4 w-4"></i>Back</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+    <div class="rounded-xl border border-outline-default bg-surface-card p-4"><p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Product</p><p class="mt-2 text-sm font-bold text-content-primary">{{ (instance.endpoint_product or 'Prometheus compatible')|replace('_',' ')|title }}</p></div>
+    <div class="rounded-xl border border-outline-default bg-surface-card p-4"><p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Detected version</p><p class="mt-2 text-sm font-bold text-content-primary">{{ instance.detected_version or 'Not detected' }}</p></div>
+    <div class="rounded-xl border border-outline-default bg-surface-card p-4"><p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Compatibility profile</p><p class="mt-2 text-sm font-bold text-content-primary">{{ instance.compatibility_profile or 'Not assigned' }}</p></div>
+    <div class="rounded-xl border border-outline-default bg-surface-card p-4"><p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Asset bindings</p><p class="mt-2 text-sm font-bold text-content-primary">{{ bindings|length }}</p></div>
+  </section>
+
+  {% if not bindings %}
+  <section class="rounded-xl border border-kaori-primary/20 bg-kaori-primary-soft/40 p-5">
+    <div class="flex items-start gap-3"><i data-lucide="info" class="mt-0.5 h-5 w-5 text-kaori-primary"></i><div><h2 class="text-sm font-bold text-content-primary">Runtime is standalone</h2><p class="mt-1 text-sm text-content-secondary">Connection testing and runtime validation are available without an asset binding. Kubernetes Analytics remains unavailable until this runtime is mapped to a cluster.</p><a href="{{ url_for('prometheus.instances') }}" class="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-kaori-primary"><i data-lucide="waypoints" class="h-4 w-4"></i>Manage asset bindings</a></div></div>
+  </section>
+  {% else %}
+  <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <header class="border-b border-outline-subtle px-5 py-4"><h2 class="text-base font-bold text-content-primary">Bound Kubernetes assets</h2><p class="mt-1 text-sm text-content-secondary">These mappings authorize cluster-scoped Analytics consumers to resolve this runtime.</p></header>
+    <div class="overflow-x-auto"><table class="min-w-full text-left text-sm"><thead class="border-b border-outline-subtle bg-surface-subtle text-xs uppercase tracking-wide text-content-muted"><tr><th class="px-5 py-3">Cluster</th><th class="px-4 py-3">Role</th><th class="px-4 py-3">Priority</th><th class="px-4 py-3">Status</th><th class="px-4 py-3 text-right">Configuration</th></tr></thead><tbody class="divide-y divide-outline-subtle">{% for binding in bindings %}{% set cluster = clusters_by_id.get(binding.asset_key) %}<tr><td class="px-5 py-4"><p class="font-semibold text-content-primary">{{ cluster.name if cluster else binding.asset_key }}</p><p class="text-xs text-content-muted">{{ binding.asset_key }}</p></td><td class="px-4 py-4">{{ binding.binding_role|title }}</td><td class="px-4 py-4">{{ binding.priority }}</td><td class="px-4 py-4">{{ status_badge('ready' if binding.enabled else 'disabled') }}</td><td class="px-4 py-4 text-right">{% if cluster %}<a href="{{ url_for('prometheus.configuration', cluster_id=cluster.id) }}" class="text-sm font-semibold text-kaori-primary">Open cluster settings</a>{% else %}<span class="text-xs text-content-muted">Asset unavailable</span>{% endif %}</td></tr>{% endfor %}</tbody></table></div>
+  </section>
+  {% endif %}
+
+  {% include 'prometheus/partials/_runtime_history.html' %}
+</div>
+{% endblock %}

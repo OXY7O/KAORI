@@ -30,7 +30,7 @@
       </div>
       <div class="flex flex-wrap items-center gap-2">
         <span class="inline-flex min-h-6 items-center rounded-md border border-outline-default bg-surface-subtle px-2 text-[10px] font-semibold text-content-secondary">{{ row.binding_count }} binding{{ '' if row.binding_count == 1 else 's' }}</span>
-        {% if row.primary_cluster_id %}<a href="{{ row.detail_url }}" class="inline-flex items-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover"><i data-lucide="settings-2" class="h-4 w-4"></i>Open configuration</a>{% endif %}
+        <a href="{{ row.detail_url }}" class="inline-flex items-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover"><i data-lucide="settings-2" class="h-4 w-4"></i>Open runtime</a>
       </div>
     </header>
 

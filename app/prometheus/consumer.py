@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from app.integrations.consumer import ConsumerDiagnostic, ConsumerResult, ConsumerSource
-from app.models import Cluster
+from app.models import Cluster, PrometheusInstance
 from app.prometheus.client import PrometheusClient
 from app.prometheus.exceptions import PrometheusError
 from app.prometheus.repository import resolve_instance_for_cluster
@@ -24,7 +24,9 @@ class PrometheusConsumer:
         self.cluster = cluster
         config = resolve_instance_for_cluster(cluster.id)
         if config is None:
-            raise PrometheusError('No Prometheus runtime is bound to the selected Kubernetes cluster')
+            raise PrometheusError(
+                'No canonical Prometheus runtime is bound to this Kubernetes cluster.'
+            )
         self.config = config
         self.client = PrometheusClient(config)
 
@@ -254,7 +256,7 @@ class PrometheusConsumer:
         return ConsumerSource(
             provider='prometheus',
             instance_id=self.config.id,
-            instance_name=f'{self.cluster.name} metrics',
+            instance_name=self.config.name,
             endpoint_product=self.config.endpoint_product,
             compatibility_profile=self.config.compatibility_profile,
             capability_profile=self.config.capability_profile,

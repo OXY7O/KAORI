@@ -111,12 +111,29 @@ def instances() -> ResponseReturnValue:
     return render_template('prometheus/instances.html', rows=rows, clusters=clusters)
 
 
-@prometheus_bp.route('/instances/<int:instance_id>', methods=['GET', 'POST'])
+@prometheus_bp.get('/instances/<int:instance_id>')
 @permission_required('settings.manage_integrations')
 def instance_detail(instance_id: int) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
-    cluster = _cluster_for_instance_or_404(instance)
-    return configuration(cluster.id)
+    bindings = cluster_bindings_for_instance(instance)
+    clusters_by_id = {
+        cluster.id: cluster
+        for cluster in Cluster.query.filter(
+            Cluster.id.in_([binding.asset_key for binding in bindings])
+        ).all()
+    } if bindings else {}
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 5, type=int)
+    rows, pagination = paginate_runtime_history(
+        'prometheus', str(instance.id), page=page, per_page=per_page,
+    )
+    return render_template(
+        'prometheus/instance_detail.html',
+        instance=instance,
+        bindings=bindings,
+        clusters_by_id=clusters_by_id,
+        runtime_history=runtime_history_view(rows, pagination=pagination),
+    )
 
 
 @prometheus_bp.post('/instances/<int:instance_id>/bindings')
@@ -240,10 +257,8 @@ def instance_runtime_history(instance_id: int) -> ResponseReturnValue:
     rows, pagination = paginate_runtime_history(
         'prometheus', str(instance.id), page=page, per_page=per_page,
     )
-    cluster = _cluster_for_instance_or_404(instance)
     return render_template(
         'prometheus/partials/_runtime_history.html',
-        cluster=cluster,
         config=instance,
         runtime_history=runtime_history_view(rows, pagination=pagination),
     )
