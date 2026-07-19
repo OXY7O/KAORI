@@ -14,6 +14,35 @@ flex min-w-0 flex-col justify-center xl:col-span-7 xl:self-stretch
 min-w-0 xl:col-span-5 xl:self-stretch xl:[&>*]:h-full
 {%- endmacro %}
 
+
+{% macro title_classes() -%}
+text-[30px] font-bold leading-9 tracking-[-0.02em] text-brand-foreground lg:text-[32px] lg:leading-10
+{%- endmacro %}
+
+{% macro description_classes() -%}
+max-w-[44rem] text-[15px] font-normal leading-6 text-brand-foreground-muted
+{%- endmacro %}
+
+{% macro metadata_row_classes() -%}
+mt-4 flex flex-wrap items-center gap-2
+{%- endmacro %}
+
+{% macro action_group_classes() -%}
+flex flex-wrap items-center justify-start gap-2 xl:justify-end
+{%- endmacro %}
+
+{% macro primary_action_classes() -%}
+inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-white/70 bg-white px-4 text-sm font-semibold text-kaori-primary shadow-sm transition hover:border-white hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-kaori-primary active:bg-kaori-primary-soft
+{%- endmacro %}
+
+{% macro secondary_action_classes() -%}
+inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-white/25 bg-white/10 px-4 text-sm font-semibold text-white transition hover:border-white/40 hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-kaori-primary
+{%- endmacro %}
+
+{% macro destructive_action_classes() -%}
+inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-critical-border bg-critical-soft px-4 text-sm font-semibold text-critical-text transition hover:bg-critical hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-critical focus-visible:ring-offset-2 focus-visible:ring-offset-kaori-primary
+{%- endmacro %}
+
 {% macro eyebrow(icon, label) -%}
     <div class="kaori-context-label inline-flex min-h-8 w-fit items-center gap-2 rounded-lg bg-brand-surface px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-brand-foreground backdrop-blur">
         <i data-lucide="{{ icon }}" class="h-4 w-4 shrink-0" aria-hidden="true"></i>

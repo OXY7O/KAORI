@@ -291,70 +291,238 @@ The Kubernetes Operations Dashboard is the reference implementation for authenti
 
 ## Hero Standard
 
+The KAORI authenticated hero is a frozen design-system component. Every page that requires a hero must use `app/templates/components/page_hero.html`; page-local hero geometry, typography, action styling, and alignment are prohibited.
 
-### Hero supporting context and filters
+### Final geometry and visual baseline
 
-- Supporting context below a hero description must use `page_hero.supporting_strip(icon, label, text)` with a short semantic label and a concise explanation. Do not place a long unlabeled sentence inside the hero.
-- Recommended labels include `Source scope`, `Data scope`, `Validation context`, and `Operational boundary`.
-- Hero filter labels use sentence case and standard readable typography: `text-sm font-semibold`. Do not use 10 px uppercase eyebrow typography for interactive form labels.
-- Hero select controls use at least `text-sm`, 44 px control height, and normal font weight so options remain readable on laptop displays.
+The active shared implementation is the authoritative baseline and supersedes the earlier experimental 164–188 px proposal.
 
-### Hero metadata labels
+- Compact viewport outer minimum height: **248 px** (`min-h-[15.5rem]`).
+- Desktop outer target/minimum height from `lg`: **280 px** (`lg:min-h-[17.5rem]`).
+- Internal compact grid minimum height: **208 px** (`min-h-[13rem]`).
+- Internal desktop grid minimum height: **232 px** (`lg:min-h-[14.5rem]`).
+- Outer padding: **20 px compact**, **24 px desktop**.
+- Desktop grid: **7/5 columns**, representing approximately **58/42** rather than an arbitrary page-specific split.
+- Column gap: **20 px**.
+- Outer radius: **16 px**.
 
-- Metadata labels displayed below a hero description are not status pills.
-- Use the shared `page_hero.meta_label()` macro.
-- Radius: 6 px (`rounded-md`).
-- Minimum height: 32 px.
-- Padding: 12 px horizontal and 6 px vertical.
-- Do not use `rounded-full` for role, workspace count, capability count, source, scope, or other non-status hero metadata.
-- `rounded-full` remains reserved for true status badges, avatars, toggles, and compact state indicators.
-- Supporting informational strips below the description use `page_hero.supporting_strip()` with the same 6 px radius.
+The shared minimum height preserves one visual horizon while allowing responsive wrapping. A normal desktop hero must visually remain at the 280 px baseline. Content that forces recurring growth beyond the baseline must be shortened or moved below the hero. A page may not introduce a smaller or taller local baseline.
 
-### Kubernetes Dashboard standard alignment
+### Authoritative typography
 
-- Kubernetes Dashboard must consume the shared hero component and solid-violet hero treatment.
-- Non-status metadata labels use `rounded-md`; they must not use pill styling.
-- `rounded-full` is reserved for dynamic status, state dots, avatar, toggle controls, and progress tracks.
-- Decorative and navigation icons use KAORI violet. Semantic colors are reserved for values that communicate health, severity, readiness, or process state.
-- Empty and unavailable placeholders use violet surfaces unless they communicate a true semantic failure or warning.
-- Dashboard loading indicators use a solid brand color and must not use gradients.
+KAORI uses the global **Inter / `font-sans`** family for all hero content.
 
-## Kubernetes cluster management reference
+| Element | Compact/Desktop size | Weight | Line height | Additional rule |
+|---|---:|---:|---:|---|
+| Eyebrow | 10 px | 700 | 16 px | Uppercase, tracking `0.14em`, one line |
+| Title | 30/32 px | 700 | 36/40 px | Tracking `-0.02em`, one line preferred, two maximum |
+| Supporting description | 15 px | 400 | 24 px | One line minimum, two lines maximum |
+| Metadata label | 11 px | 700 | Natural within 32 px min-height | Two minimum, three maximum |
+| Supporting-strip label | 10 px | 700 | 16 px | Uppercase, tracking `0.12em` |
+| Supporting-strip text | 12 px | 400 | 20 px | Short operational context only |
+| Hero action | 14 px | 600 | 20 px within 40 px height | Full text label; no unexplained abbreviation |
+| Compact posture metric label | 11 px | 600 | 16 px | Maximum four metrics |
+| Compact posture metric value | 20–24 px | 700 | 28–32 px | Semantic status where applicable |
 
-The Kubernetes Cluster module follows the same authenticated hero, table, semantic state, and moderate-radius rules as Welcome and the Kubernetes Operations Dashboard.
+Use the shared macros:
 
-- Cluster list, Add Cluster, and Edit Cluster use a solid `kaori-primary` hero and the shared `page_hero.intro()` alignment contract.
-- Hero metadata below the description uses `page_hero.meta_label()` with `rounded-md`; registered, connected, synced, cluster identity, and kubeconfig requirements are metadata rather than status pills.
-- The cluster inventory card uses a 12 px outer radius, an 8 px icon surface, semantic surfaces, and compact operational density.
-- Cluster table headers and body values are left aligned. Only the final Actions column and its controls are right aligned.
-- Environment is descriptive metadata and therefore uses a violet rectangular label. It must not use red, amber, or blue severity colors.
-- Connection health, inventory state, integration configuration, and TLS exceptions are dynamic operational states and must use semantic status tokens.
-- Non-destructive row actions use KAORI violet. Destructive actions use the Critical semantic color.
-- Filters use sentence case, `text-sm`, 44 px control height, and readable labels. Supporting filter context uses violet rectangular metadata labels rather than pills.
-- Empty cluster inventory, upload zones, and non-error placeholders use violet surfaces. Validation and deletion remain Critical; legacy TLS exceptions remain Warning.
-- Cluster loading indicators use a solid KAORI brand color without page-level style blocks or gradients.
+- `page_hero.title_classes()`
+- `page_hero.description_classes()`
+- `page_hero.metadata_row_classes()`
+- `page_hero.action_group_classes()`
+- `page_hero.primary_action_classes()`
+- `page_hero.secondary_action_classes()`
+- `page_hero.destructive_action_classes()`
 
-## Kubernetes inventory hero geometry
+Do not copy these utility strings into page templates.
 
-The Kubernetes Inventory Overview hero is the authoritative size and spacing reference for Inventory Overview, Topology, Nodes, and subsequent resource inventory pages.
+### Supporting-description contract
 
-- Use the same outer structure: `p-5 lg:p-6`, `gap-5`, a 7/5 column split at `xl`, and `xl:items-stretch`.
-- The right context panel uses `h-full min-h-[13rem]`, `rounded-xl`, `p-4`, and a compact vertical flow.
-- Context metric cards use `mt-3`, two columns, `gap-2`, `px-3 py-2.5`, 11 px labels, 20 px values, and 10 px supporting text.
-- The footer action uses `mt-3`, minimum height 36 px, 12 px semibold text, and the label `Manage Clusters`. Inventory heroes must not introduce a different footer action or taller metric geometry without an explicit workflow requirement.
+The supporting description states the operational purpose of the page.
 
-## Kubernetes inventory overview reference
+- Minimum: one meaningful line, normally **60 characters or more**.
+- Maximum: two rendered lines, normally **120 characters or fewer**.
+- Recommended desktop content width: **620–704 px**; the shared class caps it at `44rem`.
+- Use active, direct language such as `Register, validate, and manage...` or `Review and govern...`.
+- Do not include implementation internals, full workflows, remediation steps, endpoint details, or multi-sentence guidance.
+- When localization or a narrow viewport produces additional wrapping, the copy remains semantically concise; do not truncate essential meaning merely to satisfy a physical character count.
 
-The Kubernetes Inventory Overview follows the authenticated operational overview standard.
+### Metadata-label contract
 
-- Use the shared `page_hero.intro()` structure with a solid `kaori-primary` hero, one aligned text column, and non-pill metadata labels below the description.
-- Inventory metadata labels describe connected cluster count, collected object count, and collection timestamp. They use violet brand styling because they are context values, not health statuses.
-- Resource KPI cards remain neutral. Labels and icons use KAORI violet; values use the primary content color. Non-status markers such as `Tracked` use compact rectangular metadata labels.
-- Collection health, freshness, connectivity, sync state, and risk hints use semantic status colors only when they communicate a real dynamic infrastructure state.
-- Tables follow the global alignment rule: every column is left aligned except the final column, which is right aligned. On Resources by Cluster, `Risk Hints` is the final right-aligned column.
-- Table headers use the brand violet content color. Cluster identity icons and empty-state icons use violet because they are non-status visual elements.
-- Loading bars use a solid violet fill; gradients are prohibited.
-- Pagination, per-page selectors, and secondary actions use the standard 8 px control radius and semantic surface tokens.
+Every normal hero contains **two or three** contextual metadata labels.
+
+Preferred order:
+
+1. Environment or scope.
+2. Provider, mode, object type, or page context.
+3. Count, source role, compatibility profile, or other operational metadata.
+
+Rules:
+
+- Use `page_hero.meta_label()`.
+- Use full environment names: `Development`, `Staging`, `Production`, and other canonical values.
+- Metadata uses KAORI Violet because it communicates identity or context.
+- Dynamic health, severity, readiness, failure, and process state use semantic status components instead.
+- Empty collections use factual metadata such as `0 Connections`; do not use a misleading health label such as `Healthy`.
+- Metadata labels are borderless, rectangular, and never pills.
+
+### Hero action contract
+
+The right-side primary hero action uses a white surface, natural hover treatment, and KAORI Violet text.
+
+- Primary: white background, Violet text, subtle white/brand border, soft Violet hover, visible Violet/white focus ring.
+- Secondary: translucent neutral surface on the Violet hero.
+- Destructive: Critical semantic treatment; never Violet.
+- Height: **40 px**.
+- Horizontal padding: **16 px**.
+- Ideal action count: one primary plus one secondary.
+- Maximum visible actions: three. Additional actions move to a labelled overflow menu.
+- Action order: primary operational action, secondary navigation/refresh action, destructive action last.
+- Icon-only controls require an accessible name; normal hero actions should retain visible text.
+
+### Official hero types
+
+Only the following five types are permitted. These types share the same geometry, typography, semantic treatment, and component contract.
+
+#### Standard Hero
+
+Default for lists, settings, reports, governance, operations, and general module pages.
+
+- Left: identity, purpose, two or three metadata labels.
+- Right: actions or a compact contextual panel.
+- No progress indicator, chart, or workflow detail.
+
+#### Dashboard Hero
+
+For operational overview and analytics overview pages.
+
+- May include one compact posture panel containing no more than four metrics.
+- Metrics summarize the current scope; they do not reproduce dashboard sections.
+- Expensive live analytics and detailed trends remain below the hero.
+
+#### Workspace Hero
+
+For ongoing operational workspaces such as integration management, report generation, and protected workflows.
+
+- May show current object identity, lifecycle context, and a compact posture summary.
+- Workflow instructions, diagnostics, remediation, and historical evidence remain below the hero.
+
+#### Wizard Hero
+
+For create, register, import, and guided setup workflows.
+
+- May show current step and short phase context.
+- Progress is textual or compact; the full wizard and validation detail remain in the page body.
+- The hero remains the same height when moving between steps.
+
+#### Detail Hero
+
+For a single managed object such as a cluster, user, integration instance, node, or namespace.
+
+- Prioritizes object identity, environment/scope, provider/type, and lifecycle context.
+- Provides only the most important object actions.
+- Detailed properties and operational evidence remain below the hero.
+
+Do not create a sixth type. A specialized workflow must select the closest official type and use content slots below the hero for domain-specific detail.
+
+### Empty Hero
+
+The hero does not become an empty-state component and must never disappear because no records exist.
+
+- Keep eyebrow, title, purpose description, metadata, and the relevant creation/registration action.
+- Use factual metadata such as `0 Connections`, `0 Reports`, or `No Active Binding` where context requires it.
+- Render the explanatory empty state in the content region below the hero.
+- Do not replace the hero with a large empty illustration or duplicate the same no-data message in both areas.
+
+### Busy Hero
+
+The hero remains static during HTMX requests, filtering, polling, pagination, runtime refresh, validation, synchronization, and background processing.
+
+- Loading indicators belong to the affected content card or operation control.
+- Do not replace, hide, collapse, dim, skeletonize, or reload the entire hero.
+- Disable only the action that cannot safely be repeated, while retaining its dimensions and label context.
+- A busy process may update a compact textual state after completion, but it must not change hero geometry.
+
+### Hero stability
+
+Hero stability is a functional requirement, not merely a visual preference.
+
+The following must remain stable during dynamic operations:
+
+- Outer height and padding.
+- Leading-icon position.
+- Eyebrow, title, description, and metadata alignment.
+- Action-group position and button dimensions.
+- Right-panel dimensions.
+
+Dynamic values must reserve sufficient width or use stable wrapping. Filters, polling, runtime updates, and pagination must not cause the title, metadata, action group, or context panel to jump between rows. Long values should be shortened through canonical display names or moved into detailed content, not compensated with local geometry changes.
+
+### Hero content rule
+
+Every hero answers exactly five questions:
+
+1. **Where am I?** — eyebrow.
+2. **What page or object is this?** — title.
+3. **What is its purpose?** — supporting description.
+4. **What is the current context?** — two or three metadata labels and, when justified, one compact posture panel.
+5. **What is the primary action?** — right-side action group.
+
+Content that does not answer one of these questions belongs below the hero. In particular, do not place full technical diagnostics, remediation guidance, audit history, filter forms, long operational workflows, capability matrices, or explanatory documentation inside the hero.
+
+Information hierarchy is fixed:
+
+`Identity → Purpose → Context → Action`
+
+### Information density and right-side panel
+
+A standard hero may contain:
+
+- One eyebrow.
+- One title.
+- One supporting description.
+- Two or three metadata labels.
+- Up to two normal actions, with three as the absolute visible maximum.
+- Optionally, one compact right-side panel with up to four metrics.
+
+The panel must not become a mini-dashboard. Long descriptions, tables, charts, progress bars, and diagnostic lists are prohibited in the hero panel.
+
+### Responsive behavior
+
+- Desktop: left content and right context/action region use the shared 7/5 grid.
+- Tablet and mobile: right content stacks after identity, purpose, and metadata.
+- Reading order remains eyebrow → title → description → metadata → supporting context/action.
+- Actions never move above the title.
+- Buttons retain a 40 px minimum height and remain keyboard accessible.
+- Responsive wrapping may increase natural document height, but no page may introduce custom breakpoint geometry.
+
+### Accessibility and performance
+
+- The page title is the single authoritative `h1`.
+- Text and controls meet WCAG AA contrast.
+- Focus indicators remain visible against the Violet hero surface.
+- Icons are supplemental; labels and status wording communicate meaning independently of color.
+- Hero content uses lightweight page context already required for navigation. Heavy runtime queries, charts, history, and large aggregates are loaded in the content area.
+- HTMX targets should exclude the hero unless navigation changes the page or managed object.
+
+### Compliance checklist
+
+A hero is compliant only when all applicable statements are true:
+
+- Uses the shared `page_hero.html` component and macros.
+- Uses one of the five official hero types.
+- Uses the 248 px compact and 280 px desktop baseline.
+- Uses Inter and the authoritative typography sizes.
+- Has one `h1`, no more than two title lines, and no more than two description lines.
+- Has two or three metadata labels in the prescribed order.
+- Uses full environment names.
+- Uses the white/Violet primary hero action treatment.
+- Uses semantic colors for operational state and Critical for destructive actions.
+- Contains no heavy query, chart, table, diagnostic list, or long workflow.
+- Remains stable during HTMX, polling, filtering, pagination, and runtime updates.
+- Preserves responsive reading order and visible keyboard focus.
+- Contains no page-local hero geometry or duplicated typography classes.
+
+Any exception requires a documented design-system decision before implementation.
 
 ## Semantic color and label contract
 
