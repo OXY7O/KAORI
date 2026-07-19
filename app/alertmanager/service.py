@@ -106,7 +106,15 @@ def save_alertmanager_instance(
     instance.capabilities = None
     instance.validation_message = 'Configuration changed. Run validation before KAORI uses this integration.'
     instance.last_validated_at = None
+
+    # The provider row has a NOT NULL foreign key to IntegrationInstance.
+    # Create or resolve the canonical identity before flushing the provider row,
+    # otherwise a newly registered Alertmanager is inserted with a NULL
+    # integration_instance_id.
+    ensure_canonical_instance(instance, provider_type='alertmanager')
     db.session.flush()
+
+    # Refresh canonical metadata after the provider row has received its ID.
     ensure_canonical_instance(instance, provider_type='alertmanager')
     if commit:
         try:
