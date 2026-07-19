@@ -29,7 +29,6 @@
                     {{ page_hero.meta_label(identity_context.icon, identity_context.provider_name) }}
                     {{ page_hero.meta_label('shield', user_role) }}
                     {{ page_hero.meta_label('circle-check' if current_user.account_is_active else 'circle-pause', 'Active Account' if current_user.account_is_active else 'Inactive Account') }}
-                    {{ page_hero.meta_label('key-round', identity_context.credential_owner) }}
                 </div>
             {% endcall %}
         </div>

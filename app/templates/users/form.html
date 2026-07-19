@@ -336,7 +336,7 @@
                             Cancel
                         </a>
                         <button type="submit" data-operation-submit data-loading-label="{{ 'Creating user...' if mode == 'create' else 'Updating user...' }}"
-                                class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card disabled:cursor-wait disabled:opacity-70">
+                                class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card disabled:cursor-wait disabled:opacity-70 cursor-pointer disabled:cursor-not-allowed">
                             <i data-lucide="save" class="h-4 w-4"></i>
                             <span data-operation-submit-label>{{ 'Create User' if mode == 'create' else 'Update User' }}</span>
                         </button>

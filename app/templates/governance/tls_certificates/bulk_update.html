@@ -192,7 +192,7 @@
                             hx-target="#tls-secret-update-feedback"
                             hx-swap="innerHTML"
                             @htmx:before-request="updateModal = false"
-                            class="inline-flex items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-kaori-primary-hover disabled:cursor-wait disabled:opacity-75 ">
+                            class="inline-flex items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-kaori-primary-hover disabled:cursor-wait disabled:opacity-75  cursor-pointer disabled:cursor-not-allowed">
                         <i data-lucide="upload-cloud" class="h-4 w-4"></i>
                         <span>Update Selected</span>
                     </button>

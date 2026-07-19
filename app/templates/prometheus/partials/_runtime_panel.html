@@ -3,7 +3,7 @@
 <section id="prometheus-runtime-panel"{% if runtime_oob|default(false) %} hx-swap-oob="outerHTML"{% endif %} class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
     <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 lg:flex-row lg:items-start lg:justify-between">
         <div class="flex items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="activity" class="h-5 w-5"></i></span><div><h2 class="text-base font-semibold text-content-primary">Runtime Health &amp; Diagnostics</h2><p class="mt-1 text-sm leading-6 text-content-secondary">Current endpoint health, query-contract readiness, latency, and capability evidence.</p></div></div>
-        {% if runtime_state.refresh_url %}<form method="post" action="{{ runtime_state.refresh_url }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="inline-flex h-10 items-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white hover:bg-kaori-primary-hover"><i data-lucide="refresh-cw" class="h-4 w-4"></i>Refresh Runtime</button></form>{% endif %}
+        {% if runtime_state.refresh_url %}<form method="post" action="{{ runtime_state.refresh_url }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="inline-flex h-10 items-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white hover:bg-kaori-primary-hover cursor-pointer disabled:cursor-not-allowed"><i data-lucide="refresh-cw" class="h-4 w-4"></i>Refresh Runtime</button></form>{% endif %}
     </header>
 
     <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">

@@ -47,8 +47,9 @@
                                 hx-post="{{ url_for('notifications.mark_all_read') }}"
                                 hx-target="#notification-center"
                                 hx-swap="outerHTML"
-                                class="whitespace-nowrap rounded-lg px-2.5 py-1.5 text-[10px] font-bold text-kaori-primary transition hover:bg-kaori-soft">
-                            Mark all read
+                                class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-[10px] font-bold text-kaori-primary transition hover:bg-kaori-soft cursor-pointer disabled:cursor-not-allowed">
+                            <i data-lucide="check-check" class="h-3 w-3"></i>
+                            Mark All Read
                         </button>
                     </form>
                 {% endif %}
@@ -122,8 +123,9 @@
                                                         hx-post="{{ url_for('notifications.mark_read', notification_id=notification.id) }}"
                                                         hx-target="#notification-center"
                                                         hx-swap="outerHTML"
-                                                        class="text-[10px] font-semibold text-content-muted hover:text-content-primary">
-                                                    Mark read
+                                                        class="inline-flex items-center gap-1 text-[10px] font-semibold text-content-muted hover:text-content-primary cursor-pointer disabled:cursor-not-allowed">
+                                                    <i data-lucide="check" class="h-3 w-3"></i>
+                                                    Mark Read
                                                 </button>
                                             </form>
                                         {% endif %}
@@ -157,7 +159,7 @@
                     <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i>
                 </a>
             {% else %}
-                <span class="text-[10px] font-semibold text-content-muted">Personal notifications</span>
+                <span class="inline-flex items-center gap-1 text-[10px] font-semibold text-content-muted">Personal notifications</span>
             {% endif %}
         </div>
     </div>

@@ -1,9 +1,10 @@
 {% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
 {% block title %}Report Detail{% endblock title %}
 {% block dashboard_content %}
     <div class="space-y-6">
         <!-- Hero -->
-        <section class="rounded-2xl border border-outline-default bg-white p-6 shadow-sm dark:border-outline-default bg-surface-card">
+        <section class="{{ page_hero.shell_classes() }}">
             <div class="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
                 <div class="flex items-start gap-4">
                     <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
@@ -36,13 +37,13 @@
                                 {{ payload.report.file_state.label }}
                             </span>
                         </div>
-                        <h1 class="text-3xl font-bold text-content-primary text-content-primary">{{ payload.report.name }}</h1>
-                        <p class="mt-1 max-w-3xl text-sm leading-6 text-content-muted sm:text-base dark:text-content-muted">{{ payload.page_subtitle }}</p>
+                        <h1 class="{{ page_hero.title_classes() }}">{{ payload.report.name }}</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">{{ payload.page_subtitle }}</p>
                     </div>
                 </div>
                 <div id="report-actions" class="flex flex-wrap items-center gap-3">
                     <a href="{{ url_for('reports.generated_reports') }}"
-                       class="inline-flex items-center justify-center gap-2 rounded-xl border border-outline-default bg-white px-4 py-2 text-sm font-semibold text-content-secondary shadow-sm transition hover:border-brand-outline hover:text-kaori-primary dark:border-outline-default bg-surface-subtle dark:text-content-secondary hover:border-brand-outline dark:hover:text-kaori-primary">
+                       class="{{ page_hero.primary_action_classes() }}">
                         <i data-lucide="arrow-left" class="h-4 w-4"></i>
                         Back
                     </a>
@@ -75,7 +76,7 @@
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             {% endif %}
                             <button type="submit"
-                                    class="inline-flex items-center justify-center gap-2 rounded-xl border border-brand-outline bg-kaori-soft px-4 py-2 text-sm font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 border-brand-outline bg-kaori-soft dark:text-kaori-primary hover:bg-kaori-soft">
+                                    class="inline-flex items-center justify-center gap-2 rounded-xl border border-brand-outline bg-kaori-soft px-4 py-2 text-sm font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 border-brand-outline bg-kaori-soft dark:text-kaori-primary hover:bg-kaori-soft cursor-pointer disabled:cursor-not-allowed">
                                 <i data-lucide="file-text" class="h-4 w-4"></i>
                                 {% if payload.report.raw_status == 'ready' %}
                                     Regenerate PDF
@@ -99,7 +100,7 @@
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             {% endif %}
                             <button type="submit"
-                                    class="inline-flex items-center justify-center gap-2 rounded-xl border border-outline-default bg-white px-4 py-2 text-sm font-semibold text-content-secondary shadow-sm transition hover:border-outline-default hover:bg-surface-subtle focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 dark:border-outline-default bg-surface-subtle dark:text-content-secondary hover:bg-kaori-soft">
+                                    class="inline-flex items-center justify-center gap-2 rounded-xl border border-outline-default bg-white px-4 py-2 text-sm font-semibold text-content-secondary shadow-sm transition hover:border-outline-default hover:bg-surface-subtle focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 dark:border-outline-default bg-surface-subtle dark:text-content-secondary hover:bg-kaori-soft cursor-pointer disabled:cursor-not-allowed">
                                 <i data-lucide="archive" class="h-4 w-4"></i>
                                 Archive Report
                             </button>
@@ -112,7 +113,7 @@
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             {% endif %}
                             <button type="submit"
-                                    class="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 shadow-sm transition hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-900/50">
+                                    class="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 shadow-sm transition hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-900/50 cursor-pointer disabled:cursor-not-allowed">
                                 <i data-lucide="rotate-ccw" class="h-4 w-4"></i>
                                 Restore Report
                             </button>

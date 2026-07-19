@@ -82,7 +82,6 @@
                             {% if role %}{{ page_hero.meta_label('fingerprint', role.name) }}{% endif %}
                             {% if clone_source %}{{ page_hero.meta_label('copy-plus', 'Source · ' ~ clone_source.display_name) }}{% endif %}
                             {{ page_hero.meta_label('key-round', selected_count ~ ' permissions') }}
-                            {{ page_hero.meta_label('boxes', selected_module_ns.count ~ ' modules') }}
                         </div>
                     {% endcall %}
                 </div>
@@ -260,9 +259,9 @@
                                     {% if not read_only %}
                                         <button type="button"
                                                 data-role-toggle-all
-                                                class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-brand-outline bg-kaori-soft px-3.5 text-sm font-semibold text-kaori-primary transition hover:bg-kaori-primary hover:text-white">
+                                                class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-brand-outline bg-kaori-soft px-3.5 text-sm font-semibold text-kaori-primary transition hover:bg-kaori-primary hover:text-white cursor-pointer disabled:cursor-not-allowed">
                                             <i data-lucide="list-checks" class="h-4 w-4"></i>
-                                            <span data-role-toggle-all-label>Select all</span>
+                                            <span data-role-toggle-all-label>Select All</span>
                                         </button>
                                     {% endif %}
                                 </div>
@@ -363,7 +362,7 @@
                                    class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white hover:bg-kaori-primary/90"><i data-lucide="copy-plus" class="h-4 w-4"></i>Clone default role</a>
                             {% elif not read_only %}
                                 <button type="submit"
-                                        class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white hover:bg-kaori-primary/90">
+                                        class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white hover:bg-kaori-primary/90 cursor-pointer disabled:cursor-not-allowed">
                                     <i data-lucide="save" class="h-4 w-4"></i>
                                     {% if page_mode == 'clone' %}
                                         Create cloned role

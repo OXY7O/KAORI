@@ -125,7 +125,7 @@
                                                 <form method="post" action="{{ url_for('users.validate_provider', provider_id=provider.id) }}">
                                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                                     <button type="submit"
-                                                            class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-outline-default px-3 text-xs font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kaori-primary/20">
+                                                            class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-outline-default px-3 text-xs font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kaori-primary/20 cursor-pointer disabled:cursor-not-allowed">
                                                         <i data-lucide="badge-check" class="h-3.5 w-3.5"></i>
                                                         Validate
                                                     </button>

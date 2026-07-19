@@ -99,13 +99,13 @@ archive_search=retention.archive_filters.search) %}
                             <input type="hidden" name="mode" value="archive_only">
                             <button type="submit"
                                     hx-disabled-elt="this"
-                                    class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-brand-outline bg-kaori-soft px-3.5 py-2 text-sm font-semibold text-kaori-primary transition hover:bg-kaori-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-70">
+                                    class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-brand-outline bg-kaori-soft px-3.5 py-2 text-sm font-semibold text-kaori-primary transition hover:bg-kaori-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-70 cursor-pointer disabled:cursor-not-allowed">
                                 <i data-lucide="archive" class="h-4 w-4"></i>Archive only
                             </button>
                         </form>
                         <button type="button"
                                 @click="cleanupModal = true"
-                                class="inline-flex min-h-10 items-center gap-2 rounded-lg bg-kaori-primary px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-kaori-primary/90">
+                                class="inline-flex min-h-10 items-center gap-2 rounded-lg bg-kaori-primary px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-kaori-primary/90 cursor-pointer disabled:cursor-not-allowed">
                             <i data-lucide="database" class="h-4 w-4"></i>Archive &amp; cleanup
                         </button>
                     {% endif %}
@@ -498,7 +498,7 @@ archive_search=retention.archive_filters.search) %}
                                                     {{ retention_state_inputs() }}
                                                     <button type="submit"
                                                             hx-disabled-elt="this"
-                                                            class="inline-flex items-center gap-1 rounded-lg border border-brand-outline bg-kaori-soft px-2.5 py-1.5 text-[10px] font-semibold text-kaori-primary hover:bg-kaori-soft disabled:cursor-not-allowed disabled:opacity-70 dark:border-brand-outline dark:bg-kaori-soft dark:text-kaori-primary">
+                                                            class="inline-flex items-center gap-1 rounded-lg border border-brand-outline bg-kaori-soft px-2.5 py-1.5 text-[10px] font-semibold text-kaori-primary hover:bg-kaori-soft disabled:cursor-not-allowed disabled:opacity-70 dark:border-brand-outline dark:bg-kaori-soft dark:text-kaori-primary cursor-pointer disabled:cursor-not-allowed">
                                                         <i data-lucide="shield-check" class="h-3.5 w-3.5"></i>
                                                         Verify
                                                     </button>
@@ -629,7 +629,7 @@ archive_search=retention.archive_filters.search) %}
                     <input type="hidden" name="mode" value="archive_and_cleanup">
                     <button type="submit"
                             hx-disabled-elt="this"
-                            class="inline-flex items-center justify-center gap-2 rounded-xl bg-kaori-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70">
+                            class="inline-flex items-center justify-center gap-2 rounded-xl bg-kaori-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70 cursor-pointer disabled:cursor-not-allowed">
                         <i data-lucide="database" class="h-4 w-4"></i>
                         Archive &amp; cleanup
                     </button>

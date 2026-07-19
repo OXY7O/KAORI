@@ -129,7 +129,7 @@
                                             hx-include="#quick-sync-form"
                                             hx-disabled-elt="this"
                                             @click="quickOpen = false; document.getElementById('quick-sync-feedback')?.replaceChildren()"
-                                            class="group relative flex w-full items-start gap-3 overflow-hidden rounded-xl border border-kaori-primary/15 bg-kaori-soft p-3 text-left transition hover:border-kaori-primary/30 hover:bg-kaori-soft disabled:cursor-wait disabled:opacity-75 ">
+                                            class="group relative flex w-full items-start gap-3 overflow-hidden rounded-xl border border-kaori-primary/15 bg-kaori-soft p-3 text-left transition hover:border-kaori-primary/30 hover:bg-kaori-soft disabled:cursor-wait disabled:opacity-75  cursor-pointer disabled:cursor-not-allowed">
                                         <span class="relative z-10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-kaori-primary text-white shadow-sm shadow-kaori-primary/20">
                                             <i data-lucide="refresh-cw"
                                                class="h-4 w-4 group-[.htmx-request]:animate-spin"></i>
@@ -243,7 +243,7 @@
                         <form method="POST" action="{{ url_for('auth.logout') }}">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                             <button type="submit"
-                                    class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-status-critical transition hover:bg-status-critical-soft hover:text-status-critical-text">
+                                    class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-status-critical transition hover:bg-status-critical-soft hover:text-status-critical-text cursor-pointer disabled:cursor-not-allowed">
                                 <i data-lucide="log-out" class="h-4 w-4"></i>
                                 <span>Logout</span>
                             </button>

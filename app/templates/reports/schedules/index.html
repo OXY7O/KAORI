@@ -1,8 +1,9 @@
 {% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
 {% block title %}Report Schedules{% endblock title %}
 {% block dashboard_content %}
     <div class="space-y-6">
-        <section class="rounded-2xl border border-outline-default bg-white p-6 shadow-sm dark:border-outline-default bg-surface-card">
+        <section class="{{ page_hero.shell_classes() }}">
             <div class="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
                 <div class="flex items-start gap-4">
                     <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
@@ -19,14 +20,14 @@
                                 Storage {{ payload.storage_context.status }}
                             </span>
                         </div>
-                        <h1 class="text-3xl font-bold tracking-tight text-content-primary text-content-primary">{{ payload.page_title }}</h1>
-                        <p class="mt-1 max-w-3xl text-sm leading-6 text-content-muted sm:text-base dark:text-content-muted">{{ payload.page_subtitle }}</p>
+                        <h1 class="{{ page_hero.title_classes() }}">{{ payload.page_title }}</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">{{ payload.page_subtitle }}</p>
                         <p class="mt-2 max-w-3xl text-xs leading-5 text-content-muted dark:text-content-muted">{{ payload.status_description }}</p>
                     </div>
                 </div>
                 <div class="flex flex-wrap items-center gap-3">
                     <a href="{{ url_for('reports.schedules') }}"
-                       class="inline-flex items-center justify-center gap-2 rounded-xl border border-outline-default bg-white px-4 py-2 text-sm font-semibold text-content-secondary shadow-sm transition hover:border-brand-outline hover:text-kaori-primary dark:border-outline-default bg-surface-subtle dark:text-content-secondary hover:border-brand-outline dark:hover:text-kaori-primary">
+                       class="{{ page_hero.primary_action_classes() }}">
                         <i data-lucide="refresh-cw" class="h-4 w-4"></i>
                         Refresh
                     </a>
@@ -120,15 +121,15 @@
                                                   action="{{ url_for('reports.run_schedule', schedule_id=schedule.id) }}">
                                                 {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                                                 <button type="submit"
-                                                        class="inline-flex items-center gap-1.5 rounded-lg bg-kaori-primary px-3 py-2 text-xs font-semibold text-white hover:bg-kaori-primary bg-kaori-primary dark:hover:bg-kaori-primary">
-                                                    <i data-lucide="play" class="h-3.5 w-3.5"></i> Run now
+                                                        class="inline-flex items-center gap-1.5 rounded-lg bg-kaori-primary px-3 py-2 text-xs font-semibold text-white hover:bg-kaori-primary bg-kaori-primary dark:hover:bg-kaori-primary cursor-pointer disabled:cursor-not-allowed">
+                                                    <i data-lucide="play" class="h-3.5 w-3.5"></i> Run Now
                                                 </button>
                                             </form>
                                             <form method="POST"
                                                   action="{{ url_for('reports.toggle_schedule', schedule_id=schedule.id) }}">
                                                 {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                                                 <button type="submit"
-                                                        class="inline-flex items-center gap-1.5 rounded-lg border border-outline-default px-3 py-2 text-xs font-semibold text-content-secondary hover:border-brand-outline hover:text-kaori-primary dark:border-outline-default dark:text-content-secondary hover:border-brand-outline dark:hover:text-kaori-primary">
+                                                        class="inline-flex items-center gap-1.5 rounded-lg border border-outline-default px-3 py-2 text-xs font-semibold text-content-secondary hover:border-brand-outline hover:text-kaori-primary dark:border-outline-default dark:text-content-secondary hover:border-brand-outline dark:hover:text-kaori-primary cursor-pointer disabled:cursor-not-allowed">
                                                     <i data-lucide="{{ 'pause' if schedule.is_enabled else 'play' }}"
                                                        class="h-3.5 w-3.5"></i>
                                                     {{ 'Pause' if schedule.is_enabled else 'Enable' }}
@@ -243,7 +244,7 @@
                                                    value="{{ schedule.edit_state.is_enabled }}">
                                             <div class="flex flex-wrap justify-end gap-2">
                                                 <button type="submit"
-                                                        class="inline-flex items-center gap-2 rounded-xl bg-kaori-primary px-4 py-2 text-sm font-semibold text-white hover:bg-kaori-primary bg-kaori-primary dark:hover:bg-kaori-primary"><i data-lucide="save" class="h-4 w-4"></i>Save changes</button>
+                                                        class="inline-flex items-center gap-2 rounded-xl bg-kaori-primary px-4 py-2 text-sm font-semibold text-white hover:bg-kaori-primary bg-kaori-primary dark:hover:bg-kaori-primary cursor-pointer disabled:cursor-not-allowed"><i data-lucide="save" class="h-4 w-4"></i>Save Changes</button>
                                             </div>
                                         </form>
                                         <form method="POST"
@@ -252,7 +253,7 @@
                                               onsubmit="return confirm('Delete this report schedule? Existing generated reports will remain.');">
                                             {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                                             <button type="submit"
-                                                    class="inline-flex items-center gap-2 rounded-xl border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50 dark:border-rose-900/60 dark:text-rose-300 dark:hover:bg-rose-950/30"><i data-lucide="trash-2" class="h-4 w-4"></i>Delete schedule</button>
+                                                    class="inline-flex items-center gap-2 rounded-xl border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50 dark:border-rose-900/60 dark:text-rose-300 dark:hover:bg-rose-950/30 cursor-pointer disabled:cursor-not-allowed"><i data-lucide="trash-2" class="h-4 w-4"></i>Delete Schedule</button>
                                         </form>
                                     </details>
                                 </article>
@@ -271,7 +272,7 @@
                 <section class="rounded-2xl border border-outline-default bg-white shadow-sm dark:border-outline-default bg-surface-card">
                     <div class="border-b border-outline-default px-5 py-4 dark:border-outline-default">
                         <h2 class="text-base font-semibold text-content-primary text-content-primary">Recent Schedule Runs</h2>
-                        <p class="mt-1 text-xs text-content-muted dark:text-content-muted">Execution history created by Run now and the CLI runner.</p>
+                        <p class="mt-1 text-xs text-content-muted dark:text-content-muted">Execution history created by Run Now and the CLI runner.</p>
                     </div>
                     <div class="divide-y divide-outline-default divide-outline-default">
                         {% if payload.recent_runs %}
@@ -418,7 +419,7 @@
                                 <div class="flex gap-2">
                                     <button type="button"
                                             x-on:click="selectAll()"
-                                            class="text-xs font-semibold text-kaori-primary dark:text-kaori-primary">Select all</button>
+                                            class="text-xs font-semibold text-kaori-primary dark:text-kaori-primary">Select All</button>
                                     <button type="button"
                                             x-on:click="selectDefaults()"
                                             class="text-xs font-semibold text-content-muted dark:text-content-muted">Reset</button>
@@ -441,7 +442,7 @@
                             </div>
                         </div>
                         <button type="submit"
-                                class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-kaori-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-kaori-primary bg-kaori-primary dark:hover:bg-kaori-primary">
+                                class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-kaori-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-kaori-primary bg-kaori-primary dark:hover:bg-kaori-primary cursor-pointer disabled:cursor-not-allowed">
                             <i data-lucide="calendar-plus" class="h-4 w-4"></i>
                             Create Schedule
                         </button>

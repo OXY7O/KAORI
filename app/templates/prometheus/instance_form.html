@@ -136,7 +136,7 @@
 
             <footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                 <p class="text-xs leading-5 text-content-muted">Saving resets readiness to Validation Required. Test Connection and Full Validation are performed from the connection detail page.</p>
-                <button type="submit" class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-5 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2">
+                <button type="submit" class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-5 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 cursor-pointer disabled:cursor-not-allowed">
                     <i data-lucide="save" class="h-4 w-4"></i>{{ 'Save Changes' if instance else 'Register Connection' }}
                 </button>
             </footer>

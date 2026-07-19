@@ -190,7 +190,7 @@
                                         <button type="submit"
                                                 title="Test cluster connection"
                                                 hx-disabled-elt="this"
-                                                class="group inline-flex h-9 w-9 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-kaori-primary transition hover:border-outline-focus hover:bg-kaori-soft disabled:cursor-wait disabled:opacity-70">
+                                                class="group inline-flex h-9 w-9 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-kaori-primary transition hover:border-outline-focus hover:bg-kaori-soft disabled:cursor-wait disabled:opacity-70 cursor-pointer disabled:cursor-not-allowed">
                                             <i data-lucide="plug-zap" class="h-4 w-4 group-[.htmx-request]:animate-spin"></i>
                                         </button>
                                     </form>
@@ -203,7 +203,7 @@
                                         <button type="submit"
                                                 title="Sync inventory"
                                                 hx-disabled-elt="this"
-                                                class="group inline-flex h-9 w-9 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-kaori-primary transition hover:border-outline-focus hover:bg-kaori-soft disabled:cursor-wait disabled:opacity-70">
+                                                class="group inline-flex h-9 w-9 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-kaori-primary transition hover:border-outline-focus hover:bg-kaori-soft disabled:cursor-wait disabled:opacity-70 cursor-pointer disabled:cursor-not-allowed">
                                             <i data-lucide="refresh-cw" class="h-4 w-4 group-[.htmx-request]:animate-spin"></i>
                                         </button>
                                     </form>
@@ -226,7 +226,7 @@
                                     <button type="button"
                                             title="Delete cluster"
                                             x-on:click="deleteModal = true; deleteUrl = '{{ url_for('cluster.delete_cluster_route', cluster_id=cluster.id) }}'; deleteName = '{{ cluster.name }}'"
-                                            class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-status-critical-border bg-surface-card text-status-critical-text transition hover:bg-status-critical-soft">
+                                            class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-status-critical-border bg-surface-card text-status-critical-text transition hover:bg-status-critical-soft cursor-pointer disabled:cursor-not-allowed">
                                         <i data-lucide="trash-2" class="h-4 w-4"></i>
                                     </button>
                                 {% endif %}

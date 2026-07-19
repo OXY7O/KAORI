@@ -238,9 +238,9 @@
                         {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                         <input type="hidden" name="next" value="{{ request.full_path }}">
                         <button type="submit"
-                                class="inline-flex items-center gap-2 rounded-xl border border-outline-default bg-white px-3 py-1.5 text-xs font-semibold text-content-secondary shadow-sm transition hover:border-brand-outline hover:text-kaori-primary dark:border-outline-default bg-surface-subtle dark:text-content-secondary hover:border-brand-outline dark:hover:text-kaori-primary">
+                                class="inline-flex items-center gap-2 rounded-xl border border-outline-default bg-white px-3 py-1.5 text-xs font-semibold text-content-secondary shadow-sm transition hover:border-brand-outline hover:text-kaori-primary dark:border-outline-default bg-surface-subtle dark:text-content-secondary hover:border-brand-outline dark:hover:text-kaori-primary cursor-pointer disabled:cursor-not-allowed">
                             <i data-lucide="archive" class="h-3.5 w-3.5"></i>
-                            Archive selected
+                            Archive Selected
                         </button>
                     </form>
                     <span class="inline-flex w-fit items-center gap-2 rounded-xl bg-kaori-soft px-3 py-1.5 text-xs font-semibold text-content-secondary bg-kaori-soft dark:text-content-secondary">
@@ -347,7 +347,7 @@
                                                         {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                                                         <input type="hidden" name="next" value="{{ request.full_path }}">
                                                         <button type="submit"
-                                                                class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50 dark:text-emerald-300 dark:hover:bg-emerald-950/40">
+                                                                class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50 dark:text-emerald-300 dark:hover:bg-emerald-950/40 cursor-pointer disabled:cursor-not-allowed">
                                                             <i data-lucide="{{ 'refresh-cw' if report.raw_status == 'ready' else 'file-plus-2' }}"
                                                                class="h-3.5 w-3.5"></i>
                                                             {{ report.generate_pdf_label }}
@@ -372,7 +372,7 @@
                                                         {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                                                         <input type="hidden" name="next" value="{{ request.full_path }}">
                                                         <button type="submit"
-                                                                class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-semibold text-content-secondary transition hover:bg-surface-subtle dark:text-content-secondary hover:bg-kaori-soft">
+                                                                class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-semibold text-content-secondary transition hover:bg-surface-subtle dark:text-content-secondary hover:bg-kaori-soft cursor-pointer disabled:cursor-not-allowed">
                                                             <i data-lucide="archive" class="h-3.5 w-3.5"></i>
                                                             Archive
                                                         </button>
@@ -383,7 +383,7 @@
                                                         {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                                                         <input type="hidden" name="next" value="{{ request.full_path }}">
                                                         <button type="submit"
-                                                                class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-semibold text-content-secondary transition hover:bg-surface-subtle dark:text-content-secondary hover:bg-kaori-soft">
+                                                                class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-semibold text-content-secondary transition hover:bg-surface-subtle dark:text-content-secondary hover:bg-kaori-soft cursor-pointer disabled:cursor-not-allowed">
                                                             <i data-lucide="rotate-ccw" class="h-3.5 w-3.5"></i>
                                                             Restore
                                                         </button>

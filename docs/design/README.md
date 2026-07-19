@@ -7,6 +7,7 @@
 ## Component contracts
 
 - `components/HERO.md`
+- `components/BUTTON.md`
 - `components/TABLE_AND_LABEL.md`
 
 ## Reusable page patterns

@@ -83,7 +83,7 @@
                                       hx-disabled-elt="button">
                                     {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                                     <button type="submit"
-                                            class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-brand-outline bg-surface-card px-3 py-2 text-xs font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70">
+                                            class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-brand-outline bg-surface-card px-3 py-2 text-xs font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 cursor-pointer disabled:cursor-not-allowed">
                                         <i data-lucide="scan-line" class="h-4 w-4" aria-hidden="true"></i>
                                         Full Validation
                                     </button>
@@ -298,7 +298,7 @@
                                     data-operation-submit
                                     data-loading-label="{{ 'Updating instance...' if instance else 'Registering instance...' }}"
                                     {% if not instance %}disabled x-bind:disabled="!connectionVerified" x-bind:title="connectionVerified ? 'Register this verified connection' : 'Run Test Connection successfully before registering'"{% endif %}
-                                    class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card disabled:cursor-not-allowed disabled:bg-content-disabled disabled:opacity-70">
+                                    class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card disabled:cursor-not-allowed disabled:bg-content-disabled disabled:opacity-70 cursor-pointer disabled:cursor-not-allowed">
                                 <i data-lucide="save" class="h-4 w-4"></i>
                                 <span data-operation-submit-label>{{ 'Update Instance' if instance else 'Register Instance' }}</span>
                             </button>
@@ -560,7 +560,7 @@
                                                         data-delete-name="{{ row.scope_label }}"
                                                         data-delete-detail="This Alertmanager connection will no longer be eligible for the selected operational scope. Historical activity remains available in Activity Audit Log."
                                                         data-delete-action-label="Remove binding"
-                                                        class="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-status-critical-border bg-surface-card px-3 text-xs font-semibold text-status-critical-text transition hover:bg-status-critical-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                                        class="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-status-critical-border bg-surface-card px-3 text-xs font-semibold text-status-critical-text transition hover:bg-status-critical-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus cursor-pointer disabled:cursor-not-allowed">
                                                     <i data-lucide="unlink" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                                     Remove
                                                 </button>
@@ -640,7 +640,7 @@
                         </div>
                         <input type="hidden" name="enabled" value="1">
                         <button type="submit"
-                                class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-kaori-primary px-4 py-2.5 text-sm font-bold text-white hover:bg-kaori-primary-hover"><i data-lucide="link" class="h-4 w-4"></i>Save binding</button>
+                                class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-kaori-primary px-4 py-2.5 text-sm font-bold text-white hover:bg-kaori-primary-hover cursor-pointer disabled:cursor-not-allowed"><i data-lucide="link" class="h-4 w-4"></i>Save Binding</button>
                     </form>
                 </div>
             </section>
@@ -662,7 +662,7 @@
                             data-delete-detail="The connection identity, endpoint configuration, and saved credentials will be removed. Historical operational activity remains available in Activity Audit Log."
                             data-delete-action-label="Delete instance"
                             {% if bindings %}disabled{% endif %}
-                            class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-status-critical-border bg-surface-card px-4 text-sm font-semibold text-status-critical-text transition hover:bg-status-critical-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-not-allowed disabled:opacity-50">
+                            class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-status-critical-border bg-surface-card px-4 text-sm font-semibold text-status-critical-text transition hover:bg-status-critical-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed">
                         <i data-lucide="trash-2" class="h-4 w-4" aria-hidden="true"></i>
                         Delete instance
                     </button>

@@ -93,7 +93,7 @@
                                         name="submit"
                                         value="Search"
                                         {% if not has_ldap_providers %}disabled{% endif %}
-                                        class="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-5 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-not-allowed disabled:opacity-60">
+                                        class="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-5 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer disabled:cursor-not-allowed">
                                     <i data-lucide="search" class="h-4 w-4"></i>
                                     Search LDAP
                                 </button>
@@ -188,7 +188,7 @@
 
                                 <div class="lg:col-span-2 lg:text-right">
                                     <button type="submit"
-                                            class="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus lg:w-auto">
+                                            class="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus lg:w-auto cursor-pointer disabled:cursor-not-allowed">
                                         <i data-lucide="user-plus" class="h-4 w-4"></i>
                                         Provision
                                     </button>

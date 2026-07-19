@@ -159,7 +159,7 @@
                                                 data-delete-url="{{ url_for('users.delete', user_id=user.id) }}"
                                                 data-delete-name="{{ user.display_label }}"
                                                 data-delete-meta="{{ user.username }} · {{ user.email }} · {{ user.role_display_name }}"
-                                                class="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-2.5 py-1.5 text-xs font-bold text-red-700 transition hover:bg-red-50 dark:border-red-900/60 dark:text-red-300 dark:hover:bg-red-950/30">
+                                                class="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-2.5 py-1.5 text-xs font-bold text-red-700 transition hover:bg-red-50 dark:border-red-900/60 dark:text-red-300 dark:hover:bg-red-950/30 cursor-pointer disabled:cursor-not-allowed">
                                             <i data-lucide="trash-2" class="h-3.5 w-3.5"></i>Delete
                                         </button>
                                     {% else %}

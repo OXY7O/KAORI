@@ -72,7 +72,7 @@
                             <button type="submit"
                                     title="Save {{ row.namespace }} policy"
                                     {% if not row.in_live_cluster and row.policy == 'disabled' %}disabled{% endif %}
-                                    class="inline-flex h-10 w-24 shrink-0 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-3 text-sm font-semibold text-white shadow-sm outline-none transition hover:bg-kaori-primary-hover focus:ring-4 focus:ring-kaori-primary/20 disabled:cursor-not-allowed disabled:bg-surface-disabled disabled:text-content-muted disabled:shadow-none">
+                                    class="inline-flex h-10 w-24 shrink-0 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-3 text-sm font-semibold text-white shadow-sm outline-none transition hover:bg-kaori-primary-hover focus:ring-4 focus:ring-kaori-primary/20 disabled:cursor-not-allowed disabled:bg-surface-disabled disabled:text-content-muted disabled:shadow-none cursor-pointer disabled:cursor-not-allowed">
                                 <i data-lucide="save" class="h-4 w-4"></i>
                                 Save
                             </button>

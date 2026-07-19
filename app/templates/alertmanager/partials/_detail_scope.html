@@ -69,7 +69,7 @@
                                                     data-delete-name="{{ row.scope_label }}"
                                                     data-delete-detail="This connection will no longer be eligible for the selected operational scope. Historical activity remains available in Activity Audit Log."
                                                     data-delete-action-label="Remove binding"
-                                                    class="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-status-critical-border bg-surface-card px-3 text-xs font-semibold text-status-critical-text transition hover:bg-status-critical-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                                    class="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-status-critical-border bg-surface-card px-3 text-xs font-semibold text-status-critical-text transition hover:bg-status-critical-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus cursor-pointer disabled:cursor-not-allowed">
                                                 <i data-lucide="unlink" class="h-3.5 w-3.5"></i>
                                                 Remove
                                             </button>
@@ -279,7 +279,7 @@
                     </details>
 
                     <input type="hidden" name="enabled" value="1">
-                    <button type="submit" class="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-70">
+                    <button type="submit" class="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-70 cursor-pointer disabled:cursor-not-allowed">
                         <i data-lucide="link" class="h-4 w-4"></i>
                         Create Binding
                     </button>
@@ -313,7 +313,7 @@
                     data-delete-detail="The connection identity, endpoint configuration, and saved credentials will be removed. Historical operational activity remains available in Activity Audit Log."
                     data-delete-action-label="Delete instance"
                     {% if bindings %}disabled{% endif %}
-                    class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-status-critical-border bg-surface-card px-4 text-sm font-semibold text-status-critical-text transition hover:bg-status-critical-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-not-allowed disabled:opacity-50">
+                    class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-status-critical-border bg-surface-card px-4 text-sm font-semibold text-status-critical-text transition hover:bg-status-critical-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed">
                 <i data-lucide="trash-2" class="h-4 w-4"></i>
                 Delete Instance
             </button>
