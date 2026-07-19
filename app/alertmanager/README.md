@@ -573,3 +573,8 @@ Alertmanager is part of the first semantic-color rollout together with Prometheu
 - Alertmanager templates use the application sans-serif family for endpoints, scope keys, identifiers, and runtime evidence. Monospace remains limited to dedicated code or payload contexts.
 - Landing, registration, instance detail, validation, runtime history, scope binding, and effective-source resolution must remain inside the shared `kaori-integration-semantic` presentation scope.
 
+
+
+### Global semantic color contract
+
+This workspace consumes the shared KAORI palette and label components. Provider templates must not introduce a separate status palette. Pending maps to Info, maintenance to Warning, and disabled/unknown to Neutral.

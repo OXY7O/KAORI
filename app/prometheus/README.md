@@ -120,5 +120,10 @@ Prometheus uses the same provider-neutral workspace concept as Alertmanager whil
 - Runtime evidence uses the shared health model and rolling 100-record retention. Scope bindings determine which operational consumers may resolve the connection.
 - Prometheus and Thanos remain authoritative for scraping, rules, query execution, retention, federation, and historical storage. KAORI provides validation, governance, correlation, runtime evidence, and controlled source resolution.
 
-Alertmanager and Prometheus opt into the `kaori-integration-semantic` scope. Within this scope, Primary Violet is limited to navigation, primary action, focus, selection, and KAORI identity. Operational state uses Normal, Info, Warning, Critical, or Neutral. Compact labels are rectangular and borderless; semantic border tokens are reserved for panels, callouts, dialogs, and controls.
+The KAORI semantic color contract applies globally. Primary Violet is limited to navigation, primary action, focus, selection, and KAORI identity. Operational state uses Normal, Info, Warning, Critical, or Neutral. Compact labels are rectangular and borderless; semantic border tokens are reserved for panels, callouts, dialogs, inputs, and destructive controls.
 
+
+
+### Global semantic color contract
+
+This workspace consumes the shared KAORI palette and label components. Provider templates must not introduce a separate status palette. Pending maps to Info, maintenance to Warning, and disabled/unknown to Neutral.

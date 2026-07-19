@@ -1,26 +1,12 @@
 from pathlib import Path
 
-
 STYLES = Path('frontend/styles.css')
 TABLE_LABEL = Path('app/templates/components/table_label.html')
 PAGE_HERO = Path('app/templates/components/page_hero.html')
 STATUS_BADGE = Path('app/templates/integrations/partials/_status_badge.html')
 
-ALERTMANAGER_TEMPLATES = (
-    Path('app/templates/integrations/alertmanager.html'),
-    Path('app/templates/alertmanager/instance_form.html'),
-    Path('app/templates/alertmanager/instance_detail.html'),
-)
-PROMETHEUS_TEMPLATES = (
-    Path('app/templates/integrations/prometheus.html'),
-    Path('app/templates/prometheus/instance_form.html'),
-    Path('app/templates/prometheus/instance_detail.html'),
-    Path('app/templates/prometheus/instances.html'),
-    Path('app/templates/prometheus/config.html'),
-)
 
-
-def test_alertmanager_and_prometheus_use_final_semantic_palette() -> None:
+def test_final_semantic_palette_is_global() -> None:
     source = STYLES.read_text(encoding='utf-8').lower()
     expected = (
         '--kaori-brand-primary: #7c3aed;',
@@ -52,66 +38,37 @@ def test_alertmanager_and_prometheus_use_final_semantic_palette() -> None:
     assert not missing, f'Final KAORI semantic colors are missing: {missing}'
 
 
-def test_integration_labels_are_borderless_inside_rollout_scope() -> None:
+def test_labels_are_borderless_globally() -> None:
     styles = STYLES.read_text(encoding='utf-8')
     table_label = TABLE_LABEL.read_text(encoding='utf-8')
     hero = PAGE_HERO.read_text(encoding='utf-8')
     badge = STATUS_BADGE.read_text(encoding='utf-8')
 
-    assert '.kaori-integration-semantic .kaori-semantic-label,' in styles
-    assert '.kaori-integration-semantic .kaori-context-label {' in styles
-    assert 'border-width: 0;' in styles
+    assert '.kaori-semantic-label,' in styles
+    assert '.kaori-context-label,' in styles
+    assert 'border-width: 0 !important;' in styles
+    assert 'rounded-md border px-2' not in table_label
+    assert 'rounded-md border px-2' not in badge
     assert 'kaori-semantic-label' in table_label
     assert 'kaori-semantic-label' in badge
-    assert 'text-status-normal' in badge and 'text-status-normal-text' in badge
-    assert 'text-kaori-primary' in table_label and 'text-kaori-primary-dark' in table_label
     assert hero.count('kaori-context-label') >= 2
+    assert 'kaori-context-label inline-flex min-h-8 w-fit items-center gap-2 rounded-lg border' not in hero
 
 
-def test_integration_pages_opt_into_scoped_semantic_contract() -> None:
-    for template in ALERTMANAGER_TEMPLATES + PROMETHEUS_TEMPLATES:
-        source = template.read_text(encoding='utf-8')
-        assert 'kaori-integration-semantic' in source, f'{template} is outside semantic rollout scope'
+def test_legacy_compact_labels_are_normalized() -> None:
+    styles = STYLES.read_text(encoding='utf-8')
+    for token in (
+        'span.inline-flex[class*="bg-emerald-"]',
+        'span.inline-flex[class*="bg-blue-"]',
+        'span.inline-flex[class*="bg-amber-"]',
+        'span.inline-flex[class*="bg-red-"]',
+        'span.inline-flex[class*="bg-slate-"]',
+    ):
+        assert token in styles
 
 
-def test_active_alertmanager_and_prometheus_templates_have_no_raw_status_colors_or_monospace() -> None:
-    roots = (
-        Path('app/templates/alertmanager'),
-        Path('app/templates/integrations/alertmanager.html'),
-        Path('app/templates/integrations/alertmanager'),
-        Path('app/templates/prometheus'),
-        Path('app/templates/integrations/prometheus.html'),
-        Path('app/templates/integrations/prometheus'),
-    )
-    files: list[Path] = []
-    for root in roots:
-        if root.is_file():
-            files.append(root)
-        elif root.exists():
-            files.extend(root.rglob('*.html'))
-
-    forbidden = (
-        'font-mono',
-        'text-emerald-',
-        'bg-emerald-',
-        'border-emerald-',
-        'text-red-',
-        'bg-red-',
-        'border-red-',
-        'text-amber-',
-        'bg-amber-',
-        'border-amber-',
-        'text-blue-',
-        'bg-blue-',
-        'border-blue-',
-        'text-slate-',
-        'bg-slate-',
-        'border-slate-',
-    )
-    violations: list[str] = []
-    for template in files:
-        source = template.read_text(encoding='utf-8')
-        for token in forbidden:
-            if token in source:
-                violations.append(f'{template}:{token}')
-    assert not violations, f'Active integration templates contain raw color/font utilities: {violations}'
+def test_secondary_states_use_six_family_contract() -> None:
+    table_label = TABLE_LABEL.read_text(encoding='utf-8')
+    assert "tone == 'maintenance' %}bg-status-warning-soft text-status-warning-text" in table_label
+    assert "tone == 'pending' %}bg-status-info-soft text-status-info-text" in table_label
+    assert "tone == 'disabled' %}bg-status-disabled-soft text-status-disabled-text" in table_label

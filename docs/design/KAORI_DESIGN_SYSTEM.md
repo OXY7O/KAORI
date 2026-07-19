@@ -358,7 +358,7 @@ The Kubernetes Inventory Overview follows the authenticated operational overview
 
 ## Semantic color and label contract
 
-Alertmanager and Prometheus are the first rollout domains for the final KAORI semantic palette. The same contract will be expanded only after these workspaces are validated.
+The final KAORI semantic palette applies globally to every workspace. Alertmanager, Prometheus, and Kubernetes remain reference implementations, but no page may define an alternative operational status palette.
 
 | Family | Strong / icon | Text | Soft background | Border reference |
 | --- | --- | --- | --- | --- |
@@ -660,3 +660,18 @@ All Settings workspaces use the KAORI Violet Infrastructure visual system. Heroe
 ### Kubernetes integration rollout
 
 The Kubernetes Integration landing and detail workspaces use the same semantic contract as Alertmanager and Prometheus. Violet identifies KAORI navigation, selection, primary actions, metadata, and focus. Readiness, runtime health, compatibility fallback, blocked APIs, and destructive lifecycle actions use the appropriate semantic family. Kubernetes remains authoritative for live resources; KAORI stores canonical connection context, normalized inventory, runtime evidence, correlation, governance, and audit history.
+
+
+## Global Semantic Color Contract
+
+The semantic palette is a global application contract, not a domain-specific theme.
+
+- Primary Violet (`#7C3AED`, text `#6D28D9`, soft `#F5F3FF`) is reserved for KAORI identity, active navigation, primary actions, focus, and selected state.
+- Info uses `#2563EB`, text `#1D4ED8`, soft `#EFF6FF`.
+- Normal uses `#059669`, text `#047857`, soft `#ECFDF5`.
+- Warning uses `#D97706`, text `#B45309`, soft `#FFFBEB`.
+- Critical uses `#DC2626`, text `#B91C1C`, soft `#FEF2F2`.
+- Neutral uses `#64748B`, text `#475569`, soft `#F8FAFC`.
+- Pending maps to Info, disabled/unknown map to Neutral, and maintenance maps to Warning.
+- Compact status and metadata labels are borderless globally. Border-reference colors are reserved for panels, callouts, modal dialogs, inputs, and destructive controls.
+- Provider or feature templates must use shared semantic tokens and label macros instead of introducing raw product-specific color classes.
