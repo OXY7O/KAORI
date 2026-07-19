@@ -49,8 +49,8 @@ def test_alertmanager_instance_hero_uses_the_same_geometry() -> None:
         "page_hero.intro('siren', 'Alertmanager Integration Source', 'server-cog')",
         'aside class="xl:col-span-5"',
         'flex h-full min-h-[13rem] flex-col rounded-xl',
-        'Source posture',
-        'Configuration and usage boundary',
+        'Integration workflow',
+        'Connection lifecycle &amp; scope',
         'Back to Registry',
         'components/table_label.html',
     )
@@ -109,6 +109,62 @@ def test_alertmanager_copy_is_global_and_has_no_future_product_positioning() -> 
     )
     found = [fragment for fragment in forbidden_fragments if fragment in combined]
     assert not found, f'Alertmanager still contains product/future positioning: {found}'
+
+
+def test_register_alertmanager_instance_matches_informative_form_contract() -> None:
+    source = INSTANCE_FORM.read_text(encoding='utf-8')
+
+    required_fragments = (
+        'id="alertmanager-instance-form"',
+        'xl:col-span-8',
+        'xl:col-span-4 xl:sticky xl:top-5',
+        'Alertmanager Scope &amp; Workflow',
+        'Provider Identity &amp; Contract',
+        'After Registration',
+        'Reusable connection identity',
+        'Reachability test',
+        'Validation and scope assignment',
+        'Allow KAORI to use this connection',
+        'maintenance or troubleshooting without deleting the instance',
+        "url_for('alertmanager.test_new_instance_connection')",
+        'hx-include="#alertmanager-instance-form"',
+        'hx-target="#alertmanager-connection-test-result"',
+        'Test Connection',
+        'Register Instance',
+        'focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20',
+    )
+    missing = [fragment for fragment in required_fragments if fragment not in source]
+    assert not missing, f'Register Alertmanager form contract is incomplete: {missing}'
+
+    forbidden_fragments = (
+        'Integration Boundary',
+        'Source Boundary',
+        'font-mono',
+        'focus:border-kaori-primary focus:ring-2 focus:ring-outline-focus',
+        'Runtime source enabled',
+        'Disabled sources are excluded from asset-scope resolution',
+    )
+    found = [fragment for fragment in forbidden_fragments if fragment in source]
+    assert not found, f'Register Alertmanager form still contains legacy UI patterns: {found}'
+
+
+def test_alertmanager_connection_test_result_is_semantic_and_separate_from_validation() -> None:
+    source = Path(
+        'app/templates/alertmanager/partials/_connection_test_result.html'
+    ).read_text(encoding='utf-8')
+
+    required_fragments = (
+        'Reachable',
+        'Not reachable',
+        'Response time',
+        'Cluster status',
+        'Register the instance, then run Full Validation',
+        'API capabilities, compatibility profile, runtime readiness, and scope eligibility',
+    )
+    missing = [fragment for fragment in required_fragments if fragment not in source]
+    assert not missing, f'Connection test result contract is incomplete: {missing}'
+    assert 'rounded-full' not in source
+    assert 'font-mono' not in source
 
 
 def test_obsolete_cluster_configuration_template_is_removed() -> None:

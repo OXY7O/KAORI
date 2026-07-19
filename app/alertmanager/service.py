@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from typing import Any
+from urllib.parse import urlsplit
 
 from app.alertmanager.bindings import create_or_update_binding, delete_binding, resolve_sources
+from app.alertmanager.client import AlertmanagerClient
 from app.alertmanager.client_factory import build_client
 from app.alertmanager.consumer import (
     KUBERNETES_CLUSTER_SCOPE,
@@ -11,6 +13,7 @@ from app.alertmanager.consumer import (
     list_alerts_for_scope,
     list_silences_for_scope,
 )
+from app.alertmanager.exceptions import AlertmanagerError
 from app.alertmanager.forms import (
     AlertmanagerBindingForm,
     AlertmanagerInstanceForm,
@@ -24,6 +27,7 @@ from app.alertmanager.repository import (
 )
 from app.alertmanager.resolver import AlertmanagerSourceResolution, resolve_alertmanager_sources
 from app.alertmanager.validation import validate_source
+from app.common.integration_errors import describe_integration_failure
 from app.extensions import db
 from app.integrations.lifecycle import bind_instance, ensure_canonical_instance
 from app.models.alertmanager import AlertmanagerInstance
@@ -56,6 +60,25 @@ def resolve_alertmanager_scope_sources(
     )
 
 
+def _validate_connection_settings(
+    form: AlertmanagerInstanceForm,
+    *,
+    instance: AlertmanagerInstance | None = None,
+) -> None:
+    validate_endpoint(form.endpoint)
+    if form.auth_type == 'basic':
+        if not form.username:
+            raise ValueError('Username is required for Basic authentication.')
+        if not form.password and (instance is None or not instance.password):
+            raise ValueError('Password is required for Basic authentication.')
+    if (
+        form.auth_type == 'bearer'
+        and not form.bearer_token
+        and (instance is None or not instance.bearer_token)
+    ):
+        raise ValueError('Bearer token is required for Bearer authentication.')
+
+
 def save_alertmanager_instance(
     *,
     form: AlertmanagerInstanceForm,
@@ -64,7 +87,7 @@ def save_alertmanager_instance(
 ) -> AlertmanagerInstance:
     if not form.name:
         raise ValueError('Instance name is required.')
-    validate_endpoint(form.endpoint)
+    _validate_connection_settings(form, instance=instance)
 
     duplicate = get_instance_by_name(form.name)
     if duplicate is not None and (instance is None or duplicate.id != instance.id):
@@ -149,7 +172,7 @@ def create_alertmanager_instance(
 
 def remove_alertmanager_instance(instance: AlertmanagerInstance) -> None:
     if get_alertmanager_bindings(instance.id):
-        raise ValueError('Remove all asset bindings before deleting this Alertmanager instance.')
+        raise ValueError('Remove all scope bindings before deleting this Alertmanager instance.')
     canonical = (
         db.session.get(IntegrationInstance, instance.integration_instance_id)
         if instance.integration_instance_id
@@ -167,6 +190,90 @@ def remove_alertmanager_instance(instance: AlertmanagerInstance) -> None:
 
 def validate_alertmanager_instance(instance: AlertmanagerInstance) -> dict[str, Any]:
     return validate_source(instance, source_label=instance.name).to_dict()
+
+
+def test_alertmanager_form_connection(form: AlertmanagerInstanceForm) -> dict[str, Any]:
+    """Test draft connection settings without creating or mutating an instance.
+
+    This probe is intentionally limited to the Alertmanager status endpoint. Full
+    capability discovery and readiness validation remain a separate post-registration
+    workflow.
+    """
+    try:
+        _validate_connection_settings(form)
+    except ValueError as exc:
+        return {
+            'connected': False,
+            'label': 'Connection settings incomplete',
+            'error': str(exc),
+            'reason': 'Review the submitted endpoint and authentication settings.',
+            'failure_code': 'invalid_configuration',
+            'request_path': '/api/v2/status',
+        }
+
+    client = AlertmanagerClient(
+        endpoint=form.endpoint,
+        auth_type=form.auth_type,
+        username=form.username,
+        password=form.password,
+        bearer_token=form.bearer_token,
+        timeout=form.timeout,
+        verify_ssl=form.verify_ssl,
+    )
+    try:
+        result = client.test_connection()
+    except AlertmanagerError as exc:
+        failure = describe_integration_failure(
+            exc,
+            service_name='Alertmanager',
+            endpoint=form.endpoint,
+            request_path='/api/v2/status',
+            timeout_seconds=form.timeout,
+        )
+        return {
+            'connected': False,
+            'label': 'Connection failed',
+            'error': failure['detail'],
+            'reason': failure['reason'],
+            'failure_code': failure['code'],
+            'endpoint_host': failure['endpoint_host'],
+            'endpoint_port': failure['endpoint_port'],
+            'request_path': failure['request_path'],
+        }
+    except Exception as exc:  # pragma: no cover - defensive network boundary
+        failure = describe_integration_failure(
+            exc,
+            service_name='Alertmanager',
+            endpoint=form.endpoint,
+            request_path='/api/v2/status',
+            timeout_seconds=form.timeout,
+        )
+        return {
+            'connected': False,
+            'label': 'Connection test failed',
+            'error': failure['detail'],
+            'reason': failure['reason'],
+            'failure_code': failure['code'],
+            'endpoint_host': failure['endpoint_host'],
+            'endpoint_port': failure['endpoint_port'],
+            'request_path': failure['request_path'],
+        }
+
+    parsed_endpoint = urlsplit(form.endpoint)
+    return {
+        'connected': True,
+        'label': 'Connection verified',
+        'endpoint_host': parsed_endpoint.hostname,
+        'endpoint_port': parsed_endpoint.port,
+        'response_time_ms': int(result.get('response_time_ms') or 0),
+        'version': str(result.get('version') or 'unknown'),
+        'cluster_status': str(result.get('cluster_status') or 'unknown'),
+        'reason': (
+            'The Alertmanager status API responded successfully. Endpoint reachability, '
+            'authentication, and TLS negotiation are confirmed for the submitted settings.'
+        ),
+        'request_path': '/api/v2/status',
+    }
 
 
 def add_alertmanager_binding(

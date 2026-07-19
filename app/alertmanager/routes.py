@@ -26,6 +26,7 @@ from app.alertmanager.service import (
     remove_alertmanager_instance,
     save_alertmanager_instance,
     test_alertmanager_connection,
+    test_alertmanager_form_connection,
     validate_alertmanager_instance,
 )
 from app.integrations.runtime.monitoring import refresh_and_record as refresh_provider_runtime
@@ -47,11 +48,14 @@ alertmanager_bp = Blueprint(
 def new_instance() -> ResponseReturnValue:
     initial_cluster_id = request.values.get('cluster_id', '').strip()
     initial_cluster = get_cluster_by_id(initial_cluster_id) if initial_cluster_id else None
+    draft_form = None
+    form_error = None
 
     if request.method == 'POST':
         form = parse_alertmanager_instance_form(request.form)
         if not form.name and initial_cluster is not None:
             form = replace(form, name=f'{initial_cluster.name} Alertmanager', deployment_type='cluster_managed')
+        draft_form = form
         try:
             initial_binding = (
                 AlertmanagerBindingForm(
@@ -69,6 +73,7 @@ def new_instance() -> ResponseReturnValue:
                 initial_binding=initial_binding,
             )
         except ValueError as exc:
+            form_error = str(exc)
             record_instance_activity(
                 user_id=int(current_user.id),
                 instance=None,
@@ -80,6 +85,7 @@ def new_instance() -> ResponseReturnValue:
                 metadata={'cluster_id': initial_cluster_id or None},
             )
         except Exception as exc:  # pragma: no cover - defensive database boundary
+            form_error = 'KAORI could not save the Alertmanager instance. Review application logs and database connectivity before retrying.'
             logger.exception('Alertmanager instance creation failed.')
             record_instance_activity(
                 user_id=int(current_user.id),
@@ -99,7 +105,7 @@ def new_instance() -> ResponseReturnValue:
                 status='success',
                 title='Alertmanager instance created',
                 message=f'{instance.name} is now registered as an Alertmanager source.',
-                detail='Run full validation before downstream analytics use this source.',
+                detail='Run full validation, review readiness, then create scope bindings before operational use.',
                 metadata={'initial_cluster_id': initial_cluster_id or None},
             )
             return redirect(url_for('alertmanager.instance_detail', instance_id=instance.id))
@@ -108,6 +114,60 @@ def new_instance() -> ResponseReturnValue:
         'alertmanager/instance_form.html',
         **build_instance_context(),
         initial_cluster=initial_cluster,
+        draft_form=draft_form,
+        form_error=form_error,
+    )
+
+
+@alertmanager_bp.post('/instances/test-connection')
+@permission_required('settings.manage_integrations')
+def test_new_instance_connection() -> ResponseReturnValue:
+    form = parse_alertmanager_instance_form(request.form)
+    result = test_alertmanager_form_connection(form)
+
+    if result.get('connected'):
+        record_instance_activity(
+            user_id=int(current_user.id),
+            instance=None,
+            event_type='alertmanager_connection_test',
+            status='success',
+            title='Alertmanager connection verified',
+            message='KAORI reached the submitted Alertmanager endpoint.',
+            detail=(
+                f"Status API responded in {result.get('response_time_ms', 0)} ms. "
+                'Register the instance, then run full validation from its detail page.'
+            ),
+            metadata={
+                'endpoint_host': result.get('endpoint_host'),
+                'version': result.get('version'),
+                'response_time_ms': result.get('response_time_ms'),
+                'request_path': result.get('request_path'),
+                'draft_connection': True,
+            },
+            queue_feedback=False,
+        )
+    else:
+        record_instance_activity(
+            user_id=int(current_user.id),
+            instance=None,
+            event_type='alertmanager_connection_test_failed',
+            status='error',
+            title='Alertmanager connection test failed',
+            message='KAORI could not reach the submitted Alertmanager endpoint.',
+            detail=result.get('error') or 'Review endpoint, authentication, TLS, and network reachability.',
+            metadata={
+                'failure_code': result.get('failure_code'),
+                'endpoint_host': result.get('endpoint_host'),
+                'endpoint_port': result.get('endpoint_port'),
+                'request_path': result.get('request_path'),
+                'draft_connection': True,
+            },
+            queue_feedback=False,
+        )
+
+    return render_template(
+        'alertmanager/partials/_connection_test_result.html',
+        connection_test=result,
     )
 
 
@@ -302,7 +362,7 @@ def create_binding(instance_id: int) -> ResponseReturnValue:
             event_type='alertmanager_binding_created',
             status='success',
             title='Alertmanager binding saved',
-            message=f'{instance.name} is now available to the selected asset scope.',
+            message=f'{instance.name} is now available to the selected operational scope.',
             detail=f'{binding.asset_type}:{binding.asset_key} is mapped as {binding.binding_role}.',
             metadata={
                 'binding_id': binding.id,
@@ -333,7 +393,7 @@ def remove_binding(instance_id: int, binding_id: int) -> ResponseReturnValue:
         event_type='alertmanager_binding_deleted',
         status='success',
         title='Alertmanager binding removed',
-        message=f'{instance.name} is no longer mapped to the selected asset scope.',
+        message=f'{instance.name} is no longer mapped to the selected operational scope.',
         detail=f'{binding.asset_type}:{binding.asset_key} was removed.',
         metadata={
             'binding_id': binding.id,

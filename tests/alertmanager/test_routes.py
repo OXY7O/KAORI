@@ -11,6 +11,7 @@ from app.alertmanager.forms import AlertmanagerBindingForm, AlertmanagerInstance
 from app.alertmanager.service import add_alertmanager_binding, save_alertmanager_instance  # noqa: E402
 from app.extensions import db  # noqa: E402
 from app.models import Cluster, User  # noqa: E402
+from app.models.alertmanager import AlertmanagerInstance  # noqa: E402
 
 
 @pytest.fixture
@@ -95,8 +96,8 @@ def test_instance_inventory_detail_and_legacy_cluster_redirect(app) -> None:
     assert detail.status_code == 200
     assert b'Instance Configuration' in detail.data
     assert b'Scope Bindings' in detail.data
-    assert b'Run full validation' in detail.data
-    assert b'Source posture' in detail.data
+    assert b'Full Validation' in detail.data
+    assert b'Integration workflow' in detail.data
     assert b'Runtime Health & Diagnostics' in detail.data
 
     legacy = client.get(f'/integrations/alertmanager/cluster/{cluster.id}')
@@ -121,4 +122,60 @@ def test_new_instance_page_prefills_cluster_binding_context(app) -> None:
     assert response.status_code == 200
     assert b'Register Alertmanager Instance' in response.data
     assert b'Platform Cluster Alertmanager' in response.data
-    assert b'Initial Binding' in response.data
+    assert b'Initial Scope Binding' in response.data
+    assert b'Alertmanager Scope &amp; Workflow' in response.data
+    assert b'Test Connection' in response.data
+    assert b'Provider Identity &amp; Contract' in response.data
+
+
+def test_draft_connection_test_uses_submitted_settings_without_creating_instance(app, monkeypatch) -> None:
+    user = User(username='connection-admin', email='connection-admin@example.test', is_super_admin=True)
+    db.session.add(user)
+    db.session.commit()
+
+    observed = {}
+
+    def fake_test(form):
+        observed['endpoint'] = form.endpoint
+        observed['auth_type'] = form.auth_type
+        observed['verify_ssl'] = form.verify_ssl
+        return {
+            'connected': True,
+            'label': 'Connection verified',
+            'response_time_ms': 18,
+            'version': '0.33.1',
+            'cluster_status': 'ready',
+            'reason': 'The Alertmanager status API responded successfully.',
+            'request_path': '/api/v2/status',
+        }
+
+    monkeypatch.setattr('app.alertmanager.routes.test_alertmanager_form_connection', fake_test)
+
+    client = app.test_client()
+    _login(client, user.id)
+    response = client.post(
+        '/integrations/alertmanager/instances/test-connection',
+        data={
+            'name': 'Draft Alertmanager',
+            'deployment_type': 'shared',
+            'endpoint': 'https://alertmanager.example.test:9093/',
+            'auth_type': 'none',
+            'timeout': '7',
+            'verify_ssl': '1',
+            'enabled': '1',
+        },
+        headers={'HX-Request': 'true'},
+    )
+
+    assert response.status_code == 200
+    assert b'Connection verified' in response.data
+    assert b'Reachable' in response.data
+    assert b'0.33.1' in response.data
+    assert b'18 ms' in response.data
+    assert b'Full Validation' in response.data
+    assert observed == {
+        'endpoint': 'https://alertmanager.example.test:9093',
+        'auth_type': 'none',
+        'verify_ssl': True,
+    }
+    assert db.session.query(AlertmanagerInstance).count() == 0

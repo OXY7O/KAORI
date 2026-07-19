@@ -1,0 +1,52 @@
+{% set connected = connection_test.connected %}
+<article class="rounded-lg border {{ 'border-status-normal-border bg-status-normal-soft' if connected else 'border-status-critical-border bg-status-critical-soft' }} px-4 py-4"
+         role="status"
+         aria-live="polite">
+    <div class="flex items-start gap-3">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border {{ 'border-status-normal-border bg-surface-card text-status-normal-text' if connected else 'border-status-critical-border bg-surface-card text-status-critical-text' }}">
+            <i data-lucide="{{ 'circle-check' if connected else 'circle-x' }}" class="h-5 w-5"></i>
+        </span>
+        <div class="min-w-0 flex-1">
+            <div class="flex flex-wrap items-center gap-2">
+                <h3 class="text-sm font-semibold {{ 'text-status-normal-text' if connected else 'text-status-critical-text' }}">
+                    {{ connection_test.label }}
+                </h3>
+                <span class="inline-flex min-h-6 items-center gap-1.5 rounded-md border px-2 py-0.5 text-[10px] font-semibold {{ 'border-status-normal-border bg-surface-card text-status-normal-text' if connected else 'border-status-critical-border bg-surface-card text-status-critical-text' }}">
+                    <i data-lucide="{{ 'plug-zap' if connected else 'unplug' }}" class="h-3 w-3"></i>
+                    {{ 'Reachable' if connected else 'Not reachable' }}
+                </span>
+            </div>
+            <p class="mt-1.5 text-xs leading-5 {{ 'text-status-normal-text' if connected else 'text-status-critical-text' }}">
+                {{ connection_test.reason or connection_test.error }}
+            </p>
+
+            {% if connected %}
+                <div class="mt-3 grid gap-2 sm:grid-cols-3">
+                    <div class="rounded-lg border border-status-normal-border bg-surface-card px-3 py-2.5">
+                        <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Version</p>
+                        <p class="mt-1 text-sm font-semibold text-content-primary">{{ connection_test.version or 'Unknown' }}</p>
+                    </div>
+                    <div class="rounded-lg border border-status-normal-border bg-surface-card px-3 py-2.5">
+                        <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Response time</p>
+                        <p class="mt-1 text-sm font-semibold text-content-primary">{{ connection_test.response_time_ms or 0 }} ms</p>
+                    </div>
+                    <div class="rounded-lg border border-status-normal-border bg-surface-card px-3 py-2.5">
+                        <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Cluster status</p>
+                        <p class="mt-1 text-sm font-semibold text-content-primary">{{ connection_test.cluster_status|replace('_', ' ')|title }}</p>
+                    </div>
+                </div>
+                <div class="mt-3 rounded-lg border border-status-info-border bg-status-info-soft px-3 py-2.5 text-xs leading-5 text-status-info-text">
+                    Reachability is confirmed for the values submitted in this test. Register the instance, then run Full Validation to establish API capabilities, compatibility profile, runtime readiness, and scope eligibility.
+                </div>
+            {% else %}
+                <div class="mt-3 rounded-lg border border-status-critical-border bg-surface-card px-3 py-2.5">
+                    <p class="text-xs font-semibold text-status-critical-text">What to review</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ connection_test.error or 'Review endpoint, authentication, TLS verification, network routing, and firewall access from the KAORI runtime.' }}</p>
+                    {% if connection_test.request_path %}
+                        <p class="mt-2 text-[11px] leading-5 text-content-muted">Probe path: {{ connection_test.request_path }}</p>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</article>
