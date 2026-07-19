@@ -361,7 +361,7 @@
 
                         <div class="prometheus-action-grid">
                             <button type="button"
-                                    hx-post="{{ url_for('prometheus.test_connection', cluster_id=cluster.id) }}"
+                                    hx-post="{{ url_for('prometheus.instance_test', instance_id=config.id) }}"
                                     hx-target="#operational-action-feedback"
                                     hx-swap="innerHTML"
                                     hx-disabled-elt="this"
@@ -373,7 +373,7 @@
                             <button type="button"
                                     data-operational-progress-title="Prometheus full validation is running"
                                     data-operational-progress-message="KAORI is checking metric availability, label schemas, versioned PromQL, and retention coverage. Thanos-backed endpoints may take several minutes."
-                                    hx-post="{{ url_for('prometheus.validate_integration', cluster_id=cluster.id) }}"
+                                    hx-post="{{ url_for('prometheus.instance_validate', instance_id=config.id) }}"
                                     hx-target="#operational-action-feedback"
                                     hx-swap="innerHTML"
                                     hx-disabled-elt="this"

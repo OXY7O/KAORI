@@ -38,15 +38,28 @@ class PrometheusCompatibilityResolution:
 
 
 class PrometheusService:
-    def __init__(self, cluster: Cluster) -> None:
-        self.cluster = cluster
-        config = resolve_instance_for_cluster(cluster.id)
-        if not config:
-            raise PrometheusError('No Prometheus runtime is bound to the selected Kubernetes cluster')
+    def __init__(
+        self,
+        source: Cluster | PrometheusInstance,
+        *,
+        cluster: Cluster | None = None,
+    ) -> None:
+        if isinstance(source, PrometheusInstance):
+            config = source
+            self.cluster = cluster
+        else:
+            self.cluster = source
+            config = resolve_instance_for_cluster(source.id)
+            if not config:
+                raise PrometheusError('No Prometheus runtime is bound to the selected Kubernetes cluster')
+
+        self.instance = config
         self.client = PrometheusClient(config)
-        self.consumer = PrometheusConsumer(cluster)
+        self.consumer = PrometheusConsumer(self.cluster) if self.cluster is not None else None
 
     def instant_query(self, query: str) -> dict[str, Any]:
+        if self.consumer is None:
+            return self.client.query(query)
         return self.consumer.query(query)
 
     def range_query(
@@ -56,6 +69,8 @@ class PrometheusService:
         end: str,
         step: str,
     ) -> dict[str, Any]:
+        if self.consumer is None:
+            return self.client.query_range(query, start, end, step)
         return self.consumer.query_range(query, start, end, step)
 
     def test_connection(self) -> dict[str, Any]:

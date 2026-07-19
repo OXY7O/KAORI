@@ -13,14 +13,7 @@ class PrometheusRuntimeAdapter:
     provider = 'prometheus'
 
     def refresh(self, instance: PrometheusInstance) -> dict[str, Any]:
-        cluster = getattr(instance, 'cluster', None)
-        if cluster is None:
-            binding = next((item for item in instance.bindings if item.scope_type == 'kubernetes_cluster' and item.enabled), None)
-            if binding is None:
-                raise ValueError('Prometheus runtime has no enabled Kubernetes cluster binding.')
-            from app.models import Cluster
-            cluster = Cluster.query.get(binding.scope_key)
-        return PrometheusService(cluster).validate_integration()
+        return PrometheusService(instance).validate_integration()
 
     def get_state(self, instance: PrometheusInstance, *, validation_result: dict[str, Any] | None = None) -> RuntimeState:
         now = datetime.now(UTC)

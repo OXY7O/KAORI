@@ -157,13 +157,96 @@ def delete_instance_binding(instance_id: int, binding_id: int) -> ResponseReturn
 @prometheus_bp.post('/instances/<int:instance_id>/test')
 @permission_required('settings.manage_integrations')
 def instance_test(instance_id: int) -> ResponseReturnValue:
-    return test_connection(_cluster_for_instance_or_404(_instance_or_404(instance_id)).id)
+    instance = _instance_or_404(instance_id)
+    try:
+        result = PrometheusService(instance).test_connection()
+        record_operational_activity(
+            user_id=current_user.id,
+            event_type='prometheus_connection_test',
+            status='success',
+            title='Prometheus connection verified',
+            message=f'KAORI connected to {instance.name}.',
+            detail=f'{(result.get("endpoint_product") or "endpoint").title()} {result.get("endpoint_version", "unknown")} responded successfully.',
+            action_url=url_for('prometheus.instance_detail', instance_id=instance.id),
+            action_label='View Prometheus instance',
+            action_icon='activity',
+            metadata={'instance_id': instance.id, 'instance_name': instance.name, 'endpoint': instance.endpoint},
+            queue_feedback=True,
+        )
+        return redirect(url_for('prometheus.instance_detail', instance_id=instance.id))
+    except PrometheusError as exc:
+        record_operational_activity(
+            user_id=current_user.id,
+            event_type='prometheus_connection_test',
+            status='error',
+            title='Prometheus connection failed',
+            message=f'KAORI could not connect to {instance.name}.',
+            detail=str(exc),
+            action_url=url_for('prometheus.instance_detail', instance_id=instance.id),
+            action_label='Review Prometheus instance',
+            action_icon='activity',
+            metadata={'instance_id': instance.id, 'instance_name': instance.name},
+            queue_feedback=True,
+        )
+        return redirect(url_for('prometheus.instance_detail', instance_id=instance.id))
 
 
 @prometheus_bp.post('/instances/<int:instance_id>/validate')
 @permission_required('settings.manage_integrations')
 def instance_validate(instance_id: int) -> ResponseReturnValue:
-    return validate_integration(_cluster_for_instance_or_404(_instance_or_404(instance_id)).id)
+    instance = _instance_or_404(instance_id)
+    try:
+        result, _state, _observation = refresh_and_record(
+            runtime_adapter,
+            instance,
+            trigger_type='manual',
+        )
+        record_operational_activity(
+            user_id=current_user.id,
+            event_type='prometheus_compatibility_validation',
+            status='success' if result.get('success') else 'warning',
+            title='Prometheus validation completed',
+            message=f'Runtime validation completed for {instance.name}.',
+            detail=result.get('message') or 'Compatibility and query contracts were evaluated.',
+            action_url=url_for('prometheus.instance_detail', instance_id=instance.id),
+            action_label='View Prometheus instance',
+            action_icon='activity',
+            metadata={'instance_id': instance.id, 'instance_name': instance.name, 'readiness_status': result.get('readiness_status')},
+            queue_feedback=True,
+        )
+    except PrometheusError as exc:
+        record_operational_activity(
+            user_id=current_user.id,
+            event_type='prometheus_compatibility_validation',
+            status='error',
+            title='Prometheus validation failed',
+            message=f'Runtime validation failed for {instance.name}.',
+            detail=str(exc),
+            action_url=url_for('prometheus.instance_detail', instance_id=instance.id),
+            action_label='Review Prometheus instance',
+            action_icon='activity',
+            metadata={'instance_id': instance.id, 'instance_name': instance.name},
+            queue_feedback=True,
+        )
+    return redirect(url_for('prometheus.instance_detail', instance_id=instance.id))
+
+
+@prometheus_bp.get('/instances/<int:instance_id>/runtime/history')
+@permission_required('settings.manage_integrations')
+def instance_runtime_history(instance_id: int) -> ResponseReturnValue:
+    instance = _instance_or_404(instance_id)
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 5, type=int)
+    rows, pagination = paginate_runtime_history(
+        'prometheus', str(instance.id), page=page, per_page=per_page,
+    )
+    cluster = _cluster_for_instance_or_404(instance)
+    return render_template(
+        'prometheus/partials/_runtime_history.html',
+        cluster=cluster,
+        config=instance,
+        runtime_history=runtime_history_view(rows, pagination=pagination),
+    )
 
 
 
