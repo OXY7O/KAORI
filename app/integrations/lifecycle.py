@@ -7,13 +7,30 @@ from app.models.integration import IntegrationBinding, IntegrationInstance
 
 
 def ensure_canonical_instance(provider_record: Any, *, provider_type: str) -> IntegrationInstance:
+    """Create or update the canonical identity for a provider record.
+
+    A new provider row can already be pending in the SQLAlchemy session while its
+    ``integration_instance_id`` column is NOT NULL.  Flushing the whole session
+    while creating the canonical identity would therefore try to insert the
+    provider row too early.  Flush only the new IntegrationInstance first, assign
+    its generated ID to the provider, and let the caller flush the complete unit
+    of work afterwards.
+    """
     canonical_id = getattr(provider_record, 'integration_instance_id', None)
     canonical = db.session.get(IntegrationInstance, canonical_id) if canonical_id else None
+
     if canonical is None:
-        canonical = IntegrationInstance(provider_type=provider_type, name=provider_record.name)
+        canonical = IntegrationInstance(
+            provider_type=provider_type,
+            name=provider_record.name,
+        )
         db.session.add(canonical)
-        db.session.flush()
+
+        # Critical: do not flush the complete session here. The provider record
+        # may still have integration_instance_id=None and a NOT NULL constraint.
+        db.session.flush([canonical])
         provider_record.integration_instance_id = canonical.id
+
     canonical.name = provider_record.name
     canonical.description = getattr(provider_record, 'description', None)
     canonical.enabled = bool(getattr(provider_record, 'enabled', True))
@@ -22,7 +39,9 @@ def ensure_canonical_instance(provider_record: Any, *, provider_type: str) -> In
     canonical.last_error = getattr(provider_record, 'last_error', None)
     canonical.last_checked_at = getattr(provider_record, 'last_checked_at', None)
     canonical.metadata_json = {
-        'provider_record_id': provider_record.id,
+        # This is intentionally None before the provider's first flush and is
+        # refreshed by the second lifecycle call after the provider receives ID.
+        'provider_record_id': getattr(provider_record, 'id', None),
         'endpoint_product': getattr(provider_record, 'endpoint_product', None),
     }
     return canonical
