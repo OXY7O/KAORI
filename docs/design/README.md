@@ -10,6 +10,7 @@
 - `components/BUTTON.md`
 - `components/TABLE_AND_LABEL.md`
 - `components/SIDEBAR_NAVIGATION.md`
+- `components/INFO_FLOW.md`
 
 ## Reusable page patterns
 

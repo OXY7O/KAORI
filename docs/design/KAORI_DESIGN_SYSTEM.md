@@ -259,3 +259,7 @@ Place those rules in `docs/modules/` or the owning module README. Reusable struc
 ## Hero context-panel baseline
 
 The Node Inventory right-side hero panel is the baseline for compact operational posture panels. Alertmanager Integrations and other applicable pages must use the shared `page_hero` context-panel macros. Human-readable hero metadata uses Title Case while technical identifiers preserve canonical casing. See `components/HERO.md`.
+
+## Info Flow
+
+Use the shared Info Flow component for short ordered governance or operational sequences. The standard structure is an expandable header, a three-to-five-step vertical timeline, and one optional flow-wide boundary note. Role Assignment Flow is the reference implementation. See `components/INFO_FLOW.md`.

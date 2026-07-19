@@ -1,4 +1,5 @@
 {% import "components/pagination.html" as pagination_ui %}
+{% import "components/info_flow.html" as info_flow %}
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
 {% block title %}Roles & Access{% endblock title %}
@@ -354,42 +355,20 @@
                 </footer>
             </div>
             <aside class="space-y-5">
-                <details open class="group overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
-                    <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 marker:hidden">
-                        <div class="flex min-w-0 items-start gap-3">
-                            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="workflow" class="h-5 w-5"></i></span>
-                            <div class="min-w-0">
-                                <h2 class="text-base font-bold text-content-primary">Role assignment flow</h2>
-                                <p class="mt-1 text-sm leading-5 text-content-muted">How backend capabilities become effective user access.</p>
-                            </div>
-                        </div>
-                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-muted transition group-open:rotate-180">
-                            <i data-lucide="chevron-down" class="h-4 w-4"></i>
-                        </span>
-                    </summary>
-                    <div class="border-t border-outline-default px-5 py-4">
-                        <ol class="relative space-y-4 before:absolute before:bottom-4 before:left-4 before:top-4 before:w-px before:bg-outline-default">
-                            {% set role_flow = [
-                                            ('1', 'Permission Catalog', 'Code-owned permission keys define atomic application capabilities.'),
-                                            ('2', 'Role Composition', 'Default or custom roles package those keys into reusable access profiles.'),
-                                            ('3', 'User Management', 'One active role is assigned to each account and evaluated by server guards.')
-                                        ] %}
-                            {% for number, title, description in role_flow %}
-                                <li class="relative flex gap-3">
-                                    <span class="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-brand-outline bg-kaori-soft text-xs font-bold text-kaori-primary">{{ number }}</span>
-                                    <div class="min-w-0 pt-0.5">
-                                        <p class="text-sm font-bold text-content-primary">{{ title }}</p>
-                                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>
-                                    </div>
-                                </li>
-                            {% endfor %}
-                        </ol>
-                        <div class="mt-4 flex gap-2.5 rounded-xl border border-brand-outline bg-kaori-soft px-3.5 py-3 text-xs leading-5 text-kaori-primary">
-                            <i data-lucide="shield-alert" class="mt-0.5 h-4 w-4 shrink-0"></i>
-                            <p>Super Admin remains a separate emergency authority flag and is never represented as a normal role column.</p>
-                        </div>
-                    </div>
-                </details>
+                {% set role_assignment_flow = [
+                    ('Permission Catalog', 'Code-owned permission keys define atomic KAORI capabilities.'),
+                    ('Role Composition', 'Default or custom roles package those keys into reusable access profiles.'),
+                    ('User Management', 'One active role is assigned to each account and evaluated by server-side guards.')
+                ] %}
+                {{ info_flow.render(
+                    'Role Assignment Flow',
+                    'How backend capabilities become effective user access.',
+                    role_assignment_flow,
+                    icon='workflow',
+                    note='Super Admin remains a separate emergency authority flag and is never represented as a normal role column.',
+                    note_icon='shield-alert',
+                    open_by_default=true
+                ) }}
                 <section class="rounded-2xl border border-outline-default bg-surface-card p-5 shadow-sm">
                     <div class="flex items-center justify-between gap-3">
                         <div>
