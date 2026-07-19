@@ -5,45 +5,31 @@
     <div class="relative grid gap-5 xl:grid-cols-12 xl:items-stretch">
         <div class="flex min-w-0 flex-col justify-center xl:col-span-7">
             {% call page_hero.intro('server-cog', 'Kubernetes node inventory', 'server') %}
-                <h1 class="text-2xl font-semibold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">Node Inventory</h1>
+                <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">Node Inventory</h1>
                 <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">
                     Review node health, allocatable capacity, scheduling readiness, runtime identity, and placement context across connected clusters.
                 </p>
                 <div class="mt-5 flex flex-wrap gap-2">
-                    {{ page_hero.meta_label('server', inventory.total_nodes ~ ' nodes tracked') }}
-                    {{ page_hero.meta_label('cpu', inventory.total_cpu ~ ' CPU cores') }}
-                    {{ page_hero.meta_label('memory-stick', inventory.total_memory ~ ' GiB memory') }}
+                    {{ page_hero.meta_label('server', inventory.total_nodes ~ ' Nodes Tracked') }}
+                    {{ page_hero.meta_label('cpu', inventory.total_cpu ~ ' CPU Cores') }}
+                    {{ page_hero.meta_label('memory-stick', inventory.total_memory ~ ' GiB Memory') }}
                 </div>
             {% endcall %}
         </div>
 
         <aside class="xl:col-span-5" aria-label="Node readiness posture">
-            <div class="flex h-full min-h-[13rem] flex-col rounded-xl border border-brand-outline bg-brand-surface-strong p-4 backdrop-blur-md">
+            <div class="{{ page_hero.context_panel_classes() }}">
                 <div class="flex items-start justify-between gap-4">
                     <div>
-                        <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Node readiness</p>
-                        <h2 class="mt-1 text-base font-semibold text-brand-foreground">Scheduling Posture</h2>
+                        <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Node Readiness</p>
+                        <h2 class="{{ page_hero.context_panel_title_classes() }}">Scheduling Posture</h2>
                     </div>
                     {{ table_label.status_label('Ready' if readiness_tone == 'normal' else ('Attention' if readiness_tone == 'warning' else 'Unknown'), readiness_tone, 'circle-check' if readiness_tone == 'normal' else ('triangle-alert' if readiness_tone == 'warning' else 'circle-help')) }}
                 </div>
 
-                <div class="mt-3 grid grid-cols-2 gap-2">
-                    <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5">
-                        <div class="flex items-center gap-2 text-brand-foreground">
-                            <i data-lucide="circle-check" class="h-3.5 w-3.5"></i>
-                            <p class="text-xs font-semibold">Ready</p>
-                        </div>
-                        <p class="mt-1.5 text-xl font-semibold leading-none text-brand-foreground">{{ inventory.ready_nodes }}</p>
-                        <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Available for workload scheduling</p>
-                    </div>
-                    <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5">
-                        <div class="flex items-center gap-2 text-brand-foreground">
-                            <i data-lucide="triangle-alert" class="h-3.5 w-3.5"></i>
-                            <p class="text-xs font-semibold">Not Ready</p>
-                        </div>
-                        <p class="mt-1.5 text-xl font-semibold leading-none text-brand-foreground">{{ inventory.not_ready_nodes }}</p>
-                        <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Require operational review</p>
-                    </div>
+                <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                    {{ page_hero.context_metric('circle-check', 'Ready', inventory.ready_nodes, 'Available for workload scheduling') }}
+                    {{ page_hero.context_metric('triangle-alert', 'Not Ready', inventory.not_ready_nodes, 'Requires operational review') }}
                 </div>
 
                 <a href="{{ url_for('integrations.kubernetes') }}"

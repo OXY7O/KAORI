@@ -15,12 +15,40 @@ min-w-0 xl:col-span-5 xl:self-stretch xl:[&>*]:h-full
 {%- endmacro %}
 
 
+{% macro context_panel_classes() -%}
+flex h-full min-h-[13rem] flex-col rounded-xl border border-brand-outline bg-brand-surface-strong p-4 backdrop-blur-md
+{%- endmacro %}
+
+{% macro context_panel_eyebrow_classes() -%}
+text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted
+{%- endmacro %}
+
+{% macro context_panel_title_classes() -%}
+mt-1 text-base font-semibold text-brand-foreground
+{%- endmacro %}
+
+{% macro context_panel_metrics_classes() -%}
+mt-3 grid grid-cols-2 gap-2
+{%- endmacro %}
+
+{% macro context_metric(icon, label, value, description, value_classes='text-xl font-bold leading-none') -%}
+    <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5">
+        <div class="flex items-center gap-2 text-brand-foreground">
+            <i data-lucide="{{ icon }}" class="h-3.5 w-3.5" aria-hidden="true"></i>
+            <p class="text-[11px] font-semibold">{{ label }}</p>
+        </div>
+        <p class="mt-1.5 {{ value_classes }} text-brand-foreground">{{ value }}</p>
+        <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">{{ description }}</p>
+    </div>
+{%- endmacro %}
+
+
 {% macro title_classes() -%}
-text-3xl font-semibold leading-9 tracking-[-0.02em] text-brand-foreground lg:text-3xl lg:leading-10
+text-[30px] font-bold leading-9 tracking-[-0.02em] text-brand-foreground lg:text-[32px] lg:leading-10
 {%- endmacro %}
 
 {% macro description_classes() -%}
-max-w-[44rem] text-base font-normal leading-6 text-brand-foreground-muted
+max-w-[44rem] text-[15px] font-normal leading-6 text-brand-foreground-muted
 {%- endmacro %}
 
 {% macro metadata_row_classes() -%}
@@ -44,7 +72,7 @@ inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-crit
 {%- endmacro %}
 
 {% macro eyebrow(icon, label) -%}
-    <div class="kaori-context-label inline-flex min-h-8 w-fit items-center gap-2 rounded-lg bg-brand-surface px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-brand-foreground backdrop-blur">
+    <div class="kaori-context-label inline-flex min-h-8 w-fit items-center gap-2 rounded-lg bg-brand-surface px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-brand-foreground backdrop-blur">
         <i data-lucide="{{ icon }}" class="h-4 w-4 shrink-0" aria-hidden="true"></i>
         <span>{{ label }}</span>
     </div>
@@ -68,7 +96,7 @@ inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-crit
 
 
 {% macro meta_label(icon, label, value_id=None, suffix='') -%}
-    <span class="kaori-context-label inline-flex min-h-8 items-center gap-2 rounded-md bg-brand-surface px-3 py-1.5 text-xs font-semibold text-brand-foreground backdrop-blur">
+    <span class="kaori-context-label inline-flex min-h-8 items-center gap-2 rounded-md bg-brand-surface px-3 py-1.5 text-[11px] font-bold text-brand-foreground backdrop-blur">
         <i data-lucide="{{ icon }}" class="h-4 w-4 shrink-0" aria-hidden="true"></i>
         <span>{% if value_id %}<span id="{{ value_id }}">{{ label }}</span>{{ suffix }}{% else %}{{ label }}{% endif %}</span>
     </span>
@@ -80,7 +108,7 @@ inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-crit
             <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
         </span>
         <span class="min-w-0">
-            <span class="block text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-foreground">{{ label }}</span>
+            <span class="block text-[10px] font-bold uppercase tracking-[0.12em] text-brand-foreground">{{ label }}</span>
             <span class="mt-0.5 block text-xs leading-5 text-brand-foreground-muted">{{ text }}</span>
         </span>
     </div>

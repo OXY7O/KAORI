@@ -163,15 +163,12 @@ Use a visible violet focus ring with a surface-colored offset. Functional transi
 ## Application shell
 
 - Use `surface-page` with a compact outer gutter.
-- The desktop sidebar is 250 px when expanded and 78 px in the approved collapsed icon-rail state.
-- Collapsed mode hides labels and nested navigation; it must not shrink parent typography to fit the rail.
-- Sidebar navigation owns a shell-specific typography hierarchy and is exempt from direct application of the ordinary content scale.
+- The desktop sidebar is 250 px when open and may be fully hidden; do not introduce an icon-only rail unless separately approved.
 - The sidebar uses `surface-sidebar`; violet is reserved for active state, focus, brand icon, and restrained highlights.
 - Sidebar and main application frame use a 16 px outer radius.
-- Active parent navigation uses a filled violet state with white text and icon.
-- Active nested navigation uses lower-emphasis translucent and accent-violet treatment so it remains subordinate to its parent.
+- Active navigation uses a filled violet state with white text and icon.
+- Nested navigation uses compact rows, a low-contrast guide, and violet selected state.
 - The main frame uses semantic surface and outline tokens in light and dark mode.
-- Full sidebar geometry, typography, spacing, collapse, and interaction rules are defined in `docs/design/components/SIDEBAR_NAVIGATION.md`.
 
 ## Global component contracts
 
@@ -179,7 +176,6 @@ Detailed component rules are maintained separately:
 
 - Hero: `docs/design/components/HERO.md`
 - Tables and compact labels: `docs/design/components/TABLE_AND_LABEL.md`
-- Sidebar navigation: `docs/design/components/SIDEBAR_NAVIGATION.md`
 - Reusable page composition: `docs/design/patterns/`
 
 A page must consume shared components rather than recreate their utility strings.
@@ -258,3 +254,8 @@ The following do **not** belong in this global document:
 - module-specific empty-state copy
 
 Place those rules in `docs/modules/` or the owning module README. Reusable structures that apply across multiple domains belong in `docs/design/patterns/`.
+
+
+## Hero context-panel baseline
+
+The Node Inventory right-side hero panel is the baseline for compact operational posture panels. Alertmanager Integrations and other applicable pages must use the shared `page_hero` context-panel macros. Human-readable hero metadata uses Title Case while technical identifiers preserve canonical casing. See `components/HERO.md`.

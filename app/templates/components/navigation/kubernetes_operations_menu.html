@@ -14,7 +14,7 @@
 {% if secret_operations_visible or configmap_operations_visible %}
     <details class="sidebar-menu space-y-1"
              {% if operations_active %}open{% endif %}>
-        <summary class="{{ 'bg-kaori-primary text-white shadow-lg shadow-kaori-primary/20 ring-1 ring-white/10' if operations_active else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} sidebar-parent-link group flex cursor-pointer select-none items-center justify-between min-h-11 rounded-lg px-2.5 py-2 text-sm font-semibold transition [.sidebar-collapsed_&]:justify-center [.sidebar-collapsed_&]:px-2"
+        <summary class="{{ 'bg-kaori-primary text-white shadow-lg shadow-kaori-primary/20 ring-1 ring-white/10' if operations_active else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} sidebar-parent-link group flex cursor-pointer select-none items-center justify-between min-h-11 rounded-lg px-2.5 py-2 text-[12px] font-semibold transition [.sidebar-collapsed_&]:justify-center [.sidebar-collapsed_&]:px-2"
              title="K8s Operations"
              aria-label="K8s Operations"
              @click="if (!sidebarExpanded) { $event.preventDefault(); toggleSidebar(); $el.parentElement.open = true }">
@@ -25,10 +25,10 @@
             <i data-lucide="chevron-right"
                class="sidebar-expanded-only sidebar-menu-chevron h-4 w-4 {{ 'text-kaori-accent' if operations_active else 'text-white/[0.35]' }}"></i>
         </summary>
-        <div class="sidebar-expanded-only sidebar-submenu ml-6 mt-1 space-y-0.5 border-l border-white/10 pl-3">
+        <div class="sidebar-expanded-only sidebar-submenu ml-6 mt-1 space-y-1 border-l border-white/10 pl-3">
             {% if configmap_operations_visible %}
                 <a href="{{ url_for('kubernetes_operations.configmap_management') }}"
-                   class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint and request.endpoint.startswith('kubernetes_operations.configmap') else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1 text-[13px] leading-5 transition">
+                   class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint and request.endpoint.startswith('kubernetes_operations.configmap') else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] leading-4 transition">
                     <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint and request.endpoint.startswith('kubernetes_operations.configmap') else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
                     <i data-lucide="file-cog" class="h-3.5 w-3.5"></i>
                     <span class="truncate whitespace-nowrap">ConfigMap Management</span>
@@ -36,7 +36,7 @@
             {% endif %}
             {% if secret_operations_visible %}
                 <a href="{{ url_for('kubernetes_operations.secret_management') }}"
-                   class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint and request.endpoint.startswith('kubernetes_operations.secret') or request.endpoint and request.endpoint.startswith('kubernetes_operations.tls_secret') else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1 text-[13px] leading-5 transition">
+                   class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint and request.endpoint.startswith('kubernetes_operations.secret') or request.endpoint and request.endpoint.startswith('kubernetes_operations.tls_secret') else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] leading-4 transition">
                     <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint and request.endpoint.startswith('kubernetes_operations.secret') or request.endpoint and request.endpoint.startswith('kubernetes_operations.tls_secret') else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
                     <i data-lucide="key-round" class="h-3.5 w-3.5"></i>
                     <span class="truncate whitespace-nowrap">Secret Management</span>

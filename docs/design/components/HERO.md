@@ -50,7 +50,7 @@ The page title is the page's single `h1`.
 
 ## Metadata labels
 
-Every normal hero contains **two or three** contextual metadata labels.
+Every normal hero contains **two or three** contextual metadata labels. Human-readable metadata wording uses Title Case.
 
 Preferred order:
 
@@ -59,6 +59,59 @@ Preferred order:
 3. Count, source role, compatibility profile, or other operational metadata.
 
 Metadata uses Violet because it communicates identity or context. Health, severity, readiness, failure, and process state use semantic status components. Labels are borderless, rectangular, and never pills.
+
+## Right-side context panel
+
+The Node Inventory hero is the visual baseline for a hero right-side context panel. Use the shared context-panel macros rather than page-local geometry.
+
+Required structure:
+
+1. Compact uppercase eyebrow identifying the posture domain.
+2. Title Case panel title describing the operational posture.
+3. One semantic status label aligned at the top right.
+4. Exactly two compact metric cards in a two-column grid.
+5. One full-width action at the bottom when an action is required.
+
+Shared macros:
+
+- `page_hero.context_panel_classes()`
+- `page_hero.context_panel_eyebrow_classes()`
+- `page_hero.context_panel_title_classes()`
+- `page_hero.context_panel_metrics_classes()`
+- `page_hero.context_metric(...)`
+
+Geometry and density:
+
+- Minimum panel height: **208 px** (`min-h-[13rem]`).
+- Padding: **16 px**.
+- Metric grid gap: **8 px**.
+- Metric card padding: **12 px horizontal / 10 px vertical**.
+- Metric title: **11 px semibold**.
+- Metric value: normally **20 px bold**.
+- Metric description: **10 px**, sentence case, maximum two short lines.
+- Bottom action: full width, compact 36 px minimum height.
+
+The panel is operational context, not a second dashboard. Do not add charts, lists, more than two metric cards, long descriptions, or multiple action rows.
+
+## Hero metadata casing
+
+Human-readable metadata labels use **Title Case**. Numbers and dynamic values may precede the label, but the descriptive words remain Title Case.
+
+Correct:
+
+- `4 Nodes Tracked`
+- `64 CPU Cores`
+- `3 Registered Instances`
+- `2 Scope Bindings`
+- `Ready`
+
+Incorrect:
+
+- `4 nodes tracked`
+- `3 registered instances`
+- `2 scope bindings`
+
+Technical identifiers preserve canonical casing and must not be transformed mechanically. Examples include `kube-system`, `prometheus-v3`, `v1beta1`, `OAuth`, and provider-defined profile names. Metadata Title Case applies to the human-readable label, not to technical values.
 
 ## Actions
 
