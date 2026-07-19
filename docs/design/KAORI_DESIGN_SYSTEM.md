@@ -13,10 +13,6 @@ KAORI UI documentation is organized into four layers:
 
 A reference implementation demonstrates a contract; its domain-specific content is never a global rule.
 
-## Product wording
-
-Use **KAORI** directly whenever the product is the subject or object of user-facing copy. Do not substitute generic wording such as *the application*, *this platform*, or *the system* unless the text refers to a genuinely generic or external technical object. See `docs/design/components/PRODUCT_WORDING.md`.
-
 ## Design direction
 
 The visual concept is **KAORI Violet Infrastructure**: a modern enterprise operations interface with a violet brand identity, neutral operational surfaces, restrained elevation, and conventional infrastructure status semantics.
@@ -167,12 +163,15 @@ Use a visible violet focus ring with a surface-colored offset. Functional transi
 ## Application shell
 
 - Use `surface-page` with a compact outer gutter.
-- The desktop sidebar is 250 px when open and may be fully hidden; do not introduce an icon-only rail unless separately approved.
+- The desktop sidebar is 250 px when expanded and 78 px in the approved collapsed icon-rail state.
+- Collapsed mode hides labels and nested navigation; it must not shrink parent typography to fit the rail.
+- Sidebar navigation owns a shell-specific typography hierarchy and is exempt from direct application of the ordinary content scale.
 - The sidebar uses `surface-sidebar`; violet is reserved for active state, focus, brand icon, and restrained highlights.
 - Sidebar and main application frame use a 16 px outer radius.
-- Active navigation uses a filled violet state with white text and icon.
-- Nested navigation uses compact rows, a low-contrast guide, and violet selected state.
+- Active parent navigation uses a filled violet state with white text and icon.
+- Active nested navigation uses lower-emphasis translucent and accent-violet treatment so it remains subordinate to its parent.
 - The main frame uses semantic surface and outline tokens in light and dark mode.
+- Full sidebar geometry, typography, spacing, collapse, and interaction rules are defined in `docs/design/components/SIDEBAR_NAVIGATION.md`.
 
 ## Global component contracts
 
@@ -180,6 +179,7 @@ Detailed component rules are maintained separately:
 
 - Hero: `docs/design/components/HERO.md`
 - Tables and compact labels: `docs/design/components/TABLE_AND_LABEL.md`
+- Sidebar navigation: `docs/design/components/SIDEBAR_NAVIGATION.md`
 - Reusable page composition: `docs/design/patterns/`
 
 A page must consume shared components rather than recreate their utility strings.

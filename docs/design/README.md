@@ -9,6 +9,7 @@
 - `components/HERO.md`
 - `components/BUTTON.md`
 - `components/TABLE_AND_LABEL.md`
+- `components/SIDEBAR_NAVIGATION.md`
 
 ## Reusable page patterns
 
