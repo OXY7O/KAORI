@@ -85,6 +85,14 @@ def build_instance_context(instance: AlertmanagerInstance | None = None) -> dict
         'source_resolution_rows': _source_resolution_rows(instance) if instance else [],
         'runtime_state': runtime_state_view(runtime_adapter.get_state(instance)) if instance else None,
         'runtime_history': build_runtime_history_context(instance) if instance else None,
+        'scope_type_labels': {
+            'kubernetes_cluster': 'Managed cluster',
+            'server': 'Infrastructure asset',
+            'server_group': 'Infrastructure asset group',
+            'hci_environment': 'Platform environment',
+            'storage_service': 'Infrastructure service',
+            'global': 'Global operational scope',
+        },
         'stats': {
             'bindings': len(bindings),
             'ready': bool(instance and instance.readiness_status == 'ready'),

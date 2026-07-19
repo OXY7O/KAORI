@@ -253,12 +253,11 @@ def instance_detail(instance_id: int) -> ResponseReturnValue:
                 message=f'{instance.name} connection settings were saved.',
                 detail='Readiness is now Validation Required until a full validation completes.',
             )
-        return redirect(url_for('alertmanager.instance_detail', instance_id=instance_id))
+        return redirect(url_for('alertmanager.instance_detail', instance_id=instance_id) + '#configuration')
 
     return render_template(
-        'alertmanager/instance_form.html',
+        'alertmanager/instance_detail.html',
         **build_instance_context(instance),
-        initial_cluster=None,
     )
 
 
@@ -412,12 +411,15 @@ def validate_instance(instance_id: int) -> ResponseReturnValue:
             )
 
     if request.headers.get('HX-Request') == 'true':
+        context = build_instance_context(instance)
         return render_template(
-            'components/navigation/_quick_sync_result.html',
-            **feedback,
+            'alertmanager/partials/_detail_validation_content.html',
+            **context,
+            validation_feedback=feedback,
+            validation_scope_oob=True,
             notification_context=get_navigation_notification_context(user_id=int(current_user.id)),
         )
-    return redirect(url_for('alertmanager.instance_detail', instance_id=instance_id))
+    return redirect(url_for('alertmanager.instance_detail', instance_id=instance_id) + '#validation')
 
 
 @alertmanager_bp.post('/instances/<int:instance_id>/bindings')
@@ -479,7 +481,7 @@ def create_binding(instance_id: int) -> ResponseReturnValue:
                 'priority': binding.priority,
             },
         )
-    return redirect(url_for('alertmanager.instance_detail', instance_id=instance_id))
+    return redirect(url_for('alertmanager.instance_detail', instance_id=instance_id) + '#scope')
 
 
 @alertmanager_bp.post('/instances/<int:instance_id>/bindings/<int:binding_id>/delete')
@@ -523,7 +525,7 @@ def remove_binding(instance_id: int, binding_id: int) -> ResponseReturnValue:
             detail=f'{binding.asset_type}:{binding.asset_key} was removed.',
             metadata=binding_metadata,
         )
-    return redirect(url_for('alertmanager.instance_detail', instance_id=instance_id))
+    return redirect(url_for('alertmanager.instance_detail', instance_id=instance_id) + '#scope')
 
 
 @alertmanager_bp.post('/instances/<int:instance_id>/delete')
@@ -545,7 +547,7 @@ def delete_instance(instance_id: int) -> ResponseReturnValue:
             message=f'{instance_name} still has active asset bindings.',
             detail=str(exc),
         )
-        return redirect(url_for('alertmanager.instance_detail', instance_id=instance_id))
+        return redirect(url_for('alertmanager.instance_detail', instance_id=instance_id) + '#scope')
     except Exception as exc:  # pragma: no cover - defensive database boundary
         logger.exception('Alertmanager instance deletion failed for %s.', instance_id)
         record_instance_activity(
@@ -558,7 +560,7 @@ def delete_instance(instance_id: int) -> ResponseReturnValue:
             detail='Review application logs and database connectivity before retrying the deletion.',
             metadata={'reason': type(exc).__name__},
         )
-        return redirect(url_for('alertmanager.instance_detail', instance_id=instance_id))
+        return redirect(url_for('alertmanager.instance_detail', instance_id=instance_id) + '#scope')
 
     record_instance_activity(
         user_id=int(current_user.id),

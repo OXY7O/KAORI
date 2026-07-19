@@ -98,7 +98,11 @@ def test_instance_inventory_detail_and_legacy_cluster_redirect(app) -> None:
     assert b'Instance Configuration' in detail.data
     assert b'Scope Bindings' in detail.data
     assert b'Full Validation' in detail.data
-    assert b'Integration workflow' in detail.data
+    assert b'Configuration' in detail.data
+    assert b'Validation &amp; Capabilities' in detail.data
+    assert b'Runtime &amp; History' in detail.data
+    assert b'Scope &amp; Resolution' in detail.data
+    assert b'Connection contract' in detail.data
     assert b'Runtime Health & Diagnostics' in detail.data
 
     legacy = client.get(f'/integrations/alertmanager/cluster/{cluster.id}')

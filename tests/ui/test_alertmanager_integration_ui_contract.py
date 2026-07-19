@@ -4,6 +4,12 @@ from pathlib import Path
 
 LANDING = Path('app/templates/integrations/alertmanager.html')
 INSTANCE_FORM = Path('app/templates/alertmanager/instance_form.html')
+INSTANCE_DETAIL = Path('app/templates/alertmanager/instance_detail.html')
+DETAIL_CONFIGURATION = Path('app/templates/alertmanager/partials/_detail_configuration.html')
+DETAIL_VALIDATION = Path('app/templates/alertmanager/partials/_detail_validation.html')
+DETAIL_VALIDATION_CONTENT = Path('app/templates/alertmanager/partials/_detail_validation_content.html')
+DETAIL_RUNTIME = Path('app/templates/alertmanager/partials/_detail_runtime.html')
+DETAIL_SCOPE = Path('app/templates/alertmanager/partials/_detail_scope.html')
 RUNTIME_PANEL = Path('app/templates/alertmanager/partials/_runtime_panel.html')
 RUNTIME_RESPONSE = Path('app/templates/alertmanager/partials/_runtime_refresh_response.html')
 FEEDBACK_OOB = Path('app/templates/alertmanager/partials/_operation_feedback_oob.html')
@@ -166,6 +172,76 @@ def test_register_alertmanager_instance_matches_informative_form_contract() -> N
     assert not found, f'Register Alertmanager form still contains legacy UI patterns: {found}'
 
 
+
+def test_manage_alertmanager_detail_is_domain_tabbed_and_informative() -> None:
+    detail = INSTANCE_DETAIL.read_text(encoding='utf-8')
+    configuration = DETAIL_CONFIGURATION.read_text(encoding='utf-8')
+    validation = '\n'.join((
+        DETAIL_VALIDATION.read_text(encoding='utf-8'),
+        DETAIL_VALIDATION_CONTENT.read_text(encoding='utf-8'),
+    ))
+    runtime = DETAIL_RUNTIME.read_text(encoding='utf-8')
+    scope = DETAIL_SCOPE.read_text(encoding='utf-8')
+    combined = '\n'.join((detail, configuration, validation, runtime, scope))
+
+    required_detail_fragments = (
+        'page_hero.shell_classes()',
+        'page_hero.layout_classes()',
+        'Manage the connection contract, validation evidence, runtime health, and governed scope resolution.',
+        'id="alertmanager-detail-tabs"',
+        "('configuration', 'Configuration', 'settings-2'",
+        "('validation', 'Validation & Capabilities', 'scan-search'",
+        "('runtime', 'Runtime & History', 'activity'",
+        "('scope', 'Scope & Resolution', 'route'",
+        "activeTab === 'configuration'",
+        "activeTab === 'validation'",
+        "activeTab === 'runtime'",
+        "activeTab === 'scope'",
+    )
+    missing = [fragment for fragment in required_detail_fragments if fragment not in detail]
+    assert not missing, f'Alertmanager detail tab workspace is incomplete: {missing}'
+
+    required_domain_fragments = (
+        'Connection contract',
+        'Change impact',
+        'Integration flow',
+        'Configuration Flow',
+        'What validation does',
+        'Why it matters',
+        'Operator flow',
+        'alertmanager-validation-workspace',
+        'Readiness versus health',
+        'How monitoring works',
+        'Resolver correlation',
+        'What a binding does',
+        'Selection order',
+        'Operational flow',
+        'Effective Source Resolution',
+        'Instance Lifecycle &amp; Deletion',
+    )
+    missing = [fragment for fragment in required_domain_fragments if fragment not in combined]
+    assert not missing, f'Alertmanager detail domain guidance is incomplete: {missing}'
+
+    forbidden_fragments = (
+        'rounded-2xl',
+        'font-mono',
+        'text-emerald-700',
+        'text-red-700',
+        'text-amber-700',
+        'focus:border-kaori-primary focus:ring-2',
+    )
+    found = [fragment for fragment in forbidden_fragments if fragment in combined]
+    assert not found, f'Alertmanager detail still contains legacy visual patterns: {found}'
+
+    validation_content = DETAIL_VALIDATION_CONTENT.read_text(encoding='utf-8')
+    assert 'validation_scope_oob' in validation_content
+    assert "alertmanager/partials/_detail_scope.html" in validation_content
+    assert 'id="alertmanager-scope-workspace"' in scope
+
+    routes = ROUTES.read_text(encoding='utf-8')
+    for fragment in ('#configuration', '#validation', '#scope'):
+        assert fragment in routes
+
 def test_alertmanager_connection_test_result_is_semantic_and_separate_from_validation() -> None:
     source = Path(
         'app/templates/alertmanager/partials/_connection_test_result.html'
@@ -187,7 +263,11 @@ def test_alertmanager_connection_test_result_is_semantic_and_separate_from_valid
 
 
 def test_alertmanager_delete_actions_use_kaori_confirmation_modal() -> None:
-    source = INSTANCE_FORM.read_text(encoding='utf-8')
+    source = '\n'.join((
+        INSTANCE_FORM.read_text(encoding='utf-8'),
+        INSTANCE_DETAIL.read_text(encoding='utf-8'),
+        DETAIL_SCOPE.read_text(encoding='utf-8'),
+    ))
     modal = Path(
         'app/templates/alertmanager/partials/_delete_confirmation_modal.html'
     ).read_text(encoding='utf-8')

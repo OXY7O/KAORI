@@ -1,0 +1,27 @@
+<section id="alertmanager-validation-workspace" class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="scan-search" class="h-5 w-5"></i></span><div><h2 class="text-base font-semibold text-content-primary">Compatibility &amp; Capability Matrix</h2><p class="mt-1 text-sm leading-6 text-content-secondary">Validation evidence is the capability contract used by readiness checks and source resolution.</p></div></div>
+        <form method="post" action="{{ url_for('alertmanager.validate_instance', instance_id=instance.id) }}" hx-post="{{ url_for('alertmanager.validate_instance', instance_id=instance.id) }}" hx-target="#alertmanager-validation-workspace" hx-swap="outerHTML" hx-disabled-elt="button" hx-indicator="#alertmanager-validation-loading">
+            {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+            <button type="submit" class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-70"><i data-lucide="scan-line" class="h-4 w-4"></i>Run Full Validation</button>
+        </form>
+    </header>
+    <div id="alertmanager-validation-loading" class="htmx-indicator h-1 overflow-hidden bg-kaori-soft"><div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div></div>
+    <div class="grid gap-5 p-5 xl:grid-cols-[minmax(0,1.3fr)_minmax(320px,0.7fr)]">
+        <div class="overflow-hidden rounded-xl border border-outline-subtle">
+            <div class="overflow-x-auto"><table class="min-w-full text-left text-sm"><thead class="bg-surface-hover text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted"><tr><th class="px-4 py-3">Capability</th><th class="px-4 py-3">Category</th><th class="px-4 py-3">Required</th><th class="px-4 py-3">Status</th></tr></thead><tbody class="divide-y divide-outline-subtle bg-surface-card">{% for row in capability_rows %}<tr class="align-top"><td class="px-4 py-3"><p class="font-semibold text-content-primary">{{ row.label }}</p><p class="mt-1 text-xs leading-5 text-content-secondary">{{ row.description }}</p></td><td class="px-4 py-3 text-content-secondary">{{ row.category|title }}</td><td class="px-4 py-3 text-content-secondary">{{ 'Yes' if row.required else 'No' }}</td><td class="px-4 py-3">{{ status_badge('ready' if row.available else ('blocked' if row.required else 'not_configured')) }}</td></tr>{% endfor %}</tbody></table></div>
+        </div>
+        <div class="space-y-3">
+            <div class="rounded-xl border border-brand-outline bg-kaori-soft p-4"><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-kaori-primary">Detected profile</p><p class="mt-2 text-sm font-semibold text-content-primary">{{ instance.capability_profile or 'Validation required' }}</p><p class="mt-1 text-xs leading-5 text-content-secondary">Profiles are derived from observed capabilities instead of hard-coded product assumptions.</p></div>
+            {% for row in module_readiness_rows %}<div class="rounded-xl border border-outline-subtle bg-surface-hover p-4"><div class="flex items-center justify-between gap-3"><p class="text-sm font-semibold text-content-primary">{{ row.label }}</p>{{ status_badge(row.status) }}</div>{% if row.missing_required %}<p class="mt-2 text-xs leading-5 text-content-secondary">Missing required: {{ row.missing_required|join(', ') }}</p>{% elif row.missing_optional %}<p class="mt-2 text-xs leading-5 text-content-secondary">Optional metadata not observed: {{ row.missing_optional|join(', ') }}</p>{% else %}<p class="mt-2 text-xs leading-5 text-content-secondary">All declared requirements are available.</p>{% endif %}</div>{% endfor %}
+            <div class="rounded-xl border border-outline-subtle bg-surface-card p-4"><p class="text-sm font-semibold text-content-primary">How to interpret results</p><p class="mt-2 text-xs leading-5 text-content-secondary"><strong class="font-semibold">Required missing</strong> blocks the related operational domain. <strong class="font-semibold">Optional missing</strong> may reduce metadata depth without blocking core usage.</p></div>
+        </div>
+    </div>
+</section>
+{% if validation_feedback is defined and validation_feedback %}
+    {% with operation_feedback=validation_feedback %}{% include 'alertmanager/partials/_operation_feedback_oob.html' %}{% endwith %}
+{% endif %}
+
+{% if validation_scope_oob is defined and validation_scope_oob %}
+    {% with scope_oob=true %}{% include 'alertmanager/partials/_detail_scope.html' %}{% endwith %}
+{% endif %}
