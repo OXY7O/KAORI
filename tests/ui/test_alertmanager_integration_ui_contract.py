@@ -29,12 +29,14 @@ def test_alertmanager_landing_hero_matches_kaori_violet_geometry() -> None:
         'page_hero.content_classes()',
         "page_hero.intro('siren', 'Operational Integration', 'server-cog')",
         'font-medium leading-6 text-brand-foreground-muted sm:text-base',
-        'Register, validate, and govern reusable Alertmanager connections and their operational scope bindings.',
+        'Register, validate, and govern Alertmanager connections and scope bindings.',
         'page_hero.meta_label',
         'page_hero.aside_classes()',
-        'flex h-full min-h-[12rem] flex-col rounded-xl',
+        'flex h-full min-h-[12rem] flex-col justify-between rounded-xl',
         'Integration posture',
-        'Connection readiness and scope coverage',
+        'Connection readiness and bindings',
+        'Ready</span>',
+        'Bindings</span>',
         'Register Instance',
     )
     missing = [fragment for fragment in required_fragments if fragment not in source]
@@ -47,6 +49,8 @@ def test_alertmanager_landing_hero_matches_kaori_violet_geometry() -> None:
         'bg-gradient-to-r',
         'from-blue-',
         'to-cyan-',
+        'Configured connections ready for operational use',
+        'Active source-to-scope mappings',
     )
     found = [fragment for fragment in forbidden_fragments if fragment in source]
     assert not found, f'Alertmanager landing still contains legacy hero patterns: {found}'
@@ -78,7 +82,6 @@ def test_alertmanager_instance_hero_uses_the_same_geometry() -> None:
     )
     found = [fragment for fragment in forbidden_fragments if fragment in source]
     assert not found, f'Alertmanager instance hero still contains oversized workflow content: {found}'
-    assert 'rounded-full' not in source
 
 
 def test_alertmanager_runtime_panel_uses_semantic_kaori_statuses_and_htmx_indicator() -> None:
@@ -90,27 +93,45 @@ def test_alertmanager_runtime_panel_uses_semantic_kaori_statuses_and_htmx_indica
         'table_label.status_label',
         'id="alertmanager-runtime-loading"',
         'hx-indicator="#alertmanager-runtime-loading"',
-        'xl:grid-cols-6',
+        'absolute bottom-2 left-5 right-5 h-1 overflow-hidden rounded-full bg-kaori-soft',
+        'notification-progress-indeterminate h-full rounded-full bg-kaori-primary',
+        'sm:grid-cols-2 xl:grid-cols-4',
+        'xl:grid-cols-12',
+        'xl:col-span-5',
+        'xl:col-span-7',
         'Health Interpretation',
         'role="progressbar"',
-        'Weighted health factors',
+        'Weighted factors',
         'Diagnostic Pipeline',
-        'md:grid-cols-2',
+        'Ordered technical checks with evidence, duration, and the next corrective action.',
         'Recommended fixing',
     )
     missing = [fragment for fragment in required_fragments if fragment not in source]
     assert not missing, f'Alertmanager runtime panel contract is incomplete: {missing}'
 
+    forbidden_runtime_fragments = (
+        'xl:grid-cols-6',
+        'md:grid-cols-2',
+        'Weighted health factors',
+    )
+    found = [fragment for fragment in forbidden_runtime_fragments if fragment in source]
+    assert not found, f'Alertmanager runtime panel still uses wasteful legacy geometry: {found}'
+
     required_history_fragments = (
         'id="alertmanager-history-loading"',
-        'Items per page',
+        'absolute bottom-2 left-5 right-5 h-1 overflow-hidden rounded-full bg-kaori-soft',
+        'KAORI retains the latest {{ runtime_history.pagination.retention_limit }} records per connection.',
+        '{{ runtime_history.pagination.retention_limit }}-record retention',
         'aria-label="Runtime observations per page"',
         'hx-trigger="change"',
-        'h-10 w-20 rounded-lg',
+        'h-9 w-20 rounded-lg',
+        'Showing <span class="font-semibold text-content-primary">',
         'Page {{ runtime_history.pagination.page }} / {{ runtime_history.pagination.total_pages }}',
     )
     missing = [fragment for fragment in required_history_fragments if fragment not in history]
     assert not missing, f'Alertmanager runtime history pagination contract is incomplete: {missing}'
+
+    assert 'Items per page' not in history
 
 
 
@@ -123,7 +144,7 @@ def test_alertmanager_copy_is_global_and_has_no_future_product_positioning() -> 
     combined = '\n'.join((landing, instance, inventory))
 
     required_fragments = (
-        'Register, validate, and govern reusable Alertmanager connections',
+        'Register, validate, and govern Alertmanager connections and scope bindings.',
         'multiple operational contexts through governed bindings',
         'systems, services, and workflows that use them',
         'infrastructure assets, services, operational domains, and workflows',
@@ -173,7 +194,9 @@ def test_register_alertmanager_instance_matches_informative_form_contract() -> N
         'name="connection_test_proof"',
         'x-bind:disabled="!connectionVerified"',
         'x-on:alertmanager-connection-tested.window',
-        'absolute inset-x-0 bottom-0 h-1',
+        'id="alertmanager-connection-test-loading"',
+        'absolute bottom-2 left-4 right-4 h-1 overflow-hidden rounded-full bg-kaori-soft',
+        'notification-progress-indeterminate h-full rounded-full bg-kaori-primary',
         "alertmanager/partials/_delete_confirmation_modal.html",
         'data-alertmanager-delete-button',
     )
@@ -232,6 +255,9 @@ def test_manage_alertmanager_detail_is_domain_tabbed_and_informative() -> None:
         'Why it matters',
         'Operator flow',
         'alertmanager-validation-workspace',
+        'id="alertmanager-validation-loading"',
+        'absolute bottom-2 left-5 right-5 h-1 overflow-hidden rounded-full bg-kaori-soft',
+        'notification-progress-indeterminate h-full rounded-full bg-kaori-primary',
         'Readiness versus health',
         'How monitoring works',
         'Resolver correlation',

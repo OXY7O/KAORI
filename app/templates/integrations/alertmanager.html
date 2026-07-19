@@ -12,7 +12,7 @@
                             Alertmanager Integrations
                         </h1>
                         <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">
-                            Register, validate, and govern reusable Alertmanager connections and their operational scope bindings.
+                            Register, validate, and govern Alertmanager connections and scope bindings.
                         </p>
 
                         <div class="mt-5 flex flex-wrap gap-2">
@@ -24,45 +24,52 @@
                 </div>
 
                 <aside class="{{ page_hero.aside_classes() }}" aria-label="Alertmanager integration posture">
-                    <div class="flex h-full min-h-[12rem] flex-col rounded-xl border border-brand-outline bg-brand-surface-strong p-4 backdrop-blur-md">
-                        <div class="flex items-start justify-between gap-4">
-                            <div>
-                                <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Integration posture</p>
-                                <h2 class="mt-1 text-base font-semibold text-brand-foreground">Connection readiness and scope coverage</h2>
+                    <div class="flex h-full min-h-[12rem] flex-col justify-between rounded-xl border border-brand-outline bg-brand-surface-strong p-4 backdrop-blur-md">
+                        <div>
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                    <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Integration posture</p>
+                                    <p class="mt-1 text-sm font-semibold text-brand-foreground">Connection readiness and bindings</p>
+                                </div>
+                                <span class="inline-flex min-h-6 shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1 text-[10px] font-semibold
+                                             {% if posture_status == 'Healthy' %}border-status-normal-border bg-status-normal-soft text-status-normal-text
+                                             {% elif posture_status == 'Attention' %}border-status-warning-border bg-status-warning-soft text-status-warning-text
+                                             {% else %}border-status-unknown-border bg-status-unknown-soft text-status-unknown-text{% endif %}">
+                                    <i data-lucide="{% if posture_status == 'Healthy' %}circle-check{% elif posture_status == 'Attention' %}triangle-alert{% else %}circle-help{% endif %}" class="h-3 w-3" aria-hidden="true"></i>
+                                    {{ posture_status }}
+                                </span>
                             </div>
-                            <span class="inline-flex min-h-6 shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1 text-[10px] font-semibold
-                                         {% if posture_status == 'Healthy' %}border-status-normal-border bg-status-normal-soft text-status-normal-text
-                                         {% elif posture_status == 'Attention' %}border-status-warning-border bg-status-warning-soft text-status-warning-text
-                                         {% else %}border-status-unknown-border bg-status-unknown-soft text-status-unknown-text{% endif %}">
-                                <i data-lucide="{% if posture_status == 'Healthy' %}circle-check{% elif posture_status == 'Attention' %}triangle-alert{% else %}circle-help{% endif %}" class="h-3 w-3" aria-hidden="true"></i>
-                                {{ posture_status }}
-                            </span>
+                            <p class="mt-2 text-xs leading-5 text-brand-foreground-muted">Review validated connections and governed scope coverage from one integration workspace.</p>
                         </div>
 
-                        <div class="mt-3 grid grid-cols-2 gap-2">
-                            <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5">
-                                <div class="flex items-center gap-2 text-brand-foreground">
-                                    <i data-lucide="badge-check" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                    <p class="text-[11px] font-semibold">Readiness</p>
+                        <div class="mt-4">
+                            <div class="grid grid-cols-2 gap-2">
+                                <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5">
+                                    <div class="flex items-center justify-between gap-2">
+                                        <span class="flex items-center gap-2 text-brand-foreground">
+                                            <i data-lucide="badge-check" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                            <span class="text-[11px] font-semibold">Ready</span>
+                                        </span>
+                                        <span class="text-base font-semibold leading-none text-brand-foreground">{{ stats.ready }} / {{ stats.configured }}</span>
+                                    </div>
                                 </div>
-                                <p class="mt-1.5 text-xl font-bold leading-none text-brand-foreground">{{ stats.ready }} / {{ stats.configured }}</p>
-                                <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Configured connections ready for operational use</p>
-                            </div>
-                            <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5">
-                                <div class="flex items-center gap-2 text-brand-foreground">
-                                    <i data-lucide="link-2" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                    <p class="text-[11px] font-semibold">Bindings</p>
+                                <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5">
+                                    <div class="flex items-center justify-between gap-2">
+                                        <span class="flex items-center gap-2 text-brand-foreground">
+                                            <i data-lucide="link-2" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                            <span class="text-[11px] font-semibold">Bindings</span>
+                                        </span>
+                                        <span class="text-base font-semibold leading-none text-brand-foreground">{{ stats.bindings }}</span>
+                                    </div>
                                 </div>
-                                <p class="mt-1.5 text-xl font-bold leading-none text-brand-foreground">{{ stats.bindings }}</p>
-                                <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Active source-to-scope mappings</p>
                             </div>
-                        </div>
 
-                        <a href="{{ url_for('alertmanager.new_instance') }}"
-                           class="mt-3 inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-brand-outline bg-surface-card px-4 py-2 text-xs font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-kaori-primary">
-                            <i data-lucide="plus" class="h-4 w-4" aria-hidden="true"></i>
-                            Register Instance
-                        </a>
+                            <a href="{{ url_for('alertmanager.new_instance') }}"
+                               class="mt-2 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-white/80 bg-white px-4 text-sm font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft hover:text-kaori-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80">
+                                <i data-lucide="plus" class="h-4 w-4" aria-hidden="true"></i>
+                                Register Instance
+                            </a>
+                        </div>
                     </div>
                 </aside>
             </div>
