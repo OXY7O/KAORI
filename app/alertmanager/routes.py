@@ -50,65 +50,99 @@ def new_instance() -> ResponseReturnValue:
     initial_cluster = get_cluster_by_id(initial_cluster_id) if initial_cluster_id else None
     draft_form = None
     form_error = None
+    connection_test = None
 
     if request.method == 'POST':
         form = parse_alertmanager_instance_form(request.form)
         if not form.name and initial_cluster is not None:
             form = replace(form, name=f'{initial_cluster.name} Alertmanager', deployment_type='cluster_managed')
         draft_form = form
-        try:
-            initial_binding = (
-                AlertmanagerBindingForm(
-                    scope_type='kubernetes_cluster',
-                    scope_key=initial_cluster.id,
-                    binding_role='primary',
-                    priority=100,
-                    enabled=True,
-                )
-                if initial_cluster is not None
-                else None
+        connection_test = test_alertmanager_form_connection(form)
+
+        if not connection_test.get('connected'):
+            failure_detail = (
+                connection_test.get('error')
+                or connection_test.get('reason')
+                or 'Review endpoint, authentication, TLS, and network reachability.'
             )
-            instance = create_alertmanager_instance(
-                form=form,
-                initial_binding=initial_binding,
+            form_error = (
+                'Connection verification must pass before registration. '
+                f'{failure_detail}'
             )
-        except ValueError as exc:
-            form_error = str(exc)
             record_instance_activity(
                 user_id=int(current_user.id),
                 instance=None,
                 event_type='alertmanager_instance_create_rejected',
                 status='error',
                 title='Alertmanager instance not created',
-                message='KAORI could not create the Alertmanager instance.',
-                detail=str(exc),
-                metadata={'cluster_id': initial_cluster_id or None},
-            )
-        except Exception as exc:  # pragma: no cover - defensive database boundary
-            form_error = 'KAORI could not save the Alertmanager instance. Review application logs and database connectivity before retrying.'
-            logger.exception('Alertmanager instance creation failed.')
-            record_instance_activity(
-                user_id=int(current_user.id),
-                instance=None,
-                event_type='alertmanager_instance_create_failed',
-                status='error',
-                title='Alertmanager instance not created',
-                message='KAORI could not save the Alertmanager instance.',
-                detail='Review application logs and database connectivity before retrying.',
-                metadata={'reason': type(exc).__name__},
+                message='The submitted connection did not pass the required reachability test.',
+                detail=failure_detail,
+                metadata={
+                    'cluster_id': initial_cluster_id or None,
+                    'failure_code': connection_test.get('failure_code'),
+                    'endpoint_host': connection_test.get('endpoint_host'),
+                    'request_path': connection_test.get('request_path'),
+                    'submitted_name': form.name or 'Draft Alertmanager connection',
+                },
             )
         else:
-            record_instance_activity(
-                user_id=int(current_user.id),
-                instance=instance,
-                event_type='alertmanager_instance_created',
-                status='success',
-                title='Alertmanager instance created',
-                message=f'{instance.name} is now registered as an Alertmanager source.',
-                detail='Run full validation, review readiness, then create scope bindings before operational use.',
-                metadata={'initial_cluster_id': initial_cluster_id or None},
-            )
-            return redirect(url_for('alertmanager.instance_detail', instance_id=instance.id))
+            try:
+                initial_binding = (
+                    AlertmanagerBindingForm(
+                        scope_type='kubernetes_cluster',
+                        scope_key=initial_cluster.id,
+                        binding_role='primary',
+                        priority=100,
+                        enabled=True,
+                    )
+                    if initial_cluster is not None
+                    else None
+                )
+                instance = create_alertmanager_instance(
+                    form=form,
+                    initial_binding=initial_binding,
+                )
+            except ValueError as exc:
+                form_error = str(exc)
+                record_instance_activity(
+                    user_id=int(current_user.id),
+                    instance=None,
+                    event_type='alertmanager_instance_create_rejected',
+                    status='error',
+                    title='Alertmanager instance not created',
+                    message='KAORI could not create the Alertmanager instance.',
+                    detail=str(exc),
+                    metadata={'cluster_id': initial_cluster_id or None},
+                )
+            except Exception as exc:  # pragma: no cover - defensive database boundary
+                form_error = 'KAORI could not save the Alertmanager instance. Review application logs and database connectivity before retrying.'
+                logger.exception('Alertmanager instance creation failed.')
+                record_instance_activity(
+                    user_id=int(current_user.id),
+                    instance=None,
+                    event_type='alertmanager_instance_create_failed',
+                    status='error',
+                    title='Alertmanager instance not created',
+                    message='KAORI could not save the Alertmanager instance.',
+                    detail='Review application logs and database connectivity before retrying.',
+                    metadata={'reason': type(exc).__name__},
+                )
+            else:
+                record_instance_activity(
+                    user_id=int(current_user.id),
+                    instance=instance,
+                    event_type='alertmanager_instance_created',
+                    status='success',
+                    title='Alertmanager instance created',
+                    message=f'{instance.name} is now registered as an Alertmanager source.',
+                    detail='Reachability passed during registration. Run Full Validation, review readiness, then create scope bindings before operational use.',
+                    metadata={
+                        'initial_cluster_id': initial_cluster_id or None,
+                        'connection_response_time_ms': connection_test.get('response_time_ms'),
+                        'detected_version': connection_test.get('version'),
+                    },
+                )
+                return redirect(url_for('alertmanager.instance_detail', instance_id=instance.id))
 
     return render_template(
         'alertmanager/instance_form.html',
@@ -116,6 +150,7 @@ def new_instance() -> ResponseReturnValue:
         initial_cluster=initial_cluster,
         draft_form=draft_form,
         form_error=form_error,
+        connection_test=connection_test,
     )
 
 

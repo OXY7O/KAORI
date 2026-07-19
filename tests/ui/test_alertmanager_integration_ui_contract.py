@@ -47,22 +47,28 @@ def test_alertmanager_instance_hero_uses_the_same_geometry() -> None:
     source = INSTANCE_FORM.read_text(encoding='utf-8')
 
     required_fragments = (
-        'rounded-2xl border border-brand-outline bg-kaori-primary p-5',
-        'grid gap-5 xl:grid-cols-12 xl:items-stretch',
-        'flex min-w-0 flex-col justify-center xl:col-span-7',
-        "page_hero.intro('siren', 'Alertmanager Integration Source', 'server-cog')",
-        'aside class="xl:col-span-5"',
-        'flex h-full min-h-[13rem] flex-col rounded-xl',
-        'Integration workflow',
-        'Connection lifecycle &amp; scope',
+        'page_hero.shell_classes()',
+        'page_hero.layout_classes()',
+        'page_hero.content_classes()',
+        "page_hero.intro('siren', 'Alertmanager Integration', 'server-cog')",
+        'page_hero.aside_classes()',
+        'flex h-full min-h-[12rem] flex-col rounded-xl',
+        'Create a reusable Alertmanager connection and verify reachability before registration.',
+        'Registration posture',
+        'Pre-save requirements',
         'Back to Registry',
         'components/table_label.html',
     )
     missing = [fragment for fragment in required_fragments if fragment not in source]
     assert not missing, f'Alertmanager instance hero contract is incomplete: {missing}'
 
-    assert 'page_hero.shell_classes()' not in source
-    assert 'page_hero.layout_classes()' not in source
+    forbidden_fragments = (
+        'min-h-[13rem]',
+        'Define a reusable Alertmanager connection for infrastructure assets, services, operational domains, and workflows',
+        "('01', 'plug-zap', 'Test Connection'",
+    )
+    found = [fragment for fragment in forbidden_fragments if fragment in source]
+    assert not found, f'Alertmanager instance hero still contains oversized workflow content: {found}'
     assert 'rounded-full' not in source
 
 
@@ -123,7 +129,11 @@ def test_register_alertmanager_instance_matches_informative_form_contract() -> N
         'xl:col-span-8',
         'xl:col-span-4 xl:sticky xl:top-5',
         'Alertmanager Scope &amp; Workflow',
-        'Provider Identity &amp; Contract',
+        'Connection Identity &amp; Contract',
+        'Connection Type Guide',
+        'Externally managed',
+        'Shared service',
+        'Managed for a specific scope',
         'After Registration',
         'Reusable connection identity',
         'Reachability test',
@@ -136,6 +146,10 @@ def test_register_alertmanager_instance_matches_informative_form_contract() -> N
         'Test Connection',
         'Register Instance',
         'focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20',
+        'Registration repeats the reachability probe and only saves when it passes.',
+        'absolute inset-x-0 bottom-0 h-1',
+        "alertmanager/partials/_delete_confirmation_modal.html",
+        'data-alertmanager-delete-button',
     )
     missing = [fragment for fragment in required_fragments if fragment not in source]
     assert not missing, f'Register Alertmanager form contract is incomplete: {missing}'
@@ -162,7 +176,7 @@ def test_alertmanager_connection_test_result_is_semantic_and_separate_from_valid
         'Not reachable',
         'Response time',
         'Cluster status',
-        'Register the instance, then run Full Validation',
+        'Register Instance repeats the same status probe and only saves when it passes.',
         'API capabilities, compatibility profile, runtime readiness, and scope eligibility',
         "alertmanager/partials/_operation_feedback_oob.html",
     )
@@ -170,6 +184,35 @@ def test_alertmanager_connection_test_result_is_semantic_and_separate_from_valid
     assert not missing, f'Connection test result contract is incomplete: {missing}'
     assert 'rounded-full' not in source
     assert 'font-mono' not in source
+
+
+def test_alertmanager_delete_actions_use_kaori_confirmation_modal() -> None:
+    source = INSTANCE_FORM.read_text(encoding='utf-8')
+    modal = Path(
+        'app/templates/alertmanager/partials/_delete_confirmation_modal.html'
+    ).read_text(encoding='utf-8')
+
+    required_form_fragments = (
+        'data-delete-title="Remove scope binding?"',
+        'data-delete-title="Delete Alertmanager instance?"',
+        'data-delete-action-label="Remove binding"',
+        'data-delete-action-label="Delete instance"',
+        "alertmanager/partials/_delete_confirmation_modal.html",
+    )
+    missing = [fragment for fragment in required_form_fragments if fragment not in source]
+    assert not missing, f'Alertmanager delete triggers are incomplete: {missing}'
+
+    required_modal_fragments = (
+        'id="alertmanager-delete-modal"',
+        'role="dialog"',
+        'border-status-critical-border',
+        'data-alertmanager-delete-close',
+        'data-operation-submit',
+        "closest('[data-alertmanager-delete-button]')",
+        "event.key === 'Escape'",
+    )
+    missing = [fragment for fragment in required_modal_fragments if fragment not in modal]
+    assert not missing, f'Alertmanager delete modal contract is incomplete: {missing}'
 
 
 def test_alertmanager_htmx_actions_render_persistent_notification_toasts() -> None:

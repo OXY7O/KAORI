@@ -19,34 +19,38 @@
     <div class="space-y-6">
         {% set hero_readiness = (instance.readiness_status or 'validation_required') if instance else 'draft' %}
         {% set source_posture = 'Ready' if hero_readiness == 'ready' else ('Attention' if hero_readiness in ['degraded', 'blocked'] else ('Configured' if instance else 'Draft')) %}
-        <section class="relative overflow-hidden rounded-2xl border border-brand-outline bg-kaori-primary p-5 text-brand-foreground shadow-sm lg:p-6">
-            <div class="relative grid gap-5 xl:grid-cols-12 xl:items-stretch">
-                <div class="flex min-w-0 flex-col justify-center xl:col-span-7">
-                    {% call page_hero.intro('siren', 'Alertmanager Integration Source', 'server-cog') %}
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('siren', 'Alertmanager Integration', 'server-cog') %}
                         <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">
                             {{ instance.name if instance else 'Register Alertmanager Instance' }}
                         </h1>
                         <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">
                             {% if instance %}
-                                Manage the saved connection, inspect runtime posture, run full capability validation, and govern the operational scopes that may use it.
+                                Manage connection settings, validation, runtime health, and scope bindings.
                             {% else %}
-                                Define a reusable Alertmanager connection for infrastructure assets, services, operational domains, and workflows; verify that KAORI can reach it, then register the instance for capability validation and scope assignment.
+                                Create a reusable Alertmanager connection and verify reachability before registration.
                             {% endif %}
                         </p>
                         <div class="mt-5 flex flex-wrap gap-2">
-                            {{ page_hero.meta_label('plug-zap', 'Configured connection' if instance and instance.endpoint else 'Draft connection') }}
-                            {{ page_hero.meta_label('shield-check', hero_readiness|replace('_', ' ')|title) }}
-                            {{ page_hero.meta_label('link-2', (bindings|length|string) ~ ' scope bindings' if instance else 'Scope assigned after registration') }}
+                            {% if instance %}
+                                {{ page_hero.meta_label('shield-check', hero_readiness|replace('_', ' ')|title) }}
+                                {{ page_hero.meta_label('link-2', (bindings|length|string) ~ ' scope bindings') }}
+                            {% else %}
+                                {{ page_hero.meta_label('file-pen-line', 'Draft connection') }}
+                                {{ page_hero.meta_label('plug-zap', 'Reachability required') }}
+                            {% endif %}
                         </div>
                     {% endcall %}
                 </div>
 
-                <aside class="xl:col-span-5" aria-label="Alertmanager registration workflow">
-                    <div class="flex h-full min-h-[13rem] flex-col rounded-xl border border-brand-outline bg-brand-surface-strong p-4 backdrop-blur-md">
+                <aside class="{{ page_hero.aside_classes() }}" aria-label="Alertmanager registration posture">
+                    <div class="flex h-full min-h-[12rem] flex-col rounded-xl border border-brand-outline bg-brand-surface-strong p-4 backdrop-blur-md">
                         <div class="flex items-start justify-between gap-4">
                             <div>
-                                <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Integration workflow</p>
-                                <h2 class="mt-1 text-base font-semibold text-brand-foreground">Connection lifecycle &amp; scope</h2>
+                                <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">{{ 'Connection posture' if instance else 'Registration posture' }}</p>
+                                <h2 class="mt-1 text-base font-semibold text-brand-foreground">{{ 'Readiness & scope coverage' if instance else 'Pre-save requirements' }}</h2>
                             </div>
                             <span class="inline-flex min-h-6 shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1 text-[10px] font-semibold
                                          {% if source_posture == 'Ready' %}border-status-normal-border bg-status-normal-soft text-status-normal-text
@@ -59,14 +63,14 @@
                         </div>
 
                         {% if instance %}
-                            <div class="mt-3 grid grid-cols-2 gap-2">
+                            <div class="mt-4 grid grid-cols-2 gap-2">
                                 <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5">
                                     <div class="flex items-center gap-2 text-brand-foreground">
                                         <i data-lucide="shield-check" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                         <p class="text-[11px] font-semibold">Readiness</p>
                                     </div>
                                     <p class="mt-1.5 truncate text-sm font-semibold leading-5 text-brand-foreground">{{ hero_readiness|replace('_', ' ')|title }}</p>
-                                    <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Established by full validation</p>
+                                    <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Established by Full Validation</p>
                                 </div>
                                 <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5">
                                     <div class="flex items-center gap-2 text-brand-foreground">
@@ -77,7 +81,7 @@
                                     <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Contexts eligible to use this source</p>
                                 </div>
                             </div>
-                            <div class="mt-3 grid grid-cols-2 gap-2">
+                            <div class="mt-auto grid grid-cols-2 gap-2 pt-3">
                                 <form method="post"
                                       action="{{ url_for('alertmanager.validate_instance', instance_id=instance.id) }}"
                                       hx-post="{{ url_for('alertmanager.validate_instance', instance_id=instance.id) }}"
@@ -98,21 +102,26 @@
                                 </a>
                             </div>
                         {% else %}
-                            <div class="mt-3 space-y-2">
-                                {% for number, icon, label, detail in [
-                                    ('01', 'plug-zap', 'Test Connection', 'Checks endpoint reachability, authentication, TLS, and the status API.'),
-                                    ('02', 'save', 'Register Instance', 'Saves the reusable connection identity without declaring capability readiness.'),
-                                    ('03', 'scan-search', 'Validate & Bind', 'Run full validation, then assign the operational scopes that may use it.')
-                                ] %}
-                                    <div class="grid grid-cols-[28px_28px_minmax(0,1fr)] items-start gap-2 rounded-lg border border-brand-outline bg-brand-surface px-3 py-2">
-                                        <span class="pt-0.5 text-[10px] font-semibold text-brand-foreground-muted">{{ number }}</span>
-                                        <span class="flex h-7 w-7 items-center justify-center rounded-md bg-white/10 text-brand-foreground"><i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i></span>
-                                        <div><p class="text-xs font-semibold text-brand-foreground">{{ label }}</p><p class="mt-0.5 text-[10px] leading-4 text-brand-foreground-muted">{{ detail }}</p></div>
+                            <div class="mt-4 grid grid-cols-2 gap-2">
+                                <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5">
+                                    <div class="flex items-center gap-2 text-brand-foreground">
+                                        <i data-lucide="plug-zap" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                        <p class="text-[11px] font-semibold">Before save</p>
                                     </div>
-                                {% endfor %}
+                                    <p class="mt-1.5 text-sm font-semibold leading-5 text-brand-foreground">Test connection</p>
+                                    <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Registration repeats the probe</p>
+                                </div>
+                                <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5">
+                                    <div class="flex items-center gap-2 text-brand-foreground">
+                                        <i data-lucide="scan-search" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                        <p class="text-[11px] font-semibold">After save</p>
+                                    </div>
+                                    <p class="mt-1.5 text-sm font-semibold leading-5 text-brand-foreground">Full Validation</p>
+                                    <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Then assign scope bindings</p>
+                                </div>
                             </div>
                             <a href="{{ url_for('integrations.alertmanager') }}"
-                               class="mt-3 inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-brand-outline bg-surface-card px-4 py-2 text-xs font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70">
+                               class="mt-auto inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-brand-outline bg-surface-card px-4 py-2 text-xs font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70">
                                 <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i>
                                 Back to Registry
                             </a>
@@ -134,7 +143,7 @@
                   x-data="{ authType: '{{ current_auth_type }}' }">
                 {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                 {% if initial_cluster %}<input type="hidden" name="cluster_id" value="{{ initial_cluster.id }}">{% endif %}
-                <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+                <section class="relative overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
                     <header class="flex items-center gap-3 border-b border-outline-subtle px-5 py-4">
                         <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                             <i data-lucide="settings-2" class="h-5 w-5"></i>
@@ -177,7 +186,9 @@
                                             <option value="{{ value }}" {% if selected_deployment == value %}selected{% endif %}>{{ label }}</option>
                                         {% endfor %}
                                     </select>
-                                    <p class="mt-1.5 text-xs leading-5 text-content-muted">Describes ownership and deployment context; it does not limit where the connection can be bound.</p>
+                                    <div class="mt-2 rounded-lg border border-brand-outline bg-kaori-soft px-3 py-2.5">
+                                        <p class="text-xs leading-5 text-content-secondary"><span class="font-semibold text-kaori-primary">What this controls:</span> the operational ownership and deployment model recorded for this connection. It does not restrict scope bindings or capability usage.</p>
+                                    </div>
                                 </div>
                             </div>
                             <div class="mt-4">
@@ -252,19 +263,23 @@
 
                         {% if not instance %}
                             <div id="alertmanager-connection-test-result" x-ref="connectionResult" role="status" aria-live="polite">
-                                <div class="rounded-lg border border-outline-subtle bg-surface-hover px-4 py-3">
-                                    <div class="flex items-start gap-3">
-                                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="plug-zap" class="h-4 w-4"></i></span>
-                                        <div><p class="text-sm font-semibold text-content-primary">Connection not tested</p><p class="mt-1 text-xs leading-5 text-content-muted">Test Connection checks reachability, authentication, TLS negotiation, and the status API. It does not save the instance or establish capability readiness.</p></div>
+                                {% if connection_test is defined and connection_test %}
+                                    {% include 'alertmanager/partials/_connection_test_result.html' %}
+                                {% else %}
+                                    <div class="rounded-lg border border-outline-subtle bg-surface-hover px-4 py-3">
+                                        <div class="flex items-start gap-3">
+                                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="plug-zap" class="h-4 w-4"></i></span>
+                                            <div><p class="text-sm font-semibold text-content-primary">Connection not tested</p><p class="mt-1 text-xs leading-5 text-content-muted">Test Connection checks reachability, authentication, TLS negotiation, and the status API without saving. Register Instance repeats the same probe before creating the record.</p></div>
+                                        </div>
                                     </div>
-                                </div>
+                                {% endif %}
                             </div>
                         {% endif %}
                     </div>
 
                     <footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                         <p class="max-w-xl text-xs leading-5 text-content-muted">
-                            {% if instance %}Saving configuration resets readiness to Validation Required. Run Full Validation afterward.{% else %}Recommended sequence: test the submitted connection, register the instance, then complete full validation and scope binding from the instance page.{% endif %}
+                            {% if instance %}Saving configuration resets readiness to Validation Required. Run Full Validation afterward.{% else %}Registration repeats the reachability probe and only saves when it passes. Full Validation and scope binding follow on the saved instance.{% endif %}
                         </p>
                         <div class="flex flex-col gap-2 sm:flex-row sm:justify-end">
                             {% if not instance %}
@@ -287,7 +302,7 @@
                             </button>
                         </div>
                     </footer>
-                    {% if not instance %}<div id="alertmanager-connection-test-loading" class="htmx-indicator h-1 w-full overflow-hidden bg-kaori-soft"><div class="h-full w-1/3 animate-pulse bg-kaori-primary"></div></div>{% endif %}
+                    {% if not instance %}<div id="alertmanager-connection-test-loading" class="htmx-indicator pointer-events-none absolute inset-x-0 bottom-0 h-1 overflow-hidden bg-kaori-soft"><div class="h-full w-1/3 animate-pulse bg-kaori-primary"></div></div>{% endif %}
                 </section>
             </form>
 
@@ -316,11 +331,27 @@
 
                     <details class="group overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
                         <summary class="flex cursor-pointer list-none select-none items-start justify-between gap-3 border-b border-outline-subtle bg-surface-hover px-4 py-3.5 transition hover:bg-kaori-soft/40 [&::-webkit-details-marker]:hidden">
-                            <div class="flex items-start gap-3"><div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="file-check-2" class="h-4 w-4"></i></div><div><h2 class="text-sm font-semibold text-content-primary">Provider Identity &amp; Contract</h2><p class="mt-0.5 text-xs leading-5 text-content-muted">How KAORI represents and evaluates this source.</p></div></div>
+                            <div class="flex items-start gap-3">
+                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="boxes" class="h-4 w-4"></i></div>
+                                <div><h2 class="text-sm font-semibold text-content-primary">Connection Type Guide</h2><p class="mt-0.5 text-xs leading-5 text-content-muted">Choose the ownership and deployment context that best describes this endpoint.</p></div>
+                            </div>
+                            <span class="ml-auto flex shrink-0 items-center gap-2 pl-3 text-xs font-semibold text-content-secondary"><span class="group-open:hidden">Details</span><span class="hidden group-open:inline">Collapse</span><i data-lucide="chevron-down" class="h-4 w-4 transition-transform duration-200 group-open:rotate-180"></i></span>
+                        </summary>
+                        <div class="divide-y divide-outline-subtle text-xs leading-5 text-content-muted">
+                            <article class="p-4"><p class="font-semibold text-content-primary">Externally managed</p><p class="mt-1">Use when another team, service owner, or platform manages the Alertmanager lifecycle and KAORI only consumes the exposed connection.</p></article>
+                            <article class="p-4"><p class="font-semibold text-content-primary">Standalone</p><p class="mt-1">Use for a dedicated, independently operated Alertmanager that is not presented as a shared organizational service.</p></article>
+                            <article class="p-4"><p class="font-semibold text-content-primary">Shared service</p><p class="mt-1">Use for a centralized Alertmanager intended to serve infrastructure assets, services, operational domains, and workflows through governed bindings.</p></article>
+                            <article class="p-4"><p class="font-semibold text-content-primary">Managed for a specific scope</p><p class="mt-1">Use when ownership and lifecycle are aligned to one primary operational scope. Governed bindings may still make it eligible elsewhere.</p></article>
+                        </div>
+                    </details>
+
+                    <details class="group overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+                        <summary class="flex cursor-pointer list-none select-none items-start justify-between gap-3 border-b border-outline-subtle bg-surface-hover px-4 py-3.5 transition hover:bg-kaori-soft/40 [&::-webkit-details-marker]:hidden">
+                            <div class="flex items-start gap-3"><div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="file-check-2" class="h-4 w-4"></i></div><div><h2 class="text-sm font-semibold text-content-primary">Connection Identity &amp; Contract</h2><p class="mt-0.5 text-xs leading-5 text-content-muted">How KAORI represents and evaluates this source.</p></div></div>
                             <span class="ml-auto flex shrink-0 items-center gap-2 pl-3 text-xs font-semibold text-content-secondary"><span class="group-open:hidden">Details</span><span class="hidden group-open:inline">Collapse</span><i data-lucide="chevron-down" class="h-4 w-4 transition-transform duration-200 group-open:rotate-180"></i></span>
                         </summary>
                         <div class="space-y-3 p-4 text-xs leading-5 text-content-muted">
-                            <div class="grid grid-cols-[24px_minmax(0,1fr)] gap-2"><span class="font-semibold text-kaori-primary">01</span><p><strong class="font-semibold text-content-secondary">Provider identity</strong> is the canonical KAORI record for the Alertmanager connection. It is registered once and referenced by bindings.</p></div>
+                            <div class="grid grid-cols-[24px_minmax(0,1fr)] gap-2"><span class="font-semibold text-kaori-primary">01</span><p><strong class="font-semibold text-content-secondary">Connection identity</strong> is the canonical KAORI record for the Alertmanager connection. It is registered once and referenced by bindings.</p></div>
                             <div class="grid grid-cols-[24px_minmax(0,1fr)] gap-2"><span class="font-semibold text-kaori-primary">02</span><p><strong class="font-semibold text-content-secondary">Connection contract</strong> covers the base URL, authentication, request timeout, TLS verification, and API v2 status reachability.</p></div>
                             <div class="grid grid-cols-[24px_minmax(0,1fr)] gap-2"><span class="font-semibold text-kaori-primary">03</span><p><strong class="font-semibold text-content-secondary">Capability contract</strong> is established only by Full Validation after registration. It records supported APIs, detected version/profile, and readiness.</p></div>
                             <div class="grid grid-cols-[24px_minmax(0,1fr)] gap-2"><span class="font-semibold text-kaori-primary">04</span><p><strong class="font-semibold text-content-secondary">Scope bindings</strong> determine where the source is eligible and how resolver priority selects primary, secondary, or fallback connections.</p></div>
@@ -521,11 +552,17 @@
                                             <td class="px-4 py-3 text-content-secondary">{{ row.binding.priority }}</td>
                                             <td class="px-4 py-3">{{ status_badge('ready' if row.binding.enabled else 'not_configured') }}</td>
                                             <td class="px-4 py-3 text-right">
-                                                <form method="post"
-                                                      action="{{ url_for('alertmanager.remove_binding', instance_id=instance.id, binding_id=row.binding.id) }}">
-                                                    <button type="submit"
-                                                            class="rounded-lg border border-red-200 px-3 py-2 text-xs font-bold text-red-700 hover:bg-red-50">Remove</button>
-                                                </form>
+                                                <button type="button"
+                                                        data-alertmanager-delete-button
+                                                        data-delete-url="{{ url_for('alertmanager.remove_binding', instance_id=instance.id, binding_id=row.binding.id) }}"
+                                                        data-delete-title="Remove scope binding?"
+                                                        data-delete-name="{{ row.scope_label }}"
+                                                        data-delete-detail="This Alertmanager connection will no longer be eligible for the selected operational scope. Historical activity remains available in Activity Audit Log."
+                                                        data-delete-action-label="Remove binding"
+                                                        class="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-status-critical-border bg-surface-card px-3 text-xs font-semibold text-status-critical-text transition hover:bg-status-critical-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                                    <i data-lucide="unlink" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                                    Remove
+                                                </button>
                                             </td>
                                         </tr>
                                     {% else %}
@@ -606,24 +643,31 @@
                     </form>
                 </div>
             </section>
-            <details class="group overflow-hidden rounded-2xl border border-red-200 bg-surface-card shadow-sm">
+            <details class="group overflow-hidden rounded-xl border border-status-critical-border bg-surface-card shadow-sm">
                 <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4">
                     <div>
-                        <p class="font-bold text-content-primary">Instance lifecycle</p>
+                        <p class="font-semibold text-content-primary">Instance lifecycle</p>
                         <p class="mt-1 text-xs text-content-secondary">Deletion is blocked while scope bindings remain.</p>
                     </div>
                     <i data-lucide="chevron-down"
                        class="h-4 w-4 text-content-tertiary transition group-open:rotate-180"></i>
                 </summary>
-                <div class="border-t border-red-100 bg-red-50/40 p-5">
-                    <form method="post"
-                          action="{{ url_for('alertmanager.delete_instance', instance_id=instance.id) }}">
-                        <button type="submit"
-                                {% if bindings %}disabled{% endif %}
-                                class="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-2.5 text-sm font-bold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"><i data-lucide="trash-2" class="h-4 w-4"></i>Delete instance</button>
-                    </form>
+                <div class="border-t border-status-critical-border bg-status-critical-soft p-5">
+                    <button type="button"
+                            data-alertmanager-delete-button
+                            data-delete-url="{{ url_for('alertmanager.delete_instance', instance_id=instance.id) }}"
+                            data-delete-title="Delete Alertmanager instance?"
+                            data-delete-name="{{ instance.name }}"
+                            data-delete-detail="The connection identity, endpoint configuration, and saved credentials will be removed. Historical operational activity remains available in Activity Audit Log."
+                            data-delete-action-label="Delete instance"
+                            {% if bindings %}disabled{% endif %}
+                            class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-status-critical-border bg-surface-card px-4 text-sm font-semibold text-status-critical-text transition hover:bg-status-critical-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-not-allowed disabled:opacity-50">
+                        <i data-lucide="trash-2" class="h-4 w-4" aria-hidden="true"></i>
+                        Delete instance
+                    </button>
                 </div>
             </details>
+            {% include 'alertmanager/partials/_delete_confirmation_modal.html' %}
         {% endif %}
     </div>
 {% endblock dashboard_content %}

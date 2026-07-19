@@ -126,7 +126,8 @@ def test_new_instance_page_prefills_cluster_binding_context(app) -> None:
     assert b'Initial Scope Binding' in response.data
     assert b'Alertmanager Scope &amp; Workflow' in response.data
     assert b'Test Connection' in response.data
-    assert b'Provider Identity &amp; Contract' in response.data
+    assert b'Connection Identity &amp; Contract' in response.data
+    assert b'Connection Type Guide' in response.data
 
 
 def test_draft_connection_test_uses_submitted_settings_without_creating_instance(app, monkeypatch) -> None:
@@ -186,3 +187,98 @@ def test_draft_connection_test_uses_submitted_settings_without_creating_instance
     assert notification.event_type == 'alertmanager_connection_test'
     assert notification.status == 'success'
     assert notification.metadata_json['submitted_name'] == 'Draft Alertmanager'
+
+
+def test_registration_rejects_unreachable_connection_before_database_save(app, monkeypatch) -> None:
+    user = User(username='register-admin', email='register-admin@example.test', is_super_admin=True)
+    db.session.add(user)
+    db.session.commit()
+
+    def fake_test(_form):
+        return {
+            'connected': False,
+            'label': 'Connection failed',
+            'error': 'Connection refused by the submitted endpoint.',
+            'reason': 'The Alertmanager status API was not reachable.',
+            'failure_code': 'connection_refused',
+            'endpoint_host': 'alertmanager.example.test',
+            'request_path': '/api/v2/status',
+        }
+
+    monkeypatch.setattr('app.alertmanager.routes.test_alertmanager_form_connection', fake_test)
+
+    client = app.test_client()
+    _login(client, user.id)
+    response = client.post(
+        '/integrations/alertmanager/instances/new',
+        data={
+            'name': 'Rejected Alertmanager',
+            'deployment_type': 'shared',
+            'endpoint': 'https://alertmanager.example.test:9093',
+            'auth_type': 'none',
+            'timeout': '5',
+            'verify_ssl': '1',
+            'enabled': '1',
+        },
+    )
+
+    assert response.status_code == 200
+    assert b'Connection verification must pass before registration' in response.data
+    assert b'Connection failed' in response.data
+    assert db.session.query(AlertmanagerInstance).count() == 0
+    notification = db.session.query(Notification).one()
+    assert notification.event_type == 'alertmanager_instance_create_rejected'
+    assert notification.status == 'error'
+
+
+def test_registration_rechecks_reachability_then_redirects_to_full_validation_page(app, monkeypatch) -> None:
+    user = User(username='register-success', email='register-success@example.test', is_super_admin=True)
+    db.session.add(user)
+    db.session.commit()
+
+    observed = {'calls': 0}
+
+    def fake_test(form):
+        observed['calls'] += 1
+        observed['endpoint'] = form.endpoint
+        return {
+            'connected': True,
+            'label': 'Connection verified',
+            'response_time_ms': 12,
+            'version': '0.33.1',
+            'cluster_status': 'ready',
+            'reason': 'The Alertmanager status API responded successfully.',
+            'request_path': '/api/v2/status',
+        }
+
+    monkeypatch.setattr('app.alertmanager.routes.test_alertmanager_form_connection', fake_test)
+
+    client = app.test_client()
+    _login(client, user.id)
+    response = client.post(
+        '/integrations/alertmanager/instances/new',
+        data={
+            'name': 'Verified Alertmanager',
+            'deployment_type': 'shared',
+            'endpoint': 'https://alertmanager.example.test:9093/',
+            'auth_type': 'none',
+            'timeout': '5',
+            'verify_ssl': '1',
+            'enabled': '1',
+        },
+    )
+
+    assert response.status_code == 302
+    instance = db.session.query(AlertmanagerInstance).one()
+    assert response.headers['Location'].endswith(
+        f'/integrations/alertmanager/instances/{instance.id}'
+    )
+    assert observed == {
+        'calls': 1,
+        'endpoint': 'https://alertmanager.example.test:9093',
+    }
+    notification = db.session.query(Notification).one()
+    assert notification.event_type == 'alertmanager_instance_created'
+    assert notification.status == 'success'
+    assert notification.metadata_json['connection_response_time_ms'] == 12
+
