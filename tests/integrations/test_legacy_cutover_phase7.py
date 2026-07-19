@@ -26,3 +26,11 @@ def test_reconciliation_covers_orphans_legacy_rows_and_kubeconfig() -> None:
     assert 'delete_verified_legacy_bindings' in source
     assert 'delete_verified_legacy_configs' in source
     assert 'clear_verified_legacy_kubeconfig' in source
+
+
+def test_reconciliation_recovers_targets_from_runtime_and_bindings() -> None:
+    source = (_root() / 'app/integrations/legacy_reconcile.py').read_text(encoding='utf-8')
+    assert 'runtime_observation.instance_id=' in source
+    assert 'matching binding asset=' in source
+    assert 'create_canonical_binding_from_legacy' in source
+    assert 'canonical_bindings_created' in source

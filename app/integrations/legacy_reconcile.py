@@ -65,46 +65,133 @@ def _table(name: str):
     return table
 
 
-def _provider_target(orphan: IntegrationInstance) -> IntegrationInstance | None:
+def _provider_model(provider_type: str):
+    if provider_type == 'prometheus':
+        return PrometheusInstance
+    if provider_type == 'alertmanager':
+        return AlertmanagerInstance
+    if provider_type == 'kubernetes':
+        return KubernetesConnection
+    return None
+
+
+def _candidate_target_ids(orphan: IntegrationInstance) -> dict[int, list[str]]:
+    """Collect deterministic evidence that links an orphan identity to one canonical target."""
+    model = _provider_model(orphan.provider_type)
+    if model is None:
+        return {}
+
+    evidence: dict[int, list[str]] = {}
+
+    def add(target_id: int | None, reason: str) -> None:
+        if target_id is None or target_id == orphan.id:
+            return
+        target = db.session.get(IntegrationInstance, target_id)
+        if target is None or target.provider_type != orphan.provider_type:
+            return
+        evidence.setdefault(target_id, []).append(reason)
+
     metadata = orphan.metadata_json or {}
     provider_record_id = metadata.get('provider_record_id')
-
-    if orphan.provider_type == 'prometheus':
-        model = PrometheusInstance
-    elif orphan.provider_type == 'alertmanager':
-        model = AlertmanagerInstance
-    elif orphan.provider_type == 'kubernetes':
-        model = KubernetesConnection
-    else:
-        return None
-
-    provider_record = None
     if provider_record_id is not None and orphan.provider_type != 'kubernetes':
         provider_record = db.session.get(model, provider_record_id)
-    elif orphan.provider_type == 'kubernetes':
-        asset_key = metadata.get('asset_key')
-        if asset_key:
+        add(
+            getattr(provider_record, 'integration_instance_id', None) if provider_record else None,
+            f'metadata.provider_record_id={provider_record_id}',
+        )
+
+    asset_key = metadata.get('asset_key')
+    if orphan.provider_type == 'kubernetes' and asset_key:
+        connection = db.session.execute(
+            select(KubernetesConnection).where(KubernetesConnection.cluster_id == str(asset_key))
+        ).scalar_one_or_none()
+        add(
+            connection.integration_instance_id if connection else None,
+            f'metadata.asset_key={asset_key}',
+        )
+
+    # Runtime observations retain the provider record id in instance_id. This is
+    # the strongest recovery signal for duplicate identities created before the
+    # canonical FK was made authoritative.
+    observation_instance_ids = set(
+        db.session.execute(
+            select(IntegrationRuntimeObservation.instance_id).where(
+                IntegrationRuntimeObservation.integration_instance_id == orphan.id,
+                IntegrationRuntimeObservation.provider == orphan.provider_type,
+            )
+        ).scalars()
+    )
+    for instance_id in observation_instance_ids:
+        if orphan.provider_type == 'kubernetes':
             provider_record = db.session.execute(
-                select(KubernetesConnection).where(KubernetesConnection.cluster_id == str(asset_key))
+                select(KubernetesConnection).where(KubernetesConnection.cluster_id == str(instance_id))
             ).scalar_one_or_none()
+        else:
+            try:
+                provider_record = db.session.get(model, int(instance_id))
+            except (TypeError, ValueError):
+                provider_record = None
+        add(
+            getattr(provider_record, 'integration_instance_id', None) if provider_record else None,
+            f'runtime_observation.instance_id={instance_id}',
+        )
 
-    if provider_record is not None:
-        canonical_id = getattr(provider_record, 'integration_instance_id', None)
-        if canonical_id and canonical_id != orphan.id:
-            return db.session.get(IntegrationInstance, canonical_id)
+    orphan_bindings = db.session.execute(
+        select(IntegrationBinding).where(IntegrationBinding.integration_instance_id == orphan.id)
+    ).scalars().all()
+    for binding in orphan_bindings:
+        if orphan.provider_type == 'kubernetes' and binding.asset_type == 'kubernetes_cluster':
+            connection = db.session.execute(
+                select(KubernetesConnection).where(KubernetesConnection.cluster_id == binding.asset_key)
+            ).scalar_one_or_none()
+            add(
+                connection.integration_instance_id if connection else None,
+                f'binding:{binding.id} asset={binding.asset_type}/{binding.asset_key}',
+            )
+            continue
 
+        canonical_binding_ids = db.session.execute(
+            select(IntegrationBinding.integration_instance_id).where(
+                IntegrationBinding.asset_type == binding.asset_type,
+                IntegrationBinding.asset_key == binding.asset_key,
+                IntegrationBinding.integration_instance_id != orphan.id,
+            )
+        ).scalars().all()
+        for target_id in canonical_binding_ids:
+            add(target_id, f'matching binding asset={binding.asset_type}/{binding.asset_key}')
+
+    # Name matching is a final, weaker signal. It is only accepted when it
+    # resolves to exactly one canonical provider record.
     if orphan.provider_type in {'prometheus', 'alertmanager'}:
         provider_rows = db.session.execute(select(model).where(model.name == orphan.name)).scalars().all()
-        targets = {
+        matching_ids = {
             row.integration_instance_id
             for row in provider_rows
             if row.integration_instance_id and row.integration_instance_id != orphan.id
         }
-        if len(targets) == 1:
-            return db.session.get(IntegrationInstance, targets.pop())
+        if len(matching_ids) == 1:
+            add(matching_ids.pop(), f'exact provider name={orphan.name!r}')
+    elif orphan.provider_type == 'kubernetes':
+        connections = db.session.execute(select(KubernetesConnection)).scalars().all()
+        matching_ids = {
+            row.integration_instance_id
+            for row in connections
+            if row.integration_instance
+            and row.integration_instance_id != orphan.id
+            and row.integration_instance.name == orphan.name
+        }
+        if len(matching_ids) == 1:
+            add(matching_ids.pop(), f'exact canonical name={orphan.name!r}')
 
-    return None
+    return evidence
 
+
+def _provider_target(orphan: IntegrationInstance) -> tuple[IntegrationInstance | None, dict[int, list[str]]]:
+    evidence = _candidate_target_ids(orphan)
+    if len(evidence) != 1:
+        return None, evidence
+    target_id = next(iter(evidence))
+    return db.session.get(IntegrationInstance, target_id), evidence
 
 def _merge_capabilities(left: list[str] | None, right: list[str] | None) -> list[str] | None:
     values = sorted(set(left or []) | set(right or []))
@@ -248,7 +335,7 @@ def build_reconciliation_report(*, apply: bool = False) -> ReconcileReport:
     orphans = [row for row in all_instances if row.id not in provider_identity_ids]
 
     for orphan in orphans:
-        target = _provider_target(orphan)
+        target, target_evidence = _provider_target(orphan)
         binding_count = db.session.execute(
             select(IntegrationBinding.id).where(IntegrationBinding.integration_instance_id == orphan.id)
         ).scalars().all()
@@ -272,27 +359,79 @@ def build_reconciliation_report(*, apply: bool = False) -> ReconcileReport:
             if apply:
                 db.session.delete(orphan)
             continue
+        evidence_text = {
+            target_id: reasons for target_id, reasons in sorted(target_evidence.items())
+        }
         blockers.append(
             f'IntegrationInstance {orphan.id} ({orphan.provider_type}/{orphan.name}) has '
-            f'{len(binding_count)} binding(s) and {len(observation_count)} observation(s), but no unambiguous provider target.'
+            f'{len(binding_count)} binding(s) and {len(observation_count)} observation(s), but no unambiguous provider target. '
+            f'Candidate evidence: {evidence_text or "none"}.'
         )
 
     for provider, spec in LEGACY_PROVIDER_TABLES.items():
         binding_table = _table(spec['binding'])
         if binding_table is not None:
             rows = [dict(row) for row in db.session.execute(select(binding_table)).mappings().all()]
-            unverified = [row['id'] for row in rows if not _legacy_binding_verified(provider, row)]
-            if unverified:
-                blockers.append(f'{spec["binding"]} rows cannot be reconciled: {unverified}')
+            unrecoverable: list[int] = []
+            created_count = 0
+            for row in rows:
+                provider_model = PrometheusInstance if provider == 'prometheus' else AlertmanagerInstance
+                provider_record = db.session.get(provider_model, row[spec['binding_fk']])
+                canonical_id = getattr(provider_record, 'integration_instance_id', None) if provider_record else None
+                if canonical_id is None:
+                    unrecoverable.append(row['id'])
+                    continue
+                existing = db.session.execute(
+                    select(IntegrationBinding).where(
+                        IntegrationBinding.integration_instance_id == canonical_id,
+                        IntegrationBinding.asset_type == row['scope_type'],
+                        IntegrationBinding.asset_key == str(row['scope_key']),
+                        IntegrationBinding.binding_role == (row.get('binding_role') or 'primary'),
+                    )
+                ).scalar_one_or_none()
+                if existing is None:
+                    created_count += 1
+                    actions.append(
+                        ReconcileAction(
+                            action='create_canonical_binding_from_legacy',
+                            subject=f'{spec["binding"]}:{row["id"]}',
+                            details={
+                                'integration_instance_id': canonical_id,
+                                'asset_type': row['scope_type'],
+                                'asset_key': str(row['scope_key']),
+                                'binding_role': row.get('binding_role') or 'primary',
+                            },
+                        )
+                    )
+                    if apply:
+                        default_scope = (
+                            ['metrics', 'capacity', 'utilization', 'storage', 'workload', 'forecast', 'top_consumers', 'alert_metrics']
+                            if provider == 'prometheus'
+                            else ['alerts', 'alerts_v2', 'silences', 'silences_v2', 'routing', 'receivers', 'status_v2']
+                        )
+                        db.session.add(
+                            IntegrationBinding(
+                                integration_instance_id=canonical_id,
+                                asset_type=row['scope_type'],
+                                asset_key=str(row['scope_key']),
+                                binding_role=row.get('binding_role') or 'primary',
+                                priority=row.get('priority') or 100,
+                                enabled=bool(row.get('enabled', True)),
+                                capability_scope=default_scope,
+                            )
+                        )
+            if unrecoverable:
+                blockers.append(f'{spec["binding"]} rows have no canonical provider identity: {unrecoverable}')
             elif rows:
                 actions.append(
                     ReconcileAction(
                         action='delete_verified_legacy_bindings',
                         subject=spec['binding'],
-                        details={'count': len(rows)},
+                        details={'count': len(rows), 'canonical_bindings_created': created_count},
                     )
                 )
                 if apply:
+                    db.session.flush()
                     db.session.execute(delete(binding_table))
 
         config_table = _table(spec['config'])
