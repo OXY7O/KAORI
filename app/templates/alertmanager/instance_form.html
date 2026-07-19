@@ -1,40 +1,98 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
 {% from "integrations/partials/_status_badge.html" import status_badge %}
+{% import "components/table_label.html" as table_label %}
 {% block title %}{{ instance.name if instance else 'Register Alertmanager Instance' }} · KAORI{% endblock title %}
 {% block dashboard_content %}
     {% set current_auth_type = instance.auth_type if instance else 'none' %}
     <div class="space-y-6">
-        <section class="{{ page_hero.shell_classes() }}">
-            <div class="{{ page_hero.layout_classes() }}">
-                <div class="{{ page_hero.content_classes() }}">
+        {% set hero_readiness = (instance.readiness_status or 'validation_required') if instance else 'validation_required' %}
+        {% set source_posture = 'Ready' if hero_readiness == 'ready' else ('Attention' if hero_readiness in ['degraded', 'blocked'] else 'Validation required') %}
+        <section class="relative overflow-hidden rounded-2xl border border-brand-outline bg-kaori-primary p-5 text-brand-foreground shadow-sm lg:p-6">
+            <div class="relative grid gap-5 xl:grid-cols-12 xl:items-stretch">
+                <div class="flex min-w-0 flex-col justify-center xl:col-span-7">
                     {% call page_hero.intro('siren', 'Alertmanager Source', 'server-cog') %}
                         <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">
                             {{ instance.name if instance else 'Register Alertmanager Instance' }}
                         </h1>
-                        <p class="mt-2 max-w-3xl text-sm leading-6 text-brand-foreground-muted">
+                        <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">
                             {% if instance %}
-                                Manage one reusable Alertmanager provider connection, validate API v2 capability, and control which infrastructure scopes may consume it.
+                                Manage a reusable provider connection, validate Alertmanager API capability and runtime health, then control which infrastructure scopes may consume this source.
                             {% else %}
-                                Register an existing standalone, shared, cluster-managed, or externally managed Alertmanager deployment before binding it to infrastructure assets.
+                                Register an existing standalone, shared, cluster-managed, or externally managed Alertmanager deployment before assigning asset bindings.
                             {% endif %}
                         </p>
-                    {% endcall %}
-                    <div class="mt-5 flex flex-wrap gap-2 sm:ml-[4rem] sm:pl-4">
-                        {{ page_hero.meta_label('plug-zap', 'Configured' if instance and instance.endpoint else 'New source') }}
-                        {{ page_hero.meta_label('shield-check', (instance.readiness_status or 'validation_required') |replace('_', ' ')|title if instance else 'Validation required') }}
-                        {{ page_hero.meta_label('link-2', (bindings|length|string) ~ ' bindings' if instance else 'Unbound') }}
-                    </div>
-                </div>
-                <aside class="{{ page_hero.aside_classes() }}">
-                    <div class="flex h-full flex-col justify-between rounded-xl border border-brand-outline bg-brand-surface p-4 text-brand-foreground backdrop-blur">
-                        <div>
-                            <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-brand-foreground-muted">Provider ownership</p>
-                            <p class="mt-3 text-sm font-bold">Alertmanager remains authoritative</p>
-                            <p class="mt-2 text-xs leading-5 text-brand-foreground-muted">KAORI reads status, alerts, and silences. Routing and notification delivery remain outside KAORI.</p>
+
+                        <div class="mt-5 flex flex-wrap gap-2">
+                            {{ page_hero.meta_label('plug-zap', 'Configured source' if instance and instance.endpoint else 'New source') }}
+                            {{ page_hero.meta_label('shield-check', hero_readiness|replace('_', ' ')|title) }}
+                            {{ page_hero.meta_label('link-2', (bindings|length|string) ~ ' asset bindings' if instance else 'No asset bindings') }}
                         </div>
-                        <a href="{{ url_for('integrations.alertmanager') }}"
-                           class="mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-brand-outline bg-brand-surface-strong px-4 py-2.5 text-sm font-bold text-brand-foreground transition hover:bg-white/20"><i data-lucide="arrow-left" class="h-4 w-4"></i>Back to registry</a>
+                    {% endcall %}
+                </div>
+
+                <aside class="xl:col-span-5" aria-label="Alertmanager source posture">
+                    <div class="flex h-full min-h-[13rem] flex-col rounded-xl border border-brand-outline bg-brand-surface-strong p-4 backdrop-blur-md">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Source posture</p>
+                                <h2 class="mt-1 text-base font-semibold text-brand-foreground">Configuration and consumption boundary</h2>
+                            </div>
+                            <span class="inline-flex min-h-6 shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1 text-[10px] font-semibold
+                                         {% if source_posture == 'Ready' %}border-status-normal-border bg-status-normal-soft text-status-normal-text
+                                         {% elif source_posture == 'Attention' %}border-status-warning-border bg-status-warning-soft text-status-warning-text
+                                         {% else %}border-status-info-border bg-status-info-soft text-status-info-text{% endif %}">
+                                <i data-lucide="{% if source_posture == 'Ready' %}circle-check{% elif source_posture == 'Attention' %}triangle-alert{% else %}badge-check{% endif %}" class="h-3 w-3" aria-hidden="true"></i>
+                                {{ source_posture }}
+                            </span>
+                        </div>
+
+                        <div class="mt-3 grid grid-cols-2 gap-2">
+                            <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5">
+                                <div class="flex items-center gap-2 text-brand-foreground">
+                                    <i data-lucide="shield-check" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                    <p class="text-[11px] font-semibold">Readiness</p>
+                                </div>
+                                <p class="mt-1.5 truncate text-sm font-bold leading-5 text-brand-foreground" title="{{ hero_readiness|replace('_', ' ')|title }}">{{ hero_readiness|replace('_', ' ')|title }}</p>
+                                <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Capability and configuration fitness</p>
+                            </div>
+                            <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5">
+                                <div class="flex items-center gap-2 text-brand-foreground">
+                                    <i data-lucide="link-2" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                    <p class="text-[11px] font-semibold">Bindings</p>
+                                </div>
+                                <p class="mt-1.5 text-xl font-bold leading-none text-brand-foreground">{{ bindings|length if instance else 0 }}</p>
+                                <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Infrastructure scopes using this source</p>
+                            </div>
+                        </div>
+
+                        {% if instance %}
+                            <div class="mt-3 grid grid-cols-2 gap-2">
+                                <form method="post"
+                                      action="{{ url_for('alertmanager.validate_instance', instance_id=instance.id) }}"
+                                      hx-post="{{ url_for('alertmanager.validate_instance', instance_id=instance.id) }}"
+                                      hx-target="#operational-action-feedback"
+                                      hx-swap="innerHTML"
+                                      hx-disabled-elt="button">
+                                    <button type="submit"
+                                            class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-brand-outline bg-surface-card px-3 py-2 text-xs font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70">
+                                        <i data-lucide="scan-line" class="h-4 w-4" aria-hidden="true"></i>
+                                        Run full validation
+                                    </button>
+                                </form>
+                                <a href="{{ url_for('integrations.alertmanager') }}"
+                                   class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-brand-outline bg-brand-surface px-3 py-2 text-xs font-semibold text-brand-foreground transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70">
+                                    <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i>
+                                    Back to Registry
+                                </a>
+                            </div>
+                        {% else %}
+                            <a href="{{ url_for('integrations.alertmanager') }}"
+                               class="mt-3 inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-brand-outline bg-surface-card px-4 py-2 text-xs font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-kaori-primary">
+                                <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i>
+                                Back to Registry
+                            </a>
+                        {% endif %}
                     </div>
                 </aside>
             </div>
@@ -263,7 +321,7 @@
                                 <div>
                                     <div class="flex flex-wrap items-center gap-2">
                                         <p class="font-bold text-content-primary">{{ scope.scope_label }}</p>
-                                        <span class="rounded-full border border-outline-default bg-surface-card px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.1em] text-content-secondary">{{ scope.scope_type_label }}</span>
+                                        {{ table_label.metadata_label(scope.scope_type_label, 'boxes') }}
                                     </div>
                                     <p class="mt-1 font-mono text-[11px] text-content-tertiary">{{ scope.scope_type }}:{{ scope.scope_key }}</p>
                                 </div>
@@ -279,11 +337,13 @@
                                                 <p class="mt-1 text-xs text-content-secondary">Requires {{ resolution.required_capabilities|join(', ') }}</p>
                                             </div>
                                             {% if resolution.selected_instance_id %}
-                                                <span class="rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.1em] {{ 'bg-emerald-100 text-emerald-700' if resolution.current_instance_selected else 'bg-kaori-soft text-kaori-primary' }}">
-                                                    {{ 'This instance is effective' if resolution.current_instance_selected else 'Another source is effective' }}
-                                                </span>
+                                                {% if resolution.current_instance_selected %}
+                                                    {{ table_label.status_label('This instance is effective', 'normal', 'circle-check') }}
+                                                {% else %}
+                                                    {{ table_label.status_label('Another source is effective', 'info', 'route') }}
+                                                {% endif %}
                                             {% else %}
-                                                <span class="rounded-full bg-red-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.1em] text-red-700">Unavailable</span>
+                                                {{ table_label.status_label('Unavailable', 'critical', 'octagon-alert') }}
                                             {% endif %}
                                         </div>
                                         <div class="mt-4 space-y-2">
@@ -293,12 +353,16 @@
                                                         <div class="min-w-0">
                                                             <div class="flex flex-wrap items-center gap-2">
                                                                 <p class="truncate text-sm font-bold text-content-primary">{{ candidate.instance_name }}</p>
-                                                                {% if candidate.is_current_instance %}<span class="rounded-full bg-kaori-soft px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em] text-kaori-primary">Current</span>{% endif %}
-                                                                {% if candidate.is_selected %}<span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em] text-emerald-700">Selected</span>{% endif %}
+                                                                {% if candidate.is_current_instance %}{{ table_label.metadata_label('Current', 'server-cog') }}{% endif %}
+                                                                {% if candidate.is_selected %}{{ table_label.status_label('Selected', 'normal', 'circle-check') }}{% endif %}
                                                             </div>
                                                             <p class="mt-1 text-[11px] text-content-secondary">{{ candidate.binding_role|title }} · Priority {{ candidate.priority }} · {{ candidate.operational_state|replace('_', ' ')|title }}</p>
                                                         </div>
-                                                        <span class="rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.1em] {{ 'bg-emerald-100 text-emerald-700' if candidate.eligible else 'bg-red-100 text-red-700' }}">{{ 'Eligible' if candidate.eligible else 'Skipped' }}</span>
+                                                        {% if candidate.eligible %}
+                                                            {{ table_label.status_label('Eligible', 'normal', 'circle-check') }}
+                                                        {% else %}
+                                                            {{ table_label.status_label('Skipped', 'critical', 'circle-x') }}
+                                                        {% endif %}
                                                     </div>
                                                     <p class="mt-2 text-xs leading-5 text-content-secondary">{{ candidate.decision_reason }}</p>
                                                     {% if candidate.missing_capability_labels %}
