@@ -9,7 +9,7 @@
         <h1 class="mt-1 text-2xl font-bold text-content-primary">Prometheus Instances & Bindings</h1>
         <p class="mt-2 max-w-3xl text-sm leading-6 text-content-secondary">Manage standalone Prometheus or Thanos runtimes and map each runtime to Kubernetes assets through canonical integration bindings.</p>
       </div>
-      <a href="{{ url_for('integrations.prometheus') }}" class="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-subtle px-4 py-2.5 text-sm font-semibold text-content-secondary transition hover:border-kaori-primary/40 hover:text-kaori-primary"><i data-lucide="layout-list" class="h-4 w-4"></i>View inventory</a>
+      <div class="flex flex-wrap gap-2"><a href="{{ url_for('prometheus.new_instance') }}" class="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover"><i data-lucide="plus" class="h-4 w-4"></i>Add Prometheus</a><a href="{{ url_for('integrations.prometheus') }}" class="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-subtle px-4 py-2.5 text-sm font-semibold text-content-secondary transition hover:border-kaori-primary/40 hover:text-kaori-primary"><i data-lucide="layout-list" class="h-4 w-4"></i>View inventory</a></div>
     </div>
   </section>
 
@@ -63,7 +63,7 @@
     </div>
   </section>
   {% else %}
-  <section class="rounded-xl border border-kaori-primary/20 bg-kaori-primary-soft/35 px-6 py-10 text-center"><i data-lucide="activity" class="mx-auto h-8 w-8 text-kaori-primary"></i><h2 class="mt-3 text-base font-bold text-content-primary">No Prometheus runtime registered</h2><p class="mt-1 text-sm text-content-secondary">Create or save a Prometheus configuration from the inventory page first. The standalone runtime will then appear here for asset mapping.</p><a href="{{ url_for('integrations.prometheus') }}" class="mt-4 inline-flex items-center gap-2 rounded-lg bg-kaori-primary px-4 py-2.5 text-sm font-semibold text-white"><i data-lucide="arrow-left" class="h-4 w-4"></i>Open Prometheus inventory</a></section>
+  <section class="rounded-xl border border-kaori-primary/20 bg-kaori-primary-soft/35 px-6 py-10 text-center"><i data-lucide="activity" class="mx-auto h-8 w-8 text-kaori-primary"></i><h2 class="mt-3 text-base font-bold text-content-primary">No Prometheus runtime registered</h2><p class="mt-1 text-sm text-content-secondary">Create a standalone Prometheus runtime, then bind it to one or more Kubernetes clusters.</p><a href="{{ url_for('prometheus.new_instance') }}" class="mt-4 inline-flex items-center gap-2 rounded-lg bg-kaori-primary px-4 py-2.5 text-sm font-semibold text-white"><i data-lucide="arrow-left" class="h-4 w-4"></i>Add Prometheus</a></section>
   {% endfor %}
 </div>
 {% endblock %}

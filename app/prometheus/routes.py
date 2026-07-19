@@ -21,7 +21,7 @@ from app.notifications.service import (
     record_operational_activity,
 )
 from app.prometheus.exceptions import PrometheusError
-from app.prometheus.forms import PrometheusConfigForm
+from app.prometheus.forms import PrometheusConfigForm, PrometheusInstanceForm
 from app.prometheus.repository import (
     cluster_bindings_for_instance,
     get_instance,
@@ -30,7 +30,7 @@ from app.prometheus.repository import (
     resolve_instance_for_cluster,
 )
 from app.prometheus.runtime_adapter import runtime_adapter
-from app.prometheus.service import PrometheusService
+from app.prometheus.service import PrometheusService, save_prometheus_instance
 from app.rbac.decorators import permission_required
 
 logger = logging.getLogger(__name__)
@@ -90,6 +90,81 @@ def _cluster_for_instance_or_404(instance: PrometheusInstance) -> Cluster:
     if cluster_id is None:
         abort(409, description='Prometheus instance has no enabled Kubernetes cluster binding.')
     return _get_cluster_or_404(cluster_id)
+
+
+@prometheus_bp.route('/instances/new', methods=['GET', 'POST'])
+@permission_required('settings.manage_integrations')
+def new_instance() -> ResponseReturnValue:
+    cluster_id = request.values.get('cluster_id', '').strip()
+    initial_cluster = get_cluster_by_id(cluster_id) if cluster_id else None
+    form = PrometheusInstanceForm()
+    if request.method == 'GET':
+        form.enabled.data = True
+        form.verify_ssl.data = True
+    if form.validate_on_submit():
+        try:
+            instance = save_prometheus_instance(form, initial_cluster=initial_cluster)
+        except Exception as exc:
+            logger.exception('Prometheus instance creation failed.')
+            record_operational_activity(
+                user_id=current_user.id,
+                event_type='prometheus_instance_create_failed',
+                status='error',
+                title='Prometheus instance not created',
+                message='KAORI could not save the Prometheus instance.',
+                detail=str(exc),
+                action_url=url_for('prometheus.new_instance', cluster_id=cluster_id or None),
+                action_label='Review Prometheus form',
+                action_icon='activity',
+                metadata={'cluster_id': cluster_id or None, 'reason': type(exc).__name__},
+                queue_feedback=True,
+            )
+        else:
+            record_operational_activity(
+                user_id=current_user.id,
+                event_type='prometheus_instance_created',
+                status='success',
+                title='Prometheus instance created',
+                message=f'{instance.name} is now registered.',
+                detail='Test the connection and run full validation before Analytics uses this source.',
+                action_url=url_for('prometheus.instance_detail', instance_id=instance.id),
+                action_label='Open Prometheus runtime',
+                action_icon='activity',
+                metadata={'instance_id': instance.id, 'cluster_id': cluster_id or None},
+                queue_feedback=True,
+            )
+            return redirect(url_for('prometheus.instance_detail', instance_id=instance.id))
+    return render_template('prometheus/instance_form.html', form=form, instance=None, initial_cluster=initial_cluster)
+
+
+@prometheus_bp.route('/instances/<int:instance_id>/edit', methods=['GET', 'POST'])
+@permission_required('settings.manage_integrations')
+def edit_instance(instance_id: int) -> ResponseReturnValue:
+    instance = _instance_or_404(instance_id)
+    form = PrometheusInstanceForm(obj=instance)
+    if form.validate_on_submit():
+        try:
+            instance = save_prometheus_instance(form, instance=instance)
+        except Exception as exc:
+            logger.exception('Prometheus instance update failed for %s.', instance_id)
+            record_operational_activity(
+                user_id=current_user.id, event_type='prometheus_instance_update_failed', status='error',
+                title='Prometheus instance not updated', message=f'KAORI could not update {instance.name}.',
+                detail=str(exc), action_url=url_for('prometheus.edit_instance', instance_id=instance.id),
+                action_label='Review Prometheus form', action_icon='activity',
+                metadata={'instance_id': instance.id, 'reason': type(exc).__name__}, queue_feedback=True,
+            )
+        else:
+            record_operational_activity(
+                user_id=current_user.id, event_type='prometheus_instance_updated', status='success',
+                title='Prometheus instance updated', message=f'{instance.name} connection settings were saved.',
+                detail='Readiness returned to Validation Required.',
+                action_url=url_for('prometheus.instance_detail', instance_id=instance.id),
+                action_label='Open Prometheus runtime', action_icon='activity',
+                metadata={'instance_id': instance.id}, queue_feedback=True,
+            )
+            return redirect(url_for('prometheus.instance_detail', instance_id=instance.id))
+    return render_template('prometheus/instance_form.html', form=form, instance=instance, initial_cluster=None)
 
 
 @prometheus_bp.get('/instances')

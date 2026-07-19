@@ -17,7 +17,7 @@ from app.models import Cluster, PrometheusInstance
 from app.prometheus.client import PrometheusClient
 from app.prometheus.consumer import PrometheusConsumer
 from app.prometheus.exceptions import PrometheusError
-from app.prometheus.forms import PrometheusConfigForm
+from app.prometheus.forms import PrometheusConfigForm, PrometheusInstanceForm
 from app.prometheus.query_profiles.audit import PromQLProfileAuditor
 from app.prometheus.repository import KUBERNETES_CLUSTER_SCOPE, resolve_instance_for_cluster
 
@@ -384,3 +384,85 @@ class PrometheusService:
         db.session.commit()
         return config
 
+
+
+def save_prometheus_instance(
+    form: PrometheusInstanceForm,
+    *,
+    instance: PrometheusInstance | None = None,
+    initial_cluster: Cluster | None = None,
+) -> PrometheusInstance:
+    """Create or update a standalone Prometheus runtime and optional cluster binding."""
+    endpoint = (form.endpoint.data or '').strip()
+    if not endpoint.startswith(('http://', 'https://')):
+        raise PrometheusError('Endpoint must start with http:// or https://')
+
+    duplicate = PrometheusInstance.query.filter_by(name=(form.name.data or '').strip()).first()
+    if duplicate is not None and (instance is None or duplicate.id != instance.id):
+        raise PrometheusError('A Prometheus instance with this name already exists.')
+
+    creating = instance is None
+    if instance is None:
+        instance = PrometheusInstance(name=(form.name.data or '').strip(), endpoint=endpoint)
+        db.session.add(instance)
+
+    instance.name = (form.name.data or '').strip()
+    instance.description = (form.description.data or '').strip() or None
+    instance.endpoint = endpoint
+    instance.auth_type = form.auth_type.data or 'none'
+    instance.timeout = form.timeout.data or 5
+    instance.verify_ssl = bool(form.verify_ssl.data)
+    instance.enabled = bool(form.enabled.data)
+    instance.version_detection_mode = form.version_detection_mode.data or 'automatic'
+    instance.endpoint_product = 'thanos' if instance.version_detection_mode == 'manual' else 'prometheus'
+    instance.source_prometheus_major = (form.source_prometheus_major.data or None) if instance.version_detection_mode == 'manual' else None
+
+    if instance.auth_type == 'basic':
+        instance.username = (form.username.data or '').strip() or None
+        if form.password.data:
+            instance.password = form.password.data
+        instance.bearer_token = None
+    elif instance.auth_type == 'bearer':
+        instance.username = None
+        instance.password = None
+        if form.bearer_token.data:
+            instance.bearer_token = form.bearer_token.data
+    else:
+        instance.username = None
+        instance.password = None
+        instance.bearer_token = None
+
+    instance.detected_version = None
+    instance.compatibility_status = 'validation_required'
+    instance.compatibility_profile = None
+    instance.readiness_status = 'validation_required'
+    instance.validation_message = 'Configuration changed. Test the endpoint, then run full validation.'
+    instance.query_profile = None
+    instance.query_validation_status = 'validation_required'
+    instance.query_validation_summary = None
+    instance.retention_validation_summary = None
+    instance.capability_profile = None
+    instance.capabilities = None
+    instance.module_readiness = None
+    instance.last_status = None
+    instance.last_error = None
+    instance.last_response_time_ms = None
+    instance.last_checked_at = None
+    instance.last_validated_at = None
+
+    canonical = ensure_canonical_instance(instance, provider_type='prometheus')
+    db.session.flush()
+    ensure_canonical_instance(instance, provider_type='prometheus')
+    if initial_cluster is not None:
+        bind_instance(
+            canonical,
+            asset_type=KUBERNETES_CLUSTER_SCOPE,
+            asset_key=initial_cluster.id,
+            capability_scope=['metrics', 'capacity', 'utilization', 'storage', 'workload', 'forecast', 'top_consumers', 'alert_metrics'],
+        )
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        raise
+    return instance

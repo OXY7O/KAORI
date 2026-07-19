@@ -1,6 +1,7 @@
 from flask_wtf import FlaskForm
 from wtforms import (
     BooleanField,
+    TextAreaField,
     IntegerField,
     PasswordField,
     SelectField,
@@ -158,3 +159,17 @@ class PrometheusConfigForm(FlaskForm):
             raise ValidationError(
                 'Select the Prometheus major version used behind the intermediary endpoint.',
             )
+
+
+class PrometheusInstanceForm(PrometheusConfigForm):
+    name = StringField(
+        'Instance Name',
+        validators=[DataRequired(), Length(min=2, max=160)],
+        render_kw={'placeholder': 'Prometheus Production'},
+    )
+    description = TextAreaField(
+        'Description',
+        validators=[Optional(), Length(max=2000)],
+        render_kw={'rows': 3, 'placeholder': 'Operational purpose and ownership context'},
+    )
+    enabled = BooleanField('Enabled', default=True)

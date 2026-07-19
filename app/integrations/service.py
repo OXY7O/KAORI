@@ -127,6 +127,7 @@ def build_kubernetes_page(*, page: int = 1, per_page: int = 5) -> dict[str, Any]
             integration_instance_id=connection.integration_instance_id,
             enabled=True,
         ).count()
+        prometheus = resolve_instance_for_cluster(cluster.id)
         rows.append({
             'connection_id': connection.id,
             'integration_instance_id': connection.integration_instance_id,
@@ -138,6 +139,8 @@ def build_kubernetes_page(*, page: int = 1, per_page: int = 5) -> dict[str, Any]
             'compatibility_profile': connection.compatibility_profile or cluster.kubernetes_compatibility_profile,
             'version': cluster.kubernetes_version,
             'binding_count': binding_count,
+            'prometheus_instance_id': prometheus.id if prometheus else None,
+            'prometheus_name': prometheus.name if prometheus else None,
             'last_validated_at': present_user_datetime(
                 connection.last_validated_at or cluster.kubernetes_last_validated_at,
                 empty='Not validated',
@@ -208,27 +211,67 @@ def build_prometheus_page(
     page: int = 1,
     per_page: int = 5,
 ) -> dict[str, Any]:
-    all_rows = [row for row in build_rows() if row['key'] == 'prometheus']
-    rows = _filter_prometheus_rows(
-        all_rows,
-        compatibility=compatibility,
-        environment=environment,
-        readiness=readiness,
-    )
-    page_rows, pagination = _paginate(rows, page=page, per_page=per_page)
+    clusters_by_id = {cluster.id: cluster for cluster in Cluster.query.all()}
+    all_rows: list[dict[str, Any]] = []
+    covered_cluster_ids: set[str] = set()
+    for instance in PrometheusInstance.query.order_by(PrometheusInstance.name.asc()).all():
+        bindings = [binding for binding in instance.bindings if binding.enabled and binding.scope_type == 'kubernetes_cluster']
+        cluster_ids = [binding.scope_key for binding in bindings]
+        covered_cluster_ids.update(cluster_ids)
+        bound_clusters = [clusters_by_id[key] for key in cluster_ids if key in clusters_by_id]
+        environments = sorted({cluster.environment for cluster in bound_clusters if cluster.environment})
+        readiness_value = instance.readiness_status or 'validation_required'
+        compatibility_value = instance.compatibility_status or 'validation_required'
+        all_rows.append({
+            'instance_id': instance.id,
+            'name': instance.name,
+            'description': instance.description,
+            'endpoint': safe_endpoint(instance.endpoint),
+            'endpoint_product': instance.endpoint_product or 'prometheus',
+            'version': instance.detected_version,
+            'compatibility': compatibility_value,
+            'readiness': readiness_value,
+            'profile': instance.compatibility_profile,
+            'query_profile': instance.query_profile,
+            'capability_profile': instance.capability_profile,
+            'validated_at': present_user_datetime(instance.last_validated_at, empty='Not validated'),
+            'binding_count': len(bindings),
+            'bound_clusters': bound_clusters,
+            'cluster_ids': cluster_ids,
+            'environments': environments,
+            'configured': bool(instance.endpoint),
+            'enabled': instance.enabled,
+        })
+
+    filtered = all_rows
+    if compatibility:
+        filtered = [row for row in filtered if row['compatibility'] == compatibility]
+    if environment:
+        filtered = [row for row in filtered if environment in row['environments']]
+    if readiness:
+        filtered = [row for row in filtered if row['readiness'] == readiness]
+    page_rows, pagination = _paginate(filtered, page=page, per_page=per_page)
+    uncovered = [cluster for cluster in clusters_by_id.values() if cluster.id not in covered_cluster_ids]
     return {
         'rows': page_rows,
-        'stats': _stats(all_rows),
+        'stats': {
+            'total': len(all_rows),
+            'configured': len(all_rows),
+            'ready': sum(1 for row in all_rows if row['readiness'] == 'ready'),
+            'attention': sum(1 for row in all_rows if row['readiness'] != 'ready'),
+            'blocked': sum(1 for row in all_rows if row['readiness'] == 'blocked'),
+        },
         'pagination': pagination,
+        'uncovered_clusters': sorted(uncovered, key=lambda cluster: cluster.name.lower()),
         'selected_compatibility': compatibility,
         'selected_environment': environment,
         'selected_readiness': readiness,
-        'compatibility_options': _ordered_status_options(all_rows, 'compatibility', ['compatible', 'compatible_with_warnings', 'capability_mismatch', 'unsupported_version', 'version_unknown', 'validation_required', 'not_configured']),
+        'compatibility_options': _ordered_status_options(all_rows, 'compatibility', ['compatible', 'compatible_with_warnings', 'capability_mismatch', 'unsupported_version', 'version_unknown', 'validation_required']),
         'environment_options': [
             {'value': value, 'label': get_environment_label(value)}
-            for value in sorted({row['environment'] for row in all_rows if row['environment']}, key=lambda item: get_environment_label(item).lower())
+            for value in sorted({value for row in all_rows for value in row['environments']}, key=lambda item: get_environment_label(item).lower())
         ],
-        'readiness_options': _ordered_status_options(all_rows, 'readiness', ['ready', 'degraded', 'blocked', 'validation_required', 'not_configured']),
+        'readiness_options': _ordered_status_options(all_rows, 'readiness', ['ready', 'degraded', 'blocked', 'validation_required']),
     }
 
 

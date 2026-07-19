@@ -81,7 +81,7 @@ def prometheus() -> ResponseReturnValue:
         per_page=request.args.get('per_page', 5, type=int),
     )
     if request.headers.get('HX-Request') == 'true':
-        return render_template('integrations/prometheus/partials/_inventory_content.html', **context)
+        return render_template('integrations/prometheus/partials/_instance_inventory.html', **context)
     return render_template('integrations/prometheus.html', **context)
 
 
