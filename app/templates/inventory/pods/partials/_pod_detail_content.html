@@ -171,7 +171,7 @@
                 {% if pod.container_statuses %}
                     <div class="overflow-x-auto">
                         <table class="min-w-[980px] w-full text-left text-xs text-content-secondary">
-                            <thead class="border-b border-outline-subtle bg-surface-hover text-[10px] font-semibold uppercase tracking-[0.08em] text-kaori-primary">
+                            <thead class="border-b border-outline-subtle bg-surface-hover text-[10px] font-semibold text-kaori-primary">
                                 <tr><th class="px-4 py-2.5">Container</th><th class="px-4 py-2.5">Kind</th><th class="px-4 py-2.5">Image</th><th class="px-4 py-2.5">Ready</th><th class="px-4 py-2.5">State</th><th class="px-4 py-2.5">Restarts</th><th class="px-4 py-2.5">Started / Finished</th></tr>
                             </thead>
                             <tbody class="divide-y divide-outline-subtle">
@@ -221,7 +221,7 @@
                 {% if pod.volumes %}
                     <div class="overflow-x-auto">
                         <table class="min-w-[760px] w-full text-left text-xs text-content-secondary">
-                            <thead class="border-b border-outline-subtle bg-surface-hover text-[10px] font-semibold uppercase tracking-[0.08em] text-kaori-primary"><tr><th class="px-4 py-2.5">Volume</th><th class="px-4 py-2.5">Type</th><th class="px-4 py-2.5">Source</th><th class="px-4 py-2.5">Mounted by</th></tr></thead>
+                            <thead class="border-b border-outline-subtle bg-surface-hover text-[10px] font-semibold text-kaori-primary"><tr><th class="px-4 py-2.5">Volume</th><th class="px-4 py-2.5">Type</th><th class="px-4 py-2.5">Source</th><th class="px-4 py-2.5">Mounted by</th></tr></thead>
                             <tbody class="divide-y divide-outline-subtle">
                                 {% for volume in pod.volumes %}
                                     <tr class="hover:bg-surface-hover">
