@@ -4,9 +4,11 @@ from typing import Any
 from urllib.parse import urlsplit
 
 from app.cluster.constants import get_environment_label
+from app.extensions.db import db
 from app.common.presentation import present_user_datetime
 from app.integrations.compatibility import get_profile
 from app.models import AlertmanagerInstance, Cluster, PrometheusInstance
+from app.models.integration import IntegrationBinding, IntegrationInstance, KubernetesConnection
 from app.models.integration_runtime import IntegrationRuntimeObservation
 from app.prometheus.repository import resolve_instance_for_cluster
 
@@ -95,6 +97,7 @@ def build_integrations_overview(
         'selected_health': health,
         'selected_readiness': readiness,
         'provider_options': [
+            {'value': 'kubernetes', 'label': 'Kubernetes'},
             {'value': 'prometheus', 'label': 'Prometheus / Thanos'},
             {'value': 'alertmanager', 'label': 'Alertmanager'},
         ],
@@ -112,6 +115,44 @@ def build_integrations_overview(
         ],
     }
 
+
+
+def build_kubernetes_page(*, page: int = 1, per_page: int = 5) -> dict[str, Any]:
+    connections = KubernetesConnection.query.join(Cluster).order_by(Cluster.created_at.asc(), Cluster.id.asc()).all()
+    rows = []
+    for connection in connections:
+        cluster = connection.cluster
+        binding_count = IntegrationBinding.query.filter_by(
+            integration_instance_id=connection.integration_instance_id,
+            enabled=True,
+        ).count()
+        rows.append({
+            'connection_id': connection.id,
+            'integration_instance_id': connection.integration_instance_id,
+            'cluster_id': cluster.id,
+            'cluster_name': cluster.name,
+            'environment': get_environment_label(cluster.environment),
+            'server': connection.server or cluster.server or 'Not discovered',
+            'readiness': connection.readiness_status or cluster.kubernetes_readiness_status or 'validation_required',
+            'compatibility_profile': connection.compatibility_profile or cluster.kubernetes_compatibility_profile,
+            'version': cluster.kubernetes_version,
+            'binding_count': binding_count,
+            'last_validated_at': present_user_datetime(
+                connection.last_validated_at or cluster.kubernetes_last_validated_at,
+                empty='Not validated',
+            ),
+        })
+    page_rows, pagination = _paginate(rows, page=page, per_page=per_page)
+    return {
+        'rows': page_rows,
+        'pagination': pagination,
+        'stats': {
+            'total': len(rows),
+            'ready': sum(1 for row in rows if row['readiness'] == 'ready'),
+            'attention': sum(1 for row in rows if row['readiness'] != 'ready'),
+            'bindings': sum(row['binding_count'] for row in rows),
+        },
+    }
 
 def build_prometheus_page(
     *,
@@ -192,7 +233,17 @@ def _coverage(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
 def _catalog(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     configured_prometheus = sum(1 for row in rows if row['key'] == 'prometheus' and row['configured'])
     configured_alertmanager = AlertmanagerInstance.query.filter(AlertmanagerInstance.endpoint != '').count()
+    configured_kubernetes = KubernetesConnection.query.count()
     return [
+        {
+            'key': 'kubernetes',
+            'name': 'Kubernetes',
+            'category': 'Compute & Infrastructure',
+            'icon': 'boxes',
+            'availability': 'available',
+            'configured': configured_kubernetes,
+            'description': 'Canonical Kubernetes API connections, asset identity, discovery, readiness, and operational access.',
+        },
         {
             'key': 'prometheus',
             'name': 'Prometheus',
@@ -336,6 +387,33 @@ def _runtime_overview_rows() -> list[dict[str, Any]]:
         latest.setdefault((observation.provider, observation.instance_id), observation)
 
     rows: list[dict[str, Any]] = []
+    for connection in KubernetesConnection.query.join(Cluster).order_by(Cluster.created_at.asc(), Cluster.id.asc()).all():
+        cluster = connection.cluster
+        canonical = db.session.get(IntegrationInstance, connection.integration_instance_id)
+        observation = latest.get(('kubernetes', str(connection.id)))
+        observed_at = observation.observed_at if observation else (connection.last_validated_at or cluster.kubernetes_last_validated_at)
+        rows.append({
+            'provider': 'kubernetes',
+            'provider_label': 'Kubernetes',
+            'instance_id': str(connection.id),
+            'instance_name': canonical.name if canonical else f'{cluster.name} Kubernetes API',
+            'scope_label': cluster.name,
+            'endpoint_product': 'Kubernetes API',
+            'health_status': observation.health_status if observation else ('healthy' if cluster.status == 'connected' else 'not_observed'),
+            'health_score': observation.health_score if observation else None,
+            'readiness': connection.readiness_status or cluster.kubernetes_readiness_status or 'validation_required',
+            'observed_at': observed_at,
+            'observed_at_display': present_user_datetime(observed_at, empty='Not observed'),
+            'latency_ms': observation.latency_ms if observation else None,
+            'latency_display': f'{observation.latency_ms} ms' if observation and observation.latency_ms is not None else None,
+            'capability_profile': connection.compatibility_profile or cluster.kubernetes_compatibility_profile,
+            'capability_attention': 0 if (connection.readiness_status or cluster.kubernetes_readiness_status) == 'ready' else 1,
+            'capability_attention_display': 'Ready' if (connection.readiness_status or cluster.kubernetes_readiness_status) == 'ready' else 'Validation needs attention',
+            'message': (observation.message if observation else None) or connection.validation_message or cluster.kubernetes_validation_message,
+            'detail_endpoint': 'cluster.edit_cluster',
+            'detail_kwargs': {'cluster_id': cluster.id},
+        })
+
     for instance in PrometheusInstance.query.order_by(PrometheusInstance.name.asc()).all():
         observation = latest.get(('prometheus', str(instance.id)))
         assessments = ((instance.capabilities or {}).get('assessments') or [])

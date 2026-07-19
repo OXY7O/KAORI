@@ -98,3 +98,56 @@ def reconcile_integration_legacy(apply_changes: bool, yes: bool, json_output: bo
     else:
         click.echo('')
         click.echo('Reconciliation applied successfully.')
+
+
+@click.command(
+    'factory-reset-integrations',
+    short_help='Delete all integration runtime data and rebuild Kubernetes integrations.',
+    help=(
+        'Preserve Kubernetes cluster assets, delete Prometheus, Alertmanager, runtime history, canonical and '        'legacy integration records, then recreate one canonical KubernetesConnection and binding per cluster. '        'The command defaults to dry-run.'
+    ),
+)
+@click.option('--apply', 'apply_changes', is_flag=True, help='Apply the cleanup transaction.')
+@click.option('--yes', is_flag=True, help='Skip the destructive confirmation prompt.')
+@click.option('--json-output', is_flag=True, help='Print the cleanup report as JSON.')
+@with_appcontext
+def factory_reset_integrations(apply_changes: bool, yes: bool, json_output: bool) -> None:
+    from app.integrations.factory_cleanup import build_factory_cleanup_report
+
+    preview = build_factory_cleanup_report(apply=False)
+    if json_output and not apply_changes:
+        click.echo(json.dumps(preview.as_dict(), indent=2, sort_keys=True, default=str))
+        return
+
+    click.echo('KAORI integration factory cleanup')
+    click.echo(f'Can apply safely: {"YES" if preview.can_apply else "NO"}')
+    click.echo(f'Preserved Kubernetes clusters: {len(preview.preserved_cluster_ids)}')
+    click.echo('')
+    for action in preview.actions:
+        click.echo(f'[PLAN] {action.key}: {action.count}')
+        click.echo(f'  - {action.detail}')
+    for blocker in preview.blockers:
+        click.echo(f'[BLOCKER] {blocker}')
+
+    if not apply_changes:
+        click.echo('')
+        click.echo('Dry-run only. Re-run with --apply after reviewing the plan.')
+        return
+    if not preview.can_apply:
+        raise click.ClickException('Factory cleanup cannot be applied while blockers remain.')
+    if not yes:
+        click.confirm(
+            'Delete all Prometheus and Alertmanager integrations and rebuild Kubernetes integration records?',
+            abort=True,
+        )
+
+    result = build_factory_cleanup_report(apply=True)
+    if not result.applied:
+        raise click.ClickException('Factory cleanup was not applied.')
+    if json_output:
+        click.echo(json.dumps(result.as_dict(), indent=2, sort_keys=True, default=str))
+    else:
+        click.echo('')
+        click.echo('Integration factory cleanup completed successfully.')
+        click.echo(f'Recreated Kubernetes connections: {len(result.recreated_kubernetes_connection_ids)}')
+        click.echo('Prometheus and Alertmanager are now empty and ready to be registered again.')

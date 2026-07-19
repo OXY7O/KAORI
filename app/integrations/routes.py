@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request
 from flask.typing import ResponseReturnValue
 
-from app.integrations.service import build_alertmanager_page, build_integrations_overview, build_prometheus_page
+from app.integrations.service import build_alertmanager_page, build_integrations_overview, build_kubernetes_page, build_prometheus_page
 from app.rbac.decorators import permission_required
 
 integrations_bp = Blueprint('integrations', __name__, url_prefix='/integrations')
@@ -19,6 +19,16 @@ def overview() -> ResponseReturnValue:
     if request.headers.get('HX-Request') == 'true':
         return render_template('integrations/partials/_runtime_overview.html', **context)
     return render_template('integrations/overview.html', **context)
+
+
+@integrations_bp.get('/kubernetes')
+@permission_required('settings.manage_integrations')
+def kubernetes() -> ResponseReturnValue:
+    context = build_kubernetes_page(
+        page=request.args.get('page', 1, type=int) or 1,
+        per_page=request.args.get('per_page', 5, type=int) or 5,
+    )
+    return render_template('integrations/kubernetes.html', **context)
 
 
 @integrations_bp.get('/prometheus')
