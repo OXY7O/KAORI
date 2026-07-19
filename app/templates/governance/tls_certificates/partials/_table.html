@@ -324,9 +324,7 @@
                     Previous
                 </span>
             {% endif %}
-            <span class="inline-flex h-10 items-center rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-primary">
-                Page {{ payload.pagination.page }} / {{ payload.pagination.total_pages }}
-            </span>
+            {{ pagination_ui.numeric_pages(payload.pagination.page, payload.pagination.total_pages) }}
             {% if payload.pagination.has_next %}
                 {% set next_url = url_for('governance.tls_certificates', cluster_id=payload.filters.cluster_id, namespace=payload.filters.namespace, status=payload.filters.status, search=payload.filters.search, per_page=payload.pagination.per_page, page=payload.pagination.next_page, partial_mode='table') %}
                 <a href="{{ next_url }}"

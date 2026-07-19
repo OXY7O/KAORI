@@ -126,3 +126,39 @@ Previous and Next are navigation controls. They must never use solid Primary Vio
 ## Enforcement
 
 Creating local Previous/Next style strings in a new template is not permitted. Extend the shared pagination component when a reusable capability is missing. Route parameters and HTMX state remain owned by the calling template.
+
+## Numeric pagination contract
+
+Numeric pagination is mandatory for standard operational tables. Legacy indicators such as `Page 2 of 8`, `2 / 8`, or a single current-page badge are not permitted after migration.
+
+The control order is:
+
+```text
+[Previous] [1] [2] [3] [4] [5] [Next]
+```
+
+Rules:
+
+- Show at most five numeric page buttons at one time.
+- Preserve the first and last page when the active window is in the middle of a long result set.
+- Use a non-interactive ellipsis (`…`) where page ranges are omitted.
+- The current page uses Primary Soft, Strong Violet text, a Violet border, and `aria-current="page"`.
+- Other numeric pages use the neutral pagination control style and Violet-soft hover treatment.
+- Numeric pages are navigation controls and must never use solid Primary Violet.
+- Desktop uses numeric buttons. Narrow layouts may collapse to Previous, current page, and Next when required to avoid horizontal overflow.
+
+Window examples:
+
+```text
+Page 1 of 20:  [1] [2] [3] [4] … [20]
+Page 10 of 20: [1] … [9] [10] [11] … [20]
+Page 20 of 20: [1] … [17] [18] [19] [20]
+```
+
+The shared macro is authoritative:
+
+```jinja
+{{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages) }}
+```
+
+The global pagination script derives numeric-page destinations from the existing Previous or Next control. This preserves each template's existing endpoint, query parameters, HTMX target, swap mode, loading indicator, and filter state without duplicating route construction.

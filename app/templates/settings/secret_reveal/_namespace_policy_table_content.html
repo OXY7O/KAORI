@@ -147,7 +147,7 @@
         {% else %}
             <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
         {% endif %}
-        <span class="inline-flex items-center rounded-lg border border-brand-outline bg-kaori-soft/70 px-3 py-2 text-sm font-semibold text-kaori-primary">Page {{ namespace_pagination.page }} / {{ namespace_pagination.total_pages }}</span>
+        {{ pagination_ui.numeric_pages(namespace_pagination.page, namespace_pagination.total_pages) }}
         {% if namespace_pagination.has_next %}
             {% set next_url = url_for('settings.secret_reveal.index', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.next_page, per_page=namespace_pagination.per_page) %}
             <a href="{{ next_url }}"

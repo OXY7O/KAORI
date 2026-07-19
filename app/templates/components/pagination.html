@@ -9,3 +9,9 @@ inline-flex min-h-9 min-w-9 items-center justify-center rounded-md border border
 {% macro page_size_classes() -%}
 min-h-9 cursor-pointer rounded-md border border-outline-strong bg-surface-card px-3 py-2 text-xs font-semibold text-content-secondary transition-colors outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-accent/40
 {%- endmacro %}
+
+{% macro numeric_pages(current_page, total_pages) -%}
+<span class="inline-flex items-center gap-1" data-kaori-numeric-pagination data-current-page="{{ current_page }}" data-total-pages="{{ total_pages }}" aria-label="Pagination pages">
+    <span class="{{ current_page_classes() }}" aria-current="page">{{ current_page }}</span>
+</span>
+{%- endmacro %}

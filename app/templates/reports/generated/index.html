@@ -516,7 +516,7 @@
                                 Previous
                             </button>
                         {% endif %}
-                        <span class="rounded-xl bg-kaori-soft px-3 py-2 text-sm font-semibold text-kaori-primary bg-kaori-soft dark:text-kaori-primary">Page {{ payload.pagination.page }} of {{ payload.pagination.total_pages }}</span>
+                        {{ pagination_ui.numeric_pages(payload.pagination.page, payload.pagination.total_pages) }}
                         {% if payload.pagination.has_next %}
                             <a href="{{ next_url }}"
                                hx-get="{{ next_url }}"

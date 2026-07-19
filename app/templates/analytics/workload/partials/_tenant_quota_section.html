@@ -344,9 +344,7 @@
 
  Previous
  </a>
- <span class="rounded-xl border border-outline-default px-3 py-2 text-sm font-semibold text-content-secondary ">
- Page {{ quota_pagination.page }} of {{ quota_pagination.total_pages }}
- </span>
+ {{ pagination_ui.numeric_pages(quota_pagination.page, quota_pagination.total_pages) }}
  <a href="{{ quota_next_url }}"
  hx-get="{{ quota_next_url }}"
  hx-target="#tenant-quota-analysis"

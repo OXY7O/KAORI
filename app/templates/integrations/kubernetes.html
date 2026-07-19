@@ -109,7 +109,7 @@
       <div class="flex items-center gap-3 text-xs text-content-muted"><span>Showing {{ pagination.start_item }}–{{ pagination.end_item }} of {{ pagination.total_items }} connections</span><select class="{{ pagination_ui.page_size_classes() }}" onchange="window.location.href='{{ url_for('integrations.kubernetes') }}?page=1&per_page='+this.value">{% for size in [5,10,25,50] %}<option value="{{ size }}" {% if pagination.per_page == size %}selected{% endif %}>{{ size }}</option>{% endfor %}</select></div>
       <div class="flex items-center gap-2"><a class="{{ pagination_ui.navigation_classes(disabled=true) }}" href="{{ url_for('integrations.kubernetes', page=pagination.prev_page, per_page=pagination.per_page) }}">
 <i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>
-Previous</a><span class="rounded-lg bg-kaori-soft px-3 py-2 text-xs font-semibold text-kaori-primary">Page {{ pagination.page }} / {{ pagination.total_pages }}</span><a class="{{ pagination_ui.navigation_classes(disabled=true) }}" href="{{ url_for('integrations.kubernetes', page=pagination.next_page, per_page=pagination.per_page) }}">Next
+Previous</a>{{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages) }}<a class="{{ pagination_ui.navigation_classes(disabled=true) }}" href="{{ url_for('integrations.kubernetes', page=pagination.next_page, per_page=pagination.per_page) }}">Next
 <i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i>
 </a></div>
     </footer>

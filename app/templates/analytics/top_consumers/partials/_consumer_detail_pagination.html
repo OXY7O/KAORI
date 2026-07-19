@@ -66,9 +66,7 @@
  Previous
  </span>
  {% endif %}
- <span class="inline-flex min-w-[74px] items-center justify-center rounded-xl bg-surface-hover px-4 py-2 text-sm font-bold text-content-secondary ">
- {{ current_page }} / {{ total_pages }}
- </span>
+ {{ pagination_ui.numeric_pages(current_page, total_pages) }}
  {% if has_next and next_page <= total_pages %}
  {% set next_page_url = url_for('analytics.top_consumers', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, resource=selected_resource, time_range=selected_time_range, search=selected_search, sort=selected_sort, focus=selected_focus, page=next_page, per_page=per_page) %}
  {% set next_table_url = url_for('analytics.top_consumers_table', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, resource=selected_resource, time_range=selected_time_range, search=selected_search, sort=selected_sort, focus=selected_focus, page=next_page, per_page=per_page) %}

@@ -44,9 +44,7 @@
  Previous
  </span>
  {% endif %}
- <span class="inline-flex items-center rounded-xl bg-kaori-soft px-3 py-2 text-xs font-semibold text-kaori-primary bg-kaori-soft ">
- {{ pagination.page }} / {{ pagination.total_pages }}
- </span>
+ {{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages) }}
  {% if pagination.has_next %}
  <a href="{{ url_for('analytics.alerts', page=pagination.next_page, cluster_id=selected_cluster_id, source=selected_source, severity=selected_severity, status=selected_status, namespace=selected_namespace, search=selected_search, alerts_per_page=(pagination.per_page if page_size_name == 'alerts_per_page' else sibling_page_size_value) , anomalies_per_page=(pagination.per_page if page_size_name == 'anomalies_per_page' else sibling_page_size_value)) }}"
  hx-get="{{ url_for(endpoint_name, page=pagination.next_page, cluster_id=selected_cluster_id, source=selected_source, severity=selected_severity, status=selected_status, namespace=selected_namespace, search=selected_search, alerts_per_page=(pagination.per_page if page_size_name == 'alerts_per_page' else sibling_page_size_value) , anomalies_per_page=(pagination.per_page if page_size_name == 'anomalies_per_page' else sibling_page_size_value)) }}"

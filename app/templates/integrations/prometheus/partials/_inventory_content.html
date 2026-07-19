@@ -78,7 +78,7 @@
         {% else %}
             <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"><i data-lucide="chevron-left" class="h-3.5 w-3.5"></i>Previous</span>
         {% endif %}
-        <span class="inline-flex h-9 items-center rounded-lg bg-kaori-soft px-3 text-xs font-semibold text-kaori-primary-dark">Page {{ pagination.page }} / {{ pagination.total_pages }}</span>
+        {{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages) }}
         {% if pagination.has_next %}
             {% set next_url = url_for('integrations.prometheus', page=pagination.next_page, **base_args) %}
             <a href="{{ next_url }}" hx-get="{{ next_url }}" hx-target="#prometheus-inventory-content" hx-swap="innerHTML" hx-indicator="#prometheus-inventory-loading" class="{{ pagination_ui.navigation_classes(disabled=false) }}">Next<i data-lucide="chevron-right" class="h-3.5 w-3.5"></i></a>

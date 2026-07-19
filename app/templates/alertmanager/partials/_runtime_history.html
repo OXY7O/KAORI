@@ -129,7 +129,7 @@
                         class="{{ pagination_ui.navigation_classes(disabled=true) }}">
                     <i data-lucide="chevron-left" class="h-4 w-4"></i>Previous
                 </button>
-                <span class="inline-flex h-9 items-center rounded-lg border border-outline-default bg-surface-card px-3 font-semibold text-content-primary">Page {{ runtime_history.pagination.page }} / {{ runtime_history.pagination.total_pages }}</span>
+                {{ pagination_ui.numeric_pages(runtime_history.pagination.page, runtime_history.pagination.total_pages) }}
                 <button type="button"
                         {% if runtime_history.pagination.has_next %}hx-get="{{ url_for('alertmanager.runtime_history', instance_id=instance.id, page=runtime_history.pagination.next_page, per_page=runtime_history.pagination.per_page) }}"{% else %}disabled{% endif %}
                         hx-target="#alertmanager-runtime-history"

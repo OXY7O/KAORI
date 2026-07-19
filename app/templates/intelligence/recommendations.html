@@ -500,7 +500,7 @@
  <i data-lucide="chevron-left" class="h-4 w-4"></i>
  Prev
  </a>
- <span class="rounded-xl bg-kaori-soft px-3 py-2 text-sm font-bold text-content-secondary ">{{ payload.pagination.page }} / {{ payload.pagination.total_pages }}</span>
+ {{ pagination_ui.numeric_pages(payload.pagination.page, payload.pagination.total_pages) }}
  <a href="{{ url_for(endpoint_name, page=payload.pagination.next_page, per_page=payload.pagination.per_page, domain=payload.filters.domain, category=payload.filters.category, severity=payload.filters.severity, status=payload.filters.status, source_kind=payload.filters.source_kind, logic_type=payload.filters.logic_type, signal_source=payload.filters.signal_source, q=payload.filters.q) }}"
  hx-get="{{ url_for(endpoint_name, page=payload.pagination.next_page, per_page=payload.pagination.per_page, domain=payload.filters.domain, category=payload.filters.category, severity=payload.filters.severity, status=payload.filters.status, source_kind=payload.filters.source_kind, logic_type=payload.filters.logic_type, signal_source=payload.filters.signal_source, q=payload.filters.q) }}"
  hx-target="#recommendation-catalog"

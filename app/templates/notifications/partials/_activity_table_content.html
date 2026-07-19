@@ -375,9 +375,7 @@
                 Previous
             </span>
         {% endif %}
-        <span class="inline-flex items-center rounded-xl border border-outline-default bg-surface-card px-3 py-2 text-sm font-semibold text-content-secondary dark:border-outline-default dark:bg-surface-card dark:text-slate-200">
-            Page {{ pagination.page }} / {{ pagination.total_pages }}
-        </span>
+        {{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages) }}
         {% set next_url = url_for('notifications.activity_log', page=pagination.next_page, per_page=pagination.per_page, user_id=filters.user_id, status=filters.status, event_type=filters.event_type, read_state=filters.read_state, search=filters.search) %}
         {% if pagination.has_next %}
             <a href="{{ next_url }}"

@@ -134,7 +134,7 @@
             </span>
         {% endif %}
 
-        <span class="inline-flex h-9 items-center rounded-lg border border-outline-default bg-surface-card px-3 font-semibold text-content-primary">Page {{ pagination.page }} / {{ pagination.total_pages }}</span>
+        {{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages) }}
 
         {% if pagination.has_next %}
             {% set next_url = url_for('integrations.alertmanager', q=selected_query, readiness=selected_readiness, deployment_type=selected_deployment_type, page=pagination.next_page, per_page=pagination.per_page) %}

@@ -426,9 +426,7 @@
 
  Previous
  </a>
- <span class="rounded-xl border border-outline-default px-3 py-2 text-sm font-semibold text-content-secondary ">
- Page {{ workload_pagination.page }} of {{ workload_pagination.total_pages }}
- </span>
+ {{ pagination_ui.numeric_pages(workload_pagination.page, workload_pagination.total_pages) }}
  <a href="{{ workload_next_url }}"
  hx-get="{{ workload_next_url }}"
  hx-target="#workload-resource-mapping"

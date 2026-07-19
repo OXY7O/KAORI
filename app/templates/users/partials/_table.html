@@ -226,7 +226,7 @@
                 <i data-lucide="chevron-left" class="h-4 w-4"></i>
                 Previous
             </a>
-            <span class="inline-flex h-9 items-center rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-extrabold text-kaori-primary ">Page {{ pagination.page }} of {{ pagination.total_pages }}</span>
+            {{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages) }}
             <a href="{{ url_for('users.index', page=pagination.next_page, per_page=filters.per_page, search=filters.search, status=filters.status, auth_source=filters.auth_source, role_id=filters.role_id or 'all') }}"
                hx-get="{{ url_for('users.index', page=pagination.next_page, per_page=filters.per_page, search=filters.search, status=filters.status, auth_source=filters.auth_source, role_id=filters.role_id or 'all') }}"
                hx-target="#users-page-content"

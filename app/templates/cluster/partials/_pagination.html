@@ -54,9 +54,7 @@
             </span>
         {% endif %}
 
-        <span class="inline-flex h-9 items-center rounded-md border border-outline-default bg-kaori-soft px-3 text-xs font-semibold text-kaori-primary">
-            Page {{ pagination.page }} of {{ pagination.total_pages }}
-        </span>
+        {{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages) }}
 
         {% if pagination.has_next %}
             <a href="{{ url_for('cluster.list_clusters', page=pagination.next_page, per_page=pagination.per_page, search=selected_search, environment=selected_environment) }}"
