@@ -7,7 +7,7 @@
   {% set rows = history.rows if history is defined else runtime_history %}
   <div class="overflow-x-auto">
     <table class="min-w-full divide-y divide-outline-subtle text-left text-sm">
-      <thead class="bg-surface-muted/70 text-xs tracking-wide text-content-muted"><tr><th class="px-5 py-3">Observed</th><th class="px-5 py-3">Health</th><th class="px-5 py-3">Score</th><th class="px-5 py-3">Evidence</th></tr></thead>
+      <thead class="bg-surface-muted/70 text-xs text-content-muted"><tr><th class="px-5 py-3">Observed</th><th class="px-5 py-3">Health</th><th class="px-5 py-3">Score</th><th class="px-5 py-3">Evidence</th></tr></thead>
       <tbody class="divide-y divide-outline-subtle">
         {% for row in rows %}<tr class="align-top"><td class="px-5 py-4 font-medium text-content-primary">{{ row.observed_at_display if row.observed_at_display is defined else row.observed_at }}</td><td class="px-5 py-4">{{ status_badge(row.health_status) }}</td><td class="px-5 py-4 text-content-secondary">{{ row.health_score_display if row.health_score_display is defined else row.health_score ~ '/100' }}</td><td class="px-5 py-4 text-content-secondary">{{ row.message or 'Runtime observation recorded.' }}</td></tr>{% else %}<tr><td colspan="4" class="px-5 py-10 text-center text-content-muted">No runtime observations recorded yet.</td></tr>{% endfor %}
       </tbody>

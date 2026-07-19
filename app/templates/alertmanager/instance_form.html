@@ -277,7 +277,7 @@
 
                     <footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                         <p class="max-w-xl text-xs leading-5 text-content-muted">
-                            {% if instance %}Saving configuration resets readiness to Validation Required. Run Full Validation afterward.{% else %}Complete the form and run Test Connection. Register Instance becomes available only after the submitted values pass reachability verification.{% endif %}
+                            {% if instance %}Saving configuration resets readiness to Validation Required. Run Validation afterward.{% else %}Complete the form and run Test Connection. Register Instance becomes available only after the submitted values pass reachability verification.{% endif %}
                         </p>
                         <div class="flex flex-col gap-2 sm:flex-row sm:justify-end">
                             {% if not instance %}
@@ -405,7 +405,7 @@
                     <div class="overflow-hidden rounded-xl border border-outline-subtle">
                         <div class="overflow-x-auto">
                             <table class="min-w-full text-left text-sm">
-                                <thead class="bg-surface-hover text-[10px] font-bold text-content-tertiary">
+                                <thead class="bg-surface-hover text-xs font-semibold text-content-tertiary">
                                     <tr><th class="px-4 py-3">Capability</th><th class="px-4 py-3">Category</th><th class="px-4 py-3">Required</th><th class="px-4 py-3">Status</th></tr>
                                 </thead>
                                 <tbody class="divide-y divide-outline-subtle">
@@ -533,7 +533,7 @@
                     <div class="overflow-hidden rounded-xl border border-outline-subtle">
                         <div class="overflow-x-auto">
                             <table class="min-w-full text-left text-sm">
-                                <thead class="bg-surface-hover text-[10px] font-bold text-content-tertiary">
+                                <thead class="bg-surface-hover text-xs font-semibold text-content-tertiary">
                                     <tr>
                                         <th class="px-4 py-3">Scope</th>
                                         <th class="px-4 py-3">Role</th>

@@ -260,13 +260,13 @@
                                         {% elif can_manage_roles %}
                                             <a href="{{ url_for('settings.edit_role', role_id=role.id) }}"
                                                class="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-kaori-primary px-3 py-2 text-sm font-semibold text-white transition hover:bg-kaori-primary/90">
-                                                <i data-lucide="pencil" class="h-4 w-4"></i>Edit custom role
+                                                <i data-lucide="pencil" class="h-4 w-4"></i>Edit Role
                                             </a>
                                             <button type="button"
                                                     @click="deleteOpen = true"
                                                     {% if delete_blocked %}disabled{% endif %}
                                                     class="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition {{ 'cursor-not-allowed border-outline-default bg-surface-subtle text-content-disabled' if delete_blocked else 'border-status-critical-border bg-status-critical-soft text-status-critical-text hover:bg-status-critical-soft/80' }} cursor-pointer disabled:cursor-not-allowed">
-                                                <i data-lucide="trash-2" class="h-4 w-4"></i>Delete custom role
+                                                <i data-lucide="trash-2" class="h-4 w-4"></i>Delete Role
                                             </button>
                                             {% if delete_blocked %}
                                                 <p class="text-xs leading-5 text-content-muted">
@@ -422,7 +422,7 @@
                     </div>
                     <a href="{{ url_for('settings.permission_catalog') }}"
                        class="mt-4 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-white/30 bg-surface-card px-3 py-2 text-sm font-semibold text-kaori-primary hover:bg-kaori-soft">
-                        Open Permission Catalog<i data-lucide="arrow-right" class="h-4 w-4"></i>
+                        Permission Catalog<i data-lucide="arrow-right" class="h-4 w-4"></i>
                     </a>
                 </section>
             </aside>

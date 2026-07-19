@@ -4,7 +4,7 @@
 {% if rows %}
 <div class="overflow-x-auto">
     <table class="min-w-[1080px] w-full text-left text-sm">
-        <thead class="border-b border-outline-subtle bg-surface-hover text-[10px] font-semibold text-content-muted">
+        <thead class="border-b border-outline-subtle bg-surface-hover text-xs font-semibold text-content-muted">
             <tr>
                 <th class="px-5 py-3.5 sm:px-6">Connection</th>
                 <th class="px-4 py-3.5">Endpoint</th>
@@ -38,7 +38,7 @@
                     </td>
                     <td class="px-4 py-4 align-top">
                         {{ status_badge(row.compatibility) }}
-                        <p class="mt-2 max-w-[210px] text-xs leading-5 text-content-muted">{{ row.profile or 'Run Full Validation to establish compatibility.' }}</p>
+                        <p class="mt-2 max-w-[210px] text-xs leading-5 text-content-muted">{{ row.profile or 'Run Validation to establish compatibility.' }}</p>
                     </td>
                     <td class="px-4 py-4 align-top">{{ status_badge(row.readiness) }}</td>
                     <td class="px-4 py-4 align-top">

@@ -6,7 +6,7 @@
   </div>
   <div class="overflow-x-auto">
     <table class="min-w-full text-left text-sm">
-      <thead class="bg-slate-50 text-xs tracking-wide text-slate-500 dark:bg-slate-900">
+      <thead class="bg-slate-50 text-xs text-slate-500 dark:bg-slate-900">
         <tr><th class="px-5 py-4">Integration</th><th class="px-5 py-4">Cluster</th><th class="px-5 py-4">Endpoint</th><th class="px-5 py-4">Runtime version</th><th class="px-5 py-4">Compatibility</th><th class="px-5 py-4">Readiness</th><th class="px-5 py-4">Profile</th><th class="px-5 py-4 text-right">Details</th></tr>
       </thead>
       <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
@@ -19,7 +19,7 @@
           <td class="px-5 py-4">{{ status_badge(row.compatibility) }}</td>
           <td class="px-5 py-4">{{ status_badge(row.readiness) }}</td>
           <td class="px-5 py-4 text-xs text-slate-500">{{ row.profile or '—' }}</td>
-          <td class="px-5 py-4 text-right"><a class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-blue-600 hover:bg-blue-50 dark:border-slate-600 dark:text-blue-300 dark:hover:bg-blue-950/30" href="{{ url_for('prometheus.configuration', cluster_id=row.cluster.id) if row.key == 'prometheus' else url_for('alertmanager.cluster_alertmanager_config', cluster_id=row.cluster.id) }}"><i data-lucide="settings-2" class="h-3.5 w-3.5"></i>{{ 'Configure' if not row.configured else 'View details' }}</a></td>
+          <td class="px-5 py-4 text-right"><a class="inline-flex min-h-8 cursor-pointer items-center gap-1.5 rounded-md border border-outline-default bg-surface-card px-2.5 text-xs font-medium text-content-secondary transition-colors hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-1" href="{{ url_for('prometheus.configuration', cluster_id=row.cluster.id) if row.key == 'prometheus' else url_for('alertmanager.cluster_alertmanager_config', cluster_id=row.cluster.id) }}"><i data-lucide="settings-2" class="h-3.5 w-3.5"></i>{{ 'Configure' if not row.configured else 'View Details' }}</a></td>
         </tr>
       {% else %}
         <tr><td colspan="8" class="px-5 py-16 text-center text-slate-500">No integration targets are available.</td></tr>

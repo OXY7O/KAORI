@@ -107,7 +107,7 @@ archive_search=retention.archive_filters.search) %}
                         <button type="button"
                                 @click="cleanupModal = true"
                                 class="inline-flex min-h-10 items-center gap-2 rounded-lg bg-kaori-primary px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-kaori-primary/90 cursor-pointer disabled:cursor-not-allowed">
-                            <i data-lucide="database" class="h-4 w-4"></i>Archive &amp; cleanup
+                            <i data-lucide="database" class="h-4 w-4"></i>Archive Data
                         </button>
                     {% endif %}
                 {% endif %}
@@ -407,7 +407,7 @@ archive_search=retention.archive_filters.search) %}
             {% endfor %}
             <div class="mt-4 overflow-x-auto rounded-xl border border-outline-default dark:border-outline-default">
                 <table class="min-w-full divide-y divide-slate-200 text-left text-xs dark:divide-slate-700">
-                    <thead class="bg-surface-subtle text-[10px] font-semibold tracking-wide text-content-muted dark:bg-surface-card/50 dark:text-content-muted">
+                    <thead class="bg-surface-subtle text-xs font-semibold text-content-muted dark:bg-surface-card/50 dark:text-content-muted">
                         <tr>
                             <th class="px-4 py-3">Archive</th>
                             <th class="px-4 py-3">Archive range</th>
@@ -632,7 +632,7 @@ archive_search=retention.archive_filters.search) %}
                             hx-disabled-elt="this"
                             class="inline-flex items-center justify-center gap-2 rounded-xl bg-kaori-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70 cursor-pointer disabled:cursor-not-allowed">
                         <i data-lucide="database" class="h-4 w-4"></i>
-                        Archive &amp; cleanup
+                        Archive Data
                     </button>
                 </form>
             </div>

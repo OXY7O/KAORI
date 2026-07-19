@@ -46,7 +46,7 @@ def test_table_headers_do_not_force_uppercase_or_expanded_tracking():
     violations = []
     for path, text in table_templates():
         for tag in re.findall(r"<thead\b[^>]*>", text, flags=re.IGNORECASE):
-            if re.search(r"\buppercase\b|tracking-\[", tag):
+            if re.search(r"\buppercase\b|\btracking-", tag):
                 violations.append(str(path.relative_to(ROOT)))
     assert not violations, f"Legacy table header typography remains: {violations}"
 
@@ -84,7 +84,38 @@ def test_table_audit_report_exists_and_records_scope():
     text = AUDIT_DOC.read_text(encoding="utf-8")
     assert "53 template files" in text
     assert "57 table elements" in text
-    assert "31 table templates" in text
+    assert "28 direct arbitrary table typography declarations" in text
+    assert "19 table headers" in text
+
+
+
+def test_table_headers_use_approved_size_and_semantic_color():
+    violations = []
+    for path, text in table_templates():
+        for tag in re.findall(r"<thead\b[^>]*>", text, flags=re.IGNORECASE):
+            if re.search(r"text-\[(?:10|11)px\]", tag) or "text-kaori-primary" in tag:
+                violations.append(str(path.relative_to(ROOT)))
+    assert not violations, f"Legacy table header size or color remains: {violations}"
+
+
+def test_known_visible_table_action_labels_are_compact():
+    forbidden = (
+        "View Catalog Rule",
+        "Open Scope Workspace",
+        "Run Full Validation",
+        "View Full Audit",
+        "View all reports",
+        "Archive &amp; cleanup",
+        "Open Full Record",
+        "Edit custom role",
+        "Delete custom role",
+    )
+    violations = []
+    for path, text in table_templates():
+        for label in forbidden:
+            if label in text:
+                violations.append(f"{path.relative_to(ROOT)}: {label}")
+    assert not violations, f"Long table action labels remain: {violations}"
 
 
 def test_title_cell_scales_icon_for_two_line_content():

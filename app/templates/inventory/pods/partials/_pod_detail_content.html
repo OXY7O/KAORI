@@ -171,7 +171,7 @@
                 {% if pod.container_statuses %}
                     <div class="overflow-x-auto">
                         <table class="min-w-[980px] w-full text-left text-xs text-content-secondary">
-                            <thead class="border-b border-outline-subtle bg-surface-hover text-[10px] font-semibold text-kaori-primary">
+                            <thead class="border-b border-outline-subtle bg-surface-hover text-xs font-semibold text-content-muted">
                                 <tr><th class="px-4 py-2.5">Container</th><th class="px-4 py-2.5">Kind</th><th class="px-4 py-2.5">Image</th><th class="px-4 py-2.5">Ready</th><th class="px-4 py-2.5">State</th><th class="px-4 py-2.5">Restarts</th><th class="px-4 py-2.5">Started / Finished</th></tr>
                             </thead>
                             <tbody class="divide-y divide-outline-subtle">
@@ -194,7 +194,7 @@
                                             {% if container.exit_code is not none %}<p class="mt-1 text-[10px] text-content-muted">Exit code {{ container.exit_code }}</p>{% endif %}
                                         </td>
                                         <td class="px-4 py-3 font-semibold tabular-nums {{ 'text-status-warning-text' if container.restart_count > 0 else 'text-content-primary' }}">{{ container.restart_count }}</td>
-                                        <td class="px-4 py-3 text-[10px] leading-5 text-content-muted">
+                                        <td class="px-4 py-3 text-xs leading-5 text-content-muted">
                                             {% if container.started_at_value %}<div>Started {{ container.started_at_value|user_datetime }}</div>{% endif %}
                                             {% if container.finished_at_value %}<div>Finished {{ container.finished_at_value|user_datetime }}</div>{% endif %}
                                             {% if not container.started_at_value and not container.finished_at_value %}-{% endif %}
@@ -221,7 +221,7 @@
                 {% if pod.volumes %}
                     <div class="overflow-x-auto">
                         <table class="min-w-[760px] w-full text-left text-xs text-content-secondary">
-                            <thead class="border-b border-outline-subtle bg-surface-hover text-[10px] font-semibold text-kaori-primary"><tr><th class="px-4 py-2.5">Volume</th><th class="px-4 py-2.5">Type</th><th class="px-4 py-2.5">Source</th><th class="px-4 py-2.5">Mounted by</th></tr></thead>
+                            <thead class="border-b border-outline-subtle bg-surface-hover text-xs font-semibold text-content-muted"><tr><th class="px-4 py-2.5">Volume</th><th class="px-4 py-2.5">Type</th><th class="px-4 py-2.5">Source</th><th class="px-4 py-2.5">Mounted by</th></tr></thead>
                             <tbody class="divide-y divide-outline-subtle">
                                 {% for volume in pod.volumes %}
                                     <tr class="hover:bg-surface-hover">

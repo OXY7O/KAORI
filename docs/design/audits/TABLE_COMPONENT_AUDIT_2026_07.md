@@ -1,8 +1,8 @@
-# KAORI Table Component Audit — July 2026
+# KAORI Table Component Re-Audit — July 2026
 
 ## Scope
 
-The audit inspected all HTML templates under `app/templates/` in the cumulative KAORI source after the global button and pagination migrations.
+The re-audit inspected the cumulative KAORI source after the global button, pagination, table-standard, inventory summary fix, and table-guidance refinement patches.
 
 Observed scope:
 
@@ -10,52 +10,61 @@ Observed scope:
 - 57 table elements.
 - Kubernetes inventory, analytics, integrations, operations, governance, reports, intelligence, notifications, users, roles, and provider administration.
 
-## Findings before this migration
+## Re-audit findings
 
-- 31 table templates applied uppercase transformation and expanded letter spacing to column headers.
-- Header typography varied between 10 px, 11 px, and 12 px and between primary Violet and muted content colors.
-- Several table-local actions used long labels, including a three-word cluster settings action.
-- Loading indicators were implemented using both block-level bars and absolute overlays attached to headers.
-- Status and metadata labels are mostly routed through shared semantic helpers, but legacy `rounded-full` usage still exists in mixed-purpose table templates and requires context-sensitive review because some occurrences represent progress dots or non-label decoration.
-- Final-column right alignment is broadly present in primary inventory tables but is not yet generated from one universal table renderer.
+The first table-standard migration established the shared contract but left several visual inconsistencies in existing templates. The re-audit found:
 
-## Changes in this patch
+- 28 direct arbitrary table typography declarations using 10 px or 11 px values.
+- 19 table headers that still inherited legacy uppercase or expanded-tracking declarations in their opening `<thead>` markup.
+- Multiple inventory and integration table headers using Primary Violet text instead of the standard muted column-label color.
+- Routine table actions using provider-blue or page-local styling instead of the shared neutral utility appearance.
+- Visible action labels longer than two words, including `View Catalog Rule`, `Open Scope Workspace`, `Run Full Validation`, `Open Full Record`, and role-management labels.
+- Existing title cells and labels remain context-dependent; a blind global insertion of icons or labels would reduce scanability and was intentionally avoided.
+- Center alignment remains only for full-width empty-state cells, matrix controls, and other documented non-data exceptions. Ordinary data cells remain left aligned and final action cells remain right aligned.
 
-- Expanded the authoritative table documentation into a complete Table, Data Block, and Compact Label Standard.
-- Added `app/templates/components/table.html` as the shared presentation contract for table blocks, loading bars, filters, headers, cells, resource titles, and compact actions.
-- Removed force-uppercase and expanded tracking from table headers across all audited table templates.
-- Normalized legacy 10 px table-header typography to 11 px where the class was declared directly on `<thead>`.
-- Shortened the Prometheus cluster action from `Open cluster settings` to `Open Settings`.
-- Added automated guardrails for header casing, shared component availability, alignment rules, filter geometry, action geometry, and documentation coverage.
+## Adjustments completed
 
-## Intentionally not mass-rewritten
+- Normalized every directly declared `<thead>` size to the approved `text-xs` table-header level.
+- Removed force-uppercase and expanded tracking from all audited `<thead>` opening tags.
+- Normalized direct table-header weight to semibold.
+- Replaced Primary Violet table-header text with the standard muted content color.
+- Normalized the remaining 10 px ordinary detail cell to the approved supporting-text size.
+- Shortened visible table action labels while preserving meaning:
+  - `View Catalog Rule` → `View Rule`.
+  - `Open Scope Workspace` → `Open Scope`.
+  - `Run Full Validation` → `Run Validation`.
+  - `View Full Audit` → `View Audit`.
+  - `View all reports` → `View Reports`.
+  - `Archive & cleanup` → `Archive Data`.
+  - `Open Full Record` → `View Record`.
+  - `Edit custom role` → `Edit Role`.
+  - `Delete custom role` → `Delete Role`.
+- Replaced the legacy provider-blue Integrations row action with the shared neutral utility interaction pattern.
+- Normalized Users row utility actions and the TLS record action to the same compact neutral geometry, hover, focus, pointer, and disabled behavior.
+- Preserved Critical styling for destructive actions and preserved domain behavior, URLs, HTMX targets, permissions, and filters.
 
-The audit did not replace every table with a single rendering macro. Domain tables have different row structures, responsive priorities, HTMX targets, expandable content, and authorization controls. A blind renderer migration would risk functional regressions.
+## Contextual exceptions retained
 
-The following remain controlled migration work:
+The following are valid exceptions and are not treated as alignment violations:
 
-- importing shared table classes into every existing table;
-- context-sensitive replacement of legacy `rounded-full` occurrences;
-- moving all table-region loading indicators below their block headers;
-- shortening every row-action label after verifying its domain meaning;
-- adding `scope="col"` and `aria-busy` where missing;
-- consolidating repeated filter markup into a shared filter-field component.
+- A `colspan` empty-state cell may be centered because it represents the complete table body rather than one data column.
+- Permission matrices may center binary controls when comparison across rows and columns requires it.
+- Expanded detail content may contain semantic cards and labels that do not represent ordinary row cells.
+- Technical identifiers may use monospace only when the format itself benefits from fixed-width presentation.
+- More than two visible actions remain permitted when the documented width, frequency, and scanability conditions are satisfied.
 
-New tables must use the shared component immediately. Existing tables should be migrated by module while preserving endpoint, filter, sort, permission, and HTMX behavior.
+## Compliance status after re-audit
 
-## Compliance status
+- Shared table visual contract: available and documented.
+- Table-header size, casing, tracking, weight, and semantic color: normalized across the audited templates.
+- Ordinary table action appearance: normalized in identified legacy implementations.
+- Known visible table action labels longer than two words: corrected.
+- Contextual icon and label usage: retained; no decorative mass insertion performed.
+- Default page size and numeric pagination: standardized through the shared pagination component.
+- Full migration of every table markup fragment to `table_ui.*`: still incremental because domain-specific HTMX, expandable rows, sorting, permissions, and responsive priorities differ.
+- Loading-bar placement: remains a targeted module-level review item where legacy asynchronous regions do not yet use the shared block structure.
+- Accessibility completion: remains incremental for legacy tables missing `scope="col"`, `aria-sort`, or region-level `aria-busy`.
 
-- Table-header casing and tracking: migrated globally.
-- Shared visual contract: available and documented.
-- Default page size and numeric pagination: already standardized.
-- Compact semantic labels: shared helper already available.
-- Full shared-component adoption: in progress by module.
-- Loading-bar placement: requires targeted module migration.
-- Accessibility completion: requires targeted module migration.
+## Forward guidance
 
-
-## Guidance addendum: contextual density and action flexibility
-
-The standard was refined after design review to avoid over-standardizing decoration. Two-line resource title cells now use a larger icon container, while single-line cells retain the compact icon geometry. Table typography is constrained to one application font family and an approved size hierarchy. Icons and compact labels are explicitly optional and must be chosen for semantic value rather than applied to every cell.
-
-The preferred action count remains two, but a row may expose more than two actions when the controls fit without wrapping, remain high-frequency and concise, and do not overpower the row data. All ordinary non-CRUD actions use the same neutral utility color and interaction behavior; CRUD actions may use semantic variants while preserving identical geometry.
+New tables must use the shared table component and the authoritative guidance in `docs/design/components/TABLE_AND_LABEL.md`. Existing tables should be migrated when their module is changed, but every migration must preserve routes, query state, authorization, HTMX behavior, and domain-specific responsive priorities.

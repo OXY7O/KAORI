@@ -1,7 +1,7 @@
 {% import "components/pagination.html" as pagination_ui %}
     <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-outline-subtle text-left text-sm">
-            <thead class="bg-surface-hover text-[11px] font-semibold text-content-muted">
+            <thead class="bg-surface-hover text-xs font-semibold text-content-muted">
                 <tr>
                     <th class="px-6 py-3.5 text-left">User</th>
                     <th class="px-6 py-3.5 text-left">Role</th>
@@ -75,21 +75,21 @@
                             <div class="flex flex-wrap justify-end gap-2">
                                 {% if actions.get('can_edit') %}
                                     <a href="{{ url_for('users.edit', user_id=user.id) }}"
-                                       class="inline-flex items-center gap-1.5 rounded-lg border border-outline-default px-2.5 py-1.5 text-xs font-bold text-content-secondary transition hover:bg-surface-subtle"><i data-lucide="pencil" class="h-3.5 w-3.5"></i>Edit</a>
+                                       class="inline-flex min-h-8 cursor-pointer items-center gap-1.5 rounded-md border border-outline-default bg-surface-card px-2.5 text-xs font-medium text-content-secondary transition-colors hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-1"><i data-lucide="pencil" class="h-3.5 w-3.5"></i>Edit</a>
                                 {% else %}
                                     <button type="button"
                                             title="{{ actions.get('edit_reason', 'Edit is restricted for this account.') }}"
                                             disabled
-                                            class="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-outline-default px-2.5 py-1.5 text-xs font-bold text-content-muted opacity-60"><i data-lucide="pencil" class="h-3.5 w-3.5"></i>Edit</button>
+                                            class="inline-flex min-h-8 cursor-not-allowed items-center gap-1.5 rounded-md border border-outline-default bg-surface-muted px-2.5 text-xs font-medium text-content-muted opacity-60"><i data-lucide="pencil" class="h-3.5 w-3.5"></i>Edit</button>
                                 {% endif %}
                                 {% if actions.get('can_reset_password') %}
                                     <a href="{{ url_for('users.reset_password', user_id=user.id) }}"
-                                       class="inline-flex items-center gap-1.5 rounded-lg border border-outline-default px-2.5 py-1.5 text-xs font-bold text-content-secondary transition hover:bg-surface-subtle"><i data-lucide="key-round" class="h-3.5 w-3.5"></i>Reset</a>
+                                       class="inline-flex min-h-8 cursor-pointer items-center gap-1.5 rounded-md border border-outline-default bg-surface-card px-2.5 text-xs font-medium text-content-secondary transition-colors hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-1"><i data-lucide="key-round" class="h-3.5 w-3.5"></i>Reset</a>
                                 {% elif user.auth_source == 'database' %}
                                     <button type="button"
                                             title="{{ actions.get('reset_reason', 'Password reset is restricted for this account.') }}"
                                             disabled
-                                            class="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-outline-default px-2.5 py-1.5 text-xs font-bold text-content-muted opacity-60"><i data-lucide="key-round" class="h-3.5 w-3.5"></i>Reset</button>
+                                            class="inline-flex min-h-8 cursor-not-allowed items-center gap-1.5 rounded-md border border-outline-default bg-surface-muted px-2.5 text-xs font-medium text-content-muted opacity-60"><i data-lucide="key-round" class="h-3.5 w-3.5"></i>Reset</button>
                                 {% endif %}
                                 {% if user.deleted_at %}
                                     {% if actions.get('can_restore') %}
