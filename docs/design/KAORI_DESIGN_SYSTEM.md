@@ -176,6 +176,7 @@ Detailed component rules are maintained separately:
 
 - Hero: `docs/design/components/HERO.md`
 - Tables and compact labels: `docs/design/components/TABLE_AND_LABEL.md`
+- Related page relationships: `docs/design/components/RELATED_PAGE_CARD.md`
 - Reusable page composition: `docs/design/patterns/`
 
 A page must consume shared components rather than recreate their utility strings.
@@ -263,3 +264,8 @@ The Node Inventory right-side hero panel is the baseline for compact operational
 ## Info Flow
 
 Use the shared Info Flow component for short ordered governance or operational sequences. The standard structure is an expandable header, a three-to-five-step vertical timeline, and one optional flow-wide boundary note. Role Assignment Flow is the reference implementation. See `components/INFO_FLOW.md`.
+
+
+## Related workspace contract
+
+When two KAORI pages form one operational or governance workflow, expose the relationship through the shared Related Page Card rather than an undocumented page-local shortcut. The card explains the dependency, preserves authority boundaries, and provides exactly one destination action. Place it beside the primary block it extends on desktop and stack it below on smaller screens.

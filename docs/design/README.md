@@ -11,6 +11,7 @@
 - `components/TABLE_AND_LABEL.md`
 - `components/SIDEBAR_NAVIGATION.md`
 - `components/INFO_FLOW.md`
+- `components/RELATED_PAGE_CARD.md`
 
 ## Reusable page patterns
 

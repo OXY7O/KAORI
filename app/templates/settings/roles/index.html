@@ -1,5 +1,6 @@
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/info_flow.html" as info_flow %}
+{% import "components/related_page_card.html" as related_page_card %}
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
 {% block title %}Roles & Access{% endblock title %}
@@ -391,19 +392,15 @@
                         {% endfor %}
                     </div>
                 </section>
-                <section class="rounded-2xl border border-brand-outline bg-kaori-primary p-5 text-brand-foreground shadow-sm">
-                    <div class="flex items-start gap-3">
-                        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-brand-outline bg-brand-surface-strong"><i data-lucide="book-key" class="h-5 w-5"></i></span>
-                        <div>
-                            <h2 class="text-base font-bold">Permission Catalog</h2>
-                            <p class="mt-1 text-sm leading-6 text-brand-foreground-muted">Permission keys are code-backed application contracts. Role management assigns them; it does not edit the registry.</p>
-                        </div>
-                    </div>
-                    <a href="{{ url_for('settings.permission_catalog') }}"
-                       class="mt-4 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-white/30 bg-surface-card px-3 py-2 text-sm font-semibold text-kaori-primary hover:bg-kaori-soft">
-                        Permission Catalog<i data-lucide="arrow-right" class="h-4 w-4"></i>
-                    </a>
-                </section>
+                {{ related_page_card.render(
+                    'Permission Catalog',
+                    'Permission keys are code-backed KAORI contracts. Role management assigns them; it does not edit the registry.',
+                    url_for('settings.permission_catalog'),
+                    'Open Permission Catalog',
+                    icon='book-key',
+                    eyebrow='Related Access Workspace',
+                    boundary='Roles package permission keys into reusable access profiles. The catalog remains the authoritative registry for available capabilities.'
+                ) }}
             </aside>
         </section>
         <section data-role-access-panel="matrix" hidden class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">

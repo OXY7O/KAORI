@@ -1,6 +1,7 @@
 {% import "components/pagination.html" as pagination_ui %}
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
+{% import "components/related_page_card.html" as related_page_card %}
 {% from "integrations/partials/_status_badge.html" import status_badge %}
 {% block title %}Kubernetes Integrations · KAORI{% endblock %}
 {% block dashboard_content %}
@@ -52,7 +53,8 @@
     </div>
   </section>
 
-  <section class="grid gap-4 lg:grid-cols-3">
+  <section class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
+    <div class="grid gap-4 lg:grid-cols-3">
     <article class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
       <div class="flex items-start gap-3">
         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="plug-zap" class="h-5 w-5"></i></span>
@@ -71,6 +73,16 @@
         <div><h2 class="text-base font-semibold text-content-primary">Authority Boundary</h2><p class="mt-1 text-xs leading-5 text-content-muted">Kubernetes remains authoritative for live resources. KAORI stores normalized inventory, runtime evidence, governance context, and audit history.</p></div>
       </div>
     </article>
+  </div>
+    {{ related_page_card.render(
+      'Kubernetes Inventory',
+      'Validated Kubernetes connections supply the normalized resource inventory used across KAORI operational views.',
+      url_for('inventory.overview'),
+      'Open Kubernetes Inventory',
+      icon='boxes',
+      eyebrow='Related Operational Workspace',
+      boundary='Kubernetes remains authoritative for live resources. KAORI Inventory presents synchronized operational context and history.'
+    ) }}
   </section>
 
   <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">

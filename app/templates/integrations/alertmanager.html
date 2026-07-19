@@ -1,5 +1,6 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
+{% import "components/related_page_card.html" as related_page_card %}
 {% from "integrations/partials/_status_badge.html" import status_badge %}
 {% block title %}Alertmanager Integrations · KAORI{% endblock title %}
 {% block dashboard_content %}
@@ -51,7 +52,8 @@
             </div>
         </section>
 
-        <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+        <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
+            <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
             <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
                 <div class="flex items-start gap-3">
                     <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
@@ -103,7 +105,17 @@
                     <p class="mt-1 text-xs leading-5 text-content-secondary">Alert lifecycle, routing, grouping, inhibition, silences, and delivery remain managed by Alertmanager.</p>
                 </div>
             </div>
-        </section>
+            </section>
+            {{ related_page_card.render(
+                'Alert Intelligence',
+                'Eligible Alertmanager sources provide the alert lifecycle context used by KAORI correlation, prioritization, and operational review.',
+                url_for('intelligence.alert_intelligence'),
+                'Open Alert Intelligence',
+                icon='brain-circuit',
+                eyebrow='Related Intelligence Workspace',
+                boundary='Alertmanager remains authoritative for routing, grouping, inhibition, silences, and notification delivery.'
+            ) }}
+        </div>
 
         {% include 'integrations/alertmanager/partials/_inventory_card.html' %}
     </div>
