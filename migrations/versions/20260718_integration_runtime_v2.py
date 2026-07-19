@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 
 import sqlalchemy as sa
 from alembic import op
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 revision = '20260718_runtime_v2'
 down_revision = '20260718_prom_instances'
@@ -89,69 +90,110 @@ def upgrade() -> None:
     conn = op.get_bind()
     now = datetime.now(UTC)
 
+    integration_instances = sa.table(
+        'integration_instances',
+        sa.column('id', sa.Integer()),
+        sa.column('provider_type', sa.String(80)),
+        sa.column('name', sa.String(180)),
+        sa.column('description', sa.Text()),
+        sa.column('environment', sa.String(40)),
+        sa.column('enabled', sa.Boolean()),
+        sa.column('lifecycle_status', sa.String(30)),
+        sa.column('readiness_status', sa.String(40)),
+        sa.column('health_status', sa.String(40)),
+        sa.column('last_error', sa.Text()),
+        sa.column('last_checked_at', sa.DateTime(timezone=True)),
+        sa.column('metadata_json', sa.JSON()),
+        sa.column('created_at', sa.DateTime(timezone=True)),
+        sa.column('updated_at', sa.DateTime(timezone=True)),
+    )
+    integration_bindings = sa.table(
+        'integration_bindings',
+        sa.column('id', sa.Integer()),
+        sa.column('integration_instance_id', sa.Integer()),
+        sa.column('asset_type', sa.String(80)),
+        sa.column('asset_key', sa.String(255)),
+        sa.column('binding_role', sa.String(30)),
+        sa.column('priority', sa.Integer()),
+        sa.column('enabled', sa.Boolean()),
+        sa.column('capability_scope', sa.JSON()),
+        sa.column('created_at', sa.DateTime(timezone=True)),
+        sa.column('updated_at', sa.DateTime(timezone=True)),
+    )
+    kubernetes_connections = sa.table(
+        'kubernetes_connections',
+        sa.column('id', sa.Integer()),
+        sa.column('integration_instance_id', sa.Integer()),
+        sa.column('cluster_id', sa.String(36)),
+        sa.column('kubeconfig', sa.Text()),
+        sa.column('verify_ssl', sa.Boolean()),
+        sa.column('allow_weak_tls', sa.Boolean()),
+        sa.column('server', sa.String(500)),
+        sa.column('compatibility_profile', sa.String(100)),
+        sa.column('readiness_status', sa.String(40)),
+        sa.column('validation_message', sa.Text()),
+        sa.column('last_validated_at', sa.DateTime(timezone=True)),
+        sa.column('discovery_summary', sa.JSON()),
+        sa.column('created_at', sa.DateTime(timezone=True)),
+        sa.column('updated_at', sa.DateTime(timezone=True)),
+    )
+
     clusters = conn.execute(sa.text('SELECT * FROM clusters ORDER BY created_at, id')).mappings().all()
     for row in clusters:
-        canonical_id = conn.execute(sa.text('''
-            INSERT INTO integration_instances (
-                provider_type, name, description, environment, enabled, lifecycle_status,
-                readiness_status, health_status, last_error, last_checked_at, metadata_json,
-                created_at, updated_at
-            ) VALUES (
-                'kubernetes', :name, :description, :environment, true, 'active',
-                :readiness_status, :health_status, NULL, :last_checked_at, :metadata_json,
-                :created_at, :updated_at
-            ) RETURNING id
-        '''), {
-            'name': f"{row['name']} Kubernetes API",
-            'description': row.get('description'),
-            'environment': row.get('environment'),
-            'readiness_status': row.get('kubernetes_readiness_status'),
-            'health_status': row.get('status'),
-            'last_checked_at': row.get('last_check'),
-            'metadata_json': {'asset_type': 'kubernetes_cluster', 'asset_key': str(row['id'])},
-            'created_at': row.get('created_at') or now,
-            'updated_at': row.get('updated_at') or now,
-        }).scalar_one()
-        conn.execute(sa.text('''
-            INSERT INTO kubernetes_connections (
-                integration_instance_id, cluster_id, kubeconfig, verify_ssl, allow_weak_tls,
-                server, compatibility_profile, readiness_status, validation_message,
-                last_validated_at, discovery_summary, created_at, updated_at
-            ) VALUES (
-                :integration_instance_id, :cluster_id, :kubeconfig, :verify_ssl, :allow_weak_tls,
-                :server, :compatibility_profile, :readiness_status, :validation_message,
-                :last_validated_at, :discovery_summary, :created_at, :updated_at
+        canonical_id = conn.execute(
+            integration_instances.insert()
+            .values(
+                provider_type='kubernetes',
+                name=f"{row['name']} Kubernetes API",
+                description=row.get('description'),
+                environment=row.get('environment'),
+                enabled=True,
+                lifecycle_status='active',
+                readiness_status=row.get('kubernetes_readiness_status'),
+                health_status=row.get('status'),
+                last_error=None,
+                last_checked_at=row.get('last_check'),
+                metadata_json={
+                    'asset_type': 'kubernetes_cluster',
+                    'asset_key': str(row['id']),
+                },
+                created_at=row.get('created_at') or now,
+                updated_at=row.get('updated_at') or now,
             )
-        '''), {
-            'integration_instance_id': canonical_id,
-            'cluster_id': str(row['id']),
-            'kubeconfig': row.get('kubeconfig') or '',
-            'verify_ssl': bool(row.get('kube_verify_ssl', True)),
-            'allow_weak_tls': bool(row.get('kube_allow_weak_tls', False)),
-            'server': row.get('server'),
-            'compatibility_profile': row.get('kubernetes_compatibility_profile'),
-            'readiness_status': row.get('kubernetes_readiness_status'),
-            'validation_message': row.get('kubernetes_validation_message'),
-            'last_validated_at': row.get('kubernetes_last_validated_at'),
-            'discovery_summary': row.get('kubernetes_api_discovery_summary'),
-            'created_at': row.get('created_at') or now,
-            'updated_at': row.get('updated_at') or now,
-        })
-        conn.execute(sa.text('''
-            INSERT INTO integration_bindings (
-                integration_instance_id, asset_type, asset_key, binding_role, priority,
-                enabled, capability_scope, created_at, updated_at
-            ) VALUES (
-                :instance_id, 'kubernetes_cluster', :asset_key, 'primary', 100,
-                true, :capability_scope, :created_at, :updated_at
+            .returning(integration_instances.c.id)
+        ).scalar_one()
+
+        conn.execute(
+            kubernetes_connections.insert().values(
+                integration_instance_id=canonical_id,
+                cluster_id=str(row['id']),
+                kubeconfig=row.get('kubeconfig') or '',
+                verify_ssl=bool(row.get('kube_verify_ssl', True)),
+                allow_weak_tls=bool(row.get('kube_allow_weak_tls', False)),
+                server=row.get('server'),
+                compatibility_profile=row.get('kubernetes_compatibility_profile'),
+                readiness_status=row.get('kubernetes_readiness_status'),
+                validation_message=row.get('kubernetes_validation_message'),
+                last_validated_at=row.get('kubernetes_last_validated_at'),
+                discovery_summary=row.get('kubernetes_api_discovery_summary'),
+                created_at=row.get('created_at') or now,
+                updated_at=row.get('updated_at') or now,
             )
-        '''), {
-            'instance_id': canonical_id,
-            'asset_key': str(row['id']),
-            'capability_scope': ['inventory', 'operations', 'governance', 'discovery'],
-            'created_at': now,
-            'updated_at': now,
-        })
+        )
+
+        conn.execute(
+            integration_bindings.insert().values(
+                integration_instance_id=canonical_id,
+                asset_type='kubernetes_cluster',
+                asset_key=str(row['id']),
+                binding_role='primary',
+                priority=100,
+                enabled=True,
+                capability_scope=['inventory', 'operations', 'governance', 'discovery'],
+                created_at=now,
+                updated_at=now,
+            )
+        )
 
     providers = (
         ('prometheus', 'prometheus_instances', 'prometheus_bindings', 'prometheus_instance_id', ['metrics', 'capacity', 'utilization', 'storage', 'workload', 'forecast', 'top_consumers', 'alert_metrics']),
@@ -160,51 +202,50 @@ def upgrade() -> None:
     for provider, instance_table, binding_table, fk_name, default_scope in providers:
         rows = conn.execute(sa.text(f'SELECT * FROM {instance_table} ORDER BY id')).mappings().all()
         for row in rows:
-            canonical_id = conn.execute(sa.text('''
-                INSERT INTO integration_instances (
-                    provider_type, name, description, environment, enabled, lifecycle_status,
-                    readiness_status, health_status, last_error, last_checked_at, metadata_json,
-                    created_at, updated_at
-                ) VALUES (
-                    :provider_type, :name, :description, NULL, :enabled, 'active',
-                    :readiness_status, :health_status, :last_error, :last_checked_at, :metadata_json,
-                    :created_at, :updated_at
-                ) RETURNING id
-            '''), {
-                'provider_type': provider,
-                'name': row['name'],
-                'description': row.get('description'),
-                'enabled': bool(row.get('enabled', True)),
-                'readiness_status': row.get('readiness_status'),
-                'health_status': row.get('last_status'),
-                'last_error': row.get('last_error'),
-                'last_checked_at': row.get('last_checked_at'),
-                'metadata_json': {'provider_record_id': row['id']},
-                'created_at': row.get('created_at') or now,
-                'updated_at': row.get('updated_at') or now,
-            }).scalar_one()
-            conn.execute(sa.text(f'UPDATE {instance_table} SET integration_instance_id = :canonical_id WHERE id = :id'), {'canonical_id': canonical_id, 'id': row['id']})
-            bindings = conn.execute(sa.text(f'SELECT * FROM {binding_table} WHERE {fk_name} = :id ORDER BY priority, id'), {'id': row['id']}).mappings().all()
+            canonical_id = conn.execute(
+                integration_instances.insert()
+                .values(
+                    provider_type=provider,
+                    name=row['name'],
+                    description=row.get('description'),
+                    environment=None,
+                    enabled=bool(row.get('enabled', True)),
+                    lifecycle_status='active',
+                    readiness_status=row.get('readiness_status'),
+                    health_status=row.get('last_status'),
+                    last_error=row.get('last_error'),
+                    last_checked_at=row.get('last_checked_at'),
+                    metadata_json={'provider_record_id': row['id']},
+                    created_at=row.get('created_at') or now,
+                    updated_at=row.get('updated_at') or now,
+                )
+                .returning(integration_instances.c.id)
+            ).scalar_one()
+
+            conn.execute(
+                sa.text(f'UPDATE {instance_table} SET integration_instance_id = :canonical_id WHERE id = :id'),
+                {'canonical_id': canonical_id, 'id': row['id']},
+            )
+            bindings = conn.execute(
+                sa.text(f'SELECT * FROM {binding_table} WHERE {fk_name} = :id ORDER BY priority, id'),
+                {'id': row['id']},
+            ).mappings().all()
             for binding in bindings:
-                conn.execute(sa.text('''
-                    INSERT INTO integration_bindings (
-                        integration_instance_id, asset_type, asset_key, binding_role, priority,
-                        enabled, capability_scope, created_at, updated_at
-                    ) VALUES (
-                        :instance_id, :asset_type, :asset_key, :binding_role, :priority,
-                        :enabled, :capability_scope, :created_at, :updated_at
-                    ) ON CONFLICT DO NOTHING
-                '''), {
-                    'instance_id': canonical_id,
-                    'asset_type': binding['scope_type'],
-                    'asset_key': str(binding['scope_key']),
-                    'binding_role': binding.get('binding_role') or 'primary',
-                    'priority': binding.get('priority') or 100,
-                    'enabled': bool(binding.get('enabled', True)),
-                    'capability_scope': default_scope,
-                    'created_at': binding.get('created_at') or now,
-                    'updated_at': binding.get('updated_at') or now,
-                })
+                conn.execute(
+                    pg_insert(integration_bindings)
+                    .values(
+                        integration_instance_id=canonical_id,
+                        asset_type=binding['scope_type'],
+                        asset_key=str(binding['scope_key']),
+                        binding_role=binding.get('binding_role') or 'primary',
+                        priority=binding.get('priority') or 100,
+                        enabled=bool(binding.get('enabled', True)),
+                        capability_scope=default_scope,
+                        created_at=binding.get('created_at') or now,
+                        updated_at=binding.get('updated_at') or now,
+                    )
+                    .on_conflict_do_nothing()
+                )
 
     conn.execute(sa.text('''
         UPDATE integration_runtime_observations o
