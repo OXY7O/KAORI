@@ -76,9 +76,9 @@ def test_instance_inventory_detail_and_legacy_cluster_redirect(app) -> None:
     assert inventory.status_code == 200
     assert b'Alertmanager Instance Registry' in inventory.data
     assert b'Cluster A Alertmanager' in inventory.data
-    assert b'asset bindings' in inventory.data
+    assert b'scope bindings' in inventory.data
     assert b'Integration posture' in inventory.data
-    assert b'Alertmanager Source Overview' in inventory.data
+    assert b'Alertmanager Integration Overview' in inventory.data
     assert b'Register Instance' in inventory.data
 
     partial = client.get(
@@ -94,7 +94,7 @@ def test_instance_inventory_detail_and_legacy_cluster_redirect(app) -> None:
     detail = client.get(f'/integrations/alertmanager/instances/{instance.id}')
     assert detail.status_code == 200
     assert b'Instance Configuration' in detail.data
-    assert b'Asset Bindings' in detail.data
+    assert b'Scope Bindings' in detail.data
     assert b'Run full validation' in detail.data
     assert b'Source posture' in detail.data
     assert b'Runtime Health & Diagnostics' in detail.data

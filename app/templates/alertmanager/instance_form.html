@@ -5,28 +5,36 @@
 {% block title %}{{ instance.name if instance else 'Register Alertmanager Instance' }} · KAORI{% endblock title %}
 {% block dashboard_content %}
     {% set current_auth_type = instance.auth_type if instance else 'none' %}
+    {% set scope_type_labels = {
+        'kubernetes_cluster': 'Managed cluster',
+        'server': 'Infrastructure asset',
+        'server_group': 'Infrastructure asset group',
+        'hci_environment': 'Platform environment',
+        'storage_service': 'Infrastructure service',
+        'global': 'Global operational scope'
+    } %}
     <div class="space-y-6">
         {% set hero_readiness = (instance.readiness_status or 'validation_required') if instance else 'validation_required' %}
         {% set source_posture = 'Ready' if hero_readiness == 'ready' else ('Attention' if hero_readiness in ['degraded', 'blocked'] else 'Validation required') %}
         <section class="relative overflow-hidden rounded-2xl border border-brand-outline bg-kaori-primary p-5 text-brand-foreground shadow-sm lg:p-6">
             <div class="relative grid gap-5 xl:grid-cols-12 xl:items-stretch">
                 <div class="flex min-w-0 flex-col justify-center xl:col-span-7">
-                    {% call page_hero.intro('siren', 'Alertmanager Source', 'server-cog') %}
+                    {% call page_hero.intro('siren', 'Alertmanager Integration Source', 'server-cog') %}
                         <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">
                             {{ instance.name if instance else 'Register Alertmanager Instance' }}
                         </h1>
                         <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">
                             {% if instance %}
-                                Manage a reusable provider connection, validate Alertmanager API capability and runtime health, then control which infrastructure scopes may consume this source.
+                                Manage this reusable Alertmanager connection, validate its API capabilities and runtime health, then govern how it is used across infrastructure assets, services, operational domains, and workflows.
                             {% else %}
-                                Register an existing standalone, shared, cluster-managed, or externally managed Alertmanager deployment before assigning asset bindings.
+                                Register an existing Alertmanager endpoint as a reusable operational source, then associate it with the contexts that may use it.
                             {% endif %}
                         </p>
 
                         <div class="mt-5 flex flex-wrap gap-2">
                             {{ page_hero.meta_label('plug-zap', 'Configured source' if instance and instance.endpoint else 'New source') }}
                             {{ page_hero.meta_label('shield-check', hero_readiness|replace('_', ' ')|title) }}
-                            {{ page_hero.meta_label('link-2', (bindings|length|string) ~ ' asset bindings' if instance else 'No asset bindings') }}
+                            {{ page_hero.meta_label('link-2', (bindings|length|string) ~ ' scope bindings' if instance else 'No scope bindings') }}
                         </div>
                     {% endcall %}
                 </div>
@@ -36,7 +44,7 @@
                         <div class="flex items-start justify-between gap-4">
                             <div>
                                 <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Source posture</p>
-                                <h2 class="mt-1 text-base font-semibold text-brand-foreground">Configuration and consumption boundary</h2>
+                                <h2 class="mt-1 text-base font-semibold text-brand-foreground">Configuration and usage boundary</h2>
                             </div>
                             <span class="inline-flex min-h-6 shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1 text-[10px] font-semibold
                                          {% if source_posture == 'Ready' %}border-status-normal-border bg-status-normal-soft text-status-normal-text
@@ -54,7 +62,7 @@
                                     <p class="text-[11px] font-semibold">Readiness</p>
                                 </div>
                                 <p class="mt-1.5 truncate text-sm font-bold leading-5 text-brand-foreground" title="{{ hero_readiness|replace('_', ' ')|title }}">{{ hero_readiness|replace('_', ' ')|title }}</p>
-                                <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Capability and configuration fitness</p>
+                                <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Capability and connection fitness</p>
                             </div>
                             <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5">
                                 <div class="flex items-center gap-2 text-brand-foreground">
@@ -62,7 +70,7 @@
                                     <p class="text-[11px] font-semibold">Bindings</p>
                                 </div>
                                 <p class="mt-1.5 text-xl font-bold leading-none text-brand-foreground">{{ bindings|length if instance else 0 }}</p>
-                                <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Infrastructure scopes using this source</p>
+                                <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Operational contexts using this source</p>
                             </div>
                         </div>
 
@@ -111,15 +119,15 @@
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="settings-2" class="h-5 w-5"></i></span>
                         <div>
                             <h2 class="text-lg font-bold text-content-primary">Instance Configuration</h2>
-                            <p class="mt-1 text-sm leading-6 text-content-secondary">Provider identity, endpoint, authentication, TLS behavior, and runtime availability.</p>
+                            <p class="mt-1 text-sm leading-6 text-content-secondary">Connection identity, endpoint, authentication, TLS behavior, and runtime availability.</p>
                         </div>
                     </div>
                 </header>
                 <div class="space-y-6 p-5 sm:p-6">
                     <section class="space-y-4 rounded-xl border border-outline-subtle bg-surface-hover p-4">
                         <div>
-                            <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-kaori-primary">Provider Identity</p>
-                            <p class="mt-1 text-xs text-content-secondary">Name the deployment independently from any cluster or asset binding.</p>
+                            <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-kaori-primary">Connection Identity</p>
+                            <p class="mt-1 text-xs text-content-secondary">Name the connection independently from any infrastructure asset, service, or workflow.</p>
                         </div>
                         <div class="grid gap-4 sm:grid-cols-2">
                             <label class="text-sm font-bold text-content-primary">
@@ -143,13 +151,13 @@
                             </label>
                         </div>
                         <label class="block text-sm font-bold text-content-primary">
-                            Description<textarea name="description" rows="3" placeholder="Operational ownership and intended source coverage." class="mt-2 w-full rounded-xl border border-outline-default bg-surface-card px-3.5 py-3 text-sm font-normal text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-outline-focus">{{ instance.description if instance and instance.description else '' }}</textarea>
+                            Description<textarea name="description" rows="3" placeholder="Operational ownership and intended usage coverage." class="mt-2 w-full rounded-xl border border-outline-default bg-surface-card px-3.5 py-3 text-sm font-normal text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-outline-focus">{{ instance.description if instance and instance.description else '' }}</textarea>
                         </label>
                     </section>
                     <section class="space-y-4 rounded-xl border border-outline-subtle bg-surface-card p-4">
                         <div>
                             <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-kaori-primary">Connection Contract</p>
-                            <p class="mt-1 text-xs text-content-secondary">KAORI currently requires Alertmanager API v2 status, alerts, and silences endpoints.</p>
+                            <p class="mt-1 text-xs text-content-secondary">KAORI validates the Alertmanager API v2 interfaces required for status, alerts, and silences.</p>
                         </div>
                         <label class="block text-sm font-bold text-content-primary">
                             Endpoint URL
@@ -226,7 +234,7 @@
                                    value="1"
                                    {% if not instance or instance.enabled %}checked{% endif %}
                                    class="mt-0.5 h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-outline-focus">
-                            <span><span class="block text-sm font-bold text-content-primary">Runtime source enabled</span><span class="mt-1 block text-xs leading-5 text-content-secondary">Disabled sources are excluded from asset-scope resolution.</span></span>
+                            <span><span class="block text-sm font-bold text-content-primary">Connection enabled</span><span class="mt-1 block text-xs leading-5 text-content-secondary">Disabled connections are excluded from source resolution.</span></span>
                         </label>
                     </div>
                 </div>
@@ -239,20 +247,20 @@
             <aside class="min-w-0 self-start space-y-6">
                 <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
                     <header class="border-b border-outline-subtle px-5 py-4">
-                        <h2 class="font-bold text-content-primary">Source Boundary</h2>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">Connection identity is reusable. Bindings control consumption.</p>
+                        <h2 class="font-bold text-content-primary">Integration Boundary</h2>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Connection identity is reusable. Bindings govern where the source can be used.</p>
                     </header>
                     <div class="space-y-3 p-5 text-xs leading-5 text-content-secondary">
-                        <div class="rounded-xl bg-kaori-soft p-3 text-kaori-primary"><strong>Instance:</strong> endpoint, credentials, validation, and provider capability.</div>
-                        <div class="rounded-xl border border-outline-subtle bg-surface-hover p-3"><strong class="text-content-primary">Binding:</strong> asset scope, source role, and priority.</div>
-                        <div class="rounded-xl border border-outline-subtle bg-surface-hover p-3"><strong class="text-content-primary">Analytics:</strong> domain-specific enrichment and interpretation.</div>
+                        <div class="rounded-xl bg-kaori-soft p-3 text-kaori-primary"><strong>Connection:</strong> endpoint, credentials, validation, and capabilities.</div>
+                        <div class="rounded-xl border border-outline-subtle bg-surface-hover p-3"><strong class="text-content-primary">Binding:</strong> operational context, source role, and priority.</div>
+                        <div class="rounded-xl border border-outline-subtle bg-surface-hover p-3"><strong class="text-content-primary">Usage:</strong> analytics, governance, automation, and other workflows use the resolved source.</div>
                     </div>
                 </section>
                 {% if initial_cluster %}
                     <section class="rounded-2xl border border-brand-outline bg-kaori-soft p-5">
                         <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-kaori-primary">Initial Binding</p>
                         <p class="mt-2 font-bold text-content-primary">{{ initial_cluster.name }}</p>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">The instance will be mapped as the primary Alertmanager source for this Kubernetes cluster after creation.</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">The connection will be assigned as the primary Alertmanager source for this selected operational scope after creation.</p>
                     </section>
                 {% endif %}
             </aside>
@@ -264,7 +272,7 @@
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="scan-search" class="h-5 w-5"></i></span>
                         <div>
                             <h2 class="text-lg font-bold text-content-primary">Compatibility & Capability Matrix</h2>
-                            <p class="mt-1 text-sm leading-6 text-content-secondary">Validation checks provider APIs and observed alert metadata, then maps them to KAORI feature readiness.</p>
+                            <p class="mt-1 text-sm leading-6 text-content-secondary">Validation checks exposed APIs and observed alert metadata, then maps them to KAORI capability readiness.</p>
                         </div>
                     </div>
                 </header>
@@ -292,7 +300,7 @@
                         <div class="rounded-xl border border-brand-outline bg-kaori-soft p-4">
                             <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-kaori-primary">Detected profile</p>
                             <p class="mt-2 font-bold text-content-primary">{{ instance.capability_profile or 'Validation required' }}</p>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">Runtime code consumes capabilities, not hard-coded version comparisons.</p>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">KAORI uses detected capabilities at runtime instead of hard-coded product or version assumptions.</p>
                         </div>
                         {% for row in module_readiness_rows %}
                             <div class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
@@ -310,7 +318,7 @@
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="route" class="h-5 w-5"></i></span>
                         <div>
                             <h2 class="text-lg font-bold text-content-primary">Effective Source Resolution</h2>
-                            <p class="mt-1 text-sm leading-6 text-content-secondary">See which bound source KAORI will use for alerts and silences, including capability gates, runtime health, and fallback decisions.</p>
+                            <p class="mt-1 text-sm leading-6 text-content-secondary">See which connection KAORI selects for each bound operational context, including capability gates, runtime health, and fallback decisions.</p>
                         </div>
                     </div>
                 </header>
@@ -321,11 +329,11 @@
                                 <div>
                                     <div class="flex flex-wrap items-center gap-2">
                                         <p class="font-bold text-content-primary">{{ scope.scope_label }}</p>
-                                        {{ table_label.metadata_label(scope.scope_type_label, 'boxes') }}
+                                        {{ table_label.metadata_label(scope_type_labels.get(scope.scope_type, scope.scope_type_label), 'boxes') }}
                                     </div>
                                     <p class="mt-1 font-mono text-[11px] text-content-tertiary">{{ scope.scope_type }}:{{ scope.scope_key }}</p>
                                 </div>
-                                <p class="text-xs text-content-secondary">Resolver evaluates every enabled binding for this scope.</p>
+                                <p class="text-xs text-content-secondary">Resolver evaluates every enabled binding for this operational context.</p>
                             </div>
                             <div class="grid gap-4 p-4 xl:grid-cols-2">
                                 {% for consumer_key, consumer_label, resolution in [('alerts', 'Alert retrieval', scope.alerts), ('silences', 'Silence retrieval', scope.silences)] %}
@@ -380,7 +388,7 @@
                     {% else %}
                         <div class="rounded-xl border border-dashed border-outline-default bg-surface-hover px-5 py-10 text-center">
                             <p class="font-bold text-content-primary">No source resolution is available yet.</p>
-                            <p class="mt-2 text-sm text-content-secondary">Add an asset binding to evaluate effective sources, capability mismatches, and fallback order.</p>
+                            <p class="mt-2 text-sm text-content-secondary">Add a scope binding to evaluate eligible sources, capability mismatches, and fallback order.</p>
                         </div>
                     {% endfor %}
                 </div>
@@ -391,8 +399,8 @@
                     <div class="flex items-start gap-3">
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="link-2" class="h-5 w-5"></i></span>
                         <div>
-                            <h2 class="text-lg font-bold text-content-primary">Asset Bindings</h2>
-                            <p class="mt-1 text-sm leading-6 text-content-secondary">Map this provider source to Kubernetes clusters now and to Server, HCI, or Storage scope keys as those asset registries are introduced.</p>
+                            <h2 class="text-lg font-bold text-content-primary">Scope Bindings</h2>
+                            <p class="mt-1 text-sm leading-6 text-content-secondary">Associate this source with multiple infrastructure assets, services, operational domains, workflows, or global contexts through canonical bindings.</p>
                         </div>
                     </div>
                 </header>
@@ -414,7 +422,7 @@
                                         <tr>
                                             <td class="px-4 py-3">
                                                 <p class="font-bold text-content-primary">{{ row.scope_label }}</p>
-                                                <p class="mt-1 font-mono text-[11px] text-content-tertiary">{{ row.binding.asset_type }}:{{ row.binding.asset_key }}</p>
+                                                <p class="mt-1 font-mono text-[11px] text-content-tertiary">{{ scope_type_labels.get(row.binding.asset_type, row.binding.asset_type|replace('_', ' ')|title) }} · {{ row.binding.asset_key }}</p>
                                             </td>
                                             <td class="px-4 py-3 text-content-secondary">{{ row.binding.binding_role|title }}</td>
                                             <td class="px-4 py-3 text-content-secondary">{{ row.binding.priority }}</td>
@@ -430,7 +438,7 @@
                                     {% else %}
                                         <tr>
                                             <td colspan="5"
-                                                class="px-5 py-12 text-center text-sm text-content-secondary">This source is not bound to any asset scope.</td>
+                                                class="px-5 py-12 text-center text-sm text-content-secondary">This source is not bound to any operational scope.</td>
                                         </tr>
                                     {% endfor %}
                                 </tbody>
@@ -450,21 +458,21 @@
                             <select name="scope_type"
                                     x-model="scopeType"
                                     class="mt-2 w-full rounded-xl border border-outline-default bg-surface-card px-3 py-2.5 text-sm font-normal">
-                                <option value="kubernetes_cluster">Kubernetes cluster</option>
-                                <option value="server">Server</option>
-                                <option value="server_group">Server group</option>
-                                <option value="hci_environment">HCI environment</option>
-                                <option value="storage_service">Storage service</option>
-                                <option value="global">Global scope</option>
+                                <option value="kubernetes_cluster">Managed cluster</option>
+                                <option value="server">Infrastructure asset</option>
+                                <option value="server_group">Infrastructure asset group</option>
+                                <option value="hci_environment">Platform environment</option>
+                                <option value="storage_service">Infrastructure service</option>
+                                <option value="global">Global operational scope</option>
                             </select>
                         </label>
                         <label x-show="scopeType === 'kubernetes_cluster'"
                                class="block text-xs font-bold text-content-primary">
-                            Kubernetes cluster
+                            Managed cluster
                             <select name="cluster_scope_key"
                                     :disabled="scopeType !== 'kubernetes_cluster'"
                                     class="mt-2 w-full rounded-xl border border-outline-default bg-surface-card px-3 py-2.5 text-sm font-normal">
-                                <option value="">Select cluster</option>
+                                <option value="">Select managed cluster</option>
                                 {% for cluster in clusters %}
                                     <option value="{{ cluster.id }}">{{ cluster.name }}</option>
                                 {% endfor %}
@@ -476,7 +484,7 @@
                             Scope key
                             <input name="generic_scope_key"
                                    :disabled="scopeType === 'kubernetes_cluster'"
-                                   placeholder="Canonical asset or service key"
+                                   placeholder="Canonical asset, service, domain, or workflow key"
                                    class="mt-2 w-full rounded-xl border border-outline-default bg-surface-card px-3 py-2.5 text-sm font-normal">
                         </label>
                         <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
@@ -509,7 +517,7 @@
                 <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4">
                     <div>
                         <p class="font-bold text-content-primary">Instance lifecycle</p>
-                        <p class="mt-1 text-xs text-content-secondary">Deletion is blocked while asset bindings remain.</p>
+                        <p class="mt-1 text-xs text-content-secondary">Deletion is blocked while scope bindings remain.</p>
                     </div>
                     <i data-lucide="chevron-down"
                        class="h-4 w-4 text-content-tertiary transition group-open:rotate-180"></i>

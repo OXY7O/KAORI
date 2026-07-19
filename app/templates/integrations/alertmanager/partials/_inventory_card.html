@@ -7,7 +7,7 @@
             </span>
             <div>
                 <h2 class="text-lg font-bold text-content-primary">Alertmanager Instance Registry</h2>
-                <p class="mt-1 text-sm leading-6 text-content-secondary">Manage provider connections independently from asset ownership. Bindings determine which analytics domain may consume each source.</p>
+                <p class="mt-1 text-sm leading-6 text-content-secondary">Manage reusable Alertmanager connections independently from the systems, services, and workflows that use them. Bindings define where each connection is eligible.</p>
             </div>
         </div>
         <div id="alertmanager-inventory-loading"
@@ -40,7 +40,7 @@
                            type="search"
                            name="q"
                            value="{{ selected_query }}"
-                           placeholder="Name, endpoint, description, or deployment type"
+                           placeholder="Name, endpoint, description, or connection type"
                            class="h-11 w-full rounded-lg border border-outline-default bg-surface-card pl-10 pr-3 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                 </div>
             </div>
@@ -58,11 +58,11 @@
             </div>
 
             <div class="xl:col-span-4">
-                <label class="mb-2 block text-sm font-semibold text-content-secondary" for="alertmanager-deployment">Deployment Type</label>
+                <label class="mb-2 block text-sm font-semibold text-content-secondary" for="alertmanager-deployment">Connection Type</label>
                 <select id="alertmanager-deployment"
                         name="deployment_type"
                         class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
-                    <option value="">All Deployment Types</option>
+                    <option value="">All Connection Types</option>
                     {% for option in deployment_type_options %}
                         <option value="{{ option }}" {% if selected_deployment_type == option %}selected{% endif %}>{{ option|replace('_', ' ')|title }}</option>
                     {% endfor %}

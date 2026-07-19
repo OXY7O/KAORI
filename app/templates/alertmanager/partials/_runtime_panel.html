@@ -34,7 +34,7 @@
         <div class="min-h-[7rem] bg-surface-card p-4">
             <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-content-tertiary">Health</p>
             <div class="mt-3">{{ table_label.status_label(runtime_state.health_status_label, health_tone, health_icon) }}</div>
-            <p class="mt-2 text-xs leading-5 text-content-secondary">Latest observed provider condition</p>
+            <p class="mt-2 text-xs leading-5 text-content-secondary">Latest observed source condition</p>
         </div>
         <div class="min-h-[7rem] bg-surface-card p-4">
             <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-content-tertiary">Readiness</p>
@@ -43,8 +43,8 @@
         </div>
         {% for label, value, description in [
             ('Health Score', runtime_state.health_score_display, 'Weighted runtime health evaluation'),
-            ('Latency', runtime_state.latency_display, 'Latest provider response duration'),
-            ('Capability Profile', runtime_state.capability_profile or 'Not detected', 'Validated provider capability contract'),
+            ('Latency', runtime_state.latency_display, 'Latest source response duration'),
+            ('Capability Profile', runtime_state.capability_profile or 'Not detected', 'Validated integration capability contract'),
             ('Capabilities', runtime_state.capability_count_display, 'Capabilities observed during validation')
         ] %}
             <div class="min-h-[7rem] bg-surface-card p-4">

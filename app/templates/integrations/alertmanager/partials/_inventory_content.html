@@ -1,11 +1,19 @@
 {% import "components/table_label.html" as table_label %}
+{% set scope_type_labels = {
+    'kubernetes_cluster': 'Managed cluster',
+    'server': 'Infrastructure asset',
+    'server_group': 'Infrastructure asset group',
+    'hci_environment': 'Platform environment',
+    'storage_service': 'Infrastructure service',
+    'global': 'Global operational scope'
+} %}
 <div class="overflow-x-auto">
     <table class="min-w-full text-left text-sm">
         <thead class="bg-surface-hover text-[10px] font-bold uppercase tracking-[0.12em] text-content-tertiary">
             <tr>
                 <th class="px-5 py-3.5">Instance</th>
                 <th class="px-5 py-3.5">Endpoint</th>
-                <th class="px-5 py-3.5">Deployment</th>
+                <th class="px-5 py-3.5">Connection Type</th>
                 <th class="px-5 py-3.5">Version</th>
                 <th class="px-5 py-3.5">Readiness</th>
                 <th class="px-5 py-3.5">Bindings</th>
@@ -42,7 +50,13 @@
                     </td>
                     <td class="px-5 py-4 align-top">
                         <p class="font-semibold text-content-primary">{{ row.binding_count }}</p>
-                        <p class="mt-1 max-w-[14rem] truncate text-xs text-content-muted" title="{{ row.scope_types|join(', ')|replace('_', ' ')|title if row.scope_types else 'Unbound source' }}">{{ row.scope_types|join(', ')|replace('_', ' ')|title if row.scope_types else 'Unbound source' }}</p>
+                        <p class="mt-1 max-w-[14rem] truncate text-xs text-content-muted" title="{{ row.scope_types|length }} bound scope type{{ '' if row.scope_types|length == 1 else 's' }}">
+                            {% if row.scope_types %}
+                                {% for scope_type in row.scope_types %}{{ scope_type_labels.get(scope_type, scope_type|replace('_', ' ')|title) }}{% if not loop.last %}, {% endif %}{% endfor %}
+                            {% else %}
+                                No scope bindings
+                            {% endif %}
+                        </p>
                     </td>
                     <td class="px-5 py-4 text-right align-top">
                         <a href="{{ url_for('alertmanager.instance_detail', instance_id=row.instance.id) }}"
@@ -56,8 +70,8 @@
                 <tr>
                     <td colspan="7" class="p-0">
                         {% set empty_state_icon = 'siren' %}
-                        {% set empty_state_title = 'No Alertmanager instances found' %}
-                        {% set empty_state_description = 'Register an Alertmanager instance or adjust the active filters.' %}
+                        {% set empty_state_title = 'No Alertmanager connections found' %}
+                        {% set empty_state_description = 'Register an Alertmanager connection or adjust the active filters.' %}
                         {% set empty_state_min_height = 'min-h-[190px]' %}
                         {% set empty_state_action_url = url_for('alertmanager.new_instance') if not selected_query and not selected_readiness and not selected_deployment_type else none %}
                         {% set empty_state_action_label = 'Register Instance' if empty_state_action_url else none %}

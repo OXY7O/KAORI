@@ -46,3 +46,13 @@ def test_alertmanager_registry_content_uses_kaori_table_contract() -> None:
     )
     missing = [fragment for fragment in required_fragments if fragment not in source]
     assert not missing, f'Alertmanager registry table contract is incomplete: {missing}'
+
+def test_alertmanager_registry_copy_uses_global_operational_positioning() -> None:
+    source = Path(
+        'app/templates/integrations/alertmanager/partials/_inventory_card.html'
+    ).read_text(encoding='utf-8')
+
+    assert 'systems, services, and workflows that use them' in source
+    assert 'analytics domain may consume each source' not in source
+    assert 'Connection Type' in source
+
