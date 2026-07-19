@@ -29,8 +29,10 @@ def test_sidebar_keeps_shell_specific_widths() -> None:
 
 def test_parent_navigation_is_stronger_than_submenu() -> None:
     source = _navigation_sources()
-    assert "text-[12px] font-semibold" in source
-    assert "text-[11px] leading-4" in source
+    assert "text-sm font-semibold" in source
+    assert "text-[13px] leading-5" in source
+    assert "space-y-0.5" in source
+    assert "py-1 text-[13px] leading-5" in source
     assert "min-h-11" in source
 
 
@@ -48,7 +50,8 @@ def test_active_parent_and_child_use_different_emphasis() -> None:
 
 def test_documented_sidebar_exceptions_remain_explicit() -> None:
     standard = STANDARD.read_text(encoding="utf-8")
-    assert "Parent menu: 12 px semibold" in standard
-    assert "Submenu:     11 px regular/medium" in standard
+    assert "Parent menu: 14 px semibold" in standard
+    assert "Submenu:     13 px regular/medium" in standard
+    assert "vertical gap between submenu rows: 2 px" in standard
     assert "approved exceptions" in standard
     assert "must never be reduced" in standard

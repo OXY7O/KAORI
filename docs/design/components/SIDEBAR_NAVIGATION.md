@@ -51,20 +51,20 @@ The sidebar typography scale is frozen independently from content typography.
 |---|---:|---|---|---|
 | Product name | 14 px | Extra-bold / strong brand emphasis | Official `KAORI` casing | 20 px |
 | Product descriptor | 10 px | Medium | Title Case | Compact |
-| Navigation section label | 9 px | Extra-bold | Uppercase | Compact |
-| Parent menu label | 12 px | Semibold | Title Case | 20 px |
-| Submenu label | 11 px | Regular or medium | Title Case | 16 px |
+| Navigation section label | 10 px | Extra-bold | Uppercase | Compact |
+| Parent menu label | 14 px | Semibold | Title Case | 20 px |
+| Submenu label | 13 px | Regular or medium | Title Case | 20 px |
 
 ### Mandatory hierarchy
 
 Parent menu labels must remain visually stronger than submenu labels:
 
 ```text
-Parent menu: 12 px semibold
-Submenu:     11 px regular/medium
+Parent menu: 14 px semibold
+Submenu:     13 px regular/medium
 ```
 
-Do not shrink parent labels to the global `text-xs` treatment merely to make all application text use the same class. The semantic role is different.
+Do not shrink parent labels to `text-xs`. Parent labels use `text-sm` so primary navigation remains immediately scannable. Submenu labels use the dedicated `text-[13px]` shell exception so they are readable without competing with the parent.
 
 ### Casing exceptions
 
@@ -116,7 +116,7 @@ Section labels provide grouping, not navigation.
 Contract:
 
 - visible only in expanded mode;
-- 9 px extra-bold uppercase;
+- 10 px extra-bold uppercase;
 - restrained tracking;
 - low-contrast inverse text;
 - 12 px horizontal inset relative to the sidebar frame;
@@ -136,7 +136,7 @@ Parent navigation represents a primary functional domain such as Inventory, Anal
 - icon surface: 32 × 32 px;
 - icon: 16 × 16 px;
 - icon-to-label gap: 10 px;
-- label: 12 px semibold;
+- label: 14 px semibold;
 - chevron: 16 × 16 px;
 - full-width click target in expanded mode.
 
@@ -190,16 +190,19 @@ Submenu links are secondary navigation and must not compete with their parent.
 
 ### Geometry
 
+The submenu uses compact vertical density: readable 13 px labels, 4 px vertical padding, and a 2 px gap between rows. This avoids both the overly sparse list appearance and cramped click targets.
+
 - left offset: 24 px from the parent content line;
 - guide line: subtle vertical border;
 - inner left padding: 12 px;
 - row horizontal padding: 10 px;
-- row vertical padding: 6 px;
+- row vertical padding: 4 px;
 - radius: 8 px;
 - icon: 14 px;
 - indicator dot: 6 px;
-- label: 11 px with 16 px line height;
-- item gap: 8 px between dot, icon, and text composition.
+- label: 13 px with 20 px line height;
+- item gap: 8 px between dot, icon, and text composition;
+- vertical gap between submenu rows: 2 px.
 
 ### Default state
 
@@ -303,7 +306,7 @@ Do not:
 
 - apply ordinary content typography wholesale to sidebar navigation;
 - make parent and submenu labels the same size and weight;
-- shrink parent labels below 12 px to solve clipping;
+- shrink parent labels below 14 px to solve clipping;
 - use `font-bold` or extra-bold on every navigation item;
 - use solid Violet for active submenu links;
 - use provider-specific colors in navigation;
@@ -324,19 +327,21 @@ app/templates/components/navigation/*_menu.html
 The current implementation establishes the baseline classes:
 
 ```text
-Parent:  min-h-11 rounded-lg px-2.5 py-2 text-[12px] font-semibold
-Child:   rounded-lg px-2.5 py-1.5 text-[11px] leading-4
-Section: text-[9px] font-extrabold uppercase tracking-[0.18em]
+Parent:  min-h-11 rounded-lg px-2.5 py-2 text-sm font-semibold
+Child:   rounded-lg px-2.5 py-1 text-[13px] leading-5
+Group:   space-y-0.5
+Section: text-[10px] font-extrabold uppercase tracking-[0.18em]
 ```
 
-These arbitrary sizes are intentional shell-navigation tokens. They are approved exceptions to the content typography rule that otherwise discourages local arbitrary font sizes.
+The 13 px submenu label and 10 px section marker are intentional shell-navigation tokens. They are approved exceptions to the content typography rule that otherwise discourages local arbitrary font sizes.
 
 ## Review Checklist
 
 Before accepting a sidebar change, verify:
 
-- parent remains 12 px semibold;
-- submenu remains 11 px and visually subordinate;
+- parent remains 14 px semibold;
+- submenu remains 13 px, uses 20 px line height, and stays visually subordinate;
+- submenu rows use 4 px vertical padding with a 2 px inter-row gap;
 - section label remains compact uppercase metadata;
 - collapsed mode hides text instead of shrinking it;
 - active parent and active child use different emphasis levels;
