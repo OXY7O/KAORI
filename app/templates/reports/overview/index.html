@@ -1,63 +1,30 @@
 {% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
 {% block title %}Reports Overview{% endblock title %}
 {% block dashboard_content %}
     <div class="space-y-6">
         <!-- Hero -->
-        <section class="relative overflow-hidden rounded-2xl bg-kaori-primary px-6 py-6 text-white shadow-sm">
-            </div>
-            <div class="relative grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px] xl:items-stretch">
-                <div class="space-y-5">
-                    <div class="flex items-start gap-4">
-                        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-white/15 text-white backdrop-blur">
-                            <i data-lucide="file-text" class="h-6 w-6"></i>
-                        </div>
-                        <div class="min-w-0">
-                            <div class="inline-flex items-center gap-2 rounded-md border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold tracking-wide text-white/90">
-                                <i data-lucide="sparkles" class="h-3.5 w-3.5"></i>
-                                Infrastructure reporting center
-                            </div>
-                            <h1 class="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">{{ payload.page_title }}</h1>
-                            <p class="mt-2 max-w-3xl text-sm leading-6 text-white/85 sm:text-base">{{ payload.page_subtitle }}</p>
-                        </div>
-                    </div>
-                    <div class="flex flex-wrap items-center gap-2.5 sm:pl-16">
-                        <span class="inline-flex items-center gap-2 rounded-md border border-white/15 bg-white/10 px-3.5 py-2 text-sm font-semibold text-white/90">
-                            <i data-lucide="boxes" class="h-4 w-4"></i>
-                            Infrastructure resources
-                        </span>
-                        <span class="inline-flex items-center gap-2 rounded-md border border-white/15 bg-white/10 px-3.5 py-2 text-sm font-semibold text-white/90">
-                            <i data-lucide="hard-drive" class="h-4 w-4"></i>
-                            {{ payload.storage_status }}
-                        </span>
-                        <span class="inline-flex items-center gap-2 rounded-md border border-white/15 bg-white/10 px-3.5 py-2 text-sm font-semibold text-white/90">
-                            <i data-lucide="calendar-clock" class="h-4 w-4"></i>
-                            Schedule UI and CLI
-                        </span>
-                    </div>
+        <section class="{{ page_hero.shell_classes() }}">
+    <div class="{{ page_hero.layout_classes() }}">
+        <div class="{{ page_hero.content_classes() }}">
+            {% call page_hero.intro('file-text', 'Infrastructure reporting center', 'file-text') %}
+                <h1 class="{{ page_hero.title_classes() }}">{{ payload.page_title }}</h1>
+                <p class="mt-2 {{ page_hero.description_classes() }}">{{ payload.page_subtitle }}</p>
+                <div class="{{ page_hero.metadata_row_classes() }}">
+                    {{ page_hero.meta_label('boxes', 'Infrastructure resources') }}
+                    {{ page_hero.meta_label('hard-drive', payload.storage_status) }}
+                    {{ page_hero.meta_label('calendar-clock', 'Scheduled reporting') }}
                 </div>
-                <div class="rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur">
-                    <div class="flex flex-col gap-4">
-                        <div class="min-w-0">
-                            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-white/75">Report engine posture</p>
-                            <div class="mt-2 text-4xl font-bold leading-none">{{ payload.report_engine_status }}</div>
-                            <p class="mt-2 text-sm leading-5 text-white/80">Generate standalone PDF reports from infrastructure templates, selected sections, and scheduled runs.</p>
-                        </div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <a href="{{ url_for('reports.report_templates') }}"
-                               class="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-sm font-semibold text-white transition hover:bg-white/20">
-                                <i data-lucide="layout-template" class="h-4 w-4"></i>
-                                Templates
-                            </a>
-                            <a href="{{ url_for('reports.generate_report') }}"
-                               class="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft">
-                                <i data-lucide="plus-circle" class="h-4 w-4"></i>
-                                Generate
-                            </a>
-                        </div>
-                    </div>
-                </div>
+            {% endcall %}
+        </div>
+        <aside class="{{ page_hero.aside_classes() }}" aria-label="Report actions">
+            <div class="flex h-full min-h-[12rem] flex-col justify-between rounded-xl border border-brand-outline bg-brand-surface-strong p-4 backdrop-blur-md">
+                <div><p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Report engine</p><h2 class="mt-1 text-base font-semibold text-brand-foreground">{{ payload.report_engine_status }}</h2><p class="mt-2 text-xs leading-5 text-brand-foreground-muted">Generate and govern standalone PDF artifacts from reusable templates and selected infrastructure scopes.</p></div>
+                <div class="mt-4 grid grid-cols-2 gap-2"><a href="{{ url_for('reports.report_templates') }}" class="{{ page_hero.secondary_action_classes() }}"><i data-lucide="layout-template" class="h-4 w-4"></i>Templates</a><a href="{{ url_for('reports.generate_report') }}" class="{{ page_hero.primary_action_classes() }}"><i data-lucide="plus-circle" class="h-4 w-4"></i>Generate</a></div>
             </div>
-        </section>
+        </aside>
+    </div>
+</section>
         <!-- Summary Cards -->
         <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {% for card in payload.summary_cards %}

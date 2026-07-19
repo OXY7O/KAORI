@@ -1,4 +1,5 @@
 {% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
 {% block title %}Resource Forecast{% endblock title %}
 {% block dashboard_content %}
     <div id="forecast-page"
@@ -29,91 +30,12 @@
             {% set posture_desc = "Waiting for metrics." %}
             {% set posture_badge = "bg-slate-500 text-white ring-slate-200/40" %}
         {% endif %}
-        <section class="relative overflow-hidden min-h-[16.5rem] min-h-[16.5rem] rounded-3xl bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 px-6 py-6 text-white shadow-lg shadow-blue-500/20 sm:px-7 sm:py-7 sm:px-7 sm:py-7">
-            <div class="absolute inset-y-0 right-0 hidden w-1/3 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.22),transparent_55%)] lg:block">
-            </div>
-            <div class="absolute -top-16 right-10 h-40 w-40 rounded-full bg-white/10 blur-3xl"></div>
-            <div class="absolute -bottom-20 right-32 h-48 w-48 rounded-full bg-cyan-300/20 blur-3xl"></div>
-            <div class="relative grid gap-6 xl:grid-cols-[minmax(0,1fr)_400px] xl:items-start">
-                <div class="space-y-5">
-                    <div class="flex items-start gap-4">
-                        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-white/15 text-white backdrop-blur">
-                            <i data-lucide="line-chart" class="h-6 w-6"></i>
-                        </div>
-                        <div class="min-w-0 space-y-5">
-                            <div>
-                                <div class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold tracking-wide text-blue-50">
-                                    <i data-lucide="sparkles" class="h-3.5 w-3.5"></i>
-                                    Kubernetes capacity forecast center
-                                </div>
-                                <h1 class="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">Resource Forecast</h1>
-                                <p class="mt-2 max-w-4xl text-sm leading-6 text-blue-50/90 sm:text-base xl:whitespace-nowrap">Forecast CPU, memory, storage, and pod growth to anticipate capacity pressure and future risk.</p>
-                            </div>
-                            {% if dependency_blocker %}
-                                <div class="flex flex-wrap items-center gap-2.5 sm:ml-16">
-                                    <span class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-2 text-sm font-semibold text-blue-50">
-                                        <i data-lucide="server" class="h-4 w-4"></i>
-                                        {{ selected_cluster_name }}
-                                    </span>
-                                    <span class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-2 text-sm font-semibold text-blue-50">
-                                        <i data-lucide="lock-keyhole" class="h-4 w-4"></i>
-                                        Step {{ dependency_blocker.stage }} · {{ dependency_blocker.badge }}
-                                    </span>
-                                </div>
-                            {% else %}
-                                <div class="flex flex-wrap items-center gap-2.5">
-                                    <span class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-2 text-sm font-semibold text-blue-50">
-                                        <i data-lucide="server" class="h-4 w-4"></i>
-                                        {{ selected_cluster_name }}
-                                    </span>
-                                    <span class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-2 text-sm font-semibold text-blue-50">
-                                        <i data-lucide="calendar-range" class="h-4 w-4"></i>
-                                        {{ selected_history_window }} history
-                                    </span>
-                                    <span class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-2 text-sm font-semibold text-blue-50">
-                                        <i data-lucide="activity" class="h-4 w-4"></i>
-                                        {{ forecast_payload.method_label|default("Linear Trend") }}
-                                    </span>
-                                    <span class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-2 text-sm font-semibold text-blue-50">
-                                        <i data-lucide="list-checks" class="h-4 w-4"></i>
-                                        {{ recommendation_count }} actionable
-                                    </span>
-                                </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-                {% if dependency_blocker %}
-                    {% set analytics_posture_label = "Forecast posture" %}
-                    {% include "analytics/components/_blocked_posture.html" %}
-                {% else %}
-                    <div class="rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur xl:min-h-[176px]">
-                        <div class="flex h-full flex-col justify-start gap-3">
-                            <div class="flex items-start justify-between gap-4">
-                                <div class="min-w-0">
-                                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-50/80">Forecast posture</p>
-                                    <div class="mt-2 text-4xl font-bold leading-none">{{ posture_value }}</div>
-                                    <p class="mt-1 text-sm leading-5 text-blue-50/85">{{ posture_desc }}</p>
-                                </div>
-                                <span class="inline-flex shrink-0 rounded-md px-3 py-1.5 text-xs font-bold ring-1 ring-inset {{ posture_badge }}">
-                                    {{ posture_value }}
-                                </span>
-                            </div>
-                            <div class="mt-2 grid grid-cols-2 gap-3">
-                                <div class="rounded-xl bg-white/10 px-4 py-3">
-                                    <p class="text-xs text-blue-50/75">Highest Projection</p>
-                                    <p class="mt-1 text-2xl font-semibold">{{ summary.highest_projected_percent|default(0) }}%</p>
-                                </div>
-                                <div class="rounded-xl bg-white/10 px-4 py-3">
-                                    <p class="text-xs text-blue-50/75">Forecast Horizon</p>
-                                    <p class="mt-1 text-2xl font-semibold">{{ selected_forecast_horizon }}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                {% endif %}
-            </div>
-        </section>
+        <section class="{{ page_hero.shell_classes() }}">
+    <div class="{{ page_hero.layout_classes() }}">
+        <div class="{{ page_hero.content_classes() }}">{% call page_hero.intro('sparkles', 'Kubernetes capacity forecast', 'line-chart') %}<h1 class="{{ page_hero.title_classes() }}">Resource Forecast</h1><p class="mt-2 {{ page_hero.description_classes() }}">Forecast CPU, memory, storage, and pod growth to anticipate capacity pressure and future operational risk.</p><div class="{{ page_hero.metadata_row_classes() }}">{{ page_hero.meta_label('server', selected_cluster_name) }}{{ page_hero.meta_label('lock-keyhole' if dependency_blocker else 'calendar-range', ('Step ' ~ dependency_blocker.stage ~ ' · ' ~ dependency_blocker.badge) if dependency_blocker else (selected_history_window ~ ' history')) }}{{ page_hero.meta_label('list-checks', recommendation_count ~ ' actionable') }}</div>{% endcall %}</div>
+        <aside class="{{ page_hero.aside_classes() }}" aria-label="Forecast posture">{% if dependency_blocker %}{% set analytics_posture_label = 'Forecast posture' %}{% include 'analytics/components/_blocked_posture.html' %}{% else %}<div class="flex h-full min-h-[12rem] flex-col justify-between rounded-xl border border-brand-outline bg-brand-surface-strong p-4 backdrop-blur-md"><div><p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Forecast posture</p><h2 class="mt-1 text-2xl font-bold text-brand-foreground">{{ posture_value }}</h2><p class="mt-2 text-xs leading-5 text-brand-foreground-muted">{{ posture_desc }}</p></div><div class="mt-4">{{ page_hero.meta_label('list-checks', recommendation_count ~ ' actionable') }}</div></div>{% endif %}</aside>
+    </div>
+</section>
         {% if dependency_blocker %}
             {% include "components/dependencies/_blocker.html" %}
         {% endif %}
