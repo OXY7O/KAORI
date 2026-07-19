@@ -46,24 +46,24 @@
         <div class="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <article class="rounded-lg border border-brand-outline bg-kaori-primary p-4 text-brand-foreground">
                 <p class="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wide text-brand-foreground-muted"><i data-lucide="crosshair" class="h-3.5 w-3.5"></i>Trend scope</p>
-                <p class="mt-2 truncate text-lg font-bold">{{ selected_trend_node if selected_trend_node else 'All Worker Nodes' }}</p>
+                <p class="mt-2 truncate text-lg font-semibold">{{ selected_trend_node if selected_trend_node else 'All Worker Nodes' }}</p>
                 <p class="mt-1 text-xs leading-5 text-brand-foreground-muted">Chart queries follow this scope only.</p>
             </article>
             <article class="rounded-lg border border-outline-default bg-surface-hover p-4">
                 <p class="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wide text-content-muted"><i data-lucide="clock-3" class="h-3.5 w-3.5"></i>Window</p>
-                <p class="mt-2 text-lg font-bold text-content-primary">
+                <p class="mt-2 text-lg font-semibold text-content-primary">
                     {% if trend_hours < 24 %}Last {{ trend_hours }}h{% elif trend_hours == 24 %}Last 24 Hours{% elif trend_hours == 168 %}Last 7 Days{% elif trend_hours == 720 %}Last 30 Days{% elif trend_hours == 1440 %}Last 60 Days{% else %}{{ trend_hours }}h{% endif %}
                 </p>
                 <p class="mt-1 text-xs leading-5 text-content-muted">Controlled by the page time-range filter.</p>
             </article>
             <article class="rounded-lg border border-outline-default bg-surface-hover p-4">
                 <p class="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wide text-content-muted"><i data-lucide="activity" class="h-3.5 w-3.5"></i>Signals</p>
-                <p class="mt-2 text-lg font-bold text-content-primary">CPU · Memory · Pods</p>
+                <p class="mt-2 text-lg font-semibold text-content-primary">CPU · Memory · Pods</p>
                 <p class="mt-1 text-xs leading-5 text-content-muted">Filesystem pressure remains in Node Detail.</p>
             </article>
             <article class="rounded-lg border border-outline-default bg-surface-hover p-4">
                 <p class="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wide text-content-muted"><i data-lucide="database" class="h-3.5 w-3.5"></i>Samples</p>
-                <p class="mt-2 text-lg font-bold text-content-primary">{{ trend_sample_count }}</p>
+                <p class="mt-2 text-lg font-semibold text-content-primary">{{ trend_sample_count }}</p>
                 <p class="mt-1 text-xs leading-5 text-content-muted">Prometheus range points rendered.</p>
             </article>
         </div>
@@ -71,7 +71,7 @@
         <div class="rounded-xl border border-outline-default bg-surface-hover p-4">
             <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                    <h3 class="text-sm font-semibold text-content-primary">Trend behavior</h3>
+                    <h3 class="text-sm font-semibold text-content-primary">Trend Behavior</h3>
                     <p class="mt-1 text-xs leading-5 text-content-muted">Validate sustained pressure before acting on the current node-detail snapshot.</p>
                 </div>
                 {{ table_label.metadata_label('Historical view', 'line-chart') }}

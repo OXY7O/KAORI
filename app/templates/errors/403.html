@@ -12,8 +12,8 @@
                     <span class="inline-flex h-14 w-14 items-center justify-center rounded-2xl border border-brand-outline bg-brand-surface-strong">
                         <i data-lucide="shield-alert" class="h-7 w-7"></i>
                     </span>
-                    <p class="mt-6 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-foreground-muted">KAORI access boundary</p>
-                    <h1 class="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
+                    <p class="mt-6 text-xs font-semibold uppercase tracking-[0.18em] text-brand-foreground-muted">KAORI access boundary</p>
+                    <h1 class="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
                         {{ 'Access role unavailable' if role_unavailable else 'Access denied' }}
                     </h1>
                     <p class="mt-4 max-w-xl text-sm font-medium leading-7 text-brand-foreground-muted sm:text-base">
@@ -43,8 +43,8 @@
                         <i data-lucide="key-round" class="h-5 w-5"></i>
                     </span>
                     <div>
-                        <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-content-muted">Current authorization</p>
-                        <h2 class="mt-1 text-base font-bold text-content-primary">
+                        <p class="text-xs font-semibold uppercase tracking-[0.14em] text-content-muted">Current authorization</p>
+                        <h2 class="mt-1 text-base font-semibold text-content-primary">
                             {% if current_user.is_super_admin %}
                                 Super Admin
                             {% elif assigned_role %}

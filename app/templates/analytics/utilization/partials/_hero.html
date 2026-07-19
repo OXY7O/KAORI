@@ -29,7 +29,7 @@
         <div class="relative grid gap-5 xl:grid-cols-12 xl:items-stretch">
             <div class="flex min-w-0 flex-col justify-center xl:col-span-7">
                 {% call page_hero.intro('activity', 'Kubernetes analytics', 'chart-no-axes-combined') %}
-                    <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">Resource Utilization</h1>
+                    <h1 class="text-2xl font-semibold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">Resource Utilization</h1>
                     <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">
                         Analyze CPU, memory, storage, pod utilization, historical trends, and node pressure for the selected cluster.
                     </p>
@@ -55,7 +55,7 @@
                         <div class="flex items-start justify-between gap-4">
                             <div class="min-w-0">
                                 <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Utilization posture</p>
-                                <p class="mt-1 text-3xl font-bold leading-none text-brand-foreground">{{ posture_value }}</p>
+                                <p class="mt-1 text-3xl font-semibold leading-none text-brand-foreground">{{ posture_value }}</p>
                                 <p class="mt-2 text-xs leading-5 text-brand-foreground-muted">{{ posture_desc }}</p>
                             </div>
                             {{ table_label.status_label(posture_value, posture_tone, posture_icon) }}
@@ -63,11 +63,11 @@
                         <div class="mt-auto grid grid-cols-2 gap-2 pt-4">
                             <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-3">
                                 <p class="text-[10px] font-semibold uppercase tracking-wide text-brand-foreground-muted">Highest usage</p>
-                                <p class="mt-1 text-2xl font-bold text-brand-foreground">{{ highest_util }}%</p>
+                                <p class="mt-1 text-2xl font-semibold text-brand-foreground">{{ highest_util }}%</p>
                             </div>
                             <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-3">
                                 <p class="text-[10px] font-semibold uppercase tracking-wide text-brand-foreground-muted">Pod utilization</p>
-                                <p class="mt-1 text-2xl font-bold text-brand-foreground">{{ pod_util }}%</p>
+                                <p class="mt-1 text-2xl font-semibold text-brand-foreground">{{ pod_util }}%</p>
                             </div>
                         </div>
                     </div>

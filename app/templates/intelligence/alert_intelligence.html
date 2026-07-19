@@ -8,7 +8,7 @@
             <div class="relative grid gap-5 xl:grid-cols-12 xl:items-stretch">
                 <div class="flex min-w-0 flex-col justify-center xl:col-span-7">
                     {% call page_hero.intro('triangle-alert', payload.hero_label, 'radio-tower') %}
-                        <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">{{ payload.page_title }}</h1>
+                        <h1 class="text-2xl font-semibold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">{{ payload.page_title }}</h1>
                         <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">{{ payload.page_subtitle }}</p>
                         <div class="mt-5 flex flex-wrap gap-2">
                             {{ page_hero.meta_label('boxes', 'Kubernetes alerts') }}
@@ -22,7 +22,7 @@
                         <div class="flex items-start justify-between gap-4">
                             <div class="min-w-0">
                                 <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Alert intelligence posture</p>
-                                <h2 class="mt-1 text-3xl font-bold leading-none text-brand-foreground">{{ payload.engine_status }}</h2>
+                                <h2 class="mt-1 text-3xl font-semibold leading-none text-brand-foreground">{{ payload.engine_status }}</h2>
                                 <p class="mt-2 text-sm leading-5 text-brand-foreground-muted">{{ payload.engine_description }}</p>
                             </div>
                             {{ table_label.status_label('Ready', 'normal', 'circle-check') }}
@@ -44,7 +44,7 @@
                             <i data-lucide="{{ card.icon }}" class="h-5 w-5"></i>
                         </span>
                         <div class="min-w-0">
-                            <h3 class="text-sm font-bold text-content-primary">{{ card.title }}</h3>
+                            <h3 class="text-sm font-semibold text-content-primary">{{ card.title }}</h3>
                             <p class="mt-1 text-sm leading-6 text-content-secondary">{{ card.description }}</p>
                         </div>
                     </div>
@@ -55,8 +55,8 @@
         <section class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
             <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                 <div>
-                    <p class="text-xs font-bold uppercase tracking-[0.16em] text-kaori-primary">Signal enrichment flow</p>
-                    <h2 class="mt-1 text-xl font-bold text-content-primary">How Alert Intelligence works</h2>
+                    <p class="text-xs font-semibold uppercase tracking-[0.16em] text-kaori-primary">Signal enrichment flow</p>
+                    <h2 class="mt-1 text-xl font-semibold text-content-primary">How Alert Intelligence Works</h2>
                     <p class="mt-1 max-w-3xl text-sm leading-6 text-content-muted">Detection and routing remain in their authoritative source systems. KAORI adds normalized asset context, operational correlation, and investigation guidance.</p>
                 </div>
                 {{ table_label.status_label('Enrichment workspace', 'maintenance', 'construction') }}
@@ -64,8 +64,8 @@
             <div class="mt-5 grid gap-4 lg:grid-cols-4">
                 {% for step in payload.dummy_flow %}
                     <article class="rounded-lg border border-outline-default bg-surface-subtle p-4">
-                        <div class="flex h-9 w-9 items-center justify-center rounded-md border border-brand-outline bg-kaori-primary text-sm font-bold text-brand-foreground">{{ step.step }}</div>
-                        <h3 class="mt-4 text-sm font-bold text-content-primary">{{ step.title }}</h3>
+                        <div class="flex h-9 w-9 items-center justify-center rounded-md border border-brand-outline bg-kaori-primary text-sm font-semibold text-brand-foreground">{{ step.step }}</div>
+                        <h3 class="mt-4 text-sm font-semibold text-content-primary">{{ step.title }}</h3>
                         <p class="mt-2 text-sm leading-6 text-content-secondary">{{ step.description }}</p>
                     </article>
                 {% endfor %}

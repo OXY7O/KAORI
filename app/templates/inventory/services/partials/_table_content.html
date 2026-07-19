@@ -43,7 +43,7 @@
                     <td class="px-3 py-3.5 text-right align-top">
                         <button type="button"
                                 data-inventory-detail-kind="service"
-                                class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-2.5 text-[11px] font-semibold text-content-secondary shadow-sm transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
+                                class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs font-semibold text-content-secondary shadow-sm transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
                                 hx-get="{{ url_for('inventory.service_details', service_id=service.id) }}"
                                 hx-target="#service-detail-content-{{ service.id }}"
                                 hx-swap="innerHTML"

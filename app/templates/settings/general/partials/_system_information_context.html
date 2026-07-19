@@ -4,7 +4,7 @@
             <i data-lucide="variable" class="h-5 w-5"></i>
         </span>
         <div>
-            <h2 class="text-base font-bold text-content-primary">Version Configuration</h2>
+            <h2 class="text-base font-semibold text-content-primary">Version Configuration</h2>
             <p class="mt-1 text-sm leading-6 text-content-muted">
                 Release identity is deployment metadata, not an editable user preference.
             </p>
@@ -12,17 +12,17 @@
     </div>
     <dl class="mt-5 space-y-3 text-xs">
         <div class="rounded-xl border border-outline-default bg-surface-subtle p-3.5">
-            <dt class="font-bold text-content-primary">Required variable</dt>
+            <dt class="font-semibold text-content-primary">Required variable</dt>
             <dd class="mt-1 font-mono leading-5 text-kaori-primary">APP_VERSION={{ system_information.version }}</dd>
         </div>
         <div class="rounded-xl border border-outline-default bg-surface-subtle p-3.5">
-            <dt class="font-bold text-content-primary">Optional build metadata</dt>
+            <dt class="font-semibold text-content-primary">Optional build metadata</dt>
             <dd class="mt-1 leading-5 text-content-muted">
                 APP_BUILD_SHA and APP_BUILD_DATE provide immutable release traceability when supplied by the image build or deployment pipeline.
             </dd>
         </div>
         <div class="rounded-xl border border-outline-default bg-surface-subtle p-3.5">
-            <dt class="font-bold text-content-primary">Deployment rule</dt>
+            <dt class="font-semibold text-content-primary">Deployment rule</dt>
             <dd class="mt-1 leading-5 text-content-muted">
                 Keep APP_VERSION aligned with the immutable KAORI image tag to make support and rollback decisions unambiguous.
             </dd>
@@ -36,7 +36,7 @@
             <i data-lucide="shield-ellipsis" class="h-5 w-5"></i>
         </span>
         <div>
-            <h2 class="text-base font-bold text-content-primary">Information Boundary</h2>
+            <h2 class="text-base font-semibold text-content-primary">Information Boundary</h2>
             <p class="mt-1 text-sm leading-6 text-content-muted">
                 This tab is intentionally safe for every authenticated KAORI user.
             </p>

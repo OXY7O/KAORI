@@ -50,7 +50,7 @@
                     {{ table_label.status_label(item.status, semantic_tone) }}
                 </div>
                 <p class="mt-4 text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">{{ item.label }}</p>
-                <p class="mt-2 truncate text-xl font-bold {{ value_class }}" title="{{ item.value }}">{{ item.value }}</p>
+                <p class="mt-2 truncate text-xl font-semibold {{ value_class }}" title="{{ item.value }}">{{ item.value }}</p>
                 <p class="mt-2 min-h-10 text-xs leading-5 text-content-muted">{{ item.description }}</p>
             </article>
         {% endfor %}

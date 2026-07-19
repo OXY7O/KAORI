@@ -155,7 +155,7 @@
                 <header class="flex items-center justify-between gap-3 border-b border-outline-subtle px-4 py-4">
                     <div class="flex items-center gap-3">
                         <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="git-branch" class="h-4 w-4"></i></span>
-                        <div><h4 class="text-sm font-semibold text-content-primary">Backend routes</h4><p class="mt-0.5 text-xs text-content-muted">Declared host, path, path type, backend Service, and port mappings.</p></div>
+                        <div><h4 class="text-sm font-semibold text-content-primary">Backend Routes</h4><p class="mt-0.5 text-xs text-content-muted">Declared host, path, path type, backend Service, and port mappings.</p></div>
                     </div>
                     {{ table_label.metadata_label(ingress.backend_count ~ ' routes', 'route') }}
                 </header>
@@ -187,7 +187,7 @@
             <div class="grid gap-4 xl:grid-cols-2">
                 <section class="rounded-xl border border-outline-default bg-surface-card p-4">
                     <div class="mb-4 flex items-center justify-between gap-3">
-                        <div class="flex items-center gap-3"><span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="tags" class="h-4 w-4"></i></span><div><h4 class="text-sm font-semibold text-content-primary">Ingress labels</h4><p class="mt-0.5 text-xs text-content-muted">Descriptive Kubernetes labels from the Ingress snapshot.</p></div></div>
+                        <div class="flex items-center gap-3"><span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="tags" class="h-4 w-4"></i></span><div><h4 class="text-sm font-semibold text-content-primary">Ingress Labels</h4><p class="mt-0.5 text-xs text-content-muted">Descriptive Kubernetes labels from the Ingress snapshot.</p></div></div>
                         {{ table_label.metadata_label(ingress.labels|length ~ ' labels', 'tags') }}
                     </div>
                     {% if ingress.labels %}
@@ -200,7 +200,7 @@
 
                 <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
                     <header class="flex items-center justify-between gap-3 border-b border-outline-subtle px-4 py-4">
-                        <div class="flex items-center gap-3"><span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="braces" class="h-4 w-4"></i></span><div><h4 class="text-sm font-semibold text-content-primary">Ingress annotations</h4><p class="mt-0.5 text-xs text-content-muted">Controller and integration annotations displayed as key-value rows.</p></div></div>
+                        <div class="flex items-center gap-3"><span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="braces" class="h-4 w-4"></i></span><div><h4 class="text-sm font-semibold text-content-primary">Ingress Annotations</h4><p class="mt-0.5 text-xs text-content-muted">Controller and integration annotations displayed as key-value rows.</p></div></div>
                         {{ table_label.metadata_label(ingress.annotations|length ~ ' annotations', 'braces') }}
                     </header>
                     {% if ingress.annotations %}

@@ -56,7 +56,7 @@
                             <i data-lucide="triangle-alert" class="h-4.5 w-4.5"></i>
                         </span>
                         <div>
-                            <h3 class="font-semibold text-content-primary">Utilization data unavailable</h3>
+                            <h3 class="font-semibold text-content-primary">Utilization Data Unavailable</h3>
                             <p class="mt-1 text-sm leading-6 text-content-muted">{{ error }}</p>
                         </div>
                     </div>
@@ -104,7 +104,7 @@
                                 {{ table_label.status_label('Ready' if cluster_info.not_ready_nodes == 0 else 'Review', 'normal' if cluster_info.not_ready_nodes == 0 else 'warning', 'circle-check' if cluster_info.not_ready_nodes == 0 else 'triangle-alert') }}
                             </div>
                             <p class="mt-4 text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-foreground-muted">Node readiness</p>
-                            <p class="mt-1 text-3xl font-bold">{{ "%.0f"|format(ready_ratio) }}%</p>
+                            <p class="mt-1 text-3xl font-semibold">{{ "%.0f"|format(ready_ratio) }}%</p>
                             <p class="mt-2 text-xs leading-5 text-brand-foreground-muted">{{ cluster_info.ready_nodes }} ready · {{ cluster_info.not_ready_nodes }} NotReady</p>
                             <div class="mt-auto pt-4">
                                 <div class="h-2 overflow-hidden rounded-full bg-brand-surface">
@@ -121,7 +121,7 @@
                             <article class="flex min-h-[184px] flex-col rounded-xl border border-outline-default bg-surface-card p-4 transition hover:bg-surface-hover">
                                 <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ metric.icon }}" class="h-4.5 w-4.5"></i></span>
                                 <p class="mt-4 text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">{{ metric.label }}</p>
-                                <p class="mt-1 text-3xl font-bold text-content-primary">{{ metric.value }}</p>
+                                <p class="mt-1 text-3xl font-semibold text-content-primary">{{ metric.value }}</p>
                                 <p class="mt-2 text-xs leading-5 text-content-muted">{{ metric.description }}</p>
                                 <p class="mt-auto border-t border-outline-subtle pt-3 text-xs font-semibold text-kaori-primary">Review with requests, limits, and workload density.</p>
                             </article>
@@ -158,7 +158,7 @@
                                 {{ utilization_status(metric.value) }}
                             </div>
                             <p class="mt-4 text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">{{ metric.label }}</p>
-                            <p class="mt-1 text-3xl font-bold tracking-tight text-content-primary">{{ metric.value }}%</p>
+                            <p class="mt-1 text-3xl font-semibold tracking-tight text-content-primary">{{ metric.value }}%</p>
                             {{ utilization_fill_bar(metric.value, metric.tone) }}
                             <p class="mt-4 text-sm font-semibold text-content-primary">{{ metric.detail }}</p>
                             <p class="mt-1 text-xs leading-5 text-content-muted">{{ metric.description }}</p>

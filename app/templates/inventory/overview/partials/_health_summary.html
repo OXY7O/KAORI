@@ -24,17 +24,17 @@
         <div class="grid gap-3 sm:grid-cols-3">
             <div class="rounded-2xl bg-gradient-to-br from-blue-700 via-blue-600 to-cyan-500 p-4 text-white shadow-sm shadow-blue-500/20">
                 <p class="text-[10px] font-semibold uppercase tracking-wide text-blue-50/80">Coverage</p>
-                <div class="mt-2 text-2xl font-bold">{{ coverage_score | int }}%</div>
+                <div class="mt-2 text-2xl font-semibold">{{ coverage_score | int }}%</div>
                 <p class="mt-1 text-xs text-blue-50/80">{{ synced_clusters }}/{{ total_clusters }} synced</p>
             </div>
             <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/40">
                 <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Reachable</p>
-                <div class="mt-2 text-2xl font-bold text-slate-950 dark:text-white">{{ connected }}/{{ total_clusters }}</div>
+                <div class="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">{{ connected }}/{{ total_clusters }}</div>
                 <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ connection_percentage | int }}% connected</p>
             </div>
             <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/40">
                 <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Fresh</p>
-                <div class="mt-2 text-2xl font-bold text-slate-950 dark:text-white">{{ fresh_synced }}/{{ total_clusters }}</div>
+                <div class="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">{{ fresh_synced }}/{{ total_clusters }}</div>
                 <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ freshness_score | int }}% in {{ overview.health.freshness_window_hours or 24 }}h</p>
             </div>
         </div>
@@ -63,15 +63,15 @@
         <div class="mt-5 grid gap-2 sm:grid-cols-3">
             <div class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-500/20 dark:bg-amber-500/10">
                 <p class="text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">Never Sync</p>
-                <p class="mt-1 text-lg font-bold text-amber-900 dark:text-amber-200">{{ never_synced }}</p>
+                <p class="mt-1 text-lg font-semibold text-amber-900 dark:text-amber-200">{{ never_synced }}</p>
             </div>
             <div class="rounded-xl border border-orange-200 bg-orange-50 px-3 py-2 dark:border-orange-500/20 dark:bg-orange-500/10">
                 <p class="text-[10px] font-semibold uppercase tracking-wide text-orange-700 dark:text-orange-300">Stale</p>
-                <p class="mt-1 text-lg font-bold text-orange-900 dark:text-orange-200">{{ stale_synced }}</p>
+                <p class="mt-1 text-lg font-semibold text-orange-900 dark:text-orange-200">{{ stale_synced }}</p>
             </div>
             <div class="rounded-xl border border-red-200 bg-red-50 px-3 py-2 dark:border-red-500/20 dark:bg-red-500/10">
                 <p class="text-[10px] font-semibold uppercase tracking-wide text-red-700 dark:text-red-300">Disconnected</p>
-                <p class="mt-1 text-lg font-bold text-red-900 dark:text-red-200">{{ disconnected }}</p>
+                <p class="mt-1 text-lg font-semibold text-red-900 dark:text-red-200">{{ disconnected }}</p>
             </div>
         </div>
         <div class="mt-auto pt-5">
@@ -81,7 +81,7 @@
                         <i data-lucide="clock-3" class="h-4 w-4"></i>
                     </span>
                     <div class="min-w-0">
-                        <p class="text-xs font-bold text-slate-900 dark:text-white">Latest collection</p>
+                        <p class="text-xs font-semibold text-slate-900 dark:text-white">Latest collection</p>
                         <p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">{{ overview.health.last_sync|user_datetime }}</p>
                     </div>
                 </div>

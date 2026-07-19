@@ -24,16 +24,16 @@
     <div x-cloak x-show="open" x-transition class="p-5">
         <div class="grid grid-cols-3 gap-3">
             <div class="rounded-lg border border-outline-subtle bg-surface-hover p-3 text-center">
-                <p class="text-[11px] font-semibold uppercase tracking-wide text-kaori-primary">Generated</p>
-                <p class="mt-1 text-xl font-bold text-content-primary">{{ dashboard.reporting_snapshot.generated_reports }}</p>
+                <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary">Generated</p>
+                <p class="mt-1 text-xl font-semibold text-content-primary">{{ dashboard.reporting_snapshot.generated_reports }}</p>
             </div>
             <div class="rounded-lg border border-outline-subtle bg-surface-hover p-3 text-center">
-                <p class="text-[11px] font-semibold uppercase tracking-wide text-kaori-primary">Templates</p>
-                <p class="mt-1 text-xl font-bold text-content-primary">{{ dashboard.reporting_snapshot.templates }}</p>
+                <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary">Templates</p>
+                <p class="mt-1 text-xl font-semibold text-content-primary">{{ dashboard.reporting_snapshot.templates }}</p>
             </div>
             <div class="rounded-lg border border-outline-subtle bg-surface-hover p-3 text-center">
-                <p class="text-[11px] font-semibold uppercase tracking-wide text-kaori-primary">Schedules</p>
-                <p class="mt-1 text-xl font-bold text-content-primary">{{ dashboard.reporting_snapshot.schedules }}</p>
+                <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary">Schedules</p>
+                <p class="mt-1 text-xl font-semibold text-content-primary">{{ dashboard.reporting_snapshot.schedules }}</p>
             </div>
         </div>
 
@@ -47,10 +47,10 @@
                             </div>
                             <div class="min-w-0">
                                 <p class="truncate text-sm font-semibold text-content-primary">{{ report.title }}</p>
-                                <p class="mt-0.5 text-[11px] text-content-muted">{{ report.generated_at }}</p>
+                                <p class="mt-0.5 text-xs text-content-muted">{{ report.generated_at }}</p>
                             </div>
                         </div>
-                        <span class="rounded-md border px-2.5 py-1 text-[11px] font-semibold
+                        <span class="rounded-md border px-2.5 py-1 text-xs font-semibold
                                     {% if report.status|lower == 'completed' %}border-status-normal-border bg-status-normal-soft text-status-normal-text
                                     {% elif report.status|lower == 'failed' %}border-status-critical-border bg-status-critical-soft text-status-critical-text
                                     {% else %}border-status-pending-border bg-status-pending-soft text-status-pending-text{% endif %}">

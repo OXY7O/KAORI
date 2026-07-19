@@ -106,11 +106,11 @@
                 </div>
                 <div class="grid gap-2 sm:grid-cols-2 lg:min-w-[20rem]">
                     <div class="rounded-lg border border-brand-outline bg-surface-card px-3 py-2.5">
-                        <p class="text-[11px] font-semibold uppercase tracking-widest text-content-muted">Source</p>
+                        <p class="text-xs font-semibold uppercase tracking-widest text-content-muted">Source</p>
                         <p class="mt-1 text-sm font-semibold text-content-primary">{{ last_auth_label }}</p>
                     </div>
                     <div class="rounded-lg border border-brand-outline bg-surface-card px-3 py-2.5">
-                        <p class="text-[11px] font-semibold uppercase tracking-widest text-content-muted">IP address</p>
+                        <p class="text-xs font-semibold uppercase tracking-widest text-content-muted">IP address</p>
                         <p class="mt-1 text-sm font-semibold text-content-primary">{{ current_user.last_login_ip|default('Unavailable', true) }}</p>
                     </div>
                 </div>

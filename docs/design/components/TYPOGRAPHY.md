@@ -260,3 +260,11 @@ Before accepting a new page or component, verify:
 8. Is monospace limited to technical values?
 9. Does the hierarchy remain readable on mobile?
 10. Has any recurring exception been documented?
+
+## Enforced Content Heading Rule
+
+Static content headings use Title Case in source text. CSS `capitalize` is not the default because it can corrupt acronyms, identifiers, and provider names. Hero eyebrows and compact category markers may remain uppercase when the component explicitly defines that treatment.
+
+Semibold is the default title emphasis. Bold is reserved for deliberate high-emphasis metrics or exceptional hero treatment. Ordinary headings, card titles, modal titles, drawer titles, table block titles, form section titles, and expandable titles use semibold.
+
+Arbitrary font sizes are not permitted outside documented shared components. The approved content scale is `text-xs`, `text-sm`, `text-base`, `text-lg`, `text-xl`, `text-2xl`, and `text-3xl`. The compact semantic label may use 10 px through the shared label component.

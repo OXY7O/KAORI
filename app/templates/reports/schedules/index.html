@@ -54,7 +54,7 @@
                         </div>
                         <div>
                             <p class="text-sm font-semibold text-content-secondary dark:text-content-secondary">{{ card.label }}</p>
-                            <p class="mt-2 text-3xl font-bold tracking-tight text-content-primary text-content-primary">{{ card.value }}</p>
+                            <p class="mt-2 text-3xl font-semibold tracking-tight text-content-primary text-content-primary">{{ card.value }}</p>
                             <p class="mt-1 text-sm text-content-muted dark:text-content-muted">{{ card.caption }}</p>
                         </div>
                     </div>
@@ -80,7 +80,7 @@
                     <div class="border-b border-outline-default px-5 py-4 dark:border-outline-default">
                         <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                             <div>
-                                <h2 class="text-base font-semibold text-content-primary text-content-primary">Configured Schedules</h2>
+                                <h2 class="text-base font-semibold text-content-primary">Configured Schedules</h2>
                                 <p class="mt-1 text-xs text-content-muted dark:text-content-muted">Recurring schedules create normal generated report records and PDF artifacts.</p>
                             </div>
                             <span class="inline-flex w-fit items-center gap-2 rounded-xl bg-kaori-soft px-3 py-1.5 text-xs font-semibold text-content-secondary bg-kaori-soft dark:text-content-secondary">
@@ -100,7 +100,7 @@
                                     <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                                         <div class="min-w-0 flex-1">
                                             <div class="flex flex-wrap items-center gap-2">
-                                                <h3 class="text-sm font-semibold text-content-primary text-content-primary">{{ schedule.name }}</h3>
+                                                <h3 class="text-sm font-semibold text-content-primary">{{ schedule.name }}</h3>
                                                 <span class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold ring-1 ring-inset {{ status_class }}">
                                                     <i data-lucide="{{ schedule.status_meta.icon }}" class="h-3.5 w-3.5"></i>
                                                     {{ schedule.status_meta.label }}
@@ -263,7 +263,7 @@
                                 <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-kaori-soft text-content-muted bg-kaori-soft dark:text-content-secondary">
                                     <i data-lucide="calendar-plus" class="h-6 w-6"></i>
                                 </div>
-                                <h3 class="mt-4 text-sm font-semibold text-content-primary text-content-primary">No schedules yet</h3>
+                                <h3 class="mt-4 text-sm font-semibold text-content-primary">No Schedules Yet</h3>
                                 <p class="mt-1 text-sm text-content-muted dark:text-content-muted">Create the first recurring report schedule from the form on the right.</p>
                             </div>
                         {% endif %}
@@ -271,7 +271,7 @@
                 </section>
                 <section class="rounded-2xl border border-outline-default bg-white shadow-sm dark:border-outline-default bg-surface-card">
                     <div class="border-b border-outline-default px-5 py-4 dark:border-outline-default">
-                        <h2 class="text-base font-semibold text-content-primary text-content-primary">Recent Schedule Runs</h2>
+                        <h2 class="text-base font-semibold text-content-primary">Recent Schedule Runs</h2>
                         <p class="mt-1 text-xs text-content-muted dark:text-content-muted">Execution history created by Run Now and the CLI runner.</p>
                     </div>
                     <div class="divide-y divide-outline-default divide-outline-default">
@@ -306,7 +306,7 @@
                             <i data-lucide="calendar-plus" class="h-4 w-4"></i>
                         </div>
                         <div>
-                            <h2 class="text-base font-semibold text-content-primary text-content-primary">Create Schedule</h2>
+                            <h2 class="text-base font-semibold text-content-primary">Create Schedule</h2>
                             <p class="text-xs text-content-muted dark:text-content-muted">Define the recurring report contract.</p>
                         </div>
                     </div>
@@ -435,7 +435,7 @@
                                                :value="section.value"
                                                x-model="sections">
                                         <span><span class="block text-xs font-semibold text-content-secondary dark:text-content-secondary"
-      x-text="section.label"></span><span class="block text-[11px] leading-4 text-content-muted dark:text-content-muted"
+      x-text="section.label"></span><span class="block text-xs leading-4 text-content-muted dark:text-content-muted"
       x-text="section.description"></span></span>
                                     </label>
                                 </template>
@@ -450,7 +450,7 @@
                 </section>
                 <section class="rounded-2xl border border-outline-default bg-white shadow-sm dark:border-outline-default bg-surface-card">
                     <div class="border-b border-outline-default px-5 py-4 dark:border-outline-default">
-                        <h2 class="text-base font-semibold text-content-primary text-content-primary">Scheduler Readiness</h2>
+                        <h2 class="text-base font-semibold text-content-primary">Scheduler Readiness</h2>
                     </div>
                     <div class="divide-y divide-outline-default divide-outline-default">
                         {% for item in payload.scheduler_context %}
@@ -466,7 +466,7 @@
                                 <div>
                                     <div class="flex flex-wrap items-center gap-2">
                                         <p class="text-sm font-semibold text-content-primary dark:text-content-primary">{{ item.label }}</p>
-                                        <span class="rounded-lg px-2 py-0.5 text-[11px] font-semibold {{ tone_class }}">{{ item.status }}</span>
+                                        <span class="rounded-lg px-2 py-0.5 text-xs font-semibold {{ tone_class }}">{{ item.status }}</span>
                                     </div>
                                     <p class="mt-1 text-xs leading-5 text-content-muted dark:text-content-muted">{{ item.description }}</p>
                                 </div>
@@ -475,7 +475,7 @@
                     </div>
                 </section>
                 <section class="rounded-2xl border border-outline-default bg-white p-5 shadow-sm dark:border-outline-default bg-surface-card">
-                    <h2 class="text-base font-semibold text-content-primary text-content-primary">Recommended Next Steps</h2>
+                    <h2 class="text-base font-semibold text-content-primary">Recommended Next Steps</h2>
                     <ul class="mt-4 space-y-3">
                         {% for action in payload.recommended_actions %}
                             <li class="flex gap-3 text-sm text-content-secondary dark:text-content-secondary"><i data-lucide="check-circle-2"

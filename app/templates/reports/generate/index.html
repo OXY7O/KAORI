@@ -7,7 +7,7 @@
         <section class="{{ page_hero.shell_classes() }}">
     <div class="{{ page_hero.layout_classes() }}">
         <div class="{{ page_hero.content_classes() }}">{% call page_hero.intro('wand-sparkles', 'Infrastructure report builder', 'plus-circle') %}<h1 class="{{ page_hero.title_classes() }}">{{ payload.page_title }}</h1><p class="mt-2 {{ page_hero.description_classes() }}">{{ payload.page_subtitle }}</p><div class="{{ page_hero.metadata_row_classes() }}">{{ page_hero.meta_label('layout-template', 'Base and custom templates') }}{{ page_hero.meta_label('file-check-2', 'Standalone PDF reports') }}{{ page_hero.meta_label('hard-drive', payload.storage_context.label) }}</div>{% endcall %}</div>
-        <aside class="{{ page_hero.aside_classes() }}" aria-label="Report generation navigation"><div class="flex h-full min-h-[12rem] flex-col justify-between rounded-xl border border-brand-outline bg-brand-surface-strong p-4 backdrop-blur-md"><div><p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Generation contract</p><h2 class="mt-1 text-base font-semibold text-brand-foreground">Ready to generate</h2><p class="mt-2 text-xs leading-5 text-brand-foreground-muted">Select infrastructure scope, report type, period, and sections in the form below.</p></div><div class="mt-4 grid grid-cols-2 gap-2"><a href="{{ url_for('reports.report_templates') }}" class="{{ page_hero.secondary_action_classes() }}">Templates</a><a href="{{ url_for('reports.generated_reports') }}" class="{{ page_hero.primary_action_classes() }}">Generated</a></div></div></aside>
+        <aside class="{{ page_hero.aside_classes() }}" aria-label="Report generation navigation"><div class="flex h-full min-h-[12rem] flex-col justify-between rounded-xl border border-brand-outline bg-brand-surface-strong p-4 backdrop-blur-md"><div><p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Generation contract</p><h2 class="mt-1 text-base font-semibold text-brand-foreground">Ready to Generate</h2><p class="mt-2 text-xs leading-5 text-brand-foreground-muted">Select infrastructure scope, report type, period, and sections in the form below.</p></div><div class="mt-4 grid grid-cols-2 gap-2"><a href="{{ url_for('reports.report_templates') }}" class="{{ page_hero.secondary_action_classes() }}">Templates</a><a href="{{ url_for('reports.generated_reports') }}" class="{{ page_hero.primary_action_classes() }}">Generated</a></div></div></aside>
     </div>
 </section>
         <section x-data="{ open: false }"
@@ -79,7 +79,7 @@
                                 <i data-lucide="settings-2" class="h-4 w-4"></i>
                             </div>
                             <div>
-                                <h2 class="text-base font-semibold text-content-primary text-content-primary">Report Configuration</h2>
+                                <h2 class="text-base font-semibold text-content-primary">Report Configuration</h2>
                                 <p class="text-xs text-content-muted dark:text-content-muted">Define report scope, category, period, and output format.</p>
                             </div>
                         </div>
@@ -140,11 +140,11 @@
                                             <p id="selected-report-label"
                                                class="font-semibold text-content-primary dark:text-content-primary">{{ payload.selected_report_type.label }}</p>
                                             <span id="selected-report-scope"
-                                                  class="rounded-md bg-white px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-kaori-primary bg-surface-card dark:text-kaori-primary">
+                                                  class="rounded-md bg-white px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-kaori-primary bg-surface-card dark:text-kaori-primary">
                                                 {{ payload.selected_report_type.cluster_scope_label }}
                                             </span>
                                             <span id="selected-report-count"
-                                                  class="rounded-md bg-white px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-kaori-primary bg-surface-card dark:text-kaori-primary">
+                                                  class="rounded-md bg-white px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-kaori-primary bg-surface-card dark:text-kaori-primary">
                                                 {{ payload.selected_report_type.section_count }} sections
                                             </span>
                                         </div>
@@ -203,7 +203,7 @@
                                     <i data-lucide="list-checks" class="h-4 w-4"></i>
                                 </div>
                                 <div>
-                                    <h2 class="text-base font-semibold text-content-primary text-content-primary">Report Section Selector</h2>
+                                    <h2 class="text-base font-semibold text-content-primary">Report Section Selector</h2>
                                     <p class="text-xs text-content-muted dark:text-content-muted">
                                         Choose the sections included in this request. Default selection follows the selected system template.
                                     </p>
@@ -234,7 +234,7 @@
                         </div>
                         <div id="selected-section-list" class="grid gap-3 lg:grid-cols-2">
                             {% for section in payload.selected_section_options %}
-                                <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-brand-outline bg-kaori-soft/60 p-3 shadow-sm transition hover:border-brand-outline hover:bg-kaori-soft border-brand-outline bg-kaori-soft hover:border-brand-outline">
+                                <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-brand-outline bg-kaori-soft/60 p-3 shadow-sm transition hover:border-brand-outline hover:bg-kaori-soft bg-kaori-soft">
                                     <input type="checkbox"
                                            name="sections"
                                            value="{{ section.value }}"
@@ -294,7 +294,7 @@
                                                     <div class="min-w-0">
                                                         <div class="flex flex-wrap items-center gap-2">
                                                             <p class="text-sm font-semibold text-content-primary text-content-primary">{{ item.label }}</p>
-                                                            <span class="rounded-md bg-kaori-soft px-2 py-0.5 text-[11px] font-semibold text-kaori-primary bg-kaori-soft dark:text-kaori-primary">{{ item.status }}</span>
+                                                            <span class="rounded-md bg-kaori-soft px-2 py-0.5 text-xs font-semibold text-kaori-primary bg-kaori-soft dark:text-kaori-primary">{{ item.status }}</span>
                                                         </div>
                                                         <p class="mt-1 text-xs leading-5 text-content-muted dark:text-content-muted">{{ item.description }}</p>
                                                     </div>
@@ -313,7 +313,7 @@
                                 <i data-lucide="eye" class="h-4 w-4"></i>
                             </div>
                             <div>
-                                <h2 class="text-base font-semibold text-content-primary text-content-primary">Request Preview</h2>
+                                <h2 class="text-base font-semibold text-content-primary">Request Preview</h2>
                                 <p class="text-xs text-content-muted dark:text-content-muted">
                                     This will create a report record first. PDF rendering is executed from Generated Reports.
                                 </p>

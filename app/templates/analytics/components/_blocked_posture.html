@@ -7,7 +7,7 @@
             <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">
                 {{ analytics_posture_label|default('Analytics posture') }}
             </p>
-            <p class="mt-1 text-3xl font-bold leading-none text-brand-foreground">Blocked</p>
+            <p class="mt-1 text-3xl font-semibold leading-none text-brand-foreground">Blocked</p>
         </div>
         {{ table_label.status_label(blocker_status, blocker_tone, 'triangle-alert' if blocker_tone == 'warning' else 'circle-x') }}
     </div>

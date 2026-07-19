@@ -8,7 +8,7 @@
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('eye', 'Security Settings', 'shield-check') %}
-                        <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">Protected Secret Reveal</h1>
+                        <h1 class="text-2xl font-semibold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">Protected Secret Reveal</h1>
                         <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">Define which Kubernetes namespaces permit one-time Secret reveal and whether protected access requires step-up authentication or independent approval.</p>
                         <div class="mt-5 flex flex-wrap gap-2">
                             {{ page_hero.meta_label('server-cog', protected_cluster_count ~ ' protected clusters') }}
@@ -23,7 +23,7 @@
                             <div class="flex items-start justify-between gap-3">
                                 <div>
                                     <p class="text-xs font-semibold uppercase tracking-widest text-brand-foreground-muted">Reveal policy posture</p>
-                                    <p id="secret-reveal-hero-cluster-name" class="mt-2 text-lg font-bold text-brand-foreground">{{ selected_cluster.name if selected_cluster else 'No cluster selected' }}</p>
+                                    <p id="secret-reveal-hero-cluster-name" class="mt-2 text-lg font-semibold text-brand-foreground">{{ selected_cluster.name if selected_cluster else 'No cluster selected' }}</p>
                                 </div>
                                 {{ table_label.status_label('Enabled' if global_reveal_enabled else 'Disabled', 'normal' if global_reveal_enabled else 'warning', 'shield-check' if global_reveal_enabled else 'shield-alert') }}
                             </div>
@@ -60,7 +60,7 @@
                     <div class="flex items-start justify-between gap-3">
                         <div>
                             <p class="text-xs font-semibold uppercase tracking-[0.12em] text-content-muted">Global Feature</p>
-                            <p class="mt-2 text-2xl font-bold tracking-tight {{ 'text-status-normal-text' if global_reveal_enabled else 'text-status-warning-text' }}">{{ 'Enabled' if global_reveal_enabled else 'Disabled' }}</p>
+                            <p class="mt-2 text-2xl font-semibold tracking-tight {{ 'text-status-normal-text' if global_reveal_enabled else 'text-status-warning-text' }}">{{ 'Enabled' if global_reveal_enabled else 'Disabled' }}</p>
                         </div>
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl {{ 'bg-status-normal-soft text-status-normal-text' if global_reveal_enabled else 'bg-status-warning-soft text-status-warning-text' }}">
                             <i data-lucide="{{ 'power' if global_reveal_enabled else 'power-off' }}" class="h-5 w-5"></i>
@@ -73,7 +73,7 @@
                     <div class="flex items-start justify-between gap-3">
                         <div>
                             <p class="text-xs font-semibold uppercase tracking-[0.12em] text-content-muted">Protected Clusters</p>
-                            <p class="mt-2 text-3xl font-bold tracking-tight text-content-primary">{{ protected_cluster_count }}</p>
+                            <p class="mt-2 text-3xl font-semibold tracking-tight text-content-primary">{{ protected_cluster_count }}</p>
                         </div>
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
                             <i data-lucide="server-cog" class="h-5 w-5"></i>
@@ -86,7 +86,7 @@
                     <div class="flex items-start justify-between gap-3">
                         <div>
                             <p class="text-xs font-semibold uppercase tracking-[0.12em] text-content-muted">Enabled Namespaces</p>
-                            <p class="mt-2 text-3xl font-bold tracking-tight text-content-primary">{{ total_enabled_namespaces }}</p>
+                            <p class="mt-2 text-3xl font-semibold tracking-tight text-content-primary">{{ total_enabled_namespaces }}</p>
                         </div>
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl {{ 'bg-status-normal-soft text-status-normal-text' if total_enabled_namespaces else 'bg-surface-disabled text-content-muted' }}">
                             <i data-lucide="boxes" class="h-5 w-5"></i>
@@ -99,7 +99,7 @@
                     <div class="flex items-start justify-between gap-3">
                         <div>
                             <p class="text-xs font-semibold uppercase tracking-[0.12em] text-content-muted">Selected Cluster</p>
-                            <p class="mt-2 text-xl font-bold tracking-tight {{ 'text-status-normal-text' if selected_cluster_ready else 'text-status-warning-text' if selected_cluster else 'text-content-muted' }}">{{ 'Ready' if selected_cluster_ready else 'Review required' if selected_cluster else 'Not selected' }}</p>
+                            <p class="mt-2 text-xl font-semibold tracking-tight {{ 'text-status-normal-text' if selected_cluster_ready else 'text-status-warning-text' if selected_cluster else 'text-content-muted' }}">{{ 'Ready' if selected_cluster_ready else 'Review required' if selected_cluster else 'Not selected' }}</p>
                         </div>
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl {{ 'bg-status-normal-soft text-status-normal-text' if selected_cluster_ready else 'bg-status-warning-soft text-status-warning-text' if selected_cluster else 'bg-surface-disabled text-content-muted' }}">
                             <i data-lucide="{{ 'badge-check' if selected_cluster_ready else 'shield-alert' if selected_cluster else 'circle-dashed' }}" class="h-5 w-5"></i>
@@ -137,7 +137,7 @@
                 <div class="flex items-start gap-3">
                     <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/70 text-status-warning-text ring-1 ring-inset ring-status-warning-border"><i data-lucide="info" class="h-5 w-5"></i></span>
                     <div>
-                        <h2 class="text-sm font-semibold text-status-warning-text">Global reveal remains disabled</h2>
+                        <h2 class="text-sm font-semibold text-status-warning-text">Global Reveal Remains Disabled</h2>
                         <p class="mt-1 text-sm leading-6 text-status-warning-text">Namespace policies may be prepared now, but no Secret can be revealed until <code>KUBERNETES_SECRET_REVEAL_ENABLED=true</code> and the application is restarted.</p>
                     </div>
                 </div>

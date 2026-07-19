@@ -10,7 +10,7 @@
             </div>
         </div>
         <div class="ml-auto flex shrink-0 items-center gap-2">
-            <span class="hidden items-center gap-1.5 rounded-md border border-outline-default bg-surface-hover px-2.5 py-1 text-[11px] font-semibold text-content-secondary sm:inline-flex">
+            <span class="hidden items-center gap-1.5 rounded-md border border-outline-default bg-surface-hover px-2.5 py-1 text-xs font-semibold text-content-secondary sm:inline-flex">
                 <i data-lucide="list-checks" class="h-3.5 w-3.5 text-kaori-primary"></i>
                 {{ dashboard.recommended_actions|length }} active
             </span>
@@ -51,7 +51,7 @@
                 </div>
                 <p class="text-sm font-semibold leading-5 text-content-primary transition group-hover:text-kaori-primary">{{ action.title }}</p>
                 <p class="mt-2 line-clamp-4 text-xs leading-5 text-content-muted">{{ action.description }}</p>
-                <div class="mt-auto flex items-center gap-2 border-t border-outline-subtle pt-3 text-[11px] font-medium text-content-muted">
+                <div class="mt-auto flex items-center gap-2 border-t border-outline-subtle pt-3 text-xs font-medium text-content-muted">
                     <i data-lucide="database" class="h-3.5 w-3.5 shrink-0 text-kaori-primary"></i>
                     <span class="truncate">{{ action.source }}</span>
                 </div>

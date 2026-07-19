@@ -53,47 +53,47 @@
                                     {% set overall_tone = 'normal' if row.status == 'Healthy' else 'warning' if row.status == 'Warning' else 'critical' if row.status == 'Critical' else 'unknown' %}
                                     {% set overall_icon = 'circle-check' if row.status == 'Healthy' else 'triangle-alert' if row.status == 'Warning' else 'octagon-alert' if row.status == 'Critical' else 'circle-help' %}
                                     {{ table_label.status_label(row.status, overall_tone, overall_icon) }}
-                                    <p class="max-w-[190px] text-[11px] leading-4 text-content-muted" title="{{ row.status_reason }}">{{ row.status_reason }}</p>
+                                    <p class="max-w-[190px] text-xs leading-4 text-content-muted" title="{{ row.status_reason }}">{{ row.status_reason }}</p>
                                 </div>
                             </td>
                             <td class="px-4 py-3.5 align-top">
                                 {% if row.nodes_ready is not none and row.nodes_total is not none %}
                                     <div class="font-semibold text-content-primary">{{ row.nodes_ready }}/{{ row.nodes_total }}</div>
-                                    <div class="mt-1 text-[11px] {% if row.nodes_ready == row.nodes_total %}text-status-normal-text{% else %}text-status-warning-text{% endif %}">Ready nodes</div>
+                                    <div class="mt-1 text-xs {% if row.nodes_ready == row.nodes_total %}text-status-normal-text{% else %}text-status-warning-text{% endif %}">Ready nodes</div>
                                 {% else %}
                                     <div class="font-semibold text-content-disabled">N/A</div>
-                                    <div class="mt-1 text-[11px] text-status-unknown-text">{{ row.nodes_status }}</div>
+                                    <div class="mt-1 text-xs text-status-unknown-text">{{ row.nodes_status }}</div>
                                 {% endif %}
                             </td>
                             <td class="px-4 py-3.5 align-top">
                                 {% if row.cpu_percent is not none %}
                                     <div class="font-semibold text-content-primary">{{ row.cpu_percent|round(0) }}%</div>
-                                    <div class="mt-1 text-[11px] text-content-muted">Utilized</div>
+                                    <div class="mt-1 text-xs text-content-muted">Utilized</div>
                                 {% else %}
                                     <div class="font-semibold text-content-disabled">N/A</div>
-                                    <div class="mt-1 text-[11px] text-status-unknown-text">{{ row.cpu_status }}</div>
+                                    <div class="mt-1 text-xs text-status-unknown-text">{{ row.cpu_status }}</div>
                                 {% endif %}
                             </td>
                             <td class="px-4 py-3.5 align-top">
                                 {% if row.memory_percent is not none %}
                                     <div class="font-semibold text-content-primary">{{ row.memory_percent|round(0) }}%</div>
-                                    <div class="mt-1 text-[11px] text-content-muted">Utilized</div>
+                                    <div class="mt-1 text-xs text-content-muted">Utilized</div>
                                 {% else %}
                                     <div class="font-semibold text-content-disabled">N/A</div>
-                                    <div class="mt-1 text-[11px] text-status-unknown-text">{{ row.memory_status }}</div>
+                                    <div class="mt-1 text-xs text-status-unknown-text">{{ row.memory_status }}</div>
                                 {% endif %}
                             </td>
                             <td class="px-4 py-3.5 align-top">
                                 {% if row.active_alerts is not none %}
                                     <div class="font-semibold {% if row.active_alerts > 0 %}text-status-critical-text{% else %}text-status-normal-text{% endif %}">{{ row.active_alerts }}</div>
-                                    <div class="mt-1 text-[11px] text-content-muted">Active alerts</div>
+                                    <div class="mt-1 text-xs text-content-muted">Active alerts</div>
                                 {% else %}
                                     <div class="font-semibold text-content-disabled">N/A</div>
-                                    <div class="mt-1 text-[11px] text-status-unknown-text">{{ row.alerts_status }}</div>
+                                    <div class="mt-1 text-xs text-status-unknown-text">{{ row.alerts_status }}</div>
                                 {% endif %}
                             </td>
                             <td class="px-5 py-3.5 text-right align-top">
-                                <div class="ml-auto flex w-fit flex-col items-end gap-1.5 text-[11px]">
+                                <div class="ml-auto flex w-fit flex-col items-end gap-1.5 text-xs">
                                     <div class="flex items-center justify-end gap-2">
                                         <span class="h-2 w-2 rounded-full {% if row.cpu_status == 'Live' or row.memory_status == 'Live' or row.nodes_status == 'Live' %}bg-status-normal{% else %}bg-status-unknown{% endif %}"></span>
                                         <span class="text-content-muted">Prometheus</span>

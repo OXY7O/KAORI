@@ -15,7 +15,7 @@
         <div class="{{ page_hero.layout_classes() }}">
             <div class="{{ page_hero.content_classes() }}">
                 {% call page_hero.intro('activity', 'Cluster Metrics Integration', 'chart-spline') %}
-                    <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">Prometheus Configuration</h1>
+                    <h1 class="text-2xl font-semibold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">Prometheus Configuration</h1>
                     <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">Manage the effective metrics connection and Analytics contracts for {{ cluster.name }}.</p>
                     <div class="mt-5 flex flex-wrap gap-2">
                         {{ page_hero.meta_label('boxes', cluster.name) }}
@@ -66,8 +66,8 @@
                         <footer class="flex items-center justify-end border-t border-outline-subtle bg-surface-hover px-5 py-4"><button class="inline-flex h-10 items-center gap-2 rounded-lg bg-kaori-primary px-5 text-sm font-semibold text-white hover:bg-kaori-primary-hover cursor-pointer disabled:cursor-not-allowed"><i data-lucide="save" class="h-4 w-4"></i>Save Configuration</button></footer>
                     </section>
                     <aside class="space-y-4 xl:col-span-4">
-                        <section class="rounded-xl border border-status-info-border bg-status-info-soft p-4"><div class="flex items-start gap-3"><i data-lucide="workflow" class="mt-0.5 h-4 w-4 text-status-info"></i><div><h2 class="text-sm font-semibold text-status-info-text">Configuration flow</h2><p class="mt-1 text-xs leading-5 text-content-secondary">Save settings, test reachability, run Full Validation, then review Analytics and runtime evidence.</p></div></div></section>
-                        <section class="rounded-xl border border-outline-default bg-surface-card p-4"><h2 class="text-sm font-semibold text-content-primary">Cluster binding</h2><p class="mt-2 text-sm font-semibold text-content-primary">{{ cluster.name }}</p><p class="mt-1 text-xs leading-5 text-content-muted">This page manages the effective Prometheus connection resolved for the selected managed cluster.</p></section>
+                        <section class="rounded-xl border border-status-info-border bg-status-info-soft p-4"><div class="flex items-start gap-3"><i data-lucide="workflow" class="mt-0.5 h-4 w-4 text-status-info"></i><div><h2 class="text-sm font-semibold text-status-info-text">Configuration Flow</h2><p class="mt-1 text-xs leading-5 text-content-secondary">Save settings, test reachability, run Full Validation, then review Analytics and runtime evidence.</p></div></div></section>
+                        <section class="rounded-xl border border-outline-default bg-surface-card p-4"><h2 class="text-sm font-semibold text-content-primary">Cluster Binding</h2><p class="mt-2 text-sm font-semibold text-content-primary">{{ cluster.name }}</p><p class="mt-1 text-xs leading-5 text-content-muted">This page manages the effective Prometheus connection resolved for the selected managed cluster.</p></section>
                     </aside>
                 </form>
             </div>

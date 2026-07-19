@@ -118,7 +118,7 @@
                 <header class="flex items-center justify-between gap-3 border-b border-outline-subtle px-4 py-4">
                     <div class="flex items-center gap-3">
                         <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="plug-zap" class="h-4 w-4"></i></span>
-                        <div><h4 class="text-sm font-semibold text-content-primary">Port mappings</h4><p class="mt-0.5 text-xs text-content-muted">Service ports, target ports, protocols, and NodePort assignments.</p></div>
+                        <div><h4 class="text-sm font-semibold text-content-primary">Port Mappings</h4><p class="mt-0.5 text-xs text-content-muted">Service ports, target ports, protocols, and NodePort assignments.</p></div>
                     </div>
                     {{ table_label.metadata_label(service.port_count ~ ' ports', 'plug-zap') }}
                 </header>
@@ -152,7 +152,7 @@
                 <header class="flex items-center justify-between gap-3 border-b border-outline-subtle px-4 py-4">
                     <div class="flex items-center gap-3">
                         <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="waypoints" class="h-4 w-4"></i></span>
-                        <div><h4 class="text-sm font-semibold text-content-primary">Endpoint addresses</h4><p class="mt-0.5 text-xs text-content-muted">Ready and not-ready backend addresses registered for this Service.</p></div>
+                        <div><h4 class="text-sm font-semibold text-content-primary">Endpoint Addresses</h4><p class="mt-0.5 text-xs text-content-muted">Ready and not-ready backend addresses registered for this Service.</p></div>
                     </div>
                     {{ table_label.metadata_label(endpoint_total ~ ' endpoints', 'waypoints') }}
                 </header>
@@ -178,7 +178,7 @@
                                 </article>
                             {% endfor %}
                         </div>
-                        {% if service.endpoints_truncated %}<p class="mt-3 text-[11px] text-content-muted">Showing the first 12 addresses from each endpoint state.</p>{% endif %}
+                        {% if service.endpoints_truncated %}<p class="mt-3 text-xs text-content-muted">Showing the first 12 addresses from each endpoint state.</p>{% endif %}
                     {% elif service.endpoints_reported %}
                         {{ detail_object.empty('No endpoints registered', 'No backend address is present in the latest endpoint snapshot.', 'waypoints') }}
                     {% else %}
@@ -213,7 +213,7 @@
                                 </article>
                             {% endfor %}
                         </div>
-                        {% if service.pods_truncated %}<p class="mt-3 text-[11px] text-content-muted">Showing the first 8 selected Pods.</p>{% endif %}
+                        {% if service.pods_truncated %}<p class="mt-3 text-xs text-content-muted">Showing the first 8 selected Pods.</p>{% endif %}
                     {% elif service.has_selector %}
                         {{ detail_object.empty('No matching Pods', 'No Pod matches the Service selector in the latest snapshot.', 'package-x') }}
                     {% else %}
@@ -226,7 +226,7 @@
             <div class="grid gap-4 xl:grid-cols-2">
                 <section class="rounded-xl border border-outline-default bg-surface-card p-4">
                     <div class="mb-4 flex items-center justify-between gap-3">
-                        <div class="flex items-center gap-3"><span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="tags" class="h-4 w-4"></i></span><div><h4 class="text-sm font-semibold text-content-primary">Service labels</h4><p class="mt-0.5 text-xs text-content-muted">Descriptive Kubernetes labels from the Service snapshot.</p></div></div>
+                        <div class="flex items-center gap-3"><span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="tags" class="h-4 w-4"></i></span><div><h4 class="text-sm font-semibold text-content-primary">Service Labels</h4><p class="mt-0.5 text-xs text-content-muted">Descriptive Kubernetes labels from the Service snapshot.</p></div></div>
                         {{ table_label.metadata_label(service.labels|length ~ ' labels', 'tags') }}
                     </div>
                     {% if service.labels %}
@@ -239,7 +239,7 @@
 
                 <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
                     <header class="flex items-center justify-between gap-3 border-b border-outline-subtle px-4 py-4">
-                        <div class="flex items-center gap-3"><span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="braces" class="h-4 w-4"></i></span><div><h4 class="text-sm font-semibold text-content-primary">Service annotations</h4><p class="mt-0.5 text-xs text-content-muted">Annotation metadata displayed as readable key-value rows.</p></div></div>
+                        <div class="flex items-center gap-3"><span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="braces" class="h-4 w-4"></i></span><div><h4 class="text-sm font-semibold text-content-primary">Service Annotations</h4><p class="mt-0.5 text-xs text-content-muted">Annotation metadata displayed as readable key-value rows.</p></div></div>
                         {{ table_label.metadata_label(service.annotations|length ~ ' annotations', 'braces') }}
                     </header>
                     {% if service.annotations %}

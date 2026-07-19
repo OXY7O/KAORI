@@ -3,7 +3,7 @@
     <div class="{{ page_hero.layout_classes() }}">
         <div class="{{ page_hero.content_classes() }}">
             {% call page_hero.intro('settings-2', 'Personal Preferences', 'sliders-horizontal') %}
-                <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">
+                <h1 class="text-2xl font-semibold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">
                     General Settings
                 </h1>
                 <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">
@@ -31,7 +31,7 @@
                 {% if active_tab == 'system-information' %}
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-widest text-brand-foreground-muted">Deployed release</p>
-                        <p class="mt-2 text-2xl font-bold text-brand-foreground">v{{ system_information.version }}</p>
+                        <p class="mt-2 text-2xl font-semibold text-brand-foreground">v{{ system_information.version }}</p>
                         <p class="mt-2 text-xs leading-5 text-brand-foreground-muted">
                             The version is read from the <span class="font-semibold text-brand-foreground">APP_VERSION</span> runtime environment variable and should match the deployed image tag.
                         </p>
@@ -46,7 +46,7 @@
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-widest text-brand-foreground-muted">Current rendered time</p>
                         <p id="general-current-time"
-                           class="mt-2 text-lg font-bold text-brand-foreground">{{ current_time_display }}</p>
+                           class="mt-2 text-lg font-semibold text-brand-foreground">{{ current_time_display }}</p>
                         <p class="mt-2 text-xs leading-5 text-brand-foreground-muted">
                             KAORI stores canonical timestamps in UTC, then applies this account preference consistently across time-related views.
                         </p>

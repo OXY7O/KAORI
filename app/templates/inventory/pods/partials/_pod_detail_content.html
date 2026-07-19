@@ -136,7 +136,7 @@
                     {% else %}
                         {{ detail_object.empty('No conditions reported', 'The latest Pod snapshot does not contain condition records.', 'list-checks') }}
                     {% endif %}
-                    {% if pod.message %}<div class="rounded-lg border border-status-warning-border bg-status-warning-soft p-3 text-[11px] leading-5 text-status-warning-text">{{ pod.message }}</div>{% endif %}
+                    {% if pod.message %}<div class="rounded-lg border border-status-warning-border bg-status-warning-soft p-3 text-xs leading-5 text-status-warning-text">{{ pod.message }}</div>{% endif %}
                     {{ info_box('Snapshot boundary', 'Conditions are snapshot data; history remains in Analytics.', 'info', 'brand', true) }}
                 {% endcall %}
             {% endcall %}
@@ -162,7 +162,7 @@
                     <div class="flex items-center gap-3">
                         <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="images" class="h-4 w-4"></i></span>
                         <div>
-                            <h4 class="text-sm font-semibold text-content-primary">Images & container runtime</h4>
+                            <h4 class="text-sm font-semibold text-content-primary">Images & Container Runtime</h4>
                             <p class="mt-0.5 text-xs text-content-muted">Image references, readiness, runtime state, and restart counters for regular and init containers.</p>
                         </div>
                     </div>
@@ -245,7 +245,7 @@
             <div class="grid gap-4 xl:grid-cols-2">
                 <section class="rounded-xl border border-outline-default bg-surface-card p-4">
                     <div class="mb-4 flex items-center justify-between gap-3">
-                        <div class="flex items-center gap-3"><span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="tags" class="h-4 w-4"></i></span><div><h4 class="text-sm font-semibold text-content-primary">Pod labels</h4><p class="mt-0.5 text-xs text-content-muted">Descriptive Kubernetes labels from the Pod snapshot.</p></div></div>
+                        <div class="flex items-center gap-3"><span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="tags" class="h-4 w-4"></i></span><div><h4 class="text-sm font-semibold text-content-primary">Pod Labels</h4><p class="mt-0.5 text-xs text-content-muted">Descriptive Kubernetes labels from the Pod snapshot.</p></div></div>
                         {{ table_label.metadata_label(pod.labels|length ~ ' labels', 'tags') }}
                     </div>
                     {% if pod.labels %}
@@ -258,7 +258,7 @@
 
                 <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
                     <header class="flex items-center justify-between gap-3 border-b border-outline-subtle px-4 py-4">
-                        <div class="flex items-center gap-3"><span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="braces" class="h-4 w-4"></i></span><div><h4 class="text-sm font-semibold text-content-primary">Pod annotations</h4><p class="mt-0.5 text-xs text-content-muted">Annotation metadata displayed as readable key-value rows.</p></div></div>
+                        <div class="flex items-center gap-3"><span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="braces" class="h-4 w-4"></i></span><div><h4 class="text-sm font-semibold text-content-primary">Pod Annotations</h4><p class="mt-0.5 text-xs text-content-muted">Annotation metadata displayed as readable key-value rows.</p></div></div>
                         {{ table_label.metadata_label(pod.annotations|length ~ ' annotations', 'braces') }}
                     </header>
                     {% if pod.annotations %}

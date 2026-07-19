@@ -15,7 +15,7 @@
             <div class="min-w-0 flex-1">
                 <div class="flex flex-wrap items-start justify-between gap-2">
                     <div>
-                        <p class="text-sm font-bold text-content-primary">Kubernetes sync is running</p>
+                        <p class="text-sm font-semibold text-content-primary">Kubernetes sync is running</p>
                         <p class="mt-1 text-xs font-semibold leading-5 text-content-secondary">
                             {% if sync.current_cluster_name %}
                                 Synchronizing {{ sync.current_cluster_name }}.
@@ -26,26 +26,26 @@
                             {% endif %}
                         </p>
                     </div>
-                    <span class="rounded-lg bg-kaori-soft px-2 py-1 text-[9px] font-bold uppercase tracking-wide text-kaori-primary">
+                    <span class="rounded-lg bg-kaori-soft px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-kaori-primary">
                         {{ sync.state_label }}
                     </span>
                 </div>
                 <div class="mt-3 grid grid-cols-4 gap-2">
                     <div class="rounded-xl border border-outline-default bg-surface-subtle px-2.5 py-2">
-                        <p class="text-[9px] font-bold uppercase tracking-wide text-content-muted">Progress</p>
-                        <p class="mt-1 text-sm font-bold text-content-primary">{{ sync.processed_count }}/{{ sync.total_count }}</p>
+                        <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Progress</p>
+                        <p class="mt-1 text-sm font-semibold text-content-primary">{{ sync.processed_count }}/{{ sync.total_count }}</p>
                     </div>
                     <div class="rounded-xl border border-emerald-100 bg-emerald-50/70 px-2.5 py-2 dark:border-emerald-500/20 dark:bg-emerald-500/5">
-                        <p class="text-[9px] font-bold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">Synced</p>
-                        <p class="mt-1 text-sm font-bold text-emerald-700 dark:text-emerald-300">{{ sync.synced_count }}</p>
+                        <p class="text-[10px] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">Synced</p>
+                        <p class="mt-1 text-sm font-semibold text-emerald-700 dark:text-emerald-300">{{ sync.synced_count }}</p>
                     </div>
                     <div class="rounded-xl border border-red-100 bg-red-50/70 px-2.5 py-2 dark:border-red-500/20 dark:bg-red-500/5">
-                        <p class="text-[9px] font-bold uppercase tracking-wide text-red-600 dark:text-red-300">Failed</p>
-                        <p class="mt-1 text-sm font-bold text-red-700 dark:text-red-300">{{ sync.failed_count }}</p>
+                        <p class="text-[10px] font-semibold uppercase tracking-wide text-red-600 dark:text-red-300">Failed</p>
+                        <p class="mt-1 text-sm font-semibold text-red-700 dark:text-red-300">{{ sync.failed_count }}</p>
                     </div>
                     <div class="rounded-xl border border-brand-outline bg-kaori-soft/70 px-2.5 py-2 dark:border-brand-outline dark:bg-kaori-soft/70">
-                        <p class="text-[9px] font-bold uppercase tracking-wide text-kaori-primary">Elapsed</p>
-                        <p class="mt-1 text-sm font-bold text-kaori-primary">{{ sync.elapsed_seconds }}s</p>
+                        <p class="text-[10px] font-semibold uppercase tracking-wide text-kaori-primary">Elapsed</p>
+                        <p class="mt-1 text-sm font-semibold text-kaori-primary">{{ sync.elapsed_seconds }}s</p>
                     </div>
                 </div>
                 <div class="mt-3 flex items-start gap-2 rounded-xl bg-slate-50 px-3 py-2.5 text-[10px] leading-4 text-slate-500 dark:bg-slate-800/70 dark:text-content-muted">

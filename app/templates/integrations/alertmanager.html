@@ -9,7 +9,7 @@
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('siren', 'Operational Integration', 'server-cog') %}
-                        <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">
+                        <h1 class="text-2xl font-semibold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">
                             Alertmanager Integrations
                         </h1>
                         <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">
@@ -43,7 +43,7 @@
                                     <div class="flex items-center justify-between gap-2">
                                         <span class="flex items-center gap-2 text-brand-foreground">
                                             <i data-lucide="badge-check" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                            <span class="text-[11px] font-semibold">Ready</span>
+                                            <span class="text-xs font-semibold">Ready</span>
                                         </span>
                                         <span class="text-base font-semibold leading-none text-brand-foreground">{{ stats.ready }} / {{ stats.configured }}</span>
                                     </div>
@@ -52,7 +52,7 @@
                                     <div class="flex items-center justify-between gap-2">
                                         <span class="flex items-center gap-2 text-brand-foreground">
                                             <i data-lucide="link-2" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                            <span class="text-[11px] font-semibold">Bindings</span>
+                                            <span class="text-xs font-semibold">Bindings</span>
                                         </span>
                                         <span class="text-base font-semibold leading-none text-brand-foreground">{{ stats.bindings }}</span>
                                     </div>
@@ -77,7 +77,7 @@
                         <i data-lucide="network" class="h-5 w-5" aria-hidden="true"></i>
                     </span>
                     <div>
-                        <h2 class="text-lg font-bold text-content-primary">Alertmanager Integration Overview</h2>
+                        <h2 class="text-lg font-semibold text-content-primary">Alertmanager Integration Overview</h2>
                         <p class="mt-1 text-sm leading-6 text-content-secondary">Each Alertmanager connection is registered once and can be associated with multiple operational contexts through governed bindings.</p>
                     </div>
                 </div>
@@ -93,8 +93,8 @@
                     <article class="min-h-[8.5rem] rounded-xl border border-outline-subtle bg-surface-hover p-4">
                         <div class="flex items-start justify-between gap-3">
                             <div>
-                                <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-content-tertiary">{{ item[0] }}</p>
-                                <p class="mt-2 text-2xl font-bold text-content-primary">{{ item[1] }}</p>
+                                <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-tertiary">{{ item[0] }}</p>
+                                <p class="mt-2 text-2xl font-semibold text-content-primary">{{ item[1] }}</p>
                             </div>
                             <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary">
                                 <i data-lucide="{{ item[3] }}" class="h-4 w-4" aria-hidden="true"></i>
@@ -107,17 +107,17 @@
 
             <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle md:grid-cols-3">
                 <div class="bg-surface-card px-5 py-4 sm:px-6">
-                    <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-content-tertiary">Integration Contract</p>
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-tertiary">Integration Contract</p>
                     <p class="mt-1.5 text-sm font-semibold text-content-primary">Alertmanager API v2</p>
                     <p class="mt-1 text-xs leading-5 text-content-secondary">Status, alerts, and silences interfaces are validated before use.</p>
                 </div>
                 <div class="bg-surface-card px-5 py-4 sm:px-6">
-                    <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-content-tertiary">Usage Resolution</p>
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-tertiary">Usage Resolution</p>
                     <p class="mt-1.5 text-sm font-semibold text-content-primary">Binding, capability, and runtime aware</p>
                     <p class="mt-1 text-xs leading-5 text-content-secondary">KAORI resolves an eligible source for each bound operational context.</p>
                 </div>
                 <div class="bg-surface-card px-5 py-4 sm:px-6">
-                    <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-content-tertiary">Authority Boundary</p>
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-tertiary">Authority Boundary</p>
                     <p class="mt-1.5 text-sm font-semibold text-content-primary">Alertmanager remains authoritative</p>
                     <p class="mt-1 text-xs leading-5 text-content-secondary">Alert lifecycle, routing, grouping, inhibition, silences, and delivery remain managed by Alertmanager.</p>
                 </div>

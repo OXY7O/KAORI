@@ -9,7 +9,7 @@
         <div class="{{ page_hero.layout_classes() }}">
             <div class="{{ page_hero.content_classes() }}">
                 {% call page_hero.intro('activity', 'Operational Integration', 'chart-no-axes-combined') %}
-                    <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">Prometheus Integrations</h1>
+                    <h1 class="text-2xl font-semibold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">Prometheus Integrations</h1>
                     <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">
                         Register, validate, and govern metrics connections and their operational scope bindings.
                     </p>
@@ -38,13 +38,13 @@
                         <div class="grid grid-cols-2 gap-2">
                             <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5">
                                 <div class="flex items-center justify-between gap-2 text-brand-foreground">
-                                    <span class="flex items-center gap-2 text-[11px] font-semibold"><i data-lucide="badge-check" class="h-3.5 w-3.5"></i>Ready</span>
+                                    <span class="flex items-center gap-2 text-xs font-semibold"><i data-lucide="badge-check" class="h-3.5 w-3.5"></i>Ready</span>
                                     <span class="text-base font-semibold leading-none">{{ stats.ready }} / {{ stats.configured }}</span>
                                 </div>
                             </div>
                             <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5">
                                 <div class="flex items-center justify-between gap-2 text-brand-foreground">
-                                    <span class="flex items-center gap-2 text-[11px] font-semibold"><i data-lucide="link-2" class="h-3.5 w-3.5"></i>Bindings</span>
+                                    <span class="flex items-center gap-2 text-xs font-semibold"><i data-lucide="link-2" class="h-3.5 w-3.5"></i>Bindings</span>
                                     <span class="text-base font-semibold leading-none">{{ stats.bindings }}</span>
                                 </div>
                             </div>

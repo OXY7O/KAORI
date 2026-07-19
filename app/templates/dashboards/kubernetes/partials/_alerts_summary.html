@@ -30,16 +30,16 @@
             {% set total_alerts = dashboard.alerts_snapshot.critical + dashboard.alerts_snapshot.warning + dashboard.alerts_snapshot.info %}
             <div class="grid grid-cols-3 gap-3">
                 <div class="rounded-lg border border-status-critical-border bg-status-critical-soft p-3 text-center">
-                    <p class="text-[11px] font-semibold uppercase tracking-wide text-status-critical-text">Critical</p>
-                    <p class="mt-1 text-2xl font-bold text-status-critical-text">{{ dashboard.alerts_snapshot.critical }}</p>
+                    <p class="text-xs font-semibold uppercase tracking-wide text-status-critical-text">Critical</p>
+                    <p class="mt-1 text-2xl font-semibold text-status-critical-text">{{ dashboard.alerts_snapshot.critical }}</p>
                 </div>
                 <div class="rounded-lg border border-status-warning-border bg-status-warning-soft p-3 text-center">
-                    <p class="text-[11px] font-semibold uppercase tracking-wide text-status-warning-text">Warning</p>
-                    <p class="mt-1 text-2xl font-bold text-status-warning-text">{{ dashboard.alerts_snapshot.warning }}</p>
+                    <p class="text-xs font-semibold uppercase tracking-wide text-status-warning-text">Warning</p>
+                    <p class="mt-1 text-2xl font-semibold text-status-warning-text">{{ dashboard.alerts_snapshot.warning }}</p>
                 </div>
                 <div class="rounded-lg border border-status-info-border bg-status-info-soft p-3 text-center">
-                    <p class="text-[11px] font-semibold uppercase tracking-wide text-status-info-text">Info</p>
-                    <p class="mt-1 text-2xl font-bold text-status-info-text">{{ dashboard.alerts_snapshot.info }}</p>
+                    <p class="text-xs font-semibold uppercase tracking-wide text-status-info-text">Info</p>
+                    <p class="mt-1 text-2xl font-semibold text-status-info-text">{{ dashboard.alerts_snapshot.info }}</p>
                 </div>
             </div>
 
@@ -52,7 +52,7 @@
                                 <p class="truncate text-sm font-semibold text-content-primary">{{ alert.title }}</p>
                                 <p class="mt-1 line-clamp-2 text-xs leading-5 text-content-muted">{{ alert.description }}</p>
                             </div>
-                            <span class="shrink-0 text-[11px] text-content-muted">{{ alert.age|user_datetime }}</span>
+                            <span class="shrink-0 text-xs text-content-muted">{{ alert.age|user_datetime }}</span>
                         </div>
                     {% endfor %}
                 {% else %}
@@ -92,21 +92,21 @@
                     <div class="grid grid-cols-3 gap-2 text-xs lg:min-w-[270px]">
                         <div class="rounded-lg border border-outline-subtle bg-surface-card px-3 py-2">
                             <p class="text-content-muted">Total</p>
-                            <p class="mt-1 font-bold text-content-primary">{{ total_alerts }}</p>
+                            <p class="mt-1 font-semibold text-content-primary">{{ total_alerts }}</p>
                         </div>
                         <div class="rounded-lg border border-outline-subtle bg-surface-card px-3 py-2">
                             <p class="text-content-muted">Highest</p>
-                            <p class="mt-1 font-bold {% if dashboard.alerts_snapshot.critical > 0 %}text-status-critical-text{% elif dashboard.alerts_snapshot.warning > 0 %}text-status-warning-text{% elif total_alerts > 0 %}text-status-info-text{% else %}text-status-normal-text{% endif %}">
+                            <p class="mt-1 font-semibold {% if dashboard.alerts_snapshot.critical > 0 %}text-status-critical-text{% elif dashboard.alerts_snapshot.warning > 0 %}text-status-warning-text{% elif total_alerts > 0 %}text-status-info-text{% else %}text-status-normal-text{% endif %}">
                                 {% if dashboard.alerts_snapshot.critical > 0 %}Critical{% elif dashboard.alerts_snapshot.warning > 0 %}Warning{% elif total_alerts > 0 %}Info{% else %}None{% endif %}
                             </p>
                         </div>
                         <div class="rounded-lg border border-outline-subtle bg-surface-card px-3 py-2">
                             <p class="text-content-muted">Source</p>
-                            <p class="mt-1 truncate font-bold text-content-primary">{{ dashboard.alerts_snapshot.source_status }}</p>
+                            <p class="mt-1 truncate font-semibold text-content-primary">{{ dashboard.alerts_snapshot.source_status }}</p>
                         </div>
                     </div>
                 </div>
-                <div class="mt-3 flex flex-wrap gap-2 text-[11px]">
+                <div class="mt-3 flex flex-wrap gap-2 text-xs">
                     <span class="rounded-md border border-outline-default bg-surface-card px-3 py-1 text-content-secondary">{{ dashboard.alerts_snapshot.message }}</span>
                     {% if dashboard.alerts_snapshot.items %}
                         <span class="rounded-md border border-outline-default bg-surface-card px-3 py-1 text-content-secondary">Showing top {{ dashboard.alerts_snapshot.items|length }} signals</span>

@@ -28,7 +28,7 @@
     <div class="flex items-start justify-between gap-4">
         <div class="min-w-0">
             <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Operational posture</p>
-            <p class="mt-1 text-3xl font-bold leading-none text-brand-foreground">{{ posture.value }}</p>
+            <p class="mt-1 text-3xl font-semibold leading-none text-brand-foreground">{{ posture.value }}</p>
             <p class="mt-2 text-xs leading-5 text-brand-foreground-muted">{{ posture_short_description }}</p>
         </div>
         {{ table_label.status_label(posture.status, posture_tone, posture_icon) }}
@@ -36,11 +36,11 @@
     <div class="mt-auto grid grid-cols-2 gap-2 pt-4">
         <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-3">
             <p class="text-[10px] font-semibold uppercase tracking-wide text-brand-foreground-muted">Actionable</p>
-            <p class="mt-1 text-2xl font-bold text-brand-foreground">{{ actionable.total_count|default(0) }}</p>
+            <p class="mt-1 text-2xl font-semibold text-brand-foreground">{{ actionable.total_count|default(0) }}</p>
         </div>
         <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-3">
             <p class="text-[10px] font-semibold uppercase tracking-wide text-brand-foreground-muted">Active alerts</p>
-            <p class="mt-1 text-2xl font-bold text-brand-foreground">{{ active_alerts }}</p>
+            <p class="mt-1 text-2xl font-semibold text-brand-foreground">{{ active_alerts }}</p>
         </div>
     </div>
 </div>

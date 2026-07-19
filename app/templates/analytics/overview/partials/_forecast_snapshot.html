@@ -64,7 +64,7 @@
                                     <span class="h-2 w-2 rounded-full {% if item.key == 'cpu' %}bg-status-info {% elif item.key == 'memory' %}bg-kaori-primary {% elif item.key == 'storage' %}bg-status-normal {% elif item.key == 'pods' %}bg-status-pending {% else %}bg-status-unknown{% endif %}"></span>
                                     <span class="text-xs font-semibold text-content-secondary">{{ item.label }}</span>
                                 </div>
-                                <p class="mt-1 text-[11px] text-content-muted">{{ item.latest_percent }}% → {{ item.projected_percent }}%</p>
+                                <p class="mt-1 text-xs text-content-muted">{{ item.latest_percent }}% → {{ item.projected_percent }}%</p>
                             </div>
                         {% endfor %}
                     </div>

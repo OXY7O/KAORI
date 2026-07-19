@@ -2,7 +2,7 @@
 <details class="sidebar-menu space-y-1"
          {% if inventory_active %}open{% endif %}>
     <!-- Inventory Parent -->
-    <summary class="{{ 'bg-kaori-primary text-white shadow-lg shadow-kaori-primary/20 ring-1 ring-white/10' if inventory_active else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} sidebar-parent-link group flex cursor-pointer select-none items-center justify-between min-h-11 rounded-lg px-2.5 py-2 text-[12px] font-semibold transition [.sidebar-collapsed_&]:justify-center [.sidebar-collapsed_&]:px-2"
+    <summary class="{{ 'bg-kaori-primary text-white shadow-lg shadow-kaori-primary/20 ring-1 ring-white/10' if inventory_active else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} sidebar-parent-link group flex cursor-pointer select-none items-center justify-between min-h-11 rounded-lg px-2.5 py-2 text-xs font-semibold transition [.sidebar-collapsed_&]:justify-center [.sidebar-collapsed_&]:px-2"
              title="K8s Inventory"
              aria-label="K8s Inventory"
              @click="if (!sidebarExpanded) { $event.preventDefault(); toggleSidebar(); $el.parentElement.open = true }">
@@ -10,7 +10,7 @@
             <span class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg {{ 'bg-white/15 text-white' if inventory_active else 'bg-white/5 text-brand-foreground-muted group-hover:bg-white/10 group-hover:text-white' }} transition">
                 <i data-lucide="package-search" class="h-4 w-4"></i>
             </span>
-            <span class="sidebar-expanded-only truncate whitespace-nowrap text-[12px] leading-5">K8s Inventory</span>
+            <span class="sidebar-expanded-only truncate whitespace-nowrap text-xs leading-5">K8s Inventory</span>
         </div>
         <i data-lucide="chevron-right"
            class="sidebar-expanded-only sidebar-menu-chevron h-4 w-4 {{ 'text-kaori-accent' if inventory_active else 'text-white/[0.35]' }}"></i>
@@ -18,61 +18,61 @@
     <!-- Inventory Sub Menu -->
     <div class="sidebar-expanded-only sidebar-submenu ml-6 mt-1 space-y-1 border-l border-white/10 pl-3">
         <a href="{{ url_for('inventory.overview') }}"
-           class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint == 'inventory.overview' else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] leading-4 transition">
+           class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint == 'inventory.overview' else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs leading-4 transition">
             <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint == 'inventory.overview' else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
             <i data-lucide="layout-grid" class="h-3.5 w-3.5"></i>
             <span class="truncate whitespace-nowrap">Overview</span>
         </a>
         <a href="{{ url_for('inventory.topology') }}"
-           class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint in ['inventory.topology', 'inventory.topology_data'] else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] leading-4 transition">
+           class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint in ['inventory.topology', 'inventory.topology_data'] else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs leading-4 transition">
             <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint in ['inventory.topology', 'inventory.topology_data'] else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
             <i data-lucide="waypoints" class="h-3.5 w-3.5"></i>
             <span class="truncate whitespace-nowrap">Topology</span>
         </a>
         <a href="{{ url_for('inventory.nodes') }}"
-           class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint == 'inventory.nodes' else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] leading-4 transition">
+           class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint == 'inventory.nodes' else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs leading-4 transition">
             <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint == 'inventory.nodes' else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
             <i data-lucide="server" class="h-3.5 w-3.5"></i>
             <span class="truncate whitespace-nowrap">Nodes</span>
         </a>
         <a href="{{ url_for('inventory.namespaces') }}"
-           class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint == 'inventory.namespaces' else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] leading-4 transition">
+           class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint == 'inventory.namespaces' else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs leading-4 transition">
             <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint == 'inventory.namespaces' else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
             <i data-lucide="folders" class="h-3.5 w-3.5"></i>
             <span class="truncate whitespace-nowrap">Namespaces</span>
         </a>
         <a href="{{ url_for('inventory.workloads') }}"
-           class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint == 'inventory.workloads' else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] leading-4 transition">
+           class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint == 'inventory.workloads' else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs leading-4 transition">
             <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint == 'inventory.workloads' else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
             <i data-lucide="boxes" class="h-3.5 w-3.5"></i>
             <span class="truncate whitespace-nowrap">Workloads</span>
         </a>
         <a href="{{ url_for('inventory.pods') }}"
-           class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint == 'inventory.pods' else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] leading-4 transition">
+           class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint == 'inventory.pods' else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs leading-4 transition">
             <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint == 'inventory.pods' else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
             <i data-lucide="box" class="h-3.5 w-3.5"></i>
             <span class="truncate whitespace-nowrap">Pods</span>
         </a>
         <a href="{{ url_for('inventory.services') }}"
-           class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint == 'inventory.services' else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] leading-4 transition">
+           class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint == 'inventory.services' else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs leading-4 transition">
             <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint == 'inventory.services' else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
             <i data-lucide="network" class="h-3.5 w-3.5"></i>
             <span class="truncate whitespace-nowrap">Services</span>
         </a>
         <a href="{{ url_for('inventory.ingresses') }}"
-           class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint == 'inventory.ingresses' else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] leading-4 transition">
+           class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint == 'inventory.ingresses' else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs leading-4 transition">
             <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint == 'inventory.ingresses' else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
             <i data-lucide="route" class="h-3.5 w-3.5"></i>
             <span class="truncate whitespace-nowrap">Ingresses</span>
         </a>
         <a href="{{ url_for('inventory.storage') }}"
-           class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint == 'inventory.storage' else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] leading-4 transition">
+           class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint == 'inventory.storage' else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs leading-4 transition">
             <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint == 'inventory.storage' else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
             <i data-lucide="hard-drive" class="h-3.5 w-3.5"></i>
             <span class="truncate whitespace-nowrap">Storage</span>
         </a>
         <a href="{{ url_for('inventory.configuration') }}"
-           class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint in ['inventory.configuration', 'inventory.configuration_details'] else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] leading-4 transition">
+           class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint in ['inventory.configuration', 'inventory.configuration_details'] else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs leading-4 transition">
             <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint in ['inventory.configuration', 'inventory.configuration_details'] else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
             <i data-lucide="file-key-2" class="h-3.5 w-3.5"></i>
             <span class="truncate whitespace-nowrap">Configuration</span>

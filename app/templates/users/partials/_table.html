@@ -48,14 +48,14 @@
                         </td>
                         <td class="px-6 py-4 text-left align-top">
                             <div class="flex flex-wrap items-center gap-2">
-                                <span class="rounded-md bg-surface-subtle px-2.5 py-1 text-xs font-bold text-content-secondary">{{ user.role_display_name }}</span>
+                                <span class="rounded-md bg-surface-subtle px-2.5 py-1 text-xs font-semibold text-content-secondary">{{ user.role_display_name }}</span>
                                 {% if user.is_super_admin %}
-                                    <span class="rounded-md bg-kaori-soft px-2.5 py-1 text-xs font-bold text-kaori-primary ">Break-glass</span>
+                                    <span class="rounded-md bg-kaori-soft px-2.5 py-1 text-xs font-semibold text-kaori-primary ">Break-glass</span>
                                 {% endif %}
                             </div>
                         </td>
                         <td class="px-6 py-4 text-left align-top">
-                            <span class="inline-flex items-center gap-1.5 rounded-md bg-kaori-soft px-2.5 py-1 text-xs font-bold text-kaori-primary ring-1 ring-kaori-primary/20 ">
+                            <span class="inline-flex items-center gap-1.5 rounded-md bg-kaori-soft px-2.5 py-1 text-xs font-semibold text-kaori-primary ring-1 ring-kaori-primary/20 ">
                                 <i data-lucide="{{ 'database' if user.auth_source == 'database' else 'network' }}"
                                    class="h-3 w-3"></i>
                                 {{ user.auth_source|upper }}
@@ -63,11 +63,11 @@
                         </td>
                         <td class="px-6 py-4 text-left align-top">
                             {% if user.deleted_at %}
-                                <span class="inline-flex items-center gap-1.5 rounded-md bg-surface-subtle px-2.5 py-1 text-xs font-bold text-content-muted"><i data-lucide="archive" class="h-3 w-3"></i> Deleted</span>
+                                <span class="inline-flex items-center gap-1.5 rounded-md bg-surface-subtle px-2.5 py-1 text-xs font-semibold text-content-muted"><i data-lucide="archive" class="h-3 w-3"></i> Deleted</span>
                             {% elif user.is_active %}
-                                <span class="inline-flex items-center gap-1.5 rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:ring-emerald-900/60"><i data-lucide="check-circle-2" class="h-3 w-3"></i> Active</span>
+                                <span class="inline-flex items-center gap-1.5 rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:ring-emerald-900/60"><i data-lucide="check-circle-2" class="h-3 w-3"></i> Active</span>
                             {% else %}
-                                <span class="inline-flex items-center gap-1.5 rounded-md bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700 ring-1 ring-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:ring-amber-900/60"><i data-lucide="pause-circle" class="h-3 w-3"></i> Inactive</span>
+                                <span class="inline-flex items-center gap-1.5 rounded-md bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:ring-amber-900/60"><i data-lucide="pause-circle" class="h-3 w-3"></i> Inactive</span>
                             {% endif %}
                         </td>
                         <td class="px-6 py-4 text-left align-top text-content-muted">{{ user.last_login_at|user_datetime('Never') }}</td>
@@ -103,7 +103,7 @@
                                             {% if csrf_token is defined %}
                                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             {% endif %}
-                                            <button class="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 px-2.5 py-1.5 text-xs font-bold text-emerald-700 transition hover:bg-emerald-50 dark:border-emerald-900/60 dark:text-emerald-300 dark:hover:bg-emerald-950/30">
+                                            <button class="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50 dark:border-emerald-900/60 dark:text-emerald-300 dark:hover:bg-emerald-950/30">
                                                 <i data-lucide="rotate-ccw" class="h-3.5 w-3.5"></i>Restore
                                             </button>
                                         </form>
@@ -111,7 +111,7 @@
                                         <button type="button"
                                                 title="{{ actions.get('restore_reason', 'Restore is restricted for this account.') }}"
                                                 disabled
-                                                class="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-emerald-100 px-2.5 py-1.5 text-xs font-bold text-emerald-300 opacity-60 dark:border-emerald-950/60 dark:text-emerald-700"><i data-lucide="rotate-ccw" class="h-3.5 w-3.5"></i>Restore</button>
+                                                class="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-emerald-100 px-2.5 py-1.5 text-xs font-semibold text-emerald-300 opacity-60 dark:border-emerald-950/60 dark:text-emerald-700"><i data-lucide="rotate-ccw" class="h-3.5 w-3.5"></i>Restore</button>
                                     {% endif %}
                                 {% elif user.is_active %}
                                     {% if actions.get('can_deactivate') %}
@@ -125,13 +125,13 @@
                                             {% if csrf_token is defined %}
                                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             {% endif %}
-                                            <button class="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 px-2.5 py-1.5 text-xs font-bold text-amber-700 transition hover:bg-amber-50 dark:border-amber-900/60 dark:text-amber-300 dark:hover:bg-amber-950/30"><i data-lucide="pause-circle" class="h-3.5 w-3.5"></i>Deactivate</button>
+                                            <button class="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 px-2.5 py-1.5 text-xs font-semibold text-amber-700 transition hover:bg-amber-50 dark:border-amber-900/60 dark:text-amber-300 dark:hover:bg-amber-950/30"><i data-lucide="pause-circle" class="h-3.5 w-3.5"></i>Deactivate</button>
                                         </form>
                                     {% else %}
                                         <button type="button"
                                                 title="{{ actions.get('deactivate_reason', 'Deactivate is restricted for this account.') }}"
                                                 disabled
-                                                class="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-amber-100 px-2.5 py-1.5 text-xs font-bold text-amber-300 opacity-60 dark:border-amber-950/60 dark:text-amber-700"><i data-lucide="pause-circle" class="h-3.5 w-3.5"></i>Deactivate</button>
+                                                class="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-amber-100 px-2.5 py-1.5 text-xs font-semibold text-amber-300 opacity-60 dark:border-amber-950/60 dark:text-amber-700"><i data-lucide="pause-circle" class="h-3.5 w-3.5"></i>Deactivate</button>
                                     {% endif %}
                                 {% else %}
                                     {% if actions.get('can_activate') %}
@@ -143,13 +143,13 @@
                                               hx-indicator="#users-refresh-indicator"
                                               hx-include="#users-filter-form">
                                             {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                                            <button class="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 px-2.5 py-1.5 text-xs font-bold text-emerald-700 transition hover:bg-emerald-50 dark:border-emerald-900/60 dark:text-emerald-300 dark:hover:bg-emerald-950/30"><i data-lucide="play-circle" class="h-3.5 w-3.5"></i>Activate</button>
+                                            <button class="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50 dark:border-emerald-900/60 dark:text-emerald-300 dark:hover:bg-emerald-950/30"><i data-lucide="play-circle" class="h-3.5 w-3.5"></i>Activate</button>
                                         </form>
                                     {% else %}
                                         <button type="button"
                                                 title="{{ actions.get('activate_reason', 'Activate is restricted for this account.') }}"
                                                 disabled
-                                                class="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-emerald-100 px-2.5 py-1.5 text-xs font-bold text-emerald-300 opacity-60 dark:border-emerald-950/60 dark:text-emerald-700"><i data-lucide="play-circle" class="h-3.5 w-3.5"></i>Activate</button>
+                                                class="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-emerald-100 px-2.5 py-1.5 text-xs font-semibold text-emerald-300 opacity-60 dark:border-emerald-950/60 dark:text-emerald-700"><i data-lucide="play-circle" class="h-3.5 w-3.5"></i>Activate</button>
                                     {% endif %}
                                 {% endif %}
                                 {% if not user.deleted_at %}
@@ -160,14 +160,14 @@
                                                 data-delete-url="{{ url_for('users.delete', user_id=user.id) }}"
                                                 data-delete-name="{{ user.display_label }}"
                                                 data-delete-meta="{{ user.username }} · {{ user.email }} · {{ user.role_display_name }}"
-                                                class="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-2.5 py-1.5 text-xs font-bold text-red-700 transition hover:bg-red-50 dark:border-red-900/60 dark:text-red-300 dark:hover:bg-red-950/30 cursor-pointer disabled:cursor-not-allowed">
+                                                class="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-50 dark:border-red-900/60 dark:text-red-300 dark:hover:bg-red-950/30 cursor-pointer disabled:cursor-not-allowed">
                                             <i data-lucide="trash-2" class="h-3.5 w-3.5"></i>Delete
                                         </button>
                                     {% else %}
                                         <button type="button"
                                                 title="{{ actions.get('delete_reason', 'Delete is restricted for this account.') }}"
                                                 disabled
-                                                class="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-red-100 px-2.5 py-1.5 text-xs font-bold text-red-300 opacity-60 dark:border-red-950/60 dark:text-red-700"><i data-lucide="trash-2" class="h-3.5 w-3.5"></i>Delete</button>
+                                                class="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-red-100 px-2.5 py-1.5 text-xs font-semibold text-red-300 opacity-60 dark:border-red-950/60 dark:text-red-700"><i data-lucide="trash-2" class="h-3.5 w-3.5"></i>Delete</button>
                                     {% endif %}
                                 {% endif %}
                             </div>

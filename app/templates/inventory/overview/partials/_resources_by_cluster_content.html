@@ -47,9 +47,9 @@
                     <td class="px-4 py-3.5">
                         <div class="flex min-w-[10.5rem] flex-col items-start gap-1">
                             {% if synced_at %}
-                                <span class="whitespace-nowrap text-[11px] font-medium text-content-secondary">{{ synced_at|user_datetime }}</span>
+                                <span class="whitespace-nowrap text-xs font-medium text-content-secondary">{{ synced_at|user_datetime }}</span>
                             {% else %}
-                                <span class="text-[11px] font-medium text-content-disabled">Not collected</span>
+                                <span class="text-xs font-medium text-content-disabled">Not collected</span>
                             {% endif %}
                             {% if cluster.sync_status_tone == 'green' %}
                                 {{ status_label(cluster.sync_status_label, 'normal') }}
@@ -75,7 +75,7 @@
                                     {{ status_label(hint.label, 'unknown', hint.icon) }}
                                 {% endif %}
                             {% else %}
-                                <span class="text-[11px] text-content-muted">No risk hints</span>
+                                <span class="text-xs text-content-muted">No risk hints</span>
                             {% endfor %}
                         </div>
                     </td>

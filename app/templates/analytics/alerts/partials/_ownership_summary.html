@@ -8,7 +8,7 @@
  </div>
  <div>
  <div class="flex flex-wrap items-center gap-2">
- <h2 class="text-lg font-semibold text-content-primary ">Ownership &amp; Runbook Readiness</h2>
+ <h2 class="text-lg font-semibold text-content-primary">Ownership &amp; Runbook Readiness</h2>
  <span class="inline-flex rounded-md px-2.5 py-1 text-xs font-semibold {{ ownership_summary.class }}">
  {{ ownership_summary.label }}
  </span>
@@ -20,7 +20,7 @@
  <span class="rounded-md bg-surface-hover px-2.5 py-1 text-xs font-semibold text-content-secondary ">
  Score {{ ownership_summary.score }}/100
  </span>
- <span class="inline-flex w-fit items-center gap-2 rounded-xl border border-outline-default bg-surface-subtle px-3 py-2 text-xs font-bold text-content-secondary transition group-open:bg-kaori-soft group-open:text-kaori-primary group-open:bg-kaori-soft dark:group-open:text-kaori-primary">
+ <span class="inline-flex w-fit items-center gap-2 rounded-xl border border-outline-default bg-surface-subtle px-3 py-2 text-xs font-semibold text-content-secondary transition group-open:bg-kaori-soft group-open:text-kaori-primary group-open:bg-kaori-soft dark:group-open:text-kaori-primary">
  <i data-lucide="chevron-down"
  class="h-4 w-4 transition group-open:rotate-180"></i>
  Details
@@ -51,7 +51,7 @@
  {% for label, value, desc in cards %}
  <div class="rounded-xl border border-outline-default bg-surface-subtle p-4 ">
  <p class="text-xs font-semibold uppercase tracking-wide text-content-muted ">{{ label }}</p>
- <p class="mt-2 text-2xl font-bold text-content-primary ">{{ value }}</p>
+ <p class="mt-2 text-2xl font-semibold text-content-primary ">{{ value }}</p>
  <p class="mt-1 text-xs text-content-muted ">{{ desc }}</p>
  </div>
  {% endfor %}
@@ -60,7 +60,7 @@
  <div class="rounded-xl border border-outline-default p-4 ">
  <div class="flex items-center gap-2">
  <i data-lucide="users" class="h-4 w-4 text-content-muted"></i>
- <h3 class="text-sm font-semibold text-content-primary ">Owner Groups</h3>
+ <h3 class="text-sm font-semibold text-content-primary">Owner Groups</h3>
  </div>
  <div class="mt-4 space-y-3">
  {% for owner in ownership_summary.owner_groups %}
@@ -82,7 +82,7 @@
  <div class="rounded-xl border border-outline-default p-4 ">
  <div class="flex items-center gap-2">
  <i data-lucide="book-open" class="h-4 w-4 text-content-muted"></i>
- <h3 class="text-sm font-semibold text-content-primary ">Runbook Links</h3>
+ <h3 class="text-sm font-semibold text-content-primary">Runbook Links</h3>
  </div>
  <div class="mt-4 space-y-3">
  {% for item in ownership_summary.runbook_items %}
@@ -101,7 +101,7 @@
  <div class="rounded-xl border border-outline-default p-4 ">
  <div class="flex items-center gap-2">
  <i data-lucide="triangle-alert" class="h-4 w-4 text-content-muted"></i>
- <h3 class="text-sm font-semibold text-content-primary ">Missing Metadata</h3>
+ <h3 class="text-sm font-semibold text-content-primary">Missing Metadata</h3>
  </div>
  <div class="mt-4 space-y-3">
  {% for item in ownership_summary.missing_metadata_items %}
@@ -111,7 +111,7 @@
  <div class="truncate text-sm font-semibold text-content-primary ">{{ item.name }}</div>
  <div class="mt-1 text-xs text-content-muted ">{{ item.namespace }} · {{ item.severity|title }}</div>
  </div>
- <span class="shrink-0 rounded-md bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
+ <span class="shrink-0 rounded-md bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
  {{ item.missing|join(", ") }}
  </span>
  </div>

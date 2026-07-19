@@ -43,7 +43,7 @@
                      class="h-11 w-11 object-contain">
             </div>
             <div class="sidebar-expanded-only min-w-0 flex-1">
-                <h1 class="truncate text-sm font-extrabold leading-5 tracking-[-0.02em] text-white">KAORI</h1>
+                <h1 class="truncate text-sm font-extrabold leading-5 text-white">KAORI</h1>
                 <p class="truncate text-[10px] font-medium text-brand-foreground-muted">Infrastructure Operations</p>
             </div>
         </div>
@@ -52,12 +52,12 @@
     <nav class="relative z-10 flex-1 space-y-4 overflow-y-auto overscroll-contain px-3 py-3 [scrollbar-gutter:stable]">
         {% if current_user.is_authenticated %}
             <div class="sidebar-nav-section">
-                <div class="sidebar-expanded-only mb-1.5 px-3 text-[9px] font-extrabold uppercase tracking-[0.18em] text-white/40">Main</div>
+                <div class="sidebar-expanded-only mb-1.5 px-3 text-[10px] font-extrabold uppercase tracking-[0.18em] text-white/40">Main</div>
                 <div class="space-y-1">
                     <a href="{{ url_for('welcome.index') }}"
                        title="Welcome"
                        aria-label="Welcome"
-                       class="{{ 'bg-kaori-primary text-white shadow-lg shadow-kaori-primary/20 ring-1 ring-white/10' if request.endpoint == 'welcome.index' else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} sidebar-parent-link group flex min-h-11 items-center gap-2.5 rounded-lg px-2.5 py-2 text-[12px] font-semibold transition [.sidebar-collapsed_&]:justify-center [.sidebar-collapsed_&]:px-2">
+                       class="{{ 'bg-kaori-primary text-white shadow-lg shadow-kaori-primary/20 ring-1 ring-white/10' if request.endpoint == 'welcome.index' else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} sidebar-parent-link group flex min-h-11 items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-semibold transition [.sidebar-collapsed_&]:justify-center [.sidebar-collapsed_&]:px-2">
                         <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ 'bg-white/15 text-white' if request.endpoint == 'welcome.index' else 'bg-white/5 text-brand-foreground-muted group-hover:bg-white/10 group-hover:text-white' }} transition">
                             <i data-lucide="sparkles" class="h-4 w-4"></i>
                         </span>
@@ -70,7 +70,7 @@
 
         {% if can_inventory or can_operations or can_governance %}
             <div class="sidebar-nav-section">
-                <div class="sidebar-expanded-only mb-1.5 px-3 text-[9px] font-extrabold uppercase tracking-[0.18em] text-white/40">Kubernetes</div>
+                <div class="sidebar-expanded-only mb-1.5 px-3 text-[10px] font-extrabold uppercase tracking-[0.18em] text-white/40">Kubernetes</div>
                 <div class="space-y-1">
                     {% if can_inventory %}{% include "components/navigation/inventory_menu.html" %}{% endif %}
                     {% if can_operations %}{% include "components/navigation/kubernetes_operations_menu.html" %}{% endif %}
@@ -81,7 +81,7 @@
 
         {% if can_analytics or can_intelligence or can_reports %}
             <div class="sidebar-nav-section">
-                <div class="sidebar-expanded-only mb-1.5 px-3 text-[9px] font-extrabold uppercase tracking-[0.18em] text-white/40">Insights &amp; Reporting</div>
+                <div class="sidebar-expanded-only mb-1.5 px-3 text-[10px] font-extrabold uppercase tracking-[0.18em] text-white/40">Insights &amp; Reporting</div>
                 <div class="space-y-1">
                     {% if can_analytics %}{% include "components/navigation/analytics_menu.html" %}{% endif %}
                     {% if can_intelligence %}{% include "components/navigation/intelligence_menu.html" %}{% endif %}
@@ -92,13 +92,13 @@
 
         {% if can_integrations %}
             <div class="sidebar-nav-section">
-                <div class="sidebar-expanded-only mb-1.5 px-3 text-[9px] font-extrabold uppercase tracking-[0.18em] text-white/40">Platform Extensions</div>
+                <div class="sidebar-expanded-only mb-1.5 px-3 text-[10px] font-extrabold uppercase tracking-[0.18em] text-white/40">Platform Extensions</div>
                 <div class="space-y-1">{% include "components/navigation/integrations_menu.html" %}</div>
             </div>
         {% endif %}
 
         <div class="sidebar-nav-section">
-            <div class="sidebar-expanded-only mb-1.5 px-3 text-[9px] font-extrabold uppercase tracking-[0.18em] text-white/40">Administration</div>
+            <div class="sidebar-expanded-only mb-1.5 px-3 text-[10px] font-extrabold uppercase tracking-[0.18em] text-white/40">Administration</div>
             <div class="space-y-1">
                 {% include "components/navigation/access_management_menu.html" %}
                 {% include "components/navigation/settings_menu.html" %}

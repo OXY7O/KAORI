@@ -10,7 +10,7 @@
  <div class="relative grid gap-5 xl:grid-cols-12 xl:items-stretch">
  <div class="flex min-w-0 flex-col justify-center xl:col-span-7">
  {% call page_hero.intro('brain-circuit', payload.hero_label, 'sparkles') %}
- <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">{{ payload.page_title }}</h1>
+ <h1 class="text-2xl font-semibold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">{{ payload.page_title }}</h1>
  <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">{{ payload.page_subtitle }}</p>
  <div class="mt-5 flex flex-wrap gap-2">
  {{ page_hero.meta_label('badge-check', 'Inventory-based rules') }}
@@ -24,7 +24,7 @@
  <div class="flex items-start justify-between gap-4">
  <div class="min-w-0">
  <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Intelligence posture</p>
- <h2 class="mt-1 text-3xl font-bold leading-none text-brand-foreground">{{ payload.engine_status }}</h2>
+ <h2 class="mt-1 text-3xl font-semibold leading-none text-brand-foreground">{{ payload.engine_status }}</h2>
  <p class="mt-2 text-sm leading-5 text-brand-foreground-muted">{{ payload.engine_description }}</p>
  </div>
  {{ table_label.status_label('Ready', 'normal', 'circle-check') }}
@@ -42,7 +42,7 @@
  <div class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm ">
  <div class="flex items-center justify-between gap-3">
  <div>
- <p class="text-xs font-bold uppercase tracking-[0.16em] text-content-muted ">{{ card.label }}</p>
+ <p class="text-xs font-semibold uppercase tracking-[0.16em] text-content-muted ">{{ card.label }}</p>
  <p class="mt-2 text-2xl font-black text-content-primary ">{{ card.value }}</p>
  </div>
  <span class="flex h-11 w-11 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
@@ -61,7 +61,7 @@
  <i data-lucide="{{ card.icon }}" class="h-5 w-5"></i>
  </span>
  <div>
- <h3 class="text-sm font-black text-content-primary ">{{ card.title }}</h3>
+ <h3 class="text-sm font-black text-content-primary">{{ card.title }}</h3>
  <p class="mt-1 text-sm leading-6 text-content-secondary ">{{ card.description }}</p>
  </div>
  </div>
@@ -73,8 +73,8 @@
  <div class="border-b border-outline-default p-5 ">
  <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
  <div>
- <p class="text-xs font-bold uppercase tracking-[0.16em] text-kaori-primary">Recommendation registry</p>
- <h2 class="mt-1 text-xl font-black text-content-primary ">{{ payload.page_title }} data workspace</h2>
+ <p class="text-xs font-semibold uppercase tracking-[0.16em] text-kaori-primary">Recommendation registry</p>
+ <h2 class="mt-1 text-xl font-black text-content-primary">{{ payload.page_title }} data workspace</h2>
  <p class="mt-1 text-sm text-content-muted ">Filter recommendation catalog definitions by domain, logic type, signal source, severity, and target resource.</p>
  </div>
  <a href="{{ url_for('intelligence.catalog') }}"
@@ -103,7 +103,7 @@
  hx-push-url="true"
  hx-sync="#recommendation-catalog:replace"
  hx-indicator="#recommendation-filter-loading"
- class="inline-flex items-center gap-2 rounded-xl border border-outline-default px-3 py-1.5 text-xs font-bold text-content-secondary transition hover:bg-kaori-soft">
+ class="inline-flex items-center gap-2 rounded-xl border border-outline-default px-3 py-1.5 text-xs font-semibold text-content-secondary transition hover:bg-kaori-soft">
  <i data-lucide="rotate-ccw" class="h-3.5 w-3.5"></i>
  Reset filters
  </a>
@@ -221,7 +221,7 @@
  <col style="width: 22%;">
  <col style="width: 10%;">
  </colgroup>
- <thead class="bg-surface-subtle ">
+ <thead class="bg-surface-subtle">
  <tr>
  <th class="px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-content-muted ">Priority</th>
  <th class="px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-content-muted ">Recommendation</th>
@@ -240,17 +240,17 @@
  <p class="mt-1 truncate text-xs font-semibold text-content-muted ">{{ item.severity_label }}</p>
  </td>
  <td class="px-4 py-3">
- <p class="truncate text-sm font-bold text-content-primary "
+ <p class="truncate text-sm font-semibold text-content-primary "
  title="{{ item.title }}">{{ item.title }}</p>
  <p class="mt-1 truncate text-xs text-content-muted "
  title="{{ item.rule_key }}">{{ item.rule_key }}</p>
  </td>
  <td class="px-4 py-3">
  <div class="flex min-w-0 flex-nowrap items-center gap-2 overflow-hidden">
- <span class="inline-flex min-w-0 max-w-[9rem] rounded-md bg-kaori-soft px-2.5 py-0.5 text-xs font-bold text-kaori-primary ring-1 ring-outline-default text-kaori-primary ">
+ <span class="inline-flex min-w-0 max-w-[9rem] rounded-md bg-kaori-soft px-2.5 py-0.5 text-xs font-semibold text-kaori-primary ring-1 ring-outline-default text-kaori-primary ">
  <span class="truncate">{{ item.domain_label }}</span>
  </span>
- <span class="inline-flex min-w-0 max-w-[9rem] rounded-md bg-kaori-soft px-2.5 py-0.5 text-xs font-bold text-content-secondary ring-1 ring-outline-default ">
+ <span class="inline-flex min-w-0 max-w-[9rem] rounded-md bg-kaori-soft px-2.5 py-0.5 text-xs font-semibold text-content-secondary ring-1 ring-outline-default ">
  <span class="truncate">{{ item.source_kind_label }}</span>
  </span>
  </div>
@@ -267,7 +267,7 @@
  </td>
  <td class="px-4 py-3">
  <button type="button"
- class="inline-flex items-center gap-2 rounded-xl border border-outline-default px-3 py-1.5 text-xs font-bold text-content-secondary transition hover:bg-kaori-soft"
+ class="inline-flex items-center gap-2 rounded-xl border border-outline-default px-3 py-1.5 text-xs font-semibold text-content-secondary transition hover:bg-kaori-soft"
  data-recommendation-detail-toggle="{{ loop.index }}">
  View More
  <i data-lucide="chevron-down"
@@ -350,7 +350,7 @@
  {% endfor %}
  </div>
  <a href="{{ url_for('intelligence.catalog', q=item.rule_key.split(':')[0] ) }}"
- class="inline-flex items-center justify-center gap-2 rounded-xl bg-kaori-primary px-3 py-2 text-xs font-bold text-white transition hover:bg-kaori-strong">
+ class="inline-flex items-center justify-center gap-2 rounded-xl bg-kaori-primary px-3 py-2 text-xs font-semibold text-white transition hover:bg-kaori-strong">
  View Rule
  <i data-lucide="arrow-up-right" class="h-3.5 w-3.5"></i>
  </a>
@@ -363,7 +363,7 @@
  <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-kaori-soft text-content-muted ">
  <i data-lucide="shield-check" class="h-6 w-6"></i>
  </div>
- <h3 class="mt-3 text-base font-black text-content-primary ">No active recommendations found</h3>
+ <h3 class="mt-3 text-base font-black text-content-primary">No Active Recommendations Found</h3>
  <p class="mx-auto mt-1 max-w-xl text-sm leading-6 text-content-muted ">
  No current resource state matches the available recommendation evaluators. Open Catalog to review which rules are defined, or sync inventory and metrics again.
  </p>
@@ -382,12 +382,12 @@
  <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
  <div class="min-w-0">
  <div class="flex flex-wrap items-center gap-2">
- <span class="rounded-md bg-kaori-soft px-2.5 py-0.5 text-xs font-bold text-kaori-primary ring-1 ring-outline-default text-kaori-primary ">{{ item.domain_label }}</span>
- <span class="rounded-md bg-kaori-soft px-2.5 py-0.5 text-xs font-bold text-content-secondary ">{{ item.logic_type_label }}</span>
- <span class="rounded-md bg-kaori-soft px-2.5 py-0.5 text-xs font-bold text-content-secondary ">{{ item.signal_source_label }}</span>
- <span class="rounded-md px-2.5 py-0.5 text-xs font-bold {{ 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-300 dark:ring-emerald-900/40' if item.status_tone == 'emerald' else 'bg-purple-50 text-purple-700 ring-1 ring-purple-100 dark:bg-purple-950/30 dark:text-purple-300 dark:ring-purple-900/40' if item.status_tone == 'purple' else 'bg-amber-50 text-amber-700 ring-1 ring-amber-100 dark:bg-amber-950/30 dark:text-amber-300 dark:ring-amber-900/40' }}">{{ item.status_label }}</span>
+ <span class="rounded-md bg-kaori-soft px-2.5 py-0.5 text-xs font-semibold text-kaori-primary ring-1 ring-outline-default text-kaori-primary ">{{ item.domain_label }}</span>
+ <span class="rounded-md bg-kaori-soft px-2.5 py-0.5 text-xs font-semibold text-content-secondary ">{{ item.logic_type_label }}</span>
+ <span class="rounded-md bg-kaori-soft px-2.5 py-0.5 text-xs font-semibold text-content-secondary ">{{ item.signal_source_label }}</span>
+ <span class="rounded-md px-2.5 py-0.5 text-xs font-semibold {{ 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-300 dark:ring-emerald-900/40' if item.status_tone == 'emerald' else 'bg-purple-50 text-purple-700 ring-1 ring-purple-100 dark:bg-purple-950/30 dark:text-purple-300 dark:ring-purple-900/40' if item.status_tone == 'purple' else 'bg-amber-50 text-amber-700 ring-1 ring-amber-100 dark:bg-amber-950/30 dark:text-amber-300 dark:ring-amber-900/40' }}">{{ item.status_label }}</span>
  </div>
- <h3 class="mt-3 text-base font-bold text-content-primary ">{{ item.title }}</h3>
+ <h3 class="mt-3 text-base font-semibold text-content-primary">{{ item.title }}</h3>
  <p class="mt-1 text-sm leading-6 text-content-secondary ">{{ item.summary }}</p>
  <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-content-muted ">
  <span class="inline-flex items-center gap-1.5"><i data-lucide="fingerprint" class="h-3.5 w-3.5"></i>{{ item.rule_key }}</span>
@@ -408,23 +408,23 @@
  x-cloak
  class="mt-5 grid gap-4 rounded-lg border border-outline-default bg-surface-subtle p-4 lg:grid-cols-2">
  <div>
- <p class="text-xs font-bold uppercase tracking-[0.16em] text-content-muted ">What it checks</p>
+ <p class="text-xs font-semibold uppercase tracking-[0.16em] text-content-muted ">What it checks</p>
  <p class="mt-2 text-sm leading-6 text-content-secondary ">{{ item.condition_summary }}</p>
  </div>
  <div>
- <p class="text-xs font-bold uppercase tracking-[0.16em] text-content-muted ">Recommended action</p>
+ <p class="text-xs font-semibold uppercase tracking-[0.16em] text-content-muted ">Recommended action</p>
  <p class="mt-2 text-sm leading-6 text-content-secondary ">{{ item.recommended_action }}</p>
  </div>
  <div>
- <p class="text-xs font-bold uppercase tracking-[0.16em] text-content-muted ">Impact</p>
+ <p class="text-xs font-semibold uppercase tracking-[0.16em] text-content-muted ">Impact</p>
  <p class="mt-2 text-sm leading-6 text-content-secondary ">{{ item.impact }}</p>
  </div>
  <div>
- <p class="text-xs font-bold uppercase tracking-[0.16em] text-content-muted ">Signal boundary</p>
+ <p class="text-xs font-semibold uppercase tracking-[0.16em] text-content-muted ">Signal boundary</p>
  <p class="mt-2 text-sm leading-6 text-content-secondary ">{{ item.prometheus_relationship }}</p>
  </div>
  <div>
- <p class="text-xs font-bold uppercase tracking-[0.16em] text-content-muted ">Visibility</p>
+ <p class="text-xs font-semibold uppercase tracking-[0.16em] text-content-muted ">Visibility</p>
  <div class="mt-2 flex flex-wrap gap-2">
  {% for label in item.visible_in %}
  <span class="rounded-md bg-surface-card px-2.5 py-1 text-xs font-semibold text-content-secondary ring-1 ring-outline-default ">{{ label }}</span>
@@ -432,7 +432,7 @@
  </div>
  </div>
  <div>
- <p class="text-xs font-bold uppercase tracking-[0.16em] text-content-muted ">Supported sources</p>
+ <p class="text-xs font-semibold uppercase tracking-[0.16em] text-content-muted ">Supported sources</p>
  <div class="mt-2 flex flex-wrap gap-2">
  {% for label in item.supported_sources %}
  <span class="rounded-md bg-surface-card px-2.5 py-1 text-xs font-semibold text-content-secondary ring-1 ring-outline-default ">{{ label }}</span>
@@ -446,7 +446,7 @@
  <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-kaori-soft text-content-muted ">
  <i data-lucide="search-x" class="h-6 w-6"></i>
  </div>
- <h3 class="mt-3 text-base font-bold text-content-primary ">No catalog rules found</h3>
+ <h3 class="mt-3 text-base font-semibold text-content-primary">No Catalog Rules Found</h3>
  <p class="mt-1 text-sm text-content-muted ">Adjust the filters or search keyword to view more rule definitions.</p>
  </div>
  {% endfor %}

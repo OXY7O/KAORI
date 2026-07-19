@@ -7,7 +7,7 @@
  </div>
  <div>
  <div class="text-xs font-medium text-content-muted ">Node Filesystem</div>
- <div class="mt-1 text-2xl font-bold text-content-primary ">
+ <div class="mt-1 text-2xl font-semibold text-content-primary ">
  {{ storage_summary.node_filesystem.summary.capacity }}
  </div>
  <div class="text-xs text-content-muted ">{{ storage_summary.node_filesystem.summary.used }} used</div>
@@ -21,7 +21,7 @@
  </div>
  <div>
  <div class="text-xs font-medium text-content-muted ">Free Filesystem</div>
- <div class="mt-1 text-2xl font-bold text-content-primary ">
+ <div class="mt-1 text-2xl font-semibold text-content-primary ">
  {{ storage_summary.node_filesystem.summary.free }}
  </div>
  <div class="text-xs text-content-muted ">
@@ -37,7 +37,7 @@
  </div>
  <div>
  <div class="text-xs font-medium text-content-muted ">Persistent Volumes</div>
- <div class="mt-1 text-2xl font-bold text-content-primary ">
+ <div class="mt-1 text-2xl font-semibold text-content-primary ">
  {{ storage_summary.persistent_storage.pv.count }}
  </div>
  <div class="text-xs text-content-muted ">
@@ -53,7 +53,7 @@
  </div>
  <div>
  <div class="text-xs font-medium text-content-muted ">Persistent Volume Claims</div>
- <div class="mt-1 text-2xl font-bold text-content-primary ">
+ <div class="mt-1 text-2xl font-semibold text-content-primary ">
  {{ storage_summary.persistent_storage.pvc.count }}
  </div>
  <div class="text-xs text-content-muted ">
@@ -66,7 +66,7 @@
  <div class="rounded-xl border border-outline-default p-5 ">
  <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
  <div>
- <h3 class="font-semibold text-content-primary ">Node Filesystem Usage</h3>
+ <h3 class="font-semibold text-content-primary">Node Filesystem Usage</h3>
  <p class="mt-1 text-xs text-content-muted ">
  Highest usage: {{ storage_summary.node_filesystem.summary.highest_usage }}% on {{ storage_summary.node_filesystem.summary.highest_node }}
  </p>

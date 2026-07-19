@@ -13,7 +13,7 @@
                     <i data-lucide="map-pinned" class="h-5 w-5"></i>
                 </span>
                 <div>
-                    <h2 class="text-base font-bold text-content-primary">Time Zone Source</h2>
+                    <h2 class="text-base font-semibold text-content-primary">Time Zone Source</h2>
                     <p class="mt-1 text-sm leading-6 text-content-muted">
                         Use browser detection for mobile users and travel, or pin a specific IANA timezone for a fixed operational context.
                     </p>
@@ -31,7 +31,7 @@
                                    class="mt-1 h-4 w-4 border-outline-default text-kaori-primary focus:ring-kaori-primary"
                                    {% if timezone_form.timezone_mode.data == value %}checked{% endif %}>
                             <span class="min-w-0">
-                                <span class="flex items-center gap-2 text-sm font-bold text-content-primary">
+                                <span class="flex items-center gap-2 text-sm font-semibold text-content-primary">
                                     <i data-lucide="{{ 'locate-fixed' if value == 'automatic' else 'pin' }}"
                                        class="h-4 w-4 text-kaori-primary"></i>
                                     {{ label }}
@@ -52,9 +52,9 @@
                  class="rounded-xl border border-kaori-primary/25 bg-kaori-soft/60 p-4">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <p class="text-xs font-bold uppercase tracking-[0.12em] text-kaori-primary">Detected browser timezone</p>
+                        <p class="text-xs font-semibold uppercase tracking-[0.12em] text-kaori-primary">Detected browser timezone</p>
                         <p id="browser-timezone-label"
-                           class="mt-1 text-sm font-bold text-content-primary">Detecting…</p>
+                           class="mt-1 text-sm font-semibold text-content-primary">Detecting…</p>
                     </div>
                     <button id="detect-browser-timezone"
                             type="button"
@@ -91,7 +91,7 @@
         </div>
         <footer class="flex flex-col gap-3 border-t border-outline-default bg-surface-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
             <p class="text-xs leading-5 text-content-muted">
-                Effective timezone: <span class="font-bold text-content-primary">{{ current_timezone }}</span>
+                Effective timezone: <span class="font-semibold text-content-primary">{{ current_timezone }}</span>
             </p>
             <button type="submit"
                     name="{{ timezone_form.submit_timezone.name }}"

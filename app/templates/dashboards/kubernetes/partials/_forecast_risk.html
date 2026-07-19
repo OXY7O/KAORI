@@ -37,7 +37,7 @@
                                 </div>
                                 <p class="truncate text-sm font-semibold text-content-primary">{{ item.label }}</p>
                             </div>
-                            <span class="rounded-md border px-2.5 py-1 text-[11px] font-semibold
+                            <span class="rounded-md border px-2.5 py-1 text-xs font-semibold
                                         {% if item.risk == 'High' %}border-status-critical-border bg-status-critical-soft text-status-critical-text
                                         {% elif item.risk == 'Medium' %}border-status-warning-border bg-status-warning-soft text-status-warning-text
                                         {% elif item.risk == 'Low' %}border-status-normal-border bg-status-normal-soft text-status-normal-text

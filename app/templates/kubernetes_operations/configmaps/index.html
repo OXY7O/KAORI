@@ -12,7 +12,7 @@
             <div class="relative grid gap-5 xl:grid-cols-12 xl:items-stretch">
                 <div class="flex min-w-0 flex-col justify-center xl:col-span-7">
                     {% call page_hero.intro('workflow', 'Kubernetes Operations', 'file-cog') %}
-                        <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">ConfigMap Management</h1>
+                        <h1 class="text-2xl font-semibold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">ConfigMap Management</h1>
                         <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">
                             Create, update, and delete Kubernetes ConfigMaps through live, validated, permission-aware operational workflows.
                         </p>
@@ -46,11 +46,11 @@
         <section class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm sm:p-6">
             <header class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div>
-                    <div class="inline-flex min-h-8 items-center gap-2 rounded-lg border border-kaori-primary/15 bg-kaori-soft px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-kaori-primary">
+                    <div class="inline-flex min-h-8 items-center gap-2 rounded-lg border border-kaori-primary/15 bg-kaori-soft px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-kaori-primary">
                         <i data-lucide="mouse-pointer-click" class="h-4 w-4" aria-hidden="true"></i>
                         Operational workflows
                     </div>
-                    <h2 class="mt-3 text-xl font-bold tracking-tight text-content-primary">Choose a controlled action</h2>
+                    <h2 class="mt-3 text-xl font-semibold tracking-tight text-content-primary">Choose a Controlled Action</h2>
                     <p class="mt-1.5 max-w-3xl text-sm leading-6 text-content-muted">Each workflow has its own permission, validation, impact review, and confirmation boundary.</p>
                 </div>
                 <div class="inline-flex min-h-9 items-center gap-2 self-start rounded-lg border border-outline-default bg-surface-hover px-3 text-xs font-medium text-content-secondary lg:self-auto">
@@ -69,11 +69,11 @@
                     <p class="mt-2 text-sm leading-6 text-content-muted">Create a new text or binary configuration object without overwriting an existing resource.</p>
                     <div class="mt-5 grid gap-3">
                         <div class="rounded-lg border border-outline-default bg-surface-hover p-3.5">
-                            <p class="text-[10px] font-bold uppercase tracking-[0.1em] text-kaori-primary">Supported content</p>
+                            <p class="text-[10px] font-semibold uppercase tracking-[0.1em] text-kaori-primary">Supported content</p>
                             <p class="mt-1.5 text-xs leading-5 text-content-muted">Plain-text keys and binary entries containing valid base64 data.</p>
                         </div>
                         <div class="rounded-lg border border-outline-default bg-surface-hover p-3.5">
-                            <p class="text-[10px] font-bold uppercase tracking-[0.1em] text-kaori-primary">Create policy</p>
+                            <p class="text-[10px] font-semibold uppercase tracking-[0.1em] text-kaori-primary">Create policy</p>
                             <p class="mt-1.5 text-xs leading-5 text-content-muted">Kubernetes dry-run must pass before the final create request.</p>
                         </div>
                     </div>
@@ -95,11 +95,11 @@
                     <p class="mt-2 text-sm leading-6 text-content-muted">Load current values, review workload usage, preview the diff, and apply a merge or replacement.</p>
                     <div class="mt-5 grid gap-3">
                         <div class="rounded-lg border border-outline-default bg-surface-hover p-3.5">
-                            <p class="text-[10px] font-bold uppercase tracking-[0.1em] text-kaori-primary">Change modes</p>
+                            <p class="text-[10px] font-semibold uppercase tracking-[0.1em] text-kaori-primary">Change modes</p>
                             <p class="mt-1.5 text-xs leading-5 text-content-muted">Merge submitted keys or replace the complete data payload.</p>
                         </div>
                         <div class="rounded-lg border border-outline-default bg-surface-hover p-3.5">
-                            <p class="text-[10px] font-bold uppercase tracking-[0.1em] text-kaori-primary">Update policy</p>
+                            <p class="text-[10px] font-semibold uppercase tracking-[0.1em] text-kaori-primary">Update policy</p>
                             <p class="mt-1.5 text-xs leading-5 text-content-muted">Immutable ConfigMaps remain protected from modification.</p>
                         </div>
                     </div>
@@ -121,11 +121,11 @@
                     <p class="mt-2 text-sm leading-6 text-content-muted">Remove a live ConfigMap through an explicit impact review and exact-name confirmation workflow.</p>
                     <div class="mt-5 grid gap-3">
                         <div class="rounded-lg border border-outline-default bg-surface-hover p-3.5">
-                            <p class="text-[10px] font-bold uppercase tracking-[0.1em] text-status-critical-text">Impact review</p>
+                            <p class="text-[10px] font-semibold uppercase tracking-[0.1em] text-status-critical-text">Impact review</p>
                             <p class="mt-1.5 text-xs leading-5 text-content-muted">Known workload references are shown before deletion.</p>
                         </div>
                         <div class="rounded-lg border border-outline-default bg-surface-hover p-3.5">
-                            <p class="text-[10px] font-bold uppercase tracking-[0.1em] text-status-critical-text">Delete policy</p>
+                            <p class="text-[10px] font-semibold uppercase tracking-[0.1em] text-status-critical-text">Delete policy</p>
                             <p class="mt-1.5 text-xs leading-5 text-content-muted">Exact-name confirmation and Kubernetes dry-run are required.</p>
                         </div>
                     </div>

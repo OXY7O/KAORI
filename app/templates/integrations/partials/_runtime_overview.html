@@ -4,7 +4,7 @@
   <div class="flex flex-col gap-3 border-b border-border-soft p-5 lg:flex-row lg:items-center lg:justify-between">
     <div>
       <p class="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Runtime overview</p>
-      <h2 class="mt-1 text-xl font-bold text-content-primary">Integration health and capability posture</h2>
+      <h2 class="mt-1 text-xl font-semibold text-content-primary">Integration Health and Capability Posture</h2>
       <p class="mt-1 text-sm text-content-secondary">Latest persisted observation for every Prometheus/Thanos and Alertmanager target.</p>
     </div>
     <button type="button" hx-get="{{ url_for('integrations.overview', provider=selected_provider, health=selected_health, readiness=selected_readiness, per_page=runtime_pagination.per_page) }}" hx-target="#integration-runtime-overview" hx-swap="outerHTML" class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-border-soft bg-surface-card px-4 text-sm font-semibold text-content-primary hover:border-primary/40 hover:text-primary">
@@ -16,7 +16,7 @@
     {% for label, value, icon in [('Healthy', runtime_stats.healthy, 'circle-check'), ('Degraded', runtime_stats.degraded, 'triangle-alert'), ('Unhealthy', runtime_stats.unhealthy, 'circle-x'), ('Not observed', runtime_stats.not_observed, 'circle-help'), ('Capability attention', runtime_stats.capability_attention, 'puzzle')] %}
     <div class="rounded-xl border border-border-soft bg-surface-muted/60 p-4">
       <div class="flex items-center justify-between"><span class="text-xs font-semibold uppercase tracking-wide text-content-muted">{{ label }}</span><i data-lucide="{{ icon }}" class="h-4 w-4 text-primary"></i></div>
-      <p class="mt-2 text-2xl font-bold text-content-primary">{{ value }}</p>
+      <p class="mt-2 text-2xl font-semibold text-content-primary">{{ value }}</p>
     </div>
     {% endfor %}
   </div>

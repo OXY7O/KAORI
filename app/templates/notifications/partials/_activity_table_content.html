@@ -1,6 +1,6 @@
 {% import "components/pagination.html" as pagination_ui %}
 {% macro context_label(item) -%}
-    <span class="inline-flex max-w-full items-center gap-1 rounded-md px-2 py-1 text-[9px] font-bold leading-none ring-1 ring-inset {% if item.tone == 'emerald' %}bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-900/40 {% elif item.tone == 'amber' %}bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-900/40 {% elif item.tone == 'indigo' %}bg-indigo-50 text-indigo-700 ring-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-300 dark:ring-indigo-900/40 {% else %}bg-kaori-soft text-kaori-primary ring-brand-outline dark:bg-kaori-soft dark:text-kaori-primary dark:ring-brand-outline{% endif %}">
+    <span class="inline-flex max-w-full items-center gap-1 rounded-md px-2 py-1 text-[10px] font-semibold leading-none ring-1 ring-inset {% if item.tone == 'emerald' %}bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-900/40 {% elif item.tone == 'amber' %}bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-900/40 {% elif item.tone == 'indigo' %}bg-indigo-50 text-indigo-700 ring-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-300 dark:ring-indigo-900/40 {% else %}bg-kaori-soft text-kaori-primary ring-brand-outline dark:bg-kaori-soft dark:text-kaori-primary dark:ring-brand-outline{% endif %}">
         <span class="font-semibold">{{ item.label }}:</span>
         <span class="truncate">{{ item.value }}</span>
     </span>
@@ -9,7 +9,7 @@
     <div class="min-w-0 overflow-hidden">
         <div class="min-w-0">
             <div style="grid-template-columns: minmax(6.75rem,0.72fr) minmax(12rem,1.12fr) minmax(16rem,1.85fr) minmax(6.5rem,0.62fr) minmax(6.5rem,0.62fr) 6.25rem"
-                 class="grid min-w-0 items-center gap-3 border-b border-outline-default bg-surface-subtle px-5 py-3 text-left text-[10px] font-bold uppercase tracking-wide text-content-muted dark:border-outline-default dark:bg-surface-card/50 dark:text-content-muted">
+                 class="grid min-w-0 items-center gap-3 border-b border-outline-default bg-surface-subtle px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-wide text-content-muted dark:border-outline-default dark:bg-surface-card/50 dark:text-content-muted">
                 <div>Time</div>
                 <div>Actor</div>
                 <div>Activity</div>
@@ -27,7 +27,7 @@
                                  class="grid min-w-0 cursor-pointer list-none items-center gap-3 px-5 py-4 text-left transition hover:bg-surface-subtle/80 focus:outline-none group-open:bg-kaori-soft/70 dark:hover:bg-slate-900 dark:group-open:bg-blue-950/30">
                             <div class="relative min-w-0 pl-4">
                                 <span class="absolute left-0 top-2 h-2 w-2 rounded-full {% if item.is_read %}bg-slate-300 dark:bg-slate-600{% else %}bg-kaori-primary ring-2 ring-brand-outline dark:ring-brand-outline{% endif %}"></span>
-                                <p class="whitespace-nowrap text-[11px] font-bold text-content-primary dark:text-content-primary">
+                                <p class="whitespace-nowrap text-xs font-semibold text-content-primary dark:text-content-primary">
                                     {{ item.created_at|user_datetime("%d %b %Y") }}
                                 </p>
                                 <p class="mt-1 whitespace-nowrap text-[10px] font-semibold text-content-muted dark:text-content-muted">
@@ -41,11 +41,11 @@
                                 </span>
                                 <div class="min-w-0 flex-1">
                                     <div class="flex min-w-0 items-center gap-1.5 whitespace-nowrap">
-                                        <p class="truncate text-[11px] font-bold text-content-primary dark:text-white"
+                                        <p class="truncate text-xs font-semibold text-content-primary dark:text-white"
                                            title="{{ item.user_label }}">{{ item.user_label }}</p>
-                                        <span class="flex-shrink-0 rounded-md bg-kaori-soft px-1.5 py-0.5 text-[9px] font-bold text-kaori-primary ring-1 ring-inset ring-brand-outline dark:bg-kaori-soft dark:text-kaori-primary dark:ring-brand-outline">{{ item.user_role }}</span>
+                                        <span class="flex-shrink-0 rounded-md bg-kaori-soft px-1.5 py-0.5 text-[10px] font-semibold text-kaori-primary ring-1 ring-inset ring-brand-outline dark:bg-kaori-soft dark:text-kaori-primary dark:ring-brand-outline">{{ item.user_role }}</span>
                                     </div>
-                                    <div class="mt-1 flex min-w-0 items-center gap-1.5 whitespace-nowrap text-[9px] text-content-muted dark:text-content-muted">
+                                    <div class="mt-1 flex min-w-0 items-center gap-1.5 whitespace-nowrap text-[10px] text-content-muted dark:text-content-muted">
                                         <i data-lucide="key-round" class="h-3 w-3 flex-shrink-0"></i>
                                         <span class="flex-shrink-0">{{ item.user_auth_source }}</span>
                                         {% if item.user_email %}
@@ -61,7 +61,7 @@
                                         <i data-lucide="{{ item.event_icon }}" class="h-3.5 w-3.5"></i>
                                     </span>
                                     <div class="min-w-0">
-                                        <p class="truncate text-[11px] font-extrabold leading-4 text-content-primary dark:text-white"
+                                        <p class="truncate text-xs font-extrabold leading-4 text-content-primary dark:text-white"
                                            title="{{ item.title }}">{{ item.title }}</p>
                                         <p class="mt-1 truncate text-[10px] leading-4 text-content-muted dark:text-content-muted"
                                            title="{{ item.message }}">{{ item.message }}</p>
@@ -70,12 +70,12 @@
                             </div>
                             <div class="flex min-w-0 items-center"
                                  title="{{ item.target_type }}{% if item.target_name %} · {{ item.target_name }}{% endif %}">
-                                <span class="inline-flex max-w-full items-center rounded-md px-2 py-1 text-[9px] font-bold ring-1 ring-inset {% if item.event_tone == 'rose' %}bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-900 {% elif item.event_tone == 'cyan' %}bg-cyan-50 text-cyan-700 ring-cyan-100 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-900/60 {% elif item.event_tone == 'indigo' %}bg-indigo-50 text-indigo-700 ring-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-300 dark:ring-indigo-900/40 {% elif item.event_tone == 'blue' %}bg-kaori-soft text-kaori-primary ring-brand-outline dark:bg-kaori-soft dark:text-kaori-primary dark:ring-brand-outline {% else %}bg-surface-subtle text-content-secondary ring-slate-200 dark:bg-surface-subtle dark:text-slate-200 dark:ring-slate-700{% endif %}">
+                                <span class="inline-flex max-w-full items-center rounded-md px-2 py-1 text-[10px] font-semibold ring-1 ring-inset {% if item.event_tone == 'rose' %}bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-900 {% elif item.event_tone == 'cyan' %}bg-cyan-50 text-cyan-700 ring-cyan-100 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-900/60 {% elif item.event_tone == 'indigo' %}bg-indigo-50 text-indigo-700 ring-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-300 dark:ring-indigo-900/40 {% elif item.event_tone == 'blue' %}bg-kaori-soft text-kaori-primary ring-brand-outline dark:bg-kaori-soft dark:text-kaori-primary dark:ring-brand-outline {% else %}bg-surface-subtle text-content-secondary ring-slate-200 dark:bg-surface-subtle dark:text-slate-200 dark:ring-slate-700{% endif %}">
                                     <span class="truncate">{{ item.target_type }}</span>
                                 </span>
                             </div>
                             <div>
-                                <span class="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[9px] font-bold ring-1 ring-inset {% if is_success %}bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-900/40 {% elif is_warning %}bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-900/40 {% elif is_error %}bg-red-50 text-red-700 ring-red-200 dark:bg-red-500/10 dark:text-red-300 dark:ring-red-500/20 {% else %}bg-kaori-soft text-kaori-primary ring-brand-outline dark:bg-kaori-soft dark:text-kaori-primary dark:ring-brand-outline{% endif %}">
+                                <span class="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-semibold ring-1 ring-inset {% if is_success %}bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-900/40 {% elif is_warning %}bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-900/40 {% elif is_error %}bg-red-50 text-red-700 ring-red-200 dark:bg-red-500/10 dark:text-red-300 dark:ring-red-500/20 {% else %}bg-kaori-soft text-kaori-primary ring-brand-outline dark:bg-kaori-soft dark:text-kaori-primary dark:ring-brand-outline{% endif %}">
                                     <i data-lucide="{% if is_success %}check-circle-2{% elif is_warning %}alert-triangle{% elif is_error %}x-circle{% else %}info{% endif %}"
                                        class="h-3 w-3"></i>
                                     {{ item.status_label }}
@@ -98,11 +98,11 @@
                                             <i data-lucide="{{ item.event_icon }}" class="h-5 w-5"></i>
                                         </span>
                                         <div class="min-w-0">
-                                            <p class="text-[9px] font-extrabold uppercase tracking-[0.18em] text-kaori-primary dark:text-kaori-primary">Activity detail</p>
+                                            <p class="text-[10px] font-extrabold uppercase tracking-[0.18em] text-kaori-primary dark:text-kaori-primary">Activity detail</p>
                                             <h3 class="mt-1 text-sm font-extrabold text-content-primary dark:text-white">{{ item.title }}</h3>
-                                            <p class="mt-1 max-w-4xl text-[11px] leading-5 text-content-secondary dark:text-slate-300">{{ item.detail or item.message }}</p>
+                                            <p class="mt-1 max-w-4xl text-xs leading-5 text-content-secondary dark:text-slate-300">{{ item.detail or item.message }}</p>
                                             <div class="mt-3 flex flex-wrap items-center gap-2">
-                                                <span class="inline-flex items-center rounded-md bg-surface-subtle px-2.5 py-1 text-[9px] font-bold text-content-secondary ring-1 ring-inset ring-slate-200 dark:bg-surface-subtle/70 dark:text-slate-200 dark:ring-slate-600">{{ item.target_type }} · {{ item.target_name }}</span>
+                                                <span class="inline-flex items-center rounded-md bg-surface-subtle px-2.5 py-1 text-[10px] font-semibold text-content-secondary ring-1 ring-inset ring-slate-200 dark:bg-surface-subtle/70 dark:text-slate-200 dark:ring-slate-600">{{ item.target_type }} · {{ item.target_name }}</span>
                                                 {% for context_item in item.context_items %}
                                                     {{ context_label(context_item) }}
                                                 {% endfor %}
@@ -115,7 +115,7 @@
                                                class="h-3.5 w-3.5"></i>
                                             {{ item.status_label }}
                                         </span>
-                                        <span class="inline-flex items-center gap-1.5 rounded-md bg-surface-card px-2.5 py-1.5 text-[9px] font-bold text-content-secondary ring-1 ring-inset ring-slate-200 dark:bg-surface-card dark:text-slate-300 dark:ring-slate-600">
+                                        <span class="inline-flex items-center gap-1.5 rounded-md bg-surface-card px-2.5 py-1.5 text-[10px] font-semibold text-content-secondary ring-1 ring-inset ring-slate-200 dark:bg-surface-card dark:text-slate-300 dark:ring-slate-600">
                                             <i data-lucide="clock" class="h-3.5 w-3.5"></i>
                                             {{ item.created_label }}
                                         </span>
@@ -128,33 +128,33 @@
                                                 <i data-lucide="user-round" class="h-4 w-4"></i>
                                             </span>
                                             <div>
-                                                <h4 class="text-xs font-extrabold text-content-primary dark:text-white">Actor & access</h4>
-                                                <p class="mt-0.5 text-[9px] text-content-muted dark:text-content-muted">Who initiated or owned this activity.</p>
+                                                <h4 class="text-xs font-extrabold text-content-primary dark:text-white">Actor & Access</h4>
+                                                <p class="mt-0.5 text-[10px] text-content-muted dark:text-content-muted">Who initiated or owned this activity.</p>
                                             </div>
                                         </div>
                                         <div class="mt-4 flex items-center gap-3 rounded-xl bg-surface-card px-3 py-3 ring-1 ring-inset ring-brand-outline dark:bg-surface-card dark:ring-brand-outline">
                                             <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-kaori-soft text-xs font-extrabold text-kaori-primary dark:bg-kaori-soft dark:text-kaori-primary">{{ item.user_initials }}</span>
                                             <div class="min-w-0">
-                                                <p class="truncate text-[11px] font-extrabold text-content-primary dark:text-white">{{ item.user_label }}</p>
-                                                <p class="mt-1 truncate text-[9px] text-content-muted dark:text-content-muted">{{ item.user_email or 'No email recorded' }}</p>
+                                                <p class="truncate text-xs font-extrabold text-content-primary dark:text-white">{{ item.user_label }}</p>
+                                                <p class="mt-1 truncate text-[10px] text-content-muted dark:text-content-muted">{{ item.user_email or 'No email recorded' }}</p>
                                             </div>
                                         </div>
                                         <dl class="mt-4 space-y-2.5 text-[10px]">
                                             <div class="flex items-start justify-between gap-3">
                                                 <dt class="text-content-muted dark:text-content-muted">Role</dt>
-                                                <dd class="text-right font-bold text-content-secondary dark:text-slate-200">
+                                                <dd class="text-right font-semibold text-content-secondary dark:text-slate-200">
                                                     {{ item.user_role }}
                                                 </dd>
                                             </div>
                                             <div class="flex items-start justify-between gap-3">
                                                 <dt class="text-content-muted dark:text-content-muted">Authentication</dt>
-                                                <dd class="text-right font-bold text-content-secondary dark:text-slate-200">
+                                                <dd class="text-right font-semibold text-content-secondary dark:text-slate-200">
                                                     {{ item.user_auth_source }}
                                                 </dd>
                                             </div>
                                             <div class="flex items-start justify-between gap-3">
                                                 <dt class="text-content-muted dark:text-content-muted">Notification</dt>
-                                                <dd class="text-right font-bold text-content-secondary dark:text-slate-200">
+                                                <dd class="text-right font-semibold text-content-secondary dark:text-slate-200">
                                                     {{ item.read_label }}
                                                 </dd>
                                             </div>
@@ -166,8 +166,8 @@
                                                 <i data-lucide="monitor" class="h-4 w-4"></i>
                                             </span>
                                             <div>
-                                                <h4 class="text-xs font-extrabold text-content-primary dark:text-white">Execution & trace</h4>
-                                                <p class="mt-0.5 text-[9px] text-content-muted dark:text-content-muted">How and when the operation was executed.</p>
+                                                <h4 class="text-xs font-extrabold text-content-primary dark:text-white">Execution & Trace</h4>
+                                                <p class="mt-0.5 text-[10px] text-content-muted dark:text-content-muted">How and when the operation was executed.</p>
                                             </div>
                                         </div>
                                         <div class="mt-4 rounded-xl bg-surface-card px-3 py-3 ring-1 ring-inset ring-cyan-100 dark:bg-surface-card dark:ring-cyan-900/40">
@@ -177,27 +177,27 @@
                                                 </span>
                                                 <div class="min-w-0">
                                                     <p class="text-[10px] font-extrabold text-content-primary dark:text-content-primary">{{ item.source_label }}</p>
-                                                    <p class="mt-1 break-words text-[9px] leading-4 text-content-muted dark:text-content-muted">{{ item.source_detail }}</p>
+                                                    <p class="mt-1 break-words text-[10px] leading-4 text-content-muted dark:text-content-muted">{{ item.source_detail }}</p>
                                                 </div>
                                             </div>
                                         </div>
                                         <dl class="mt-4 space-y-2.5 text-[10px]">
                                             <div class="flex min-w-0 items-center justify-between gap-3">
                                                 <dt class="flex-shrink-0 text-content-muted dark:text-content-muted">Event type</dt>
-                                                <dd class="min-w-0 truncate text-right font-bold text-content-secondary dark:text-slate-200"
+                                                <dd class="min-w-0 truncate text-right font-semibold text-content-secondary dark:text-slate-200"
                                                     title="{{ item.event_label }}">
                                                     {{ item.event_label }}
                                                 </dd>
                                             </div>
                                             <div class="flex items-start justify-between gap-3">
                                                 <dt class="text-content-muted dark:text-content-muted">Recorded</dt>
-                                                <dd class="text-right font-bold text-content-secondary dark:text-slate-200">
+                                                <dd class="text-right font-semibold text-content-secondary dark:text-slate-200">
                                                     {{ item.created_at|user_datetime("%d %b %Y %H:%M:%S %Z") }}
                                                 </dd>
                                             </div>
                                             <div class="flex items-start justify-between gap-3">
                                                 <dt class="text-content-muted dark:text-content-muted">Relative time</dt>
-                                                <dd class="text-right font-bold text-content-secondary dark:text-slate-200">
+                                                <dd class="text-right font-semibold text-content-secondary dark:text-slate-200">
                                                     {{ item.created_label }}
                                                 </dd>
                                             </div>
@@ -209,8 +209,8 @@
                                                 <i data-lucide="target" class="h-4 w-4"></i>
                                             </span>
                                             <div>
-                                                <h4 class="text-xs font-extrabold text-content-primary dark:text-white">Context & target</h4>
-                                                <p class="mt-0.5 text-[9px] text-content-muted dark:text-content-muted">The resource and operational scope involved.</p>
+                                                <h4 class="text-xs font-extrabold text-content-primary dark:text-white">Context & Target</h4>
+                                                <p class="mt-0.5 text-[10px] text-content-muted dark:text-content-muted">The resource and operational scope involved.</p>
                                             </div>
                                         </div>
                                         <dl class="mt-4 space-y-3 text-[10px]">
@@ -231,7 +231,7 @@
                                         </dl>
                                         {% if item.action_url %}
                                             <a href="{{ item.action_url }}"
-                                               class="mt-auto inline-flex items-center justify-center gap-1.5 rounded-lg bg-kaori-primary px-3 py-2 text-[10px] font-bold text-white shadow-sm transition hover:bg-blue-700">
+                                               class="mt-auto inline-flex items-center justify-center gap-1.5 rounded-lg bg-kaori-primary px-3 py-2 text-[10px] font-semibold text-white shadow-sm transition hover:bg-blue-700">
                                                 Open related workspace
                                                 <i data-lucide="arrow-up-right" class="h-3.5 w-3.5"></i>
                                             </a>
@@ -250,16 +250,16 @@
                                                     <i data-lucide="refresh-cw" class="h-4 w-4"></i>
                                                 </span>
                                                 <div>
-                                                    <h4 class="text-xs font-extrabold text-content-primary dark:text-white">Recorded changes</h4>
-                                                    <p class="mt-0.5 text-[9px] text-content-muted dark:text-content-muted">Before and after values captured with this action.</p>
+                                                    <h4 class="text-xs font-extrabold text-content-primary dark:text-white">Recorded Changes</h4>
+                                                    <p class="mt-0.5 text-[10px] text-content-muted dark:text-content-muted">Before and after values captured with this action.</p>
                                                 </div>
                                             </div>
-                                            <span class="self-start rounded-md bg-violet-50 px-2.5 py-1 text-[9px] font-bold text-violet-700 ring-1 ring-inset ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-900/50 sm:self-auto">{{ item.changed_fields|length }} changes</span>
+                                            <span class="self-start rounded-md bg-violet-50 px-2.5 py-1 text-[10px] font-semibold text-violet-700 ring-1 ring-inset ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-900/50 sm:self-auto">{{ item.changed_fields|length }} changes</span>
                                         </div>
                                         <div class="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                                             {% for field in item.changed_fields %}
                                                 <div class="rounded-xl border border-violet-100 bg-violet-50/35 p-3 dark:border-violet-900/40 dark:bg-violet-950/10">
-                                                    <p class="text-[9px] font-extrabold uppercase tracking-wide text-violet-600 dark:text-violet-300">{{ field.label }}</p>
+                                                    <p class="text-[10px] font-extrabold uppercase tracking-wide text-violet-600 dark:text-violet-300">{{ field.label }}</p>
                                                     <div class="mt-2 grid items-center gap-2 text-[10px]"
                                                          style="grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr)">
                                                         <span class="break-words rounded-lg bg-surface-card px-2.5 py-2 font-semibold text-content-muted ring-1 ring-inset ring-slate-200 dark:bg-surface-card dark:text-content-muted dark:ring-slate-700">{{ field.before }}</span>
@@ -279,18 +279,18 @@
                                                     <i data-lucide="list-tree" class="h-4 w-4"></i>
                                                 </span>
                                                 <div>
-                                                    <h4 class="text-xs font-extrabold text-content-primary dark:text-white">Operational metadata</h4>
-                                                    <p class="mt-0.5 text-[9px] text-content-muted dark:text-content-muted">Relevant trace values captured for this activity. Duplicate context and recorded changes are omitted.</p>
+                                                    <h4 class="text-xs font-extrabold text-content-primary dark:text-white">Operational Metadata</h4>
+                                                    <p class="mt-0.5 text-[10px] text-content-muted dark:text-content-muted">Relevant trace values captured for this activity. Duplicate context and recorded changes are omitted.</p>
                                                 </div>
                                             </div>
-                                            <span class="self-start rounded-md bg-surface-card px-2.5 py-1 text-[9px] font-bold text-content-secondary ring-1 ring-inset ring-slate-200 dark:bg-surface-card dark:text-slate-300 dark:ring-slate-600 sm:self-auto">{{ item.metadata_items|length }} fields</span>
+                                            <span class="self-start rounded-md bg-surface-card px-2.5 py-1 text-[10px] font-semibold text-content-secondary ring-1 ring-inset ring-slate-200 dark:bg-surface-card dark:text-slate-300 dark:ring-slate-600 sm:self-auto">{{ item.metadata_items|length }} fields</span>
                                         </div>
                                         {% if item.metadata_items %}
                                             <dl class="divide-y divide-slate-100 dark:divide-slate-700 sm:grid sm:grid-cols-2 sm:divide-y-0 xl:grid-cols-3">
                                                 {% for metadata in item.metadata_items %}
                                                     <div class="flex min-w-0 items-start justify-between gap-3 px-4 py-3 sm:border-b sm:border-r sm:border-slate-100 dark:sm:border-slate-700">
-                                                        <dt class="flex-shrink-0 text-[9px] font-semibold text-content-muted dark:text-content-muted">{{ metadata.label }}</dt>
-                                                        <dd class="min-w-0 text-right text-[10px] font-bold leading-4 {% if metadata.tone == 'rose' %}text-rose-700 dark:text-rose-300{% else %}text-content-primary dark:text-content-primary{% endif %} {% if metadata.is_identifier %}truncate font-mono{% else %}break-words{% endif %}"
+                                                        <dt class="flex-shrink-0 text-[10px] font-semibold text-content-muted dark:text-content-muted">{{ metadata.label }}</dt>
+                                                        <dd class="min-w-0 text-right text-[10px] font-semibold leading-4 {% if metadata.tone == 'rose' %}text-rose-700 dark:text-rose-300{% else %}text-content-primary dark:text-content-primary{% endif %} {% if metadata.is_identifier %}truncate font-mono{% else %}break-words{% endif %}"
                                                             title="{{ metadata.value }}">
                                                             {{ metadata.value }}
                                                         </dd>

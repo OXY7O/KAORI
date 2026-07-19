@@ -7,7 +7,7 @@
  </span>
  <div>
  <div class="flex flex-wrap items-center gap-2">
- <h2 class="text-lg font-semibold text-content-primary ">Silence &amp; Inhibition Visibility</h2>
+ <h2 class="text-lg font-semibold text-content-primary">Silence &amp; Inhibition Visibility</h2>
  <span class="inline-flex rounded-md px-2.5 py-1 text-xs font-semibold {{ silence_summary.class }}">
  {{ silence_summary.label }}
  </span>
@@ -19,7 +19,7 @@
  <span class="inline-flex rounded-md bg-surface-hover px-2.5 py-1 text-xs font-semibold text-content-secondary ">
  {{ silence_summary.active_silences }} active · {{ inhibition_summary.matched_alerts }} inhibited
  </span>
- <span class="inline-flex w-fit items-center gap-2 rounded-xl border border-outline-default bg-surface-subtle px-3 py-2 text-xs font-bold text-content-secondary transition group-open:bg-kaori-soft group-open:text-kaori-primary group-open:bg-kaori-soft dark:group-open:text-kaori-primary">
+ <span class="inline-flex w-fit items-center gap-2 rounded-xl border border-outline-default bg-surface-subtle px-3 py-2 text-xs font-semibold text-content-secondary transition group-open:bg-kaori-soft group-open:text-kaori-primary group-open:bg-kaori-soft dark:group-open:text-kaori-primary">
  <i data-lucide="chevron-down"
  class="h-4 w-4 transition group-open:rotate-180"></i>
  Details
@@ -50,7 +50,7 @@
  {% for label, value in cards %}
  <div class="rounded-xl border border-outline-default bg-surface-subtle px-4 py-3 ">
  <p class="text-xs font-medium text-content-muted ">{{ label }}</p>
- <p class="mt-1 text-lg font-bold text-content-primary ">{{ value }}</p>
+ <p class="mt-1 text-lg font-semibold text-content-primary ">{{ value }}</p>
  </div>
  {% endfor %}
  </div>
@@ -58,7 +58,7 @@
  <div class="rounded-xl border border-outline-default bg-surface-subtle p-4 ">
  <div class="flex items-center justify-between gap-3">
  <div>
- <h3 class="text-sm font-semibold text-content-primary ">Active Silence Matchers</h3>
+ <h3 class="text-sm font-semibold text-content-primary">Active Silence Matchers</h3>
  <p class="mt-1 text-xs text-content-muted ">Matcher expressions currently suppressing alert notifications.</p>
  </div>
  <span class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold {{ silence_summary.class }}">
@@ -90,7 +90,7 @@
  <div class="rounded-xl border border-outline-default bg-surface-subtle p-4 ">
  <div class="flex items-center justify-between gap-3">
  <div>
- <h3 class="text-sm font-semibold text-content-primary ">Inhibition Readiness</h3>
+ <h3 class="text-sm font-semibold text-content-primary">Inhibition Readiness</h3>
  <p class="mt-1 text-xs text-content-muted ">Derived from Alertmanager inhibited alert metadata.</p>
  </div>
  <span class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold {{ inhibition_summary.class }}">
@@ -100,11 +100,11 @@
  <div class="mt-4 grid gap-3 sm:grid-cols-2">
  <div class="rounded-xl bg-surface-card px-3 py-2 ">
  <p class="text-xs text-content-muted ">Rules Detected</p>
- <p class="mt-1 text-sm font-bold text-content-primary ">{{ inhibition_summary.rules_detected }}</p>
+ <p class="mt-1 text-sm font-semibold text-content-primary ">{{ inhibition_summary.rules_detected }}</p>
  </div>
  <div class="rounded-xl bg-surface-card px-3 py-2 ">
  <p class="text-xs text-content-muted ">Matched Alerts</p>
- <p class="mt-1 text-sm font-bold text-content-primary ">{{ inhibition_summary.matched_alerts }}</p>
+ <p class="mt-1 text-sm font-semibold text-content-primary ">{{ inhibition_summary.matched_alerts }}</p>
  </div>
  </div>
  {% if inhibition_summary.source_equal_labels %}
@@ -124,7 +124,7 @@
  {% if silence_summary['items'] %}
  <div class="mt-5 overflow-hidden rounded-xl border border-outline-default ">
  <div class="border-b border-outline-default bg-surface-subtle px-4 py-3 ">
- <h3 class="text-sm font-semibold text-content-primary ">Active Silence Details</h3>
+ <h3 class="text-sm font-semibold text-content-primary">Active Silence Details</h3>
  </div>
  <div class="divide-y divide-outline-default dark:divide-outline-default">
  {% for item in silence_summary['items'] %}
