@@ -511,7 +511,6 @@ def _runtime_overview_rows() -> list[dict[str, Any]]:
         observed_at = observation.observed_at if observation else instance.last_checked_at
         latency_ms = observation.latency_ms if observation else instance.last_response_time_ms
         enabled_bindings = [binding for binding in instance.bindings if binding.enabled]
-        primary_binding = next((binding for binding in enabled_bindings if binding.binding_role == 'primary'), None)
         rows.append({
             'provider': 'prometheus',
             'provider_label': 'Prometheus / Thanos',
@@ -532,8 +531,8 @@ def _runtime_overview_rows() -> list[dict[str, Any]]:
                 f'{attention} item needs attention' if attention == 1 else f'{attention} items need attention'
             ),
             'message': (observation.message if observation else None) or instance.validation_message or instance.last_error,
-            'detail_endpoint': 'prometheus.configuration',
-            'detail_kwargs': {'cluster_id': primary_binding.scope_key} if primary_binding else {},
+            'detail_endpoint': 'prometheus.instance_detail',
+            'detail_kwargs': {'instance_id': instance.id},
         })
 
     for instance in AlertmanagerInstance.query.order_by(AlertmanagerInstance.name.asc()).all():
