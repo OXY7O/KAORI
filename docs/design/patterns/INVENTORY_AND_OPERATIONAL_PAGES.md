@@ -54,3 +54,19 @@ This document defines reusable structures. It does not define domain-specific fi
 4. The lower contract row contains Integration Contract, Capability Resolution, and Authority Boundary.
 5. Do not split these three contracts into separate standalone cards above the registry; they belong inside the shared overview box.
 
+## Integrations overview portfolio pattern
+
+1. The Integrations domain landing page places an Integration Portfolio Overview directly below the hero.
+2. Portfolio metrics are Available Providers, Configured Targets, Ready for Use, and Needs Attention.
+3. The lower contract row is Connection Contract, Binding Contract, and Authority Boundary.
+4. Provider Catalog, Runtime Overview, and Domain Coverage use one shared Violet tab bar; switching tabs must not reload the full page.
+5. Runtime filters and pagination update only the Runtime Overview region through HTMX and preserve `tab=runtime` in the URL.
+6. Planned providers remain visible as compact roadmap entries and do not expose configuration actions.
+
+## Pagination interaction contract
+
+1. A disabled Previous or Next control must be rendered as a non-interactive element, never as an anchor with an `href`.
+2. Disabled controls use `aria-disabled="true"` and the shared disabled navigation classes.
+3. Active pagination and page-size changes should update only the owning table or workspace region through HTMX when practical.
+4. The loading bar belongs directly below the owning block header and must target the same partial region.
+

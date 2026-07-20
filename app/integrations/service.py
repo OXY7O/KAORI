@@ -25,6 +25,7 @@ def safe_endpoint(value: str | None) -> str:
 
 def build_integrations_overview(
     *,
+    tab: str = "catalog",
     provider: str = "",
     health: str = "",
     readiness: str = "",
@@ -73,13 +74,17 @@ def build_integrations_overview(
         'not_observed': sum(1 for row in runtime_rows if row['health_status'] == 'not_observed'),
         'capability_attention': sum(1 for row in runtime_rows if row['capability_attention'] > 0),
     }
+    catalog = _catalog(
+        kubernetes_connections=kubernetes_connections,
+        prometheus_instances=prometheus_instances,
+        alertmanager_instances=alertmanager_instances,
+    )
     return {
         'stats': stats,
-        'catalog': _catalog(
-            kubernetes_connections=kubernetes_connections,
-            prometheus_instances=prometheus_instances,
-            alertmanager_instances=alertmanager_instances,
-        ),
+        'catalog': catalog,
+        'available_provider_count': sum(1 for item in catalog if item['availability'] == 'available'),
+        'planned_provider_count': sum(1 for item in catalog if item['availability'] != 'available'),
+        'active_tab': tab if tab in {'catalog', 'runtime', 'coverage'} else 'catalog',
         'coverage': _coverage(
             kubernetes_connections=kubernetes_connections,
             prometheus_instances=prometheus_instances,
@@ -111,6 +116,9 @@ def build_integrations_overview(
             {'value': 'validation_required', 'label': 'Validation Required'},
         ],
     }
+
+
+
 
 
 def _kubernetes_readiness(connection: KubernetesConnection) -> str:

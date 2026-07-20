@@ -15,7 +15,7 @@ def test_prometheus_workspace_exposes_create_route_and_instance_inventory():
 
 def test_kubernetes_workspace_exposes_prometheus_binding_actions():
     service = Path('app/integrations/service.py').read_text()
-    template = Path('app/templates/integrations/kubernetes.html').read_text()
+    template = Path('app/templates/integrations/kubernetes/partials/_registry.html').read_text()
 
     assert "'prometheus_instance_id': prometheus.id if prometheus else None" in service
     assert "url_for('integrations.bind_prometheus_source', scope_key=row.cluster_id)" in template

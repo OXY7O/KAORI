@@ -8,12 +8,22 @@ This document owns domain-specific UI behavior for the Integrations landing page
 
 The Integrations landing page follows this fixed sequence:
 
-1. Standard Hero
-2. Provider Catalog
-3. Runtime Overview
-4. Integration Domain Coverage
+1. Standard Hero.
+2. Integration Portfolio Overview.
+3. Shared Violet workspace tabs.
+4. Provider Catalog, Runtime Overview, and Integration Domain Coverage tab panels.
 
-The hero explains the purpose of the Integrations domain. It must not duplicate provider navigation already represented by the Provider Catalog.
+The hero explains the purpose of the Integrations domain. It must not duplicate provider navigation already represented by the Provider Catalog. The portfolio overview summarizes provider availability, configured targets, readiness, and the shared connection/binding/authority contracts before the user enters a detailed tab.
+
+## Integration Portfolio Overview
+
+The portfolio overview appears directly below the hero and uses the same KAORI overview-box hierarchy as provider landing pages. It contains four compact metrics: Available Providers, Configured Targets, Ready for Use, and Needs Attention. Its lower contract row contains Connection Contract, Binding Contract, and Authority Boundary.
+
+The portfolio overview is informational only. Provider registration, validation, and remediation remain inside the provider workspaces.
+
+## Workspace Tabs
+
+The landing page uses one shared Violet tab bar with Provider Catalog, Runtime Overview, and Domain Coverage. The active tab uses solid KAORI Violet with white text; inactive tabs remain Violet outlined or soft. Tab changes do not reload the page and the selected tab is retained in the URL.
 
 ## Hero Contract
 
@@ -34,7 +44,7 @@ Runtime health, readiness, attention counts, and capability posture belong in th
 
 ## Provider Catalog
 
-The Provider Catalog is the primary entry point for provider workspaces. Available providers expose a `Manage` action. Planned providers remain visible to communicate roadmap categories but do not expose unfinished configuration workflows.
+The Provider Catalog is the primary entry point for provider workspaces. Available providers expose an `Open Workspace` action. Planned providers remain visible to communicate roadmap categories but do not expose unfinished configuration workflows.
 
 Provider cards may show provider category, availability, configured instance count, and a concise purpose statement. They must not become mini dashboards.
 
