@@ -131,6 +131,21 @@ def get_active_validation_task_id(
     instance_id: int | str,
     binding_id: int | str | None = None,
 ) -> str | None:
+    try:
+        from app.jobs.service import find_active_job
+
+        scope_key = f'binding:{binding_id}' if binding_id is not None else None
+        job = find_active_job(
+            provider_type=provider_type,
+            provider_instance_id=int(instance_id),
+            operation=operation,
+            scope_key=scope_key,
+        )
+        if job is not None and job.celery_task_id:
+            return job.celery_task_id
+    except Exception:
+        # During migration/bootstrap Redis remains a compatibility fallback.
+        pass
     client = _redis_client()
     value = client.get(
         _lock_key(
@@ -222,6 +237,16 @@ def _elapsed_seconds(payload: dict[str, Any]) -> int:
 def build_validation_snapshot(task_id: str) -> dict[str, Any]:
     result = current_app.extensions['celery'].AsyncResult(task_id)
     payload = get_validation_metadata(task_id)
+    canonical: dict[str, Any] = {}
+    try:
+        from app.jobs.service import get_job_by_task_id, job_snapshot
+
+        job = get_job_by_task_id(task_id)
+        if job is not None:
+            canonical = job_snapshot(job)
+            payload = {**canonical, **payload}
+    except Exception:
+        canonical = {}
     if isinstance(result.info, dict):
         payload.update(result.info)
     if result.state == 'SUCCESS' and isinstance(result.result, dict):
@@ -231,13 +256,17 @@ def build_validation_snapshot(task_id: str) -> dict[str, Any]:
         payload.setdefault('title', 'Integration validation interrupted')
         payload.setdefault('message', 'The validation worker could not complete the requested operation.')
         payload.setdefault('detail', 'Review the validation-worker logs and Redis connectivity before retrying.')
+    canonical_status = str(canonical.get('status') or '')
+    canonical_active = bool(canonical.get('is_active'))
+    canonical_complete = bool(canonical.get('is_complete'))
+    state_label = canonical_status.replace('_', ' ') if canonical_status else result.state.lower().replace('_', ' ')
     return {
         **payload,
         'task_id': task_id,
         'celery_state': result.state,
-        'state_label': result.state.lower().replace('_', ' '),
-        'is_active': result.state in ACTIVE_CELERY_STATES,
-        'is_complete': result.state in {'SUCCESS', 'FAILURE', 'REVOKED'},
+        'state_label': state_label,
+        'is_active': canonical_active if canonical else result.state in ACTIVE_CELERY_STATES,
+        'is_complete': canonical_complete if canonical else result.state in {'SUCCESS', 'FAILURE', 'REVOKED'},
         'elapsed_seconds': _elapsed_seconds(payload),
         'feedback': payload.get('feedback'),
     }

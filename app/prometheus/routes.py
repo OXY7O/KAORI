@@ -1109,7 +1109,7 @@ def refresh_runtime(instance_id: int) -> ResponseReturnValue:
                 else f'A runtime refresh is already running for {instance.name}.'
             ),
             detail=(
-                'The validation worker will check endpoint health without discarding Full Validation evidence.'
+                'The runtime worker will check endpoint health without discarding Full Validation evidence.'
                 if created
                 else 'KAORI kept the active task and did not enqueue a duplicate.'
             ),
@@ -1119,7 +1119,7 @@ def refresh_runtime(instance_id: int) -> ResponseReturnValue:
             metadata={
                 'task_id': runtime_refresh_job.get('task_id'),
                 'instance_id': instance.id,
-                'queue': current_app.config.get('INTEGRATION_VALIDATION_CELERY_QUEUE', 'integration-validation'),
+                'queue': current_app.config.get('INTEGRATION_RUNTIME_CELERY_QUEUE', 'integration-runtime'),
             },
             queue_feedback=not is_htmx,
         )
@@ -1132,7 +1132,7 @@ def refresh_runtime(instance_id: int) -> ResponseReturnValue:
             status='error',
             title='Prometheus runtime refresh not queued',
             message=f'KAORI could not queue runtime health refresh for {instance.name}.',
-            detail='Verify Redis, the Celery broker, and the integration-validation worker before retrying.',
+            detail='Verify Redis, the Celery broker, and the integration-runtime worker before retrying.',
             action_url=url_for('prometheus.instance_detail', instance_id=instance.id) + '#runtime',
             action_label='Review Prometheus runtime',
             action_icon='activity',

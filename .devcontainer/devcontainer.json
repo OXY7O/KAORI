@@ -11,6 +11,9 @@
     "redis",
     "worker",
     "validation-worker",
+    "runtime-worker",
+    "analytics-worker",
+    "forecasting-worker",
     "beat"
   ],
   "workspaceFolder": "/workspace/kaori",

@@ -1,0 +1,66 @@
+from __future__ import annotations
+
+from typing import Any
+
+from celery import Task
+
+from app.jobs.service import create_or_attach_job, mark_job_failed
+from app.models.job import JobExecution
+
+
+def enqueue_canonical_job(
+    *,
+    task: Task,
+    task_kwargs: dict[str, Any],
+    job_type: str,
+    operation: str,
+    queue_name: str,
+    workload_class: str,
+    requested_by_user_id: int | None,
+    resource_group: str | None,
+    parameters: dict[str, Any],
+    payload: dict[str, Any] | None = None,
+    provider_type: str | None = None,
+    provider_instance_id: int | None = None,
+    scope_type: str | None = None,
+    scope_key: str | None = None,
+    max_attempts: int = 3,
+    priority: int | None = None,
+) -> tuple[JobExecution, bool]:
+    """Create or attach to one idempotent job and dispatch it exactly once.
+
+    This provider-neutral dispatcher is the required entry point for future
+    analytics and forecasting jobs. Integration validation retains its additional
+    provider lock because it has cross-operation conflict rules.
+    """
+    job, created = create_or_attach_job(
+        job_type=job_type,
+        operation=operation,
+        queue_name=queue_name,
+        workload_class=workload_class,
+        requested_by_user_id=requested_by_user_id,
+        provider_type=provider_type,
+        provider_instance_id=provider_instance_id,
+        scope_type=scope_type,
+        scope_key=scope_key,
+        resource_group=resource_group,
+        parameters=parameters,
+        payload=payload,
+        max_attempts=max_attempts,
+        priority=priority,
+    )
+    if not created:
+        return job, False
+    if not job.celery_task_id:
+        raise RuntimeError('Canonical job does not have a Celery task identifier.')
+    try:
+        task.apply_async(
+            kwargs={**task_kwargs, 'job_execution_id': job.id},
+            task_id=job.celery_task_id,
+            queue=queue_name,
+            priority=job.priority,
+        )
+    except Exception as exc:
+        mark_job_failed(job.celery_task_id, error=exc, error_code='dispatch_failed')
+        raise
+    return job, True

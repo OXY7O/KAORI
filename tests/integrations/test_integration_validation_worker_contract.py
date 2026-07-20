@@ -24,23 +24,32 @@ def test_validation_tasks_use_a_dedicated_celery_queue_and_worker() -> None:
 
     assert "INTEGRATION_VALIDATION_CELERY_QUEUE" in config
     assert "'app.integrations.validation.tasks'" in config
-    for task_name in (
-        'validate_integration_instance',
-        'validate_integration_binding',
-        'refresh_integration_runtime_instance',
-    ):
+    for task_name in ('validate_integration_instance', 'validate_integration_binding', 'refresh_integration_runtime_instance'):
         assert f"app.integrations.validation.tasks.{task_name}" in config
+    assert 'INTEGRATION_RUNTIME_CELERY_QUEUE' in config
+    assert 'ANALYTICS_CELERY_QUEUE' in config
+    assert 'FORECASTING_CELERY_QUEUE' in config
 
     assert 'INTEGRATION_VALIDATION_CELERY_QUEUE=integration-validation' in env
     assert 'INTEGRATION_VALIDATION_WORKER_CONCURRENCY=1' in env
     assert 'INTEGRATION_VALIDATION_CELERY_QUEUE=integration-validation' in production_env
     assert 'INTEGRATION_VALIDATION_WORKER_CONCURRENCY=1' in production_env
-    assert '"validation-worker"' in devcontainer
+    assert 'INTEGRATION_RUNTIME_CELERY_QUEUE=integration-runtime' in env
+    assert 'ANALYTICS_CELERY_QUEUE=analytics-batch' in env
+    assert 'FORECASTING_CELERY_QUEUE=forecasting' in env
+    for worker_name in ('runtime-worker', 'validation-worker', 'analytics-worker', 'forecasting-worker'):
+        assert f'"{worker_name}"' in devcontainer
     assert "('INTEGRATION_VALIDATION_LOCK_TTL_SECONDS', 300)" in production_validator
     assert "('INTEGRATION_VALIDATION_WORKER_CONCURRENCY', 1)" in production_validator
     for compose in (dev_compose, production_compose):
+        assert 'runtime-worker:' in compose
         assert 'validation-worker:' in compose
+        assert 'analytics-worker:' in compose
+        assert 'forecasting-worker:' in compose
+        assert '--queues="$${INTEGRATION_RUNTIME_CELERY_QUEUE:-integration-runtime}"' in compose
         assert '--queues="$${INTEGRATION_VALIDATION_CELERY_QUEUE:-integration-validation}"' in compose
+        assert '--queues="$${ANALYTICS_CELERY_QUEUE:-analytics-batch}"' in compose
+        assert '--queues="$${FORECASTING_CELERY_QUEUE:-forecasting}"' in compose
 
 
 def test_runtime_architecture_documents_worker_and_dispatcher_boundaries() -> None:
@@ -159,17 +168,17 @@ def test_full_validation_and_runtime_refresh_do_not_overlap_per_instance() -> No
     web = read('app/integrations/validation/web.py')
     scheduled_tasks = read('app/integrations/validation/tasks.py')
 
-    assert "if operation == 'full_validation':" in web
     assert "operation='runtime_refresh'" in web
     assert "operation='full_validation'" in web
+    assert "conflicting_operation='runtime_refresh'" in web
+    assert "conflicting_operation='full_validation'" in web
     assert "operation='full_validation'" in scheduled_tasks
     assert "operation='runtime_refresh'" in scheduled_tasks
     state = read('app/integrations/validation/state.py')
     assert '_CLAIM_SCRIPT' in state
     assert 'conflicting_operations' in state
-    assert "conflicting_operations=('runtime_refresh',)" in web
-    assert "conflicting_operations=('full_validation',)" in web
     assert "conflicting_operations=('full_validation',)" in scheduled_tasks
+    assert 'active_deduplication_key' in read('app/models/job.py')
 
 
 def test_test_connection_remains_synchronous_and_lightweight() -> None:
@@ -228,4 +237,5 @@ def test_worker_job_lifecycle_is_audited_and_polled_with_htmx() -> None:
     assert 'hx-trigger="load delay:1500ms"' in templates
     assert 'snapshot_feedback_for_user(snapshot, user_id=int(current_user.id))' in prom_routes
     assert 'snapshot_feedback_for_user(snapshot, user_id=int(current_user.id))' in alert_routes
-    assert 'Completion toast feedback remains limited to the operator' in read('app/integrations/validation/web.py')
+    assert 'JobExecutionSubscriber' in read('app/integrations/validation/web.py')
+    assert 'subscriber_user_ids(job)' in tasks

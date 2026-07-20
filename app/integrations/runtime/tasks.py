@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
     reject_on_worker_lost=True,
 )
 def refresh_integration_runtime(self) -> dict[str, object]:
-    """Fan out lightweight provider health refreshes to the validation queue.
+    """Fan out lightweight provider health refreshes to the runtime queue.
 
     The Beat dispatcher intentionally performs no provider I/O. Each source receives
     an independent Celery task so one slow endpoint cannot block other integrations.

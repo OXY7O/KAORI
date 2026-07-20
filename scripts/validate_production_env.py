@@ -102,6 +102,19 @@ def main() -> int:
         ('CELERY_WORKER_CONCURRENCY', 1),
         ('INTEGRATION_VALIDATION_LOCK_TTL_SECONDS', 300),
         ('INTEGRATION_VALIDATION_WORKER_CONCURRENCY', 1),
+        ('INTEGRATION_RUNTIME_WORKER_CONCURRENCY', 1),
+        ('ANALYTICS_WORKER_CONCURRENCY', 1),
+        ('FORECASTING_WORKER_CONCURRENCY', 1),
+        ('JOB_MAX_ACTIVE_PER_USER', 1),
+        ('JOB_MAX_HEAVY_PER_USER', 1),
+        ('JOB_MAX_ACTIVE_PER_RESOURCE', 1),
+        ('JOB_QUEUED_STALE_SECONDS', 300),
+        ('JOB_RUNNING_STALE_SECONDS', 300),
+        ('ANALYTICS_QUERY_MAXIMUM_RANGE_DAYS', 1),
+        ('ANALYTICS_QUERY_CHUNK_DAYS', 1),
+        ('ANALYTICS_QUERY_MINIMUM_STEP_SECONDS', 1),
+        ('ANALYTICS_QUERY_MAXIMUM_SAMPLES_PER_SERIES', 1),
+        ('ANALYTICS_QUERY_MAX_CONCURRENT_PER_SOURCE', 1),
     ):
         raw = _value(name)
         try:
@@ -110,11 +123,18 @@ def main() -> int:
         except ValueError:
             errors.append(f'{name} must be an integer greater than or equal to {minimum}.')
 
-    validation_queue = _value('INTEGRATION_VALIDATION_CELERY_QUEUE')
-    if not validation_queue:
-        errors.append('INTEGRATION_VALIDATION_CELERY_QUEUE is required for capability validation jobs.')
-    elif any(character.isspace() for character in validation_queue):
-        errors.append('INTEGRATION_VALIDATION_CELERY_QUEUE must not contain whitespace.')
+    for queue_name, purpose in (
+        ('INTEGRATION_VALIDATION_CELERY_QUEUE', 'capability validation'),
+        ('INTEGRATION_RUNTIME_CELERY_QUEUE', 'runtime health'),
+        ('ANALYTICS_CELERY_QUEUE', 'analytics batch'),
+        ('FORECASTING_CELERY_QUEUE', 'forecasting'),
+        ('JOB_MAINTENANCE_CELERY_QUEUE', 'job maintenance'),
+    ):
+        queue_value = _value(queue_name)
+        if not queue_value:
+            errors.append(f'{queue_name} is required for {purpose} jobs.')
+        elif any(character.isspace() for character in queue_value):
+            errors.append(f'{queue_name} must not contain whitespace.')
 
     storage_backend = _value('PROD_REPORT_STORAGE_BACKEND').lower() or 'local'
     if storage_backend not in {'local', 's3'}:

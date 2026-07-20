@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 from datetime import UTC, datetime
 from typing import Any
-from uuid import uuid4
 
 from celery import shared_task
 from flask import current_app
@@ -23,6 +22,17 @@ from app.integrations.validation.state import (
     get_active_validation_task_id,
     release_validation_job,
     store_validation_metadata,
+)
+from app.jobs.constants import WORKLOAD_RUNTIME
+from app.jobs.fingerprint import build_deduplication_key
+from app.jobs.service import (
+    create_or_attach_job,
+    get_job_by_task_id,
+    mark_job_failed,
+    mark_job_running,
+    mark_job_succeeded,
+    subscriber_user_ids,
+    update_job_progress,
 )
 from app.models.alertmanager import AlertmanagerInstance
 from app.models.integration import IntegrationBinding, KubernetesConnection
@@ -50,6 +60,13 @@ def _queue_name() -> str:
     )
 
 
+def _runtime_queue_name() -> str:
+    return (
+        str(current_app.config.get('INTEGRATION_RUNTIME_CELERY_QUEUE') or 'integration-runtime').strip()
+        or 'integration-runtime'
+    )
+
+
 def _action_url(provider_type: str, instance_id: int, *, section: str) -> str:
     if provider_type == 'prometheus':
         return f'/integrations/prometheus/instances/{instance_id}#{section}'
@@ -69,12 +86,24 @@ def _store_metadata_safely(*, task_id: str, metadata: dict[str, Any]) -> None:
         logger.exception('Could not persist validation metadata for task %s.', task_id)
 
 
+def _canceled_before_worker_start(task_id: str) -> bool:
+    job = get_job_by_task_id(task_id)
+    return bool(job and job.status in {'canceled', 'cancel_requested', 'expired'})
+
+
 def _store_progress(task, metadata: dict[str, Any]) -> None:
+    task_id = str(task.request.id)
+    try:
+        mark_job_running(task_id, message=str(metadata.get('message') or metadata.get('title') or 'Worker started'))
+        update_job_progress(task_id, message=str(metadata.get('detail') or metadata.get('message') or 'Worker started'))
+    except Exception:
+        db.session.rollback()
+        logger.exception('Could not update canonical job progress for task %s.', task_id)
     try:
         task.update_state(state='PROGRESS', meta=metadata)
     except Exception:
-        logger.exception('Could not publish validation progress for task %s.', task.request.id)
-    _store_metadata_safely(task_id=str(task.request.id), metadata=metadata)
+        logger.exception('Could not publish validation progress for task %s.', task_id)
+    _store_metadata_safely(task_id=task_id, metadata=metadata)
 
 
 def _release_job_safely(
@@ -160,22 +189,33 @@ def _record_completion(
     detail: str,
     metadata: dict[str, Any],
 ) -> dict[str, Any] | None:
-    if requested_by_user_id is None:
+    task_id = str(metadata.get('task_id') or '')
+    job = get_job_by_task_id(task_id) if task_id else None
+    user_ids = subscriber_user_ids(job) if job is not None else []
+    if requested_by_user_id is not None and requested_by_user_id not in user_ids:
+        user_ids.insert(0, requested_by_user_id)
+    if not user_ids:
         return None
     section = 'scope' if operation == 'binding_validation' else ('runtime' if operation == 'runtime_refresh' else 'validation')
-    return record_operational_activity(
-        user_id=requested_by_user_id,
-        event_type=f'{provider_type}_{operation}_completed' if status != 'error' else f'{provider_type}_{operation}_failed',
-        status=status,
-        title=title,
-        message=message,
-        detail=detail,
-        action_url=_action_url(provider_type, instance_id, section=section),
-        action_label='Review validation',
-        action_icon='scan-search',
-        metadata=metadata,
-        queue_feedback=False,
-    )
+    selected_feedback: dict[str, Any] | None = None
+    enriched_metadata = {**metadata, 'job_execution_id': job.id if job is not None else None}
+    for user_id in user_ids:
+        feedback = record_operational_activity(
+            user_id=user_id,
+            event_type=f'{provider_type}_{operation}_completed' if status != 'error' else f'{provider_type}_{operation}_failed',
+            status=status,
+            title=title,
+            message=message,
+            detail=detail,
+            action_url=_action_url(provider_type, instance_id, section=section),
+            action_label='Review validation',
+            action_icon='scan-search',
+            metadata=enriched_metadata,
+            queue_feedback=False,
+        )
+        if requested_by_user_id == user_id or selected_feedback is None:
+            selected_feedback = feedback
+    return selected_feedback
 
 
 def _final_payload(
@@ -191,7 +231,7 @@ def _final_payload(
     finished_at = _now_iso()
     started = datetime.fromisoformat(str(base['started_at']))
     finished = datetime.fromisoformat(finished_at)
-    return {
+    payload = {
         **base,
         'status': status,
         'title': title,
@@ -202,6 +242,22 @@ def _final_payload(
         'finished_at': finished_at,
         'duration_seconds': max(int((finished - started).total_seconds()), 0),
     }
+    task_id = str(base.get('task_id') or '')
+    if task_id:
+        try:
+            if status == 'error':
+                mark_job_failed(task_id, error=detail, error_code='operation_failed')
+            else:
+                mark_job_succeeded(
+                    task_id,
+                    result_summary=result or {},
+                    result_type=str(base.get('operation') or 'job_result'),
+                    partial=status == 'warning',
+                )
+        except Exception:
+            db.session.rollback()
+            logger.exception('Could not finalize canonical job record for task %s.', task_id)
+    return payload
 
 
 @shared_task(
@@ -217,6 +273,7 @@ def validate_integration_instance(
     instance_id: int,
     requested_by_user_id: int | None,
     trigger_type: str = 'manual',
+    job_execution_id: int | None = None,
 ) -> dict[str, Any]:
     task_id = str(self.request.id)
     started_at = _now_iso()
@@ -227,6 +284,7 @@ def validate_integration_instance(
         'instance_id': instance_id,
         'binding_id': None,
         'requested_by_user_id': requested_by_user_id,
+        'job_execution_id': job_execution_id,
         'created_at': started_at,
         'started_at': started_at,
         'status': 'info',
@@ -234,6 +292,14 @@ def validate_integration_instance(
         'message': 'The validation worker is rebuilding operational evidence.',
         'detail': 'KAORI will update this workspace when the worker completes.',
     }
+    if _canceled_before_worker_start(task_id):
+        _release_job_safely(
+            task_id=task_id,
+            provider_type=provider_type,
+            operation='full_validation',
+            instance_id=instance_id,
+        )
+        return {**base, 'status': 'warning', 'title': 'Validation canceled', 'message': 'KAORI canceled the queued validation before provider execution.', 'detail': 'No provider request was started.', 'finished_at': _now_iso()}
     _store_progress(self, base)
     operation = str(base['operation'])
     try:
@@ -335,7 +401,7 @@ def validate_integration_instance(
             error=exc,
         )
         logger.exception('%s validation task failed for instance %s.', provider_type, instance_id)
-        detail = str(exc) or 'Review validation-worker logs, provider reachability, credentials, and Redis connectivity.'
+        detail = str(exc) or 'Review runtime-worker logs, provider reachability, credentials, and Redis connectivity.'
         feedback = _record_completion(
             requested_by_user_id=requested_by_user_id,
             provider_type=provider_type,
@@ -386,6 +452,7 @@ def validate_integration_binding(
     instance_id: int,
     binding_id: int,
     requested_by_user_id: int | None,
+    job_execution_id: int | None = None,
 ) -> dict[str, Any]:
     task_id = str(self.request.id)
     started_at = _now_iso()
@@ -396,6 +463,7 @@ def validate_integration_binding(
         'instance_id': instance_id,
         'binding_id': binding_id,
         'requested_by_user_id': requested_by_user_id,
+        'job_execution_id': job_execution_id,
         'created_at': started_at,
         'started_at': started_at,
         'status': 'info',
@@ -403,6 +471,15 @@ def validate_integration_binding(
         'message': 'The validation worker is checking the scope selector.',
         'detail': 'Operational source resolution remains blocked until this job completes.',
     }
+    if _canceled_before_worker_start(task_id):
+        _release_job_safely(
+            task_id=task_id,
+            provider_type=provider_type,
+            operation='binding_validation',
+            instance_id=instance_id,
+            binding_id=binding_id,
+        )
+        return {**base, 'status': 'warning', 'title': 'Binding validation canceled', 'message': 'KAORI canceled the queued binding validation before provider execution.', 'detail': 'No provider request was started.', 'finished_at': _now_iso()}
     _store_progress(self, base)
     try:
         binding = db.session.get(IntegrationBinding, binding_id)
@@ -513,6 +590,7 @@ def refresh_integration_runtime_instance(
     instance_id: int,
     requested_by_user_id: int | None = None,
     trigger_type: str = 'scheduled',
+    job_execution_id: int | None = None,
 ) -> dict[str, Any]:
     task_id = str(self.request.id)
     started_at = _now_iso()
@@ -523,6 +601,7 @@ def refresh_integration_runtime_instance(
         'instance_id': instance_id,
         'binding_id': None,
         'requested_by_user_id': requested_by_user_id,
+        'job_execution_id': job_execution_id,
         'created_at': started_at,
         'started_at': started_at,
         'status': 'info',
@@ -530,6 +609,14 @@ def refresh_integration_runtime_instance(
         'message': 'KAORI is refreshing lightweight provider health evidence.',
         'detail': 'Full capability evidence is preserved.',
     }
+    if _canceled_before_worker_start(task_id):
+        _release_job_safely(
+            task_id=task_id,
+            provider_type=provider_type,
+            operation='runtime_refresh',
+            instance_id=instance_id,
+        )
+        return {**base, 'status': 'warning', 'title': 'Runtime refresh canceled', 'message': 'KAORI canceled the queued runtime refresh before provider execution.', 'detail': 'No provider request was started.', 'finished_at': _now_iso()}
     _store_progress(self, base)
     try:
         if provider_type == 'prometheus':
@@ -615,7 +702,7 @@ def refresh_integration_runtime_instance(
             error=exc,
         )
         logger.exception('Runtime refresh failed for %s instance %s.', provider_type, instance_id)
-        detail = str(exc) or 'Review validation-worker logs, provider reachability, credentials, and Redis connectivity.'
+        detail = str(exc) or 'Review runtime-worker logs, provider reachability, credentials, and Redis connectivity.'
         feedback = _record_completion(
             requested_by_user_id=requested_by_user_id,
             provider_type=provider_type,
@@ -660,17 +747,34 @@ def enqueue_runtime_refresh(*, provider_type: str, instance_id: int) -> str | No
         instance_id=instance_id,
     ):
         return None
-    active_task_id = get_active_validation_task_id(
-        provider_type=provider_type,
-        operation='runtime_refresh',
-        instance_id=instance_id,
+    deduplication_key = build_deduplication_key(
+        'integration', provider_type, instance_id, 'runtime_refresh'
     )
-    if active_task_id:
+    job, created = create_or_attach_job(
+        job_type='integration_operation',
+        operation='runtime_refresh',
+        queue_name=_runtime_queue_name(),
+        workload_class=WORKLOAD_RUNTIME,
+        requested_by_user_id=None,
+        provider_type=provider_type,
+        provider_instance_id=instance_id,
+        scope_type='integration_instance',
+        resource_group=f'integration:{provider_type}:{instance_id}',
+        parameters={
+            'provider_type': provider_type,
+            'instance_id': instance_id,
+            'operation': 'runtime_refresh',
+            'trigger_type': 'scheduled',
+        },
+        deduplication_key=deduplication_key,
+        max_attempts=3,
+    )
+    if not created or not job.celery_task_id:
         return None
-    task_id = str(uuid4())
     created_at = _now_iso()
     metadata = {
-        'task_id': task_id,
+        'task_id': job.celery_task_id,
+        'job_execution_id': job.id,
         'provider_type': provider_type,
         'operation': 'runtime_refresh',
         'instance_id': instance_id,
@@ -680,10 +784,10 @@ def enqueue_runtime_refresh(*, provider_type: str, instance_id: int) -> str | No
         'status': 'info',
         'title': 'Runtime health refresh queued',
         'message': 'KAORI queued a lightweight runtime health refresh.',
-        'detail': 'The validation worker will process this provider independently.',
+        'detail': 'The runtime worker will process this provider independently.',
     }
     if not claim_validation_job(
-        task_id=task_id,
+        task_id=job.celery_task_id,
         provider_type=provider_type,
         operation='runtime_refresh',
         instance_id=instance_id,
@@ -691,6 +795,11 @@ def enqueue_runtime_refresh(*, provider_type: str, instance_id: int) -> str | No
         metadata=metadata,
         conflicting_operations=('full_validation',),
     ):
+        mark_job_failed(
+            job.celery_task_id,
+            error='Could not acquire the provider runtime lock.',
+            error_code='resource_lock_conflict',
+        )
         return None
     try:
         refresh_integration_runtime_instance.apply_async(
@@ -699,16 +808,19 @@ def enqueue_runtime_refresh(*, provider_type: str, instance_id: int) -> str | No
                 'instance_id': instance_id,
                 'requested_by_user_id': None,
                 'trigger_type': 'scheduled',
+                'job_execution_id': job.id,
             },
-            task_id=task_id,
-            queue=_queue_name(),
+            task_id=job.celery_task_id,
+            queue=_runtime_queue_name(),
+            priority=job.priority,
         )
-    except Exception:
+    except Exception as exc:
         release_validation_job(
-            task_id=task_id,
+            task_id=job.celery_task_id,
             provider_type=provider_type,
             operation='runtime_refresh',
             instance_id=instance_id,
         )
+        mark_job_failed(job.celery_task_id, error=exc, error_code='dispatch_failed')
         raise
-    return task_id
+    return job.celery_task_id

@@ -141,7 +141,7 @@ ID** and deletes older rows in the same transaction as the new observation. This
 also prunes legacy rows that do not yet carry a canonical integration-instance
 foreign key.
 
-Celery Beat invokes `app.integrations.runtime.tasks.refresh_integration_runtime` as a dispatcher only. The dispatcher performs no provider I/O; it fans out one lightweight runtime-health job per provider instance to the dedicated `integration-validation` queue. One slow or unreachable source therefore cannot block the remaining integration portfolio. The default interval is five minutes and can be controlled with `INTEGRATION_RUNTIME_MONITORING_*` environment variables.
+Celery Beat invokes `app.integrations.runtime.tasks.refresh_integration_runtime` as a dispatcher only. The dispatcher performs no provider I/O; it fans out one lightweight runtime-health job per provider instance to the dedicated `integration-runtime` queue. One slow or unreachable source therefore cannot block the remaining integration portfolio. The default interval is five minutes and can be controlled with `INTEGRATION_RUNTIME_MONITORING_*` environment variables.
 
 ## Validation execution boundary
 
@@ -153,7 +153,7 @@ Test Connection
 → lightweight reachability, authentication, TLS, and basic API proof
 
 Runtime Health Refresh
-→ dedicated Celery validation worker
+→ dedicated Celery runtime worker
 → lightweight endpoint health and latency evidence
 → preserves the latest full capability evidence
 
@@ -166,9 +166,9 @@ Scope Binding Validation
 → validates the binding selector against the selected reusable source
 ```
 
-Manual actions return immediately after a job is queued. The provider workspace polls task status through HTMX and renders the completed worker result without reloading the page. Queue, already-running, enqueue-failure, completion, and validation-failure events are recorded in Activity Audit Log; user-triggered completion feedback is also surfaced as the persistent KAORI toast. Redis owns short-lived job locks and polling metadata, while Celery's result backend owns task state.
+Manual actions return immediately after a job is queued. The provider workspace polls task status through HTMX and renders the completed worker result without reloading the page. Queue, already-running, enqueue-failure, completion, and validation-failure events are recorded in Activity Audit Log; user-triggered completion feedback is also surfaced as the persistent KAORI toast. PostgreSQL owns canonical job lifecycle, deduplication, subscribers, progress, and result references. Redis owns short-lived provider locks and polling metadata, while Celery transports the work and transient task result.
 
-The dedicated worker queue is configured through `INTEGRATION_VALIDATION_CELERY_QUEUE` and is intentionally separate from the `inventory` queue. Full validation and runtime refresh cannot overlap for the same provider instance. Scheduled refreshes are fan-out tasks and never execute full Prometheus or Alertmanager capability discovery every five minutes.
+Validation and runtime queues are configured through `INTEGRATION_VALIDATION_CELERY_QUEUE` and `INTEGRATION_RUNTIME_CELERY_QUEUE`; both are isolated from the `inventory` queue and from future analytics/forecasting workers. Full validation and runtime refresh cannot overlap for the same provider instance. Scheduled refreshes are fan-out tasks and never execute full Prometheus or Alertmanager capability discovery every five minutes.
 
 ## Runtime history presentation
 
@@ -229,3 +229,8 @@ Services/presenters must supply fields such as `observed_at_display`,
 `latency_display`, and `capability_attention_display`. This keeps full-page and
 HTMX rendering consistent with the authenticated user's timezone, locale, date
 format, and time format.
+
+
+## Canonical Job Execution Foundation
+
+All new asynchronous integration, analytics, forecasting, report, and maintenance work must use the PostgreSQL-backed foundation documented in `docs/architecture/job-execution-foundation.md`. Direct `apply_async()` calls are reserved for the shared dispatcher and domain-specific compatibility code that creates a canonical `JobExecution` first.

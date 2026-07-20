@@ -83,12 +83,35 @@ services:
       - -c
       - >-
         exec celery --app celery_worker:celery_app worker
-        --queues=inventory
+        --queues=inventory,maintenance
         --loglevel="$${CELERY_LOG_LEVEL:-INFO}"
         --concurrency="$${CELERY_WORKER_CONCURRENCY:-1}"
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=128m
     stop_grace_period: 45s
+
+  runtime-worker:
+    <<: *kaori-image
+    environment:
+      APP_ENV: production
+      WAIT_FOR_DB: "true"
+    init: true
+    restart: unless-stopped
+    read_only: true
+    command:
+      - sh
+      - -c
+      - >-
+        exec celery --app celery_worker:celery_app worker
+        --queues="$${INTEGRATION_RUNTIME_CELERY_QUEUE:-integration-runtime}"
+        --loglevel="$${CELERY_LOG_LEVEL:-INFO}"
+        --concurrency="$${INTEGRATION_RUNTIME_WORKER_CONCURRENCY:-4}"
+        --max-tasks-per-child="$${INTEGRATION_RUNTIME_MAX_TASKS_PER_CHILD:-500}"
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=128m
+    stop_grace_period: 45s
+    cpus: "${INTEGRATION_RUNTIME_WORKER_CPU_LIMIT:-1.0}"
+    mem_limit: "${INTEGRATION_RUNTIME_WORKER_MEMORY_LIMIT:-1g}"
 
   validation-worker:
     <<: *kaori-image
@@ -106,9 +129,58 @@ services:
         --queues="$${INTEGRATION_VALIDATION_CELERY_QUEUE:-integration-validation}"
         --loglevel="$${CELERY_LOG_LEVEL:-INFO}"
         --concurrency="$${INTEGRATION_VALIDATION_WORKER_CONCURRENCY:-1}"
+        --max-tasks-per-child="$${INTEGRATION_VALIDATION_MAX_TASKS_PER_CHILD:-100}"
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=128m
     stop_grace_period: 45s
+    cpus: "${INTEGRATION_VALIDATION_WORKER_CPU_LIMIT:-2.0}"
+    mem_limit: "${INTEGRATION_VALIDATION_WORKER_MEMORY_LIMIT:-2g}"
+
+  analytics-worker:
+    <<: *kaori-image
+    environment:
+      APP_ENV: production
+      WAIT_FOR_DB: "true"
+    init: true
+    restart: unless-stopped
+    read_only: true
+    command:
+      - sh
+      - -c
+      - >-
+        exec celery --app celery_worker:celery_app worker
+        --queues="$${ANALYTICS_CELERY_QUEUE:-analytics-batch}"
+        --loglevel="$${CELERY_LOG_LEVEL:-INFO}"
+        --concurrency="$${ANALYTICS_WORKER_CONCURRENCY:-2}"
+        --max-tasks-per-child="$${ANALYTICS_MAX_TASKS_PER_CHILD:-50}"
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=512m
+    stop_grace_period: 120s
+    cpus: "${ANALYTICS_WORKER_CPU_LIMIT:-2.0}"
+    mem_limit: "${ANALYTICS_WORKER_MEMORY_LIMIT:-4g}"
+
+  forecasting-worker:
+    <<: *kaori-image
+    environment:
+      APP_ENV: production
+      WAIT_FOR_DB: "true"
+    init: true
+    restart: unless-stopped
+    read_only: true
+    command:
+      - sh
+      - -c
+      - >-
+        exec celery --app celery_worker:celery_app worker
+        --queues="$${FORECASTING_CELERY_QUEUE:-forecasting}"
+        --loglevel="$${CELERY_LOG_LEVEL:-INFO}"
+        --concurrency="$${FORECASTING_WORKER_CONCURRENCY:-1}"
+        --max-tasks-per-child="$${FORECASTING_MAX_TASKS_PER_CHILD:-10}"
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=1g
+    stop_grace_period: 300s
+    cpus: "${FORECASTING_WORKER_CPU_LIMIT:-4.0}"
+    mem_limit: "${FORECASTING_WORKER_MEMORY_LIMIT:-8g}"
 
   # Run exactly one Beat replica for each KAORI environment.
   beat:

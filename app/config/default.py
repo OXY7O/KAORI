@@ -142,7 +142,13 @@ def _build_maintenance_beat_schedule() -> dict[str, dict[str, object]]:
         schedule['integration-runtime-monitoring'] = {
             'task': 'app.integrations.runtime.tasks.refresh_integration_runtime',
             'schedule': crontab(minute=f"*/{_bounded_env_int('INTEGRATION_RUNTIME_MONITORING_INTERVAL_MINUTES', 5, 1, 60)}"),
-            'options': {'queue': _env_str('INTEGRATION_RUNTIME_CELERY_QUEUE', 'inventory').strip() or 'inventory'},
+            'options': {'queue': _env_str('INTEGRATION_RUNTIME_CELERY_QUEUE', 'integration-runtime').strip() or 'integration-runtime'},
+        }
+    if _env_bool('JOB_RECOVERY_ENABLED', True):
+        schedule['job-execution-recovery'] = {
+            'task': 'app.jobs.tasks.reconcile_stale_jobs',
+            'schedule': crontab(minute=f"*/{_bounded_env_int('JOB_RECOVERY_INTERVAL_MINUTES', 5, 1, 60)}"),
+            'options': {'queue': _env_str('JOB_MAINTENANCE_CELERY_QUEUE', 'maintenance').strip() or 'maintenance'},
         }
     return schedule
 
@@ -257,13 +263,37 @@ class Config:
         7200,
     )
 
+    INTEGRATION_RUNTIME_CELERY_QUEUE = (
+        _env_str('INTEGRATION_RUNTIME_CELERY_QUEUE', 'integration-runtime').strip()
+        or 'integration-runtime'
+    )
+    ANALYTICS_CELERY_QUEUE = _env_str('ANALYTICS_CELERY_QUEUE', 'analytics-batch').strip() or 'analytics-batch'
+    FORECASTING_CELERY_QUEUE = _env_str('FORECASTING_CELERY_QUEUE', 'forecasting').strip() or 'forecasting'
+    JOB_MAINTENANCE_CELERY_QUEUE = _env_str('JOB_MAINTENANCE_CELERY_QUEUE', 'maintenance').strip() or 'maintenance'
+    JOB_MAX_ACTIVE_PER_USER = _env_int('JOB_MAX_ACTIVE_PER_USER', 5)
+    JOB_MAX_HEAVY_PER_USER = _env_int('JOB_MAX_HEAVY_PER_USER', 1)
+    JOB_MAX_ACTIVE_PER_RESOURCE = _env_int('JOB_MAX_ACTIVE_PER_RESOURCE', 2)
+    JOB_QUEUED_STALE_SECONDS = _env_int('JOB_QUEUED_STALE_SECONDS', 1800)
+    JOB_RUNNING_STALE_SECONDS = _env_int('JOB_RUNNING_STALE_SECONDS', 7200)
+    ANALYTICS_QUERY_MAXIMUM_RANGE_DAYS = _env_int('ANALYTICS_QUERY_MAXIMUM_RANGE_DAYS', 366)
+    ANALYTICS_QUERY_CHUNK_DAYS = _env_int('ANALYTICS_QUERY_CHUNK_DAYS', 30)
+    ANALYTICS_QUERY_MINIMUM_STEP_SECONDS = _env_int('ANALYTICS_QUERY_MINIMUM_STEP_SECONDS', 3600)
+    ANALYTICS_QUERY_MAXIMUM_SAMPLES_PER_SERIES = _env_int('ANALYTICS_QUERY_MAXIMUM_SAMPLES_PER_SERIES', 10000)
+    ANALYTICS_QUERY_MAX_CONCURRENT_PER_SOURCE = _env_int('ANALYTICS_QUERY_MAX_CONCURRENT_PER_SOURCE', 2)
+
     CELERY = {
         'broker_url': CELERY_BROKER_URL,
         'result_backend': CELERY_RESULT_BACKEND,
         'task_track_started': True,
+        'task_send_sent_event': True,
+        'worker_send_task_events': True,
+        'result_extended': True,
         'result_expires': CELERY_RESULT_EXPIRES_SECONDS,
         'broker_connection_retry_on_startup': True,
         'worker_prefetch_multiplier': 1,
+        'task_acks_late': True,
+        'task_reject_on_worker_lost': True,
+        'task_inherit_parent_priority': True,
         'task_serializer': 'json',
         'result_serializer': 'json',
         'accept_content': ['json'],
@@ -274,6 +304,7 @@ class Config:
             'app.retention.tasks',
             'app.integrations.runtime.tasks',
             'app.integrations.validation.tasks',
+            'app.jobs.tasks',
         ),
         'task_routes': {
             'app.cluster.tasks.sync_all_clusters': {
@@ -286,7 +317,7 @@ class Config:
                 'queue': _retention_queue_name(),
             },
             'app.integrations.runtime.tasks.refresh_integration_runtime': {
-                'queue': _env_str('INTEGRATION_RUNTIME_CELERY_QUEUE', 'inventory').strip() or 'inventory',
+                'queue': INTEGRATION_RUNTIME_CELERY_QUEUE,
             },
             'app.integrations.validation.tasks.validate_integration_instance': {
                 'queue': INTEGRATION_VALIDATION_CELERY_QUEUE,
@@ -295,12 +326,17 @@ class Config:
                 'queue': INTEGRATION_VALIDATION_CELERY_QUEUE,
             },
             'app.integrations.validation.tasks.refresh_integration_runtime_instance': {
-                'queue': INTEGRATION_VALIDATION_CELERY_QUEUE,
+                'queue': INTEGRATION_RUNTIME_CELERY_QUEUE,
+            },
+            'app.jobs.tasks.reconcile_stale_jobs': {
+                'queue': JOB_MAINTENANCE_CELERY_QUEUE,
             },
         },
         'visibility_timeout': CELERY_VISIBILITY_TIMEOUT_SECONDS,
         'broker_transport_options': {
             'visibility_timeout': CELERY_VISIBILITY_TIMEOUT_SECONDS,
+            'queue_order_strategy': 'priority',
+            'priority_steps': list(range(10)),
         },
         'result_backend_transport_options': {
             'global_keyprefix': 'kaori:celery:',

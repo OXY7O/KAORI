@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Any
-from uuid import uuid4
+from typing import Any, Callable
 
 from flask import current_app
 
@@ -13,20 +12,194 @@ from app.integrations.validation.state import (
     release_validation_job,
 )
 from app.integrations.validation.tasks import (
+    refresh_integration_runtime_instance,
     validate_integration_binding,
     validate_integration_instance,
 )
+from app.jobs.constants import WORKLOAD_RUNTIME, WORKLOAD_VALIDATION
+from app.jobs.fingerprint import build_deduplication_key
+from app.jobs.service import (
+    attach_job_subscriber,
+    create_or_attach_job,
+    find_active_job,
+    mark_job_failed,
+)
+from app.models.job import JobExecutionSubscriber
 
 
 def _now_iso() -> str:
     return datetime.now(UTC).isoformat()
 
 
-def _queue_name() -> str:
+def _validation_queue_name() -> str:
     return (
         str(current_app.config.get('INTEGRATION_VALIDATION_CELERY_QUEUE') or 'integration-validation').strip()
         or 'integration-validation'
     )
+
+
+def _runtime_queue_name() -> str:
+    return (
+        str(current_app.config.get('INTEGRATION_RUNTIME_CELERY_QUEUE') or 'integration-runtime').strip()
+        or 'integration-runtime'
+    )
+
+
+def _dedup_key(*, provider_type: str, operation: str, instance_id: int, binding_id: int | None = None) -> str:
+    return build_deduplication_key(
+        'integration',
+        provider_type,
+        instance_id,
+        operation,
+        binding_id,
+    )
+
+
+def _metadata(
+    *,
+    task_id: str,
+    job_execution_id: int,
+    provider_type: str,
+    operation: str,
+    instance_id: int,
+    binding_id: int | None,
+    requested_by_user_id: int | None,
+    title: str,
+    message: str,
+    detail: str,
+) -> dict[str, Any]:
+    return {
+        'task_id': task_id,
+        'job_execution_id': job_execution_id,
+        'provider_type': provider_type,
+        'operation': operation,
+        'instance_id': instance_id,
+        'binding_id': binding_id,
+        'requested_by_user_id': requested_by_user_id,
+        'created_at': _now_iso(),
+        'status': 'info',
+        'title': title,
+        'message': message,
+        'detail': detail,
+    }
+
+
+def _enqueue_job(
+    *,
+    provider_type: str,
+    operation: str,
+    instance_id: int,
+    binding_id: int | None,
+    requested_by_user_id: int,
+    queue_name: str,
+    workload_class: str,
+    task: Callable[..., Any],
+    task_kwargs: dict[str, Any],
+    title: str,
+    message: str,
+    detail: str,
+    conflicting_operation: str | None = None,
+) -> tuple[dict[str, Any], bool]:
+    if conflicting_operation:
+        conflict = find_active_job(
+            provider_type=provider_type,
+            provider_instance_id=instance_id,
+            operation=conflicting_operation,
+        )
+        if conflict is not None and conflict.celery_task_id:
+            return build_validation_snapshot(conflict.celery_task_id), False
+
+    deduplication_key = _dedup_key(
+        provider_type=provider_type,
+        operation=operation,
+        instance_id=instance_id,
+        binding_id=binding_id,
+    )
+    scope_key = f'binding:{binding_id}' if binding_id is not None else None
+    job, created = create_or_attach_job(
+        job_type='integration_operation',
+        operation=operation,
+        queue_name=queue_name,
+        workload_class=workload_class,
+        requested_by_user_id=requested_by_user_id,
+        provider_type=provider_type,
+        provider_instance_id=instance_id,
+        scope_type='integration_binding' if binding_id is not None else 'integration_instance',
+        scope_key=scope_key,
+        resource_group=f'integration:{provider_type}:{instance_id}',
+        parameters={
+            'provider_type': provider_type,
+            'instance_id': instance_id,
+            'binding_id': binding_id,
+            'operation': operation,
+        },
+        payload={
+            'provider_type': provider_type,
+            'instance_id': instance_id,
+            'binding_id': binding_id,
+            'trigger_type': 'manual',
+        },
+        deduplication_key=deduplication_key,
+        max_attempts=3,
+    )
+    if not job.celery_task_id:
+        raise RuntimeError('Canonical job record does not have a Celery task identifier.')
+    if not created:
+        return build_validation_snapshot(job.celery_task_id), False
+
+    metadata = _metadata(
+        task_id=job.celery_task_id,
+        job_execution_id=job.id,
+        provider_type=provider_type,
+        operation=operation,
+        instance_id=instance_id,
+        binding_id=binding_id,
+        requested_by_user_id=requested_by_user_id,
+        title=title,
+        message=message,
+        detail=detail,
+    )
+    acquired = claim_validation_job(
+        task_id=job.celery_task_id,
+        provider_type=provider_type,
+        operation=operation,
+        instance_id=instance_id,
+        binding_id=binding_id,
+        metadata=metadata,
+        conflicting_operations=(conflicting_operation,) if conflicting_operation else (),
+    )
+    if not acquired:
+        mark_job_failed(job.celery_task_id, error='Could not acquire the provider resource lock.', error_code='resource_lock_conflict')
+        active_task_id = get_active_validation_task_id(
+            provider_type=provider_type,
+            operation=operation,
+            instance_id=instance_id,
+            binding_id=binding_id,
+        )
+        if active_task_id:
+            return build_validation_snapshot(active_task_id), False
+        raise RuntimeError('Could not acquire the integration job lock.')
+    try:
+        task.apply_async(
+            kwargs={
+                **task_kwargs,
+                'job_execution_id': job.id,
+            },
+            task_id=job.celery_task_id,
+            queue=queue_name,
+            priority=job.priority,
+        )
+    except Exception as exc:
+        release_validation_job(
+            task_id=job.celery_task_id,
+            provider_type=provider_type,
+            operation=operation,
+            instance_id=instance_id,
+            binding_id=binding_id,
+        )
+        mark_job_failed(job.celery_task_id, error=exc, error_code='dispatch_failed')
+        raise
+    return build_validation_snapshot(job.celery_task_id), True
 
 
 def enqueue_instance_validation(
@@ -35,76 +208,26 @@ def enqueue_instance_validation(
     instance_id: int,
     requested_by_user_id: int,
 ) -> tuple[dict[str, Any], bool]:
-    operation = 'full_validation'
-    active_task_id = get_active_validation_task_id(
+    return _enqueue_job(
         provider_type=provider_type,
-        operation=operation,
-        instance_id=instance_id,
-    )
-    if active_task_id:
-        return build_validation_snapshot(active_task_id), False
-    if operation == 'full_validation':
-        runtime_task_id = get_active_validation_task_id(
-            provider_type=provider_type,
-            operation='runtime_refresh',
-            instance_id=instance_id,
-        )
-        if runtime_task_id:
-            return build_validation_snapshot(runtime_task_id), False
-
-    task_id = str(uuid4())
-    created_at = _now_iso()
-    metadata = {
-        'task_id': task_id,
-        'provider_type': provider_type,
-        'operation': operation,
-        'instance_id': instance_id,
-        'binding_id': None,
-        'requested_by_user_id': requested_by_user_id,
-        'created_at': created_at,
-        'status': 'info',
-        'title': 'Validation queued',
-        'message': 'KAORI queued the validation job for the dedicated worker.',
-        'detail': 'This page will refresh the validation workspace when the worker completes.',
-    }
-    acquired = claim_validation_job(
-        task_id=task_id,
-        provider_type=provider_type,
-        operation=operation,
+        operation='full_validation',
         instance_id=instance_id,
         binding_id=None,
-        metadata=metadata,
-        conflicting_operations=('runtime_refresh',) if operation == 'full_validation' else (),
+        requested_by_user_id=requested_by_user_id,
+        queue_name=_validation_queue_name(),
+        workload_class=WORKLOAD_VALIDATION,
+        task=validate_integration_instance,
+        task_kwargs={
+            'provider_type': provider_type,
+            'instance_id': instance_id,
+            'requested_by_user_id': requested_by_user_id,
+            'trigger_type': 'manual',
+        },
+        title='Validation queued',
+        message='KAORI queued the validation job for the dedicated worker.',
+        detail='This page will refresh the validation workspace when the worker completes.',
+        conflicting_operation='runtime_refresh',
     )
-    if not acquired:
-        active_task_id = get_active_validation_task_id(
-            provider_type=provider_type,
-            operation=operation,
-            instance_id=instance_id,
-        )
-        if active_task_id:
-            return build_validation_snapshot(active_task_id), False
-        raise RuntimeError('Could not acquire the integration validation lock.')
-    try:
-        validate_integration_instance.apply_async(
-            kwargs={
-                'provider_type': provider_type,
-                'instance_id': instance_id,
-                'requested_by_user_id': requested_by_user_id,
-                'trigger_type': 'manual',
-            },
-            task_id=task_id,
-            queue=_queue_name(),
-        )
-    except Exception:
-        release_validation_job(
-            task_id=task_id,
-            provider_type=provider_type,
-            operation=operation,
-            instance_id=instance_id,
-        )
-        raise
-    return build_validation_snapshot(task_id), True
 
 
 def enqueue_binding_validation(
@@ -114,70 +237,25 @@ def enqueue_binding_validation(
     binding_id: int,
     requested_by_user_id: int,
 ) -> tuple[dict[str, Any], bool]:
-    operation = 'binding_validation'
-    active_task_id = get_active_validation_task_id(
+    return _enqueue_job(
         provider_type=provider_type,
-        operation=operation,
+        operation='binding_validation',
         instance_id=instance_id,
         binding_id=binding_id,
+        requested_by_user_id=requested_by_user_id,
+        queue_name=_validation_queue_name(),
+        workload_class=WORKLOAD_VALIDATION,
+        task=validate_integration_binding,
+        task_kwargs={
+            'provider_type': provider_type,
+            'instance_id': instance_id,
+            'binding_id': binding_id,
+            'requested_by_user_id': requested_by_user_id,
+        },
+        title='Binding validation queued',
+        message='KAORI queued the scope selector validation.',
+        detail='Source resolution remains blocked until the worker completes.',
     )
-    if active_task_id:
-        return build_validation_snapshot(active_task_id), False
-
-    task_id = str(uuid4())
-    created_at = _now_iso()
-    metadata = {
-        'task_id': task_id,
-        'provider_type': provider_type,
-        'operation': operation,
-        'instance_id': instance_id,
-        'binding_id': binding_id,
-        'requested_by_user_id': requested_by_user_id,
-        'created_at': created_at,
-        'status': 'info',
-        'title': 'Binding validation queued',
-        'message': 'KAORI queued the scope selector validation.',
-        'detail': 'Source resolution remains blocked until the worker completes.',
-    }
-    acquired = claim_validation_job(
-        task_id=task_id,
-        provider_type=provider_type,
-        operation=operation,
-        instance_id=instance_id,
-        binding_id=binding_id,
-        metadata=metadata,
-    )
-    if not acquired:
-        active_task_id = get_active_validation_task_id(
-            provider_type=provider_type,
-            operation=operation,
-            instance_id=instance_id,
-            binding_id=binding_id,
-        )
-        if active_task_id:
-            return build_validation_snapshot(active_task_id), False
-        raise RuntimeError('Could not acquire the binding validation lock.')
-    try:
-        validate_integration_binding.apply_async(
-            kwargs={
-                'provider_type': provider_type,
-                'instance_id': instance_id,
-                'binding_id': binding_id,
-                'requested_by_user_id': requested_by_user_id,
-            },
-            task_id=task_id,
-            queue=_queue_name(),
-        )
-    except Exception:
-        release_validation_job(
-            task_id=task_id,
-            provider_type=provider_type,
-            operation=operation,
-            instance_id=instance_id,
-            binding_id=binding_id,
-        )
-        raise
-    return build_validation_snapshot(task_id), True
 
 
 def validate_snapshot_access(
@@ -187,20 +265,10 @@ def validate_snapshot_access(
     instance_id: int,
     binding_id: int | None = None,
 ) -> bool:
-    """Validate that a task belongs to the provider workspace being rendered.
-
-    Validation jobs are instance-scoped, not browser-session-scoped. Any operator
-    with the route permission may observe an already-running job for the same
-    provider target. Completion toast feedback remains limited to the operator
-    who originally queued the task.
-    """
     return (
         str(snapshot.get('provider_type') or '') == provider_type
         and int(snapshot.get('instance_id') or 0) == int(instance_id)
-        and (
-            binding_id is None
-            or int(snapshot.get('binding_id') or 0) == int(binding_id)
-        )
+        and (binding_id is None or int(snapshot.get('binding_id') or 0) == int(binding_id))
     )
 
 
@@ -211,7 +279,15 @@ def snapshot_feedback_for_user(
 ) -> dict[str, Any] | None:
     if not snapshot.get('is_complete'):
         return None
-    if int(snapshot.get('requested_by_user_id') or 0) != int(user_id):
+    job_execution_id = int(snapshot.get('job_execution_id') or 0)
+    if job_execution_id:
+        subscribed = JobExecutionSubscriber.query.filter_by(
+            job_execution_id=job_execution_id,
+            user_id=user_id,
+        ).first()
+        if subscribed is None:
+            return None
+    elif int(snapshot.get('requested_by_user_id') or 0) != int(user_id):
         return None
     feedback = snapshot.get('feedback')
     return feedback if isinstance(feedback, dict) else None
@@ -223,73 +299,23 @@ def enqueue_runtime_health_refresh(
     instance_id: int,
     requested_by_user_id: int,
 ) -> tuple[dict[str, Any], bool]:
-    from app.integrations.validation.tasks import refresh_integration_runtime_instance
-
-    operation = 'runtime_refresh'
-    active_task_id = get_active_validation_task_id(
+    return _enqueue_job(
         provider_type=provider_type,
-        operation=operation,
-        instance_id=instance_id,
-    )
-    if active_task_id:
-        return build_validation_snapshot(active_task_id), False
-    full_validation_task_id = get_active_validation_task_id(
-        provider_type=provider_type,
-        operation='full_validation',
-        instance_id=instance_id,
-    )
-    if full_validation_task_id:
-        return build_validation_snapshot(full_validation_task_id), False
-
-    task_id = str(uuid4())
-    created_at = _now_iso()
-    metadata = {
-        'task_id': task_id,
-        'provider_type': provider_type,
-        'operation': operation,
-        'instance_id': instance_id,
-        'binding_id': None,
-        'requested_by_user_id': requested_by_user_id,
-        'created_at': created_at,
-        'status': 'info',
-        'title': 'Runtime health refresh queued',
-        'message': 'KAORI queued the lightweight runtime health refresh.',
-        'detail': 'Full capability evidence will be preserved while the worker checks reachability and response health.',
-    }
-    if not claim_validation_job(
-        task_id=task_id,
-        provider_type=provider_type,
-        operation=operation,
+        operation='runtime_refresh',
         instance_id=instance_id,
         binding_id=None,
-        metadata=metadata,
-        conflicting_operations=('full_validation',),
-    ):
-        active_task_id = get_active_validation_task_id(
-            provider_type=provider_type,
-            operation=operation,
-            instance_id=instance_id,
-        )
-        if active_task_id:
-            return build_validation_snapshot(active_task_id), False
-        raise RuntimeError('Could not acquire the runtime refresh lock.')
-    try:
-        refresh_integration_runtime_instance.apply_async(
-            kwargs={
-                'provider_type': provider_type,
-                'instance_id': instance_id,
-                'requested_by_user_id': requested_by_user_id,
-                'trigger_type': 'manual',
-            },
-            task_id=task_id,
-            queue=_queue_name(),
-        )
-    except Exception:
-        release_validation_job(
-            task_id=task_id,
-            provider_type=provider_type,
-            operation=operation,
-            instance_id=instance_id,
-        )
-        raise
-    return build_validation_snapshot(task_id), True
+        requested_by_user_id=requested_by_user_id,
+        queue_name=_runtime_queue_name(),
+        workload_class=WORKLOAD_RUNTIME,
+        task=refresh_integration_runtime_instance,
+        task_kwargs={
+            'provider_type': provider_type,
+            'instance_id': instance_id,
+            'requested_by_user_id': requested_by_user_id,
+            'trigger_type': 'manual',
+        },
+        title='Runtime health refresh queued',
+        message='KAORI queued the lightweight runtime health refresh.',
+        detail='Full capability evidence will be preserved while the worker checks reachability and response health.',
+        conflicting_operation='full_validation',
+    )
