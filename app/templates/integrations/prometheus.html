@@ -2,6 +2,7 @@
 {% import "components/page_hero.html" as page_hero %}
 {% from "integrations/partials/_status_badge.html" import status_badge %}
 {% import "components/integration_coverage.html" as integration_coverage %}
+{% import "components/integration_workspace_tabs.html" as integration_tabs %}
 {% block title %}Prometheus Integrations · KAORI{% endblock title %}
 {% block dashboard_content %}
 {% set posture_status = 'Healthy' if stats.total > 0 and stats.ready == stats.configured else ('Attention' if stats.total > 0 else 'Not Configured') %}
@@ -12,7 +13,7 @@
                 {% call page_hero.intro('activity', 'Operational Integration', 'chart-no-axes-combined') %}
                     <h1 class="text-2xl font-semibold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">Prometheus Integrations</h1>
                     <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">
-                        Register, validate, and govern metrics connections and their operational scope bindings.
+                        Register, validate, and govern Prometheus connections and scope bindings.
                     </p>
                     <div class="mt-5 flex flex-wrap gap-2">
                         {{ page_hero.meta_label('server-cog', stats.total ~ ' Registered Connections') }}
@@ -48,24 +49,24 @@
     </section>
 
     <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
-        <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:px-6 lg:flex-row lg:items-start lg:justify-between">
+        <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
             <div class="flex items-start gap-3">
                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
-                    <i data-lucide="chart-spline" class="h-5 w-5"></i>
+                    <i data-lucide="chart-spline" class="h-5 w-5" aria-hidden="true"></i>
                 </span>
                 <div>
                     <h2 class="text-lg font-semibold text-content-primary">Prometheus Integration Overview</h2>
-                    <p class="mt-1 text-sm leading-6 text-content-secondary">Each metrics connection is registered once, validated against its observed API and metric contracts, then associated with governed operational scopes.</p>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">Each Prometheus connection is registered once and associated with operational scopes through governed bindings.</p>
                 </div>
             </div>
         </header>
 
         <div class="grid gap-4 p-5 sm:grid-cols-2 sm:p-6 xl:grid-cols-4">
             {% for item in [
-                ('Registered Connections', stats.total, 'Reusable metrics endpoints', 'server-cog'),
+                ('Registered Connections', stats.total, 'Reusable Prometheus endpoints', 'server-cog'),
                 ('Validated Connections', stats.ready, 'Ready for operational use', 'badge-check'),
                 ('Needs Attention', stats.attention, 'Validation or runtime review', 'triangle-alert'),
-                ('Uncovered Scopes', coverage_stats.uncovered, 'Clusters without an eligible source', 'unlink')
+                ('Uncovered Scopes', coverage_stats.uncovered, 'Scopes without an eligible source', 'unlink')
             ] %}
                 <article class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
                     <div class="flex items-start justify-between gap-3">
@@ -74,7 +75,7 @@
                             <p class="mt-2 text-2xl font-semibold text-content-primary">{{ item[1] }}</p>
                         </div>
                         <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                            <i data-lucide="{{ item[3] }}" class="h-4 w-4"></i>
+                            <i data-lucide="{{ item[3] }}" class="h-4 w-4" aria-hidden="true"></i>
                         </span>
                     </div>
                     <p class="mt-2 text-xs leading-5 text-content-secondary">{{ item[2] }}</p>
@@ -91,28 +92,37 @@
             <div class="bg-surface-card px-5 py-4 sm:px-6">
                 <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Usage Resolution</p>
                 <p class="mt-1.5 text-sm font-semibold text-content-primary">Binding, Capability, and Runtime Aware</p>
-                <p class="mt-1 text-xs leading-5 text-content-secondary">KAORI selects an eligible metrics source for each bound operational consumer.</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">KAORI selects an eligible metrics source for each bound operational scope.</p>
             </div>
             <div class="bg-surface-card px-5 py-4 sm:px-6">
                 <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Authority Boundary</p>
-                <p class="mt-1.5 text-sm font-semibold text-content-primary">The Metrics Platform Remains Authoritative</p>
-                <p class="mt-1 text-xs leading-5 text-content-secondary">Scraping, recording rules, retention, federation, and historical storage remain managed by the connected platform.</p>
+                <p class="mt-1.5 text-sm font-semibold text-content-primary">Prometheus Remains Authoritative</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Scraping, recording rules, retention, federation, and historical storage remain managed by Prometheus.</p>
             </div>
         </div>
     </section>
 
-    {{ integration_coverage.render(
-        provider,
-        coverage_rows,
-        coverage_stats,
-        coverage_pagination,
-        selected_query=selected_query,
-        selected_readiness=selected_readiness,
-        selected_compatibility=selected_compatibility|default(''),
-        selected_deployment_type=selected_deployment_type|default(''),
-        registry_per_page=pagination.per_page
-    ) }}
-
-    {% include 'integrations/prometheus/partials/_instance_inventory.html' %}
+    {% call(tab_name) integration_tabs.render('prometheus', active_tab, coverage_stats.total, stats.total) %}
+        {% if tab_name == 'coverage' %}
+            {{ integration_coverage.render(
+                provider,
+                coverage_rows,
+                coverage_stats,
+                coverage_pagination,
+                selected_query=selected_query,
+                selected_readiness=selected_readiness,
+                selected_compatibility=selected_compatibility,
+                selected_deployment_type='',
+                registry_per_page=pagination.per_page,
+                selected_coverage_query=selected_coverage_query,
+                selected_coverage_environment=selected_coverage_environment,
+                selected_coverage_status=selected_coverage_status,
+                coverage_environment_options=coverage_environment_options,
+                coverage_status_options=coverage_status_options
+            ) }}
+        {% else %}
+            {% include 'integrations/prometheus/partials/_instance_inventory.html' %}
+        {% endif %}
+    {% endcall %}
 </div>
 {% endblock dashboard_content %}

@@ -32,14 +32,15 @@ def test_alertmanager_registry_content_uses_kaori_table_contract() -> None:
 
     required_fragments = (
         'components/table_label.html',
-        'table_label.status_label',
         'table_label.metadata_label',
-        'text-right">Action',
-        'aria-label="Rows per page"',
-        '<option value="{{ value }}"',
+        'status_badge(row.compatibility)',
+        'status_badge(row.readiness)',
+        'text-right sm:px-6">Action',
+        'aria-label="Connections per page"',
+        '<option value="{{ option }}"',
         'pagination.allowed_per_page',
-        'Page {{ pagination.page }} / {{ pagination.total_pages }}',
-        'cursor-not-allowed',
+        'pagination_ui.numeric_pages(pagination.page, pagination.total_pages)',
+        'pagination_ui.navigation_classes(disabled=true)',
         'components/states/_empty_state.html',
         'hx-target="#alertmanager-inventory-content"',
         'hx-indicator="#alertmanager-inventory-loading"',
@@ -54,7 +55,7 @@ def test_alertmanager_registry_copy_uses_global_operational_positioning() -> Non
         'app/templates/integrations/alertmanager/partials/_inventory_card.html'
     ).read_text(encoding='utf-8')
 
-    assert 'systems, services, and workflows that use them' in source
+    assert 'Manage reusable alert connections and the operational scopes that can use them.' in source
     assert 'analytics domain may consume each source' not in source
-    assert 'Connection Type' in source
+    assert 'Compatibility' in source
 

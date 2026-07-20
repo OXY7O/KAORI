@@ -43,11 +43,14 @@ def test_prometheus_landing_hero_matches_compact_alertmanager_contract() -> None
 def test_scope_coverage_uses_bind_existing_source_component() -> None:
     landing = LANDING.read_text(encoding='utf-8')
     component = (ROOT / 'app/templates/components/integration_coverage.html').read_text(encoding='utf-8')
+    content = (ROOT / 'app/templates/components/integration_coverage_content.html').read_text(encoding='utf-8')
 
     assert 'integration_coverage.render' in landing
     assert 'Operational Scopes Without a Prometheus Source' not in landing
-    for fragment in ('Integration Coverage', 'Bind Source', 'Review Binding', 'Register a new connection only when no suitable source exists.'):
+    for fragment in ('Integration Coverage', 'Bind operational scopes to existing {{ provider.label }} sources.'):
         assert fragment in component
+    for fragment in ('Bind Source', 'Review Binding'):
+        assert fragment in content
 
 
 def test_registration_workspace_matches_alertmanager_information_hierarchy() -> None:

@@ -8,6 +8,7 @@ from app.alertmanager.requirements import evaluate_module_readiness
 from app.alertmanager.resolver import AlertmanagerSourceResolution, resolve_alertmanager_sources
 from app.alertmanager.runtime_adapter import runtime_adapter
 from app.alertmanager.sanitization import safe_endpoint
+from app.common.presentation import present_user_datetime
 from app.extensions import db
 from app.integrations.binding_selectors import selector_form_values, selector_is_configured, selector_summary
 from app.integrations.coverage import build_provider_coverage
@@ -21,10 +22,15 @@ from app.models.cluster import Cluster
 def build_inventory_context(
     *,
     query: str = '',
+    compatibility: str = '',
     readiness: str = '',
     deployment_type: str = '',
+    tab: str = 'coverage',
     page: int = 1,
     per_page: int = 5,
+    coverage_query: str = '',
+    coverage_environment: str = '',
+    coverage_status: str = '',
     coverage_page: int = 1,
     coverage_per_page: int = 5,
 ) -> dict[str, Any]:
@@ -40,6 +46,8 @@ def build_inventory_context(
         ]
     if readiness:
         filtered = [row for row in filtered if row['readiness'] == readiness]
+    if compatibility:
+        filtered = [row for row in filtered if row['compatibility'] == compatibility]
     if deployment_type:
         filtered = [row for row in filtered if row['deployment_type'] == deployment_type]
 
@@ -55,15 +63,21 @@ def build_inventory_context(
         'alertmanager',
         page=coverage_page,
         per_page=coverage_per_page,
+        query=coverage_query,
+        environment=coverage_environment,
+        status=coverage_status,
     )
     return {
         'rows': page_rows,
         'stats': stats,
         'pagination': pagination,
+        'active_tab': tab if tab in {'coverage', 'registry'} else 'coverage',
         'selected_query': query,
+        'selected_compatibility': compatibility,
         'selected_readiness': readiness,
         'selected_deployment_type': deployment_type,
         'readiness_options': sorted({row['readiness'] for row in rows}),
+        'compatibility_options': sorted({row['compatibility'] for row in rows}),
         'deployment_type_options': sorted({row['deployment_type'] for row in rows}),
         'binding_scope_counts': count_bindings_by_scope_type(),
         **coverage_context,
@@ -146,6 +160,7 @@ def _instance_row(instance: AlertmanagerInstance) -> dict[str, Any]:
         'readiness': readiness,
         'profile': instance.compatibility_profile,
         'deployment_type': instance.deployment_type,
+        'validated_at': present_user_datetime(instance.last_validated_at, empty='Not validated'),
         'binding_count': len(list_bindings_for_instance(instance.id)),
         'scope_types': sorted({binding.asset_type for binding in list_bindings_for_instance(instance.id) if binding.enabled}),
         'search_text': ' '.join(
@@ -154,8 +169,10 @@ def _instance_row(instance: AlertmanagerInstance) -> dict[str, Any]:
                 [
                     instance.name.lower(),
                     (instance.description or '').lower(),
-                    instance.endpoint.lower(),
-                    instance.deployment_type.lower(),
+                    (instance.endpoint or '').lower(),
+                    (instance.deployment_type or '').lower(),
+                    (instance.detected_version or '').lower(),
+                    (instance.compatibility_profile or '').lower(),
                 ],
             )
         ),

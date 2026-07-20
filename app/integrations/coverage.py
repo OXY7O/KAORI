@@ -11,6 +11,7 @@ from app.models.prometheus import PrometheusInstance
 
 _PROVIDER_META = {
     'prometheus': {
+        'key': 'prometheus',
         'label': 'Prometheus',
         'source_label': 'metrics source',
         'icon': 'chart-no-axes-combined',
@@ -22,6 +23,7 @@ _PROVIDER_META = {
         'selector_help': 'The selector is injected into PromQL so one shared source cannot mix metrics from different clusters.',
     },
     'alertmanager': {
+        'key': 'alertmanager',
         'label': 'Alertmanager',
         'source_label': 'alert source',
         'icon': 'siren',
@@ -47,6 +49,9 @@ def build_provider_coverage(
     *,
     page: int = 1,
     per_page: int = 5,
+    query: str = '',
+    environment: str = '',
+    status: str = '',
 ) -> dict[str, Any]:
     meta = provider_meta(provider_type)
     instances = _instances(provider_type)
@@ -130,9 +135,31 @@ def build_provider_coverage(
             'coverage_status': coverage_status,
             'coverage_label': coverage_label,
             'coverage_detail': coverage_detail,
+            'search_text': ' '.join(
+                filter(
+                    None,
+                    [
+                        cluster.name.lower(),
+                        str(cluster.id).lower(),
+                        get_environment_label(cluster.environment).lower(),
+                        (selected_source.name or '').lower() if selected_source is not None else '',
+                        coverage_label.lower(),
+                    ],
+                )
+            ),
         })
 
-    page_rows, pagination = _paginate(rows, page=page, per_page=per_page)
+    all_rows = rows
+    filtered_rows = all_rows
+    normalized_query = query.strip().lower()
+    if normalized_query:
+        filtered_rows = [row for row in filtered_rows if normalized_query in row['search_text']]
+    if environment:
+        filtered_rows = [row for row in filtered_rows if row['environment'] == environment]
+    if status:
+        filtered_rows = [row for row in filtered_rows if row['coverage_status'] == status]
+
+    page_rows, pagination = _paginate(filtered_rows, page=page, per_page=per_page)
     source_options = []
     blocked_readiness = {'blocked', 'unavailable', 'disabled', 'incompatible'}
     for instance in instances:
@@ -165,12 +192,21 @@ def build_provider_coverage(
         'provider': meta,
         'coverage_rows': page_rows,
         'coverage_pagination': pagination,
+        'selected_coverage_query': query,
+        'selected_coverage_environment': environment,
+        'selected_coverage_status': status,
+        'coverage_environment_options': sorted({row['environment'] for row in all_rows}),
+        'coverage_status_options': [
+            option
+            for option in ('ready', 'degraded', 'validation_required', 'blocked', 'uncovered')
+            if any(row['coverage_status'] == option for row in all_rows)
+        ],
         'source_options': source_options,
         'coverage_stats': {
-            'total': len(rows),
-            'ready': sum(1 for row in rows if row['coverage_status'] == 'ready'),
-            'attention': sum(1 for row in rows if row['coverage_status'] in {'degraded', 'validation_required', 'blocked'}),
-            'uncovered': sum(1 for row in rows if row['coverage_status'] == 'uncovered'),
+            'total': len(all_rows),
+            'ready': sum(1 for row in all_rows if row['coverage_status'] == 'ready'),
+            'attention': sum(1 for row in all_rows if row['coverage_status'] in {'degraded', 'validation_required', 'blocked'}),
+            'uncovered': sum(1 for row in all_rows if row['coverage_status'] == 'uncovered'),
         },
     }
 

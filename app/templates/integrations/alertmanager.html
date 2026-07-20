@@ -2,122 +2,127 @@
 {% import "components/page_hero.html" as page_hero %}
 {% from "integrations/partials/_status_badge.html" import status_badge %}
 {% import "components/integration_coverage.html" as integration_coverage %}
+{% import "components/integration_workspace_tabs.html" as integration_tabs %}
 {% block title %}Alertmanager Integrations · KAORI{% endblock title %}
 {% block dashboard_content %}
-    {% set posture_status = 'Healthy' if stats.total > 0 and stats.configured == stats.total and stats.ready == stats.configured else ('Attention' if stats.total > 0 else 'Not configured') %}
-    <div class="kaori-integration-semantic space-y-6">
-        <section class="{{ page_hero.shell_classes() }}">
-            <div class="{{ page_hero.layout_classes() }}">
-                <div class="{{ page_hero.content_classes() }}">
-                    {% call page_hero.intro('siren', 'Operational Integration', 'server-cog') %}
-                        <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">
-                            Alertmanager Integrations
-                        </h1>
-                        <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">
-                            Register, validate, and govern Alertmanager connections and scope bindings.
-                        </p>
+{% set posture_status = 'Healthy' if stats.total > 0 and stats.ready == stats.configured else ('Attention' if stats.total > 0 else 'Not Configured') %}
+<div class="kaori-integration-semantic space-y-6">
+    <section class="{{ page_hero.shell_classes() }}">
+        <div class="{{ page_hero.layout_classes() }}">
+            <div class="{{ page_hero.content_classes() }}">
+                {% call page_hero.intro('siren', 'Operational Integration', 'server-cog') %}
+                    <h1 class="text-2xl font-semibold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">Alertmanager Integrations</h1>
+                    <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">
+                        Register, validate, and govern Alertmanager connections and scope bindings.
+                    </p>
+                    <div class="mt-5 flex flex-wrap gap-2">
+                        {{ page_hero.meta_label('server-cog', stats.total ~ ' Registered Connections') }}
+                        {{ page_hero.meta_label('circle-check-big', stats.ready ~ ' Ready Sources') }}
+                        {{ page_hero.meta_label('link-2', stats.bindings ~ ' Scope Bindings') }}
+                    </div>
+                {% endcall %}
+            </div>
 
-                        <div class="mt-5 flex flex-wrap gap-2">
-                            {{ page_hero.meta_label('server-cog', stats.total ~ ' Registered Instances') }}
-                            {{ page_hero.meta_label('circle-check-big', stats.ready ~ ' Ready Sources') }}
-                            {{ page_hero.meta_label('link-2', stats.bindings ~ ' Scope Bindings') }}
+            <aside class="{{ page_hero.aside_classes() }}" aria-label="Alertmanager integration posture">
+                <div class="{{ page_hero.context_panel_classes() }}">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Integration Posture</p>
+                            <p class="{{ page_hero.context_panel_title_classes() }}">Connection Readiness and Bindings</p>
                         </div>
-                    {% endcall %}
-                </div>
+                        {{ status_badge('healthy' if posture_status == 'Healthy' else ('degraded' if posture_status == 'Attention' else 'not_configured'), posture_status) }}
+                    </div>
 
-                <aside class="{{ page_hero.aside_classes() }}" aria-label="Alertmanager integration posture">
-                    <div class="{{ page_hero.context_panel_classes() }}">
+                    <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                        {{ page_hero.context_metric('badge-check', 'Ready', stats.ready ~ ' / ' ~ stats.configured, 'Validated connections available') }}
+                        {{ page_hero.context_metric('link-2', 'Bindings', stats.bindings, 'Governed scope associations') }}
+                    </div>
+
+                    <a href="{{ url_for('alertmanager.new_instance') }}"
+                       class="mt-3 inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-brand-outline bg-surface-card px-4 py-2 text-xs font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-kaori-primary">
+                        <i data-lucide="plus" class="h-4 w-4" aria-hidden="true"></i>
+                        Register Connection
+                    </a>
+                </div>
+            </aside>
+        </div>
+    </section>
+
+    <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+        <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+            <div class="flex items-start gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
+                    <i data-lucide="siren" class="h-5 w-5" aria-hidden="true"></i>
+                </span>
+                <div>
+                    <h2 class="text-lg font-semibold text-content-primary">Alertmanager Integration Overview</h2>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">Each Alertmanager connection is registered once and associated with operational scopes through governed bindings.</p>
+                </div>
+            </div>
+        </header>
+
+        <div class="grid gap-4 p-5 sm:grid-cols-2 sm:p-6 xl:grid-cols-4">
+            {% for item in [
+                ('Registered Connections', stats.total, 'Reusable Alertmanager endpoints', 'server-cog'),
+                ('Validated Connections', stats.ready, 'Ready for operational use', 'badge-check'),
+                ('Needs Attention', stats.attention, 'Validation or runtime review', 'triangle-alert'),
+                ('Uncovered Scopes', coverage_stats.uncovered, 'Scopes without an eligible source', 'unlink')
+            ] %}
+                <article class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
+                    <div class="flex items-start justify-between gap-3">
                         <div>
-                            <div class="flex items-start justify-between gap-3">
-                                <div class="min-w-0">
-                                    <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Integration Posture</p>
-                                    <p class="{{ page_hero.context_panel_title_classes() }}">Connection Readiness and Bindings</p>
-                                </div>
-                                {{ status_badge('healthy' if posture_status == 'Healthy' else ('degraded' if posture_status == 'Attention' else 'not_configured'), posture_status) }}
-                            </div>
+                            <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">{{ item[0] }}</p>
+                            <p class="mt-2 text-2xl font-semibold text-content-primary">{{ item[1] }}</p>
                         </div>
-
-                        <div class="{{ page_hero.context_panel_metrics_classes() }}">
-                            {{ page_hero.context_metric('badge-check', 'Ready', stats.ready ~ ' / ' ~ stats.configured, 'Validated connections available') }}
-                            {{ page_hero.context_metric('link-2', 'Bindings', stats.bindings, 'Governed scope associations') }}
-                        </div>
-
-                        <a href="{{ url_for('alertmanager.new_instance') }}"
-                           class="mt-3 inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-brand-outline bg-surface-card px-4 py-2 text-xs font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-kaori-primary">
-                            <i data-lucide="plus" class="h-4 w-4" aria-hidden="true"></i>
-                            Register Instance
-                        </a>
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                            <i data-lucide="{{ item[3] }}" class="h-4 w-4" aria-hidden="true"></i>
+                        </span>
                     </div>
-                </aside>
+                    <p class="mt-2 text-xs leading-5 text-content-secondary">{{ item[2] }}</p>
+                </article>
+            {% endfor %}
+        </div>
+
+        <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle md:grid-cols-3">
+            <div class="bg-surface-card px-5 py-4 sm:px-6">
+                <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Integration Contract</p>
+                <p class="mt-1.5 text-sm font-semibold text-content-primary">Alertmanager API v2</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Status, alerts, silences, and compatibility evidence are validated before use.</p>
             </div>
-        </section>
-
-        <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
-            <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
-                <div class="flex items-start gap-3">
-                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
-                        <i data-lucide="network" class="h-5 w-5" aria-hidden="true"></i>
-                    </span>
-                    <div>
-                        <h2 class="text-lg font-bold text-content-primary">Alertmanager Integration Overview</h2>
-                        <p class="mt-1 text-sm leading-6 text-content-secondary">Each Alertmanager connection is registered once and can be associated with multiple operational contexts through governed bindings.</p>
-                    </div>
-                </div>
-            </header>
-
-            <div class="grid gap-4 p-5 sm:grid-cols-2 sm:p-6 xl:grid-cols-4">
-                {% for item in [
-                    ('Registered Connections', stats.total, 'Reusable Alertmanager endpoints', 'server-cog'),
-                    ('Validated Connections', stats.ready, 'Ready for operational use', 'badge-check'),
-                    ('Needs Attention', stats.attention, 'Validation or runtime review', 'triangle-alert'),
-                    ('Scope Bindings', stats.bindings, 'Operational context mappings', 'link-2')
-                    ] %}
-                    <article class="min-h-[8.5rem] rounded-xl border border-outline-subtle bg-surface-hover p-4">
-                        <div class="flex items-start justify-between gap-3">
-                            <div>
-                                <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-content-tertiary">{{ item[0] }}</p>
-                                <p class="mt-2 text-2xl font-bold text-content-primary">{{ item[1] }}</p>
-                            </div>
-                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary">
-                                <i data-lucide="{{ item[3] }}" class="h-4 w-4" aria-hidden="true"></i>
-                            </span>
-                        </div>
-                        <p class="mt-2 text-xs leading-5 text-content-secondary">{{ item[2] }}</p>
-                    </article>
-                {% endfor %}
+            <div class="bg-surface-card px-5 py-4 sm:px-6">
+                <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Usage Resolution</p>
+                <p class="mt-1.5 text-sm font-semibold text-content-primary">Binding, Capability, and Runtime Aware</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">KAORI selects an eligible alert source for each bound operational scope.</p>
             </div>
-
-            <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle md:grid-cols-3">
-                <div class="bg-surface-card px-5 py-4 sm:px-6">
-                    <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-content-tertiary">Integration Contract</p>
-                    <p class="mt-1.5 text-sm font-semibold text-content-primary">Alertmanager API v2</p>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">Status, alerts, and silences interfaces are validated before use.</p>
-                </div>
-                <div class="bg-surface-card px-5 py-4 sm:px-6">
-                    <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-content-tertiary">Usage Resolution</p>
-                    <p class="mt-1.5 text-sm font-semibold text-content-primary">Binding, Capability, and Runtime Aware</p>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">KAORI resolves an eligible source for each bound operational context.</p>
-                </div>
-                <div class="bg-surface-card px-5 py-4 sm:px-6">
-                    <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-content-tertiary">Authority Boundary</p>
-                    <p class="mt-1.5 text-sm font-semibold text-content-primary">Alertmanager Remains Authoritative</p>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">Alert lifecycle, routing, grouping, inhibition, silences, and delivery remain managed by Alertmanager.</p>
-                </div>
+            <div class="bg-surface-card px-5 py-4 sm:px-6">
+                <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Authority Boundary</p>
+                <p class="mt-1.5 text-sm font-semibold text-content-primary">Alertmanager Remains Authoritative</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Alert routing, grouping, inhibition, silences, and delivery remain managed by Alertmanager.</p>
             </div>
-        </section>
+        </div>
+    </section>
 
-    {{ integration_coverage.render(
-        provider,
-        coverage_rows,
-        coverage_stats,
-        coverage_pagination,
-        selected_query=selected_query,
-        selected_readiness=selected_readiness,
-        selected_compatibility=selected_compatibility|default(''),
-        selected_deployment_type=selected_deployment_type|default(''),
-        registry_per_page=pagination.per_page
-    ) }}
-
-        {% include 'integrations/alertmanager/partials/_inventory_card.html' %}
-    </div>
+    {% call(tab_name) integration_tabs.render('alertmanager', active_tab, coverage_stats.total, stats.total) %}
+        {% if tab_name == 'coverage' %}
+            {{ integration_coverage.render(
+                provider,
+                coverage_rows,
+                coverage_stats,
+                coverage_pagination,
+                selected_query=selected_query,
+                selected_readiness=selected_readiness,
+                selected_compatibility=selected_compatibility,
+                selected_deployment_type=selected_deployment_type,
+                registry_per_page=pagination.per_page,
+                selected_coverage_query=selected_coverage_query,
+                selected_coverage_environment=selected_coverage_environment,
+                selected_coverage_status=selected_coverage_status,
+                coverage_environment_options=coverage_environment_options,
+                coverage_status_options=coverage_status_options
+            ) }}
+        {% else %}
+            {% include 'integrations/alertmanager/partials/_inventory_card.html' %}
+        {% endif %}
+    {% endcall %}
+</div>
 {% endblock dashboard_content %}

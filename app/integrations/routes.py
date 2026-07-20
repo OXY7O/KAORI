@@ -82,12 +82,18 @@ def prometheus() -> ResponseReturnValue:
         query=request.args.get('q', '').strip(),
         compatibility=request.args.get('compatibility', '').strip(),
         readiness=request.args.get('readiness', '').strip(),
-        page=request.args.get('page', 1, type=int),
-        per_page=request.args.get('per_page', 5, type=int),
+        tab=request.args.get('tab', 'coverage').strip(),
+        page=request.args.get('page', 1, type=int) or 1,
+        per_page=request.args.get('per_page', 5, type=int) or 5,
+        coverage_query=request.args.get('coverage_q', '').strip(),
+        coverage_environment=request.args.get('coverage_environment', '').strip(),
+        coverage_status=request.args.get('coverage_status', '').strip(),
         coverage_page=request.args.get('coverage_page', 1, type=int) or 1,
         coverage_per_page=request.args.get('coverage_per_page', 5, type=int) or 5,
     )
     if request.headers.get('HX-Request') == 'true':
+        if request.headers.get('HX-Target') == 'prometheus-coverage-content':
+            return render_template('integrations/partials/_coverage_content.html', **context)
         return render_template('integrations/prometheus/partials/_inventory_content.html', **context)
     return render_template('integrations/prometheus.html', **context)
 
@@ -97,14 +103,21 @@ def prometheus() -> ResponseReturnValue:
 def alertmanager() -> ResponseReturnValue:
     context = build_alertmanager_page(
         query=request.args.get('q', '').strip(),
+        compatibility=request.args.get('compatibility', '').strip(),
         readiness=request.args.get('readiness', '').strip(),
         deployment_type=request.args.get('deployment_type', '').strip(),
+        tab=request.args.get('tab', 'coverage').strip(),
         page=request.args.get('page', 1, type=int) or 1,
         per_page=request.args.get('per_page', 5, type=int) or 5,
+        coverage_query=request.args.get('coverage_q', '').strip(),
+        coverage_environment=request.args.get('coverage_environment', '').strip(),
+        coverage_status=request.args.get('coverage_status', '').strip(),
         coverage_page=request.args.get('coverage_page', 1, type=int) or 1,
         coverage_per_page=request.args.get('coverage_per_page', 5, type=int) or 5,
     )
     if request.headers.get('HX-Request') == 'true':
+        if request.headers.get('HX-Target') == 'alertmanager-coverage-content':
+            return render_template('integrations/partials/_coverage_content.html', **context)
         return render_template('integrations/alertmanager/partials/_inventory_content.html', **context)
     return render_template('integrations/alertmanager.html', **context)
 

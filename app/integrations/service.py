@@ -247,8 +247,12 @@ def build_prometheus_page(
     query: str = "",
     compatibility: str = "",
     readiness: str = "",
+    tab: str = "coverage",
     page: int = 1,
     per_page: int = 5,
+    coverage_query: str = "",
+    coverage_environment: str = "",
+    coverage_status: str = "",
     coverage_page: int = 1,
     coverage_per_page: int = 5,
 ) -> dict[str, Any]:
@@ -310,6 +314,9 @@ def build_prometheus_page(
         'prometheus',
         page=coverage_page,
         per_page=coverage_per_page,
+        query=coverage_query,
+        environment=coverage_environment,
+        status=coverage_status,
     )
     return {
         'rows': page_rows,
@@ -323,6 +330,7 @@ def build_prometheus_page(
         },
         'pagination': pagination,
         **coverage_context,
+        'active_tab': tab if tab in {'coverage', 'registry'} else 'coverage',
         'selected_query': query,
         'selected_compatibility': compatibility,
         'selected_readiness': readiness,
@@ -334,10 +342,15 @@ def build_prometheus_page(
 def build_alertmanager_page(
     *,
     query: str = '',
+    compatibility: str = '',
     readiness: str = '',
     deployment_type: str = '',
+    tab: str = 'coverage',
     page: int = 1,
     per_page: int = 5,
+    coverage_query: str = '',
+    coverage_environment: str = '',
+    coverage_status: str = '',
     coverage_page: int = 1,
     coverage_per_page: int = 5,
 ) -> dict[str, Any]:
@@ -345,10 +358,15 @@ def build_alertmanager_page(
 
     return build_inventory_context(
         query=query,
+        compatibility=compatibility,
         readiness=readiness,
         deployment_type=deployment_type,
+        tab=tab,
         page=page,
         per_page=per_page,
+        coverage_query=coverage_query,
+        coverage_environment=coverage_environment,
+        coverage_status=coverage_status,
         coverage_page=coverage_page,
         coverage_per_page=coverage_per_page,
     )

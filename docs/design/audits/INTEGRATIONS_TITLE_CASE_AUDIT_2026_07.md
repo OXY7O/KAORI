@@ -43,7 +43,7 @@ Preserve canonical technical casing for names such as Kubernetes, Prometheus, Al
 - 37 integration-domain templates reviewed.
 - 25 templates required semantic casing changes.
 - Register Alertmanager Instance field labels now include `Instance Name` and `Connection Type`.
-- Alertmanager registry filter labels retain `Search Instance`, `Readiness`, and `Connection Type`.
+- Prometheus and Alertmanager registry filter labels use `Search Connection`, `Readiness`, and `Compatibility`.
 - Table headers and compact titles across Overview, Kubernetes, Prometheus, and Alertmanager were normalized.
 - Descriptive prose and technical values were intentionally preserved.
 

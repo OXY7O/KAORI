@@ -1,0 +1,14 @@
+{% import "components/integration_coverage_content.html" as coverage_content %}
+{{ coverage_content.render(
+    provider,
+    coverage_rows,
+    coverage_pagination,
+    selected_query=selected_query,
+    selected_readiness=selected_readiness,
+    selected_compatibility=selected_compatibility|default(''),
+    selected_deployment_type=selected_deployment_type|default(''),
+    registry_per_page=pagination.per_page,
+    selected_coverage_query=selected_coverage_query,
+    selected_coverage_environment=selected_coverage_environment,
+    selected_coverage_status=selected_coverage_status
+) }}

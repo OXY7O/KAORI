@@ -20,7 +20,7 @@ def test_alertmanager_registration_flow_and_primary_labels_are_title_case() -> N
     assert "Alertmanager Scope & Workflow" not in form
     assert ">Instance Name<" in form
     assert ">Connection Type<" in form
-    assert ">Search Instance<" in registry
+    assert ">Search Connection<" in registry
 
 
 def test_known_sentence_case_semantic_labels_do_not_return() -> None:
@@ -55,4 +55,4 @@ def test_integration_title_case_audit_is_documented() -> None:
 
     assert "Alertmanager Registration Flow" in audit
     assert "Integrations Semantic Label Contract" in typography
-    assert "Search Instance" in typography
+    assert "Search Connection" in typography

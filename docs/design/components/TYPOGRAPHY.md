@@ -265,7 +265,7 @@ Before accepting a new page or component, verify:
 
 Human-readable UI control labels and compact card titles use **Title Case**, including:
 
-- Search and filter field labels, such as `Search Instance`.
+- Search and filter field labels, such as `Search Connection`.
 - Metric or posture card titles, such as `Binding, Capability, and Runtime Aware`.
 - Short authority or ownership statements used as card titles, such as `Alertmanager Remains Authoritative`.
 
@@ -279,7 +279,7 @@ Examples:
 
 - `Instance Name`
 - `Connection Type`
-- `Search Instance`
+- `Search Connection`
 - `Runtime and Capability State`
 - `Provider / Instance`
 - `Last Observed`
