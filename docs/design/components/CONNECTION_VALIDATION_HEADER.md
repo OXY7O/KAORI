@@ -89,7 +89,7 @@ The component supplies header geometry only. Page templates supply the action co
 - The header receives an accessible label from the title unless overridden.
 - Decorative icons use `aria-hidden="true"`.
 - Buttons retain visible focus states and explicit labels.
-- HTMX loading indicators remain inside the affected connection block.
+- HTMX loading indicators remain inside the affected connection block and sit directly below the rendered header, before form or table content.
 
 ## Prohibited Patterns
 

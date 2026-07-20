@@ -4,6 +4,7 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/info_flow.html" as info_flow %}
 {% import "components/connection_validation_header.html" as connection_validation_header %}
+{% import "components/table.html" as table_ui %}
 {% import "components/operational_toggle.html" as operational_toggle %}
 {% import "components/related_page_card.html" as related_page_card %}
 {% import "components/form_action_bar.html" as form_action_bar %}
@@ -214,7 +215,7 @@
 
                         <section class="relative overflow-hidden rounded-lg border border-outline-subtle bg-surface-elevated">
                             {% call connection_validation_header.render(
-                                'Endpoint &amp; Access',
+                                'Endpoint & Access',
                                 'Validate endpoint access before registration.',
                                 icon='network'
                             ) %}
@@ -233,6 +234,13 @@
                                     </button>
                                 {% endif %}
                             {% endcall %}
+                            {% if not instance %}
+                                <div id="alertmanager-connection-test-loading"
+                                     class="{{ table_ui.loading_bar_classes() }}"
+                                     aria-label="Testing Alertmanager connection">
+                                    <div class="notification-progress-indeterminate h-full bg-kaori-primary"></div>
+                                </div>
+                            {% endif %}
                             <div class="p-4">
                             <div>
                                 <label for="alertmanager-endpoint" class="mb-1.5 block text-sm font-semibold text-content-primary">Endpoint URL</label>
@@ -268,13 +276,6 @@
                                 <label for="alertmanager-bearer-token" class="mb-1.5 block text-sm font-semibold text-content-primary">Bearer Token</label>
                                 <input id="alertmanager-bearer-token" type="password" name="bearer_token" autocomplete="new-password" x-bind:required="authType === 'bearer' && {{ 'false' if instance and instance.bearer_token else 'true' }}" placeholder="{{ 'Leave blank to keep the current token' if instance and instance.bearer_token else 'Enter bearer token' }}" class="{{ field_classes }}">
                             </div>
-                            {% if not instance %}
-                                <div id="alertmanager-connection-test-loading"
-                                     class="htmx-indicator pointer-events-none absolute bottom-2 left-4 right-4 h-1 overflow-hidden rounded-full bg-kaori-soft"
-                                     aria-label="Testing Alertmanager connection">
-                                    <div class="notification-progress-indeterminate h-full rounded-full bg-kaori-primary"></div>
-                                </div>
-                            {% endif %}
                             </div>
                         </section>
 

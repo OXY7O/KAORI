@@ -6,6 +6,7 @@
 {% import "components/form_action_bar.html" as form_action_bar %}
 {% import "components/info_flow.html" as info_flow %}
 {% import "components/connection_validation_header.html" as connection_validation_header %}
+{% import "components/table.html" as table_ui %}
 {% import "components/context_guidance_card.html" as context_guidance_card %}
 {% import "components/information_guide_card.html" as information_guide_card %}
 {% block title %}{{ 'Edit' if instance else 'Register' }} Prometheus Connection · KAORI{% endblock title %}
@@ -127,7 +128,7 @@
 
                 <section class="relative overflow-hidden rounded-lg border border-outline-subtle bg-surface-elevated">
                     {% call connection_validation_header.render(
-                        'Endpoint &amp; Access',
+                        'Endpoint & Access',
                         'Validate endpoint access before registration.',
                         icon='network'
                     ) %}
@@ -146,6 +147,13 @@
                             </button>
                         {% endif %}
                     {% endcall %}
+                    {% if not instance %}
+                        <div id="prometheus-connection-test-loading"
+                             class="{{ table_ui.loading_bar_classes() }}"
+                             aria-label="Testing Prometheus connection">
+                            <div class="notification-progress-indeterminate h-full bg-kaori-primary"></div>
+                        </div>
+                    {% endif %}
                     <div class="p-4">
                         <label class="block">
                             <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.endpoint.label.text }}</span>
@@ -171,13 +179,6 @@
                         <div class="mt-4" x-show="authType === 'bearer'" x-cloak>
                             <label class="block"><span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.bearer_token.label.text }}</span>{{ form.bearer_token(class_='h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20', **{':required':"authType === 'bearer' && " + ('false' if instance else 'true')}) }}<p class="mt-1.5 text-xs leading-5 text-content-muted">{{ 'Leave blank to retain the saved token.' if instance else 'Required for Bearer Authentication.' }}</p></label>
                         </div>
-                        {% if not instance %}
-                            <div id="prometheus-connection-test-loading"
-                                 class="htmx-indicator pointer-events-none absolute bottom-2 left-4 right-4 h-1 overflow-hidden rounded-full bg-kaori-soft"
-                                 aria-label="Testing Prometheus connection">
-                                <div class="notification-progress-indeterminate h-full rounded-full bg-kaori-primary"></div>
-                            </div>
-                        {% endif %}
                     </div>
                 </section>
 

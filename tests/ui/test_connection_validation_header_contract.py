@@ -51,9 +51,27 @@ def test_alertmanager_endpoint_header_does_not_repeat_long_api_explanation() -> 
     source = read("app/templates/alertmanager/instance_form.html")
     assert "KAORI uses the base URL and submitted credentials to call the Alertmanager API v2 status interface." not in source
     assert source.count("Test Connection") >= 1
-    endpoint_section = source.split("'Endpoint &amp; Access'", 1)[1].split("</section>", 1)[0]
+    endpoint_section = source.split("'Endpoint & Access'", 1)[1].split("</section>", 1)[0]
     assert "Test Connection" in endpoint_section
 
+
+
+def test_registration_connection_test_loading_bar_sits_directly_below_header() -> None:
+    expectations = {
+        "app/templates/alertmanager/instance_form.html": "alertmanager-connection-test-loading",
+        "app/templates/prometheus/instance_form.html": "prometheus-connection-test-loading",
+    }
+    for relative, indicator_id in expectations.items():
+        source = read(relative)
+        assert "'Endpoint & Access'" in source
+        assert "'Endpoint &amp; Access'" not in source
+        assert 'components/table.html' in source
+        assert 'class="{{ table_ui.loading_bar_classes() }}"' in source
+        header_end = source.index('{% endcall %}', source.index("'Endpoint & Access'"))
+        indicator = source.index(f'id="{indicator_id}"')
+        content = source.index('<div class="p-4">', header_end)
+        assert header_end < indicator < content
+        assert 'absolute bottom-2' not in source[header_end:content]
 
 def test_connection_validation_header_standard_is_documented() -> None:
     standard = read("docs/design/components/CONNECTION_VALIDATION_HEADER.md")
