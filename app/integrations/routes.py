@@ -11,6 +11,7 @@ from app.integrations.runtime.presentation import runtime_history_view
 from app.integrations.validation.state import build_validation_snapshot, get_active_validation_task_id
 from app.integrations.validation.web import (
     enqueue_instance_validation,
+    enqueue_runtime_health_refresh,
     snapshot_feedback_for_user,
     validate_snapshot_access,
 )
@@ -48,25 +49,46 @@ def kubernetes() -> ResponseReturnValue:
     return render_template('integrations/kubernetes.html', **context)
 
 
-@integrations_bp.get('/kubernetes/<string:cluster_id>')
-@permission_required('clusters.view')
-def kubernetes_detail(cluster_id: str) -> ResponseReturnValue:
+def _kubernetes_detail_context(cluster_id: str, *, include_history: bool = False) -> dict[str, object]:
     context = build_kubernetes_detail(cluster_id)
     if context is None:
         abort(404)
     connection = context['connection']
-    task_id = get_active_validation_task_id(
+    capability_task_id = get_active_validation_task_id(
+        provider_type='kubernetes',
+        operation='full_validation',
+        instance_id=connection.id,
+    )
+    runtime_task_id = get_active_validation_task_id(
         provider_type='kubernetes',
         operation='runtime_refresh',
         instance_id=connection.id,
     )
-    context['validation_job'] = build_validation_snapshot(task_id) if task_id else None
-    return render_template('integrations/kubernetes/detail.html', **context)
+    context['capability_validation_job'] = build_validation_snapshot(capability_task_id) if capability_task_id else None
+    context['runtime_validation_job'] = build_validation_snapshot(runtime_task_id) if runtime_task_id else None
+    if include_history:
+        rows, pagination = paginate_runtime_history(
+            'kubernetes',
+            str(connection.id),
+            page=1,
+            per_page=5,
+        )
+        context['history'] = runtime_history_view(rows, pagination=pagination)
+    return context
 
 
-@integrations_bp.post('/kubernetes/<string:cluster_id>/runtime/refresh')
+@integrations_bp.get('/kubernetes/<string:cluster_id>')
+@permission_required('clusters.view')
+def kubernetes_detail(cluster_id: str) -> ResponseReturnValue:
+    return render_template(
+        'integrations/kubernetes/detail.html',
+        **_kubernetes_detail_context(cluster_id, include_history=True),
+    )
+
+
+@integrations_bp.post('/kubernetes/<string:cluster_id>/capabilities/validate')
 @permission_required('clusters.sync')
-def kubernetes_runtime_refresh(cluster_id: str) -> ResponseReturnValue:
+def kubernetes_capability_validate(cluster_id: str) -> ResponseReturnValue:
     connection = KubernetesConnection.query.filter_by(cluster_id=cluster_id).first_or_404()
     is_htmx = request.headers.get('HX-Request') == 'true'
     try:
@@ -77,16 +99,101 @@ def kubernetes_runtime_refresh(cluster_id: str) -> ResponseReturnValue:
         )
         feedback = record_operational_activity(
             user_id=int(current_user.id),
-            event_type='kubernetes_runtime_validation_queued' if created else 'kubernetes_runtime_validation_already_running',
+            event_type='kubernetes_capability_validation_queued' if created else 'kubernetes_capability_validation_already_running',
             status='info' if created else 'warning',
-            title='Kubernetes runtime validation queued' if created else 'Kubernetes runtime validation already running',
+            title='Kubernetes capability validation queued' if created else 'Kubernetes validation already running',
             message=(
-                f'KAORI queued runtime and capability validation for {connection.cluster.name}.'
+                f'KAORI queued full capability validation for {connection.cluster.name}.'
                 if created
-                else f'Runtime validation is already running for {connection.cluster.name}.'
+                else f'A Kubernetes validation job is already running for {connection.cluster.name}.'
             ),
             detail=(
-                'The dedicated validation worker will refresh API compatibility and capability evidence.'
+                'The dedicated validation worker will discover served APIs, effective RBAC, stable adapters, and fallback requirements.'
+                if created
+                else 'KAORI retained the active worker task and did not enqueue a duplicate validation job.'
+            ),
+            action_url=url_for('integrations.kubernetes_detail', cluster_id=cluster_id) + '#validation',
+            action_label='Review capability validation',
+            action_icon='scan-search',
+            metadata={
+                'task_id': validation_job.get('task_id'),
+                'cluster_id': cluster_id,
+                'connection_id': connection.id,
+                'queue': current_app.config.get('INTEGRATION_VALIDATION_CELERY_QUEUE', 'integration-validation'),
+            },
+            queue_feedback=not is_htmx,
+        )
+    except Exception as exc:
+        validation_job = None
+        feedback = record_operational_activity(
+            user_id=int(current_user.id),
+            event_type='kubernetes_capability_validation_enqueue_failed',
+            status='error',
+            title='Kubernetes capability validation not queued',
+            message=f'KAORI could not queue capability validation for {connection.cluster.name}.',
+            detail='Verify Redis, the Celery broker, and the integration-validation worker before retrying.',
+            action_url=url_for('integrations.kubernetes_detail', cluster_id=cluster_id) + '#validation',
+            action_label='Review capability validation',
+            action_icon='scan-search',
+            metadata={'cluster_id': cluster_id, 'connection_id': connection.id, 'reason': type(exc).__name__},
+            queue_feedback=not is_htmx,
+        )
+    if is_htmx:
+        context = _kubernetes_detail_context(cluster_id)
+        context.update({
+            'validation_job': validation_job,
+            'capability_validation_job': validation_job,
+            'operation_feedback': feedback,
+            'notification_context': get_navigation_notification_context(user_id=int(current_user.id)),
+        })
+        return render_template('integrations/kubernetes/partials/_capability_workspace.html', **context)
+    return redirect(url_for('integrations.kubernetes_detail', cluster_id=cluster_id) + '#validation')
+
+
+@integrations_bp.get('/kubernetes/<string:cluster_id>/capabilities/validate/status/<string:task_id>')
+@permission_required('clusters.view')
+def kubernetes_capability_validation_status(cluster_id: str, task_id: str) -> ResponseReturnValue:
+    connection = KubernetesConnection.query.filter_by(cluster_id=cluster_id).first_or_404()
+    snapshot = build_validation_snapshot(task_id)
+    if not validate_snapshot_access(
+        snapshot,
+        provider_type='kubernetes',
+        instance_id=connection.id,
+    ):
+        abort(404)
+    context = _kubernetes_detail_context(cluster_id)
+    context.update({
+        'validation_job': snapshot,
+        'capability_validation_job': snapshot,
+        'operation_feedback': snapshot_feedback_for_user(snapshot, user_id=int(current_user.id)),
+        'notification_context': get_navigation_notification_context(user_id=int(current_user.id)),
+    })
+    return render_template('integrations/kubernetes/partials/_capability_workspace.html', **context)
+
+
+@integrations_bp.post('/kubernetes/<string:cluster_id>/runtime/refresh')
+@permission_required('clusters.sync')
+def kubernetes_runtime_refresh(cluster_id: str) -> ResponseReturnValue:
+    connection = KubernetesConnection.query.filter_by(cluster_id=cluster_id).first_or_404()
+    is_htmx = request.headers.get('HX-Request') == 'true'
+    try:
+        validation_job, created = enqueue_runtime_health_refresh(
+            provider_type='kubernetes',
+            instance_id=connection.id,
+            requested_by_user_id=int(current_user.id),
+        )
+        feedback = record_operational_activity(
+            user_id=int(current_user.id),
+            event_type='kubernetes_runtime_refresh_queued' if created else 'kubernetes_runtime_refresh_already_running',
+            status='info' if created else 'warning',
+            title='Kubernetes runtime refresh queued' if created else 'Kubernetes runtime refresh already running',
+            message=(
+                f'KAORI queued a lightweight runtime health refresh for {connection.cluster.name}.'
+                if created
+                else f'A validation or runtime refresh is already running for {connection.cluster.name}.'
+            ),
+            detail=(
+                'The dedicated validation worker will check reachability and runtime health while preserving full capability evidence.'
                 if created
                 else 'KAORI kept the existing task and did not enqueue a duplicate validation job.'
             ),
@@ -105,10 +212,10 @@ def kubernetes_runtime_refresh(cluster_id: str) -> ResponseReturnValue:
         validation_job = None
         feedback = record_operational_activity(
             user_id=int(current_user.id),
-            event_type='kubernetes_runtime_validation_enqueue_failed',
+            event_type='kubernetes_runtime_refresh_enqueue_failed',
             status='error',
-            title='Kubernetes runtime validation not queued',
-            message=f'KAORI could not queue runtime validation for {connection.cluster.name}.',
+            title='Kubernetes runtime refresh not queued',
+            message=f'KAORI could not queue runtime health refresh for {connection.cluster.name}.',
             detail='Verify Redis, the Celery broker, and the integration-validation worker before retrying.',
             action_url=url_for('integrations.kubernetes_detail', cluster_id=cluster_id) + '#runtime',
             action_label='Review Kubernetes runtime',
@@ -117,11 +224,10 @@ def kubernetes_runtime_refresh(cluster_id: str) -> ResponseReturnValue:
             queue_feedback=not is_htmx,
         )
     if is_htmx:
-        context = build_kubernetes_detail(cluster_id)
-        if context is None:
-            abort(404)
+        context = _kubernetes_detail_context(cluster_id)
         context.update({
             'validation_job': validation_job,
+            'runtime_validation_job': validation_job,
             'operation_feedback': feedback,
             'notification_context': get_navigation_notification_context(user_id=int(current_user.id)),
         })
@@ -140,11 +246,10 @@ def kubernetes_runtime_refresh_status(cluster_id: str, task_id: str) -> Response
         instance_id=connection.id,
     ):
         abort(404)
-    context = build_kubernetes_detail(cluster_id)
-    if context is None:
-        abort(404)
+    context = _kubernetes_detail_context(cluster_id)
     context.update({
         'validation_job': snapshot,
+        'runtime_validation_job': snapshot,
         'operation_feedback': snapshot_feedback_for_user(snapshot, user_id=int(current_user.id)),
         'notification_context': get_navigation_notification_context(user_id=int(current_user.id)),
     })

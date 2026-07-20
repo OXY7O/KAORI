@@ -1,38 +1,41 @@
 {% extends "layouts/app.html" %}
 {% import "components/related_page_card.html" as related_page_card %}
-{% block title %}Edit Cluster{% endblock title %}
+{% import "components/info_flow.html" as info_flow %}
+{% import "components/information_guide_card.html" as information_guide_card %}
+{% block title %}Edit Kubernetes Connection · KAORI{% endblock title %}
 {% block dashboard_content %}
-    <div class="space-y-6">
-        {% set page_title = "Edit Cluster" %}
-        {% set page_eyebrow = "Kubernetes Cluster" %}
-        {% set page_description = "Update cluster metadata, environment, and Kubernetes API transport policy." %}
-        {% set page_icon = "pencil-line" %}
-        {% set page_badges = [
-            {"label": cluster.name, "icon": "server"},
-            {"label": "Metadata update", "icon": "settings-2"}
-        ] %}
-        {% include "cluster/partials/_page_header.html" %}
-        {% set form_mode = "edit" %}
-        {% set form_icon = "settings-2" %}
-        {% set form_title = "Cluster Configuration" %}
-        {% set form_description = "Modify cluster information used by KAORI without changing its operational identity." %}
-        {% set submit_label = "Update Cluster" %}
-        {% set action_helper = "Save changes to update cluster configuration." %}
-        <div class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start">
-            <div>
-                {% include "cluster/partials/_form.html" %}
-            </div>
-            <aside class="xl:sticky xl:top-5">
-                {{ related_page_card.render(
-                    'Kubernetes Inventory',
-                    'This Kubernetes connection supplies normalized resource context to KAORI Inventory.',
-                    url_for('inventory.overview'),
-                    'Open Kubernetes Inventory',
-                    icon='boxes',
-                    eyebrow='Related Operational Workspace',
-                    boundary='Kubernetes remains authoritative for live resources. KAORI Inventory presents synchronized operational context and history.'
-                ) }}
-            </aside>
-        </div>
+<div class="space-y-6">
+    {% set page_title = "Edit Kubernetes Connection" %}
+    {% set page_eyebrow = "Kubernetes Integration" %}
+    {% set page_description = "Update KAORI identity, environment, and Kubernetes API transport policy without replacing the saved connection record." %}
+    {% set page_icon = "settings-2" %}
+    {% set page_badges = [{"label": cluster.name, "icon": "server"}, {"label": cluster.environment|environment_name, "icon": "network"}, {"label": "Validation Required After Change", "icon": "scan-search"}] %}
+    {% set page_posture_eyebrow = "Configuration Posture" %}
+    {% set page_posture_title = "Preserve Identity, Revalidate Changes" %}
+    {% set page_metric_one = ('fingerprint', 'Identity', cluster.name, 'Canonical cluster remains unchanged') %}
+    {% set page_metric_two = ('scan-search', 'After Save', 'Full Validation', 'Refresh worker evidence') %}
+    {% include "cluster/partials/_page_header.html" %}
+
+    {% set form_mode = "edit" %}{% set form_icon = "settings-2" %}{% set form_title = "Kubernetes Connection Configuration" %}{% set form_description = "Modify identity and transport policy while preserving the saved kubeconfig and operational history." %}{% set submit_label = "Update Connection" %}{% set action_helper = "Saving configuration resets readiness until worker validation confirms the updated contract." %}
+    <div class="grid gap-6 xl:grid-cols-12 xl:items-start">
+        <div class="xl:col-span-8">{% include "cluster/partials/_form.html" %}</div>
+        <aside class="space-y-4 xl:col-span-4 xl:sticky xl:top-5">
+            {% set cluster_edit_flow = [
+                ('Review Identity and Environment', 'Keep the canonical cluster identity stable unless the operational naming contract has changed.'),
+                ('Adjust Transport Trust', 'Change TLS verification only when the endpoint certificate policy requires an approved exception.'),
+                ('Save Configuration', 'KAORI preserves the kubeconfig and history while updating the connection contract.'),
+                ('Run Full Validation', 'Use the Kubernetes manage workspace to rebuild compatibility, capability, and runtime evidence after saving.')
+            ] %}
+            {{ info_flow.render('Kubernetes Configuration Flow', 'How configuration changes return to an operationally ready state.', cluster_edit_flow, icon='route', note='Metadata and TLS changes do not replace the stored kubeconfig. Credential rotation remains a separate controlled lifecycle.', note_icon='shield-check', open_by_default=true) }}
+            {{ related_page_card.render('Kubernetes Inventory', 'This connection supplies normalized Kubernetes resource context to KAORI Inventory.', url_for('inventory.overview'), 'Open Kubernetes Inventory', icon='boxes', eyebrow='Related Operational Workspace', boundary='Kubernetes remains authoritative for live resources. KAORI presents synchronized context, history, governance, and audit evidence.') }}
+            {% set rbac_items = [
+                ('shield-check', 'Effective Permissions', 'Full Validation evaluates served APIs and SelfSubjectAccessReview evidence for each required resource.'),
+                ('route-off', 'Blocked Capability', 'A served API without required verbs is reported as blocked; KAORI does not fall back to an older API to bypass RBAC.'),
+                ('key-round', 'Credential Rotation', 'Rotate the service-account token or kubeconfig through the approved credential lifecycle, then validate again.'),
+                ('scroll-text', 'Audit Boundary', 'Configuration changes, validation outcomes, and access failures are recorded in Activity Audit Log.')
+            ] %}
+            {{ information_guide_card.render('Kubernetes RBAC & Access Contract', 'Review how KAORI interprets authorization and compatibility after configuration changes.', rbac_items, icon='shield-check') }}
+        </aside>
     </div>
+</div>
 {% endblock dashboard_content %}

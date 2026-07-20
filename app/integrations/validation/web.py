@@ -35,7 +35,7 @@ def enqueue_instance_validation(
     instance_id: int,
     requested_by_user_id: int,
 ) -> tuple[dict[str, Any], bool]:
-    operation = 'runtime_refresh' if provider_type == 'kubernetes' else 'full_validation'
+    operation = 'full_validation'
     active_task_id = get_active_validation_task_id(
         provider_type=provider_type,
         operation=operation,

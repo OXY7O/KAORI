@@ -145,3 +145,38 @@ The provider remains authoritative for execution. KAORI provides validation, gov
 - [ ] Test Connection remains synchronous and lightweight.
 - [ ] Full Validation, Runtime Refresh, and binding validation execute on the dedicated validation worker.
 - [ ] Queue, completion, and failure outcomes produce Activity Audit records and persistent toast feedback.
+
+## Kubernetes provider parity
+
+Kubernetes uses the same manage-workspace hierarchy as Alertmanager and Prometheus, with provider-specific lifecycle terminology:
+
+1. **Configuration** — canonical cluster identity, API endpoint, transport trust, access boundary, and authority contract.
+2. **Validation & Capabilities** — served API discovery, effective RBAC, stable API selection, legacy fallbacks, blocked features, CLI verification, and remediation.
+3. **Runtime & History** — worker-driven runtime refresh, diagnostics, and the shared Recent Runtime Observations component.
+4. **Inventory & Lifecycle** — normalized KAORI consumers, shared observability-source bindings, retention boundary, and governed deletion.
+
+The Kubernetes Add flow requires a successful synchronous Test Connection before Save Connection is enabled. KAORI issues a short-lived signed proof bound to the current user, identity fields, TLS policy, and kubeconfig fingerprint. Any form change invalidates the proof. The server verifies the proof and repeats the connection probe immediately before persistence. Test, rejection, persistence, and failure outcomes must create persistent toast feedback and Activity Audit records.
+
+## Shared terminal evidence
+
+Technical probes that can be executed from a shell are rendered with the shared terminal component rather than a neutral text box. The terminal contract includes:
+
+- dark technical surface and monospace command text;
+- a visible prompt marker;
+- a concise label identifying the probe context;
+- an accessible Copy action;
+- sanitized commands only—never secrets, bearer tokens, passwords, or raw kubeconfig material.
+
+Use this presentation for PromQL probes, Alertmanager API checks, `kubectl auth can-i`, and similar operator-verification commands.
+
+## Shared runtime-history component
+
+Prometheus, Alertmanager, and Kubernetes use one Recent Runtime Observations component. Provider wrappers supply only the provider label, route, loading ID, and runtime-history context. The shared component owns:
+
+- title box and retention label;
+- summary metrics;
+- technical observation table;
+- empty state;
+- default five rows and `5 / 10 / 25 / 50` page sizes;
+- enabled Previous/Next controls with active styling;
+- disabled Previous/Next controls as non-interactive elements with `aria-disabled="true"`.

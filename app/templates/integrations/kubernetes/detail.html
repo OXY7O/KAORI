@@ -1,83 +1,123 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
-{% import "components/related_page_card.html" as related_page_card %}
-{% import "components/connection_validation_header.html" as connection_validation_header %}
-{% import "components/context_guidance_card.html" as context_guidance_card %}
 {% from "integrations/partials/_status_badge.html" import status_badge %}
 {% block title %}{{ cluster.name }} · Kubernetes Integration · KAORI{% endblock %}
 {% block dashboard_content %}
+{% set readiness = runtime_state.readiness or 'validation_required' %}
+{% set source_posture = 'Ready' if readiness == 'ready' else ('Attention' if readiness in ['degraded', 'blocked'] else 'Configured') %}
 <div class="kaori-integration-semantic space-y-6"
-     x-data="{ activeTab: (window.location.hash || '#runtime').slice(1), deleteModal: false, deleteUrl: '', deleteName: '', openDelete(url, name) { this.deleteUrl = url; this.deleteName = name; this.deleteModal = true } }">
-  <section class="{{ page_hero.shell_classes() }}">
-    <div class="{{ page_hero.layout_classes() }}">
-      <div class="{{ page_hero.content_classes() }}">
-        {% call page_hero.intro('server-cog', 'Kubernetes Integration', 'network') %}
-          <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">{{ cluster.name }}</h1>
-          <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">Manage the API contract, compatibility evidence, runtime health, and inventory lifecycle for this Kubernetes connection.</p>
-          <div class="mt-5 flex flex-wrap gap-2">
-            {{ page_hero.meta_label('fingerprint', 'Canonical #' ~ canonical.id) }}
-            {{ page_hero.meta_label('plug', 'Connection #' ~ connection.id) }}
-            {{ page_hero.meta_label('network', cluster.environment|environment_name) }}
-          </div>
-        {% endcall %}
-      </div>
-      <aside class="{{ page_hero.aside_classes() }}" aria-label="Kubernetes connection posture">
-        <div class="{{ page_hero.context_panel_classes() }}">
-          <div class="flex items-start justify-between gap-4"><div><p class="{{ page_hero.context_panel_eyebrow_classes() }}">Connection Posture</p><h2 class="{{ page_hero.context_panel_title_classes() }}">Runtime and Capability State</h2></div><span class="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-surface text-brand-foreground"><i data-lucide="activity" class="h-5 w-5"></i></span></div>
-          <div class="mt-4 grid grid-cols-2 gap-2"><div class="rounded-lg bg-brand-surface px-3 py-3"><p class="text-[10px] font-semibold uppercase tracking-wide text-brand-foreground-muted">Readiness</p><p class="mt-2 text-sm font-semibold text-brand-foreground">{{ runtime_state.readiness|replace('_',' ')|title }}</p></div><div class="rounded-lg bg-brand-surface px-3 py-3"><p class="text-[10px] font-semibold uppercase tracking-wide text-brand-foreground-muted">Health</p><p class="mt-1 text-2xl font-bold text-brand-foreground">{{ runtime_state.health_score_display }}</p></div></div>
-          <div class="mt-4 grid {% if current_user.has_permission('clusters.manage') %}grid-cols-2{% else %}grid-cols-1{% endif %} gap-2"><a href="{{ url_for('cluster.edit_cluster', cluster_id=cluster.id) }}" class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-white px-3 text-sm font-semibold text-kaori-primary-dark"><i data-lucide="settings-2" class="h-4 w-4"></i>Configure</a>{% if current_user.has_permission('clusters.manage') %}<button type="button" data-delete-url="{{ url_for('cluster.delete_cluster_route', cluster_id=cluster.id) }}" data-delete-name="{{ cluster.name }}" @click="openDelete($el.dataset.deleteUrl, $el.dataset.deleteName)" class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-status-critical-soft px-3 text-sm font-semibold text-status-critical-text cursor-pointer disabled:cursor-not-allowed"><i data-lucide="trash-2" class="h-4 w-4 text-status-critical"></i>Delete</button>{% endif %}</div>
+     x-data="{
+         activeTab: ['configuration', 'validation', 'runtime', 'inventory'].includes(window.location.hash.replace('#', '')) ? window.location.hash.replace('#', '') : 'configuration',
+         deleteModal: false,
+         deleteUrl: '',
+         deleteName: '',
+         setTab(tab, moveToWorkspace = false) {
+             this.activeTab = tab;
+             window.history.replaceState(null, '', '#' + tab);
+             if (moveToWorkspace) {
+                 this.$nextTick(() => document.getElementById('kubernetes-detail-tabs')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+             }
+         },
+         openDelete(url, name) {
+             this.deleteUrl = url;
+             this.deleteName = name;
+             this.deleteModal = true;
+         }
+     }"
+     x-on:hashchange.window="activeTab = ['configuration', 'validation', 'runtime', 'inventory'].includes(window.location.hash.replace('#', '')) ? window.location.hash.replace('#', '') : 'configuration'">
+    <section class="{{ page_hero.shell_classes() }}">
+        <div class="{{ page_hero.layout_classes() }}">
+            <div class="{{ page_hero.content_classes() }}">
+                {% call page_hero.intro('server-cog', 'Kubernetes Integration', 'network') %}
+                    <h1 class="text-2xl font-semibold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">{{ cluster.name }}</h1>
+                    <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">Manage the connection contract, capability evidence, runtime health, and governed Kubernetes lifecycle.</p>
+                    <div class="mt-5 flex flex-wrap gap-2">
+                        {{ page_hero.meta_label('shield-check', readiness|replace('_', ' ')|title) }}
+                        {{ page_hero.meta_label('layers-3', (runtime_state.capability_count|string) ~ ' Capabilities') }}
+                        {{ page_hero.meta_label('network', cluster.environment|environment_name) }}
+                    </div>
+                {% endcall %}
+            </div>
+            <aside class="{{ page_hero.aside_classes() }}" aria-label="Kubernetes connection posture">
+                <div class="{{ page_hero.context_panel_classes() }}">
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Connection Posture</p>
+                            <h2 class="{{ page_hero.context_panel_title_classes() }}">Readiness &amp; Capability Coverage</h2>
+                        </div>
+                        {{ status_badge('ready' if source_posture == 'Ready' else ('degraded' if source_posture == 'Attention' else 'validation_required'), source_posture) }}
+                    </div>
+                    <div class="mt-4 grid grid-cols-2 gap-2">
+                        <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5">
+                            <div class="flex items-center gap-2 text-brand-foreground"><i data-lucide="shield-check" class="h-3.5 w-3.5"></i><p class="text-[11px] font-semibold">Readiness</p></div>
+                            <p class="mt-1.5 truncate text-sm font-semibold text-brand-foreground">{{ readiness|replace('_', ' ')|title }}</p>
+                            <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Produced by worker validation</p>
+                        </div>
+                        <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5">
+                            <div class="flex items-center gap-2 text-brand-foreground"><i data-lucide="layers-3" class="h-3.5 w-3.5"></i><p class="text-[11px] font-semibold">Capabilities</p></div>
+                            <p class="mt-1.5 text-xl font-semibold leading-none text-brand-foreground">{{ runtime_state.capability_count }}</p>
+                            <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Served APIs and access evidence</p>
+                        </div>
+                    </div>
+                    <div class="mt-auto grid grid-cols-2 gap-2 pt-3">
+                        <button type="button"
+                                @click="setTab('validation', true)"
+                                class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-brand-outline bg-surface-card px-3 py-2 text-xs font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70">
+                            <i data-lucide="scan-line" class="h-4 w-4"></i>
+                            Review Validation
+                        </button>
+                        <a href="{{ url_for('integrations.kubernetes') }}"
+                           class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-brand-outline bg-brand-surface px-3 py-2 text-xs font-semibold text-brand-foreground transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70">
+                            <i data-lucide="arrow-left" class="h-4 w-4"></i>
+                            Back to Registry
+                        </a>
+                    </div>
+                </div>
+            </aside>
         </div>
-      </aside>
-    </div>
-  </section>
+    </section>
 
-  <nav class="flex flex-wrap gap-1 rounded-xl border border-outline-default bg-surface-card p-1.5 shadow-sm" aria-label="Kubernetes integration domains">
-    {% for key, label, icon in [('overview','Connection & Contract','plug-zap'),('capabilities','Compatibility & Capabilities','scan-search'),('runtime','Runtime & History','activity'),('inventory','Inventory & Lifecycle','database')] %}
-    <button type="button" @click="activeTab='{{ key }}'; history.replaceState(null,'','#{{ key }}')" :class="activeTab === '{{ key }}' ? 'bg-kaori-soft text-kaori-primary' : 'text-content-secondary hover:bg-surface-hover hover:text-content-primary'" class="inline-flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-semibold transition"><i data-lucide="{{ icon }}" class="h-4 w-4"></i>{{ label }}</button>
-    {% endfor %}
-  </nav>
-
-  <section x-show="activeTab === 'overview'" x-cloak class="grid gap-5 xl:grid-cols-12">
-    <article class="rounded-xl border border-outline-default bg-surface-card shadow-sm xl:col-span-8"><header class="flex items-center gap-3 border-b border-outline-subtle px-5 py-4"><span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="plug-zap" class="h-5 w-5"></i></span><div><h2 class="text-base font-semibold text-content-primary">Connection Contract</h2><p class="mt-0.5 text-xs text-content-muted">Canonical identity and API access used by discovery, runtime checks, inventory collection, and operations.</p></div></header><div class="grid gap-4 p-5 sm:grid-cols-2"><div class="rounded-lg border border-outline-subtle p-4"><p class="text-xs font-semibold uppercase tracking-wide text-content-muted">API Endpoint</p><p class="mt-2 break-all font-sans text-sm font-medium text-content-primary">{{ connection.server or cluster.server }}</p></div><div class="rounded-lg border border-outline-subtle p-4"><p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Environment</p><p class="mt-2 text-sm font-semibold text-content-primary">{{ cluster.environment|environment_name }}</p></div><div class="rounded-lg border border-outline-subtle p-4"><p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Detected Version</p><p class="mt-2 text-sm font-semibold text-content-primary">{{ cluster.kubernetes_version or 'Not discovered' }}</p></div><div class="rounded-lg border border-outline-subtle p-4"><p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Compatibility Profile</p><p class="mt-2 text-sm font-semibold text-content-primary">{{ runtime_state.compatibility_profile or 'Validation required' }}</p></div></div></article>
-    <aside class="space-y-4 xl:col-span-4">
-      {% set operational_flow_items = [
-        ('Configure Connection', 'Set endpoint, credentials, TLS policy, and connection ownership.'),
-        ('Validate Compatibility', 'Discover stable APIs and supported fallback resources.'),
-        ('Refresh & Synchronize', 'Record runtime evidence and update normalized inventory.')
-      ] %}
-      {{ context_guidance_card.render(
-        'Operational Flow',
-        'How the Kubernetes connection becomes operational in KAORI.',
-        operational_flow_items,
-        icon='workflow'
-      ) }}
-      <div class="rounded-xl border border-status-info-border bg-status-info-soft p-4"><p class="text-sm font-semibold text-status-info-text">Authority Boundary</p><p class="mt-1 text-xs leading-5 text-status-info-text">Kubernetes remains authoritative for live objects. KAORI provides governed access, normalized history, correlation, reporting, and audit.</p></div>
-      {{ related_page_card.render(
-        'Kubernetes Inventory',
-        'This validated connection supplies normalized resource context to KAORI Inventory.',
-        url_for('inventory.overview'),
-        'Open Kubernetes Inventory',
-        icon='boxes',
-        eyebrow='Related Operational Workspace',
-        boundary='Kubernetes remains authoritative for live resources. KAORI Inventory presents synchronized operational context and history.'
-      ) }}
-    </aside>
-  </section>
-
-  <section x-show="activeTab === 'capabilities'" x-cloak class="space-y-5">
-    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><div class="rounded-xl border border-outline-default bg-surface-card p-4"><p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Readiness</p><div class="mt-3">{{ status_badge(runtime_state.readiness) }}</div></div><div class="rounded-xl border border-outline-default bg-surface-card p-4"><p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Compatibility</p><p class="mt-3 text-sm font-semibold text-content-primary">{{ runtime_state.compatibility_profile or 'Not validated' }}</p></div><div class="rounded-xl border border-outline-default bg-surface-card p-4"><p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Capabilities</p><p class="mt-2 text-2xl font-bold text-content-primary">{{ runtime_state.capability_count }}</p></div><div class="rounded-xl border border-outline-default bg-surface-card p-4"><p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Fallback Evidence</p><p class="mt-2 text-sm font-semibold text-content-primary">{{ legacy_features|length }} legacy · {{ blocked_features|length }} blocked</p></div></div>
-    <article class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"><header class="border-b border-outline-subtle px-5 py-4"><h2 class="text-base font-semibold text-content-primary">API Compatibility & Capability Matrix</h2><p class="mt-1 text-xs leading-5 text-content-muted">Stable v1 APIs are preferred. Tested fallback candidates remain visible with evidence and operational impact.</p></header><div class="overflow-x-auto"><table class="min-w-full divide-y divide-outline-subtle text-left text-sm"><thead class="bg-surface-muted/70 text-xs text-content-muted"><tr><th class="px-5 py-3">Feature</th><th class="px-5 py-3">Status</th><th class="px-5 py-3">Selected API</th><th class="px-5 py-3">Resource</th><th class="px-5 py-3">Technical Evidence</th></tr></thead><tbody class="divide-y divide-outline-subtle">{% for row in feature_rows %}<tr class="align-top"><td class="px-5 py-4 font-semibold text-content-primary">{{ row.key|replace('_',' ')|title }}</td><td class="px-5 py-4">{{ status_badge(row.status) }}</td><td class="px-5 py-4 text-content-secondary">{{ row.api_version }}</td><td class="px-5 py-4 text-content-secondary">{{ row.resource }}</td><td class="px-5 py-4 text-content-secondary">{{ row.message }}</td></tr>{% else %}<tr><td colspan="5" class="px-5 py-10 text-center text-content-muted">Run runtime validation to discover Kubernetes API capabilities.</td></tr>{% endfor %}</tbody></table></div></article>
-  </section>
-
-  <section x-show="activeTab === 'runtime'" x-cloak class="space-y-5">
-    {% include 'integrations/kubernetes/partials/_runtime_workspace.html' %}
-    {% include 'integrations/kubernetes/partials/_runtime_history.html' with context %}
-  </section>
-
-  <section x-show="activeTab === 'inventory'" x-cloak class="grid gap-5 xl:grid-cols-12">
-    <article class="rounded-xl border border-outline-default bg-surface-card shadow-sm xl:col-span-8"><header class="flex items-center gap-3 border-b border-outline-subtle px-5 py-4"><span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="database" class="h-5 w-5"></i></span><div><h2 class="text-base font-semibold text-content-primary">Inventory & Operational Use</h2><p class="mt-0.5 text-xs text-content-muted">The connection feeds normalized inventory, analytics, governance, operations, reporting, and cross-domain correlation.</p></div></header><div class="grid gap-4 p-5 sm:grid-cols-2"><div class="rounded-lg border border-outline-subtle p-4"><p class="text-sm font-semibold text-content-primary">Capability Scope</p><div class="mt-3 flex flex-wrap gap-2">{% for capability in capability_scope %}<span class="kaori-context-label inline-flex min-h-6 items-center rounded-md bg-kaori-soft px-2 text-[10px] font-semibold text-kaori-primary">{{ capability }}</span>{% else %}<span class="text-xs text-content-muted">No explicit capability scope recorded.</span>{% endfor %}</div></div><div class="rounded-lg border border-outline-subtle p-4"><p class="text-sm font-semibold text-content-primary">Related Prometheus</p><p class="mt-2 text-xs leading-5 text-content-muted">Metrics integration remains a separate reusable connection and is associated through governed scope binding.</p></div></div></article>
-    <aside class="rounded-xl border border-status-critical-border bg-surface-card p-5 shadow-sm xl:col-span-4"><div class="flex h-10 w-10 items-center justify-center rounded-lg bg-status-critical-soft text-status-critical"><i data-lucide="trash-2" class="h-5 w-5"></i></div><h3 class="mt-4 text-base font-semibold text-content-primary">Connection Lifecycle</h3><p class="mt-2 text-xs leading-5 text-content-muted">Delete removes the Kubernetes registration and dependent stored data according to database relationships. Audit history remains available.</p>{% if current_user.has_permission('clusters.manage') %}<button type="button" data-delete-url="{{ url_for('cluster.delete_cluster_route', cluster_id=cluster.id) }}" data-delete-name="{{ cluster.name }}" @click="openDelete($el.dataset.deleteUrl, $el.dataset.deleteName)" class="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-status-critical px-4 text-sm font-semibold text-white hover:opacity-90 cursor-pointer disabled:cursor-not-allowed"><i data-lucide="trash-2" class="h-4 w-4"></i>Delete Connection</button>{% else %}<div class="mt-4 rounded-lg bg-status-unknown-soft p-3 text-xs text-status-unknown-text">Cluster management permission is required to delete this connection.</div>{% endif %}</aside>
-  </section>
-  {% include 'integrations/kubernetes/partials/_delete_modal.html' %}
+    <section id="kubernetes-detail-tabs" class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+        <nav class="border-b border-outline-default bg-surface-hover px-4 pt-4 sm:px-5" aria-label="Kubernetes connection domains">
+            <div class="flex gap-2 overflow-x-auto" role="tablist">
+                {% for tab_key, tab_label, tab_icon, tab_badge in [
+                    ('configuration', 'Configuration', 'settings-2', cluster.environment|environment_name),
+                    ('validation', 'Validation & Capabilities', 'scan-search', readiness|replace('_', ' ')|title),
+                    ('runtime', 'Runtime & History', 'activity', runtime_state.health_status_label),
+                    ('inventory', 'Inventory & Lifecycle', 'database', (capability_scope|length|string) ~ ' Scopes')
+                ] %}
+                    <button type="button"
+                            role="tab"
+                            id="kubernetes-tab-{{ tab_key }}"
+                            aria-controls="kubernetes-panel-{{ tab_key }}"
+                            :aria-selected="activeTab === '{{ tab_key }}' ? 'true' : 'false'"
+                            @click="setTab('{{ tab_key }}')"
+                            class="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-t-xl border px-4 py-2.5 text-sm font-semibold transition"
+                            :class="activeTab === '{{ tab_key }}' ? 'border-outline-default border-b-surface-card bg-surface-card text-kaori-primary -mb-px' : 'border-transparent text-content-muted hover:bg-kaori-soft hover:text-kaori-primary'">
+                        <i data-lucide="{{ tab_icon }}" class="h-4 w-4"></i>
+                        <span>{{ tab_label }}</span>
+                        <span class="kaori-semantic-label rounded-md border px-2 py-0.5 text-[10px] font-semibold"
+                              :class="activeTab === '{{ tab_key }}' ? 'border-brand-outline bg-kaori-soft text-kaori-primary' : 'border-outline-subtle bg-surface-card text-content-muted'">{{ tab_badge }}</span>
+                    </button>
+                {% endfor %}
+            </div>
+        </nav>
+        <div class="p-4 sm:p-5 lg:p-6">
+            <div id="kubernetes-panel-configuration" role="tabpanel" aria-labelledby="kubernetes-tab-configuration" x-show="activeTab === 'configuration'">
+                {% include 'integrations/kubernetes/partials/_connection_contract.html' %}
+            </div>
+            <div id="kubernetes-panel-validation" role="tabpanel" aria-labelledby="kubernetes-tab-validation" x-show="activeTab === 'validation'" x-cloak>
+                {% with validation_job=capability_validation_job %}{% include 'integrations/kubernetes/partials/_capability_workspace.html' %}{% endwith %}
+            </div>
+            <div id="kubernetes-panel-runtime" role="tabpanel" aria-labelledby="kubernetes-tab-runtime" x-show="activeTab === 'runtime'" x-cloak class="space-y-5">
+                {% with validation_job=runtime_validation_job %}{% include 'integrations/kubernetes/partials/_runtime_workspace.html' %}{% endwith %}
+                {% include 'integrations/kubernetes/partials/_runtime_history.html' %}
+            </div>
+            <div id="kubernetes-panel-inventory" role="tabpanel" aria-labelledby="kubernetes-tab-inventory" x-show="activeTab === 'inventory'" x-cloak>
+                {% include 'integrations/kubernetes/partials/_inventory_lifecycle.html' %}
+            </div>
+        </div>
+    </section>
+    {% include 'integrations/kubernetes/partials/_delete_modal.html' %}
 </div>
-{% endblock %}
+{% endblock dashboard_content %}

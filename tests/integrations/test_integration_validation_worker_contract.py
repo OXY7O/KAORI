@@ -80,6 +80,18 @@ def test_manual_full_validation_routes_only_enqueue_and_poll() -> None:
     assert 'alertmanager_runtime_adapter' in tasks
 
 
+def test_legacy_kubernetes_cluster_test_cannot_bypass_the_worker() -> None:
+    routes = read('app/cluster/routes.py')
+    block = route_block(
+        routes,
+        'def test_cluster(cluster_id: str)',
+        "@cluster_bp.route(\n    '/<string:cluster_id>/edit',",
+    )
+    assert 'enqueue_runtime_health_refresh(' in block
+    assert 'run_test_cluster(' not in block
+    assert 'legacy_route' in block
+
+
 def test_legacy_prometheus_cluster_validation_cannot_bypass_the_worker() -> None:
     routes = read('app/prometheus/routes.py')
     block = route_block(
@@ -121,6 +133,9 @@ def test_runtime_monitoring_fans_out_lightweight_per_instance_jobs() -> None:
     tasks = read('app/integrations/validation/tasks.py')
     prometheus_service = read('app/prometheus/service.py')
     alertmanager_service = read('app/alertmanager/service.py')
+    kubernetes_service = read('app/kubernetes/service.py')
+    cluster_service = read('app/cluster/service.py')
+    kubernetes_adapter = read('app/integrations/runtime/kubernetes_adapter.py')
 
     assert 'The Beat dispatcher intentionally performs no provider I/O.' in dispatcher
     assert 'enqueue_runtime_refresh(' in dispatcher
@@ -132,6 +147,12 @@ def test_runtime_monitoring_fans_out_lightweight_per_instance_jobs() -> None:
     assert 'persist_runtime_state(' in tasks
     assert 'def refresh_runtime_health(self)' in prometheus_service
     assert 'def refresh_alertmanager_runtime_health(' in alertmanager_service
+    assert 'def test_cluster_runtime_health(' in kubernetes_service
+    assert 'avoids API discovery and node inventory' in kubernetes_service
+    assert 'def refresh_cluster_runtime_health(' in cluster_service
+    assert 'Preserve compatibility, readiness, API discovery, and capability evidence.' in cluster_service
+    assert 'def refresh_health(' in kubernetes_adapter
+    assert 'kubernetes_runtime_adapter.refresh_health(instance)' in tasks
 
 
 def test_full_validation_and_runtime_refresh_do_not_overlap_per_instance() -> None:
@@ -169,6 +190,14 @@ def test_test_connection_remains_synchronous_and_lightweight() -> None:
     assert 'enqueue_instance_validation(' not in prom_block
     assert 'test_alertmanager_form_connection(form)' in alert_block
     assert 'enqueue_instance_validation(' not in alert_block
+    cluster_service = read('app/cluster/service.py')
+    draft_block = route_block(
+        cluster_service,
+        'def test_cluster_draft_connection(',
+        'def create_cluster(',
+    )
+    assert 'test_cluster_runtime_health(' in draft_block
+    assert 'test_cluster_connection(' not in draft_block
 
 
 def test_worker_job_lifecycle_is_audited_and_polled_with_htmx() -> None:
@@ -184,12 +213,16 @@ def test_worker_job_lifecycle_is_audited_and_polled_with_htmx() -> None:
             'app/templates/alertmanager/partials/_detail_validation_content.html',
             'app/templates/alertmanager/partials/_detail_scope.html',
             'app/templates/integrations/kubernetes/partials/_runtime_workspace.html',
+            'app/templates/integrations/kubernetes/partials/_capability_workspace.html',
         )
     )
 
     assert 'full_validation_queued' in prom_routes
     assert 'full_validation_queued' in alert_routes
-    assert 'kubernetes_runtime_validation_queued' in integration_routes
+    assert 'kubernetes_capability_validation_queued' in integration_routes
+    assert 'kubernetes_runtime_refresh_queued' in integration_routes
+    assert 'enqueue_instance_validation(' in integration_routes
+    assert 'enqueue_runtime_health_refresh(' in integration_routes
     assert '_record_completion(' in tasks
     assert "queue_feedback=False" in tasks
     assert 'hx-trigger="load delay:1500ms"' in templates

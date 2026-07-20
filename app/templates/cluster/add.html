@@ -1,38 +1,41 @@
 {% extends "layouts/app.html" %}
 {% import "components/related_page_card.html" as related_page_card %}
-{% block title %}Add Cluster{% endblock title %}
+{% import "components/info_flow.html" as info_flow %}
+{% import "components/information_guide_card.html" as information_guide_card %}
+{% block title %}Add Cluster · KAORI{% endblock title %}
 {% block dashboard_content %}
-    <div class="space-y-6">
-        {% set page_title = "Add Cluster" %}
-        {% set page_eyebrow = "Kubernetes Cluster" %}
-        {% set page_description = "Register a Kubernetes cluster to start inventory collection, monitoring, controlled operations, and reporting." %}
-        {% set page_icon = "server" %}
-        {% set page_badges = [
-            {"label": "Kubernetes", "icon": "boxes"},
-            {"label": "Kubeconfig required", "icon": "file-key-2"}
-        ] %}
-        {% include "cluster/partials/_page_header.html" %}
-        {% set form_mode = "add" %}
-        {% set form_icon = "file-plus-2" %}
-        {% set form_title = "Cluster Information" %}
-        {% set form_description = "Connection identity, environment, TLS policy, and kubeconfig access." %}
-        {% set submit_label = "Save Cluster" %}
-        {% set action_helper = "Save to start Kubernetes inventory onboarding." %}
-        <div class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start">
-            <div>
-                {% include "cluster/partials/_form.html" %}
-            </div>
-            <aside class="xl:sticky xl:top-5">
-                {{ related_page_card.render(
-                    'Kubernetes Inventory',
-                    'This Kubernetes connection supplies normalized resource context to KAORI Inventory.',
-                    url_for('inventory.overview'),
-                    'Open Kubernetes Inventory',
-                    icon='boxes',
-                    eyebrow='Related Operational Workspace',
-                    boundary='Kubernetes remains authoritative for live resources. KAORI Inventory presents synchronized operational context and history.'
-                ) }}
-            </aside>
-        </div>
+<div class="space-y-6">
+    {% set page_title = "Add Kubernetes Connection" %}
+    {% set page_eyebrow = "Kubernetes Integration" %}
+    {% set page_description = "Register one tested Kubernetes API connection for inventory, runtime validation, governance, operations, and source bindings." %}
+    {% set page_icon = "server-cog" %}
+    {% set page_badges = [{"label": "Kubernetes API", "icon": "boxes"}, {"label": "Test Before Save", "icon": "plug-zap"}, {"label": "Least-Privilege RBAC", "icon": "shield-check"}] %}
+    {% set page_posture_eyebrow = "Registration Posture" %}
+    {% set page_posture_title = "Tested Access Before Persistence" %}
+    {% set page_metric_one = ('plug-zap', 'Before Save', 'Test Connection', 'Proof expires after 10 minutes') %}
+    {% set page_metric_two = ('scan-search', 'After Save', 'Worker Validation', 'Compatibility and capability evidence') %}
+    {% include "cluster/partials/_page_header.html" %}
+
+    {% set form_mode = "add" %}{% set form_icon = "file-plus-2" %}{% set form_title = "Kubernetes Connection Configuration" %}{% set form_description = "Define the canonical identity, upload least-privilege access, and verify the Kubernetes API before KAORI persists the connection." %}{% set submit_label = "Save Connection" %}{% set action_helper = "Run Test Connection successfully before KAORI enables Save Connection." %}
+    <div class="grid gap-6 xl:grid-cols-12 xl:items-start">
+        <div class="xl:col-span-8">{% include "cluster/partials/_form.html" %}</div>
+        <aside class="space-y-4 xl:col-span-4 xl:sticky xl:top-5">
+            {% set cluster_registration_flow = [
+                ('Define Connection Identity', 'Name the managed cluster and select the environment used by KAORI navigation, audit, and policy context.'),
+                ('Upload Least-Privilege Kubeconfig', 'Provide only the API credentials and certificate material required by approved inventory and operations.'),
+                ('Test Kubernetes Access', 'KAORI verifies API reachability, authentication, TLS behavior, and Kubernetes version without saving the cluster.'),
+                ('Save and Validate', 'Registration repeats the lightweight probe and creates the canonical connection. Run Full Validation from the manage workspace to build compatibility, RBAC, and capability evidence.')
+            ] %}
+            {{ info_flow.render('Kubernetes Registration Flow', 'How a tested API connection becomes operational in KAORI.', cluster_registration_flow, icon='waypoints', note='Changing any field or kubeconfig after a successful test invalidates the proof and disables Save Connection.', note_icon='circle-alert', open_by_default=true) }}
+            {{ related_page_card.render('Kubernetes Inventory', 'This connection supplies normalized Kubernetes resource context to KAORI Inventory.', url_for('inventory.overview'), 'Open Kubernetes Inventory', icon='boxes', eyebrow='Related Operational Workspace', boundary='Kubernetes remains authoritative for live resources. KAORI stores synchronized operational context, history, governance, and audit evidence.') }}
+            {% set rbac_items = [
+                ('shield-check', 'Read and Discovery', 'Allow get, list, and watch only for the Kubernetes resources KAORI inventories and validates.'),
+                ('key-round', 'Secret Operations', 'Grant Secret or ConfigMap write/reveal permissions only when those governed KAORI features are explicitly enabled.'),
+                ('user-check', 'SelfSubjectAccessReview', 'Allow KAORI to verify effective permissions so capability gaps are distinguished from unsupported APIs.'),
+                ('lock-keyhole', 'Credential Boundary', 'Use a dedicated service account, short-lived credentials where possible, and no cluster-admin kubeconfig for routine operation.')
+            ] %}
+            {{ information_guide_card.render('Kubernetes RBAC & Access Contract', 'Use least privilege and expand permissions only for approved KAORI capability domains.', rbac_items, icon='shield-check') }}
+        </aside>
     </div>
+</div>
 {% endblock dashboard_content %}

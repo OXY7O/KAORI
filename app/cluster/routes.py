@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 from datetime import UTC, datetime
 from time import perf_counter
@@ -10,6 +11,7 @@ from flask import (
     abort,
     current_app,
     flash,
+    make_response,
     redirect,
     render_template,
     request,
@@ -20,7 +22,9 @@ from flask_login import current_user
 from redis.exceptions import RedisError
 
 from app.extensions import db
+from app.integrations.validation.web import enqueue_runtime_health_refresh
 from app.cluster.forms import ClusterCreateForm, ClusterEditForm
+from app.cluster.registration import issue_cluster_registration_proof, verify_cluster_registration_proof
 from app.cluster.individual_sync_state import (
     build_individual_sync_snapshot,
     dismiss_individual_sync_result,
@@ -33,7 +37,7 @@ from app.cluster.service import (
     create_cluster,
     delete_cluster,
     get_cluster_by_id,
-    run_test_cluster,
+    test_cluster_draft_connection,
     update_cluster,
 )
 from app.cluster.sync_state import (
@@ -47,6 +51,7 @@ from app.cluster.sync_state import (
     release_cluster_sync_lock,
 )
 from app.models import Cluster
+from app.models.integration import KubernetesConnection
 from app.notifications.service import (
     create_notification,
     get_navigation_notification_context,
@@ -568,144 +573,256 @@ def _get_cluster_or_404(cluster_id: str) -> Cluster:
 @permission_required('clusters.manage')
 def add_cluster() -> ResponseReturnValue:
     form = ClusterCreateForm()
+    registration_proof = request.form.get('connection_test_proof', '').strip() if request.method == 'POST' else ''
     if form.validate_on_submit():
         kube_file = form.kubeconfig.data
-
         if kube_file is None:
             record_operational_activity(
                 user_id=current_user.id,
-                event_type='cluster_create',
+                event_type='cluster_create_rejected',
                 status='error',
                 title='Cluster could not be added',
                 message='Kubeconfig file is required.',
-                detail='Select a valid kubeconfig file before saving the cluster registration.',
+                detail='Select a valid kubeconfig file, run Test Connection, then save the cluster registration.',
                 action_url=url_for('cluster.add_cluster'),
                 action_label='Review cluster form',
                 action_icon='server-cog',
-                metadata={
-                    'cluster_name': form.name.data or '-',
-                    'environment': form.environment.data or '-',
-                    'reason': 'missing_kubeconfig',
-                },
+                metadata={'cluster_name': form.name.data or '-', 'environment': form.environment.data or '-', 'reason': 'missing_kubeconfig'},
                 queue_feedback=True,
             )
-
-            return render_template(
-                'cluster/add.html',
-                form=form,
-            )
-
-        try:
-            kube_content = kube_file.read().decode(
-                'utf-8',
-            )
-
-            assert form.name.data is not None
-            assert form.environment.data is not None
-            assert form.kubeconfig.data is not None
-
-            cluster = create_cluster(
-                name=form.name.data,
-                environment=form.environment.data,
-                description=form.description.data,
-                kubeconfig=kube_content,
-                kube_verify_ssl=bool(
-                    form.kube_verify_ssl.data,
-                ),
-                kube_allow_weak_tls=bool(
-                    form.kube_allow_weak_tls.data,
-                ),
-            )
-
-            record_operational_activity(
-                user_id=current_user.id,
-                event_type='cluster_create',
-                status='success',
-                title='Cluster added',
-                message=f'{cluster.name} is now registered in KAORI.',
-                detail='The cluster is ready for connection testing, inventory synchronization, and observability integration setup.',
-                action_url=url_for('integrations.kubernetes'),
-                action_label='View clusters',
-                action_icon='server',
-                metadata={
-                    'cluster_id': cluster.id,
-                    'cluster_name': cluster.name,
-                    'environment': cluster.environment,
-                    'server': cluster.server,
-                },
-                queue_feedback=True,
-            )
-
-            return redirect(
-                url_for(
-                    'integrations.kubernetes',
+        else:
+            try:
+                kube_content = kube_file.read().decode('utf-8')
+                name = (form.name.data or '').strip()
+                environment = (form.environment.data or '').strip()
+                verify_ssl = bool(form.kube_verify_ssl.data)
+                allow_weak_tls = bool(form.kube_allow_weak_tls.data)
+                proof_valid, proof_error = verify_cluster_registration_proof(
+                    token=registration_proof,
+                    user_id=int(current_user.id),
+                    name=name,
+                    environment=environment,
+                    description=form.description.data,
+                    kubeconfig_content=kube_content,
+                    verify_ssl=verify_ssl,
+                    allow_weak_tls=allow_weak_tls,
                 )
-            )
-
-        except ValueError as exc:
-            record_operational_activity(
-                user_id=current_user.id,
-                event_type='cluster_create',
-                status='error',
-                title='Cluster could not be added',
-                message=str(exc),
-                detail='Review the cluster name and kubeconfig content, then submit the form again.',
-                action_url=url_for('cluster.add_cluster'),
-                action_label='Review cluster form',
-                action_icon='server-cog',
-                metadata={
-                    'cluster_name': form.name.data or '-',
-                    'environment': form.environment.data or '-',
-                    'reason': type(exc).__name__,
-                },
-                queue_feedback=True,
-            )
-        except Exception as exc:
-            logger.exception(
-                'Cluster creation failed for submitted name %s.',
-                form.name.data,
-            )
-            record_operational_activity(
-                user_id=current_user.id,
-                event_type='cluster_create',
-                status='error',
-                title='Cluster could not be added',
-                message='KAORI could not save the cluster registration.',
-                detail='Review the application logs and database connectivity before retrying the operation.',
-                action_url=url_for('cluster.add_cluster'),
-                action_label='Review cluster form',
-                action_icon='server-cog',
-                metadata={
-                    'cluster_name': form.name.data or '-',
-                    'environment': form.environment.data or '-',
-                    'reason': type(exc).__name__,
-                },
-                queue_feedback=True,
-            )
+                if not proof_valid:
+                    registration_proof = ''
+                    record_operational_activity(
+                        user_id=current_user.id,
+                        event_type='cluster_create_rejected',
+                        status='warning',
+                        title='Cluster registration requires connection testing',
+                        message=proof_error,
+                        detail='KAORI did not save the Kubernetes connection because the submitted configuration has no valid Test Connection proof.',
+                        action_url=url_for('cluster.add_cluster'),
+                        action_label='Test Kubernetes connection',
+                        action_icon='plug-zap',
+                        metadata={'cluster_name': name or '-', 'environment': environment or '-', 'registration_stage': 'connection_test_proof'},
+                        queue_feedback=True,
+                    )
+                else:
+                    recheck = test_cluster_draft_connection(
+                        kubeconfig_content=kube_content,
+                        verify_ssl=verify_ssl,
+                        allow_weak_tls=allow_weak_tls,
+                    )
+                    if not recheck.get('success'):
+                        registration_proof = ''
+                        record_operational_activity(
+                            user_id=current_user.id,
+                            event_type='cluster_create_rejected',
+                            status='error',
+                            title='Cluster connection changed before save',
+                            message='KAORI could not verify the Kubernetes API immediately before registration.',
+                            detail=recheck.get('error') or recheck.get('reason') or 'Review kubeconfig credentials, API reachability, and TLS settings, then run Test Connection again.',
+                            action_url=url_for('cluster.add_cluster'),
+                            action_label='Review cluster form',
+                            action_icon='server-cog',
+                            metadata={
+                                'cluster_name': name or '-',
+                                'environment': environment or '-',
+                                'failure_code': recheck.get('failure_code'),
+                                'endpoint_host': recheck.get('endpoint_host'),
+                                'endpoint_port': recheck.get('endpoint_port'),
+                                'registration_stage': 'pre_save_recheck',
+                            },
+                            queue_feedback=True,
+                        )
+                    else:
+                        cluster = create_cluster(
+                            name=name,
+                            environment=environment,
+                            description=form.description.data,
+                            kubeconfig=kube_content,
+                            kube_verify_ssl=verify_ssl,
+                            kube_allow_weak_tls=allow_weak_tls,
+                        )
+                        record_operational_activity(
+                            user_id=current_user.id,
+                            event_type='cluster_create',
+                            status='success',
+                            title='Cluster added',
+                            message=f'{cluster.name} is now registered in KAORI.',
+                            detail='The tested Kubernetes connection is ready for worker validation, inventory synchronization, and observability source binding.',
+                            action_url=url_for('integrations.kubernetes_detail', cluster_id=cluster.id),
+                            action_label='Open Kubernetes integration',
+                            action_icon='server-cog',
+                            metadata={
+                                'cluster_id': cluster.id,
+                                'cluster_name': cluster.name,
+                                'environment': cluster.environment,
+                                'server': cluster.server,
+                                'registration_stage': 'persisted_after_recheck',
+                            },
+                            queue_feedback=True,
+                        )
+                        return redirect(url_for('integrations.kubernetes_detail', cluster_id=cluster.id))
+            except (UnicodeDecodeError, ValueError) as exc:
+                registration_proof = ''
+                record_operational_activity(
+                    user_id=current_user.id,
+                    event_type='cluster_create_rejected',
+                    status='error',
+                    title='Cluster could not be added',
+                    message=str(exc),
+                    detail='Review the cluster name and kubeconfig content, then run Test Connection again.',
+                    action_url=url_for('cluster.add_cluster'),
+                    action_label='Review cluster form',
+                    action_icon='server-cog',
+                    metadata={'cluster_name': form.name.data or '-', 'environment': form.environment.data or '-', 'reason': type(exc).__name__},
+                    queue_feedback=True,
+                )
+            except Exception as exc:
+                logger.exception('Cluster creation failed for submitted name %s.', form.name.data)
+                registration_proof = ''
+                record_operational_activity(
+                    user_id=current_user.id,
+                    event_type='cluster_create_failed',
+                    status='error',
+                    title='Cluster could not be added',
+                    message='KAORI could not save the cluster registration.',
+                    detail='Review application logs and database connectivity before retrying. Test Connection must be run again before the next save attempt.',
+                    action_url=url_for('cluster.add_cluster'),
+                    action_label='Review cluster form',
+                    action_icon='server-cog',
+                    metadata={'cluster_name': form.name.data or '-', 'environment': form.environment.data or '-', 'reason': type(exc).__name__},
+                    queue_feedback=True,
+                )
 
     if request.method == 'POST' and form.errors:
+        registration_proof = ''
         record_operational_activity(
             user_id=current_user.id,
-            event_type='cluster_create',
+            event_type='cluster_create_rejected',
             status='warning',
             title='Cluster registration needs attention',
             message='The submitted cluster form contains validation errors.',
-            detail='Correct the highlighted fields and attach a valid kubeconfig before saving again.',
+            detail='Correct the highlighted fields, attach a valid kubeconfig, and run Test Connection before saving again.',
             action_url=url_for('cluster.add_cluster'),
             action_label='Review cluster form',
             action_icon='server-cog',
-            metadata={
-                'cluster_name': form.name.data or '-',
-                'environment': form.environment.data or '-',
-                'validation_fields': sorted(form.errors.keys()),
-            },
+            metadata={'cluster_name': form.name.data or '-', 'environment': form.environment.data or '-', 'validation_fields': sorted(form.errors.keys())},
             queue_feedback=True,
         )
 
-    return render_template(
-        'cluster/add.html',
-        form=form,
-    )
+    return render_template('cluster/add.html', form=form, registration_proof=registration_proof)
+
+
+@cluster_bp.post('/add/test-connection')
+@permission_required('clusters.manage')
+def test_new_cluster_connection() -> ResponseReturnValue:
+    form = ClusterCreateForm()
+    result: dict = {'success': False}
+    kube_content = ''
+    if not form.validate_on_submit():
+        feedback = record_operational_activity(
+            user_id=current_user.id,
+            event_type='cluster_connection_test_failed',
+            status='error',
+            title='Kubernetes connection test failed',
+            message='Review the highlighted cluster fields before testing this connection.',
+            detail='A valid cluster name, environment, and kubeconfig are required.',
+            action_url=url_for('cluster.add_cluster'),
+            action_label='Review cluster form',
+            action_icon='server-cog',
+            metadata={'fields': sorted(form.errors.keys()), 'draft_connection': True},
+            queue_feedback=False,
+        )
+    else:
+        try:
+            kube_content = form.kubeconfig.data.read().decode('utf-8')
+            result = test_cluster_draft_connection(
+                kubeconfig_content=kube_content,
+                verify_ssl=bool(form.kube_verify_ssl.data),
+                allow_weak_tls=bool(form.kube_allow_weak_tls.data),
+            )
+        except (UnicodeDecodeError, ValueError) as exc:
+            result = {'success': False, 'error': str(exc), 'failure_code': type(exc).__name__}
+        if result.get('success'):
+            feedback = record_operational_activity(
+                user_id=current_user.id,
+                event_type='cluster_connection_test',
+                status='success',
+                title='Kubernetes connection verified',
+                message='KAORI reached the submitted Kubernetes API.',
+                detail=f"Kubernetes {result.get('version') or 'unknown'} accepted the submitted credentials. Save remains enabled until the tested form changes or the proof expires. Full capability and RBAC validation runs in the dedicated worker.",
+                action_url=url_for('cluster.add_cluster'),
+                action_label='Complete cluster registration',
+                action_icon='server-cog',
+                metadata={
+                    'draft_connection': True,
+                    'submitted_name': (form.name.data or '').strip(),
+                    'environment': form.environment.data,
+                    'version': result.get('version'),
+                    'platform': result.get('platform'),
+                },
+                queue_feedback=False,
+            )
+        else:
+            feedback = record_operational_activity(
+                user_id=current_user.id,
+                event_type='cluster_connection_test_failed',
+                status='error',
+                title='Kubernetes connection test failed',
+                message='KAORI could not verify the submitted Kubernetes API connection.',
+                detail=result.get('error') or result.get('reason') or 'Review kubeconfig credentials, API reachability, and TLS policy.',
+                action_url=url_for('cluster.add_cluster'),
+                action_label='Review cluster form',
+                action_icon='server-cog',
+                metadata={
+                    'draft_connection': True,
+                    'submitted_name': (form.name.data or '').strip(),
+                    'environment': form.environment.data,
+                    'failure_code': result.get('failure_code'),
+                    'endpoint_host': result.get('endpoint_host'),
+                    'endpoint_port': result.get('endpoint_port'),
+                    'request_path': result.get('request_path'),
+                },
+                queue_feedback=False,
+            )
+
+    proof = ''
+    if result.get('success'):
+        proof = issue_cluster_registration_proof(
+            user_id=int(current_user.id),
+            name=(form.name.data or '').strip(),
+            environment=(form.environment.data or '').strip(),
+            description=form.description.data,
+            kubeconfig_content=kube_content,
+            verify_ssl=bool(form.kube_verify_ssl.data),
+            allow_weak_tls=bool(form.kube_allow_weak_tls.data),
+        )
+    response = make_response(render_template(
+        'cluster/partials/_connection_test_result.html',
+        connection_feedback=feedback,
+        notification_context=get_navigation_notification_context(user_id=int(current_user.id)),
+    ))
+    response.headers['HX-Trigger'] = json.dumps({
+        'kubernetes-connection-tested': {'connected': bool(result.get('success')), 'proof': proof}
+    }, separators=(',', ':'))
+    return response
 
 
 @cluster_bp.route(
@@ -716,80 +833,78 @@ def add_cluster() -> ResponseReturnValue:
 )
 @permission_required('clusters.sync')
 def test_cluster(cluster_id: str) -> ResponseReturnValue:
-    cluster = _get_cluster_or_404(
-        cluster_id,
-    )
+    """Compatibility endpoint for the legacy cluster table.
+
+    The action now queues the same lightweight runtime refresh used by the
+    canonical Kubernetes workspace; provider I/O never runs in the Flask request.
+    """
+    cluster = _get_cluster_or_404(cluster_id)
+    connection = KubernetesConnection.query.filter_by(cluster_id=cluster.id).first()
+    is_htmx = request.headers.get('HX-Request') == 'true'
     try:
-        result = run_test_cluster(
-            cluster,
+        if connection is None:
+            raise LookupError('Canonical Kubernetes connection is not available.')
+        validation_job, created = enqueue_runtime_health_refresh(
+            provider_type='kubernetes',
+            instance_id=connection.id,
+            requested_by_user_id=int(current_user.id),
         )
-    except Exception:
-        logger.exception(
-            'Cluster connection test failed unexpectedly for %s.',
-            cluster.id,
-        )
-        result = {
-            'success': False,
-            'error': (
-                'KAORI could not complete the Kubernetes API connection test. '
-                'Review the cluster endpoint, kubeconfig credentials, TLS settings, and application logs.'
+        feedback = record_operational_activity(
+            user_id=int(current_user.id),
+            event_type='cluster_runtime_refresh_queued' if created else 'cluster_runtime_refresh_already_running',
+            status='info' if created else 'warning',
+            title='Cluster runtime refresh queued' if created else 'Cluster runtime refresh already running',
+            message=(
+                f'KAORI queued a lightweight Kubernetes API health check for {cluster.name}.'
+                if created
+                else f'A validation or runtime refresh is already running for {cluster.name}.'
             ),
-            'reason': 'Connection test could not complete',
-            'failure_code': 'unexpected_error',
-            'endpoint_host': None,
-            'endpoint_port': None,
-            'request_path': '/api/v1/nodes',
-        }
-
-    if result['success']:
-        feedback = record_operational_activity(
-            user_id=current_user.id,
-            event_type='cluster_connection_test',
-            status='success',
-            title='Cluster connection verified',
-            message=f'KAORI connected to {cluster.name} successfully.',
-            detail=f'Kubernetes API access is available and {result.get("node_count", 0)} node(s) were reported.',
-            action_url=url_for('integrations.kubernetes'),
-            action_label='View clusters',
-            action_icon='server',
+            detail=(
+                'The integration-validation worker will check API reachability and version while preserving capability evidence.'
+                if created
+                else 'KAORI retained the active worker task and did not enqueue a duplicate refresh.'
+            ),
+            action_url=url_for('integrations.kubernetes_detail', cluster_id=cluster.id) + '#runtime',
+            action_label='Review Kubernetes runtime',
+            action_icon='activity',
             metadata={
                 'cluster_id': cluster.id,
                 'cluster_name': cluster.name,
-                'node_count': result.get('node_count', 0),
-                'server': cluster.server,
+                'connection_id': connection.id,
+                'task_id': validation_job.get('task_id'),
+                'legacy_route': True,
             },
+            queue_feedback=not is_htmx,
         )
-    else:
+    except Exception as exc:
+        logger.exception('Could not queue legacy Kubernetes runtime refresh for %s.', cluster.id)
         feedback = record_operational_activity(
-            user_id=current_user.id,
-            event_type='cluster_connection_test',
+            user_id=int(current_user.id),
+            event_type='cluster_runtime_refresh_enqueue_failed',
             status='error',
-            title='Cluster connection failed',
-            message=f'KAORI could not connect to {cluster.name}.',
-            detail=result.get('error') or 'Review Kubernetes API access, kubeconfig credentials, and TLS settings.',
-            action_url=url_for('cluster.edit_cluster', cluster_id=cluster.id),
-            action_label='Review cluster settings',
-            action_icon='settings-2',
+            title='Cluster runtime refresh not queued',
+            message=f'KAORI could not queue the Kubernetes API health check for {cluster.name}.',
+            detail='Verify Redis, the Celery broker, and the integration-validation worker before retrying.',
+            action_url=url_for('integrations.kubernetes_detail', cluster_id=cluster.id) + '#runtime',
+            action_label='Review Kubernetes runtime',
+            action_icon='activity',
             metadata={
                 'cluster_id': cluster.id,
                 'cluster_name': cluster.name,
-                'server': cluster.server,
-                'reason': result.get('reason') or 'Connection failed',
-                'failure_code': result.get('failure_code') or 'connection_failed',
-                'endpoint_host': result.get('endpoint_host'),
-                'endpoint_port': result.get('endpoint_port'),
-                'request_path': result.get('request_path') or '/api/v1/nodes',
+                'connection_id': connection.id if connection else None,
+                'reason': type(exc).__name__,
+                'legacy_route': True,
             },
+            queue_feedback=not is_htmx,
         )
 
-    if request.headers.get('HX-Request') == 'true':
+    if is_htmx:
         table_html = render_template(
             'cluster/partials/_table.html',
             **_build_cluster_context_from_request(),
         )
         return f'{table_html}{_render_operational_toast(feedback, toast_oob=True)}'
 
-    queue_quick_action_feedback(feedback)
     return redirect(request.referrer or url_for('integrations.kubernetes'))
 
 

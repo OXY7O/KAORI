@@ -15,6 +15,74 @@ from app.kubernetes.tls import legacy_tls_context
 logger = logging.getLogger(__name__)
 
 
+
+def test_cluster_runtime_health(
+    kubeconfig_content: str,
+    *,
+    endpoint: str | None = None,
+    verify_ssl: bool = True,
+    allow_weak_tls: bool = False,
+) -> dict[str, Any]:
+    """Run a lightweight Kubernetes reachability probe.
+
+    This deliberately avoids API discovery and node inventory so scheduled
+    runtime monitoring does not rebuild the full capability contract.
+    """
+    try:
+        with legacy_tls_context(enabled=allow_weak_tls):
+            client_factory = KubernetesClient(
+                kubeconfig_content=kubeconfig_content,
+                verify_ssl=verify_ssl,
+            )
+            version_info = client_factory.version_api().get_code()
+
+        return {
+            'success': True,
+            'version': getattr(version_info, 'git_version', None) or 'unknown',
+            'platform': getattr(version_info, 'platform', None),
+            'message': 'Kubernetes API runtime health probe succeeded.',
+            'error': None,
+            'reason': None,
+            'failure_code': None,
+            'endpoint_host': None,
+            'endpoint_port': None,
+            'request_path': '/version',
+        }
+    except ApiException as exc:
+        failure = describe_integration_failure(
+            exc,
+            service_name='Kubernetes API',
+            endpoint=endpoint,
+            request_path='/version',
+        )
+        logger.warning('Kubernetes runtime health probe failed: %s', exc, exc_info=True)
+        return {
+            'success': False,
+            'error': failure['detail'],
+            'reason': failure['reason'],
+            'failure_code': failure['code'],
+            'endpoint_host': failure['endpoint_host'],
+            'endpoint_port': failure['endpoint_port'],
+            'request_path': failure['request_path'],
+        }
+    except Exception as exc:
+        failure = describe_integration_failure(
+            exc,
+            service_name='Kubernetes API',
+            endpoint=endpoint,
+            request_path='/version',
+        )
+        logger.exception('Unexpected Kubernetes runtime health probe failure.')
+        return {
+            'success': False,
+            'error': failure['detail'],
+            'reason': failure['reason'],
+            'failure_code': failure['code'],
+            'endpoint_host': failure['endpoint_host'],
+            'endpoint_port': failure['endpoint_port'],
+            'request_path': failure['request_path'],
+        }
+
 def test_cluster_connection(
     kubeconfig_content: str,
     *,

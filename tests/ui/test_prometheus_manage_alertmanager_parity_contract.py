@@ -81,7 +81,7 @@ def test_validation_exposes_full_technical_capability_contract() -> None:
 def test_runtime_matches_alertmanager_health_and_history_contract() -> None:
     runtime = read(RUNTIME)
     panel = read(RUNTIME_PANEL)
-    history = read(RUNTIME_HISTORY)
+    history = read(RUNTIME_HISTORY) + read(ROOT / 'app/templates/integrations/partials/_runtime_history.html')
 
     assert runtime.count('workspace_summary_card.render') == 3
     for value in ('Readiness Versus Health', 'How Monitoring Works', 'Resolver Correlation'):
@@ -97,7 +97,7 @@ def test_runtime_matches_alertmanager_health_and_history_contract() -> None:
         assert value in panel
     for value in (
         'Recent Runtime Observations',
-        '100-Record Retention',
+        'record retention',
         'Readiness:',
         'Capability Snapshot',
         'No State Change',

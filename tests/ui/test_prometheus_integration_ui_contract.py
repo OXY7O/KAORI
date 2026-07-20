@@ -108,7 +108,7 @@ def test_prometheus_instance_detail_uses_standard_domain_tabs_and_summaries() ->
 
 def test_prometheus_runtime_history_and_binding_workspace_follow_kaori_violet() -> None:
     runtime = RUNTIME.read_text(encoding='utf-8')
-    history = HISTORY.read_text(encoding='utf-8')
+    history = HISTORY.read_text(encoding='utf-8') + Path('app/templates/integrations/partials/_runtime_history.html').read_text(encoding='utf-8')
     bindings = BINDINGS.read_text(encoding='utf-8')
 
     required_runtime = (
@@ -123,7 +123,7 @@ def test_prometheus_runtime_history_and_binding_workspace_follow_kaori_violet() 
     assert not missing, f'Prometheus runtime workspace is incomplete: {missing}'
 
     required_history = (
-        '100-Record Retention',
+        'record retention',
         'Showing <span class="font-semibold text-content-primary"',
         'aria-label="Runtime observations per page"',
         'pagination_ui.numeric_pages(runtime_history.pagination.page, runtime_history.pagination.total_pages)',

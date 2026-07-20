@@ -76,7 +76,7 @@
           hx-select="#prometheus-registration-workspace"
           hx-swap="outerHTML"
           hx-disabled-elt="button[type='submit']"
-          class="grid gap-6 xl:grid-cols-12"
+          class="grid gap-6 xl:grid-cols-12 xl:items-start"
           x-data="{
               authType: '{{ form.auth_type.data or 'none' }}',
               detectionMode: '{{ form.version_detection_mode.data or 'automatic' }}',

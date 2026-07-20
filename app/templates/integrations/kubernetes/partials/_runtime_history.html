@@ -1,16 +1,6 @@
-{% from "integrations/partials/_status_badge.html" import status_badge %}
-<section id="kubernetes-runtime-history" class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-  <header class="flex items-center gap-3 border-b border-outline-subtle px-5 py-4">
-    <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="history" class="h-5 w-5"></i></span>
-    <div><h2 class="text-base font-semibold text-content-primary">Recent Runtime Observations</h2><p class="mt-0.5 text-xs leading-5 text-content-muted">Latest manual and scheduled runtime evidence for this Kubernetes connection.</p></div>
-  </header>
-  {% set rows = history.rows if history is defined else runtime_history %}
-  <div class="overflow-x-auto">
-    <table class="min-w-full divide-y divide-outline-subtle text-left text-sm">
-      <thead class="bg-surface-muted/70 text-xs text-content-muted"><tr><th class="px-5 py-3">Observed</th><th class="px-5 py-3">Health</th><th class="px-5 py-3">Score</th><th class="px-5 py-3">Evidence</th></tr></thead>
-      <tbody class="divide-y divide-outline-subtle">
-        {% for row in rows %}<tr class="align-top"><td class="px-5 py-4 font-medium text-content-primary">{{ row.observed_at_display if row.observed_at_display is defined else row.observed_at }}</td><td class="px-5 py-4">{{ status_badge(row.health_status) }}</td><td class="px-5 py-4 text-content-secondary">{{ row.health_score_display if row.health_score_display is defined else row.health_score ~ '/100' }}</td><td class="px-5 py-4 text-content-secondary">{{ row.message or 'Runtime observation recorded.' }}</td></tr>{% else %}<tr><td colspan="4" class="px-5 py-10 text-center text-content-muted">No runtime observations recorded yet.</td></tr>{% endfor %}
-      </tbody>
-    </table>
-  </div>
-</section>
+{% set runtime_history = history %}
+{% set runtime_history_id = 'kubernetes-runtime-history' %}
+{% set runtime_history_loading_id = 'kubernetes-history-loading' %}
+{% set runtime_history_url = url_for('integrations.kubernetes_runtime_history', cluster_id=cluster.id) %}
+{% set provider_label = 'Kubernetes' %}
+{% include 'integrations/partials/_runtime_history.html' %}

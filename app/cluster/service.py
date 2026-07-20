@@ -12,7 +12,7 @@ from app.extensions import db
 from app.integrations.kubernetes import kubeconfig_for_cluster
 from app.alertmanager.resolver import resolve_alertmanager_sources
 from app.prometheus.repository import resolve_instance_for_cluster
-from app.kubernetes.service import test_cluster_connection
+from app.kubernetes.service import test_cluster_connection, test_cluster_runtime_health
 from app.models import (
     AlertmanagerBinding,
     AlertmanagerInstance,
@@ -454,6 +454,27 @@ def _sync_kubernetes_runtime(cluster: Cluster, *, kubeconfig: str | None = None)
     return connection
 
 
+def test_cluster_draft_connection(
+    *,
+    kubeconfig_content: str,
+    verify_ssl: bool = True,
+    allow_weak_tls: bool = False,
+) -> dict[str, Any]:
+    """Validate reachability for a submitted kubeconfig without persistence.
+
+    Registration testing stays intentionally lightweight. Full API discovery,
+    compatibility resolution, and RBAC evidence are rebuilt by the worker after
+    the connection is registered.
+    """
+    parsed = parse_kubeconfig(kubeconfig_content)
+    return test_cluster_runtime_health(
+        kubeconfig_content=kubeconfig_content,
+        endpoint=parsed['server'],
+        verify_ssl=verify_ssl,
+        allow_weak_tls=allow_weak_tls,
+    )
+
+
 def create_cluster(
     name: str,
     environment: str,
@@ -490,6 +511,28 @@ def create_cluster(
 
     return cluster
 
+
+
+def refresh_cluster_runtime_health(cluster: Cluster) -> dict[str, Any]:
+    """Refresh lightweight API health without rebuilding capability evidence."""
+    result = test_cluster_runtime_health(
+        kubeconfig_content=kubeconfig_for_cluster(cluster),
+        endpoint=cluster.server,
+        verify_ssl=bool(getattr(cluster, 'kube_verify_ssl', True)),
+        allow_weak_tls=bool(getattr(cluster, 'kube_allow_weak_tls', False)),
+    )
+    cluster.last_check = datetime.now(UTC)
+    if result['success']:
+        cluster.status = ClusterStatus.CONNECTED.value
+        cluster.kubernetes_version = result.get('version') or cluster.kubernetes_version
+        cluster.kubernetes_platform = result.get('platform') or cluster.kubernetes_platform
+    else:
+        cluster.status = ClusterStatus.FAILED.value
+
+    # Preserve compatibility, readiness, API discovery, and capability evidence.
+    _sync_kubernetes_runtime(cluster)
+    db.session.commit()
+    return result
 
 def run_test_cluster(cluster: Cluster) -> dict[str, Any]:
     verify_ssl = bool(

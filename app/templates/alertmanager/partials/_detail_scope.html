@@ -405,4 +405,4 @@
         </div>
     </details>
 </div>
-{% include 'components/operation_feedback_oob.html' %}
+{% if not scope_oob|default(false) %}{% include 'components/operation_feedback_oob.html' %}{% endif %}

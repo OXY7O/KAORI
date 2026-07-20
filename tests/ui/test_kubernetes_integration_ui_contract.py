@@ -21,13 +21,15 @@ def test_kubernetes_landing_uses_semantic_workspace_and_delete_modal():
     assert 'grid gap-4 lg:grid-cols-3' not in template
     assert 'Kubernetes Connection Registry' in registry
     assert "cluster.delete_cluster_route" in registry
-    assert 'Delete</button>' in registry
+    assert 'aria-label="Delete {{ row.cluster_name }}"' in registry
+    assert 'h-9 w-9' in registry
+    assert '<span class="sr-only">Delete</span>' in registry
     assert 'openDelete($el.dataset.deleteUrl, $el.dataset.deleteName)' in registry
     assert 'data-delete-url=' in registry
     assert 'data-delete-name=' in registry
     assert 'row.cluster_name|tojson' not in registry
     assert "integrations/kubernetes/partials/_delete_modal.html" in template
-    assert 'font-mono' not in template + registry
+    assert 'font-mono text-xs text-content-secondary' in registry
     assert 'border-emerald-' not in template + registry
 
 
@@ -47,27 +49,36 @@ def test_kubernetes_registry_pagination_is_htmx_and_disabled_navigation_is_not_a
 
 def test_kubernetes_detail_is_domain_workspace_with_delete_lifecycle():
     template = _read('app/templates/integrations/kubernetes/detail.html')
+    capability = _read('app/templates/integrations/kubernetes/partials/_capability_workspace.html')
+    lifecycle = _read('app/templates/integrations/kubernetes/partials/_inventory_lifecycle.html')
     for tab in (
-        'Connection & Contract',
-        'Compatibility & Capabilities',
+        'Configuration',
+        'Validation & Capabilities',
         'Runtime & History',
         'Inventory & Lifecycle',
     ):
         assert tab in template
-    assert 'API Compatibility & Capability Matrix' in template
-    assert 'Delete Connection' in template
-    assert "current_user.has_permission('clusters.manage')" in template
+    assert "integrations/kubernetes/partials/_connection_contract.html" in template
+    assert "integrations/kubernetes/partials/_capability_workspace.html" in template
+    assert "integrations/kubernetes/partials/_runtime_history.html" in template
+    assert 'Kubernetes API Capability Detail' in capability
+    assert 'Run Full Validation' in capability
+    assert 'Delete Connection' in lifecycle
+    assert "current_user.has_permission('clusters.manage')" in lifecycle
     assert 'kaori-integration-semantic' in template
-    assert 'openDelete($el.dataset.deleteUrl, $el.dataset.deleteName)' in template
+    assert 'openDelete($el.dataset.deleteUrl, $el.dataset.deleteName)' in lifecycle
     assert 'cluster.name|tojson' not in template
 
 
-def test_kubernetes_runtime_history_uses_standard_table():
-    template = _read('app/templates/integrations/kubernetes/partials/_runtime_history.html')
-    assert 'Recent Runtime Observations' in template
-    assert '<table' in template
-    assert 'rounded-xl' in template
-    assert 'rounded-2xl' not in template
+def test_kubernetes_runtime_history_uses_shared_standard_table():
+    wrapper = _read('app/templates/integrations/kubernetes/partials/_runtime_history.html')
+    shared = _read('app/templates/integrations/partials/_runtime_history.html')
+    assert "integrations/partials/_runtime_history.html" in wrapper
+    assert 'Recent Runtime Observations' in shared
+    assert '<table' in shared
+    assert 'rounded-xl' in shared
+    assert 'pagination_ui.navigation_classes(disabled=false)' in shared
+    assert 'pagination_ui.navigation_classes(disabled=true)' in shared
 
 
 def test_legacy_cluster_registry_uses_safe_delete_trigger_and_csrf():

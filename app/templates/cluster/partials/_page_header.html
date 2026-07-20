@@ -1,32 +1,24 @@
 {% import "components/page_hero.html" as page_hero %}
-<section class="relative overflow-hidden rounded-2xl border border-brand-outline bg-kaori-primary p-5 text-brand-foreground shadow-sm lg:p-6">
-    <div class="relative grid gap-5 xl:grid-cols-12 xl:items-stretch">
-        <div class="flex min-w-0 flex-col justify-center xl:col-span-8">
-            {% call page_hero.intro('server-cog', page_eyebrow or 'Kubernetes Cluster', page_icon) %}
-                <h1 class="text-2xl font-semibold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">{{ page_title }}</h1>
-                <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">{{ page_description }}</p>
-                {% if page_badges %}
-                    <div class="mt-5 flex flex-wrap gap-2">
-                        {% for badge in page_badges %}
-                            {{ page_hero.meta_label(badge.icon or 'tag', badge.label) }}
-                        {% endfor %}
-                    </div>
-                {% endif %}
+<section class="{{ page_hero.shell_classes() }}">
+    <div class="{{ page_hero.layout_classes() }}">
+        <div class="{{ page_hero.content_classes() }}">
+            {% call page_hero.intro('server-cog', page_eyebrow or 'Kubernetes Integration', page_icon) %}
+                <h1 class="{{ page_hero.title_classes() }}">{{ page_title }}</h1>
+                <p class="mt-2 {{ page_hero.description_classes() }}">{{ page_description }}</p>
+                {% if page_badges %}<div class="{{ page_hero.metadata_row_classes() }}">{% for badge in page_badges %}{{ page_hero.meta_label(badge.icon or 'tag', badge.label) }}{% endfor %}</div>{% endif %}
             {% endcall %}
         </div>
-
-        <aside class="xl:col-span-4">
-            <div class="flex h-full min-h-[9rem] flex-col justify-between rounded-xl border border-brand-outline bg-brand-surface-strong p-4 backdrop-blur-md">
-                <div>
-                    <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Navigation</p>
-                    <p class="mt-1 text-sm font-semibold text-brand-foreground">Return to Cluster Inventory</p>
-                    <p class="mt-1 text-xs leading-5 text-brand-foreground-muted">Review registered clusters and operational state.</p>
+        <aside class="{{ page_hero.aside_classes() }}" aria-label="Kubernetes connection workflow">
+            <div class="{{ page_hero.context_panel_classes() }}">
+                <div class="flex items-start justify-between gap-4">
+                    <div><p class="{{ page_hero.context_panel_eyebrow_classes() }}">{{ page_posture_eyebrow or 'Connection Posture' }}</p><h2 class="{{ page_hero.context_panel_title_classes() }}">{{ page_posture_title or 'Kubernetes Connection Workflow' }}</h2></div>
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-brand-surface text-brand-foreground"><i data-lucide="route" class="h-5 w-5"></i></span>
                 </div>
-                <a href="{{ url_for('cluster.list_clusters') }}"
-                   class="mt-4 inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-brand-outline bg-brand-surface px-4 text-sm font-semibold text-brand-foreground transition hover:bg-brand-surface-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70">
-                    <i data-lucide="arrow-left" class="h-4 w-4"></i>
-                    Back to Clusters
-                </a>
+                <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                    {{ page_hero.context_metric(page_metric_one[0], page_metric_one[1], page_metric_one[2], page_metric_one[3], value_classes='text-sm font-semibold leading-5') }}
+                    {{ page_hero.context_metric(page_metric_two[0], page_metric_two[1], page_metric_two[2], page_metric_two[3], value_classes='text-sm font-semibold leading-5') }}
+                </div>
+                <a href="{{ url_for('integrations.kubernetes') }}" class="mt-auto inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-brand-outline bg-surface-card px-4 py-2 text-xs font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"><i data-lucide="arrow-left" class="h-4 w-4"></i>Back to Registry</a>
             </div>
         </aside>
     </div>

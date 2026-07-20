@@ -22,6 +22,11 @@ class KubernetesRuntimeAdapter:
 
         return run_test_cluster(self._cluster(instance))
 
+    def refresh_health(self, instance: KubernetesConnection | Any):
+        from app.cluster.service import refresh_cluster_runtime_health
+
+        return refresh_cluster_runtime_health(self._cluster(instance))
+
     def get_state(self, instance: KubernetesConnection | Any, *, validation_result=None) -> RuntimeState:
         connection = instance if isinstance(instance, KubernetesConnection) else instance.kubernetes_connection
         cluster = self._cluster(instance)
@@ -33,6 +38,14 @@ class KubernetesRuntimeAdapter:
             or ('ready' if connected else 'validation_required')
         )
         discovery = getattr(connection, 'discovery_summary', None) or cluster.kubernetes_api_discovery_summary or {}
+        validation_payload = validation_result if isinstance(validation_result, dict) else {}
+        runtime_message = (
+            validation_payload.get('validation_message')
+            or validation_payload.get('message')
+            or validation_payload.get('error')
+            or cluster.kubernetes_validation_message
+            or ''
+        )
         blocked = tuple(discovery.get('blocked_features') or ())
         legacy = tuple(discovery.get('legacy_features') or ())
         selected_adapters = discovery.get('selected_adapters') or {}
@@ -47,7 +60,7 @@ class KubernetesRuntimeAdapter:
                 'success' if connected else 'failed',
                 50,
                 100 if connected else 0,
-                cluster.kubernetes_validation_message or '',
+                runtime_message,
             ),
             HealthFactor(
                 'compatibility',
@@ -72,7 +85,7 @@ class KubernetesRuntimeAdapter:
                 'Kubernetes API',
                 'connectivity',
                 'success' if connected else 'failed',
-                cluster.kubernetes_validation_message or ('API connected.' if connected else 'API unavailable.'),
+                runtime_message or ('API connected.' if connected else 'API unavailable.'),
                 severity='critical' if not connected else 'info',
             ),
             DiagnosticResult(
@@ -113,7 +126,7 @@ class KubernetesRuntimeAdapter:
             ),
             last_success_at=cluster.last_check if connected else None,
             last_failure_at=cluster.last_check if not connected else None,
-            message=cluster.kubernetes_validation_message or ('Kubernetes runtime is ready.' if connected else 'Kubernetes runtime requires attention.'),
+            message=runtime_message or ('Kubernetes runtime is ready.' if connected else 'Kubernetes runtime requires attention.'),
         )
 
 

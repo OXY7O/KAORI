@@ -58,7 +58,7 @@ def _action_url(provider_type: str, instance_id: int, *, section: str) -> str:
     if provider_type == 'kubernetes':
         connection = db.session.get(KubernetesConnection, instance_id)
         cluster_id = connection.cluster_id if connection is not None else str(instance_id)
-        return f'/integrations/kubernetes/{cluster_id}#runtime'
+        return f'/integrations/kubernetes/{cluster_id}#{section}'
     return '/integrations/'
 
 
@@ -162,9 +162,7 @@ def _record_completion(
 ) -> dict[str, Any] | None:
     if requested_by_user_id is None:
         return None
-    section = 'scope' if operation == 'binding_validation' else 'validation'
-    if provider_type == 'kubernetes':
-        section = 'runtime'
+    section = 'scope' if operation == 'binding_validation' else ('runtime' if operation == 'runtime_refresh' else 'validation')
     return record_operational_activity(
         user_id=requested_by_user_id,
         event_type=f'{provider_type}_{operation}_completed' if status != 'error' else f'{provider_type}_{operation}_failed',
@@ -225,7 +223,7 @@ def validate_integration_instance(
     base = {
         'task_id': task_id,
         'provider_type': provider_type,
-        'operation': 'full_validation' if provider_type != 'kubernetes' else 'runtime_refresh',
+        'operation': 'full_validation',
         'instance_id': instance_id,
         'binding_id': None,
         'requested_by_user_id': requested_by_user_id,
@@ -290,8 +288,8 @@ def validate_integration_instance(
             result_payload = dict(validation_result or {})
             success = bool(result_payload.get('success'))
             status = 'success' if success and state.readiness == 'ready' else ('warning' if success else 'error')
-            title = 'Kubernetes runtime validation completed' if success else 'Kubernetes runtime validation failed'
-            message = f'Runtime and compatibility evidence was refreshed for {connection.cluster.name}.'
+            title = 'Kubernetes capability validation completed' if success else 'Kubernetes capability validation failed'
+            message = f'Compatibility, capability, and RBAC evidence was rebuilt for {connection.cluster.name}.'
             detail = str(result_payload.get('validation_message') or result_payload.get('message') or state.message)
             instance_name = connection.cluster.name
         else:
@@ -560,10 +558,12 @@ def refresh_integration_runtime_instance(
             instance = db.session.get(KubernetesConnection, instance_id)
             if instance is None:
                 raise LookupError('Kubernetes connection no longer exists.')
-            result_payload, state, _ = refresh_and_record(
-                kubernetes_runtime_adapter,
-                instance,
+            result_payload = kubernetes_runtime_adapter.refresh_health(instance)
+            state = kubernetes_runtime_adapter.get_state(instance, validation_result=result_payload)
+            persist_runtime_state(
+                state,
                 trigger_type=trigger_type,
+                integration_instance_id=instance.integration_instance_id,
             )
         else:
             raise ValueError(f'Unsupported integration provider: {provider_type}')

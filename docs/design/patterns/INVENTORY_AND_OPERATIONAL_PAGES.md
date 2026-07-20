@@ -72,3 +72,18 @@ This document defines reusable structures. It does not define domain-specific fi
 3. Active pagination and page-size changes should update only the owning table or workspace region through HTMX when practical.
 4. The loading bar belongs directly below the owning block header and must target the same partial region.
 
+
+## Kubernetes registry action-density contract
+
+1. The Kubernetes Connection Registry reserves its text width for connection identity, environment, readiness, compatibility, and validation time.
+2. Row actions use 36 px icon-only controls with `title`, `aria-label`, and screen-reader text.
+3. Manage, Configure, Prometheus binding, Alertmanager binding, and Delete use distinct provider or lifecycle icons; semantic color is reserved for binding state and destructive action.
+4. Icon-only actions remain right-aligned in the final compact column. Do not reintroduce provider names or long action labels into the registry row.
+5. Full action wording and context belong in tooltips and the destination workspace.
+
+## Hero contextual-density contract
+
+1. Hero descriptions use the same 14–16 px medium-weight supporting-text hierarchy across Integrations Overview and provider workspaces.
+2. The right context panel contains a concise title, at most two compact metrics, and at most two actions.
+3. Do not place paragraph-length workflow explanation in the context panel. Detailed guidance belongs in the overview box, Info Flow, or content workspace.
+4. Add and Edit Kubernetes pages use the shared Hero Context Panel with two metrics and one Back to Registry action; their wider contextual rail uses an 8:4 main-to-side grid.
