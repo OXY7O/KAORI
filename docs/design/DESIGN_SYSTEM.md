@@ -36,3 +36,7 @@ This document is the entry point for KAORI's interface contract. New modules mus
 ## Global guardrail
 
 A local component variant is allowed only when the existing semantic role cannot represent the requirement. The reason and exception must be documented before implementation.
+
+### Integration Manage Workspace
+
+Provider instance management uses the shared four-tab contract documented in `components/INTEGRATION_MANAGE_WORKSPACE.md`. Configuration is inline; Validation exposes technical evidence; Runtime uses shared health/history; Scope exposes governed bindings and resolution.

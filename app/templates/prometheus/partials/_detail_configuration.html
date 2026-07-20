@@ -1,0 +1,162 @@
+{% import "components/operational_toggle.html" as operational_toggle %}
+{% import "components/related_page_card.html" as related_page_card %}
+{% import "components/form_action_bar.html" as form_action_bar %}
+{% import "components/info_flow.html" as info_flow %}
+{% import "components/information_guide_card.html" as information_guide_card %}
+{% import "components/workspace_summary_card.html" as workspace_summary_card %}
+{% set field_classes = 'h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-normal text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20' %}
+{% set textarea_classes = 'min-h-24 w-full resize-y rounded-lg border border-outline-default bg-surface-card px-3.5 py-3 text-sm font-normal leading-6 text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20' %}
+<div class="space-y-5">
+    <section class="grid gap-4 lg:grid-cols-3" aria-label="Configuration Workspace Summary">
+        {{ workspace_summary_card.render(
+            'Connection Contract',
+            'Identity, endpoint, authentication, TLS, timeout, and compatibility detection define how KAORI reaches this source.',
+            icon='file-key-2'
+        ) }}
+        {{ workspace_summary_card.render(
+            'Change Impact',
+            'Saving connection settings resets readiness to Validation Required until the technical contract is rebuilt.',
+            icon='refresh-ccw'
+        ) }}
+        {{ workspace_summary_card.render(
+            'Integration Flow',
+            'Configure, validate capabilities, observe runtime health, bind scopes, and resolve the effective metrics source.',
+            icon='workflow'
+        ) }}
+    </section>
+
+    <div class="grid gap-5 xl:grid-cols-12 xl:items-start">
+        <form id="prometheus-instance-form"
+              method="post"
+              action="{{ url_for('prometheus.instance_detail', instance_id=instance.id) }}#configuration"
+              class="xl:col-span-8"
+              x-data="{ authType: '{{ form.auth_type.data or 'none' }}', detectionMode: '{{ form.version_detection_mode.data or 'automatic' }}' }">
+            {{ form.hidden_tag() }}
+            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+                <header class="flex items-center gap-3 border-b border-outline-subtle px-5 py-4">
+                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="settings-2" class="h-5 w-5"></i></div>
+                    <div><h2 class="text-base font-semibold text-content-primary">Instance Configuration</h2><p class="mt-0.5 text-xs leading-5 text-content-muted">Update the reusable identity and connection behavior used by validation, queries, and runtime operations.</p></div>
+                </header>
+
+                {% if form.errors %}
+                    <div class="border-b border-status-critical-border bg-status-critical-soft px-5 py-4">
+                        <p class="text-sm font-semibold text-status-critical-text">Configuration Requires Attention</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Review the highlighted fields before saving again.</p>
+                    </div>
+                {% endif %}
+
+                <div class="space-y-5 p-5">
+                    <section class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
+                        <div class="mb-4 flex items-start gap-3"><div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="id-card" class="h-4 w-4"></i></div><div><h3 class="text-sm font-semibold text-content-primary">Connection Identity</h3><p class="mt-0.5 text-xs leading-5 text-content-muted">The canonical record remains independent from the operational scopes that consume it.</p></div></div>
+                        <div class="grid gap-4 lg:grid-cols-2">
+                            <div>
+                                <label for="{{ form.name.id }}" class="mb-1.5 block text-sm font-semibold text-content-primary">Instance Name</label>
+                                {{ form.name(class_=field_classes) }}
+                                {% for error in form.name.errors %}<p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>{% endfor %}
+                                <p class="mt-1.5 text-xs leading-5 text-content-muted">Use a stable operational name that remains meaningful across multiple bindings.</p>
+                            </div>
+                            <div>
+                                <label for="{{ form.description.id }}" class="mb-1.5 block text-sm font-semibold text-content-primary">Description</label>
+                                {{ form.description(class_=textarea_classes, rows=3) }}
+                                {% for error in form.description.errors %}<p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>{% endfor %}
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
+                        <div class="mb-4 flex items-start gap-3"><div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="network" class="h-4 w-4"></i></div><div><h3 class="text-sm font-semibold text-content-primary">Endpoint &amp; Access</h3><p class="mt-0.5 text-xs leading-5 text-content-muted">These settings are used by validation, runtime monitoring, and Prometheus-compatible query operations.</p></div></div>
+                        <div>
+                            <label for="{{ form.endpoint.id }}" class="mb-1.5 block text-sm font-semibold text-content-primary">Endpoint URL</label>
+                            {{ form.endpoint(class_=field_classes) }}
+                            {% for error in form.endpoint.errors %}<p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>{% endfor %}
+                            <p class="mt-1.5 text-xs leading-5 text-content-muted">Provide the base URL reachable from the KAORI runtime. Do not append <span class="font-semibold text-kaori-primary">/api/v1</span>.</p>
+                        </div>
+                        <div class="mt-4 grid gap-4 lg:grid-cols-2">
+                            <div>
+                                <label for="{{ form.auth_type.id }}" class="mb-1.5 block text-sm font-semibold text-content-primary">Authentication</label>
+                                {{ form.auth_type(class_=field_classes, **{'x-on:change':'authType = $event.target.value'}) }}
+                                {% for error in form.auth_type.errors %}<p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>{% endfor %}
+                            </div>
+                            <div>
+                                <label for="{{ form.timeout.id }}" class="mb-1.5 block text-sm font-semibold text-content-primary">Request Timeout</label>
+                                {{ form.timeout(class_=field_classes) }}
+                                {% for error in form.timeout.errors %}<p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>{% endfor %}
+                                <p class="mt-1.5 text-xs leading-5 text-content-muted">Allowed range: 1–5 seconds.</p>
+                            </div>
+                        </div>
+                        <div x-show="authType === 'basic'" x-cloak class="mt-4 grid gap-4 lg:grid-cols-2">
+                            <div><label for="{{ form.username.id }}" class="mb-1.5 block text-sm font-semibold text-content-primary">Username</label>{{ form.username(class_=field_classes) }}{% for error in form.username.errors %}<p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>{% endfor %}</div>
+                            <div><label for="{{ form.password.id }}" class="mb-1.5 block text-sm font-semibold text-content-primary">Password</label>{{ form.password(class_=field_classes, autocomplete='new-password', placeholder='Leave blank to keep the current password') }}{% for error in form.password.errors %}<p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>{% endfor %}</div>
+                        </div>
+                        <div x-show="authType === 'bearer'" x-cloak class="mt-4"><label for="{{ form.bearer_token.id }}" class="mb-1.5 block text-sm font-semibold text-content-primary">Bearer Token</label>{{ form.bearer_token(class_=field_classes, autocomplete='new-password', placeholder='Leave blank to keep the current token') }}{% for error in form.bearer_token.errors %}<p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>{% endfor %}</div>
+                    </section>
+
+                    <section class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
+                        <div class="mb-4 flex items-start gap-3"><div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="scan-search" class="h-4 w-4"></i></div><div><h3 class="text-sm font-semibold text-content-primary">Compatibility Detection</h3><p class="mt-0.5 text-xs leading-5 text-content-muted">Select how KAORI identifies the Prometheus contract behind the configured endpoint.</p></div></div>
+                        <div class="grid gap-4 lg:grid-cols-2">
+                            <div>
+                                <label for="{{ form.version_detection_mode.id }}" class="mb-1.5 block text-sm font-semibold text-content-primary">Detection Mode</label>
+                                {{ form.version_detection_mode(class_=field_classes, **{'x-on:change':'detectionMode = $event.target.value'}) }}
+                                {% for error in form.version_detection_mode.errors %}<p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>{% endfor %}
+                            </div>
+                            <div x-show="detectionMode === 'manual'" x-cloak>
+                                <label for="{{ form.source_prometheus_major.id }}" class="mb-1.5 block text-sm font-semibold text-content-primary">Prometheus Source Version</label>
+                                {{ form.source_prometheus_major(class_=field_classes, **{':required':"detectionMode === 'manual'"}) }}
+                                {% for error in form.source_prometheus_major.errors %}<p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>{% endfor %}
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
+                        <div class="mb-4 flex items-start gap-3"><div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="shield-check" class="h-4 w-4"></i></div><div><h3 class="text-sm font-semibold text-content-primary">Security &amp; Operational Controls</h3><p class="mt-0.5 text-xs leading-5 text-content-muted">Control trust verification and whether the resolver may select this connection.</p></div></div>
+                        <div class="grid gap-3 lg:grid-cols-2">
+                            {% call operational_toggle.render('Verify TLS Certificate', 'Reject untrusted or mismatched certificates.') %}{{ form.verify_ssl(class_='h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-2 focus:ring-outline-focus/20 focus:ring-offset-2') }}{% endcall %}
+                            {% call operational_toggle.render('Allow KAORI to Use This Connection', 'Disabled connections remain stored but are excluded from scope resolution.') %}{{ form.enabled(class_='h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-2 focus:ring-outline-focus/20 focus:ring-offset-2') }}{% endcall %}
+                        </div>
+                    </section>
+                </div>
+                {% call form_action_bar.render('Save changes, then run Full Validation.', aria_label='Prometheus Configuration Actions') %}
+                    <button type="submit" class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 cursor-pointer disabled:cursor-not-allowed"><i data-lucide="save" class="h-4 w-4"></i>Save Changes</button>
+                {% endcall %}
+            </section>
+        </form>
+
+        <aside class="space-y-4 xl:col-span-4 xl:sticky xl:top-5">
+            {% set configuration_flow_steps = [
+                ('Save Changes', 'Update the canonical connection contract and return readiness to Validation Required.'),
+                ('Run Full Validation', 'Rebuild compatibility, metric, label, query, retention, and module-readiness evidence.'),
+                ('Refresh Runtime', 'Record current endpoint health, latency, diagnostics, and capability context.'),
+                ('Review Resolution', 'Confirm the connection remains eligible and effective for its governed scope bindings.')
+            ] %}
+            {{ info_flow.render(
+                'Configuration Flow',
+                'How saved connection changes return to governed operational use.',
+                configuration_flow_steps,
+                icon='route',
+                note='Saving configuration does not establish readiness until Full Validation succeeds.',
+                open_by_default=true
+            ) }}
+
+            {% set compatibility_detection_items = [
+                ('scan-search', 'Automatic Detection', 'Use for a direct Prometheus endpoint. KAORI discovers the observed product and source contract.'),
+                ('network', 'Manual Source Declaration', 'Use for Thanos Query or another Prometheus-compatible gateway that can hide the upstream major version.'),
+                ('badge-check', 'Full Validation Still Applies', 'Detection selects the contract; Full Validation establishes capabilities and readiness.')
+            ] %}
+            {{ information_guide_card.render(
+                'Compatibility Detection',
+                'Compare the supported detection models without changing scope eligibility.',
+                compatibility_detection_items,
+                icon='scan-search'
+            ) }}
+            {{ related_page_card.render(
+                'Kubernetes Analytics',
+                'This validated connection supplies governed query data to KAORI Kubernetes Analytics.',
+                url_for('analytics.overview'),
+                'Open Kubernetes Analytics',
+                icon='chart-no-axes-combined',
+                eyebrow='Related Analytics Workspace',
+                boundary='Prometheus remains authoritative for metric collection and query execution. KAORI applies governed source resolution and operational interpretation.'
+            ) }}
+        </aside>
+    </div>
+</div>

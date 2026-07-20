@@ -1,261 +1,106 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
-{% import "components/connection_validation_header.html" as connection_validation_header %}
-{% import "components/related_page_card.html" as related_page_card %}
-{% import "components/table_label.html" as table_label %}
-{% import "components/info_flow.html" as info_flow %}
-{% import "components/workspace_summary_card.html" as workspace_summary_card %}
 {% from "integrations/partials/_status_badge.html" import status_badge %}
 {% block title %}{{ instance.name }} · Prometheus Integration · KAORI{% endblock title %}
 {% block dashboard_content %}
-{% set readiness = instance.readiness_status or 'validation_required' %}
-{% set source_posture = 'Ready' if readiness == 'ready' else ('Attention' if readiness in ['degraded', 'blocked'] else 'Configured') %}
-<div class="kaori-integration-semantic space-y-6"
-     x-data="{
-        activeTab: ['configuration', 'validation', 'runtime', 'scope'].includes(window.location.hash.replace('#', '')) ? window.location.hash.replace('#', '') : 'configuration',
-        setTab(tab) { this.activeTab = tab; window.history.replaceState(null, '', '#' + tab); }
-     }">
-    <section class="{{ page_hero.shell_classes() }}">
-        <div class="{{ page_hero.layout_classes() }}">
-            <div class="{{ page_hero.content_classes() }}">
-                {% call page_hero.intro('activity', 'Metrics Integration', 'chart-spline') %}
-                    <div class="flex flex-wrap items-center gap-2">
+    {% set readiness = instance.readiness_status or 'validation_required' %}
+    {% set source_posture = 'Ready' if readiness == 'ready' else ('Attention' if readiness in ['degraded', 'blocked'] else 'Configured') %}
+    <div class="kaori-integration-semantic space-y-6"
+         x-data="{
+             activeTab: ['configuration', 'validation', 'runtime', 'scope'].includes(window.location.hash.replace('#', '')) ? window.location.hash.replace('#', '') : 'configuration',
+             setTab(tab, moveToWorkspace = false) {
+                 this.activeTab = tab;
+                 window.history.replaceState(null, '', '#' + tab);
+                 if (moveToWorkspace) {
+                     this.$nextTick(() => document.getElementById('prometheus-detail-tabs')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+                 }
+             }
+         }"
+         x-on:hashchange.window="activeTab = ['configuration', 'validation', 'runtime', 'scope'].includes(window.location.hash.replace('#', '')) ? window.location.hash.replace('#', '') : 'configuration'">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('activity', 'Prometheus Integration', 'chart-spline') %}
                         <h1 class="text-2xl font-semibold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">{{ instance.name }}</h1>
-                    </div>
-                    <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">Manage configuration, capability validation, runtime evidence, and operational scope bindings.</p>
-                    <div class="mt-5 flex flex-wrap gap-2">
-                        {{ page_hero.meta_label('server-cog', (instance.endpoint_product or 'Prometheus Compatible')|replace('_', ' ')|title) }}
-                        {{ page_hero.meta_label('badge-check', instance.compatibility_profile or 'Profile Not Assigned') }}
-                        {{ page_hero.meta_label('link-2', bindings|length ~ ' Scope Bindings') }}
-                    </div>
-                {% endcall %}
-            </div>
-            <aside class="{{ page_hero.aside_classes() }}" aria-label="Prometheus source posture">
-                <div class="{{ page_hero.context_panel_classes() }}">
-                    <div>
-                        <div class="flex items-start justify-between gap-3">
-                            <div><p class="{{ page_hero.context_panel_eyebrow_classes() }}">Source Posture</p><p class="mt-1 text-sm font-semibold text-brand-foreground">Validation and Runtime Evidence</p></div>
-                            {{ status_badge(readiness) }}
+                        <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">Manage the connection contract, technical capability evidence, runtime health, and governed metrics-source resolution.</p>
+                        <div class="mt-5 flex flex-wrap gap-2">
+                            {{ page_hero.meta_label('shield-check', readiness|replace('_', ' ')|title) }}
+                            {{ page_hero.meta_label('link-2', (bindings|length|string) ~ ' Scope Bindings') }}
+                            {{ page_hero.meta_label('layers-3', (stats.capabilities|string) ~ ' Capabilities') }}
                         </div>
-                        <p class="mt-2 text-xs leading-5 text-brand-foreground-muted">{{ instance.validation_message or 'Run Full Validation to establish compatibility, query contracts, and module readiness.' }}</p>
-                    </div>
-                    <div class="mt-4 grid grid-cols-2 gap-2">
-                        <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5"><p class="text-[10px] font-semibold text-brand-foreground-muted">Runtime Health</p><p class="mt-1 text-sm font-semibold text-brand-foreground">{{ runtime_state.health_status_label }}</p></div>
-                        <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5"><p class="text-[10px] font-semibold text-brand-foreground-muted">Capabilities</p><p class="mt-1 text-sm font-semibold text-brand-foreground">{{ runtime_state.capability_count }}</p></div>
-                    </div>
-                </div>
-            </aside>
-        </div>
-    </section>
-
-    <section id="prometheus-detail-tabs" class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-        <nav class="border-b border-outline-default bg-surface-hover px-4 pt-4 sm:px-5" aria-label="Prometheus instance domains">
-            <div class="flex gap-2 overflow-x-auto" role="tablist">
-                {% for tab, label, icon, badge in [
-                    ('configuration', 'Configuration', 'settings-2', (instance.endpoint_product or 'Prometheus')|replace('_', ' ')|title),
-                    ('validation', 'Validation & Capabilities', 'scan-search', readiness|replace('_', ' ')|title),
-                    ('runtime', 'Runtime & History', 'activity', runtime_state.health_status_label),
-                    ('scope', 'Scope & Resolution', 'waypoints', (bindings|length|string) ~ ' Bindings')
-                ] %}
-                    <button type="button"
-                            role="tab"
-                            id="prometheus-tab-{{ tab }}"
-                            aria-controls="prometheus-panel-{{ tab }}"
-                            :aria-selected="activeTab === '{{ tab }}' ? 'true' : 'false'"
-                            @click="setTab('{{ tab }}')"
-                            class="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-t-xl border px-4 py-2.5 text-sm font-semibold transition"
-                            :class="activeTab === '{{ tab }}' ? 'border-outline-default border-b-surface-card bg-surface-card text-kaori-primary -mb-px' : 'border-transparent text-content-muted hover:bg-kaori-soft hover:text-kaori-primary'">
-                        <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
-                        <span>{{ label }}</span>
-                        <span class="kaori-semantic-label rounded-md border px-2 py-0.5 text-[10px] font-semibold"
-                              :class="activeTab === '{{ tab }}' ? 'border-brand-outline bg-kaori-soft text-kaori-primary' : 'border-outline-subtle bg-surface-card text-content-muted'">{{ badge }}</span>
-                    </button>
-                {% endfor %}
-            </div>
-        </nav>
-
-        <div class="p-4 sm:p-5">
-            <div id="prometheus-panel-configuration" role="tabpanel" aria-labelledby="prometheus-tab-configuration" x-show="activeTab === 'configuration'" x-cloak class="space-y-5">
-                <section class="grid gap-4 lg:grid-cols-3" aria-label="Configuration Workspace Summary">
-                    {{ workspace_summary_card.render(
-                        'Connection Contract',
-                        'Identity, endpoint, authentication, TLS, timeout, and compatibility mode define how KAORI reaches this source.',
-                        icon='file-key-2'
-                    ) }}
-                    {{ workspace_summary_card.render(
-                        'Change Impact',
-                        'Saving connection settings resets readiness until Test Connection and Full Validation rebuild the evidence.',
-                        icon='refresh-ccw'
-                    ) }}
-                    {{ workspace_summary_card.render(
-                        'Integration Flow',
-                        'Configure, validate capabilities, observe runtime health, bind scopes, and resolve the effective metrics source.',
-                        icon='workflow'
-                    ) }}
-                </section>
-
-                <div class="grid gap-5 xl:grid-cols-12 xl:items-start">
-                    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm xl:col-span-8">
-                        <header class="flex items-start justify-between gap-4 border-b border-outline-subtle px-5 py-4">
-                            <div><h2 class="text-base font-semibold text-content-primary">Connection Settings</h2><p class="mt-1 text-sm leading-6 text-content-secondary">Review the reusable identity and access settings used by queries, validation, and runtime observations.</p></div>
-                            <a href="{{ url_for('prometheus.edit_instance', instance_id=instance.id) }}" class="inline-flex h-9 shrink-0 items-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus/20"><i data-lucide="pencil" class="h-3.5 w-3.5"></i>Edit Configuration</a>
-                        </header>
-                        <dl class="grid gap-px bg-outline-subtle sm:grid-cols-2">
-                            {% for label, value in [
-                                ('Endpoint', instance.endpoint),
-                                ('Authentication', (instance.auth_type or 'none')|replace('_', ' ')|title),
-                                ('Compatibility Detection', (instance.version_detection_mode or 'automatic')|replace('_', ' ')|title),
-                                ('Source Prometheus Major', instance.source_prometheus_major or 'Automatic Discovery'),
-                                ('Request Timeout', instance.timeout ~ ' seconds'),
-                                ('TLS Verification', 'Enabled' if instance.verify_ssl else 'Disabled'),
-                                ('Resolver Use', 'Enabled' if instance.enabled else 'Disabled'),
-                                ('Last Checked', runtime_state.observed_at_display)
-                            ] %}
-                                <div class="bg-surface-card px-5 py-4"><dt class="text-xs font-semibold text-content-muted">{{ label }}</dt><dd class="mt-1.5 break-words font-sans text-sm font-medium text-content-primary">{{ value }}</dd></div>
-                            {% endfor %}
-                        </dl>
-                    </section>
-
-                    <aside class="space-y-4 xl:sticky xl:top-5 xl:col-span-4">
-                        {% set configuration_flow_steps = [
-                            ('Save Changes', 'Update the canonical metrics connection and return readiness to Validation Required.'),
-                            ('Test Connection', 'Confirm endpoint reachability and identify the connected query API.'),
-                            ('Run Full Validation', 'Rebuild compatibility, metric, query, retention, and module-readiness evidence.'),
-                            ('Review Resolution', 'Confirm the source remains eligible for every governed scope binding.')
-                        ] %}
-                        {{ info_flow.render(
-                            'Configuration Flow',
-                            'How saved connection changes return to governed operational use.',
-                            configuration_flow_steps,
-                            icon='route',
-                            note='Saving configuration does not establish readiness until Full Validation succeeds.',
-                            open_by_default=true
-                        ) }}
-                        {{ related_page_card.render(
-                            'Kubernetes Analytics',
-                            'This validated metrics connection supplies governed query data to KAORI Kubernetes Analytics.',
-                            url_for('analytics.overview'),
-                            'Open Kubernetes Analytics',
-                            icon='chart-no-axes-combined',
-                            eyebrow='Related Analytics Workspace',
-                            boundary='Prometheus remains authoritative for metric collection and query execution. KAORI applies governed source resolution and operational interpretation.'
-                        ) }}
-                    </aside>
-                </div>
-            </div>
-
-            <div id="prometheus-panel-validation" role="tabpanel" aria-labelledby="prometheus-tab-validation" x-show="activeTab === 'validation'" x-cloak class="space-y-5">
-                <section class="grid gap-4 lg:grid-cols-3" aria-label="Validation Workspace Summary">
-                    {{ workspace_summary_card.render('What Validation Does', 'Tests query access, compatibility, metrics, labels, retention, and feature-query contracts.', icon='scan-search') }}
-                    {{ workspace_summary_card.render('Why It Matters', 'Analytics consumers rely on exact capability evidence rather than endpoint reachability alone.', icon='git-compare-arrows') }}
-                    {{ workspace_summary_card.render('Operator Flow', 'Test reachability, run Full Validation, resolve required gaps, and confirm module readiness.', icon='list-checks') }}
-                </section>
-                <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
-                    {% call connection_validation_header.render(
-                        'Compatibility &amp; Capability Contract',
-                        'Test reachability, then rebuild capability evidence.',
-                        icon='scan-search'
-                    ) %}
-                        <form method="post" action="{{ url_for('prometheus.instance_test', instance_id=instance.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="inline-flex h-10 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary hover:border-kaori-primary hover:text-kaori-primary-dark"><i data-lucide="plug-zap" class="h-4 w-4"></i>Test Connection</button></form>
-                        <form method="post" action="{{ url_for('prometheus.instance_validate', instance_id=instance.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="inline-flex h-10 items-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white hover:bg-kaori-primary-hover cursor-pointer disabled:cursor-not-allowed"><i data-lucide="scan-line" class="h-4 w-4"></i>Run Full Validation</button></form>
                     {% endcall %}
-                    <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
-                        <div class="bg-surface-card p-4"><p class="text-xs font-semibold text-content-muted">Readiness</p><div class="mt-2">{{ status_badge(readiness) }}</div></div>
-                        <div class="bg-surface-card p-4"><p class="text-xs font-semibold text-content-muted">Compatibility</p><div class="mt-2">{{ status_badge(instance.compatibility_status or 'validation_required') }}</div></div>
-                        <div class="bg-surface-card p-4"><p class="text-xs font-semibold text-content-muted">Query Contracts</p><div class="mt-2">{{ status_badge(instance.query_validation_status or 'validation_required') }}</div></div>
-                        <div class="bg-surface-card p-4"><p class="text-xs font-semibold text-content-muted">Capability Profile</p><p class="mt-2 text-sm font-semibold text-content-primary">{{ instance.capability_profile or 'Not established' }}</p></div>
-                    </div>
-                    {% set assessments = (instance.capabilities or {}).get('assessments', []) %}
-                    {% if assessments %}
-                        <div class="overflow-x-auto border-t border-outline-subtle">
-                            <table class="min-w-[960px] w-full text-left text-sm">
-                                <thead class="bg-surface-hover text-xs font-semibold text-content-muted"><tr><th class="px-5 py-3">Capability</th><th class="px-4 py-3">Status</th><th class="px-4 py-3">Technical Evidence</th><th class="px-4 py-3">Operational Impact</th><th class="px-5 py-3">Recommended Action</th></tr></thead>
-                                <tbody class="divide-y divide-outline-subtle">
-                                    {% for item in assessments %}
-                                        {% set state = item.status or 'unknown' %}
-                                        <tr class="align-top">
-                                            <td class="px-5 py-4"><p class="font-semibold text-content-primary">{{ item.label or item.key|replace('_', ' ')|title }}</p><p class="mt-1 text-xs text-content-muted">{{ item.source_owner or 'Prometheus-compatible metrics pipeline' }}</p></td>
-                                            <td class="px-4 py-4">{{ status_badge('ready' if state == 'available' else ('blocked' if state in ['missing', 'unsupported'] else ('degraded' if state == 'misconfigured' else 'validation_required')), state|replace('_', ' ')|title) }}</td>
-                                            <td class="px-4 py-4 text-xs leading-5 text-content-secondary">{{ item.evidence or 'No technical evidence recorded.' }}</td>
-                                            <td class="px-4 py-4 text-xs leading-5 text-content-secondary">{{ item.impact or 'Review dependent operational consumers.' }}</td>
-                                            <td class="px-5 py-4 text-xs leading-5 text-content-secondary">{{ item.recommendation or 'No action required.' }}</td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                </div>
+                <aside class="{{ page_hero.aside_classes() }}" aria-label="Prometheus connection posture">
+                    <div class="{{ page_hero.context_panel_classes() }}">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Connection Posture</p>
+                                <h2 class="{{ page_hero.context_panel_title_classes() }}">Readiness &amp; Operational Coverage</h2>
+                            </div>
+                            {{ status_badge('ready' if source_posture == 'Ready' else ('degraded' if source_posture == 'Attention' else 'validation_required'), source_posture) }}
                         </div>
-                    {% else %}
-                        <div class="border-t border-outline-subtle p-5"><div class="rounded-lg border border-status-info-border bg-status-info-soft p-4"><p class="text-sm font-semibold text-status-info-text">Capability Evidence Not Available</p><p class="mt-1 text-xs leading-5 text-content-secondary">Run Full Validation to populate API, metric, query, retention, and module readiness evidence.</p></div></div>
-                    {% endif %}
-                </section>
-            </div>
-
-            <div id="prometheus-panel-runtime" role="tabpanel" aria-labelledby="prometheus-tab-runtime" x-show="activeTab === 'runtime'" x-cloak class="space-y-5">
-                <section class="grid gap-4 lg:grid-cols-3" aria-label="Runtime Workspace Summary">
-                    {{ workspace_summary_card.render('Readiness Versus Health', 'Validation establishes readiness; runtime observations establish current operational health.', icon='activity') }}
-                    {{ workspace_summary_card.render('How Monitoring Works', 'Runtime refresh records reachability, latency, diagnostics, capability context, and health.', icon='radar') }}
-                    {{ workspace_summary_card.render('Resolver Correlation', 'Disabled, unready, capability-incomplete, or unhealthy sources can be skipped by resolution.', icon='route') }}
-                </section>
-                {% include 'prometheus/partials/_runtime_panel.html' %}
-                {% include 'prometheus/partials/_runtime_history.html' %}
-            </div>
-
-            <div id="prometheus-panel-scope" role="tabpanel" aria-labelledby="prometheus-tab-scope" x-show="activeTab === 'scope'" x-cloak class="space-y-5">
-                <section class="grid gap-4 lg:grid-cols-3" aria-label="Scope Workspace Summary">
-                    {{ workspace_summary_card.render('Binding', 'Defines the managed-cluster scope authorized to resolve this metrics source.', icon='link-2') }}
-                    {{ workspace_summary_card.render('Eligibility', 'Readiness, required capabilities, enabled state, and runtime health gate source selection.', icon='shield-check') }}
-                    {{ workspace_summary_card.render('Resolution', 'Role and lower numeric priority determine preference among otherwise eligible sources.', icon='route') }}
-                </section>
-
-                <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-                    <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 lg:flex-row lg:items-start lg:justify-between">
-                        <div><h2 class="text-base font-semibold text-content-primary">Scope Bindings</h2><p class="mt-1 text-sm leading-6 text-content-secondary">Bindings authorize cluster-scoped metrics consumers to resolve this reusable connection by role and priority.</p></div>
-                        <a href="{{ url_for('prometheus.instances') }}" class="inline-flex h-10 items-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus/20"><i data-lucide="waypoints" class="h-4 w-4"></i>Manage Bindings</a>
-                    </header>
-                    {% if bindings %}
-                        <div class="overflow-x-auto"><table class="min-w-[760px] w-full text-left text-sm"><thead class="border-b border-outline-subtle bg-surface-hover text-xs font-semibold text-content-muted"><tr><th class="px-5 py-3.5">Managed Cluster</th><th class="px-4 py-3.5">Role</th><th class="px-4 py-3.5">Priority</th><th class="px-4 py-3.5">Status</th><th class="px-5 py-3.5 text-right">Configuration</th></tr></thead><tbody class="divide-y divide-outline-subtle">{% for binding in bindings %}{% set cluster = clusters_by_id.get(binding.asset_key) %}<tr class="hover:bg-surface-hover"><td class="px-5 py-4"><p class="font-semibold text-content-primary">{{ cluster.name if cluster else binding.asset_key }}</p><p class="mt-1 max-w-[320px] truncate font-sans text-xs text-content-muted" title="{{ binding.asset_key }}">{{ binding.asset_key }}</p></td><td class="px-4 py-4">{{ table_label.metadata_label(binding.binding_role|title, 'route') }}</td><td class="px-4 py-4 font-medium text-content-primary">{{ binding.priority }}</td><td class="px-4 py-4">{{ status_badge('ready' if binding.enabled else 'disabled') }}</td><td class="px-5 py-4 text-right">{% if cluster %}<a href="{{ url_for('prometheus.configuration', cluster_id=cluster.id) }}" class="text-sm font-semibold text-kaori-primary-dark hover:underline">Open Settings</a>{% else %}<span class="text-xs text-content-muted">Scope Unavailable</span>{% endif %}</td></tr>{% endfor %}</tbody></table></div>
-                    {% else %}
-                        <div class="p-5"><div class="rounded-lg border border-status-warning-border bg-status-warning-soft p-4"><p class="text-sm font-semibold text-status-warning-text">No Scope Binding</p><p class="mt-1 text-xs leading-5 text-content-secondary">The connection can be tested and validated, but operational consumers cannot resolve it until a binding is created.</p></div></div>
-                    {% endif %}
-                </section>
-
-                <details class="group overflow-hidden rounded-xl border border-status-critical-border bg-surface-card shadow-sm">
-                    <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 [&::-webkit-details-marker]:hidden">
-                        <div>
-                            <p class="text-sm font-semibold text-content-primary">Instance Lifecycle &amp; Deletion</p>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">Remove every scope binding before deleting the connection identity and stored credentials.</p>
+                        <div class="mt-4 grid grid-cols-2 gap-2">
+                            {{ page_hero.context_metric('shield-check', 'Readiness', readiness|replace('_', ' ')|title, 'Produced by Full Validation', value_classes='truncate text-sm font-semibold leading-5') }}
+                            {{ page_hero.context_metric('link-2', 'Scope Bindings', bindings|length, 'Contexts evaluated by resolver') }}
                         </div>
-                        <i data-lucide="chevron-down" class="h-4 w-4 text-content-muted transition group-open:rotate-180"></i>
-                    </summary>
-                    <div class="flex flex-col gap-4 border-t border-status-critical-border bg-status-critical-soft p-5 lg:flex-row lg:items-center lg:justify-between">
-                        <div>
-                            <p class="text-sm font-semibold text-status-critical-text">Deletion Is Blocked While Bindings Remain</p>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">Historical runtime observations and Activity Audit records are retained after deletion.</p>
-                        </div>
-                        {% if delete_instance_url %}
+                        <div class="mt-auto grid grid-cols-2 gap-2 pt-3">
                             <button type="button"
-                                    data-prometheus-delete-button
-                                    data-delete-url="{{ delete_instance_url }}"
-                                    data-delete-title="Delete Prometheus Instance?"
-                                    data-delete-name="{{ instance.name }}"
-                                    data-delete-detail="The connection identity, endpoint configuration, and stored credentials will be removed. Historical runtime observations and Activity Audit records remain available."
-                                    data-delete-action-label="Delete Instance"
-                                    {% if bindings %}disabled{% endif %}
-                                    class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-status-critical-border bg-surface-card px-4 text-sm font-semibold text-status-critical-text transition hover:bg-status-critical-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-not-allowed disabled:opacity-50">
-                                <i data-lucide="trash-2" class="h-4 w-4"></i>
-                                Delete Instance
+                                    @click="setTab('validation', true)"
+                                    class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-brand-outline bg-surface-card px-3 py-2 text-xs font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70">
+                                <i data-lucide="scan-line" class="h-4 w-4"></i>
+                                Review Validation
                             </button>
-                        {% else %}
-                            <span class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-hover px-4 text-sm font-semibold text-content-disabled" aria-disabled="true">
-                                <i data-lucide="route-off" class="h-4 w-4"></i>
-                                Delete Unavailable
-                            </span>
-                        {% endif %}
+                            <a href="{{ url_for('integrations.prometheus') }}"
+                               class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-brand-outline bg-brand-surface px-3 py-2 text-xs font-semibold text-brand-foreground transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70">
+                                <i data-lucide="arrow-left" class="h-4 w-4"></i>
+                                Back to Registry
+                            </a>
+                        </div>
                     </div>
-                </details>
+                </aside>
             </div>
-        </div>
-    </section>
-</div>
-{% include 'prometheus/partials/_delete_confirmation_modal.html' %}
+        </section>
+
+        <section id="prometheus-detail-tabs" class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+            <nav class="border-b border-outline-default bg-surface-hover px-4 pt-4 sm:px-5" aria-label="Prometheus instance domains">
+                <div class="flex gap-2 overflow-x-auto" role="tablist">
+                    {% for tab_key, tab_label, tab_icon, tab_badge in [
+                        ('configuration', 'Configuration', 'settings-2', (instance.endpoint_product or 'Prometheus')|replace('_', ' ')|title),
+                        ('validation', 'Validation & Capabilities', 'scan-search', readiness|replace('_', ' ')|title),
+                        ('runtime', 'Runtime & History', 'activity', runtime_state.health_status_label),
+                        ('scope', 'Scope & Resolution', 'route', (bindings|length|string) ~ ' Bindings')
+                    ] %}
+                        <button type="button"
+                                role="tab"
+                                id="prometheus-tab-{{ tab_key }}"
+                                aria-controls="prometheus-panel-{{ tab_key }}"
+                                :aria-selected="activeTab === '{{ tab_key }}' ? 'true' : 'false'"
+                                @click="setTab('{{ tab_key }}')"
+                                class="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-t-xl border px-4 py-2.5 text-sm font-semibold transition"
+                                :class="activeTab === '{{ tab_key }}' ? 'border-outline-default border-b-surface-card bg-surface-card text-kaori-primary -mb-px' : 'border-transparent text-content-muted hover:bg-kaori-soft hover:text-kaori-primary'">
+                            <i data-lucide="{{ tab_icon }}" class="h-4 w-4"></i>
+                            <span>{{ tab_label }}</span>
+                            <span class="kaori-semantic-label rounded-md border px-2 py-0.5 text-[10px] font-semibold"
+                                  :class="activeTab === '{{ tab_key }}' ? 'border-brand-outline bg-kaori-soft text-kaori-primary' : 'border-outline-subtle bg-surface-card text-content-muted'">{{ tab_badge }}</span>
+                        </button>
+                    {% endfor %}
+                </div>
+            </nav>
+            <div class="p-4 sm:p-5 lg:p-6">
+                <div id="prometheus-panel-configuration" role="tabpanel" aria-labelledby="prometheus-tab-configuration" x-show="activeTab === 'configuration'">
+                    {% include 'prometheus/partials/_detail_configuration.html' %}
+                </div>
+                <div id="prometheus-panel-validation" role="tabpanel" aria-labelledby="prometheus-tab-validation" x-show="activeTab === 'validation'" x-cloak>
+                    {% include 'prometheus/partials/_detail_validation.html' %}
+                </div>
+                <div id="prometheus-panel-runtime" role="tabpanel" aria-labelledby="prometheus-tab-runtime" x-show="activeTab === 'runtime'" x-cloak>
+                    {% include 'prometheus/partials/_detail_runtime.html' %}
+                </div>
+                <div id="prometheus-panel-scope" role="tabpanel" aria-labelledby="prometheus-tab-scope" x-show="activeTab === 'scope'" x-cloak>
+                    {% include 'prometheus/partials/_detail_scope.html' %}
+                </div>
+            </div>
+        </section>
+        {% include 'prometheus/partials/_delete_confirmation_modal.html' %}
+    </div>
 {% endblock dashboard_content %}

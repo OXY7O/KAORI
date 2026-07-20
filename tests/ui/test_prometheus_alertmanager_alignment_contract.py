@@ -110,14 +110,15 @@ def test_delete_lifecycle_url_is_defensive_and_explicitly_registered() -> None:
         'def _optional_endpoint_url(endpoint: str, **values) -> str | None:',
         'endpoint not in current_app.view_functions',
         "endpoint='delete_instance'",
-        "delete_instance_url=_optional_endpoint_url(",
+        "context['delete_instance_url'] = _optional_endpoint_url(",
         "'prometheus.delete_instance'",
     )
     missing = [fragment for fragment in required_routes if fragment not in routes]
     assert not missing, f'Prometheus delete route resilience is incomplete: {missing}'
-    assert "url_for('prometheus.delete_instance'" not in detail
-    assert 'data-delete-url="{{ delete_instance_url }}"' in detail
-    assert 'Delete Unavailable' in detail
+    scope = (ROOT / 'app/templates/prometheus/partials/_detail_scope.html').read_text(encoding='utf-8')
+    assert "url_for('prometheus.delete_instance'" not in detail + scope
+    assert 'data-delete-url="{{ delete_instance_url }}"' in scope
+    assert 'Delete Unavailable' in scope
 
 
 def test_all_prometheus_template_endpoints_have_declared_handlers() -> None:

@@ -6,6 +6,10 @@ REGISTRY = Path('app/templates/integrations/prometheus/partials/_instance_invent
 REGISTRY_CONTENT = Path('app/templates/integrations/prometheus/partials/_inventory_content.html')
 FORM = Path('app/templates/prometheus/instance_form.html')
 DETAIL = Path('app/templates/prometheus/instance_detail.html')
+CONFIG_DETAIL = Path('app/templates/prometheus/partials/_detail_configuration.html')
+VALIDATION_DETAIL = Path('app/templates/prometheus/partials/_detail_validation.html')
+RUNTIME_DETAIL = Path('app/templates/prometheus/partials/_detail_runtime.html')
+SCOPE_DETAIL = Path('app/templates/prometheus/partials/_detail_scope.html')
 RUNTIME = Path('app/templates/prometheus/partials/_runtime_panel.html')
 HISTORY = Path('app/templates/prometheus/partials/_runtime_history.html')
 BINDINGS = Path('app/templates/prometheus/instances.html')
@@ -61,7 +65,7 @@ def test_prometheus_registry_uses_htmx_filters_and_standard_pagination() -> None
         'table_label.metadata_label',
         'status_badge(row.compatibility)',
         'status_badge(row.readiness)',
-        'Showing <strong',
+        'Showing <strong class="font-semibold text-content-primary"',
         'Connections per page',
         'pagination_ui.numeric_pages(pagination.page, pagination.total_pages)',
         "url_for('prometheus.instance_detail', instance_id=row.instance_id)",
@@ -73,22 +77,31 @@ def test_prometheus_registry_uses_htmx_filters_and_standard_pagination() -> None
 
 def test_prometheus_instance_detail_uses_standard_domain_tabs_and_summaries() -> None:
     source = DETAIL.read_text(encoding='utf-8')
-    required = (
+    configuration = CONFIG_DETAIL.read_text(encoding='utf-8')
+    validation = VALIDATION_DETAIL.read_text(encoding='utf-8')
+    runtime = RUNTIME_DETAIL.read_text(encoding='utf-8')
+    scope = SCOPE_DETAIL.read_text(encoding='utf-8')
+
+    required_shell = (
         'role="tablist"',
         "('configuration', 'Configuration', 'settings-2'",
         "('validation', 'Validation & Capabilities', 'scan-search'",
         "('runtime', 'Runtime & History', 'activity'",
-        "('scope', 'Scope & Resolution', 'waypoints'",
-        "workspace_summary_card.render(\n                        'Connection Contract'",
-        "workspace_summary_card.render('Readiness Versus Health'",
-        "workspace_summary_card.render('Binding'",
-        "info_flow.render(\n                            'Configuration Flow'",
-        "prometheus/partials/_runtime_panel.html",
-        "prometheus/partials/_runtime_history.html",
-        'Instance Lifecycle &amp; Deletion',
+        "('scope', 'Scope & Resolution', 'route'",
+        "prometheus/partials/_detail_configuration.html",
+        "prometheus/partials/_detail_validation.html",
+        "prometheus/partials/_detail_runtime.html",
+        "prometheus/partials/_detail_scope.html",
     )
-    missing = [fragment for fragment in required if fragment not in source]
-    assert not missing, f'Prometheus instance domain tabs are incomplete: {missing}'
+    missing = [fragment for fragment in required_shell if fragment not in source]
+    assert not missing, f'Prometheus manage shell is incomplete: {missing}'
+
+    assert configuration.count('workspace_summary_card.render') == 3
+    assert 'info_flow.render' in configuration
+    assert "'Configuration Flow'" in configuration
+    assert validation.count('workspace_summary_card.render') == 3
+    assert runtime.count('workspace_summary_card.render') == 3
+    assert 'Instance Lifecycle &amp; Deletion' in scope
 
 
 def test_prometheus_runtime_history_and_binding_workspace_follow_kaori_violet() -> None:
@@ -109,10 +122,10 @@ def test_prometheus_runtime_history_and_binding_workspace_follow_kaori_violet() 
 
     required_history = (
         '100-Record Retention',
-        'Showing <strong',
+        'Showing <span class="font-semibold text-content-primary"',
         'aria-label="Runtime observations per page"',
         'pagination_ui.numeric_pages(runtime_history.pagination.page, runtime_history.pagination.total_pages)',
-        'Run Full Validation to create the first runtime observation.',
+        'Run Refresh Runtime or wait for scheduled monitoring.',
     )
     missing = [fragment for fragment in required_history if fragment not in history]
     assert not missing, f'Prometheus runtime history is incomplete: {missing}'

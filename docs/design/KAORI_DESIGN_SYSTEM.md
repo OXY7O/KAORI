@@ -299,3 +299,7 @@ Use the shared Operational Toggle for connection boolean controls. Equivalent op
 ## Destructive Confirmation
 
 Use a KAORI critical modal for persisted-object deletion or detachment. Browser-native `confirm()` prompts are prohibited. The modal provides object identity, consequence copy, Cancel, one destructive action, Escape/backdrop handling, and focus return. Server-side lifecycle checks remain authoritative. See `components/MODAL_DRAWER.md`.
+
+## Integration Manage Workspace
+
+Use the shared Integration Manage Workspace for provider instance detail pages. Alertmanager is the reference implementation; Prometheus follows the same four-tab architecture, inline Configuration flow, technical Validation & Capabilities matrix, Runtime & History presentation, and governed Scope & Resolution workspace. Provider-specific terminology and evidence remain explicit. See `components/INTEGRATION_MANAGE_WORKSPACE.md`.

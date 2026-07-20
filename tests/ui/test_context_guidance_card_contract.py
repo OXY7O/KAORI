@@ -54,7 +54,7 @@ def test_secondary_integration_guidance_uses_context_component() -> None:
 def test_primary_prometheus_workflows_use_info_flow() -> None:
     expected = {
         "app/templates/prometheus/instance_form.html": "'Prometheus Registration Flow'",
-        "app/templates/prometheus/instance_detail.html": "'Configuration Flow'",
+        "app/templates/prometheus/partials/_detail_configuration.html": "'Configuration Flow'",
         "app/templates/prometheus/config.html": "'Configuration Flow'",
     }
 
@@ -67,13 +67,13 @@ def test_primary_prometheus_workflows_use_info_flow() -> None:
     form = read("app/templates/prometheus/instance_form.html")
     assert "context_guidance_card.render(" in form
     assert "'After Registration'" in form
-    assert "context_guidance_card.render(" not in read("app/templates/prometheus/instance_detail.html")
+    assert "context_guidance_card.render(" not in read("app/templates/prometheus/partials/_detail_configuration.html")
     assert "context_guidance_card.render(" not in read("app/templates/prometheus/config.html")
 
 
 def test_semantic_and_navigation_boxes_remain_separate() -> None:
     kubernetes = read("app/templates/integrations/kubernetes/detail.html")
-    prometheus = read("app/templates/prometheus/instance_detail.html")
+    prometheus = read("app/templates/prometheus/partials/_detail_configuration.html")
     alertmanager = read("app/templates/alertmanager/instance_form.html")
 
     assert "Authority Boundary" in kubernetes

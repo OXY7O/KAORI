@@ -93,3 +93,5 @@ Scope
 ```
 
 All cards in one row use the same Violet treatment. Lifecycle warnings and destructive actions remain separate semantic panels.
+
+The Configuration, Validation, and Runtime tabs of Alertmanager and Prometheus use identical three-card summary rows.

@@ -1,0 +1,21 @@
+{% import "components/workspace_summary_card.html" as workspace_summary_card %}
+<div class="space-y-5">
+    <section class="grid gap-4 lg:grid-cols-3" aria-label="Validation Workspace Summary">
+        {{ workspace_summary_card.render(
+            'What Validation Does',
+            'Tests query APIs, detects compatibility, validates metric and label contracts, and calculates readiness.',
+            icon='scan-search'
+        ) }}
+        {{ workspace_summary_card.render(
+            'Why It Matters',
+            'Source resolution and Analytics rely on exact technical evidence rather than endpoint reachability alone.',
+            icon='git-compare-arrows'
+        ) }}
+        {{ workspace_summary_card.render(
+            'Operator Flow',
+            'Validate, resolve required gaps, review optional gaps, refresh runtime, and confirm scope resolution.',
+            icon='list-checks'
+        ) }}
+    </section>
+    {% include 'prometheus/partials/_detail_validation_content.html' %}
+</div>

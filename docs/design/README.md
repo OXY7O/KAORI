@@ -19,6 +19,7 @@
 - `components/INFORMATION_GUIDE_CARD.md`
 - `components/WORKSPACE_SUMMARY_CARD.md`
 - `components/HEALTH_INTERPRETATION.md`
+- `components/INTEGRATION_MANAGE_WORKSPACE.md`
 
 ## Reusable page patterns
 
@@ -43,3 +44,4 @@ Use this test before adding documentation:
 
 - `audits/PROMETHEUS_STYLE_AND_LIFECYCLE_AUDIT_2026_07.md`
 - `audits/PROMETHEUS_ALERTMANAGER_ALIGNMENT_AUDIT_2026_07.md`
+- `audits/PROMETHEUS_MANAGE_ALERTMANAGER_PARITY_AUDIT_2026_07.md`

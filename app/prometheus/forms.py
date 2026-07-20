@@ -56,7 +56,7 @@ class PrometheusConfigForm(FlaskForm):
     auth_type = SelectField(
         'Authentication',
         choices=[
-            ('none', 'None'),
+            ('none', 'No Authentication'),
             ('basic', 'Basic Authentication'),
             ('bearer', 'Bearer Token'),
         ],
@@ -94,7 +94,7 @@ class PrometheusConfigForm(FlaskForm):
     )
 
     timeout = IntegerField(
-        'Timeout',
+        'Request Timeout',
         validators=[
             DataRequired(),
             NumberRange(
@@ -106,7 +106,7 @@ class PrometheusConfigForm(FlaskForm):
     )
 
     verify_ssl = BooleanField(
-        'Verify SSL',
+        'Verify TLS Certificate',
         default=True,
     )
 
@@ -139,7 +139,9 @@ class PrometheusConfigForm(FlaskForm):
         self,
         field: PasswordField,
     ) -> None:
-        if self.auth_type.data == 'basic' and not field.data:
+        existing = getattr(self, 'existing_instance', None)
+        has_existing = bool(existing and existing.auth_type == 'basic' and existing.password)
+        if self.auth_type.data == 'basic' and not field.data and not has_existing:
             raise ValidationError(
                 'Password is required',
             )
@@ -148,7 +150,9 @@ class PrometheusConfigForm(FlaskForm):
         self,
         field: PasswordField,
     ) -> None:
-        if self.auth_type.data == 'bearer' and not field.data:
+        existing = getattr(self, 'existing_instance', None)
+        has_existing = bool(existing and existing.auth_type == 'bearer' and existing.bearer_token)
+        if self.auth_type.data == 'bearer' and not field.data and not has_existing:
             raise ValidationError(
                 'Bearer token is required',
             )
@@ -172,4 +176,4 @@ class PrometheusInstanceForm(PrometheusConfigForm):
         validators=[Optional(), Length(max=2000)],
         render_kw={'rows': 3, 'placeholder': 'Operational purpose and ownership context'},
     )
-    enabled = BooleanField('Enabled', default=True)
+    enabled = BooleanField('Allow KAORI to Use This Connection', default=True)

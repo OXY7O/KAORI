@@ -45,7 +45,7 @@ def test_integration_subpages_use_canonical_related_workspaces() -> None:
         "app/templates/cluster/edit.html": ("Kubernetes Inventory", "url_for('inventory.overview')"),
         "app/templates/integrations/kubernetes/detail.html": ("Kubernetes Inventory", "url_for('inventory.overview')"),
         "app/templates/prometheus/instance_form.html": ("Kubernetes Analytics", "url_for('analytics.overview')"),
-        "app/templates/prometheus/instance_detail.html": ("Kubernetes Analytics", "url_for('analytics.overview')"),
+        "app/templates/prometheus/partials/_detail_configuration.html": ("Kubernetes Analytics", "url_for('analytics.overview')"),
         "app/templates/prometheus/config.html": ("Kubernetes Analytics", "url_for('analytics.overview')"),
         "app/templates/alertmanager/instance_form.html": ("Alert Intelligence", "url_for('intelligence.alert_intelligence')"),
         "app/templates/alertmanager/config.html": ("Alert Intelligence", "url_for('intelligence.alert_intelligence')"),

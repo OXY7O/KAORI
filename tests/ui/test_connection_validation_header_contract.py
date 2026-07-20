@@ -22,9 +22,9 @@ def test_connection_validation_header_is_used_across_integration_providers() -> 
             "Refresh connection health and compatibility evidence.",
             "Refresh Runtime",
         ),
-        "app/templates/prometheus/instance_detail.html": (
-            "Test reachability, then rebuild capability evidence.",
-            "Test Connection",
+        "app/templates/prometheus/partials/_detail_validation_content.html": (
+            "Rebuild technical capability and readiness evidence.",
+            "Run Full Validation",
         ),
         "app/templates/prometheus/config.html": (
             "Test reachability, then rebuild metrics readiness evidence.",

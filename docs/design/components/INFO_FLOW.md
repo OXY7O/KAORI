@@ -195,3 +195,5 @@ Prometheus uses Info Flow for primary ordered workflows:
 - cluster-bound Prometheus Configuration → `Configuration Flow`.
 
 These remain primary flows even when positioned in a right-side column.
+
+Prometheus Configuration Flow is a primary provider workflow and uses Info Flow, matching Alertmanager Configuration Flow.

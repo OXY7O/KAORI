@@ -9,6 +9,10 @@ BINDINGS = Path('app/templates/prometheus/instances.html')
 FORM = Path('app/templates/prometheus/instance_form.html')
 CONFIG = Path('app/templates/prometheus/config.html')
 RUNTIME = Path('app/templates/prometheus/partials/_runtime_panel.html')
+CONFIG_DETAIL = Path('app/templates/prometheus/partials/_detail_configuration.html')
+VALIDATION_DETAIL = Path('app/templates/prometheus/partials/_detail_validation.html')
+RUNTIME_DETAIL = Path('app/templates/prometheus/partials/_detail_runtime.html')
+SCOPE = Path('app/templates/prometheus/partials/_detail_scope.html')
 MODAL = Path('app/templates/prometheus/partials/_delete_confirmation_modal.html')
 DOC = Path('app/prometheus/README.md')
 AUDIT = Path('docs/design/audits/PROMETHEUS_STYLE_AND_LIFECYCLE_AUDIT_2026_07.md')
@@ -36,6 +40,7 @@ def test_prometheus_instance_delete_route_and_service_are_governed() -> None:
 
 def test_prometheus_delete_action_is_contextual_and_blocked_by_bindings() -> None:
     detail = DETAIL.read_text(encoding='utf-8')
+    scope = SCOPE.read_text(encoding='utf-8')
 
     required = (
         'Instance Lifecycle &amp; Deletion',
@@ -46,7 +51,7 @@ def test_prometheus_delete_action_is_contextual_and_blocked_by_bindings() -> Non
         'Deletion Is Blocked While Bindings Remain',
         'Historical runtime observations and Activity Audit records are retained after deletion.',
     )
-    missing = [fragment for fragment in required if fragment not in detail]
+    missing = [fragment for fragment in required if fragment not in scope]
     assert not missing, f'Prometheus deletion workspace is incomplete: {missing}'
 
 
@@ -77,17 +82,22 @@ def test_prometheus_workspaces_reuse_global_style_components() -> None:
     detail = DETAIL.read_text(encoding='utf-8')
     form = FORM.read_text(encoding='utf-8')
     config = CONFIG.read_text(encoding='utf-8')
+    inline_configuration = CONFIG_DETAIL.read_text(encoding='utf-8')
+    validation = VALIDATION_DETAIL.read_text(encoding='utf-8')
+    runtime_detail = RUNTIME_DETAIL.read_text(encoding='utf-8')
+    scope = SCOPE.read_text(encoding='utf-8')
     runtime = RUNTIME.read_text(encoding='utf-8')
 
-    assert detail.count('workspace_summary_card.render') >= 12
+    manage_workspace = inline_configuration + validation + runtime_detail + scope
+    assert manage_workspace.count('workspace_summary_card.render') >= 9
     assert config.count('workspace_summary_card.render') >= 9
-    assert 'info_flow.render' in detail
+    assert 'info_flow.render' in inline_configuration
     assert 'info_flow.render' in form
     assert 'info_flow.render' in config
     assert 'health_interpretation.render' in runtime
     assert 'stroke-dashoffset' not in runtime
     assert '<svg' not in runtime
-    assert 'context_guidance_card.render' not in detail
+    assert 'context_guidance_card.render' not in manage_workspace
     assert 'context_guidance_card.render' in form
     assert "'After Registration'" in form
     assert 'context_guidance_card.render' not in config

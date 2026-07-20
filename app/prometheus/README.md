@@ -167,3 +167,9 @@ Prometheus follows the same provider-neutral visual hierarchy as Alertmanager:
 Compatibility Detection choices distinguish a direct Prometheus endpoint from a Prometheus-compatible gateway such as Thanos Query. Detection or manual declaration identifies the compatibility contract only; Full Validation remains authoritative for capability and readiness evidence.
 
 Instance detail pages must not fail because an optional lifecycle endpoint is absent in a partial deployment. Lifecycle URLs are built in the route context through a registered-endpoint check. Missing endpoint registration is logged and rendered as an unavailable action rather than raising a Jinja `BuildError`.
+
+## Manage workspace parity with Alertmanager
+
+The registered Prometheus instance page follows the Alertmanager reference architecture. Configuration is edited inline; the legacy edit route redirects to the Configuration tab. Validation always exposes the complete Prometheus capability catalog with technical probes, evidence, success criteria, required configuration, dependent domains, and remediation. Runtime uses the shared Health Interpretation, Diagnostic Pipeline, and rolling observation history. Scope & Resolution supports inline binding creation/removal and consumer-specific source-resolution evidence.
+
+All full-page and HTMX partial responses use one manage-workspace context builder. Test Connection, Full Validation, and Runtime Refresh synchronize the provider record back to the canonical integration identity so resolver decisions use current readiness and health.

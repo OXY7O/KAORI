@@ -4,79 +4,35 @@
 {% set health_icon = 'circle-check' if runtime_state.health_status == 'healthy' else ('triangle-alert' if runtime_state.health_status == 'degraded' else ('octagon-alert' if runtime_state.health_status == 'unhealthy' else 'circle-help')) %}
 {% set readiness_tone = 'normal' if runtime_state.readiness == 'ready' else ('warning' if runtime_state.readiness == 'degraded' else ('critical' if runtime_state.readiness == 'blocked' else ('unknown' if runtime_state.readiness == 'not_configured' else 'info'))) %}
 {% set readiness_icon = 'circle-check' if runtime_state.readiness == 'ready' else ('triangle-alert' if runtime_state.readiness == 'degraded' else ('octagon-alert' if runtime_state.readiness == 'blocked' else ('circle-help' if runtime_state.readiness == 'not_configured' else 'badge-check'))) %}
-<section id="prometheus-runtime-panel"{% if runtime_oob|default(false) %} hx-swap-oob="outerHTML"{% endif %} class="relative overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+<section id="prometheus-runtime-panel" class="relative overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
     <header class="relative flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div class="flex items-start gap-3">
-            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                <i data-lucide="activity" class="h-5 w-5" aria-hidden="true"></i>
-            </span>
-            <div>
-                <h2 class="text-base font-semibold text-content-primary">Runtime Health &amp; Diagnostics</h2>
-                <p class="mt-1 text-sm leading-6 text-content-secondary">Current health evidence, validation posture, response behavior, and technical checks.</p>
-            </div>
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="activity" class="h-5 w-5" aria-hidden="true"></i></span>
+            <div><h2 class="text-base font-semibold text-content-primary">Runtime Health &amp; Diagnostics</h2><p class="mt-1 text-sm leading-6 text-content-secondary">Current health evidence, validation posture, response behavior, and technical checks.</p></div>
         </div>
-        {% if runtime_state.refresh_url %}
-            <form method="post" action="{{ runtime_state.refresh_url }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-70">
-                    <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
-                    Refresh Runtime
-                </button>
-            </form>
-        {% endif %}
+        <button type="button"
+                hx-post="{{ url_for('prometheus.refresh_runtime', instance_id=instance.id) }}"
+                hx-target="#prometheus-runtime-panel"
+                hx-swap="outerHTML"
+                hx-disabled-elt="this"
+                hx-indicator="#prometheus-runtime-loading"
+                class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-70 cursor-pointer disabled:cursor-not-allowed">
+            <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>Refresh Runtime
+        </button>
+        <div id="prometheus-runtime-loading" class="htmx-indicator pointer-events-none absolute bottom-2 left-5 right-5 h-1 overflow-hidden rounded-full bg-kaori-soft" aria-label="Refreshing Prometheus runtime health"><div class="notification-progress-indeterminate h-full rounded-full bg-kaori-primary"></div></div>
     </header>
 
     <div class="grid gap-3 border-b border-outline-subtle bg-surface-hover p-4 sm:grid-cols-2 sm:p-5 xl:grid-cols-4">
-        <article class="rounded-lg border border-outline-subtle bg-surface-card p-3.5">
-            <div class="flex items-start gap-3">
-                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {% if health_tone == 'normal' %}bg-status-normal-soft text-status-normal-text{% elif health_tone == 'warning' %}bg-status-warning-soft text-status-warning-text{% elif health_tone == 'critical' %}bg-status-critical-soft text-status-critical-text{% else %}bg-status-unknown-soft text-status-unknown-text{% endif %}">
-                    <i data-lucide="heart-pulse" class="h-4 w-4" aria-hidden="true"></i>
-                </span>
-                <div class="min-w-0">
-                    <p class="text-xs font-semibold text-content-muted">Health</p>
-                    <div class="mt-1.5 flex flex-wrap items-center gap-2">
-                        {{ table_label.status_label(runtime_state.health_status_label, health_tone, health_icon) }}
-                        <span class="text-sm font-semibold text-content-primary">{{ runtime_state.health_score }}/100</span>
-                    </div>
-                </div>
-            </div>
-        </article>
-        <article class="rounded-lg border border-outline-subtle bg-surface-card p-3.5">
-            <div class="flex items-start gap-3">
-                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="badge-check" class="h-4 w-4" aria-hidden="true"></i></span>
-                <div class="min-w-0"><p class="text-xs font-semibold text-content-muted">Readiness</p><div class="mt-1.5">{{ table_label.status_label(runtime_state.readiness_label, readiness_tone, readiness_icon) }}</div></div>
-            </div>
-        </article>
-        <article class="rounded-lg border border-outline-subtle bg-surface-card p-3.5">
-            <div class="flex items-start gap-3">
-                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="timer" class="h-4 w-4" aria-hidden="true"></i></span>
-                <div class="min-w-0"><p class="text-xs font-semibold text-content-muted">Response Evidence</p><p class="mt-1.5 text-sm font-semibold text-kaori-primary">{{ runtime_state.latency_display }}</p><p class="mt-1 truncate text-xs text-content-secondary" title="{{ runtime_state.observed_at_display }}">{{ runtime_state.observed_at_display }}</p></div>
-            </div>
-        </article>
-        <article class="rounded-lg border border-outline-subtle bg-surface-card p-3.5">
-            <div class="flex items-start gap-3">
-                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="layers-3" class="h-4 w-4" aria-hidden="true"></i></span>
-                <div class="min-w-0"><p class="text-xs font-semibold text-content-muted">Capability Context</p><p class="mt-1.5 truncate text-sm font-semibold text-content-primary" title="{{ runtime_state.capability_profile or runtime_state.compatibility_profile or 'Not Established' }}">{{ runtime_state.capability_profile or runtime_state.compatibility_profile or 'Not Established' }}</p><p class="mt-1 text-xs text-content-secondary">{{ runtime_state.capability_count_display }}</p></div>
-            </div>
-        </article>
+        <article class="rounded-lg border border-outline-subtle bg-surface-card p-3.5"><div class="flex items-start gap-3"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {% if health_tone == 'normal' %}bg-status-normal-soft text-status-normal-text{% elif health_tone == 'warning' %}bg-status-warning-soft text-status-warning-text{% elif health_tone == 'critical' %}bg-status-critical-soft text-status-critical-text{% else %}bg-status-unknown-soft text-status-unknown-text{% endif %}"><i data-lucide="heart-pulse" class="h-4 w-4"></i></span><div class="min-w-0"><p class="text-xs font-semibold text-content-muted">Health</p><div class="mt-1.5 flex flex-wrap items-center gap-2">{{ table_label.status_label(runtime_state.health_status_label, health_tone, health_icon) }}<span class="text-sm font-semibold text-content-primary">{{ runtime_state.health_score }}/100</span></div></div></div></article>
+        <article class="rounded-lg border border-outline-subtle bg-surface-card p-3.5"><div class="flex items-start gap-3"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="badge-check" class="h-4 w-4"></i></span><div class="min-w-0"><p class="text-xs font-semibold text-content-muted">Readiness</p><div class="mt-1.5">{{ table_label.status_label(runtime_state.readiness_label, readiness_tone, readiness_icon) }}</div></div></div></article>
+        <article class="rounded-lg border border-outline-subtle bg-surface-card p-3.5"><div class="flex items-start gap-3"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="timer" class="h-4 w-4"></i></span><div class="min-w-0"><p class="text-xs font-semibold text-content-muted">Response Evidence</p><p class="mt-1.5 text-sm font-semibold text-kaori-primary">{{ runtime_state.latency_display }}</p><p class="mt-1 truncate text-xs text-content-secondary" title="{{ runtime_state.observed_at_display }}">{{ runtime_state.observed_at_display }}</p></div></div></article>
+        <article class="rounded-lg border border-outline-subtle bg-surface-card p-3.5"><div class="flex items-start gap-3"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="layers-3" class="h-4 w-4"></i></span><div class="min-w-0"><p class="text-xs font-semibold text-content-muted">Capability Context</p><p class="mt-1.5 truncate text-sm font-semibold text-content-primary" title="{{ runtime_state.capability_profile or runtime_state.compatibility_profile or 'Not Detected' }}">{{ runtime_state.capability_profile or runtime_state.compatibility_profile or 'Not Detected' }}</p><p class="mt-1 text-xs text-content-secondary">{{ runtime_state.capability_count_display }}</p></div></div></article>
     </div>
 
     <div class="space-y-4 p-5 sm:p-6">
-        {{ health_interpretation.render(
-            runtime_state.health_score,
-            runtime_state.health_status_label,
-            health_tone,
-            health_icon,
-            runtime_state.health_summary,
-            runtime_state.factors,
-            readiness_label=runtime_state.readiness_label
-        ) }}
-
+        {{ health_interpretation.render(runtime_state.health_score, runtime_state.health_status_label, health_tone, health_icon, runtime_state.health_summary, runtime_state.factors, readiness_label=runtime_state.readiness_label) }}
         <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
-            <header class="flex flex-col gap-2 border-b border-outline-subtle bg-surface-hover px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
-                <div><h3 class="text-sm font-semibold text-content-primary">Diagnostic Pipeline</h3><p class="mt-1 text-xs leading-5 text-content-secondary">Ordered technical checks with evidence, duration, and the next corrective action.</p></div>
-                {{ table_label.metadata_label(runtime_state.diagnostics|length ~ ' Checks', 'list-checks') }}
-            </header>
+            <header class="flex flex-col gap-2 border-b border-outline-subtle bg-surface-hover px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between"><div><h3 class="text-sm font-semibold text-content-primary">Diagnostic Pipeline</h3><p class="mt-1 text-xs leading-5 text-content-secondary">Ordered technical checks with evidence, duration, and the next corrective action.</p></div>{{ table_label.metadata_label(runtime_state.diagnostics|length ~ ' Checks', 'list-checks') }}</header>
             <div class="overflow-x-auto">
                 <table class="min-w-full text-left text-sm">
                     <thead class="bg-surface-card text-xs font-semibold text-content-muted"><tr class="border-b border-outline-subtle"><th class="w-16 px-4 py-3">Step</th><th class="min-w-64 px-4 py-3">Check</th><th class="px-4 py-3">Status</th><th class="min-w-44 px-4 py-3">Evidence</th><th class="whitespace-nowrap px-4 py-3">Duration</th><th class="min-w-64 px-4 py-3">Next Action</th></tr></thead>
@@ -84,14 +40,7 @@
                         {% for step in runtime_state.diagnostics %}
                             {% set step_tone = 'normal' if step.status == 'success' else ('critical' if step.status == 'failed' else ('warning' if step.status == 'warning' else 'info')) %}
                             {% set step_icon = 'circle-check' if step.status == 'success' else ('circle-x' if step.status == 'failed' else ('triangle-alert' if step.status == 'warning' else 'clock-3')) %}
-                            <tr class="align-top">
-                                <td class="px-4 py-3"><span class="flex h-7 w-7 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-xs font-semibold text-kaori-primary">{{ '%02d'|format(loop.index) }}</span></td>
-                                <td class="px-4 py-3"><p class="font-semibold text-content-primary">{{ step.label }}</p><p class="mt-1 text-xs text-content-secondary">{{ step.category|replace('_', ' ')|title }}</p></td>
-                                <td class="px-4 py-3">{{ table_label.status_label('Passed' if step.status == 'success' else ('Failed' if step.status == 'failed' else ('Attention' if step.status == 'warning' else 'Pending')), step_tone, step_icon) }}</td>
-                                <td class="px-4 py-3 text-xs leading-5 text-content-secondary">{{ step.detail or 'No evidence recorded.' }}</td>
-                                <td class="whitespace-nowrap px-4 py-3 text-xs font-medium text-content-secondary">{% if step.duration_ms is not none %}{{ step.duration_ms }} ms{% else %}—{% endif %}</td>
-                                <td class="px-4 py-3 text-xs leading-5 text-content-secondary">{% if step.recommendation %}<div class="flex items-start gap-2"><i data-lucide="wrench" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-status-warning-text" aria-hidden="true"></i><span>{{ step.recommendation }}</span></div>{% else %}<span class="text-content-muted">No action required.</span>{% endif %}</td>
-                            </tr>
+                            <tr class="align-top"><td class="px-4 py-3"><span class="flex h-7 w-7 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-xs font-semibold text-kaori-primary">{{ '%02d'|format(loop.index) }}</span></td><td class="px-4 py-3"><p class="font-semibold text-content-primary">{{ step.label }}</p><p class="mt-1 text-xs text-content-secondary">{{ step.category|replace('_', ' ')|title }}</p></td><td class="px-4 py-3">{{ table_label.status_label('Passed' if step.status == 'success' else ('Failed' if step.status == 'failed' else ('Attention' if step.status == 'warning' else 'Pending')), step_tone, step_icon) }}</td><td class="px-4 py-3 text-xs leading-5 text-content-secondary">{{ step.detail or 'No evidence recorded.' }}</td><td class="whitespace-nowrap px-4 py-3 text-xs font-medium text-content-secondary">{% if step.duration_ms is not none %}{{ step.duration_ms }} ms{% else %}—{% endif %}</td><td class="px-4 py-3 text-xs leading-5 text-content-secondary">{% if step.recommendation %}<div class="flex items-start gap-2"><i data-lucide="wrench" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-status-warning-text"></i><span>{{ step.recommendation }}</span></div>{% else %}<span class="text-content-muted">No action required.</span>{% endif %}</td></tr>
                         {% else %}
                             <tr><td colspan="6" class="px-5 py-10 text-center"><p class="text-sm font-semibold text-content-primary">No Diagnostic Evidence Yet</p><p class="mt-1 text-xs leading-5 text-content-secondary">Run Full Validation and Refresh Runtime to build the technical pipeline.</p></td></tr>
                         {% endfor %}
