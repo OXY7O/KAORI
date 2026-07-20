@@ -31,11 +31,11 @@ def test_role_assignment_flow_uses_shared_component() -> None:
     assert "'User Management'" in source
 
 
-def test_alertmanager_scope_workflow_uses_shared_component() -> None:
+def test_alertmanager_registration_flow_uses_shared_component() -> None:
     source = read(ALERTMANAGER)
     assert 'components/info_flow.html' in source
     assert "info_flow.render(" in source
-    assert "'Alertmanager Scope & Workflow'" in source
+    assert "'Alertmanager Registration Flow'" in source
     assert "'Register Connection Identity'" in source
     assert "'Verify Reachability'" in source
     assert "'Validate Capabilities'" in source

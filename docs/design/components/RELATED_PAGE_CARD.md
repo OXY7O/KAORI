@@ -14,15 +14,46 @@ Use this component only when all conditions are true:
 2. The destination is required to understand, verify, consume, or continue the current workflow.
 3. The relationship can be explained in one concise paragraph.
 4. There is one clear destination action.
+5. The current page is a contextual workflow page rather than a navigation hub.
 
 Examples:
 
 - Roles & Access → Permission Catalog
-- Kubernetes Integrations → Kubernetes Inventory
-- Prometheus Integrations → Kubernetes Analytics
-- Alertmanager Integrations → Alert Intelligence
+- Kubernetes connection detail → Kubernetes Inventory
+- Prometheus connection detail → Kubernetes Analytics
+- Alertmanager connection detail → Alert Intelligence
 
 Do not use it for generic recommendations, external documentation, unrelated shortcuts, or a list of possible destinations.
+
+## Placement Contract
+
+### Allowed
+
+Place the card on a contextual subpage where the relationship is operationally meaningful:
+
+- create or registration page;
+- edit or configuration page;
+- detail page;
+- validation workspace;
+- workflow or wizard step.
+
+The preferred location is the right-side contextual column beside the primary block it extends.
+
+### Not Allowed
+
+Do not place the card on an overview, landing, list, or registry page. In detail:
+
+- overview pages;
+- provider landing pages;
+- registries;
+- generic lists;
+- portfolio or navigation hubs.
+
+These pages already provide broad navigation and do not yet have a sufficiently specific workflow context.
+
+### Single-Page Exception
+
+A module that has no separate contextual subpage may use the card on its main page. **Roles & Access** is the reference exception because Permission Catalog is a distinct related workspace and the role workflow is managed on one primary page.
 
 ## Information Architecture
 
@@ -54,19 +85,22 @@ The shared implementation is:
 
 Geometry:
 
-- `rounded-2xl`
-- Violet contextual surface
-- 20 px internal padding
-- 44 px icon surface
-- one full-width action
-- full available height when placed beside primary content
-- preferred desktop width: approximately 320 px
+- `rounded-2xl`;
+- violet contextual surface;
+- 20 px internal padding;
+- 44 px icon surface;
+- one full-width action;
+- full available height when placed beside primary content;
+- preferred desktop width: approximately 320 px;
+- minimum 24 px separation between content and the action.
+
+The shared component uses `mt-auto pt-6` around the action. This keeps the action bottom-aligned without allowing it to touch the boundary or description above.
 
 The card is contextual navigation, not a semantic health block. Do not use green, amber, or red as its primary surface.
 
-## Placement
+## Desktop and Mobile Placement
 
-Preferred desktop placement is directly to the right of the primary block whose workflow it extends:
+Preferred desktop placement:
 
 ```text
 Primary Workspace Context | Related Page Card
@@ -113,10 +147,11 @@ The boundary note must answer, when relevant:
 - Destination must be a real KAORI route.
 - Do not add secondary actions or overflow menus.
 - Do not duplicate a primary CRUD action from the current page.
+- Preserve at least 24 px between the preceding content and action.
 
 ## Responsive and Accessibility
 
-- Card stacks below primary content before `xl` breakpoint.
+- Card stacks below primary content before the `xl` breakpoint.
 - Card uses a semantic `section` with an accessible label.
 - Decorative icons use `aria-hidden="true"`.
 - Link has visible focus treatment.
@@ -124,6 +159,7 @@ The boundary note must answer, when relevant:
 
 ## Prohibited Patterns
 
+- Placement on an overview, landing, registry, or generic list page.
 - More than one destination.
 - Generic shortcut cards with no workflow explanation.
 - Raw provider links or external documentation links.
@@ -131,14 +167,17 @@ The boundary note must answer, when relevant:
 - Destructive actions.
 - Repeating the same destination already used as the page's primary Hero action.
 - Copying the component classes into page templates instead of using the shared macro.
+- Action button touching the content or authority boundary above.
 
 ## Review Checklist
 
 - [ ] The pages form one workflow or governance chain.
+- [ ] The current page is a contextual subpage, or the single-page exception is documented.
 - [ ] The destination title is canonical and Title Case.
 - [ ] The relationship is explained, not merely named.
 - [ ] KAORI is named directly in product wording.
 - [ ] Authority boundaries are accurate.
 - [ ] Exactly one destination action exists.
+- [ ] At least 24 px separates content from the action.
 - [ ] The card sits beside the relevant primary block on desktop.
 - [ ] The shared component is used.

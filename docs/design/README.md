@@ -12,6 +12,8 @@
 - `components/SIDEBAR_NAVIGATION.md`
 - `components/INFO_FLOW.md`
 - `components/RELATED_PAGE_CARD.md`
+- `components/CONNECTION_VALIDATION_HEADER.md`
+- `components/OPERATIONAL_TOGGLE.md`
 
 ## Reusable page patterns
 

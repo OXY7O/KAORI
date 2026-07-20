@@ -1,5 +1,7 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
+{% import "components/operational_toggle.html" as operational_toggle %}
+{% import "components/related_page_card.html" as related_page_card %}
 {% block title %}Alertmanager Configuration{% endblock title %}
 {% block dashboard_content %}
     <div class="space-y-6">
@@ -54,6 +56,7 @@
         {% endif %}
         <!-- Form Card -->
         {% set current_auth_type = config.auth_type if config else 'none' %}
+        <div class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start">
         <form method="POST" x-data="{ authType: '{{ current_auth_type }}' }">
             <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
                 <!-- Header -->
@@ -156,20 +159,17 @@
                                class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-950/40 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
                     </div>
                     <!-- Verify SSL -->
-                    <label class="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/50">
+                    {% call operational_toggle.render(
+                        'Verify TLS Certificate',
+                        'Reject untrusted or mismatched certificates.'
+                    ) %}
                         <input id="verify_ssl"
                                type="checkbox"
                                name="verify_ssl"
                                value="1"
                                {% if not config or config.verify_ssl %}checked{% endif %}
-                               class="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
-                        <span>
-                            <span class="block text-sm font-semibold text-slate-800 dark:text-slate-100">Verify SSL Certificate</span>
-                            <span class="mt-1 block text-xs text-slate-500 dark:text-slate-400">
-                                Keep enabled for trusted certificates. Disable only for controlled internal endpoints with self-signed certificates.
-                            </span>
-                        </span>
-                    </label>
+                               class="h-4 w-4 rounded border-outline-strong text-kaori-primary focus:ring-outline-focus">
+                    {% endcall %}
                 </div>
                 <!-- Footer -->
                 <div class="flex flex-col gap-3 border-t border-slate-200 bg-slate-50 px-6 py-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:bg-slate-900/40">
@@ -200,5 +200,17 @@
                 </div>
             </div>
         </form>
+        <aside class="xl:sticky xl:top-5">
+            {{ related_page_card.render(
+                'Alert Intelligence',
+                'This cluster-scoped Alertmanager source supplies governed alert lifecycle context to KAORI Alert Intelligence.',
+                url_for('intelligence.alert_intelligence'),
+                'Open Alert Intelligence',
+                icon='brain-circuit',
+                eyebrow='Related Intelligence Workspace',
+                boundary='Alertmanager remains authoritative for routing, grouping, inhibition, silences, and notification delivery.'
+            ) }}
+        </aside>
+        </div>
     </div>
 {% endblock dashboard_content %}

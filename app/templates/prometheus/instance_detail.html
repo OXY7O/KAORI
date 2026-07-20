@@ -1,5 +1,7 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
+{% import "components/connection_validation_header.html" as connection_validation_header %}
+{% import "components/related_page_card.html" as related_page_card %}
 {% import "components/table_label.html" as table_label %}
 {% from "integrations/partials/_status_badge.html" import status_badge %}
 {% block title %}{{ instance.name }} · Prometheus Integration · KAORI{% endblock title %}
@@ -30,7 +32,7 @@
                 <div class="{{ page_hero.context_panel_classes() }}">
                     <div>
                         <div class="flex items-start justify-between gap-3">
-                            <div><p class="{{ page_hero.context_panel_eyebrow_classes() }}">Source posture</p><p class="mt-1 text-sm font-semibold text-brand-foreground">Validation and Runtime Evidence</p></div>
+                            <div><p class="{{ page_hero.context_panel_eyebrow_classes() }}">Source Posture</p><p class="mt-1 text-sm font-semibold text-brand-foreground">Validation and Runtime Evidence</p></div>
                             {{ status_badge(readiness) }}
                         </div>
                         <p class="mt-2 text-xs leading-5 text-brand-foreground-muted">{{ instance.validation_message or 'Run Validation to establish compatibility, query contracts, and module readiness.' }}</p>
@@ -74,7 +76,7 @@
                                 ('Authentication', (instance.auth_type or 'none')|replace('_', ' ')|title),
                                 ('Compatibility detection', (instance.version_detection_mode or 'automatic')|replace('_', ' ')|title),
                                 ('Source Prometheus major', instance.source_prometheus_major or 'Automatic Discovery'),
-                                ('Request timeout', instance.timeout ~ ' seconds'),
+                                ('Request Timeout', instance.timeout ~ ' seconds'),
                                 ('TLS verification', 'Enabled' if instance.verify_ssl else 'Disabled'),
                                 ('Resolver use', 'Enabled' if instance.enabled else 'Disabled'),
                                 ('Last checked', runtime_state.observed_at_display)
@@ -96,19 +98,29 @@
                                 <p><strong class="font-semibold text-content-primary">Bind</strong> authorizes operational consumers to resolve this source.</p>
                             </div>
                         </section>
+                        {{ related_page_card.render(
+                            'Kubernetes Analytics',
+                            'This validated metrics connection supplies governed query data to KAORI Kubernetes Analytics.',
+                            url_for('analytics.overview'),
+                            'Open Kubernetes Analytics',
+                            icon='chart-no-axes-combined',
+                            eyebrow='Related Analytics Workspace',
+                            boundary='Prometheus remains authoritative for metric collection and query execution. KAORI applies governed source resolution and operational interpretation.'
+                        ) }}
                     </aside>
                 </div>
             </div>
 
             <div x-show="activeTab === 'validation'" x-cloak class="space-y-5">
                 <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
-                    <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 lg:flex-row lg:items-start lg:justify-between">
-                        <div><h2 class="text-base font-semibold text-content-primary">Compatibility &amp; Capability Contract</h2><p class="mt-1 text-sm leading-6 text-content-secondary">Technical evidence for API compatibility, metric signals, query contracts, retention, and dependent module readiness.</p></div>
-                        <div class="flex flex-wrap gap-2">
-                            <form method="post" action="{{ url_for('prometheus.instance_test', instance_id=instance.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="inline-flex h-10 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary hover:border-kaori-primary hover:text-kaori-primary-dark"><i data-lucide="plug-zap" class="h-4 w-4"></i>Test Connection</button></form>
-                            <form method="post" action="{{ url_for('prometheus.instance_validate', instance_id=instance.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="inline-flex h-10 items-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white hover:bg-kaori-primary-hover cursor-pointer disabled:cursor-not-allowed"><i data-lucide="scan-line" class="h-4 w-4"></i>Run Validation</button></form>
-                        </div>
-                    </header>
+                    {% call connection_validation_header.render(
+                        'Compatibility &amp; Capability Contract',
+                        'Test reachability, then rebuild capability evidence.',
+                        icon='scan-search'
+                    ) %}
+                        <form method="post" action="{{ url_for('prometheus.instance_test', instance_id=instance.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="inline-flex h-10 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary hover:border-kaori-primary hover:text-kaori-primary-dark"><i data-lucide="plug-zap" class="h-4 w-4"></i>Test Connection</button></form>
+                        <form method="post" action="{{ url_for('prometheus.instance_validate', instance_id=instance.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="inline-flex h-10 items-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white hover:bg-kaori-primary-hover cursor-pointer disabled:cursor-not-allowed"><i data-lucide="scan-line" class="h-4 w-4"></i>Run Validation</button></form>
+                    {% endcall %}
                     <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
                         <div class="bg-surface-card p-4"><p class="text-xs font-semibold text-content-muted">Readiness</p><div class="mt-2">{{ status_badge(readiness) }}</div></div>
                         <div class="bg-surface-card p-4"><p class="text-xs font-semibold text-content-muted">Compatibility</p><div class="mt-2">{{ status_badge(instance.compatibility_status or 'validation_required') }}</div></div>

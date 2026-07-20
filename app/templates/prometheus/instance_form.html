@@ -1,5 +1,7 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
+{% import "components/operational_toggle.html" as operational_toggle %}
+{% import "components/related_page_card.html" as related_page_card %}
 {% block title %}{{ 'Edit' if instance else 'Register' }} Prometheus Connection · KAORI{% endblock title %}
 {% block dashboard_content %}
 <div class="kaori-integration-semantic space-y-6">
@@ -23,7 +25,7 @@
             <aside class="{{ page_hero.aside_classes() }}" aria-label="Prometheus connection workflow">
                 <div class="{{ page_hero.context_panel_classes() }}">
                     <div>
-                        <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Connection workflow</p>
+                        <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Connection Workflow</p>
                         <p class="mt-1 text-sm font-semibold text-brand-foreground">{{ 'Revalidate after changes' if instance else 'Register before validation' }}</p>
                         <p class="mt-2 text-xs leading-5 text-brand-foreground-muted">Connection settings establish identity and access. Full Validation establishes API, query, metric, retention, and module readiness contracts.</p>
                     </div>
@@ -122,14 +124,18 @@
                         <div><h3 class="text-sm font-semibold text-content-primary">Security &amp; Operational Controls</h3><p class="mt-1 text-xs leading-5 text-content-muted">Control certificate verification and whether KAORI may resolve this connection for bound scopes.</p></div>
                     </div>
                     <div class="grid gap-3 md:grid-cols-2">
-                        <label class="flex min-h-16 items-start gap-3 rounded-lg border border-outline-subtle bg-surface-hover p-3.5">
-                            {{ form.verify_ssl(class_='mt-0.5 h-4 w-4 rounded border-outline-strong text-kaori-primary focus:ring-outline-focus') }}
-                            <span><span class="block text-sm font-semibold text-content-primary">Verify TLS Certificate</span><span class="mt-1 block text-xs leading-5 text-content-muted">Reject untrusted or mismatched certificates.</span></span>
-                        </label>
-                        <label class="flex min-h-16 items-start gap-3 rounded-lg border border-outline-subtle bg-surface-hover p-3.5">
-                            {{ form.enabled(class_='mt-0.5 h-4 w-4 rounded border-outline-strong text-kaori-primary focus:ring-outline-focus') }}
-                            <span><span class="block text-sm font-semibold text-content-primary">Allow KAORI to Use This Connection</span><span class="mt-1 block text-xs leading-5 text-content-muted">Disabled connections remain stored but are excluded from scope resolution.</span></span>
-                        </label>
+                        {% call operational_toggle.render(
+                            'Verify TLS Certificate',
+                            'Reject untrusted or mismatched certificates.'
+                        ) %}
+                            {{ form.verify_ssl(class_='h-4 w-4 rounded border-outline-strong text-kaori-primary focus:ring-outline-focus') }}
+                        {% endcall %}
+                        {% call operational_toggle.render(
+                            'Allow KAORI to Use This Connection',
+                            'Disabled connections remain stored but are excluded from scope resolution.'
+                        ) %}
+                            {{ form.enabled(class_='h-4 w-4 rounded border-outline-strong text-kaori-primary focus:ring-outline-focus') }}
+                        {% endcall %}
                     </div>
                 </section>
             </div>
@@ -142,8 +148,8 @@
             </footer>
         </section>
 
-        <aside class="space-y-4 xl:col-span-4">
-            <section class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm xl:sticky xl:top-5">
+        <aside class="space-y-4 xl:col-span-4 xl:sticky xl:top-5">
+            <section class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
                 <div class="flex items-start gap-3">
                     <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="workflow" class="h-5 w-5"></i></span>
                     <div><h2 class="text-base font-semibold text-content-primary">Prometheus Integration Flow</h2><p class="mt-1 text-sm leading-6 text-content-secondary">How this configuration becomes an eligible metrics source.</p></div>
@@ -169,6 +175,15 @@
                     </div>
                 {% endif %}
             </section>
+            {{ related_page_card.render(
+                'Kubernetes Analytics',
+                'This metrics connection supplies governed query data to KAORI Kubernetes Analytics.',
+                url_for('analytics.overview'),
+                'Open Kubernetes Analytics',
+                icon='chart-no-axes-combined',
+                eyebrow='Related Analytics Workspace',
+                boundary='Prometheus remains authoritative for metric collection and query execution. KAORI applies governed source resolution and operational interpretation.'
+            ) }}
         </aside>
     </form>
 </div>

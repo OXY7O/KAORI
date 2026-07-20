@@ -18,10 +18,12 @@
         </div>
     {% endif %}
 
-    <a href="{{ href }}"
-       class="mt-auto inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-white/30 bg-surface-card px-3 py-2 text-sm font-semibold text-kaori-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70">
-        {{ action_label }}
-        <i data-lucide="arrow-right" class="h-4 w-4" aria-hidden="true"></i>
-    </a>
+    <div class="mt-auto pt-6">
+        <a href="{{ href }}"
+           class="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-white/30 bg-surface-card px-3 py-2 text-sm font-semibold text-kaori-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70">
+            {{ action_label }}
+            <i data-lucide="arrow-right" class="h-4 w-4" aria-hidden="true"></i>
+        </a>
+    </div>
 </section>
 {%- endmacro %}

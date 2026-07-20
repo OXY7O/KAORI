@@ -23,6 +23,10 @@ This document is the entry point for KAORI's interface contract. New modules mus
 - `components/LOADING.md`
 - `components/MODAL_DRAWER.md`
 - `components/EXPANDABLE.md`
+- `components/INFO_FLOW.md`
+- `components/RELATED_PAGE_CARD.md`
+- `components/CONNECTION_VALIDATION_HEADER.md`
+- `components/OPERATIONAL_TOGGLE.md`
 
 ## Global guardrail
 

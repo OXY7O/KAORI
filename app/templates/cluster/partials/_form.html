@@ -1,3 +1,4 @@
+{% import "components/operational_toggle.html" as operational_toggle %}
 <form method="POST" enctype="multipart/form-data">
     {{ form.hidden_tag() }}
     <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
@@ -34,7 +35,7 @@
         <div class="space-y-5 p-5">
             <div class="grid gap-5 lg:grid-cols-2">
                 <div>
-                    <label class="mb-2 block text-sm font-semibold text-content-primary">Cluster name</label>
+                    <label class="mb-2 block text-sm font-semibold text-content-primary">Cluster Name</label>
                     {{ form.name(class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20") }}
                 </div>
                 <div>
@@ -60,23 +61,20 @@
                         </p>
 
                         <div class="mt-4 space-y-3">
-                            <label class="flex items-start gap-3 rounded-lg border border-outline-subtle bg-surface-card p-3">
-                                {{ form.kube_verify_ssl(class="mt-0.5 h-4 w-4 rounded border-outline-strong accent-kaori-primary focus:ring-kaori-primary") }}
-                                <span>
-                                    <span class="block text-sm font-semibold text-content-primary">Verify Kubernetes API TLS certificate</span>
-                                    <span class="mt-0.5 block text-xs leading-5 text-content-muted">Recommended for clusters with valid API server certificates.</span>
-                                </span>
-                            </label>
+                            {% call operational_toggle.render(
+                                'Verify Kubernetes API TLS Certificate',
+                                'Reject untrusted or mismatched API server certificates.'
+                            ) %}
+                                {{ form.kube_verify_ssl(class="h-4 w-4 rounded border-outline-strong accent-kaori-primary focus:ring-kaori-primary") }}
+                            {% endcall %}
 
-                            <label class="flex items-start gap-3 rounded-lg border border-status-warning-border bg-status-warning-soft p-3">
-                                {{ form.kube_allow_weak_tls(class="mt-0.5 h-4 w-4 rounded border-status-warning-border accent-status-warning focus:ring-status-warning") }}
-                                <span>
-                                    <span class="block text-sm font-semibold text-status-warning-text">Allow legacy TLS certificate</span>
-                                    <span class="mt-0.5 block text-xs leading-5 text-status-warning-text">
-                                        Enable only for trusted internal clusters with legacy certificates, such as endpoints that trigger an EE_KEY_TOO_SMALL error.
-                                    </span>
-                                </span>
-                            </label>
+                            {% call operational_toggle.render(
+                                'Allow Legacy TLS Certificate',
+                                'Use only for an approved internal endpoint that cannot meet the current TLS policy.',
+                                tone='warning'
+                            ) %}
+                                {{ form.kube_allow_weak_tls(class="h-4 w-4 rounded border-status-warning-border accent-status-warning focus:ring-status-warning") }}
+                            {% endcall %}
                         </div>
                     </div>
                 </div>

@@ -1,3 +1,5 @@
+{% import "components/operational_toggle.html" as operational_toggle %}
+{% import "components/related_page_card.html" as related_page_card %}
 {% set current_auth_type = instance.auth_type or 'none' %}
 {% set field_classes = 'h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-normal text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20' %}
 {% set textarea_classes = 'min-h-24 w-full resize-y rounded-lg border border-outline-default bg-surface-card px-3.5 py-3 text-sm font-normal leading-6 text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20' %}
@@ -46,8 +48,8 @@
                     <section class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
                         <div class="mb-4 flex items-start gap-3"><div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="shield-check" class="h-4 w-4"></i></div><div><h3 class="text-sm font-semibold text-content-primary">Security &amp; Operational Controls</h3><p class="mt-0.5 text-xs leading-5 text-content-muted">Control trust verification and whether the resolver may select this connection.</p></div></div>
                         <div class="grid gap-3 lg:grid-cols-2">
-                            <label class="flex items-start gap-3 rounded-lg border border-brand-outline bg-kaori-soft p-4 transition hover:border-outline-focus"><input type="checkbox" name="verify_ssl" value="1" {% if instance.verify_ssl %}checked{% endif %} class="mt-0.5 h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-2 focus:ring-outline-focus/20 focus:ring-offset-2"><span><span class="block text-sm font-semibold text-kaori-primary">Verify TLS Certificate</span><span class="mt-1 block text-xs leading-5 text-content-muted">Keep enabled unless an approved internal certificate exception is documented.</span></span></label>
-                            <label class="flex items-start gap-3 rounded-lg border border-outline-default bg-surface-card p-4 transition hover:border-outline-strong"><input type="checkbox" name="enabled" value="1" {% if instance.enabled %}checked{% endif %} class="mt-0.5 h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-2 focus:ring-outline-focus/20 focus:ring-offset-2"><span><span class="block text-sm font-semibold text-content-primary">Allow KAORI to Use This Connection</span><span class="mt-1 block text-xs leading-5 text-content-muted">Disable during maintenance to retain configuration while excluding the source from scope resolution.</span></span></label>
+                            {% call operational_toggle.render('Verify TLS Certificate', 'Reject untrusted or mismatched certificates.') %}<input type="checkbox" name="verify_ssl" value="1" {% if instance.verify_ssl %}checked{% endif %} class="h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-2 focus:ring-outline-focus/20 focus:ring-offset-2">{% endcall %}
+                            {% call operational_toggle.render('Allow KAORI to Use This Connection', 'Disabled connections remain stored but are excluded from scope resolution.') %}<input type="checkbox" name="enabled" value="1" {% if instance.enabled %}checked{% endif %} class="h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-2 focus:ring-outline-focus/20 focus:ring-offset-2">{% endcall %}
                         </div>
                     </section>
                 </div>
@@ -72,6 +74,15 @@
                 <header class="border-b border-brand-outline bg-kaori-soft px-4 py-3.5"><div class="flex items-start gap-3"><div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-surface-card text-kaori-primary"><i data-lucide="info" class="h-4 w-4"></i></div><div><h2 class="text-sm font-semibold text-content-primary">Connection Type</h2><p class="mt-0.5 text-xs leading-5 text-content-muted">Ownership context, not capability restriction.</p></div></div></header>
                 <div class="space-y-3 p-4 text-xs leading-5 text-content-muted"><p><strong class="font-semibold text-content-secondary">Externally managed:</strong> lifecycle belongs to another team or service owner.</p><p><strong class="font-semibold text-content-secondary">Standalone:</strong> independent endpoint with a dedicated operational purpose.</p><p><strong class="font-semibold text-content-secondary">Shared service:</strong> centralized connection reused across multiple scopes.</p><p><strong class="font-semibold text-content-secondary">Managed for a specific scope:</strong> ownership follows one primary context while governed bindings may extend usage.</p></div>
             </section>
+            {{ related_page_card.render(
+                'Alert Intelligence',
+                'This validated connection supplies governed alert lifecycle context to KAORI Alert Intelligence.',
+                url_for('intelligence.alert_intelligence'),
+                'Open Alert Intelligence',
+                icon='brain-circuit',
+                eyebrow='Related Intelligence Workspace',
+                boundary='Alertmanager remains authoritative for routing, grouping, inhibition, silences, and notification delivery.'
+            ) }}
         </aside>
     </div>
 </div>

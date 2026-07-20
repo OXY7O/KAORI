@@ -1,4 +1,5 @@
 {% extends "layouts/app.html" %}
+{% import "components/related_page_card.html" as related_page_card %}
 {% block title %}Add Cluster{% endblock title %}
 {% block dashboard_content %}
     <div class="space-y-6">
@@ -16,6 +17,21 @@
         {% set form_title = "Cluster Information" %}
         {% set form_description = "Connection identity, environment, TLS policy, and kubeconfig access." %}
         {% set submit_label = "Save Cluster" %}
-        {% include "cluster/partials/_form.html" %}
+        <div class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start">
+            <div>
+                {% include "cluster/partials/_form.html" %}
+            </div>
+            <aside class="xl:sticky xl:top-5">
+                {{ related_page_card.render(
+                    'Kubernetes Inventory',
+                    'This Kubernetes connection supplies normalized resource context to KAORI Inventory.',
+                    url_for('inventory.overview'),
+                    'Open Kubernetes Inventory',
+                    icon='boxes',
+                    eyebrow='Related Operational Workspace',
+                    boundary='Kubernetes remains authoritative for live resources. KAORI Inventory presents synchronized operational context and history.'
+                ) }}
+            </aside>
+        </div>
     </div>
 {% endblock dashboard_content %}

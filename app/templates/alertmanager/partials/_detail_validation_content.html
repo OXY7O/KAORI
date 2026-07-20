@@ -1,31 +1,31 @@
 {% import "components/table_label.html" as table_label %}
+{% import "components/connection_validation_header.html" as connection_validation_header %}
 <section id="alertmanager-validation-workspace" class="relative overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <header class="relative flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <div class="flex items-start gap-3">
-            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="scan-search" class="h-5 w-5"></i></span>
-            <div>
-                <h2 class="text-base font-semibold text-content-primary">Compatibility &amp; Capability Matrix</h2>
-                <p class="mt-1 text-sm leading-6 text-content-secondary">Technical evidence, acceptance criteria, operational impact, and remediation guidance for every validated capability.</p>
-            </div>
-        </div>
-        <form method="post"
-              action="{{ url_for('alertmanager.validate_instance', instance_id=instance.id) }}"
-              hx-post="{{ url_for('alertmanager.validate_instance', instance_id=instance.id) }}"
-              hx-target="#alertmanager-validation-workspace"
-              hx-swap="outerHTML"
-              hx-disabled-elt="button"
-              hx-indicator="#alertmanager-validation-loading">
-            {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-            <button type="submit" class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-70 cursor-pointer disabled:cursor-not-allowed">
-                <i data-lucide="scan-line" class="h-4 w-4"></i>Run Full Validation
-            </button>
-        </form>
+    <div class="relative">
+        {% call connection_validation_header.render(
+            'Compatibility &amp; Capability Matrix',
+            'Rebuild capability and readiness evidence.',
+            icon='scan-search'
+        ) %}
+            <form method="post"
+                  action="{{ url_for('alertmanager.validate_instance', instance_id=instance.id) }}"
+                  hx-post="{{ url_for('alertmanager.validate_instance', instance_id=instance.id) }}"
+                  hx-target="#alertmanager-validation-workspace"
+                  hx-swap="outerHTML"
+                  hx-disabled-elt="button"
+                  hx-indicator="#alertmanager-validation-loading">
+                {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                <button type="submit" class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-70 cursor-pointer disabled:cursor-not-allowed">
+                    <i data-lucide="scan-line" class="h-4 w-4"></i>Run Full Validation
+                </button>
+            </form>
+        {% endcall %}
         <div id="alertmanager-validation-loading"
              class="htmx-indicator pointer-events-none absolute bottom-2 left-5 right-5 h-1 overflow-hidden rounded-full bg-kaori-soft"
              aria-label="Running Alertmanager full validation">
             <div class="notification-progress-indeterminate h-full rounded-full bg-kaori-primary"></div>
         </div>
-    </header>
+    </div>
 
     <div class="grid gap-px border-b border-outline-subtle bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
         <div class="bg-surface-card p-4"><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Detected Profile</p><p class="mt-2 break-words text-sm font-semibold text-content-primary">{{ instance.capability_profile or 'Validation required' }}</p><p class="mt-1 text-xs leading-5 text-content-secondary">Derived from observed API and payload evidence.</p></div>

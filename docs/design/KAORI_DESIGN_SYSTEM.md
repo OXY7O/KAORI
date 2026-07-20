@@ -266,6 +266,14 @@ The Node Inventory right-side hero panel is the baseline for compact operational
 Use the shared Info Flow component for short ordered governance or operational sequences. The standard structure is an expandable header, a three-to-five-step vertical timeline, and one optional flow-wide boundary note. Role Assignment Flow is the reference implementation. See `components/INFO_FLOW.md`.
 
 
-## Related workspace contract
+## Related Workspace Contract
 
-When two KAORI pages form one operational or governance workflow, expose the relationship through the shared Related Page Card rather than an undocumented page-local shortcut. The card explains the dependency, preserves authority boundaries, and provides exactly one destination action. Place it beside the primary block it extends on desktop and stack it below on smaller screens.
+When two KAORI pages form one operational or governance workflow, expose the relationship through the shared Related Page Card rather than an undocumented page-local shortcut. Place the card on contextual create, edit, detail, configuration, validation, or workflow subpages in the right-side column. Do not place it on overview, landing, list, or registry pages. A single-page module such as Roles & Access is the documented exception. The card provides exactly one destination action and preserves at least 24 px between the content and action. See `components/RELATED_PAGE_CARD.md`.
+
+## Connection Validation Header
+
+Use the shared Connection Validation Header when a connection block exposes a reachability test, full validation, runtime refresh, or evidence-rebuild action. The helper is one short sentence, approximately 80 characters or fewer, and explains only the immediate operation. Detailed workflow or remediation information belongs outside the header. See `components/CONNECTION_VALIDATION_HEADER.md`.
+
+## Operational Toggle
+
+Use the shared Operational Toggle for connection boolean controls. Equivalent operational and security controls use the neutral baseline and identical geometry. Apply warning or critical colors only when enabling the option creates a documented exception or risk, such as allowing a legacy TLS certificate. See `components/OPERATIONAL_TOGGLE.md`.

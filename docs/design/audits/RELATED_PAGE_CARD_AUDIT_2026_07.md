@@ -2,41 +2,40 @@
 
 ## Scope
 
-The audit reviewed cross-page workflow relationships in:
+The initial audit established the shared Related Page Card from the Permission Catalog relationship on Roles & Access. A placement correction was then completed after reviewing provider landing pages and their contextual subpages.
 
-- Roles & Access
-- Kubernetes Integrations
-- Prometheus Integrations
-- Alertmanager Integrations
-- Integrations Overview
+Reviewed areas:
 
-The goal was to distinguish meaningful workflow relationships from ordinary navigation shortcuts and establish a reusable component based on the Permission Catalog card used by Roles & Access.
+- Roles & Access;
+- Integrations Overview;
+- Kubernetes provider landing, registration, edit, and detail pages;
+- Prometheus provider landing, registration, configuration, and detail pages;
+- Alertmanager provider landing, registration, configuration, and detail pages.
 
-## Findings
+## Final Decision
 
-The Roles & Access page already communicated an important relationship: roles assign permission keys, while Permission Catalog remains the authoritative registry. However, the card was implemented with page-local markup.
+Related Page Cards are contextual workflow navigation. They are not provider portfolio or registry navigation.
 
-The three provider integration pages also have direct downstream KAORI workspaces, but those relationships were not surfaced consistently:
+Therefore:
 
-| Current Workspace | Related Workspace | Relationship |
+- overview, landing, list, and registry pages do not use the component;
+- create, edit, detail, configuration, and validation subpages may use it in the right-side contextual column;
+- single-page modules may use it on the main page when no subpage exists.
+
+Integrations Overview was not given a Related Page Card because it is itself the navigation and portfolio summary for provider workspaces.
+
+## Standardized Relationships
+
+| Contextual Workspace | Related Workspace | Relationship |
 |---|---|---|
-| Kubernetes Integrations | Kubernetes Inventory | Validated connections supply normalized resource inventory. |
-| Prometheus Integrations | Kubernetes Analytics | Eligible metrics sources power analytics and forecasting workflows. |
-| Alertmanager Integrations | Alert Intelligence | Eligible alert sources power correlation and operational review. |
+| Roles & Access | Permission Catalog | Roles assign code-backed permission keys. |
+| Kubernetes connection workflow | Kubernetes Inventory | Validated connections supply normalized resource context. |
+| Prometheus connection workflow | Kubernetes Analytics | Eligible metrics sources supply governed query data. |
+| Alertmanager connection workflow | Alert Intelligence | Eligible alert sources supply governed alert lifecycle context. |
 
-Integrations Overview was not given a Related Page Card because it is itself the navigation and portfolio summary for provider workspaces. Adding another destination card there would duplicate its primary purpose.
+## Implementation Result
 
-## Implementation
-
-A shared macro was added:
-
-```text
-app/templates/components/related_page_card.html
-```
-
-The Roles & Access Permission Catalog card was migrated to the component.
-
-The component was then applied to:
+Removed from provider landing pages:
 
 ```text
 app/templates/integrations/kubernetes.html
@@ -44,32 +43,26 @@ app/templates/integrations/prometheus.html
 app/templates/integrations/alertmanager.html
 ```
 
-Each provider page now places the Related Page Card directly beside its integration context block at the desktop `xl` breakpoint and stacks it below on smaller screens.
+Applied to contextual subpages:
 
-## Standardized Relationships
+```text
+app/templates/cluster/add.html
+app/templates/cluster/edit.html
+app/templates/integrations/kubernetes/detail.html
+app/templates/prometheus/instance_form.html
+app/templates/prometheus/instance_detail.html
+app/templates/prometheus/config.html
+app/templates/alertmanager/instance_form.html
+app/templates/alertmanager/config.html
+app/templates/alertmanager/partials/_detail_configuration.html
+```
 
-### Roles & Access → Permission Catalog
+The Roles & Access exception remains valid.
 
-Clarifies that roles package code-backed permission keys while Permission Catalog remains the authoritative registry.
+The action spacing was also corrected in the shared component with a 24 px top gap before the bottom-aligned action.
 
-### Kubernetes Integrations → Kubernetes Inventory
+For detailed placement evidence, see:
 
-Clarifies that Kubernetes remains authoritative for live resources while KAORI presents normalized inventory, operational context, and history.
-
-### Prometheus Integrations → Kubernetes Analytics
-
-Clarifies that Prometheus remains authoritative for collection and query execution while KAORI applies governed source resolution and operational interpretation.
-
-### Alertmanager Integrations → Alert Intelligence
-
-Clarifies that Alertmanager remains authoritative for routing, grouping, inhibition, silences, and delivery while KAORI provides correlation, prioritization, and review.
-
-## Compliance Result
-
-- Shared Related Page Card component: implemented
-- Roles & Access local card markup: migrated
-- Kubernetes Integrations relationship: implemented
-- Prometheus Integrations relationship: implemented
-- Alertmanager Integrations relationship: implemented
-- Integrations Overview duplication: intentionally avoided
-- Documentation and automated guardrail: implemented
+```text
+docs/design/audits/RELATED_PAGE_CARD_PLACEMENT_AUDIT_2026_07.md
+```
