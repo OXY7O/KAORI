@@ -225,7 +225,9 @@
                                     </a>
                                     <button type="button"
                                             title="Delete cluster"
-                                            x-on:click="deleteModal = true; deleteUrl = '{{ url_for('cluster.delete_cluster_route', cluster_id=cluster.id) }}'; deleteName = '{{ cluster.name }}'"
+                                            data-delete-url="{{ url_for('cluster.delete_cluster_route', cluster_id=cluster.id) }}"
+                                            data-delete-name="{{ cluster.name }}"
+                                            x-on:click="openDelete($el.dataset.deleteUrl, $el.dataset.deleteName)"
                                             class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-status-critical-border bg-surface-card text-status-critical-text transition hover:bg-status-critical-soft cursor-pointer disabled:cursor-not-allowed">
                                         <i data-lucide="trash-2" class="h-4 w-4"></i>
                                     </button>

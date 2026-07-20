@@ -26,7 +26,8 @@
                     class="inline-flex h-10 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary">
                 Cancel
             </button>
-            <form :action="deleteUrl" method="POST">
+            <form x-bind:action="deleteUrl" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit"
                         data-operation-submit
                         data-loading-label="Deleting cluster..."

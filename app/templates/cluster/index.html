@@ -3,7 +3,7 @@
 {% import "components/page_hero.html" as page_hero %}
 {% block title %}Kubernetes Cluster{% endblock title %}
 {% block dashboard_content %}
-    <div x-data="{ deleteModal: false, deleteUrl: '', deleteName: '' }" class="space-y-6">
+    <div x-data="{ deleteModal: false, deleteUrl: '', deleteName: '', openDelete(url, name) { this.deleteUrl = url; this.deleteName = name; this.deleteModal = true } }" class="space-y-6">
         <section class="relative overflow-hidden rounded-2xl border border-brand-outline bg-kaori-primary p-5 text-brand-foreground shadow-sm lg:p-6">
             <div class="relative grid gap-5 xl:grid-cols-12 xl:items-stretch">
                 <div class="flex min-w-0 flex-col justify-center xl:col-span-7">
