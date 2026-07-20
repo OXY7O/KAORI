@@ -17,6 +17,7 @@
         {% set form_title = "Cluster Information" %}
         {% set form_description = "Connection identity, environment, TLS policy, and kubeconfig access." %}
         {% set submit_label = "Save Cluster" %}
+        {% set action_helper = "Save to start Kubernetes inventory onboarding." %}
         <div class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start">
             <div>
                 {% include "cluster/partials/_form.html" %}

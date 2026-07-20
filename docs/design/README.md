@@ -14,6 +14,7 @@
 - `components/RELATED_PAGE_CARD.md`
 - `components/CONNECTION_VALIDATION_HEADER.md`
 - `components/OPERATIONAL_TOGGLE.md`
+- `components/FORM_ACTION_BAR.md`
 
 ## Reusable page patterns
 

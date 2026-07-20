@@ -1,5 +1,6 @@
 {% import "components/operational_toggle.html" as operational_toggle %}
 {% import "components/related_page_card.html" as related_page_card %}
+{% import "components/form_action_bar.html" as form_action_bar %}
 {% set current_auth_type = instance.auth_type or 'none' %}
 {% set field_classes = 'h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-normal text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20' %}
 {% set textarea_classes = 'min-h-24 w-full resize-y rounded-lg border border-outline-default bg-surface-card px-3.5 py-3 text-sm font-normal leading-6 text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20' %}
@@ -53,10 +54,9 @@
                         </div>
                     </section>
                 </div>
-                <footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                    <p class="text-xs leading-5 text-content-muted">Saving resets readiness to <span class="font-semibold text-content-secondary">Validation Required</span>. Run Full Validation before relying on the connection again.</p>
+                {% call form_action_bar.render('Save changes, then run Full Validation.', aria_label='Alertmanager Configuration Actions') %}
                     <button type="submit" class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 cursor-pointer disabled:cursor-not-allowed"><i data-lucide="save" class="h-4 w-4"></i>Save Changes</button>
-                </footer>
+                {% endcall %}
             </section>
         </form>
 

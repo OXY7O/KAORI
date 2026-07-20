@@ -3,6 +3,7 @@
 {% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "components/operational_toggle.html" as operational_toggle %}
 {% import "components/related_page_card.html" as related_page_card %}
+{% import "components/form_action_bar.html" as form_action_bar %}
 {% from "integrations/partials/_status_badge.html" import status_badge %}
 {% block title %}{{ cluster.name }} · Prometheus Configuration · KAORI{% endblock title %}
 {% block dashboard_content %}
@@ -66,7 +67,7 @@
                                 <div class="mt-4">{% call operational_toggle.render('Verify TLS Certificate', 'Reject untrusted or mismatched certificates for HTTPS endpoints.') %}{{ form.verify_ssl(class_='h-4 w-4 rounded border-outline-strong text-kaori-primary focus:ring-outline-focus') }}{% endcall %}</div>
                             </section>
                         </div>
-                        <footer class="flex items-center justify-end border-t border-outline-subtle bg-surface-hover px-5 py-4"><button class="inline-flex h-10 items-center gap-2 rounded-lg bg-kaori-primary px-5 text-sm font-semibold text-white hover:bg-kaori-primary-hover cursor-pointer disabled:cursor-not-allowed"><i data-lucide="save" class="h-4 w-4"></i>Save Configuration</button></footer>
+                        {% call form_action_bar.render('Save changes, then run Full Validation.', aria_label='Prometheus Configuration Actions') %}<button class="inline-flex h-10 items-center gap-2 rounded-lg bg-kaori-primary px-5 text-sm font-semibold text-white hover:bg-kaori-primary-hover cursor-pointer disabled:cursor-not-allowed"><i data-lucide="save" class="h-4 w-4"></i>Save Configuration</button>{% endcall %}
                     </section>
                     <aside class="space-y-4 xl:col-span-4">
                         <section class="rounded-xl border border-status-info-border bg-status-info-soft p-4"><div class="flex items-start gap-3"><i data-lucide="workflow" class="mt-0.5 h-4 w-4 text-status-info"></i><div><h2 class="text-sm font-semibold text-status-info-text">Configuration Flow</h2><p class="mt-1 text-xs leading-5 text-content-secondary">Save settings, test reachability, run Full Validation, then review Analytics and runtime evidence.</p></div></div></section>

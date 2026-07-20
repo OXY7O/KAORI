@@ -2,6 +2,7 @@
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/operational_toggle.html" as operational_toggle %}
 {% import "components/related_page_card.html" as related_page_card %}
+{% import "components/form_action_bar.html" as form_action_bar %}
 {% block title %}Alertmanager Configuration{% endblock title %}
 {% block dashboard_content %}
     <div class="space-y-6">
@@ -172,32 +173,26 @@
                     {% endcall %}
                 </div>
                 <!-- Footer -->
-                <div class="flex flex-col gap-3 border-t border-slate-200 bg-slate-50 px-6 py-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:bg-slate-900/40">
-                    <p class="text-xs text-slate-500 dark:text-slate-400">
-                        Test the endpoint before saving when credentials, TLS, or network paths change.
-                    </p>
-                    <div class="flex justify-end gap-3">
-                        <button type="button"
-                                hx-post="{{ url_for('alertmanager.test_cluster_alertmanager', cluster_id=cluster.id) }}"
-                                hx-target="#operational-action-feedback"
-                                hx-swap="innerHTML"
-                                hx-disabled-elt="this"
-                                class="group inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-wait disabled:opacity-70 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
-                            <i data-lucide="plug-zap"
-                               class="h-4 w-4 group-[.htmx-request]:animate-spin"></i>
-                            Test Connection
-                        </button>
-                        <button type="submit"
-                                name="action"
-                                value="save"
-                                data-operation-submit
-                                data-loading-label="Saving Alertmanager..."
-                                class="inline-flex items-center justify-center gap-2 rounded-xl bg-kaori-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover dark:hover:bg-blue-500 cursor-pointer disabled:cursor-not-allowed">
-                            <i data-lucide="save" class="h-4 w-4"></i>
-                            <span data-operation-submit-label>Save Configuration</span>
-                        </button>
-                    </div>
-                </div>
+                {% call form_action_bar.render('Test changes before saving this configuration.', aria_label='Alertmanager Configuration Actions') %}
+                    <button type="button"
+                            hx-post="{{ url_for('alertmanager.test_cluster_alertmanager', cluster_id=cluster.id) }}"
+                            hx-target="#operational-action-feedback"
+                            hx-swap="innerHTML"
+                            hx-disabled-elt="this"
+                            class="group inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary disabled:cursor-wait disabled:opacity-70">
+                        <i data-lucide="plug-zap" class="h-4 w-4 group-[.htmx-request]:animate-spin"></i>
+                        Test Connection
+                    </button>
+                    <button type="submit"
+                            name="action"
+                            value="save"
+                            data-operation-submit
+                            data-loading-label="Saving Alertmanager..."
+                            class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-5 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover cursor-pointer disabled:cursor-not-allowed">
+                        <i data-lucide="save" class="h-4 w-4"></i>
+                        <span data-operation-submit-label>Save Configuration</span>
+                    </button>
+                {% endcall %}
             </div>
         </form>
         <aside class="xl:sticky xl:top-5">

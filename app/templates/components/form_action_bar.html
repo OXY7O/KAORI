@@ -1,0 +1,8 @@
+{% macro render(helper, aria_label='Form Actions') -%}
+<footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6" aria-label="{{ aria_label }}">
+    <p class="max-w-lg text-xs leading-5 text-content-muted">{{ helper }}</p>
+    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+        {{ caller() }}
+    </div>
+</footer>
+{%- endmacro %}

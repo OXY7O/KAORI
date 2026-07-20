@@ -6,6 +6,7 @@
 {% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "components/operational_toggle.html" as operational_toggle %}
 {% import "components/related_page_card.html" as related_page_card %}
+{% import "components/form_action_bar.html" as form_action_bar %}
 {% block title %}{{ instance.name if instance else 'Register Alertmanager Instance' }} · KAORI{% endblock title %}
 {% block dashboard_content %}
     {% set submitted_form = draft_form if draft_form is defined else none %}
@@ -298,21 +299,19 @@
                         {% endif %}
                     </div>
 
-                    <footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                        <p class="max-w-xl text-xs leading-5 text-content-muted">
-                            {% if instance %}Saving configuration resets readiness to Validation Required. Run Validation afterward.{% else %}Complete the form and run Test Connection. Register Instance becomes available only after the submitted values pass reachability verification.{% endif %}
-                        </p>
-                        <div class="flex flex-col gap-2 sm:flex-row sm:justify-end">
-                            <button type="submit"
-                                    data-operation-submit
-                                    data-loading-label="{{ 'Updating instance...' if instance else 'Registering instance...' }}"
-                                    {% if not instance %}disabled x-bind:disabled="!connectionVerified" x-bind:title="connectionVerified ? 'Register this verified connection' : 'Run Test Connection successfully before registering'"{% endif %}
-                                    class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card disabled:cursor-not-allowed disabled:bg-content-disabled disabled:opacity-70 cursor-pointer disabled:cursor-not-allowed">
-                                <i data-lucide="save" class="h-4 w-4"></i>
-                                <span data-operation-submit-label>{{ 'Update Instance' if instance else 'Register Instance' }}</span>
-                            </button>
-                        </div>
-                    </footer>
+                    {% call form_action_bar.render(
+                        'Save changes, then run Full Validation.' if instance else 'Register after Test Connection succeeds.',
+                        aria_label='Alertmanager Instance Actions'
+                    ) %}
+                        <button type="submit"
+                                data-operation-submit
+                                data-loading-label="{{ 'Updating instance...' if instance else 'Registering instance...' }}"
+                                {% if not instance %}disabled x-bind:disabled="!connectionVerified" x-bind:title="connectionVerified ? 'Register this verified connection' : 'Run Test Connection successfully before registering'"{% endif %}
+                                class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card disabled:cursor-not-allowed disabled:bg-content-disabled disabled:opacity-70 cursor-pointer disabled:cursor-not-allowed">
+                            <i data-lucide="save" class="h-4 w-4"></i>
+                            <span data-operation-submit-label>{{ 'Update Instance' if instance else 'Register Instance' }}</span>
+                        </button>
+                    {% endcall %}
                 </section>
             </form>
 

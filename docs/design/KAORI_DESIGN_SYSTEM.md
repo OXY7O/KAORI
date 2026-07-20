@@ -177,6 +177,7 @@ Detailed component rules are maintained separately:
 - Hero: `docs/design/components/HERO.md`
 - Tables and compact labels: `docs/design/components/TABLE_AND_LABEL.md`
 - Related page relationships: `docs/design/components/RELATED_PAGE_CARD.md`
+- Form submission actions: `docs/design/components/FORM_ACTION_BAR.md`
 - Reusable page composition: `docs/design/patterns/`
 
 A page must consume shared components rather than recreate their utility strings.
