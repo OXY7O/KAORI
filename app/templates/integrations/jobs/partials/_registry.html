@@ -66,12 +66,70 @@
     </div>
 
     <footer class="flex flex-col gap-3 border-t border-outline-subtle px-5 py-4 text-xs text-content-muted sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <div class="flex flex-wrap items-center gap-4"><p>Showing <strong class="text-content-primary">{{ job_pagination.start_item }}–{{ job_pagination.end_item }}</strong> of <strong class="text-content-primary">{{ job_pagination.total_items }}</strong> jobs</p><label class="flex items-center gap-2">Rows per page<select name="per_page" class="rounded-md border border-outline-default bg-surface-card px-2 py-1" hx-get="{{ url_for('integrations.jobs') }}" hx-target="#job-execution-registry" hx-swap="outerHTML" hx-push-url="true" hx-include="#job-execution-registry form" hx-indicator="#job-execution-loading"><option value="5" {% if job_pagination.per_page == 5 %}selected{% endif %}>5</option><option value="10" {% if job_pagination.per_page == 10 %}selected{% endif %}>10</option><option value="25" {% if job_pagination.per_page == 25 %}selected{% endif %}>25</option><option value="50" {% if job_pagination.per_page == 50 %}selected{% endif %}>50</option></select></label></div>
-        <div class="flex items-center gap-1">
+        <div class="flex flex-wrap items-center gap-4">
+            <p>Showing <strong class="text-content-primary">{{ job_pagination.start_item }}–{{ job_pagination.end_item }}</strong> of <strong class="text-content-primary">{{ job_pagination.total_items }}</strong> jobs</p>
+            <form class="flex items-center gap-2"
+                  hx-get="{{ url_for('integrations.jobs') }}"
+                  hx-target="#job-execution-registry"
+                  hx-swap="outerHTML"
+                  hx-push-url="true"
+                  hx-indicator="#job-execution-loading">
+                <input type="hidden" name="page" value="1">
+                <input type="hidden" name="status" value="{{ selected_job_status }}">
+                <input type="hidden" name="workload" value="{{ selected_job_workload }}">
+                <input type="hidden" name="queue" value="{{ selected_job_queue }}">
+                <input type="hidden" name="search" value="{{ job_search }}">
+                <label for="job-execution-per-page">Rows per page</label>
+                <select id="job-execution-per-page"
+                        name="per_page"
+                        class="{{ pagination_ui.page_size_classes() }}"
+                        onchange="this.form.requestSubmit()">
+                    <option value="5" {% if job_pagination.per_page == 5 %}selected{% endif %}>5</option>
+                    <option value="10" {% if job_pagination.per_page == 10 %}selected{% endif %}>10</option>
+                    <option value="25" {% if job_pagination.per_page == 25 %}selected{% endif %}>25</option>
+                    <option value="50" {% if job_pagination.per_page == 50 %}selected{% endif %}>50</option>
+                </select>
+            </form>
+        </div>
+        <div class="flex flex-wrap items-center gap-1">
             {% set base = {'status': selected_job_status, 'workload': selected_job_workload, 'queue': selected_job_queue, 'search': job_search, 'per_page': job_pagination.per_page} %}
-            {% if job_pagination.has_prev %}<a href="{{ url_for('integrations.jobs', page=job_pagination.prev_page, **base) }}" hx-get="{{ url_for('integrations.jobs', page=job_pagination.prev_page, **base) }}" hx-target="#job-execution-registry" hx-swap="outerHTML" hx-push-url="true" class="{{ pagination_ui.navigation_classes(disabled=false) }}">Previous</a>{% else %}<span class="{{ pagination_ui.navigation_classes(disabled=true) }}" aria-disabled="true">Previous</span>{% endif %}
-            {% for number in job_pagination.pages %}<a href="{{ url_for('integrations.jobs', page=number, **base) }}" hx-get="{{ url_for('integrations.jobs', page=number, **base) }}" hx-target="#job-execution-registry" hx-swap="outerHTML" hx-push-url="true" class="{{ pagination_ui.page_classes(active=number == job_pagination.page) }}">{{ number }}</a>{% endfor %}
-            {% if job_pagination.has_next %}<a href="{{ url_for('integrations.jobs', page=job_pagination.next_page, **base) }}" hx-get="{{ url_for('integrations.jobs', page=job_pagination.next_page, **base) }}" hx-target="#job-execution-registry" hx-swap="outerHTML" hx-push-url="true" class="{{ pagination_ui.navigation_classes(disabled=false) }}">Next</a>{% else %}<span class="{{ pagination_ui.navigation_classes(disabled=true) }}" aria-disabled="true">Next</span>{% endif %}
+            {% if job_pagination.has_prev %}
+                <a href="{{ url_for('integrations.jobs', page=job_pagination.prev_page, **base) }}"
+                   hx-get="{{ url_for('integrations.jobs', page=job_pagination.prev_page, **base) }}"
+                   hx-target="#job-execution-registry"
+                   hx-swap="outerHTML"
+                   hx-push-url="true"
+                   hx-indicator="#job-execution-loading"
+                   class="{{ pagination_ui.navigation_classes(disabled=false) }}">
+                    <i data-lucide="chevron-left" class="h-4 w-4"></i>
+                    Previous
+                </a>
+            {% else %}
+                <span class="{{ pagination_ui.navigation_classes(disabled=true) }}" aria-disabled="true">
+                    <i data-lucide="chevron-left" class="h-4 w-4"></i>
+                    Previous
+                </span>
+            {% endif %}
+
+            {{ pagination_ui.numeric_pages(job_pagination.page, job_pagination.total_pages) }}
+
+            {% if job_pagination.has_next %}
+                <a href="{{ url_for('integrations.jobs', page=job_pagination.next_page, **base) }}"
+                   hx-get="{{ url_for('integrations.jobs', page=job_pagination.next_page, **base) }}"
+                   hx-target="#job-execution-registry"
+                   hx-swap="outerHTML"
+                   hx-push-url="true"
+                   hx-indicator="#job-execution-loading"
+                   class="{{ pagination_ui.navigation_classes(disabled=false) }}">
+                    Next
+                    <i data-lucide="chevron-right" class="h-4 w-4"></i>
+                </a>
+            {% else %}
+                <span class="{{ pagination_ui.navigation_classes(disabled=true) }}" aria-disabled="true">
+                    Next
+                    <i data-lucide="chevron-right" class="h-4 w-4"></i>
+                </span>
+            {% endif %}
         </div>
     </footer>
 </section>
