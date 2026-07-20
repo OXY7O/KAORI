@@ -10,6 +10,14 @@ def _read(path: str) -> str:
 def test_kubernetes_landing_uses_semantic_workspace_and_delete_modal():
     template = _read('app/templates/integrations/kubernetes.html')
     assert 'kaori-integration-semantic' in template
+    assert 'Kubernetes Integration Overview' in template
+    assert template.index('Kubernetes Integration Overview') < template.index('Kubernetes Connection Registry')
+    assert 'Registered Connections' in template
+    assert 'Validated Connections' in template
+    assert 'Needs Attention' in template
+    assert 'Scope Bindings' in template
+    assert 'rounded-2xl border border-outline-default bg-surface-card shadow-sm' in template
+    assert 'grid gap-4 lg:grid-cols-3' not in template
     assert 'Kubernetes Connection Registry' in template
     assert "cluster.delete_cluster_route" in template
     assert 'Delete</button>' in template

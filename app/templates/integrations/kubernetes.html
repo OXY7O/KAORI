@@ -52,25 +52,58 @@
     </div>
   </section>
 
-  <section class="grid gap-4 lg:grid-cols-3">
-    <article class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
+  <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
       <div class="flex items-start gap-3">
-        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="plug-zap" class="h-5 w-5"></i></span>
-        <div><h2 class="text-base font-semibold text-content-primary">Connection Contract</h2><p class="mt-1 text-xs leading-5 text-content-muted">Endpoint, authentication, TLS, API discovery, and inventory access define the canonical Kubernetes connection.</p></div>
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
+          <i data-lucide="boxes" class="h-5 w-5" aria-hidden="true"></i>
+        </span>
+        <div>
+          <h2 class="text-lg font-semibold text-content-primary">Kubernetes Integration Overview</h2>
+          <p class="mt-1 text-sm leading-6 text-content-secondary">Each Kubernetes API connection is registered once and governed through compatibility, runtime readiness, and observability bindings.</p>
+        </div>
       </div>
-    </article>
-    <article class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
-      <div class="flex items-start gap-3">
-        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="scan-search" class="h-5 w-5"></i></span>
-        <div><h2 class="text-base font-semibold text-content-primary">Capability Discovery</h2><p class="mt-1 text-xs leading-5 text-content-muted">KAORI selects stable APIs first and records compatible fallback versions with actionable technical evidence.</p></div>
+    </header>
+
+    <div class="grid gap-4 p-5 sm:grid-cols-2 sm:p-6 xl:grid-cols-4">
+      {% for item in [
+        ('Registered Connections', stats.total, 'Canonical Kubernetes API connections', 'server-cog'),
+        ('Validated Connections', stats.ready, 'Ready for operational use', 'badge-check'),
+        ('Needs Attention', stats.attention, 'Validation or runtime review', 'triangle-alert'),
+        ('Scope Bindings', stats.bindings, 'Prometheus and Alertmanager associations', 'link-2')
+      ] %}
+        <article class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">{{ item[0] }}</p>
+              <p class="mt-2 text-2xl font-semibold text-content-primary">{{ item[1] }}</p>
+            </div>
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+              <i data-lucide="{{ item[3] }}" class="h-4 w-4" aria-hidden="true"></i>
+            </span>
+          </div>
+          <p class="mt-2 text-xs leading-5 text-content-secondary">{{ item[2] }}</p>
+        </article>
+      {% endfor %}
+    </div>
+
+    <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle md:grid-cols-3">
+      <div class="bg-surface-card px-5 py-4 sm:px-6">
+        <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Integration Contract</p>
+        <p class="mt-1.5 text-sm font-semibold text-content-primary">Kubernetes API and Authentication</p>
+        <p class="mt-1 text-xs leading-5 text-content-secondary">Endpoint identity, credentials, TLS, API discovery, and inventory access are validated before use.</p>
       </div>
-    </article>
-    <article class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
-      <div class="flex items-start gap-3">
-        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="database" class="h-5 w-5"></i></span>
-        <div><h2 class="text-base font-semibold text-content-primary">Authority Boundary</h2><p class="mt-1 text-xs leading-5 text-content-muted">Kubernetes remains authoritative for live resources. KAORI stores normalized inventory, runtime evidence, governance context, and audit history.</p></div>
+      <div class="bg-surface-card px-5 py-4 sm:px-6">
+        <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Capability Resolution</p>
+        <p class="mt-1.5 text-sm font-semibold text-content-primary">Stable API First with Compatible Fallbacks</p>
+        <p class="mt-1 text-xs leading-5 text-content-secondary">KAORI selects stable Kubernetes APIs first and records compatible fallback versions with runtime evidence.</p>
       </div>
-    </article>
+      <div class="bg-surface-card px-5 py-4 sm:px-6">
+        <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Authority Boundary</p>
+        <p class="mt-1.5 text-sm font-semibold text-content-primary">Kubernetes Remains Authoritative</p>
+        <p class="mt-1 text-xs leading-5 text-content-secondary">Live resources remain managed by Kubernetes while KAORI stores normalized inventory, governance context, and audit history.</p>
+      </div>
+    </div>
   </section>
 
   <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">

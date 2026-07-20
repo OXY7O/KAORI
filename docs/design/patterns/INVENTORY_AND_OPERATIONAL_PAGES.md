@@ -45,3 +45,12 @@ This document defines reusable structures. It does not define domain-specific fi
 3. Coverage and Registry title boxes use the same icon, title, description, spacing, border, and loading-bar hierarchy. Provider-specific wording may differ, but the visual shell must not.
 4. Registry tables use explicit column widths. The final Action column is compact, right-aligned, and must not be the cause of horizontal overflow.
 5. Horizontal scrolling is allowed only when the available viewport is genuinely narrower than the compact technical table contract. Do not force an oversized minimum width by default.
+
+## Kubernetes integration landing overview
+
+1. The Kubernetes Integrations landing page uses the same overview-box hierarchy as Prometheus and Alertmanager directly below the hero.
+2. The overview header contains the provider icon, `Kubernetes Integration Overview`, and one concise description.
+3. Summary metrics are presented in four compact cards: Registered Connections, Validated Connections, Needs Attention, and Scope Bindings.
+4. The lower contract row contains Integration Contract, Capability Resolution, and Authority Boundary.
+5. Do not split these three contracts into separate standalone cards above the registry; they belong inside the shared overview box.
+
