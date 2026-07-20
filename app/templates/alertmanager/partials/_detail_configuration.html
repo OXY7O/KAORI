@@ -1,22 +1,29 @@
 {% import "components/operational_toggle.html" as operational_toggle %}
 {% import "components/related_page_card.html" as related_page_card %}
 {% import "components/form_action_bar.html" as form_action_bar %}
-{% import "components/context_guidance_card.html" as context_guidance_card %}
+{% import "components/info_flow.html" as info_flow %}
 {% import "components/information_guide_card.html" as information_guide_card %}
+{% import "components/workspace_summary_card.html" as workspace_summary_card %}
 {% set current_auth_type = instance.auth_type or 'none' %}
 {% set field_classes = 'h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-normal text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20' %}
 {% set textarea_classes = 'min-h-24 w-full resize-y rounded-lg border border-outline-default bg-surface-card px-3.5 py-3 text-sm font-normal leading-6 text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20' %}
 <div class="space-y-5">
-    <section class="grid gap-4 lg:grid-cols-3">
-        <div class="rounded-xl border border-brand-outline bg-kaori-soft p-4">
-            <div class="flex items-start gap-3"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-surface-card text-kaori-primary"><i data-lucide="file-key-2" class="h-4 w-4"></i></span><div><p class="text-sm font-semibold text-content-primary">Connection Contract</p><p class="mt-1 text-xs leading-5 text-content-secondary">Identity, endpoint, authentication, TLS, timeout, and enabled state define how KAORI reaches this source.</p></div></div>
-        </div>
-        <div class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
-            <div class="flex items-start gap-3"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-content-secondary"><i data-lucide="refresh-ccw" class="h-4 w-4"></i></span><div><p class="text-sm font-semibold text-content-primary">Change Impact</p><p class="mt-1 text-xs leading-5 text-content-secondary">Saving connection settings resets readiness to Validation Required because the capability contract must be rebuilt.</p></div></div>
-        </div>
-        <div class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
-            <div class="flex items-start gap-3"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-content-secondary"><i data-lucide="workflow" class="h-4 w-4"></i></span><div><p class="text-sm font-semibold text-content-primary">Integration Flow</p><p class="mt-1 text-xs leading-5 text-content-secondary">Configure → validate capabilities → observe runtime health → bind operational scopes → resolve effective source.</p></div></div>
-        </div>
+    <section class="grid gap-4 lg:grid-cols-3" aria-label="Configuration Workspace Summary">
+        {{ workspace_summary_card.render(
+            'Connection Contract',
+            'Identity, endpoint, authentication, TLS, timeout, and enabled state define how KAORI reaches this source.',
+            icon='file-key-2'
+        ) }}
+        {{ workspace_summary_card.render(
+            'Change Impact',
+            'Saving connection settings resets readiness to Validation Required until the capability contract is rebuilt.',
+            icon='refresh-ccw'
+        ) }}
+        {{ workspace_summary_card.render(
+            'Integration Flow',
+            'Configure, validate capabilities, observe runtime health, bind scopes, and resolve the effective source.',
+            icon='workflow'
+        ) }}
     </section>
 
     <div class="grid gap-5 xl:grid-cols-12 xl:items-start">
@@ -63,17 +70,19 @@
         </form>
 
         <aside class="space-y-4 xl:col-span-4 xl:sticky xl:top-5">
-            {% set configuration_flow_items = [
-                ('Save Changes', 'to update the canonical connection contract.'),
-                ('Run Full Validation', 'to rebuild capability and readiness evidence.'),
-                ('Refresh Runtime', 'to record current health and latency.'),
-                ('Review Resolution', 'to confirm the connection remains effective for bound scopes.')
+            {% set configuration_flow_steps = [
+                ('Save Changes', 'Update the canonical connection contract and return readiness to Validation Required.'),
+                ('Run Full Validation', 'Rebuild capability, compatibility, and readiness evidence for the saved settings.'),
+                ('Refresh Runtime', 'Record current endpoint health, latency, and runtime observations.'),
+                ('Review Resolution', 'Confirm the connection remains eligible and effective for its governed scope bindings.')
             ] %}
-            {{ context_guidance_card.render(
+            {{ info_flow.render(
                 'Configuration Flow',
-                'How a saved change propagates through the integration.',
-                configuration_flow_items,
-                icon='route'
+                'How saved connection changes return to governed operational use.',
+                configuration_flow_steps,
+                icon='route',
+                note='Saving configuration does not establish readiness until Full Validation succeeds.',
+                open_by_default=true
             ) }}
 
             {% set connection_type_items = [

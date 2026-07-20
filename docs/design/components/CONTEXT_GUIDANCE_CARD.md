@@ -93,6 +93,8 @@ It may be open by default only when:
 
 Do not force every right-side card open.
 
+A primary ordered flow must use Info Flow even when it appears in a right-side column. Context Guidance Card is reserved for secondary supporting sequences such as After Registration or compact remediation guidance.
+
 ## Content rules
 
 Use two to five items.

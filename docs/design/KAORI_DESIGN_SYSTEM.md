@@ -276,6 +276,10 @@ Use the shared Context Guidance Card for compact secondary **ordered** guidance 
 
 Use the shared Information Guide Card for non-sequential option, concept, ownership-model, or contract references in contextual sidebars. Every peer item uses a related icon, Title Case label, and concise sentence-case explanation. Do not use numbering, arrows, or timeline connectors because the items may be read in any order. Connection Type Guide on Register Alertmanager Instance is the reference implementation. See `components/INFORMATION_GUIDE_CARD.md`.
 
+## Workspace Summary Card
+
+Use the shared Workspace Summary Card for two to four peer summaries immediately below a tab bar or workspace header. Every card in the same row uses the same Violet Soft surface and Violet outline; do not emphasize only one equal summary through a local color variation. A true warning or live state must use a semantic status component instead. See `components/WORKSPACE_SUMMARY_CARD.md`.
+
 ## Related Workspace Contract
 
 When two KAORI pages form one operational or governance workflow, expose the relationship through the shared Related Page Card rather than an undocumented page-local shortcut. Place the card on contextual create, edit, detail, configuration, validation, or workflow subpages in the right-side column. Do not place it on overview, landing, list, or registry pages. A single-page module such as Roles & Access is the documented exception. The card provides exactly one destination action and preserves at least 24 px between the content and action. See `components/RELATED_PAGE_CARD.md`.

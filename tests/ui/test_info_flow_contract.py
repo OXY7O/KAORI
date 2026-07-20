@@ -4,6 +4,7 @@ ROOT = Path(__file__).resolve().parents[2]
 COMPONENT = ROOT / "app/templates/components/info_flow.html"
 ROLES = ROOT / "app/templates/settings/roles/index.html"
 ALERTMANAGER = ROOT / "app/templates/alertmanager/instance_form.html"
+ALERTMANAGER_CONFIGURATION = ROOT / "app/templates/alertmanager/partials/_detail_configuration.html"
 STANDARD = ROOT / "docs/design/components/INFO_FLOW.md"
 
 
@@ -41,6 +42,19 @@ def test_alertmanager_registration_flow_uses_shared_component() -> None:
     assert "'Validate Capabilities'" in source
     assert "'Assign Operational Scope'" in source
     assert "Registration creates the reusable connection identity only" in source
+
+
+
+def test_alertmanager_configuration_flow_uses_shared_component() -> None:
+    source = read(ALERTMANAGER_CONFIGURATION)
+    assert 'components/info_flow.html' in source
+    assert "info_flow.render(" in source
+    assert "'Configuration Flow'" in source
+    assert "'Save Changes'" in source
+    assert "'Run Full Validation'" in source
+    assert "'Refresh Runtime'" in source
+    assert "'Review Resolution'" in source
+    assert "Saving configuration does not establish readiness" in source
 
 
 def test_info_flow_standard_is_documented() -> None:

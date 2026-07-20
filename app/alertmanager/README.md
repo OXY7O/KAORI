@@ -407,6 +407,26 @@ The canonical inventory presents instances, not clusters. Cluster Management may
 show a compact binding summary and link into the integration domain, but it does
 not own Alertmanager configuration.
 
+### Instance Manage presentation contract
+
+The Configuration tab follows the shared KAORI workspace hierarchy:
+
+```text
+Peer Workspace Summary Cards
+↓
+Primary Configuration Form     Configuration Flow
+                               Connection Type Guide
+                               Related Alert Intelligence Workspace
+```
+
+Connection Contract, Change Impact, and Integration Flow are peer summaries and
+therefore use the same Violet Workspace Summary Card. Configuration Flow is the
+primary ordered workflow for the tab and uses the shared Info Flow component even
+though it is placed in the right-side column. Connection Type Guide remains
+non-sequential, while navigation to Alert Intelligence remains isolated in the
+Related Page Card. A generic page-context card is not used because the active tab,
+form sections, and summaries already establish the page responsibility.
+
 ## Security rules
 
 - Never render password, bearer token, authorization header, CA material, raw

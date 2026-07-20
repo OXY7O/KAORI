@@ -44,7 +44,6 @@ def test_integration_guidance_migrations_use_shared_component() -> None:
         "app/templates/prometheus/instance_form.html": "'Prometheus Integration Flow'",
         "app/templates/prometheus/instance_detail.html": "'Operational Flow'",
         "app/templates/prometheus/config.html": "'Configuration Flow'",
-        "app/templates/alertmanager/partials/_detail_configuration.html": "'Configuration Flow'",
         "app/templates/alertmanager/partials/_detail_validation_content.html": "'When External Criteria Already Pass'",
     }
 
