@@ -4,6 +4,28 @@
 
 The Integration Manage Workspace is the shared KAORI structure for managing one registered provider connection. Alertmanager is the reference implementation. Prometheus must use the same information architecture, visual hierarchy, interaction model, and technical evidence depth while preserving metrics-specific terminology.
 
+## Provider registration contract
+
+Before a reusable provider connection enters the manage workspace, the registration page follows one shared Prometheus and Alertmanager contract:
+
+1. Define the canonical connection identity and connection contract.
+2. Run a successful Test Connection against the submitted endpoint and access settings.
+3. Issue a short-lived signed proof bound to the current user and exact submitted values.
+4. Enable the Register action only while that proof remains valid.
+5. Any connection field change must invalidate the proof immediately.
+6. Repeat the network probe on the server immediately before persistence.
+7. Record every test, rejection, failure, and successful registration as one toast and one durable Activity Audit record.
+
+Test Connection proves reachability and the provider-specific basic compatibility boundary. It does not replace Full Validation, capability evidence, readiness assessment, or scope binding validation.
+
+The registration contextual column uses this order:
+
+- provider Registration Flow;
+- Related Analytics or Intelligence Workspace;
+- provider-specific compatibility or connection-type guidance;
+- Connection Identity & Contract;
+- After Registration guidance.
+
 ## Four-tab contract
 
 A provider manage page uses these tabs when the provider supports the corresponding domains:

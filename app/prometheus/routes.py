@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 
 from flask import Blueprint, abort, current_app, jsonify, make_response, redirect, render_template, request, url_for
@@ -23,6 +24,7 @@ from app.notifications.service import (
 from app.prometheus.exceptions import PrometheusError
 from app.prometheus.forms import PrometheusConfigForm, PrometheusInstanceForm
 from app.prometheus.presentation import build_instance_context, build_runtime_history_context
+from app.prometheus.registration import issue_registration_proof, verify_registration_proof
 from app.prometheus.repository import (
     cluster_bindings_for_instance,
     get_instance,
@@ -36,6 +38,7 @@ from app.prometheus.service import (
     create_prometheus_binding,
     remove_prometheus_instance,
     save_prometheus_instance,
+    test_prometheus_form_connection,
     update_prometheus_binding_selector,
     validate_prometheus_binding,
 )
@@ -166,6 +169,7 @@ def new_instance() -> ResponseReturnValue:
     initial_cluster = get_cluster_by_id(cluster_id) if cluster_id else None
     form = PrometheusInstanceForm()
     operation_feedback = None
+    registration_proof = None
     is_htmx = _is_htmx_request()
 
     if request.method == 'GET':
@@ -174,51 +178,136 @@ def new_instance() -> ResponseReturnValue:
 
     if request.method == 'POST':
         if form.validate_on_submit():
-            try:
-                instance = save_prometheus_instance(form, initial_cluster=initial_cluster)
-            except Exception as exc:
-                logger.exception('Prometheus instance creation failed.')
+            submitted_proof = str(request.form.get('connection_test_proof') or '').strip()
+            proof_valid, proof_error = verify_registration_proof(
+                token=submitted_proof,
+                form=form,
+                user_id=int(current_user.id),
+            )
+            if not proof_valid:
                 operation_feedback = record_operational_activity(
                     user_id=current_user.id,
-                    event_type='prometheus_instance_create_failed',
+                    event_type='prometheus_instance_create_rejected',
                     status='error',
-                    title='Prometheus instance not created',
-                    message='KAORI could not save the Prometheus instance.',
-                    detail='Review the submitted connection settings and KAORI logs before retrying.',
+                    title='Connection test required',
+                    message='Run Test Connection successfully before registering the Prometheus connection.',
+                    detail=proof_error,
                     action_url=url_for('prometheus.new_instance', cluster_id=cluster_id or None),
                     action_label='Review Prometheus form',
-                    action_icon='activity',
-                    metadata={'cluster_id': cluster_id or None, 'reason': type(exc).__name__},
+                    action_icon='chart-spline',
+                    metadata={
+                        'cluster_id': cluster_id or None,
+                        'submitted_name': (form.name.data or '').strip() or 'Draft Prometheus connection',
+                        'registration_stage': 'connection_test_proof',
+                    },
                     queue_feedback=not is_htmx,
                 )
             else:
-                record_operational_activity(
-                    user_id=current_user.id,
-                    event_type='prometheus_instance_created',
-                    status='success',
-                    title='Prometheus instance created',
-                    message=f'{instance.name} is now registered.',
-                    detail='Run Full Validation, review readiness, then create scope bindings before operational use.',
-                    action_url=url_for('prometheus.instance_detail', instance_id=instance.id),
-                    action_label='Open Prometheus integration',
-                    action_icon='activity',
-                    metadata={'instance_id': instance.id, 'cluster_id': cluster_id or None},
-                    queue_feedback=True,
-                )
-                location = url_for('prometheus.instance_detail', instance_id=instance.id)
-                return _htmx_redirect(location) if is_htmx else redirect(location)
+                connection_test = test_prometheus_form_connection(form)
+                if not connection_test.get('connected'):
+                    operation_feedback = record_operational_activity(
+                        user_id=current_user.id,
+                        event_type='prometheus_instance_create_rejected',
+                        status='error',
+                        title='Prometheus connection not registered',
+                        message='The connection changed or became unavailable before registration completed.',
+                        detail=(
+                            connection_test.get('error')
+                            or connection_test.get('reason')
+                            or 'Review endpoint, authentication, TLS, and compatibility settings.'
+                        ),
+                        action_url=url_for('prometheus.new_instance', cluster_id=cluster_id or None),
+                        action_label='Review Prometheus form',
+                        action_icon='chart-spline',
+                        metadata={
+                            'cluster_id': cluster_id or None,
+                            'failure_code': connection_test.get('failure_code'),
+                            'endpoint_host': connection_test.get('endpoint_host'),
+                            'request_path': connection_test.get('request_path'),
+                            'submitted_name': (form.name.data or '').strip() or 'Draft Prometheus connection',
+                            'registration_stage': 'pre_save_recheck',
+                        },
+                        queue_feedback=not is_htmx,
+                    )
+                else:
+                    try:
+                        instance = save_prometheus_instance(form, initial_cluster=initial_cluster)
+                    except PrometheusError as exc:
+                        operation_feedback = record_operational_activity(
+                            user_id=current_user.id,
+                            event_type='prometheus_instance_create_rejected',
+                            status='error',
+                            title='Prometheus connection not registered',
+                            message='KAORI could not create the Prometheus connection.',
+                            detail=str(exc),
+                            action_url=url_for('prometheus.new_instance', cluster_id=cluster_id or None),
+                            action_label='Review Prometheus form',
+                            action_icon='chart-spline',
+                            metadata={
+                                'cluster_id': cluster_id or None,
+                                'submitted_name': (form.name.data or '').strip() or 'Draft Prometheus connection',
+                                'registration_stage': 'persistence_validation',
+                            },
+                            queue_feedback=not is_htmx,
+                        )
+                    except Exception as exc:
+                        logger.exception('Prometheus instance creation failed.')
+                        operation_feedback = record_operational_activity(
+                            user_id=current_user.id,
+                            event_type='prometheus_instance_create_failed',
+                            status='error',
+                            title='Prometheus connection not registered',
+                            message='KAORI could not save the Prometheus connection.',
+                            detail='Review KAORI logs and database connectivity before retrying.',
+                            action_url=url_for('prometheus.new_instance', cluster_id=cluster_id or None),
+                            action_label='Review Prometheus form',
+                            action_icon='chart-spline',
+                            metadata={
+                                'cluster_id': cluster_id or None,
+                                'reason': type(exc).__name__,
+                                'submitted_name': (form.name.data or '').strip() or 'Draft Prometheus connection',
+                                'registration_stage': 'database_commit',
+                            },
+                            queue_feedback=not is_htmx,
+                        )
+                    else:
+                        record_operational_activity(
+                            user_id=current_user.id,
+                            event_type='prometheus_instance_created',
+                            status='success',
+                            title='Prometheus connection registered',
+                            message=f'{instance.name} is now registered as a reusable Prometheus source.',
+                            detail='Reachability and compatibility passed during registration. Run Full Validation, review readiness, then create scope bindings before operational use.',
+                            action_url=url_for('prometheus.instance_detail', instance_id=instance.id),
+                            action_label='Open Prometheus integration',
+                            action_icon='chart-spline',
+                            metadata={
+                                'instance_id': instance.id,
+                                'cluster_id': cluster_id or None,
+                                'connection_response_time_ms': connection_test.get('response_time_ms'),
+                                'detected_version': connection_test.get('version'),
+                                'endpoint_product': connection_test.get('endpoint_product'),
+                            },
+                            queue_feedback=True,
+                        )
+                        location = url_for('prometheus.instance_detail', instance_id=instance.id)
+                        return _htmx_redirect(location) if is_htmx else redirect(location)
         else:
             operation_feedback = record_operational_activity(
                 user_id=current_user.id,
                 event_type='prometheus_instance_create_rejected',
                 status='error',
-                title='Prometheus instance not created',
-                message='Review the highlighted connection fields before registering this source.',
+                title='Prometheus connection not registered',
+                message='Review the highlighted connection fields before testing or registering this source.',
                 detail='The submitted form did not satisfy the Prometheus connection contract.',
                 action_url=url_for('prometheus.new_instance', cluster_id=cluster_id or None),
                 action_label='Review Prometheus form',
-                action_icon='activity',
-                metadata={'cluster_id': cluster_id or None, 'fields': sorted(form.errors)},
+                action_icon='chart-spline',
+                metadata={
+                    'cluster_id': cluster_id or None,
+                    'fields': sorted(form.errors),
+                    'registration_stage': 'form_validation',
+                },
                 queue_feedback=not is_htmx,
             )
 
@@ -227,6 +316,7 @@ def new_instance() -> ResponseReturnValue:
         form=form,
         instance=None,
         initial_cluster=initial_cluster,
+        registration_proof=registration_proof,
         operation_feedback=operation_feedback,
         notification_context=(
             get_navigation_notification_context(user_id=int(current_user.id))
@@ -234,6 +324,114 @@ def new_instance() -> ResponseReturnValue:
             else None
         ),
     )
+
+
+@prometheus_bp.post('/instances/test-connection')
+@permission_required('settings.manage_integrations')
+def test_new_instance_connection() -> ResponseReturnValue:
+    form = PrometheusInstanceForm()
+    cluster_id = request.form.get('cluster_id', '').strip()
+
+    if not form.validate_on_submit():
+        feedback = record_operational_activity(
+            user_id=current_user.id,
+            event_type='prometheus_connection_test_failed',
+            status='error',
+            title='Prometheus connection test failed',
+            message='Review the highlighted connection fields before testing this source.',
+            detail='The submitted form did not satisfy the Prometheus connection contract.',
+            action_url=url_for('prometheus.new_instance', cluster_id=cluster_id or None),
+            action_label='Review Prometheus form',
+            action_icon='chart-spline',
+            metadata={
+                'cluster_id': cluster_id or None,
+                'fields': sorted(form.errors),
+                'draft_connection': True,
+                'registration_stage': 'connection_test_form_validation',
+            },
+            queue_feedback=False,
+        )
+        result = {'connected': False}
+    else:
+        result = test_prometheus_form_connection(form)
+        if result.get('connected'):
+            feedback = record_operational_activity(
+                user_id=current_user.id,
+                event_type='prometheus_connection_test',
+                status='success',
+                title='Prometheus connection verified',
+                message='KAORI reached the submitted Prometheus-compatible endpoint.',
+                detail=(
+                    f"{str(result.get('endpoint_product') or 'Prometheus').title()} "
+                    f"{result.get('version') or 'unknown'} responded in "
+                    f"{result.get('response_time_ms') or 0} ms. Register the connection, then run Full Validation."
+                ),
+                action_url=url_for('prometheus.new_instance', cluster_id=cluster_id or None),
+                action_label='Review Prometheus form',
+                action_icon='chart-spline',
+                metadata={
+                    'cluster_id': cluster_id or None,
+                    'endpoint_host': result.get('endpoint_host'),
+                    'endpoint_product': result.get('endpoint_product'),
+                    'version': result.get('version'),
+                    'compatibility_profile': result.get('compatibility_profile'),
+                    'response_time_ms': result.get('response_time_ms'),
+                    'request_path': result.get('request_path'),
+                    'draft_connection': True,
+                    'submitted_name': (form.name.data or '').strip() or 'Draft Prometheus connection',
+                },
+                queue_feedback=False,
+            )
+        else:
+            feedback = record_operational_activity(
+                user_id=current_user.id,
+                event_type='prometheus_connection_test_failed',
+                status='error',
+                title='Prometheus connection test failed',
+                message='KAORI could not verify the submitted Prometheus-compatible endpoint.',
+                detail=(
+                    result.get('error')
+                    or result.get('reason')
+                    or 'Review endpoint, authentication, TLS, compatibility, and network reachability.'
+                ),
+                action_url=url_for('prometheus.new_instance', cluster_id=cluster_id or None),
+                action_label='Review Prometheus form',
+                action_icon='chart-spline',
+                metadata={
+                    'cluster_id': cluster_id or None,
+                    'failure_code': result.get('failure_code'),
+                    'endpoint_host': result.get('endpoint_host'),
+                    'endpoint_port': result.get('endpoint_port'),
+                    'request_path': result.get('request_path'),
+                    'draft_connection': True,
+                    'submitted_name': (form.name.data or '').strip() or 'Draft Prometheus connection',
+                },
+                queue_feedback=False,
+            )
+
+    registration_proof = (
+        issue_registration_proof(form=form, user_id=int(current_user.id))
+        if result.get('connected')
+        else ''
+    )
+    response = make_response(
+        render_template(
+            'prometheus/partials/_connection_test_result.html',
+            connection_feedback=feedback,
+            notification_context=get_navigation_notification_context(user_id=int(current_user.id)),
+        )
+    )
+    response.headers['HX-Trigger'] = json.dumps(
+        {
+            'prometheus-connection-tested': {
+                'connected': bool(result.get('connected')),
+                'proof': registration_proof,
+            }
+        },
+        separators=(',', ':'),
+    )
+    return response
+
 
 @prometheus_bp.get('/instances/<int:instance_id>/edit')
 @permission_required('settings.manage_integrations')

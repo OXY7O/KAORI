@@ -4,7 +4,9 @@ import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
+from urllib.parse import urlsplit
 
+from app.common.integration_errors import describe_integration_failure
 from app.extensions.db import db
 from app.integrations.compatibility import (
     CompatibilityProfile,
@@ -75,13 +77,14 @@ class PrometheusService:
             return self.client.query_range(query, start, end, step)
         return self.consumer.query_range(query, start, end, step)
 
-    def test_connection(self) -> dict[str, Any]:
+    def test_connection(self, *, persist: bool = True) -> dict[str, Any]:
         """Run a fast endpoint identity and compatibility check.
 
         The check proves that the configured query endpoint responds, identifies the
         endpoint runtime, resolves the Prometheus source profile, and selects the
         PromQL contract. Metric, label, query-pack, and retention checks remain part
-        of ``validate_integration``.
+        of ``validate_integration``. Draft registration probes set ``persist=False``
+        so no runtime or readiness state is written before the connection exists.
         """
         started = time.perf_counter()
         result = self.client.query('vector(1)')
@@ -89,6 +92,45 @@ class PrometheusService:
             raise PrometheusError('Prometheus-compatible query failed')
 
         resolution = self._resolve_compatibility()
+        response_time = time.perf_counter() - started
+        if not persist:
+            readiness = (
+                'blocked'
+                if resolution.endpoint_compatibility.readiness == 'blocked'
+                else 'degraded'
+            )
+            message = (
+                resolution.endpoint_compatibility.message
+                if readiness == 'blocked'
+                else (
+                    'Endpoint identity and compatibility were verified. Run full validation '
+                    'before KAORI marks Kubernetes Analytics as ready.'
+                )
+            )
+            return {
+                'success': readiness != 'blocked',
+                'endpoint_product': resolution.endpoint_product,
+                'endpoint_version': resolution.endpoint_version,
+                'version': resolution.endpoint_version,
+                'compatibility_status': resolution.endpoint_compatibility.status,
+                'readiness_status': readiness,
+                'query_profile': resolution.source_profile.query_profile,
+                'query_validation_status': 'validation_required',
+                'query_validation_summary': None,
+                'retention_validation_summary': None,
+                'compatibility_profile': resolution.endpoint_compatibility.profile_key,
+                'source_prometheus_major': (
+                    resolution.source_profile.key.rsplit('v', 1)[-1]
+                    if resolution.source_profile.key.startswith('prometheus-http-v')
+                    else None
+                ),
+                'capability_profile': None,
+                'capabilities': None,
+                'module_readiness': None,
+                'message': message,
+                'response_time': round(response_time, 3),
+            }
+
         config = self.client.config
         self._store_identity(config, resolution)
         config.query_validation_status = 'validation_required'
@@ -96,7 +138,7 @@ class PrometheusService:
         config.retention_validation_summary = None
         config.last_validated_at = datetime.now(UTC)
         config.last_checked_at = config.last_validated_at
-        config.last_response_time_ms = round((time.perf_counter() - started) * 1000)
+        config.last_response_time_ms = round(response_time * 1000)
         config.last_status = 'connected'
         config.last_error = None
 
@@ -113,7 +155,7 @@ class PrometheusService:
 
         return self._result_payload(
             config,
-            response_time=time.perf_counter() - started,
+            response_time=response_time,
         )
 
     def validate_integration(self) -> dict[str, Any]:
@@ -386,6 +428,68 @@ class PrometheusService:
         db.session.commit()
         return config
 
+
+def test_prometheus_form_connection(form: PrometheusInstanceForm) -> dict[str, Any]:
+    """Test draft Prometheus settings without creating or mutating an instance."""
+    endpoint = (form.endpoint.data or '').strip()
+    detection_mode = form.version_detection_mode.data or 'automatic'
+    source_major = (
+        form.source_prometheus_major.data or None
+        if detection_mode == 'manual'
+        else None
+    )
+    draft = PrometheusInstance(
+        name=(form.name.data or '').strip() or 'Draft Prometheus connection',
+        endpoint=endpoint,
+        description=(form.description.data or '').strip() or None,
+        auth_type=form.auth_type.data or 'none',
+        username=(form.username.data or '').strip() or None,
+        password=form.password.data or None,
+        bearer_token=form.bearer_token.data or None,
+        timeout=int(form.timeout.data or 5),
+        verify_ssl=bool(form.verify_ssl.data),
+        enabled=bool(form.enabled.data),
+        version_detection_mode=detection_mode,
+        endpoint_product='thanos' if detection_mode == 'manual' else 'prometheus',
+        source_prometheus_major=source_major,
+    )
+    try:
+        result = PrometheusService(draft).test_connection(persist=False)
+    except Exception as exc:
+        failure = describe_integration_failure(
+            exc,
+            service_name='Prometheus',
+            endpoint=endpoint,
+            request_path='/api/v1/query',
+            timeout_seconds=int(form.timeout.data or 5),
+        )
+        return {
+            'connected': False,
+            'label': 'Connection test failed',
+            'error': failure['detail'],
+            'reason': failure['reason'],
+            'failure_code': failure['code'],
+            'endpoint_host': failure['endpoint_host'],
+            'endpoint_port': failure['endpoint_port'],
+            'request_path': failure['request_path'],
+        }
+
+    parsed_endpoint = urlsplit(endpoint)
+    return {
+        'connected': bool(result.get('success')),
+        'label': 'Connection verified' if result.get('success') else 'Compatibility blocked',
+        'endpoint_host': parsed_endpoint.hostname,
+        'endpoint_port': parsed_endpoint.port,
+        'response_time_ms': round(float(result.get('response_time') or 0) * 1000),
+        'version': str(result.get('endpoint_version') or 'unknown'),
+        'endpoint_product': str(result.get('endpoint_product') or 'prometheus'),
+        'compatibility_status': result.get('compatibility_status'),
+        'compatibility_profile': result.get('compatibility_profile'),
+        'reason': result.get('message') or 'The Prometheus query API responded successfully.',
+        'error': None if result.get('success') else result.get('message'),
+        'failure_code': None if result.get('success') else 'compatibility_blocked',
+        'request_path': '/api/v1/query',
+    }
 
 
 def save_prometheus_instance(

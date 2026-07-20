@@ -5,6 +5,7 @@
 {% import "components/related_page_card.html" as related_page_card %}
 {% import "components/form_action_bar.html" as form_action_bar %}
 {% import "components/info_flow.html" as info_flow %}
+{% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "components/context_guidance_card.html" as context_guidance_card %}
 {% import "components/information_guide_card.html" as information_guide_card %}
 {% block title %}{{ 'Edit' if instance else 'Register' }} Prometheus Connection · KAORI{% endblock title %}
@@ -52,7 +53,7 @@
                         </a>
                     {% else %}
                         <div class="mt-4 grid grid-cols-2 gap-2">
-                            {{ page_hero.context_metric('file-pen-line', 'Before Save', 'Complete Configuration', 'Define identity, access, and compatibility', value_classes='text-sm font-semibold leading-5') }}
+                            {{ page_hero.context_metric('plug-zap', 'Before Save', 'Test Connection', 'Registration repeats the probe', value_classes='text-sm font-semibold leading-5') }}
                             {{ page_hero.context_metric('scan-search', 'After Save', 'Full Validation', 'Then assign scope bindings', value_classes='text-sm font-semibold leading-5') }}
                         </div>
                         <a href="{{ url_for('integrations.prometheus') }}"
@@ -66,7 +67,8 @@
         </div>
     </section>
 
-    <form method="post"
+    <form id="prometheus-instance-form"
+          method="post"
           action="{{ url_for('prometheus.new_instance', cluster_id=initial_cluster.id if initial_cluster else none) }}"
           hx-post="{{ url_for('prometheus.new_instance', cluster_id=initial_cluster.id if initial_cluster else none) }}"
           hx-target="#prometheus-registration-workspace"
@@ -74,8 +76,27 @@
           hx-swap="outerHTML"
           hx-disabled-elt="button[type='submit']"
           class="grid gap-6 xl:grid-cols-12"
-          x-data="{ authType: '{{ form.auth_type.data or 'none' }}', detectionMode: '{{ form.version_detection_mode.data or 'automatic' }}' }">
+          x-data="{
+              authType: '{{ form.auth_type.data or 'none' }}',
+              detectionMode: '{{ form.version_detection_mode.data or 'automatic' }}',
+              connectionVerified: {{ 'true' if registration_proof is defined and registration_proof else 'false' }},
+              invalidateConnectionTest(event) {
+                  const fieldName = event.target?.name || '';
+                  if (['csrf_token', 'connection_test_proof'].includes(fieldName)) return;
+                  this.connectionVerified = false;
+                  this.$refs.connectionProof.value = '';
+              },
+              applyConnectionTest(event) {
+                  this.connectionVerified = event.detail?.connected === true;
+                  this.$refs.connectionProof.value = event.detail?.proof || '';
+              }
+          }"
+          x-on:input.capture="invalidateConnectionTest($event)"
+          x-on:change.capture="invalidateConnectionTest($event)"
+          x-on:prometheus-connection-tested.window="applyConnectionTest($event)">
         {{ form.hidden_tag() }}
+        <input x-ref="connectionProof" type="hidden" name="connection_test_proof" value="{{ registration_proof if registration_proof is defined and registration_proof else '' }}">
+        {% if initial_cluster %}<input type="hidden" name="cluster_id" value="{{ initial_cluster.id }}">{% endif %}
         <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm xl:col-span-8">
             <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
                 <div class="flex items-start gap-3">
@@ -93,46 +114,70 @@
                         <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="fingerprint" class="h-4 w-4"></i></span>
                         <div><h3 class="text-sm font-semibold text-content-primary">Connection Identity</h3><p class="mt-1 text-xs leading-5 text-content-muted">Stable identity used by validation, bindings, runtime history, notifications, and audit records.</p></div>
                     </div>
-                    <div class="grid gap-4 md:grid-cols-2">
-                        <label class="block">
-                            <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.name.label.text }}</span>
-                            {{ form.name(class_='h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20') }}
-                            {% for error in form.name.errors %}<p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>{% endfor %}
-                        </label>
-                        <label class="block">
-                            <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.endpoint.label.text }}</span>
-                            {{ form.endpoint(class_='h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 font-sans text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20') }}
-                            {% for error in form.endpoint.errors %}<p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>{% endfor %}
-                        </label>
-                    </div>
+                    <label class="block">
+                        <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.name.label.text }}</span>
+                        {{ form.name(class_='h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20') }}
+                        {% for error in form.name.errors %}<p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>{% endfor %}
+                    </label>
                     <label class="mt-4 block">
                         <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.description.label.text }}</span>
                         {{ form.description(class_='min-h-24 w-full resize-y rounded-lg border border-outline-default bg-surface-card px-3.5 py-3 text-sm font-normal leading-6 text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20') }}
                     </label>
                 </section>
 
-                <section class="border-t border-outline-subtle pt-6">
-                    <div class="mb-4 flex items-start gap-3">
-                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="plug-zap" class="h-4 w-4"></i></span>
-                        <div><h3 class="text-sm font-semibold text-content-primary">Endpoint &amp; Access</h3><p class="mt-1 text-xs leading-5 text-content-muted">Authentication and TLS settings used for test, validation, queries, and runtime observation.</p></div>
-                    </div>
-                    <div class="grid gap-4 md:grid-cols-2">
+                <section class="relative overflow-hidden rounded-lg border border-outline-subtle bg-surface-elevated">
+                    {% call connection_validation_header.render(
+                        'Endpoint &amp; Access',
+                        'Validate endpoint access before registration.',
+                        icon='network'
+                    ) %}
+                        {% if not instance %}
+                            <button type="button"
+                                    hx-post="{{ url_for('prometheus.test_new_instance_connection') }}"
+                                    hx-include="#prometheus-instance-form"
+                                    hx-target="#prometheus-connection-test-result"
+                                    hx-swap="innerHTML"
+                                    hx-indicator="#prometheus-connection-test-loading"
+                                    hx-disabled-elt="this"
+                                    x-on:click="const form = $el.closest('form'); if (!form.reportValidity()) { $event.preventDefault(); $event.stopImmediatePropagation(); }"
+                                    class="group inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-wait disabled:opacity-70">
+                                <i data-lucide="plug-zap" class="h-4 w-4 group-[.htmx-request]:animate-pulse"></i>
+                                Test Connection
+                            </button>
+                        {% endif %}
+                    {% endcall %}
+                    <div class="p-4">
                         <label class="block">
-                            <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.auth_type.label.text }}</span>
-                            {{ form.auth_type(class_='h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20', **{'x-model':'authType'}) }}
+                            <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.endpoint.label.text }}</span>
+                            {{ form.endpoint(class_='h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 font-sans text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20') }}
+                            {% for error in form.endpoint.errors %}<p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>{% endfor %}
+                            <p class="mt-1.5 text-xs leading-5 text-content-muted">Use the base URL reachable from the KAORI runtime. Do not append an API path or embed credentials in the URL.</p>
                         </label>
-                        <label class="block">
-                            <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.timeout.label.text }}</span>
-                            {{ form.timeout(class_='h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20') }}
-                            <p class="mt-1.5 text-xs leading-5 text-content-muted">Connection and query timeout in seconds.</p>
-                        </label>
-                    </div>
-                    <div class="mt-4 grid gap-4 md:grid-cols-2" x-show="authType === 'basic'" x-cloak>
-                        <label class="block"><span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.username.label.text }}</span>{{ form.username(class_='h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20', **{':required':"authType === 'basic'"}) }}</label>
-                        <label class="block"><span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.password.label.text }}</span>{{ form.password(class_='h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20', **{':required':"authType === 'basic' && " + ('false' if instance else 'true')}) }}<p class="mt-1.5 text-xs leading-5 text-content-muted">{{ 'Leave blank to retain the saved password.' if instance else 'Required for Basic Authentication.' }}</p></label>
-                    </div>
-                    <div class="mt-4" x-show="authType === 'bearer'" x-cloak>
-                        <label class="block"><span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.bearer_token.label.text }}</span>{{ form.bearer_token(class_='h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20', **{':required':"authType === 'bearer' && " + ('false' if instance else 'true')}) }}<p class="mt-1.5 text-xs leading-5 text-content-muted">{{ 'Leave blank to retain the saved token.' if instance else 'Required for Bearer Authentication.' }}</p></label>
+                        <div class="mt-4 grid gap-4 md:grid-cols-2">
+                            <label class="block">
+                                <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.auth_type.label.text }}</span>
+                                {{ form.auth_type(class_='h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20', **{'x-model':'authType'}) }}
+                            </label>
+                            <label class="block">
+                                <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.timeout.label.text }}</span>
+                                {{ form.timeout(class_='h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20') }}
+                                <p class="mt-1.5 text-xs leading-5 text-content-muted">Connection and query timeout in seconds.</p>
+                            </label>
+                        </div>
+                        <div class="mt-4 grid gap-4 md:grid-cols-2" x-show="authType === 'basic'" x-cloak>
+                            <label class="block"><span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.username.label.text }}</span>{{ form.username(class_='h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20', **{':required':"authType === 'basic'"}) }}</label>
+                            <label class="block"><span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.password.label.text }}</span>{{ form.password(class_='h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20', **{':required':"authType === 'basic' && " + ('false' if instance else 'true')}) }}<p class="mt-1.5 text-xs leading-5 text-content-muted">{{ 'Leave blank to retain the saved password.' if instance else 'Required for Basic Authentication.' }}</p></label>
+                        </div>
+                        <div class="mt-4" x-show="authType === 'bearer'" x-cloak>
+                            <label class="block"><span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.bearer_token.label.text }}</span>{{ form.bearer_token(class_='h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20', **{':required':"authType === 'bearer' && " + ('false' if instance else 'true')}) }}<p class="mt-1.5 text-xs leading-5 text-content-muted">{{ 'Leave blank to retain the saved token.' if instance else 'Required for Bearer Authentication.' }}</p></label>
+                        </div>
+                        {% if not instance %}
+                            <div id="prometheus-connection-test-loading"
+                                 class="htmx-indicator pointer-events-none absolute bottom-2 left-4 right-4 h-1 overflow-hidden rounded-full bg-kaori-soft"
+                                 aria-label="Testing Prometheus connection">
+                                <div class="notification-progress-indeterminate h-full rounded-full bg-kaori-primary"></div>
+                            </div>
+                        {% endif %}
                     </div>
                 </section>
 
@@ -175,12 +220,20 @@
                 </section>
             </div>
 
+            {% if not instance %}
+                <div id="prometheus-connection-test-result" class="hidden" aria-hidden="true"></div>
+            {% endif %}
+
             {% call form_action_bar.render(
-                'Save changes, then run Full Validation.' if instance else 'Register now; validate from the connection detail.',
+                'Save changes, then run Full Validation.' if instance else 'Register after Test Connection succeeds.',
                 aria_label='Prometheus Connection Actions'
             ) %}
-                <button type="submit" class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-5 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 cursor-pointer disabled:cursor-not-allowed">
-                    <i data-lucide="save" class="h-4 w-4"></i>{{ 'Save Changes' if instance else 'Register Connection' }}
+                <button type="submit"
+                        data-operation-submit
+                        data-loading-label="{{ 'Saving changes...' if instance else 'Registering connection...' }}"
+                        {% if not instance %}disabled x-bind:disabled="!connectionVerified" x-bind:title="connectionVerified ? 'Register this verified connection' : 'Run Test Connection successfully before registering'"{% endif %}
+                        class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-5 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 cursor-pointer disabled:cursor-not-allowed disabled:bg-content-disabled disabled:opacity-70">
+                    <i data-lucide="save" class="h-4 w-4"></i><span data-operation-submit-label>{{ 'Save Changes' if instance else 'Register Connection' }}</span>
                 </button>
             {% endcall %}
         </section>
@@ -203,18 +256,28 @@
                 ) }}
             {% else %}
                 {% set prometheus_flow_items = [
-                    ('Define Connection Identity', 'Provide a stable name, endpoint, and ownership description.'),
-                    ('Configure Endpoint Access', 'Set authentication, TLS verification, and request timeout.'),
-                    ('Select Compatibility Detection', 'Choose direct automatic detection or declare the upstream Prometheus major version.'),
-                    ('Register Connection', 'Save the reusable connection identity before operational validation.')
+                    ('Define Connection Identity', 'Provide a stable KAORI name and ownership description for the reusable source.'),
+                    ('Configure Endpoint Access', 'Set the endpoint, authentication, TLS verification, timeout, and compatibility detection.'),
+                    ('Test Connection', 'Verify reachability and compatibility before KAORI enables registration.'),
+                    ('Register Connection', 'Create the reusable connection identity before Full Validation and scope binding.')
                 ] %}
                 {{ info_flow.render(
                     'Prometheus Registration Flow',
                     'How a reusable metrics connection is registered in KAORI.',
                     prometheus_flow_items,
                     icon='workflow',
-                    note='Registration stores the connection contract; it does not establish capability readiness or scope eligibility.',
+                    note='Registration requires a successful Test Connection and creates the reusable source identity only.',
                     open_by_default=true
+                ) }}
+
+                {{ related_page_card.render(
+                    'Kubernetes Analytics',
+                    'This metrics connection supplies governed query data to KAORI Kubernetes Analytics.',
+                    url_for('analytics.overview'),
+                    'Open Kubernetes Analytics',
+                    icon='chart-no-axes-combined',
+                    eyebrow='Related Analytics Workspace',
+                    boundary='Prometheus remains authoritative for metric collection and query execution. KAORI applies governed source resolution and operational interpretation.'
                 ) }}
             {% endif %}
 
@@ -242,12 +305,35 @@
                     after_save_items,
                     icon='list-checks'
                 ) }}
+
+                {{ related_page_card.render(
+                    'Kubernetes Analytics',
+                    'This metrics connection supplies governed query data to KAORI Kubernetes Analytics.',
+                    url_for('analytics.overview'),
+                    'Open Kubernetes Analytics',
+                    icon='chart-no-axes-combined',
+                    eyebrow='Related Analytics Workspace',
+                    boundary='Prometheus remains authoritative for metric collection and query execution. KAORI applies governed source resolution and operational interpretation.'
+                ) }}
             {% else %}
+                {% set connection_contract_items = [
+                    ('fingerprint', 'Connection Identity', 'The canonical KAORI record for this Prometheus-compatible source. Register it once and reference it through governed bindings.'),
+                    ('file-check-2', 'Connection Contract', 'The base URL, authentication, timeout, TLS verification, lifecycle state, and tested reachability used to access the source.'),
+                    ('badge-check', 'Compatibility Contract', 'Automatic or manual source detection identifies the supported Prometheus API and query profile before Full Validation.'),
+                    ('link-2', 'Scope Bindings', 'Determine which Kubernetes clusters or infrastructure scopes may use the source and which metric identity selector isolates each scope.')
+                ] %}
+                {{ information_guide_card.render(
+                    'Connection Identity & Contract',
+                    'Reference the records that define source identity, compatibility, readiness, and eligibility.',
+                    connection_contract_items,
+                    icon='file-check-2'
+                ) }}
+
                 {% set after_registration_items = [
-                    ('Open the Registered Connection', 'and test the saved endpoint from its management workspace.'),
-                    ('Run Full Validation', 'to establish compatibility, capability, retention, and readiness evidence.'),
-                    ('Review Diagnostics', 'when a required metric or query contract is degraded or blocked.'),
-                    ('Assign Scope Bindings', 'to make the validated source eligible for operational consumers.')
+                    ('Open the Registered Connection', 'and review the saved connection identity and observed endpoint information.'),
+                    ('Run Full Validation', 'to establish query, metric, retention, capability, and readiness evidence.'),
+                    ('Review Diagnostics', 'when a required query or metric contract is degraded or blocked.'),
+                    ('Assign Scope Bindings', 'to make the validated source eligible for operational consumers without duplicating the connection.')
                 ] %}
                 {{ context_guidance_card.render(
                     'After Registration',
@@ -264,16 +350,6 @@
                     <p class="mt-1 text-xs leading-5 text-content-muted">The new connection will be assigned as the primary metrics source for this managed cluster.</p>
                 </div>
             {% endif %}
-
-            {{ related_page_card.render(
-                'Kubernetes Analytics',
-                'This metrics connection supplies governed query data to KAORI Kubernetes Analytics.',
-                url_for('analytics.overview'),
-                'Open Kubernetes Analytics',
-                icon='chart-no-axes-combined',
-                eyebrow='Related Analytics Workspace',
-                boundary='Prometheus remains authoritative for metric collection and query execution. KAORI applies governed source resolution and operational interpretation.'
-            ) }}
         </aside>
     </form>
     {% include 'components/operation_feedback_oob.html' %}

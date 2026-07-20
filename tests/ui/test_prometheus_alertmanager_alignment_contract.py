@@ -59,12 +59,12 @@ def test_registration_workspace_matches_alertmanager_information_hierarchy() -> 
     required = (
         'Registration Posture',
         'Pre-save Requirements',
-        "page_hero.context_metric('file-pen-line', 'Before Save'",
+        "page_hero.context_metric('plug-zap', 'Before Save'",
         "page_hero.context_metric('scan-search', 'After Save'",
         "'Prometheus Registration Flow'",
         "information_guide_card.render(\n                'Compatibility Detection'",
         "context_guidance_card.render(\n                    'After Registration'",
-        "related_page_card.render(\n                'Kubernetes Analytics'",
+        "related_page_card.render(\n                    'Kubernetes Analytics'",
     )
     missing = [fragment for fragment in required if fragment not in form]
     assert not missing, f'Prometheus registration workspace is incomplete: {missing}'
