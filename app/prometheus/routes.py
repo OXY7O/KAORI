@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 
-from flask import Blueprint, abort, jsonify, redirect, render_template, request, url_for
+from flask import Blueprint, abort, current_app, jsonify, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 
@@ -89,6 +89,19 @@ def _instance_or_404(instance_id: int) -> PrometheusInstance:
     return instance
 
 
+def _optional_endpoint_url(endpoint: str, **values) -> str | None:
+    """Build a lifecycle URL only when the endpoint is registered.
+
+    Contextual workspaces must remain renderable even when a partial deployment
+    has not loaded an optional lifecycle route yet. The missing endpoint is
+    logged as a deployment inconsistency instead of raising BuildError in Jinja.
+    """
+    if endpoint not in current_app.view_functions:
+        logger.error('Prometheus endpoint %s is not registered.', endpoint)
+        return None
+    return url_for(endpoint, **values)
+
+
 def _cluster_for_instance_or_404(instance: PrometheusInstance) -> Cluster:
     cluster_id = primary_cluster_id_for_instance(instance)
     if cluster_id is None:
@@ -168,7 +181,13 @@ def edit_instance(instance_id: int) -> ResponseReturnValue:
                 metadata={'instance_id': instance.id}, queue_feedback=True,
             )
             return redirect(url_for('prometheus.instance_detail', instance_id=instance.id))
-    return render_template('prometheus/instance_form.html', form=form, instance=instance, initial_cluster=None)
+    return render_template(
+        'prometheus/instance_form.html',
+        form=form,
+        instance=instance,
+        initial_cluster=None,
+        bindings=cluster_bindings_for_instance(instance),
+    )
 
 
 @prometheus_bp.get('/instances')
@@ -222,6 +241,10 @@ def instance_detail(instance_id: int) -> ResponseReturnValue:
         clusters_by_id=clusters_by_id,
         runtime_state=runtime_state,
         runtime_history=runtime_history_view(rows, pagination=pagination),
+        delete_instance_url=_optional_endpoint_url(
+            'prometheus.delete_instance',
+            instance_id=instance.id,
+        ),
     )
 
 
@@ -299,7 +322,10 @@ def delete_instance_binding(instance_id: int, binding_id: int) -> ResponseReturn
     return redirect(url_for('prometheus.instances'))
 
 
-@prometheus_bp.post('/instances/<int:instance_id>/delete')
+@prometheus_bp.post(
+    '/instances/<int:instance_id>/delete',
+    endpoint='delete_instance',
+)
 @permission_required('settings.manage_integrations')
 def delete_instance(instance_id: int) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)

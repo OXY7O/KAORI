@@ -35,8 +35,8 @@ class PrometheusConfigForm(FlaskForm):
     version_detection_mode = SelectField(
         'Compatibility Detection',
         choices=[
-            ('automatic', 'Automatic — direct Prometheus endpoint'),
-            ('manual', 'Manual — Prometheus-compatible intermediary'),
+            ('automatic', 'Automatic — Direct Prometheus'),
+            ('manual', 'Manual — Prometheus-Compatible Gateway'),
         ],
         default='automatic',
         validators=[DataRequired()],
@@ -45,9 +45,9 @@ class PrometheusConfigForm(FlaskForm):
     source_prometheus_major = SelectField(
         'Prometheus Source Version',
         choices=[
-            ('', 'Select a supported major version'),
-            ('2', 'Prometheus 2.x'),
-            ('3', 'Prometheus 3.x'),
+            ('', 'Select Source Version'),
+            ('2', 'Prometheus v2'),
+            ('3', 'Prometheus v3'),
         ],
         default='',
         validators=[Optional()],

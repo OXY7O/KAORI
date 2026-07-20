@@ -1,5 +1,5 @@
 {% macro render(title, description, href, action_label, icon='arrow-up-right', eyebrow='Related Workspace', boundary=None, aria_label=None) -%}
-<section class="flex h-full flex-col rounded-2xl border border-brand-outline bg-kaori-primary p-5 text-brand-foreground shadow-sm"
+<section class="flex flex-col rounded-2xl border border-brand-outline bg-kaori-primary p-5 text-brand-foreground shadow-sm"
          aria-label="{{ aria_label or title }}">
     <div class="flex items-start gap-3">
         <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-brand-outline bg-brand-surface-strong">
@@ -18,7 +18,7 @@
         </div>
     {% endif %}
 
-    <div class="mt-auto pt-6">
+    <div class="mt-6">
         <a href="{{ href }}"
            class="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-white/30 bg-surface-card px-3 py-2 text-sm font-semibold text-kaori-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70">
             {{ action_label }}

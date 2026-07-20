@@ -28,8 +28,8 @@ def test_prometheus_landing_uses_shared_kaori_workspace_components() -> None:
         'Integration Contract',
         'Usage Resolution',
         'Authority Boundary',
-        "url_for('prometheus.instances')",
-        'Instances & Bindings',
+        'Connection Readiness and Bindings',
+        'page_hero.context_panel_metrics_classes()',
         "integrations/prometheus/partials/_instance_inventory.html",
     )
     missing = [fragment for fragment in required if fragment not in source]
@@ -48,12 +48,13 @@ def test_prometheus_registry_uses_htmx_filters_and_standard_pagination() -> None
         'hx-trigger="change from:select"',
         'id="prometheus-inventory-loading"',
         'notification-progress-indeterminate',
-        'Register Connection',
-        'Instances & Bindings',
+        'Manage Scope Bindings',
     )
     missing = [fragment for fragment in required_wrapper if fragment not in wrapper]
     assert not missing, f'Prometheus registry filters are incomplete: {missing}'
     assert '>Apply<' not in wrapper
+    assert 'Register Connection' not in wrapper
+    assert 'Instances & Bindings' not in wrapper
 
     required_content = (
         'font-sans text-sm font-normal text-content-secondary',

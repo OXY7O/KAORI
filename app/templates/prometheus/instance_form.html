@@ -1,12 +1,18 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
+{% from "integrations/partials/_status_badge.html" import status_badge %}
 {% import "components/operational_toggle.html" as operational_toggle %}
 {% import "components/related_page_card.html" as related_page_card %}
 {% import "components/form_action_bar.html" as form_action_bar %}
 {% import "components/info_flow.html" as info_flow %}
+{% import "components/context_guidance_card.html" as context_guidance_card %}
+{% import "components/information_guide_card.html" as information_guide_card %}
 {% block title %}{{ 'Edit' if instance else 'Register' }} Prometheus Connection · KAORI{% endblock title %}
 {% block dashboard_content %}
 <div class="kaori-integration-semantic space-y-6">
+    {% set hero_readiness = (instance.readiness_status or 'validation_required') if instance else 'draft' %}
+    {% set binding_count = bindings|length if bindings is defined else 0 %}
+    {% set source_posture = 'Ready' if hero_readiness == 'ready' else ('Attention' if hero_readiness in ['degraded', 'blocked'] else ('Configured' if instance else 'Draft')) %}
     <section class="{{ page_hero.shell_classes() }}">
         <div class="{{ page_hero.layout_classes() }}">
             <div class="{{ page_hero.content_classes() }}">
@@ -26,14 +32,35 @@
             </div>
             <aside class="{{ page_hero.aside_classes() }}" aria-label="Prometheus connection workflow">
                 <div class="{{ page_hero.context_panel_classes() }}">
-                    <div>
-                        <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Connection Workflow</p>
-                        <p class="mt-1 text-sm font-semibold text-brand-foreground">{{ 'Revalidate After Changes' if instance else 'Register Before Validation' }}</p>
-                        <p class="mt-2 text-xs leading-5 text-brand-foreground-muted">Connection settings establish identity and access. Full Validation establishes API, query, metric, retention, and module readiness contracts.</p>
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <p class="{{ page_hero.context_panel_eyebrow_classes() }}">{{ 'Connection Posture' if instance else 'Registration Posture' }}</p>
+                            <h2 class="{{ page_hero.context_panel_title_classes() }}">{{ 'Readiness & Scope Coverage' if instance else 'Pre-save Requirements' }}</h2>
+                        </div>
+                        {{ status_badge('ready' if source_posture == 'Ready' else ('degraded' if source_posture == 'Attention' else ('validation_required' if source_posture == 'Configured' else 'not_configured')), source_posture) }}
                     </div>
-                    <a href="{{ url_for('prometheus.instance_detail', instance_id=instance.id) if instance else url_for('integrations.prometheus') }}" class="mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-white/80 bg-white px-4 text-sm font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80">
-                        <i data-lucide="arrow-left" class="h-4 w-4"></i>{{ 'Back to Connection' if instance else 'Back to Registry' }}
-                    </a>
+
+                    {% if instance %}
+                        <div class="mt-4 grid grid-cols-2 gap-2">
+                            {{ page_hero.context_metric('shield-check', 'Readiness', hero_readiness|replace('_', ' ')|title, 'Established by Full Validation', value_classes='truncate text-sm font-semibold leading-5') }}
+                            {{ page_hero.context_metric('link-2', 'Scope Bindings', binding_count, 'Contexts eligible to use this source') }}
+                        </div>
+                        <a href="{{ url_for('prometheus.instance_detail', instance_id=instance.id) }}"
+                           class="mt-auto inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-brand-outline bg-surface-card px-4 py-2 text-xs font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70">
+                            <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i>
+                            Back to Connection
+                        </a>
+                    {% else %}
+                        <div class="mt-4 grid grid-cols-2 gap-2">
+                            {{ page_hero.context_metric('file-pen-line', 'Before Save', 'Complete Configuration', 'Define identity, access, and compatibility', value_classes='text-sm font-semibold leading-5') }}
+                            {{ page_hero.context_metric('scan-search', 'After Save', 'Full Validation', 'Then assign scope bindings', value_classes='text-sm font-semibold leading-5') }}
+                        </div>
+                        <a href="{{ url_for('integrations.prometheus') }}"
+                           class="mt-auto inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-brand-outline bg-surface-card px-4 py-2 text-xs font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70">
+                            <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i>
+                            Back to Registry
+                        </a>
+                    {% endif %}
                 </div>
             </aside>
         </div>
@@ -153,23 +180,77 @@
         </section>
 
         <aside class="space-y-4 xl:col-span-4 xl:sticky xl:top-5">
-            {% set prometheus_flow_items = [
-                ('Register Connection', 'Store endpoint identity, access, TLS, and compatibility mode.'),
-                ('Test Connection', 'Confirm endpoint reachability and identify the connected API.'),
-                ('Run Full Validation', 'Validate query APIs, metric signals, retention, query contracts, and module readiness.'),
-                ('Assign Scope Bindings', 'Allow operational consumers to resolve this source by role and priority.')
+            {% if instance %}
+                {% set prometheus_flow_items = [
+                    ('Save Changes', 'Update the reusable connection contract and return readiness to Validation Required.'),
+                    ('Test Connection', 'Confirm the saved endpoint remains reachable with the selected access settings.'),
+                    ('Run Full Validation', 'Rebuild API, query, metric, retention, and module readiness evidence.'),
+                    ('Review Scope Bindings', 'Confirm the connection remains eligible for its governed operational contexts.')
+                ] %}
+                {{ info_flow.render(
+                    'Prometheus Configuration Flow',
+                    'How saved connection changes return to governed operational use.',
+                    prometheus_flow_items,
+                    icon='workflow',
+                    note='Saving changes does not establish readiness until Full Validation succeeds.',
+                    open_by_default=true
+                ) }}
+            {% else %}
+                {% set prometheus_flow_items = [
+                    ('Define Connection Identity', 'Provide a stable name, endpoint, and ownership description.'),
+                    ('Configure Endpoint Access', 'Set authentication, TLS verification, and request timeout.'),
+                    ('Select Compatibility Detection', 'Choose direct automatic detection or declare the upstream Prometheus major version.'),
+                    ('Register Connection', 'Save the reusable connection identity before operational validation.')
+                ] %}
+                {{ info_flow.render(
+                    'Prometheus Registration Flow',
+                    'How a reusable metrics connection is registered in KAORI.',
+                    prometheus_flow_items,
+                    icon='workflow',
+                    note='Registration stores the connection contract; it does not establish capability readiness or scope eligibility.',
+                    open_by_default=true
+                ) }}
+            {% endif %}
+
+            {% set compatibility_detection_items = [
+                ('scan-search', 'Automatic Detection', 'Use for a direct Prometheus endpoint. KAORI discovers the observed product and compatibility evidence.'),
+                ('network', 'Manual Source Declaration', 'Use for Thanos Query or another Prometheus-compatible gateway that can hide the upstream major version.'),
+                ('badge-check', 'Full Validation Still Applies', 'Detection identifies the compatibility contract; Full Validation establishes capabilities and readiness.')
             ] %}
-            {{ info_flow.render(
-                'Prometheus Integration Flow',
-                'How this configuration becomes an eligible metrics source.',
-                prometheus_flow_items,
-                icon='workflow',
-                open_by_default=true
+            {{ information_guide_card.render(
+                'Compatibility Detection',
+                'Choose how KAORI identifies the Prometheus contract behind this endpoint.',
+                compatibility_detection_items,
+                icon='scan-search'
             ) }}
 
-            <div class="rounded-lg border border-status-info-border bg-status-info-soft p-3.5">
-                <div class="flex items-start gap-2.5"><i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0 text-status-info"></i><div><p class="text-sm font-semibold text-status-info-text">Connection Versus Capability</p><p class="mt-1 text-xs leading-5 text-content-secondary">A reachable endpoint is not automatically ready. KAORI only marks modules ready after their exact metric and query contracts pass.</p></div></div>
-            </div>
+            {% if instance %}
+                {% set after_save_items = [
+                    ('Test the Saved Connection', 'to confirm endpoint access after the configuration change.'),
+                    ('Run Full Validation', 'to rebuild compatibility, capability, and readiness evidence.'),
+                    ('Review Scope Resolution', 'to confirm the source remains eligible for every governed binding.')
+                ] %}
+                {{ context_guidance_card.render(
+                    'After Saving Changes',
+                    'Complete these checks before relying on the updated source.',
+                    after_save_items,
+                    icon='list-checks'
+                ) }}
+            {% else %}
+                {% set after_registration_items = [
+                    ('Open the Registered Connection', 'and test the saved endpoint from its management workspace.'),
+                    ('Run Full Validation', 'to establish compatibility, capability, retention, and readiness evidence.'),
+                    ('Review Diagnostics', 'when a required metric or query contract is degraded or blocked.'),
+                    ('Assign Scope Bindings', 'to make the validated source eligible for operational consumers.')
+                ] %}
+                {{ context_guidance_card.render(
+                    'After Registration',
+                    'Complete these steps before the source is used operationally.',
+                    after_registration_items,
+                    icon='list-checks'
+                ) }}
+            {% endif %}
+
             {% if initial_cluster %}
                 <div class="rounded-lg border border-outline-subtle bg-surface-hover p-3.5">
                     <p class="text-xs font-semibold uppercase tracking-[0.12em] text-content-muted">Initial Scope Binding</p>
@@ -177,6 +258,7 @@
                     <p class="mt-1 text-xs leading-5 text-content-muted">The new connection will be assigned as the primary metrics source for this managed cluster.</p>
                 </div>
             {% endif %}
+
             {{ related_page_card.render(
                 'Kubernetes Analytics',
                 'This metrics connection supplies governed query data to KAORI Kubernetes Analytics.',

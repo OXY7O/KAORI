@@ -61,7 +61,7 @@ Destination: `Alert Intelligence`.
 The shared card now wraps its action in:
 
 ```text
-mt-auto pt-6
+mt-6 intrinsic action spacing
 ```
 
 This preserves the bottom-aligned action while guaranteeing 24 px separation from the description or authority boundary above.
@@ -73,3 +73,8 @@ This preserves the bottom-aligned action while guaranteeing 24 px separation fro
 - Single-page exception retained: implemented.
 - Action spacing corrected: implemented.
 - Guardrail test updated: implemented.
+
+
+## Height correction
+
+The shared card now uses intrinsic height. It must not inherit or force the height of a much taller adjacent form. A fixed 24 px gap (`mt-6`) separates contextual content from the single navigation action.

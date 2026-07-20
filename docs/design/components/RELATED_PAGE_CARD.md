@@ -90,11 +90,11 @@ Geometry:
 - 20 px internal padding;
 - 44 px icon surface;
 - one full-width action;
-- full available height when placed beside primary content;
+- intrinsic content height; the card must not stretch to the height of an unrelated form or workspace;
 - preferred desktop width: approximately 320 px;
 - minimum 24 px separation between content and the action.
 
-The shared component uses `mt-auto pt-6` around the action. This keeps the action bottom-aligned without allowing it to touch the boundary or description above.
+The shared component uses an intrinsic layout with `mt-6` before the action. This preserves a clear 24 px separation without stretching the card to match a much taller adjacent form.
 
 The card is contextual navigation, not a semantic health block. Do not use green, amber, or red as its primary surface.
 
@@ -179,5 +179,6 @@ The boundary note must answer, when relevant:
 - [ ] Authority boundaries are accurate.
 - [ ] Exactly one destination action exists.
 - [ ] At least 24 px separates content from the action.
+- [ ] The card uses intrinsic height and does not stretch with an unrelated neighboring block.
 - [ ] The card sits beside the relevant primary block on desktop.
 - [ ] The shared component is used.

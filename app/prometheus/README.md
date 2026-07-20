@@ -154,3 +154,16 @@ Deletion is intentionally governed:
 5. Deletion does not call the Prometheus or Thanos endpoint and therefore does not depend on live provider availability.
 
 The delete button is disabled while bindings remain, and the service layer repeats the same blocker check so direct POST requests cannot bypass the lifecycle boundary.
+
+### Provider landing and registration alignment
+
+Prometheus follows the same provider-neutral visual hierarchy as Alertmanager:
+
+- the landing Hero owns the single registration action;
+- the registry owns the single scope-management action;
+- overview cards do not duplicate either action;
+- registration uses a compact Hero Context Panel, primary Info Flow, Compatibility Detection Information Guide, After Registration guidance, and an intrinsic-height Related Analytics Workspace card.
+
+Compatibility Detection choices distinguish a direct Prometheus endpoint from a Prometheus-compatible gateway such as Thanos Query. Detection or manual declaration identifies the compatibility contract only; Full Validation remains authoritative for capability and readiness evidence.
+
+Instance detail pages must not fail because an optional lifecycle endpoint is absent in a partial deployment. Lifecycle URLs are built in the route context through a registered-endpoint check. Missing endpoint registration is logged and rendered as an unavailable action rather than raising a Jinja `BuildError`.

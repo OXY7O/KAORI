@@ -42,3 +42,4 @@ Use this test before adding documentation:
 ## Current audits
 
 - `audits/PROMETHEUS_STYLE_AND_LIFECYCLE_AUDIT_2026_07.md`
+- `audits/PROMETHEUS_ALERTMANAGER_ALIGNMENT_AUDIT_2026_07.md`

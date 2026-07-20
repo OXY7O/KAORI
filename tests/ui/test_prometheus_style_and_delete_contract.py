@@ -19,7 +19,7 @@ def test_prometheus_instance_delete_route_and_service_are_governed() -> None:
     service = SERVICE.read_text(encoding='utf-8')
     repository = REPOSITORY.read_text(encoding='utf-8')
 
-    assert "@prometheus_bp.post('/instances/<int:instance_id>/delete')" in routes
+    assert "endpoint='delete_instance'" in routes
     assert 'def delete_instance(instance_id: int)' in routes
     assert 'remove_prometheus_instance(instance)' in routes
     assert "event_type='prometheus_instance_deleted'" in routes
@@ -40,7 +40,8 @@ def test_prometheus_delete_action_is_contextual_and_blocked_by_bindings() -> Non
     required = (
         'Instance Lifecycle &amp; Deletion',
         'data-prometheus-delete-button',
-        "url_for('prometheus.delete_instance', instance_id=instance.id)",
+        'data-delete-url="{{ delete_instance_url }}"',
+        '{% if delete_instance_url %}',
         '{% if bindings %}disabled{% endif %}',
         'Deletion Is Blocked While Bindings Remain',
         'Historical runtime observations and Activity Audit records are retained after deletion.',
@@ -87,7 +88,8 @@ def test_prometheus_workspaces_reuse_global_style_components() -> None:
     assert 'stroke-dashoffset' not in runtime
     assert '<svg' not in runtime
     assert 'context_guidance_card.render' not in detail
-    assert 'context_guidance_card.render' not in form
+    assert 'context_guidance_card.render' in form
+    assert "'After Registration'" in form
     assert 'context_guidance_card.render' not in config
 
 

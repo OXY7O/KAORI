@@ -53,7 +53,7 @@ def test_secondary_integration_guidance_uses_context_component() -> None:
 
 def test_primary_prometheus_workflows_use_info_flow() -> None:
     expected = {
-        "app/templates/prometheus/instance_form.html": "'Prometheus Integration Flow'",
+        "app/templates/prometheus/instance_form.html": "'Prometheus Registration Flow'",
         "app/templates/prometheus/instance_detail.html": "'Configuration Flow'",
         "app/templates/prometheus/config.html": "'Configuration Flow'",
     }
@@ -63,7 +63,12 @@ def test_primary_prometheus_workflows_use_info_flow() -> None:
         assert 'components/info_flow.html' in template, path
         assert "info_flow.render(" in template, path
         assert title in template, path
-        assert "context_guidance_card.render(" not in template, path
+
+    form = read("app/templates/prometheus/instance_form.html")
+    assert "context_guidance_card.render(" in form
+    assert "'After Registration'" in form
+    assert "context_guidance_card.render(" not in read("app/templates/prometheus/instance_detail.html")
+    assert "context_guidance_card.render(" not in read("app/templates/prometheus/config.html")
 
 
 def test_semantic_and_navigation_boxes_remain_separate() -> None:

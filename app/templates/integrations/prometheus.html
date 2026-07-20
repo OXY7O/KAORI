@@ -3,7 +3,7 @@
 {% from "integrations/partials/_status_badge.html" import status_badge %}
 {% block title %}Prometheus Integrations · KAORI{% endblock title %}
 {% block dashboard_content %}
-{% set posture_status = 'healthy' if stats.total > 0 and stats.ready == stats.configured else ('degraded' if stats.total > 0 else 'not_configured') %}
+{% set posture_status = 'Healthy' if stats.total > 0 and stats.ready == stats.configured else ('Attention' if stats.total > 0 else 'Not Configured') %}
 <div class="kaori-integration-semantic space-y-6">
     <section class="{{ page_hero.shell_classes() }}">
         <div class="{{ page_hero.layout_classes() }}">
@@ -23,38 +23,24 @@
 
             <aside class="{{ page_hero.aside_classes() }}" aria-label="Prometheus integration posture">
                 <div class="{{ page_hero.context_panel_classes() }}">
-                    <div>
-                        <div class="flex items-start justify-between gap-3">
-                            <div class="min-w-0">
-                                <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Integration Posture</p>
-                                <p class="mt-1 text-sm font-semibold text-brand-foreground">Metrics Readiness and Scope Coverage</p>
-                            </div>
-                            {{ status_badge(posture_status) }}
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Integration Posture</p>
+                            <p class="{{ page_hero.context_panel_title_classes() }}">Connection Readiness and Bindings</p>
                         </div>
-                        <p class="mt-2 text-xs leading-5 text-brand-foreground-muted">Review validated metrics sources, query contracts, and governed scope coverage from one workspace.</p>
+                        {{ status_badge('healthy' if posture_status == 'Healthy' else ('degraded' if posture_status == 'Attention' else 'not_configured'), posture_status) }}
                     </div>
 
-                    <div class="mt-4">
-                        <div class="grid grid-cols-2 gap-2">
-                            <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5">
-                                <div class="flex items-center justify-between gap-2 text-brand-foreground">
-                                    <span class="flex items-center gap-2 text-[11px] font-semibold"><i data-lucide="badge-check" class="h-3.5 w-3.5"></i>Ready</span>
-                                    <span class="text-base font-semibold leading-none">{{ stats.ready }} / {{ stats.configured }}</span>
-                                </div>
-                            </div>
-                            <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5">
-                                <div class="flex items-center justify-between gap-2 text-brand-foreground">
-                                    <span class="flex items-center gap-2 text-[11px] font-semibold"><i data-lucide="link-2" class="h-3.5 w-3.5"></i>Bindings</span>
-                                    <span class="text-base font-semibold leading-none">{{ stats.bindings }}</span>
-                                </div>
-                            </div>
-                        </div>
-                        <a href="{{ url_for('prometheus.new_instance') }}"
-                           class="mt-2 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-white/80 bg-white px-4 text-sm font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80">
-                            <i data-lucide="plus" class="h-4 w-4"></i>
-                            Register Connection
-                        </a>
+                    <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                        {{ page_hero.context_metric('badge-check', 'Ready', stats.ready ~ ' / ' ~ stats.configured, 'Validated connections available') }}
+                        {{ page_hero.context_metric('link-2', 'Bindings', stats.bindings, 'Governed scope associations') }}
                     </div>
+
+                    <a href="{{ url_for('prometheus.new_instance') }}"
+                       class="mt-3 inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-brand-outline bg-surface-card px-4 py-2 text-xs font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-kaori-primary">
+                        <i data-lucide="plus" class="h-4 w-4" aria-hidden="true"></i>
+                        Register Connection
+                    </a>
                 </div>
             </aside>
         </div>
@@ -71,10 +57,6 @@
                     <p class="mt-1 text-sm leading-6 text-content-secondary">Each metrics connection is registered once, validated against its observed API and metric contracts, then associated with governed operational scopes.</p>
                 </div>
             </div>
-            <a href="{{ url_for('prometheus.instances') }}" class="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-kaori-primary hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus/20">
-                <i data-lucide="waypoints" class="h-3.5 w-3.5"></i>
-                Instances & Bindings
-            </a>
         </header>
 
         <div class="grid gap-4 p-5 sm:grid-cols-2 sm:p-6 xl:grid-cols-4">

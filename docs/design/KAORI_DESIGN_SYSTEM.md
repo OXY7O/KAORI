@@ -286,7 +286,7 @@ Use the shared Health Interpretation component to translate a provider runtime s
 
 ## Related Workspace Contract
 
-When two KAORI pages form one operational or governance workflow, expose the relationship through the shared Related Page Card rather than an undocumented page-local shortcut. Place the card on contextual create, edit, detail, configuration, validation, or workflow subpages in the right-side column. Do not place it on overview, landing, list, or registry pages. A single-page module such as Roles & Access is the documented exception. The card provides exactly one destination action and preserves at least 24 px between the content and action. See `components/RELATED_PAGE_CARD.md`.
+When two KAORI pages form one operational or governance workflow, expose the relationship through the shared Related Page Card rather than an undocumented page-local shortcut. Place the card on contextual create, edit, detail, configuration, validation, or workflow subpages in the right-side column. Do not place it on overview, landing, list, or registry pages. A single-page module such as Roles & Access is the documented exception. The card provides exactly one destination action and preserves at least 24 px between the content and action. It uses intrinsic content height and must not stretch to match an unrelated neighboring form. See `components/RELATED_PAGE_CARD.md`.
 
 ## Connection Validation Header
 

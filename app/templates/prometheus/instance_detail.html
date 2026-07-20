@@ -232,18 +232,25 @@
                             <p class="text-sm font-semibold text-status-critical-text">Deletion Is Blocked While Bindings Remain</p>
                             <p class="mt-1 text-xs leading-5 text-content-secondary">Historical runtime observations and Activity Audit records are retained after deletion.</p>
                         </div>
-                        <button type="button"
-                                data-prometheus-delete-button
-                                data-delete-url="{{ url_for('prometheus.delete_instance', instance_id=instance.id) }}"
-                                data-delete-title="Delete Prometheus Instance?"
-                                data-delete-name="{{ instance.name }}"
-                                data-delete-detail="The connection identity, endpoint configuration, and stored credentials will be removed. Historical runtime observations and Activity Audit records remain available."
-                                data-delete-action-label="Delete Instance"
-                                {% if bindings %}disabled{% endif %}
-                                class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-status-critical-border bg-surface-card px-4 text-sm font-semibold text-status-critical-text transition hover:bg-status-critical-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-not-allowed disabled:opacity-50">
-                            <i data-lucide="trash-2" class="h-4 w-4"></i>
-                            Delete Instance
-                        </button>
+                        {% if delete_instance_url %}
+                            <button type="button"
+                                    data-prometheus-delete-button
+                                    data-delete-url="{{ delete_instance_url }}"
+                                    data-delete-title="Delete Prometheus Instance?"
+                                    data-delete-name="{{ instance.name }}"
+                                    data-delete-detail="The connection identity, endpoint configuration, and stored credentials will be removed. Historical runtime observations and Activity Audit records remain available."
+                                    data-delete-action-label="Delete Instance"
+                                    {% if bindings %}disabled{% endif %}
+                                    class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-status-critical-border bg-surface-card px-4 text-sm font-semibold text-status-critical-text transition hover:bg-status-critical-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-not-allowed disabled:opacity-50">
+                                <i data-lucide="trash-2" class="h-4 w-4"></i>
+                                Delete Instance
+                            </button>
+                        {% else %}
+                            <span class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-hover px-4 text-sm font-semibold text-content-disabled" aria-disabled="true">
+                                <i data-lucide="route-off" class="h-4 w-4"></i>
+                                Delete Unavailable
+                            </span>
+                        {% endif %}
                     </div>
                 </details>
             </div>
