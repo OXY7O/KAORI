@@ -4,7 +4,7 @@
 
 The Info Flow component explains a short, ordered operational or governance sequence. It is used when users need to understand **what happens first, what happens next, and where authority or eligibility is established**.
 
-The reference implementation is the **Role Assignment Flow** on Roles & Access. The same structure is used for **Alertmanager Scope & Workflow** on Register Alertmanager Instance.
+The reference implementation is the **Role Assignment Flow** on Roles & Access. The same structure is used for **Alertmanager Registration Flow** on Register Alertmanager Instance.
 
 ## When to use
 
@@ -146,7 +146,7 @@ Then:
 ] %}
 
 {{ info_flow.render(
-    'Alertmanager Scope & Workflow',
+    'Alertmanager Registration Flow',
     'How a connection becomes an eligible operational source in KAORI.',
     steps,
     icon='waypoints',
@@ -156,6 +156,10 @@ Then:
 ```
 
 Do not copy the timeline classes into page-local templates.
+
+## Relationship to Context Guidance Card
+
+Use Info Flow for the primary ordered workflow that users must understand to complete the page. Use the smaller Context Guidance Card for secondary, normally collapsed guidance in a right-side contextual column. Do not duplicate the same sequence in both components.
 
 ## Accessibility
 

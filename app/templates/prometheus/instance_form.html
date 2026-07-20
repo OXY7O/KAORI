@@ -3,6 +3,7 @@
 {% import "components/operational_toggle.html" as operational_toggle %}
 {% import "components/related_page_card.html" as related_page_card %}
 {% import "components/form_action_bar.html" as form_action_bar %}
+{% import "components/context_guidance_card.html" as context_guidance_card %}
 {% block title %}{{ 'Edit' if instance else 'Register' }} Prometheus Connection · KAORI{% endblock title %}
 {% block dashboard_content %}
 <div class="kaori-integration-semantic space-y-6">
@@ -152,32 +153,31 @@
         </section>
 
         <aside class="space-y-4 xl:col-span-4 xl:sticky xl:top-5">
-            <section class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
-                <div class="flex items-start gap-3">
-                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="workflow" class="h-5 w-5"></i></span>
-                    <div><h2 class="text-base font-semibold text-content-primary">Prometheus Integration Flow</h2><p class="mt-1 text-sm leading-6 text-content-secondary">How this configuration becomes an eligible metrics source.</p></div>
+            {% set prometheus_flow_items = [
+                ('Register Connection', 'Store endpoint identity, access, TLS, and compatibility mode.'),
+                ('Test Connection', 'Confirm endpoint reachability and identify the connected API.'),
+                ('Run Full Validation', 'Validate query APIs, metric signals, retention, query contracts, and module readiness.'),
+                ('Assign Scope Bindings', 'Allow operational consumers to resolve this source by role and priority.')
+            ] %}
+            {{ context_guidance_card.render(
+                'Prometheus Integration Flow',
+                'How this configuration becomes an eligible metrics source.',
+                prometheus_flow_items,
+                icon='workflow',
+                ordered=true,
+                open_by_default=true
+            ) }}
+
+            <div class="rounded-lg border border-status-info-border bg-status-info-soft p-3.5">
+                <div class="flex items-start gap-2.5"><i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0 text-status-info"></i><div><p class="text-sm font-semibold text-status-info-text">Connection Versus Capability</p><p class="mt-1 text-xs leading-5 text-content-secondary">A reachable endpoint is not automatically ready. KAORI only marks modules ready after their exact metric and query contracts pass.</p></div></div>
+            </div>
+            {% if initial_cluster %}
+                <div class="rounded-lg border border-outline-subtle bg-surface-hover p-3.5">
+                    <p class="text-xs font-semibold uppercase tracking-[0.12em] text-content-muted">Initial Scope Binding</p>
+                    <p class="mt-2 text-sm font-semibold text-content-primary">{{ initial_cluster.name }}</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">The new connection will be assigned as the primary metrics source for this managed cluster.</p>
                 </div>
-                <ol class="mt-5 space-y-4">
-                    {% for step in [
-                        ('1', 'Register connection', 'Store endpoint identity, access, TLS, and compatibility mode.'),
-                        ('2', 'Test connection', 'Confirm endpoint reachability and identify the connected API.'),
-                        ('3', 'Run Full Validation', 'Validate query APIs, metric signals, retention, query contracts, and module readiness.'),
-                        ('4', 'Assign scope bindings', 'Allow operational consumers to resolve this source by role and priority.')
-                    ] %}
-                        <li class="flex gap-3"><span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-xs font-semibold text-kaori-primary-dark">{{ step[0] }}</span><div><p class="text-sm font-semibold text-content-primary">{{ step[1] }}</p><p class="mt-1 text-xs leading-5 text-content-muted">{{ step[2] }}</p></div></li>
-                    {% endfor %}
-                </ol>
-                <div class="mt-5 rounded-lg border border-status-info-border bg-status-info-soft p-3.5">
-                    <div class="flex items-start gap-2.5"><i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0 text-status-info"></i><div><p class="text-sm font-semibold text-status-info-text">Connection versus Capability</p><p class="mt-1 text-xs leading-5 text-content-secondary">A reachable endpoint is not automatically ready. KAORI only marks modules ready after their exact metric and query contracts pass.</p></div></div>
-                </div>
-                {% if initial_cluster %}
-                    <div class="mt-4 rounded-lg border border-outline-subtle bg-surface-hover p-3.5">
-                        <p class="text-xs font-semibold uppercase tracking-[0.12em] text-content-muted">Initial Scope Binding</p>
-                        <p class="mt-2 text-sm font-semibold text-content-primary">{{ initial_cluster.name }}</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">The new connection will be assigned as the primary metrics source for this managed cluster.</p>
-                    </div>
-                {% endif %}
-            </section>
+            {% endif %}
             {{ related_page_card.render(
                 'Kubernetes Analytics',
                 'This metrics connection supplies governed query data to KAORI Kubernetes Analytics.',

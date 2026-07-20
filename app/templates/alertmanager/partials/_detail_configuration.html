@@ -1,6 +1,7 @@
 {% import "components/operational_toggle.html" as operational_toggle %}
 {% import "components/related_page_card.html" as related_page_card %}
 {% import "components/form_action_bar.html" as form_action_bar %}
+{% import "components/context_guidance_card.html" as context_guidance_card %}
 {% set current_auth_type = instance.auth_type or 'none' %}
 {% set field_classes = 'h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-normal text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20' %}
 {% set textarea_classes = 'min-h-24 w-full resize-y rounded-lg border border-outline-default bg-surface-card px-3.5 py-3 text-sm font-normal leading-6 text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20' %}
@@ -61,19 +62,32 @@
         </form>
 
         <aside class="space-y-4 xl:col-span-4 xl:sticky xl:top-5">
-            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-                <header class="border-b border-outline-subtle bg-surface-hover px-4 py-3.5"><div class="flex items-start gap-3"><div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="route" class="h-4 w-4"></i></div><div><h2 class="text-sm font-semibold text-content-primary">Configuration Flow</h2><p class="mt-0.5 text-xs leading-5 text-content-muted">How a saved change propagates through the integration.</p></div></div></header>
-                <div class="space-y-3 p-4 text-xs leading-5 text-content-muted">
-                    <div class="grid grid-cols-[24px_minmax(0,1fr)] gap-2"><span class="font-semibold text-kaori-primary">01</span><p><strong class="font-semibold text-content-secondary">Save Changes</strong> to update the canonical connection contract.</p></div>
-                    <div class="grid grid-cols-[24px_minmax(0,1fr)] gap-2"><span class="font-semibold text-kaori-primary">02</span><p><strong class="font-semibold text-content-secondary">Run Full Validation</strong> to rebuild capability and readiness evidence.</p></div>
-                    <div class="grid grid-cols-[24px_minmax(0,1fr)] gap-2"><span class="font-semibold text-kaori-primary">03</span><p><strong class="font-semibold text-content-secondary">Refresh Runtime</strong> to record current health and latency.</p></div>
-                    <div class="grid grid-cols-[24px_minmax(0,1fr)] gap-2"><span class="font-semibold text-kaori-primary">04</span><p><strong class="font-semibold text-content-secondary">Review Resolution</strong> to confirm the connection remains effective for bound scopes.</p></div>
-                </div>
-            </section>
-            <section class="overflow-hidden rounded-xl border border-brand-outline bg-surface-card shadow-sm">
-                <header class="border-b border-brand-outline bg-kaori-soft px-4 py-3.5"><div class="flex items-start gap-3"><div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-surface-card text-kaori-primary"><i data-lucide="info" class="h-4 w-4"></i></div><div><h2 class="text-sm font-semibold text-content-primary">Connection Type</h2><p class="mt-0.5 text-xs leading-5 text-content-muted">Ownership context, not capability restriction.</p></div></div></header>
-                <div class="space-y-3 p-4 text-xs leading-5 text-content-muted"><p><strong class="font-semibold text-content-secondary">Externally managed:</strong> lifecycle belongs to another team or service owner.</p><p><strong class="font-semibold text-content-secondary">Standalone:</strong> independent endpoint with a dedicated operational purpose.</p><p><strong class="font-semibold text-content-secondary">Shared service:</strong> centralized connection reused across multiple scopes.</p><p><strong class="font-semibold text-content-secondary">Managed for a specific scope:</strong> ownership follows one primary context while governed bindings may extend usage.</p></div>
-            </section>
+            {% set configuration_flow_items = [
+                ('Save Changes', 'to update the canonical connection contract.'),
+                ('Run Full Validation', 'to rebuild capability and readiness evidence.'),
+                ('Refresh Runtime', 'to record current health and latency.'),
+                ('Review Resolution', 'to confirm the connection remains effective for bound scopes.')
+            ] %}
+            {{ context_guidance_card.render(
+                'Configuration Flow',
+                'How a saved change propagates through the integration.',
+                configuration_flow_items,
+                icon='route',
+                ordered=true
+            ) }}
+
+            {% set connection_type_items = [
+                ('Externally Managed', 'Lifecycle belongs to another team or service owner.'),
+                ('Standalone', 'An independent endpoint with a dedicated operational purpose.'),
+                ('Shared Service', 'A centralized connection reused across multiple scopes.'),
+                ('Managed for a Specific Scope', 'Ownership follows one primary context while governed bindings may extend usage.')
+            ] %}
+            {{ context_guidance_card.render(
+                'Connection Type',
+                'Ownership context does not restrict capability or scope eligibility.',
+                connection_type_items,
+                icon='info'
+            ) }}
             {{ related_page_card.render(
                 'Alert Intelligence',
                 'This validated connection supplies governed alert lifecycle context to KAORI Alert Intelligence.',

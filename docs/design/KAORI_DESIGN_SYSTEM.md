@@ -267,6 +267,11 @@ The Node Inventory right-side hero panel is the baseline for compact operational
 Use the shared Info Flow component for short ordered governance or operational sequences. The standard structure is an expandable header, a three-to-five-step vertical timeline, and one optional flow-wide boundary note. Role Assignment Flow is the reference implementation. See `components/INFO_FLOW.md`.
 
 
+
+## Context Guidance Card
+
+Use the shared Context Guidance Card for compact secondary guidance in the right-side contextual column of create, edit, detail, configuration, and validation workspaces. The After Registration card on Register Alertmanager Instance is the reference implementation. The component uses native expandable behavior, two to five concise labeled items, generated two-digit markers for ordered guidance, and no embedded actions. It is normally closed; use the default-open state only when the guidance is essential and no separate primary Info Flow exists. See `components/CONTEXT_GUIDANCE_CARD.md`.
+
 ## Related Workspace Contract
 
 When two KAORI pages form one operational or governance workflow, expose the relationship through the shared Related Page Card rather than an undocumented page-local shortcut. Place the card on contextual create, edit, detail, configuration, validation, or workflow subpages in the right-side column. Do not place it on overview, landing, list, or registry pages. A single-page module such as Roles & Access is the documented exception. The card provides exactly one destination action and preserves at least 24 px between the content and action. See `components/RELATED_PAGE_CARD.md`.

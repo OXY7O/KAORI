@@ -1,5 +1,6 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/connection_validation_header.html" as connection_validation_header %}
+{% import "components/context_guidance_card.html" as context_guidance_card %}
 <section id="alertmanager-validation-workspace" class="relative overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
     <div class="relative">
         {% call connection_validation_header.render(
@@ -86,15 +87,19 @@
             <div class="rounded-xl border border-brand-outline bg-kaori-soft p-4">
                 <div class="flex items-start gap-3"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-surface-card text-kaori-primary"><i data-lucide="workflow" class="h-4 w-4"></i></span><div><p class="text-sm font-semibold text-content-primary">How KAORI Uses This Evidence</p><p class="mt-1 text-xs leading-5 text-content-secondary">Readiness and source resolution consume the latest capability snapshot. Fix required gaps first, rerun Full Validation, refresh runtime, then confirm the effective source.</p></div></div>
             </div>
-            <details class="group overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
-                <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-4 [&::-webkit-details-marker]:hidden"><div><p class="text-sm font-semibold text-content-primary">When the External Criteria Already Pass</p><p class="mt-1 text-xs leading-5 text-content-secondary">Use this boundary when Alertmanager returns the expected data but KAORI still marks the capability as missing.</p></div><i data-lucide="chevron-down" class="h-4 w-4 text-content-muted transition group-open:rotate-180"></i></summary>
-                <div class="border-t border-outline-subtle bg-surface-hover p-4"><ol class="space-y-2">{% for step in [
-                    'Capture a sanitized response shape from the documented probe without credentials, tokens, personal data, or unrelated alert content.',
-                    'Compare the observed field path with the capability discovery rules in app/alertmanager/probes.py and the relevant normalizer.',
-                    'Adjust the provider-neutral probe or compatibility profile instead of adding product-specific branching in the UI.',
-                    'Add a regression fixture for the observed payload shape, rerun Full Validation, then confirm module readiness and source resolution.'
-                ] %}<li class="flex items-start gap-2 text-xs leading-5 text-content-secondary"><span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-outline-default bg-surface-card text-[10px] font-semibold text-kaori-primary">{{ loop.index }}</span><span>{{ step }}</span></li>{% endfor %}</ol></div>
-            </details>
+            {% set external_criteria_items = [
+                ('Capture Sanitized Evidence', 'from the documented probe without credentials, tokens, personal data, or unrelated alert content.'),
+                ('Compare Discovery Rules', 'against app/alertmanager/probes.py and the relevant provider-neutral normalizer.'),
+                ('Adjust Compatibility Logic', 'instead of adding product-specific branching in the UI.'),
+                ('Add Regression Coverage', 'then rerun Full Validation and confirm module readiness and source resolution.')
+            ] %}
+            {{ context_guidance_card.render(
+                'When External Criteria Already Pass',
+                'Use this when Alertmanager returns expected data but KAORI still reports a missing capability.',
+                external_criteria_items,
+                icon='list-checks',
+                ordered=true
+            ) }}
             <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
                 <header class="border-b border-outline-subtle bg-surface-hover px-4 py-3"><p class="text-sm font-semibold text-content-primary">Operational Domain Readiness</p><p class="mt-1 text-xs leading-5 text-content-secondary">Shows which KAORI functions can safely use this connection.</p></header>
                 <div class="divide-y divide-outline-subtle">

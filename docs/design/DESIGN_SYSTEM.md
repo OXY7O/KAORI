@@ -18,6 +18,7 @@ This document is the entry point for KAORI's interface contract. New modules mus
 - `components/TABLE_AND_LABEL.md`
 - `components/FORM.md`
 - `components/FORM_ACTION_BAR.md`
+- `components/CONTEXT_GUIDANCE_CARD.md`
 - `components/BUTTON.md`
 - `components/PAGINATION.md`
 - `components/EMPTY_ERROR_STATE.md`
