@@ -62,8 +62,7 @@ def test_prometheus_registry_uses_htmx_filters_and_standard_pagination() -> None
     assert 'Instances & Bindings' not in wrapper
 
     required_content = (
-        'font-sans text-sm font-normal text-content-secondary',
-        'table_label.metadata_label',
+        'min-w-[860px] table-fixed',
         'status_badge(row.compatibility)',
         'status_badge(row.readiness)',
         'Showing <strong class="font-semibold text-content-primary"',
@@ -74,6 +73,7 @@ def test_prometheus_registry_uses_htmx_filters_and_standard_pagination() -> None
     )
     missing = [fragment for fragment in required_content if fragment not in content]
     assert not missing, f'Prometheus registry content is incomplete: {missing}'
+    assert '>Endpoint<' not in content
     assert "render_template('integrations/prometheus/partials/_inventory_content.html'" in routes
 
 

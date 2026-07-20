@@ -116,7 +116,6 @@ def test_provider_registry_tables_share_the_same_column_contract() -> None:
     alert = read(ROOT / 'app/templates/integrations/alertmanager/partials/_inventory_content.html')
     columns = (
         '>Connection<',
-        '>Endpoint<',
         '>Runtime<',
         '>Compatibility<',
         '>Readiness<',
@@ -127,9 +126,12 @@ def test_provider_registry_tables_share_the_same_column_contract() -> None:
     for column in columns:
         assert column in prom
         assert column in alert
-    for fragment in ('status_badge(row.compatibility)', 'status_badge(row.readiness)', 'table_label.metadata_label'):
+    for fragment in ('status_badge(row.compatibility)', 'status_badge(row.readiness)'):
         assert fragment in prom
         assert fragment in alert
+    assert 'table_label.metadata_label' in alert
+    assert '>Endpoint<' not in prom
+    assert '>Endpoint<' not in alert
 
 def test_workspace_tabs_use_violet_selected_and_unselected_states() -> None:
     tabs = read(TABS)
@@ -158,9 +160,10 @@ def test_registry_action_column_is_compact_and_table_width_is_reduced() -> None:
     prom = read(PROM_CONTENT)
     alert = read(ROOT / 'app/templates/integrations/alertmanager/partials/_inventory_content.html')
     for source in (prom, alert):
-        assert 'min-w-[980px] table-fixed' in source
+        assert 'min-w-[860px] table-fixed' in source
         assert '<colgroup>' in source
         assert 'w-[100px] whitespace-nowrap px-3 py-3.5 text-right">Action' in source
         assert 'w-[100px] whitespace-nowrap px-3 py-4 text-right align-top' in source
+        assert 'min-w-[980px]' not in source
         assert 'min-w-[1180px]' not in source
 

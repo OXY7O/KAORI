@@ -31,6 +31,8 @@ def test_integrations_runtime_summary_names_its_resource() -> None:
     template = read("app/templates/integrations/partials/_runtime_overview.html")
     assert "integration target" in template
     assert "integration targets" in template
+    assert "<span>Rows per page</span>" in template
+    assert template.index("<span>Rows per page</span>") < template.index("{% if runtime_pagination.has_prev %}")
 
 
 def test_users_summary_uses_global_wording() -> None:

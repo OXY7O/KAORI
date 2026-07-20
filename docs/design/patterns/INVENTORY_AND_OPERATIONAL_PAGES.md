@@ -44,7 +44,8 @@ This document defines reusable structures. It does not define domain-specific fi
 2. Integration Coverage and Connection Registry use one shared Violet tab bar. The selected tab uses solid KAORI Violet with white text; unselected tabs remain Violet outlined/soft rather than neutral gray.
 3. Coverage and Registry title boxes use the same icon, title, description, spacing, border, and loading-bar hierarchy. Provider-specific wording may differ, but the visual shell must not.
 4. Registry tables use explicit column widths. The final Action column is compact, right-aligned, and must not be the cause of horizontal overflow.
-5. Horizontal scrolling is allowed only when the available viewport is genuinely narrower than the compact technical table contract. Do not force an oversized minimum width by default.
+5. Prometheus and Alertmanager landing registries omit the Endpoint column. Endpoint details belong in the connection manage workspace, while the landing registry prioritizes runtime, compatibility, readiness, bindings, and validation state.
+6. Horizontal scrolling is allowed only when the available viewport is genuinely narrower than the compact technical table contract. Do not force an oversized minimum width by default.
 
 ## Kubernetes integration landing overview
 
@@ -61,7 +62,8 @@ This document defines reusable structures. It does not define domain-specific fi
 3. The lower contract row is Connection Contract, Binding Contract, and Authority Boundary.
 4. Provider Catalog, Runtime Overview, and Domain Coverage use one shared Violet tab bar; switching tabs must not reload the full page.
 5. Runtime filters and pagination update only the Runtime Overview region through HTMX and preserve `tab=runtime` in the URL.
-6. Planned providers remain visible as compact roadmap entries and do not expose configuration actions.
+6. Runtime pagination keeps the result summary and visible `Rows per page` selector together on the left; Previous, numeric pages, and Next remain grouped on the right.
+7. Planned providers remain visible as compact roadmap entries and do not expose configuration actions.
 
 ## Pagination interaction contract
 

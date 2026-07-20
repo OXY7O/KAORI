@@ -48,7 +48,8 @@ def test_alertmanager_registry_content_uses_kaori_table_contract() -> None:
     missing = [fragment for fragment in required_fragments if fragment not in source]
     assert not missing, f'Alertmanager registry table contract is incomplete: {missing}'
     assert 'font-mono' not in source
-    assert 'truncate font-sans text-sm font-normal text-content-secondary' in source
+    assert '>Endpoint<' not in source
+    assert 'min-w-[860px] table-fixed' in source
 
 def test_alertmanager_registry_copy_uses_global_operational_positioning() -> None:
     source = Path(

@@ -56,9 +56,30 @@
       <h3 class="mt-4 text-base font-semibold text-content-primary">No Runtime Targets Yet</h3>
       <p class="mx-auto mt-2 max-w-xl text-sm leading-6 text-content-secondary">Register a Kubernetes, Prometheus, or Alertmanager connection. Runtime posture will appear here after the connection exists; live provider access is not required to open this page.</p>
     </div>
-    <div class="border-t border-outline-subtle px-5 py-4">
-      <p class="text-xs text-content-muted">Showing 0–0 of 0 integration targets</p>
-    </div>
+    <footer class="flex flex-col gap-3 border-t border-outline-subtle p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+        <p class="text-xs text-content-muted">Showing 0–0 of 0 integration targets</p>
+        <label class="inline-flex items-center gap-2 text-xs font-medium text-content-muted">
+          <span>Rows per page</span>
+          <select name="per_page"
+                  aria-label="Rows per page"
+                  hx-get="{{ url_for('integrations.overview', tab='runtime', page=1, provider=selected_provider, health=selected_health, readiness=selected_readiness) }}"
+                  hx-target="#integration-runtime-overview"
+                  hx-swap="outerHTML"
+                  hx-indicator="#integration-runtime-loading"
+                  hx-push-url="true"
+                  hx-trigger="change"
+                  class="{{ pagination_ui.page_size_classes() }}">
+            {% for size in runtime_pagination.allowed_per_page %}<option value="{{ size }}" {% if runtime_pagination.per_page == size %}selected{% endif %}>{{ size }}</option>{% endfor %}
+          </select>
+        </label>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="{{ pagination_ui.navigation_classes(disabled=true) }}" aria-disabled="true"><i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>Previous</span>
+        {{ pagination_ui.numeric_pages(runtime_pagination.page, runtime_pagination.total_pages) }}
+        <span class="{{ pagination_ui.navigation_classes(disabled=true) }}" aria-disabled="true">Next<i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i></span>
+      </div>
+    </footer>
   {% else %}
     <div class="grid gap-3 border-b border-outline-subtle p-5 sm:grid-cols-2 xl:grid-cols-5">
       {% for label, value, icon in [('Healthy', runtime_stats.healthy, 'circle-check'), ('Degraded', runtime_stats.degraded, 'triangle-alert'), ('Unhealthy', runtime_stats.unhealthy, 'circle-x'), ('Not Observed', runtime_stats.not_observed, 'circle-help'), ('Capability Attention', runtime_stats.capability_attention, 'puzzle')] %}
@@ -142,11 +163,24 @@
     </div>
 
     <footer class="flex flex-col gap-3 border-t border-outline-subtle p-4 sm:flex-row sm:items-center sm:justify-between">
-      <p class="text-xs text-content-muted">Showing {{ runtime_pagination.start_item }}–{{ runtime_pagination.end_item }} of {{ runtime_pagination.total_items }} {{ 'integration target' if runtime_pagination.total_items == 1 else 'integration targets' }}</p>
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+        <p class="text-xs text-content-muted">Showing {{ runtime_pagination.start_item }}–{{ runtime_pagination.end_item }} of {{ runtime_pagination.total_items }} {{ 'integration target' if runtime_pagination.total_items == 1 else 'integration targets' }}</p>
+        <label class="inline-flex items-center gap-2 text-xs font-medium text-content-muted">
+          <span>Rows per page</span>
+          <select name="per_page"
+                  aria-label="Rows per page"
+                  hx-get="{{ url_for('integrations.overview', tab='runtime', page=1, provider=selected_provider, health=selected_health, readiness=selected_readiness) }}"
+                  hx-target="#integration-runtime-overview"
+                  hx-swap="outerHTML"
+                  hx-indicator="#integration-runtime-loading"
+                  hx-push-url="true"
+                  hx-trigger="change"
+                  class="{{ pagination_ui.page_size_classes() }}">
+            {% for size in runtime_pagination.allowed_per_page %}<option value="{{ size }}" {% if runtime_pagination.per_page == size %}selected{% endif %}>{{ size }}</option>{% endfor %}
+          </select>
+        </label>
+      </div>
       <div class="flex items-center gap-2">
-        <select name="per_page" aria-label="Rows per page" hx-get="{{ url_for('integrations.overview', tab='runtime', provider=selected_provider, health=selected_health, readiness=selected_readiness) }}" hx-target="#integration-runtime-overview" hx-swap="outerHTML" hx-indicator="#integration-runtime-loading" hx-push-url="true" hx-trigger="change" class="{{ pagination_ui.page_size_classes() }}">
-          {% for size in runtime_pagination.allowed_per_page %}<option value="{{ size }}" {% if runtime_pagination.per_page == size %}selected{% endif %}>{{ size }}</option>{% endfor %}
-        </select>
         {% if runtime_pagination.has_prev %}
           {% set prev_url = url_for('integrations.overview', tab='runtime', page=runtime_pagination.prev_page, per_page=runtime_pagination.per_page, provider=selected_provider, health=selected_health, readiness=selected_readiness) %}
           <a href="{{ prev_url }}" hx-get="{{ prev_url }}" hx-target="#integration-runtime-overview" hx-swap="outerHTML" hx-indicator="#integration-runtime-loading" hx-push-url="true" class="{{ pagination_ui.navigation_classes(disabled=false) }}"><i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>Previous</a>

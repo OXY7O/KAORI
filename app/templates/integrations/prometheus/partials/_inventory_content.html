@@ -1,11 +1,9 @@
 {% import "components/pagination.html" as pagination_ui %}
-{% import "components/table_label.html" as table_label %}
 {% from "integrations/partials/_status_badge.html" import status_badge %}
 <div class="overflow-x-auto">
-    <table class="w-full min-w-[980px] table-fixed text-left text-sm">
+    <table class="w-full min-w-[860px] table-fixed text-left text-sm">
         <colgroup>
             <col class="w-[170px]">
-            <col class="w-[160px]">
             <col class="w-[105px]">
             <col class="w-[135px]">
             <col class="w-[100px]">
@@ -16,7 +14,6 @@
         <thead class="border-b border-outline-subtle bg-surface-hover text-xs font-semibold text-content-muted">
             <tr>
                 <th class="px-5 py-3.5 sm:px-6">Connection</th>
-                <th class="px-4 py-3.5">Endpoint</th>
                 <th class="px-4 py-3.5">Runtime</th>
                 <th class="px-4 py-3.5">Compatibility</th>
                 <th class="px-4 py-3.5">Readiness</th>
@@ -36,10 +33,6 @@
                                 <p class="mt-1 line-clamp-2 text-xs leading-5 text-content-muted">{{ row.description or 'Reusable metrics connection' }}</p>
                             </div>
                         </div>
-                    </td>
-                    <td class="px-4 py-4 align-top">
-                        <p class="max-w-[250px] truncate font-sans text-sm font-normal text-content-secondary" title="{{ row.endpoint }}">{{ row.endpoint }}</p>
-                        <div class="mt-2">{{ table_label.metadata_label((row.endpoint_product or 'Prometheus')|replace('_', ' ')|title, 'server-cog') }}</div>
                     </td>
                     <td class="px-4 py-4 align-top">
                         <p class="font-semibold text-content-primary">{{ row.version or 'Not Detected' }}</p>
@@ -64,7 +57,7 @@
                 </tr>
             {% else %}
                 <tr>
-                    <td colspan="8" class="p-0">
+                    <td colspan="7" class="p-0">
                         {% set empty_state_icon = 'activity' %}
                         {% set empty_state_title = 'No Prometheus connections found' %}
                         {% set empty_state_description = 'Adjust the active filters or register a reusable metrics connection.' %}
