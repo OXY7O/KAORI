@@ -320,6 +320,4 @@
         </div>
     </details>
 </div>
-{% if binding_feedback is defined and binding_feedback %}
-    {% with operation_feedback=binding_feedback %}{% include 'alertmanager/partials/_operation_feedback_oob.html' %}{% endwith %}
-{% endif %}
+{% include 'components/operation_feedback_oob.html' %}

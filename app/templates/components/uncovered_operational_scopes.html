@@ -1,0 +1,36 @@
+{% macro render(title, description, scopes, register_endpoint, action_label='Register & Bind', icon='unlink') -%}
+{% if scopes %}
+<section class="overflow-hidden rounded-2xl border border-status-warning-border bg-surface-card shadow-sm" aria-label="{{ title }}">
+    <header class="flex flex-col gap-3 border-b border-status-warning-border bg-status-warning-soft px-5 py-4 sm:px-6 lg:flex-row lg:items-start lg:justify-between">
+        <div class="flex items-start gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-status-warning-border bg-surface-card text-status-warning-text">
+                <i data-lucide="{{ icon }}" class="h-5 w-5" aria-hidden="true"></i>
+            </span>
+            <div>
+                <h2 class="text-lg font-semibold text-content-primary">{{ title }}</h2>
+                <p class="mt-1 max-w-3xl text-sm leading-6 text-content-secondary">{{ description }}</p>
+            </div>
+        </div>
+        <span class="kaori-semantic-label inline-flex min-h-6 shrink-0 items-center gap-1.5 rounded-md border border-status-warning-border bg-surface-card px-2.5 py-1 text-[10px] font-semibold text-status-warning-text">
+            <i data-lucide="triangle-alert" class="h-3 w-3" aria-hidden="true"></i>
+            {{ scopes|length }} Uncovered
+        </span>
+    </header>
+    <div class="divide-y divide-outline-subtle">
+        {% for scope in scopes %}
+        <div class="flex flex-col gap-3 px-5 py-4 sm:px-6 md:flex-row md:items-center md:justify-between">
+            <div class="min-w-0">
+                <p class="truncate text-sm font-semibold text-content-primary">{{ scope.name }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Managed Kubernetes cluster without an enabled eligible source binding.</p>
+            </div>
+            <a href="{{ url_for(register_endpoint, cluster_id=scope.id) }}"
+               class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2">
+                <i data-lucide="plus" class="h-4 w-4" aria-hidden="true"></i>
+                {{ action_label }}
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+{%- endmacro %}

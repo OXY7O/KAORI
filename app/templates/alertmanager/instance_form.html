@@ -23,7 +23,7 @@
         'storage_service': 'Infrastructure service',
         'global': 'Global operational scope'
     } %}
-    <div class="kaori-integration-semantic space-y-6">
+    <div id="alertmanager-registration-workspace" class="kaori-integration-semantic space-y-6">
         {% set hero_readiness = (instance.readiness_status or 'validation_required') if instance else 'draft' %}
         {% set source_posture = 'Ready' if hero_readiness == 'ready' else ('Attention' if hero_readiness in ['degraded', 'blocked'] else ('Configured' if instance else 'Draft')) %}
         <section class="{{ page_hero.shell_classes() }}">
@@ -139,6 +139,12 @@
         <div class="grid gap-5 xl:grid-cols-12 xl:items-start">
             <form id="alertmanager-instance-form"
                   method="post"
+                  action="{{ url_for('alertmanager.new_instance', cluster_id=initial_cluster.id if initial_cluster else none) }}"
+                  hx-post="{{ url_for('alertmanager.new_instance', cluster_id=initial_cluster.id if initial_cluster else none) }}"
+                  hx-target="#alertmanager-registration-workspace"
+                  hx-select="#alertmanager-registration-workspace"
+                  hx-swap="outerHTML"
+                  hx-disabled-elt="button[type='submit']"
                   class="xl:col-span-8"
                   x-data="{
                       authType: '{{ current_auth_type }}',
@@ -685,5 +691,6 @@
             </details>
             {% include 'alertmanager/partials/_delete_confirmation_modal.html' %}
         {% endif %}
-    </div>
+        {% include 'components/operation_feedback_oob.html' %}
+</div>
 {% endblock dashboard_content %}

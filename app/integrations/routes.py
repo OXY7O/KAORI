@@ -74,8 +74,8 @@ def kubernetes_runtime_history(cluster_id: str) -> ResponseReturnValue:
 @permission_required('settings.manage_integrations')
 def prometheus() -> ResponseReturnValue:
     context = build_prometheus_page(
+        query=request.args.get('q', '').strip(),
         compatibility=request.args.get('compatibility', '').strip(),
-        environment=request.args.get('environment', '').strip(),
         readiness=request.args.get('readiness', '').strip(),
         page=request.args.get('page', 1, type=int),
         per_page=request.args.get('per_page', 5, type=int),

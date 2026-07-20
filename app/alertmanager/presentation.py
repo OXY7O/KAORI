@@ -12,7 +12,7 @@ from app.extensions import db
 from app.integrations.runtime.presentation import runtime_history_view, runtime_state_view
 from app.integrations.runtime.repository import paginate_runtime_history
 from app.models.alertmanager import AlertmanagerInstance
-from app.models.integration import IntegrationBinding
+from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.models.cluster import Cluster
 
 
@@ -47,6 +47,27 @@ def build_inventory_context(
         'attention': sum(1 for row in rows if row['configured'] and row['readiness'] != 'ready'),
         'bindings': sum(row['binding_count'] for row in rows),
     }
+    covered_cluster_ids = {
+        binding.asset_key
+        for binding in (
+            IntegrationBinding.query
+            .join(
+                IntegrationInstance,
+                IntegrationBinding.integration_instance_id == IntegrationInstance.id,
+            )
+            .filter(
+                IntegrationInstance.provider_type == 'alertmanager',
+                IntegrationBinding.asset_type == 'kubernetes_cluster',
+                IntegrationBinding.enabled.is_(True),
+            )
+            .all()
+        )
+    }
+    uncovered_clusters = [
+        cluster
+        for cluster in Cluster.query.order_by(Cluster.name.asc()).all()
+        if cluster.id not in covered_cluster_ids
+    ]
     return {
         'rows': page_rows,
         'stats': stats,
@@ -57,6 +78,7 @@ def build_inventory_context(
         'readiness_options': sorted({row['readiness'] for row in rows}),
         'deployment_type_options': sorted({row['deployment_type'] for row in rows}),
         'binding_scope_counts': count_bindings_by_scope_type(),
+        'uncovered_clusters': uncovered_clusters,
     }
 
 

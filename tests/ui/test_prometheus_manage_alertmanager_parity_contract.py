@@ -27,7 +27,8 @@ def test_configuration_is_inline_and_legacy_edit_redirects() -> None:
     configuration = read(CONFIGURATION)
 
     assert "@prometheus_bp.route('/instances/<int:instance_id>', methods=['GET', 'POST'])" in routes
-    assert "if request.method == 'GET':\n        return redirect(url_for('prometheus.instance_detail'" in routes
+    assert "@prometheus_bp.get('/instances/<int:instance_id>/edit')" in routes
+    assert "return redirect(url_for('prometheus.instance_detail'" in routes
     assert "render_template(\n        'prometheus/instance_form.html'" not in routes[routes.index('def edit_instance'):routes.index("@prometheus_bp.get('/instances')")]
     assert "action=\"{{ url_for('prometheus.instance_detail', instance_id=instance.id) }}#configuration\"" in configuration
     assert 'Save Changes' in configuration
@@ -133,7 +134,8 @@ def test_manage_workspace_uses_one_context_builder_for_full_and_partial_response
 
     assert 'def _instance_detail_context(' in routes
     assert "context['delete_instance_url'] = _optional_endpoint_url(" in routes
-    assert routes.count('_instance_detail_context(instance') >= 5
+    assert 'def _render_instance_partial(' in routes
+    assert routes.count('_render_instance_partial(') >= 6
     assert 'ensure_canonical_instance(instance, provider_type=\'prometheus\')' in routes
     assert "@prometheus_bp.post('/instances/<int:instance_id>/runtime/refresh')" in routes
 

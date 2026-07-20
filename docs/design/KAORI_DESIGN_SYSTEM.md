@@ -178,6 +178,7 @@ Detailed component rules are maintained separately:
 - Tables and compact labels: `docs/design/components/TABLE_AND_LABEL.md`
 - Related page relationships: `docs/design/components/RELATED_PAGE_CARD.md`
 - Form submission actions: `docs/design/components/FORM_ACTION_BAR.md`
+- Operational action feedback: `docs/design/components/OPERATIONAL_ACTION_FEEDBACK.md`
 - Reusable page composition: `docs/design/patterns/`
 
 A page must consume shared components rather than recreate their utility strings.
@@ -303,3 +304,7 @@ Use a KAORI critical modal for persisted-object deletion or detachment. Browser-
 ## Integration Manage Workspace
 
 Use the shared Integration Manage Workspace for provider instance detail pages. Alertmanager is the reference implementation; Prometheus follows the same four-tab architecture, inline Configuration flow, technical Validation & Capabilities matrix, Runtime & History presentation, and governed Scope & Resolution workspace. Provider-specific terminology and evidence remain explicit. See `components/INTEGRATION_MANAGE_WORKSPACE.md`.
+
+## Operational mutation contract
+
+Normal provider actions must persist Activity Audit evidence and return matching toast feedback. Same-page actions use HTMX and replace only the affected workspace partial. Successful actions that change resource location use `HX-Redirect`. Normal templates must not route users through legacy provider compatibility pages. See `docs/design/components/OPERATIONAL_ACTION_FEEDBACK.md`.

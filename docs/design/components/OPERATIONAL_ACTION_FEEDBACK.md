@@ -1,0 +1,78 @@
+# Operational Action Feedback
+
+## Purpose
+
+Operational Action Feedback is the required interaction contract for persisted actions in KAORI provider workspaces. Every action must produce one user-visible toast and one durable Activity Audit record from the same normalized event payload.
+
+## Core contract
+
+For a same-page mutation:
+
+1. The control sends an HTMX request.
+2. The server performs the operation and its server-side guardrails.
+3. `record_operational_activity(...)` or the provider wrapper persists the Activity Audit event.
+4. The route returns the affected workspace partial.
+5. The response includes `components/operation_feedback_oob.html` so the toast is swapped into `#operational-action-feedback`.
+6. The page is not fully reloaded.
+
+For an operation that changes the current resource location, such as successful registration or deletion, the HTMX response uses `HX-Redirect`. The event is queued before navigation so the destination page displays the same persisted feedback.
+
+## Required coverage
+
+The contract applies to mutation or evidence-producing actions:
+
+- Register and update connection.
+- Test Connection.
+- Full Validation.
+- Refresh Runtime.
+- Create and remove scope binding.
+- Delete provider instance.
+- Any future provider action that changes persisted state or operational evidence.
+
+Read-only navigation, tab selection, filter changes, pagination, and history refresh do not create Activity Audit events because they do not change provider state or evidence.
+
+## Response rules
+
+- Same-page success and failure return the smallest complete workspace partial.
+- The partial root must have a stable ID and use `outerHTML` when the root itself changes.
+- Toast feedback uses out-of-band swap and does not replace the primary target.
+- Validation failure, rejected lifecycle operation, and database failure must remain renderable; they must not degrade into an unhandled HTTP 500.
+- A non-HTMX request may use redirect fallback, but the normal KAORI control must issue HTMX.
+
+## Audit rules
+
+Every event includes:
+
+- Stable event type.
+- Success, warning, or error status.
+- Human-readable title, message, and technical detail.
+- Provider and instance identity in metadata.
+- Scope, binding, runtime, capability, or failure metadata when applicable.
+- Action URL to the canonical provider workspace, never a legacy compatibility page.
+
+Toast persistence failure must not reverse a successful provider operation. The failure is logged and the toast states that Activity Audit persistence could not be confirmed.
+
+## Loading and disabled state
+
+- Use `hx-disabled-elt` for the initiating submit control.
+- Long-running actions use the established in-panel HTMX loading bar.
+- Do not use a full-page loading state for a partial provider operation.
+- Do not use browser-native `confirm(...)` for persisted-object deletion.
+
+## Provider normal flow
+
+Prometheus and Alertmanager use their canonical instance workspace:
+
+- Configuration
+- Validation & Capabilities
+- Runtime & History
+- Scope & Resolution
+
+Cluster compatibility routes may exist only as redirect or migration boundaries. Normal templates, dependency blockers, and action feedback must point to canonical registration, provider registry, or instance manage routes. Legacy Prometheus registry and cluster-configuration bookmarks redirect to the canonical provider landing or instance Configuration tab; they do not render a parallel management workflow.
+
+## Reference implementation
+
+- `app/templates/components/operation_feedback_oob.html`
+- `app/notifications/service.py::record_operational_activity`
+- `app/prometheus/routes.py`
+- `app/alertmanager/routes.py`

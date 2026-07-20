@@ -49,10 +49,11 @@ def test_prometheus_registry_uses_htmx_filters_and_standard_pagination() -> None
     required_wrapper = (
         'Prometheus Connection Registry',
         'hx-target="#prometheus-inventory-content"',
-        'hx-trigger="change from:select"',
+        'hx-trigger="change from:select, keyup changed delay:500ms',
         'id="prometheus-inventory-loading"',
-        'notification-progress-indeterminate',
-        'Manage Scope Bindings',
+        'animate-pulse rounded-full bg-kaori-primary',
+        'Search Connection',
+        'Compatibility',
     )
     missing = [fragment for fragment in required_wrapper if fragment not in wrapper]
     assert not missing, f'Prometheus registry filters are incomplete: {missing}'
@@ -66,7 +67,8 @@ def test_prometheus_registry_uses_htmx_filters_and_standard_pagination() -> None
         'status_badge(row.compatibility)',
         'status_badge(row.readiness)',
         'Showing <strong class="font-semibold text-content-primary"',
-        'Connections per page',
+        'aria-label="Connections per page"',
+        'hx-push-url="true"',
         'pagination_ui.numeric_pages(pagination.page, pagination.total_pages)',
         "url_for('prometheus.instance_detail', instance_id=row.instance_id)",
     )

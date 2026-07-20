@@ -234,8 +234,8 @@ def build_kubernetes_detail(cluster_id: str) -> dict[str, Any] | None:
 
 def build_prometheus_page(
     *,
+    query: str = "",
     compatibility: str = "",
-    environment: str = "",
     readiness: str = "",
     page: int = 1,
     per_page: int = 5,
@@ -251,6 +251,20 @@ def build_prometheus_page(
         environments = sorted({cluster.environment for cluster in bound_clusters if cluster.environment})
         readiness_value = instance.readiness_status or 'validation_required'
         compatibility_value = instance.compatibility_status or 'validation_required'
+        search_text = ' '.join(
+            filter(
+                None,
+                [
+                    (instance.name or '').lower(),
+                    (instance.description or '').lower(),
+                    (instance.endpoint or '').lower(),
+                    (instance.endpoint_product or '').lower(),
+                    (instance.detected_version or '').lower(),
+                    (instance.compatibility_profile or '').lower(),
+                    (instance.query_profile or '').lower(),
+                ],
+            )
+        )
         all_rows.append({
             'instance_id': instance.id,
             'name': instance.name,
@@ -270,13 +284,15 @@ def build_prometheus_page(
             'environments': environments,
             'configured': bool(instance.endpoint),
             'enabled': instance.enabled,
+            'search_text': search_text,
         })
 
     filtered = all_rows
+    normalized_query = query.strip().lower()
+    if normalized_query:
+        filtered = [row for row in filtered if normalized_query in row['search_text']]
     if compatibility:
         filtered = [row for row in filtered if row['compatibility'] == compatibility]
-    if environment:
-        filtered = [row for row in filtered if environment in row['environments']]
     if readiness:
         filtered = [row for row in filtered if row['readiness'] == readiness]
     page_rows, pagination = _paginate(filtered, page=page, per_page=per_page)
@@ -293,14 +309,10 @@ def build_prometheus_page(
         },
         'pagination': pagination,
         'uncovered_clusters': sorted(uncovered, key=lambda cluster: cluster.name.lower()),
+        'selected_query': query,
         'selected_compatibility': compatibility,
-        'selected_environment': environment,
         'selected_readiness': readiness,
         'compatibility_options': _ordered_status_options(all_rows, 'compatibility', ['compatible', 'compatible_with_warnings', 'capability_mismatch', 'unsupported_version', 'version_unknown', 'validation_required']),
-        'environment_options': [
-            {'value': value, 'label': get_environment_label(value)}
-            for value in sorted({value for row in all_rows for value in row['environments']}, key=lambda item: get_environment_label(item).lower())
-        ],
         'readiness_options': _ordered_status_options(all_rows, 'readiness', ['ready', 'degraded', 'blocked', 'validation_required']),
     }
 
@@ -409,21 +421,6 @@ def _catalog(
     ]
 
 
-def _filter_prometheus_rows(
-    rows: list[dict[str, Any]],
-    *,
-    compatibility: str,
-    environment: str,
-    readiness: str,
-) -> list[dict[str, Any]]:
-    filtered = rows
-    if compatibility:
-        filtered = [row for row in filtered if row['compatibility'] == compatibility]
-    if environment:
-        filtered = [row for row in filtered if row['environment'] == environment]
-    if readiness:
-        filtered = [row for row in filtered if row['readiness'] == readiness]
-    return filtered
 
 
 def _ordered_status_options(rows: list[dict[str, Any]], field: str, order: list[str]) -> list[str]:

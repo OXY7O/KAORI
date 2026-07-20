@@ -9,7 +9,7 @@
 {% import "components/information_guide_card.html" as information_guide_card %}
 {% block title %}{{ 'Edit' if instance else 'Register' }} Prometheus Connection · KAORI{% endblock title %}
 {% block dashboard_content %}
-<div class="kaori-integration-semantic space-y-6">
+<div id="prometheus-registration-workspace" class="kaori-integration-semantic space-y-6">
     {% set hero_readiness = (instance.readiness_status or 'validation_required') if instance else 'draft' %}
     {% set binding_count = bindings|length if bindings is defined else 0 %}
     {% set source_posture = 'Ready' if hero_readiness == 'ready' else ('Attention' if hero_readiness in ['degraded', 'blocked'] else ('Configured' if instance else 'Draft')) %}
@@ -67,6 +67,12 @@
     </section>
 
     <form method="post"
+          action="{{ url_for('prometheus.new_instance', cluster_id=initial_cluster.id if initial_cluster else none) }}"
+          hx-post="{{ url_for('prometheus.new_instance', cluster_id=initial_cluster.id if initial_cluster else none) }}"
+          hx-target="#prometheus-registration-workspace"
+          hx-select="#prometheus-registration-workspace"
+          hx-swap="outerHTML"
+          hx-disabled-elt="button[type='submit']"
           class="grid gap-6 xl:grid-cols-12"
           x-data="{ authType: '{{ form.auth_type.data or 'none' }}', detectionMode: '{{ form.version_detection_mode.data or 'automatic' }}' }">
         {{ form.hidden_tag() }}
@@ -270,5 +276,6 @@
             ) }}
         </aside>
     </form>
+    {% include 'components/operation_feedback_oob.html' %}
 </div>
 {% endblock dashboard_content %}

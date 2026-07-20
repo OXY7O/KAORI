@@ -1,5 +1,4 @@
 {% include "alertmanager/partials/_runtime_panel.html" %}
 {% set runtime_history_oob = true %}
 {% include "alertmanager/partials/_runtime_history.html" %}
-{% set operation_feedback = runtime_feedback if runtime_feedback is defined else none %}
-{% include 'alertmanager/partials/_operation_feedback_oob.html' %}
+{% include 'components/operation_feedback_oob.html' %}

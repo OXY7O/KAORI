@@ -56,7 +56,7 @@ def prometheus_setup_blocker(cluster: Cluster) -> DependencyBlocker:
         'diagnostic_detail': None,
         'icon': 'activity',
         'action_label': 'Configure Prometheus',
-        'action_url': url_for('prometheus.configuration', cluster_id=cluster.id),
+        'action_url': url_for('prometheus.new_instance', cluster_id=cluster.id),
         'permission': 'settings.manage_integrations',
     }
 
@@ -77,7 +77,7 @@ def prometheus_connection_blocker(
         'diagnostic_detail': detail,
         'icon': 'plug-zap',
         'action_label': 'Review Prometheus',
-        'action_url': url_for('prometheus.configuration', cluster_id=cluster.id),
+        'action_url': url_for('integrations.prometheus'),
         'permission': 'settings.manage_integrations',
     }
 
@@ -104,7 +104,7 @@ def prometheus_capability_blocker(
         'diagnostic_detail': None,
         'icon': 'shield-alert',
         'action_label': 'Review capability remediation',
-        'action_url': url_for('prometheus.configuration', cluster_id=cluster.id),
+        'action_url': url_for('integrations.prometheus'),
         'permission': 'settings.manage_integrations',
     }
 
@@ -124,19 +124,13 @@ def alert_source_setup_blocker(
         description = f'Alertmanager is not configured for {cluster.name}. Configure it to load alert routing and lifecycle context.'
         badge = 'Alertmanager required'
         action_label = 'Configure Alertmanager'
-        action_url = url_for(
-            'alertmanager.cluster_alertmanager_config',
-            cluster_id=cluster.id,
-        )
+        action_url = url_for('alertmanager.new_instance', cluster_id=cluster.id)
     else:
         title = 'Alert source setup required'
         description = f'No alert source is configured for {cluster.name}. Configure Alertmanager or Prometheus to load alert data.'
         badge = 'Alert source required'
         action_label = 'Configure Alertmanager'
-        action_url = url_for(
-            'alertmanager.cluster_alertmanager_config',
-            cluster_id=cluster.id,
-        )
+        action_url = url_for('alertmanager.new_instance', cluster_id=cluster.id)
 
     return {
         'kind': 'alert_source_setup',
@@ -162,7 +156,7 @@ def alert_source_connection_blocker(
     source_label = 'Alert source' if normalized_source in {'', 'auto', 'none'} else normalized_source.title()
 
     action_endpoint = (
-        'prometheus.configuration' if normalized_source == 'prometheus' else 'alertmanager.cluster_alertmanager_config'
+        'integrations.prometheus' if normalized_source == 'prometheus' else 'integrations.alertmanager'
     )
 
     return {
@@ -176,7 +170,7 @@ def alert_source_connection_blocker(
         'diagnostic_detail': detail,
         'icon': 'triangle-alert',
         'action_label': 'Review integration',
-        'action_url': url_for(action_endpoint, cluster_id=cluster.id),
+        'action_url': url_for(action_endpoint),
         'permission': 'settings.manage_integrations',
     }
 

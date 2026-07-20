@@ -13,16 +13,15 @@ RELATED = ROOT / 'app/templates/components/related_page_card.html'
 AUDIT = ROOT / 'docs/design/audits/PROMETHEUS_ALERTMANAGER_ALIGNMENT_AUDIT_2026_07.md'
 
 
-def test_provider_landing_has_one_registration_and_one_scope_action() -> None:
+def test_provider_landing_has_one_registration_action_and_registry_has_no_duplicate() -> None:
     landing = LANDING.read_text(encoding='utf-8')
     registry = REGISTRY.read_text(encoding='utf-8')
     combined = landing + registry
 
     assert combined.count('Register Connection') == 1
     assert combined.count("url_for('prometheus.new_instance')") == 1
-    assert combined.count("url_for('prometheus.instances')") == 1
-    assert 'Manage Scope Bindings' in registry
-    assert 'Instances & Bindings' not in landing
+    assert "url_for('prometheus.instances')" not in combined
+    assert 'Manage Scope Bindings' not in registry
     assert 'Register Connection' not in registry
 
 
@@ -41,21 +40,13 @@ def test_prometheus_landing_hero_matches_compact_alertmanager_contract() -> None
     assert 'Review validated metrics sources, query contracts' not in landing
 
 
-def test_uncovered_scope_action_uses_global_primary_button_contract() -> None:
-    registry = REGISTRY.read_text(encoding='utf-8')
+def test_uncovered_scope_action_uses_shared_global_component() -> None:
+    landing = LANDING.read_text(encoding='utf-8')
+    component = (ROOT / 'app/templates/components/uncovered_operational_scopes.html').read_text(encoding='utf-8')
 
-    required = (
-        'Operational Scopes Without a Prometheus Source',
-        'Register &amp; Bind',
-        'inline-flex h-10',
-        'bg-kaori-primary',
-        'hover:bg-kaori-primary-hover',
-        'focus-visible:ring-2',
-        'focus-visible:ring-offset-2',
-    )
-    missing = [fragment for fragment in required if fragment not in registry]
-    assert not missing, f'Uncovered scope action is not standardized: {missing}'
-    assert 'Register &amp; bind' not in registry
+    assert 'Operational Scopes Without a Prometheus Source' in landing
+    for fragment in ('Register & Bind', 'inline-flex h-10', 'bg-kaori-primary', 'hover:bg-kaori-primary-hover', 'focus-visible:ring-2', 'focus-visible:ring-offset-2'):
+        assert fragment in component
 
 
 def test_registration_workspace_matches_alertmanager_information_hierarchy() -> None:

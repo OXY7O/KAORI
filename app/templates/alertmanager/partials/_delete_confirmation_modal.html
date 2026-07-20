@@ -20,7 +20,7 @@
                 <p id="alertmanager-delete-detail" class="text-xs leading-5 text-status-critical-text"></p>
             </div>
         </div>
-        <form id="alertmanager-delete-form" method="post" action="">
+        <form id="alertmanager-delete-form" method="post" action="" hx-target="#alertmanager-scope-workspace" hx-swap="outerHTML" hx-disabled-elt="button[type='submit']">
             {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
             <div class="flex justify-end gap-2 border-t border-outline-subtle bg-surface-hover px-5 py-4">
                 <button type="button"
@@ -56,7 +56,10 @@
 
     function openModal(button) {
         trigger = button;
-        form.setAttribute('action', button.getAttribute('data-delete-url') || '');
+        const deleteUrl = button.getAttribute('data-delete-url') || '';
+        form.setAttribute('action', deleteUrl);
+        form.setAttribute('hx-post', deleteUrl);
+        if (window.htmx) { window.htmx.process(form); }
         title.textContent = button.getAttribute('data-delete-title') || 'Confirm deletion';
         name.textContent = button.getAttribute('data-delete-name') || 'this item';
         detail.textContent = button.getAttribute('data-delete-detail') || 'The selected Alertmanager configuration will be removed.';
@@ -72,6 +75,7 @@
         modal.classList.remove('flex');
         modal.setAttribute('aria-hidden', 'true');
         form.setAttribute('action', '');
+        form.removeAttribute('hx-post');
         trigger?.focus();
         trigger = null;
     }
@@ -90,6 +94,8 @@
             closeModal();
         }
     });
+
+    form.addEventListener('htmx:afterRequest', closeModal);
 
     document.addEventListener('keydown', function (event) {
         if (event.key === 'Escape' && !modal.classList.contains('hidden')) {

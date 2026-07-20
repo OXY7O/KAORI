@@ -1,6 +1,7 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
 {% from "integrations/partials/_status_badge.html" import status_badge %}
+{% import "components/uncovered_operational_scopes.html" as uncovered_operational_scopes %}
 {% block title %}Alertmanager Integrations · KAORI{% endblock title %}
 {% block dashboard_content %}
     {% set posture_status = 'Healthy' if stats.total > 0 and stats.configured == stats.total and stats.ready == stats.configured else ('Attention' if stats.total > 0 else 'Not configured') %}
@@ -104,6 +105,13 @@
                 </div>
             </div>
         </section>
+
+    {{ uncovered_operational_scopes.render(
+        'Operational Scopes Without an Alertmanager Source',
+        'Register and bind an eligible alert source before these clusters can use governed Alertmanager-backed operational workflows.',
+        uncovered_clusters,
+        'alertmanager.new_instance'
+    ) }}
 
         {% include 'integrations/alertmanager/partials/_inventory_card.html' %}
     </div>

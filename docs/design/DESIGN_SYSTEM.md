@@ -32,6 +32,7 @@ This document is the entry point for KAORI's interface contract. New modules mus
 - `components/RELATED_PAGE_CARD.md`
 - `components/CONNECTION_VALIDATION_HEADER.md`
 - `components/OPERATIONAL_TOGGLE.md`
+- `components/OPERATIONAL_ACTION_FEEDBACK.md`
 
 ## Global guardrail
 
@@ -40,3 +41,7 @@ A local component variant is allowed only when the existing semantic role cannot
 ### Integration Manage Workspace
 
 Provider instance management uses the shared four-tab contract documented in `components/INTEGRATION_MANAGE_WORKSPACE.md`. Configuration is inline; Validation exposes technical evidence; Runtime uses shared health/history; Scope exposes governed bindings and resolution.
+
+### Operational action feedback
+
+Persisted provider actions use the shared HTMX, toast, and Activity Audit contract documented in `components/OPERATIONAL_ACTION_FEEDBACK.md`. Same-page mutations update their workspace partial; registration and successful deletion may use `HX-Redirect`.

@@ -49,7 +49,7 @@
                     <td class="px-4 py-4 align-top text-sm text-content-secondary">{{ row.validated_at }}</td>
                     <td class="px-5 py-4 text-right align-top sm:px-6">
                         <a href="{{ url_for('prometheus.instance_detail', instance_id=row.instance_id) }}" class="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-kaori-primary-dark transition hover:border-kaori-primary hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus/20">
-                            <i data-lucide="settings-2" class="h-3.5 w-3.5"></i>Manage
+                            <i data-lucide="settings-2" class="h-4 w-4"></i>Manage
                         </a>
                     </td>
                 </tr>
@@ -57,13 +57,13 @@
         </tbody>
     </table>
 </div>
-<div class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-hover px-5 py-3.5 text-sm sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+<div class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-hover px-5 py-3.5 text-xs sm:px-6 lg:flex-row lg:items-center lg:justify-between">
     <div class="flex flex-wrap items-center gap-2 text-content-muted">
         <span>Showing <strong class="font-semibold text-content-primary">{{ pagination.start_item }}–{{ pagination.end_item }}</strong> of <strong class="font-semibold text-content-primary">{{ pagination.total_items }}</strong> connections</span>
-        <form hx-get="{{ url_for('integrations.prometheus') }}" hx-target="#prometheus-inventory-content" hx-swap="innerHTML" hx-indicator="#prometheus-inventory-loading" class="inline-flex items-center">
+        <form method="get" action="{{ url_for('integrations.prometheus') }}" hx-get="{{ url_for('integrations.prometheus') }}" hx-target="#prometheus-inventory-content" hx-swap="innerHTML" hx-indicator="#prometheus-inventory-loading" hx-push-url="true" class="inline-flex items-center">
             <input type="hidden" name="page" value="1">
+            <input type="hidden" name="q" value="{{ selected_query }}">
             <input type="hidden" name="compatibility" value="{{ selected_compatibility }}">
-            <input type="hidden" name="environment" value="{{ selected_environment }}">
             <input type="hidden" name="readiness" value="{{ selected_readiness }}">
             <select name="per_page" aria-label="Connections per page" onchange="this.form.requestSubmit()" class="{{ pagination_ui.page_size_classes() }}">
                 {% for option in pagination.allowed_per_page %}<option value="{{ option }}" {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>{% endfor %}
@@ -71,19 +71,19 @@
         </form>
     </div>
     <div class="flex flex-wrap items-center gap-2">
-        {% set base_args = {'compatibility': selected_compatibility, 'environment': selected_environment, 'readiness': selected_readiness, 'per_page': pagination.per_page} %}
+        {% set base_args = {'q': selected_query, 'compatibility': selected_compatibility, 'readiness': selected_readiness, 'per_page': pagination.per_page} %}
         {% if pagination.has_prev %}
             {% set prev_url = url_for('integrations.prometheus', page=pagination.prev_page, **base_args) %}
-            <a href="{{ prev_url }}" hx-get="{{ prev_url }}" hx-target="#prometheus-inventory-content" hx-swap="innerHTML" hx-indicator="#prometheus-inventory-loading" class="{{ pagination_ui.navigation_classes(disabled=false) }}"><i data-lucide="chevron-left" class="h-3.5 w-3.5"></i>Previous</a>
+            <a href="{{ prev_url }}" hx-get="{{ prev_url }}" hx-target="#prometheus-inventory-content" hx-swap="innerHTML" hx-indicator="#prometheus-inventory-loading" hx-push-url="true" class="{{ pagination_ui.navigation_classes(disabled=false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
         {% else %}
-            <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"><i data-lucide="chevron-left" class="h-3.5 w-3.5"></i>Previous</span>
+            <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
         {% endif %}
         {{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages) }}
         {% if pagination.has_next %}
             {% set next_url = url_for('integrations.prometheus', page=pagination.next_page, **base_args) %}
-            <a href="{{ next_url }}" hx-get="{{ next_url }}" hx-target="#prometheus-inventory-content" hx-swap="innerHTML" hx-indicator="#prometheus-inventory-loading" class="{{ pagination_ui.navigation_classes(disabled=false) }}">Next<i data-lucide="chevron-right" class="h-3.5 w-3.5"></i></a>
+            <a href="{{ next_url }}" hx-get="{{ next_url }}" hx-target="#prometheus-inventory-content" hx-swap="innerHTML" hx-indicator="#prometheus-inventory-loading" hx-push-url="true" class="{{ pagination_ui.navigation_classes(disabled=false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
         {% else %}
-            <span class="{{ pagination_ui.navigation_classes(disabled=true) }}">Next<i data-lucide="chevron-right" class="h-3.5 w-3.5"></i></span>
+            <span class="{{ pagination_ui.navigation_classes(disabled=true) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
         {% endif %}
     </div>
 </div>
@@ -92,5 +92,8 @@
     {% set empty_state_title='No Prometheus connections found' %}
     {% set empty_state_description='Adjust the active filters or register a reusable metrics connection.' %}
     {% set empty_state_min_height='min-h-[210px]' %}
+    {% set empty_state_action_url = url_for('prometheus.new_instance') if not selected_query and not selected_readiness and not selected_compatibility else none %}
+    {% set empty_state_action_label = 'Register Connection' if empty_state_action_url else none %}
+    {% set empty_state_permission = 'settings.manage_integrations' %}
     {% include 'components/states/_empty_state.html' %}
 {% endif %}

@@ -173,3 +173,7 @@ Instance detail pages must not fail because an optional lifecycle endpoint is ab
 The registered Prometheus instance page follows the Alertmanager reference architecture. Configuration is edited inline; the legacy edit route redirects to the Configuration tab. Validation always exposes the complete Prometheus capability catalog with technical probes, evidence, success criteria, required configuration, dependent domains, and remediation. Runtime uses the shared Health Interpretation, Diagnostic Pipeline, and rolling observation history. Scope & Resolution supports inline binding creation/removal and consumer-specific source-resolution evidence.
 
 All full-page and HTMX partial responses use one manage-workspace context builder. Test Connection, Full Validation, and Runtime Refresh synchronize the provider record back to the canonical integration identity so resolver decisions use current readiness and health.
+
+## Operational action feedback
+
+Prometheus normal-flow mutations use HTMX, persist one Activity Audit event, and return matching out-of-band toast feedback. Configuration, validation, runtime refresh, binding changes, and rejected deletion remain on the current manage tab. Successful registration and instance deletion use `HX-Redirect`. Cluster compatibility routes are not linked by normal provider UI.

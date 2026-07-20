@@ -45,6 +45,32 @@ alertmanager_bp = Blueprint(
 )
 
 
+def _is_htmx_request() -> bool:
+    return request.headers.get('HX-Request') == 'true'
+
+
+def _htmx_redirect(location: str) -> ResponseReturnValue:
+    response = make_response('', 204)
+    response.headers['HX-Redirect'] = location
+    return response
+
+
+def _render_instance_partial(
+    template_name: str,
+    instance,
+    *,
+    operation_feedback: dict | None = None,
+    **extra_context,
+) -> str:
+    context = build_instance_context(instance)
+    context.update(extra_context)
+    context['operation_feedback'] = operation_feedback
+    context['notification_context'] = get_navigation_notification_context(
+        user_id=int(current_user.id),
+    )
+    return render_template(template_name, **context)
+
+
 @alertmanager_bp.route('/instances/new', methods=['GET', 'POST'])
 @permission_required('settings.manage_integrations')
 def new_instance() -> ResponseReturnValue:
@@ -52,6 +78,8 @@ def new_instance() -> ResponseReturnValue:
     initial_cluster = get_cluster_by_id(initial_cluster_id) if initial_cluster_id else None
     draft_form = None
     registration_proof = None
+    operation_feedback = None
+    is_htmx = _is_htmx_request()
 
     if request.method == 'POST':
         form = parse_alertmanager_instance_form(request.form)
@@ -66,7 +94,7 @@ def new_instance() -> ResponseReturnValue:
             user_id=int(current_user.id),
         )
         if not proof_valid:
-            record_instance_activity(
+            operation_feedback = record_instance_activity(
                 user_id=int(current_user.id),
                 instance=None,
                 event_type='alertmanager_instance_create_rejected',
@@ -79,6 +107,7 @@ def new_instance() -> ResponseReturnValue:
                     'submitted_name': form.name or 'Draft Alertmanager connection',
                     'registration_stage': 'connection_test_proof',
                 },
+                queue_feedback=not is_htmx,
             )
         else:
             connection_test = test_alertmanager_form_connection(form)
@@ -88,7 +117,7 @@ def new_instance() -> ResponseReturnValue:
                     or connection_test.get('reason')
                     or 'Review endpoint, authentication, TLS, and network reachability.'
                 )
-                record_instance_activity(
+                operation_feedback = record_instance_activity(
                     user_id=int(current_user.id),
                     instance=None,
                     event_type='alertmanager_instance_create_rejected',
@@ -104,6 +133,7 @@ def new_instance() -> ResponseReturnValue:
                         'submitted_name': form.name or 'Draft Alertmanager connection',
                         'registration_stage': 'pre_save_recheck',
                     },
+                    queue_feedback=not is_htmx,
                 )
             else:
                 try:
@@ -118,12 +148,9 @@ def new_instance() -> ResponseReturnValue:
                         if initial_cluster is not None
                         else None
                     )
-                    instance = create_alertmanager_instance(
-                        form=form,
-                        initial_binding=initial_binding,
-                    )
+                    instance = create_alertmanager_instance(form=form, initial_binding=initial_binding)
                 except ValueError as exc:
-                    record_instance_activity(
+                    operation_feedback = record_instance_activity(
                         user_id=int(current_user.id),
                         instance=None,
                         event_type='alertmanager_instance_create_rejected',
@@ -136,10 +163,11 @@ def new_instance() -> ResponseReturnValue:
                             'submitted_name': form.name or 'Draft Alertmanager connection',
                             'registration_stage': 'persistence_validation',
                         },
+                        queue_feedback=not is_htmx,
                     )
-                except Exception as exc:  # pragma: no cover - defensive database boundary
+                except Exception as exc:
                     logger.exception('Alertmanager instance creation failed.')
-                    record_instance_activity(
+                    operation_feedback = record_instance_activity(
                         user_id=int(current_user.id),
                         instance=None,
                         event_type='alertmanager_instance_create_failed',
@@ -152,6 +180,7 @@ def new_instance() -> ResponseReturnValue:
                             'submitted_name': form.name or 'Draft Alertmanager connection',
                             'registration_stage': 'database_commit',
                         },
+                        queue_feedback=not is_htmx,
                     )
                 else:
                     record_instance_activity(
@@ -167,8 +196,10 @@ def new_instance() -> ResponseReturnValue:
                             'connection_response_time_ms': connection_test.get('response_time_ms'),
                             'detected_version': connection_test.get('version'),
                         },
+                        queue_feedback=True,
                     )
-                    return redirect(url_for('alertmanager.instance_detail', instance_id=instance.id))
+                    location = url_for('alertmanager.instance_detail', instance_id=instance.id)
+                    return _htmx_redirect(location) if is_htmx else redirect(location)
 
     return render_template(
         'alertmanager/instance_form.html',
@@ -176,8 +207,13 @@ def new_instance() -> ResponseReturnValue:
         initial_cluster=initial_cluster,
         draft_form=draft_form,
         registration_proof=registration_proof,
+        operation_feedback=operation_feedback,
+        notification_context=(
+            get_navigation_notification_context(user_id=int(current_user.id))
+            if operation_feedback is not None
+            else None
+        ),
     )
-
 
 @alertmanager_bp.post('/instances/test-connection')
 @permission_required('settings.manage_integrations')
@@ -257,13 +293,14 @@ def instance_detail(instance_id: int) -> ResponseReturnValue:
     instance = get_alertmanager_instance(instance_id)
     if instance is None:
         abort(404)
+    is_htmx = _is_htmx_request()
 
     if request.method == 'POST':
         form = parse_alertmanager_instance_form(request.form)
         try:
             instance = save_alertmanager_instance(form=form, instance=instance)
         except ValueError as exc:
-            record_instance_activity(
+            feedback = record_instance_activity(
                 user_id=int(current_user.id),
                 instance=instance,
                 event_type='alertmanager_instance_update_rejected',
@@ -271,10 +308,11 @@ def instance_detail(instance_id: int) -> ResponseReturnValue:
                 title='Alertmanager instance not updated',
                 message=f'KAORI could not update {instance.name}.',
                 detail=str(exc),
+                queue_feedback=not is_htmx,
             )
-        except Exception as exc:  # pragma: no cover - defensive database boundary
+        except Exception as exc:
             logger.exception('Alertmanager instance update failed for %s.', instance_id)
-            record_instance_activity(
+            feedback = record_instance_activity(
                 user_id=int(current_user.id),
                 instance=instance,
                 event_type='alertmanager_instance_update_failed',
@@ -283,24 +321,28 @@ def instance_detail(instance_id: int) -> ResponseReturnValue:
                 message=f'KAORI could not update {instance.name}.',
                 detail='Review KAORI logs and database connectivity before retrying.',
                 metadata={'reason': type(exc).__name__},
+                queue_feedback=not is_htmx,
             )
         else:
-            record_instance_activity(
+            feedback = record_instance_activity(
                 user_id=int(current_user.id),
                 instance=instance,
                 event_type='alertmanager_instance_updated',
                 status='success',
                 title='Alertmanager instance updated',
                 message=f'{instance.name} connection settings were saved.',
-                detail='Readiness is now Validation Required until a full validation completes.',
+                detail='Readiness is now Validation Required until a Full Validation completes.',
+                queue_feedback=not is_htmx,
+            )
+        if is_htmx:
+            return _render_instance_partial(
+                'alertmanager/partials/_detail_configuration.html',
+                instance,
+                operation_feedback=feedback,
             )
         return redirect(url_for('alertmanager.instance_detail', instance_id=instance_id) + '#configuration')
 
-    return render_template(
-        'alertmanager/instance_detail.html',
-        **build_instance_context(instance),
-    )
-
+    return render_template('alertmanager/instance_detail.html', **build_instance_context(instance))
 
 @alertmanager_bp.post('/instances/<int:instance_id>/runtime/refresh')
 @permission_required('settings.manage_integrations')
@@ -361,13 +403,12 @@ def refresh_runtime(instance_id: int) -> ResponseReturnValue:
             },
             queue_feedback=False,
         )
-    return render_template(
+    return _render_instance_partial(
         'alertmanager/partials/_runtime_refresh_response.html',
-        instance=instance,
+        instance,
+        operation_feedback=feedback,
         runtime_state=runtime_state_view(state),
         runtime_history=build_runtime_history_context(instance),
-        runtime_feedback=feedback,
-        notification_context=get_navigation_notification_context(user_id=int(current_user.id)),
     )
 
 
@@ -412,7 +453,7 @@ def validate_instance(instance_id: int) -> ResponseReturnValue:
             metadata={
                 'reason': type(exc).__name__,
             },
-            queue_feedback=request.headers.get('HX-Request') != 'true',
+            queue_feedback=not _is_htmx_request(),
         )
     else:
         if result.get('connected'):
@@ -430,7 +471,7 @@ def validate_instance(instance_id: int) -> ResponseReturnValue:
                     'readiness_status': result.get('readiness_status'),
                     'capabilities': result.get('capabilities', []),
                 },
-                queue_feedback=request.headers.get('HX-Request') != 'true',
+                queue_feedback=not _is_htmx_request(),
             )
         else:
             feedback = record_instance_activity(
@@ -448,17 +489,15 @@ def validate_instance(instance_id: int) -> ResponseReturnValue:
                     'endpoint_port': result.get('endpoint_port'),
                     'request_path': result.get('request_path'),
                 },
-                queue_feedback=request.headers.get('HX-Request') != 'true',
+                queue_feedback=not _is_htmx_request(),
             )
 
-    if request.headers.get('HX-Request') == 'true':
-        context = build_instance_context(instance)
-        return render_template(
+    if _is_htmx_request():
+        return _render_instance_partial(
             'alertmanager/partials/_detail_validation_content.html',
-            **context,
-            validation_feedback=feedback,
+            instance,
+            operation_feedback=feedback,
             validation_scope_oob=True,
-            notification_context=get_navigation_notification_context(user_id=int(current_user.id)),
         )
     return redirect(url_for('alertmanager.instance_detail', instance_id=instance_id) + '#validation')
 
@@ -470,7 +509,7 @@ def create_binding(instance_id: int) -> ResponseReturnValue:
     if instance is None:
         abort(404)
     form = parse_alertmanager_binding_form(request.form)
-    is_htmx = request.headers.get('HX-Request') == 'true'
+    is_htmx = _is_htmx_request()
     if form.scope_type == 'kubernetes_cluster' and get_cluster_by_id(form.scope_key) is None:
         error = 'Select a managed cluster that still exists in KAORI inventory.'
     else:
@@ -535,12 +574,10 @@ def create_binding(instance_id: int) -> ResponseReturnValue:
         )
 
     if is_htmx:
-        context = build_instance_context(instance)
-        return render_template(
+        return _render_instance_partial(
             'alertmanager/partials/_detail_scope.html',
-            **context,
-            binding_feedback=feedback,
-            notification_context=get_navigation_notification_context(user_id=int(current_user.id)),
+            instance,
+            operation_feedback=feedback,
         )
     return redirect(url_for('alertmanager.instance_detail', instance_id=instance_id) + '#scope')
 
@@ -551,6 +588,7 @@ def remove_binding(instance_id: int, binding_id: int) -> ResponseReturnValue:
     instance = get_alertmanager_instance(instance_id)
     if instance is None:
         abort(404)
+    is_htmx = _is_htmx_request()
     binding = get_alertmanager_binding(binding_id)
     if binding is None or binding.integration_instance_id != instance.integration_instance_id:
         abort(404)
@@ -561,9 +599,9 @@ def remove_binding(instance_id: int, binding_id: int) -> ResponseReturnValue:
     }
     try:
         removed_binding = remove_alertmanager_binding(binding_id)
-    except Exception as exc:  # pragma: no cover - defensive database boundary
+    except Exception as exc:
         logger.exception('Alertmanager binding deletion failed for binding %s.', binding_id)
-        record_instance_activity(
+        feedback = record_instance_activity(
             user_id=int(current_user.id),
             instance=instance,
             event_type='alertmanager_binding_delete_failed',
@@ -572,11 +610,12 @@ def remove_binding(instance_id: int, binding_id: int) -> ResponseReturnValue:
             message=f'KAORI could not remove the selected binding from {instance.name}.',
             detail='Review KAORI logs and database connectivity before retrying the binding removal.',
             metadata={**binding_metadata, 'reason': type(exc).__name__},
+            queue_feedback=not is_htmx,
         )
     else:
         if removed_binding is None:
             abort(404)
-        record_instance_activity(
+        feedback = record_instance_activity(
             user_id=int(current_user.id),
             instance=instance,
             event_type='alertmanager_binding_deleted',
@@ -585,9 +624,15 @@ def remove_binding(instance_id: int, binding_id: int) -> ResponseReturnValue:
             message=f'{instance.name} is no longer mapped to the selected operational scope.',
             detail=f'{binding.asset_type}:{binding.asset_key} was removed.',
             metadata=binding_metadata,
+            queue_feedback=not is_htmx,
+        )
+    if is_htmx:
+        return _render_instance_partial(
+            'alertmanager/partials/_detail_scope.html',
+            instance,
+            operation_feedback=feedback,
         )
     return redirect(url_for('alertmanager.instance_detail', instance_id=instance_id) + '#scope')
-
 
 @alertmanager_bp.post('/instances/<int:instance_id>/delete')
 @permission_required('settings.manage_integrations')
@@ -596,10 +641,11 @@ def delete_instance(instance_id: int) -> ResponseReturnValue:
     if instance is None:
         abort(404)
     instance_name = instance.name
+    is_htmx = _is_htmx_request()
     try:
         remove_alertmanager_instance(instance)
     except ValueError as exc:
-        record_instance_activity(
+        feedback = record_instance_activity(
             user_id=int(current_user.id),
             instance=instance,
             event_type='alertmanager_instance_delete_rejected',
@@ -607,11 +653,14 @@ def delete_instance(instance_id: int) -> ResponseReturnValue:
             title='Alertmanager instance not deleted',
             message=f'{instance_name} still has active asset bindings.',
             detail=str(exc),
+            queue_feedback=not is_htmx,
         )
+        if is_htmx:
+            return _render_instance_partial('alertmanager/partials/_detail_scope.html', instance, operation_feedback=feedback)
         return redirect(url_for('alertmanager.instance_detail', instance_id=instance_id) + '#scope')
-    except Exception as exc:  # pragma: no cover - defensive database boundary
+    except Exception as exc:
         logger.exception('Alertmanager instance deletion failed for %s.', instance_id)
-        record_instance_activity(
+        feedback = record_instance_activity(
             user_id=int(current_user.id),
             instance=instance,
             event_type='alertmanager_instance_delete_failed',
@@ -620,7 +669,10 @@ def delete_instance(instance_id: int) -> ResponseReturnValue:
             message=f'KAORI could not delete {instance_name}.',
             detail='Review KAORI logs and database connectivity before retrying the deletion.',
             metadata={'reason': type(exc).__name__},
+            queue_feedback=not is_htmx,
         )
+        if is_htmx:
+            return _render_instance_partial('alertmanager/partials/_detail_scope.html', instance, operation_feedback=feedback)
         return redirect(url_for('alertmanager.instance_detail', instance_id=instance_id) + '#scope')
 
     record_instance_activity(
@@ -632,9 +684,10 @@ def delete_instance(instance_id: int) -> ResponseReturnValue:
         message=f'{instance_name} was removed from the integration registry.',
         detail='Historical operational activity remains available in Activity Audit Log.',
         metadata={'instance_id': instance_id, 'instance_name': instance_name},
+        queue_feedback=True,
     )
-    return redirect(url_for('integrations.alertmanager'))
-
+    location = url_for('integrations.alertmanager')
+    return _htmx_redirect(location) if is_htmx else redirect(location)
 
 @alertmanager_bp.route('/cluster/<string:cluster_id>', methods=['GET', 'POST'])
 @permission_required('settings.manage_integrations')
@@ -692,7 +745,7 @@ def test_cluster_alertmanager(cluster_id: str) -> ResponseReturnValue:
         },
         queue_feedback=False,
     )
-    if request.headers.get('HX-Request') == 'true':
+    if _is_htmx_request():
         return render_template(
             'components/navigation/_quick_sync_result.html',
             **feedback,

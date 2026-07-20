@@ -604,3 +604,7 @@ Alertmanager is part of the first semantic-color rollout together with Prometheu
 ### Global semantic color contract
 
 This workspace consumes the shared KAORI palette and label components. Provider templates must not introduce a separate status palette. Pending maps to Info, maintenance to Warning, and disabled/unknown to Neutral.
+
+## Operational action feedback
+
+Alertmanager normal-flow mutations use HTMX, persist one Activity Audit event, and return matching out-of-band toast feedback. Configuration, validation, runtime refresh, binding changes, and rejected deletion remain on the current manage tab. Successful registration and instance deletion use `HX-Redirect`. Cluster compatibility routes are not linked by normal provider UI.

@@ -6,7 +6,7 @@
 {% import "components/workspace_summary_card.html" as workspace_summary_card %}
 {% set field_classes = 'h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-normal text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20' %}
 {% set textarea_classes = 'min-h-24 w-full resize-y rounded-lg border border-outline-default bg-surface-card px-3.5 py-3 text-sm font-normal leading-6 text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20' %}
-<div class="space-y-5">
+<div id="prometheus-configuration-workspace" class="space-y-5">
     <section class="grid gap-4 lg:grid-cols-3" aria-label="Configuration Workspace Summary">
         {{ workspace_summary_card.render(
             'Connection Contract',
@@ -29,6 +29,10 @@
         <form id="prometheus-instance-form"
               method="post"
               action="{{ url_for('prometheus.instance_detail', instance_id=instance.id) }}#configuration"
+              hx-post="{{ url_for('prometheus.instance_detail', instance_id=instance.id) }}"
+              hx-target="#prometheus-configuration-workspace"
+              hx-swap="outerHTML"
+              hx-disabled-elt="button[type='submit']"
               class="xl:col-span-8"
               x-data="{ authType: '{{ form.auth_type.data or 'none' }}', detectionMode: '{{ form.version_detection_mode.data or 'automatic' }}' }">
             {{ form.hidden_tag() }}
@@ -160,3 +164,5 @@
         </aside>
     </div>
 </div>
+
+{% include 'components/operation_feedback_oob.html' %}

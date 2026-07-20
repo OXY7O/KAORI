@@ -123,9 +123,7 @@
         </aside>
     </div>
 </section>
-{% if validation_feedback is defined and validation_feedback %}
-    {% with operation_feedback=validation_feedback %}{% include 'alertmanager/partials/_operation_feedback_oob.html' %}{% endwith %}
-{% endif %}
+{% include 'components/operation_feedback_oob.html' %}
 
 {% if validation_scope_oob is defined and validation_scope_oob %}
     {% with scope_oob=true %}{% include 'alertmanager/partials/_detail_scope.html' %}{% endwith %}
