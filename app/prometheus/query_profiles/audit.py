@@ -597,9 +597,14 @@ class PromQLProfileAuditor:
 
     def _filesystem_contract(self, metric: str) -> dict[str, Any]:
         canonical_labels = ('node', 'nodename', 'kubernetes_node')
-        expressions = (
+        raw_expressions = (
             f'{metric}{{mountpoint="/var", fstype!~"tmpfs|overlay"}}',
             f'{metric}{{mountpoint="/", fstype!~"tmpfs|overlay"}}',
+        )
+        expressions = tuple(
+            'count by (node, nodename, kubernetes_node, mountpoint) '
+            f'({expression})'
+            for expression in raw_expressions
         )
         selected_expression = expressions[0]
         rows: list[dict[str, Any]] = []

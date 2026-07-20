@@ -12,16 +12,21 @@ def test_prometheus_registration_side_cards_do_not_stretch_main_form() -> None:
     assert 'grid gap-6 xl:grid-cols-12 xl:items-start' in source
 
 
-def test_capability_technical_probes_use_shared_terminal_component() -> None:
+def test_provider_capability_probes_use_non_executable_violet_evidence_component() -> None:
+    probe = read('app/templates/components/technical_probe.html')
     terminal = read('app/templates/components/terminal_command.html')
     prometheus = read('app/templates/prometheus/partials/_detail_validation_content.html')
     alertmanager = read('app/templates/alertmanager/partials/_detail_validation_content.html')
-    assert 'font-mono' in terminal
+    kubernetes = read('app/templates/integrations/kubernetes/partials/_capability_workspace.html')
+    assert 'bg-kaori-soft' in probe
+    assert 'not a standalone shell command' in probe
+    assert 'navigator.clipboard' not in probe
+    assert 'technical_probe.render' in prometheus
+    assert 'technical_probe.render' in alertmanager
+    assert 'terminal_command.render' not in prometheus
+    assert 'terminal_command.render' not in alertmanager
+    assert 'terminal_command.render' in kubernetes
     assert 'navigator.clipboard' in terminal
-    assert 'terminal_command.render' in prometheus
-    assert 'terminal_command.render' in alertmanager
-    assert 'Technical Probe · Run from CLI' in prometheus
-    assert 'Technical Probe · Run from CLI' in alertmanager
 
 
 def test_alertmanager_validation_scope_oob_does_not_duplicate_feedback() -> None:

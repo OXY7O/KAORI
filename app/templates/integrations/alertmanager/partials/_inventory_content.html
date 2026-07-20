@@ -36,8 +36,8 @@
                         </div>
                     </td>
                     <td class="px-4 py-4 align-top">
-                        <p class="font-semibold text-content-primary">{{ row.version or 'Not Detected' }}</p>
-                        <div class="mt-2">{{ table_label.metadata_label(row.deployment_type|replace('_', ' ')|title, 'boxes') }}</div>
+                        <div>{{ table_label.metadata_label(row.deployment_type|replace('_', ' ')|title, 'boxes') }}</div>
+                        <p class="mt-2 text-xs font-medium text-content-secondary">{{ row.version or 'Version not detected' }}</p>
                     </td>
                     <td class="px-4 py-4 align-top">
                         {{ status_badge(row.compatibility) }}

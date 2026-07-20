@@ -20,9 +20,11 @@ class PrometheusClient:
         config: PrometheusInstance,
         *,
         scope_selector: dict[str, Any] | None = None,
+        request_timeout_seconds: int | None = None,
     ) -> None:
         self.config = config
         self.scope_selector = scope_selector
+        self.request_timeout_seconds = request_timeout_seconds
         self.base_url = config.endpoint.rstrip('/')
 
     def _build_headers(
@@ -59,7 +61,7 @@ class PrometheusClient:
                 params=params,
                 headers=self._build_headers(),
                 auth=self._build_auth(),
-                timeout=(2, min(max(int(self.config.timeout or 5), 1), 5)),
+                timeout=self._request_timeout(),
                 verify=self.config.verify_ssl,
             )
 
@@ -75,6 +77,14 @@ class PrometheusClient:
 
         except requests.exceptions.RequestException as exc:
             raise PrometheusConnectionError(str(exc)) from exc
+
+    def _request_timeout(self) -> tuple[int, int]:
+        read_timeout = min(
+            max(int(self.request_timeout_seconds or self.config.timeout or 5), 1),
+            120,
+        )
+        connect_timeout = min(max(read_timeout, 2), 5)
+        return connect_timeout, read_timeout
 
     def query(
         self,

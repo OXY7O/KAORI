@@ -103,9 +103,9 @@ capability evidence.
 
 ## Storage feature-contract validation
 
-Storage readiness is validated with the same PromQL contract used by Storage Analytics. KAORI no longer marks the filesystem capability as misconfigured solely because a bounded `/series` discovery sample does not report a canonical node label. The exact `/var` query, with `/` as fallback, is authoritative.
+Storage readiness is validated from the same selectors used by Storage Analytics. The validator wraps the `/var` and `/` size/available selectors in a low-cardinality `count by (node, nodename, kubernetes_node, mountpoint)` probe, then requires at least one matching size/available identity pair. This preserves the authoritative mount and node contract while avoiding a large label-heavy response from shared or multi-cluster endpoints.
 
-The Analytics Readiness panel exposes Expected, Observed, Technical Evidence, validation query, possible causes, and remediation. Metric availability remains visible as troubleshooting evidence but does not override a successful feature query contract.
+Full Validation uses an extended provider read timeout for the query audit while Test Connection and Runtime Refresh remain lightweight. The Analytics Readiness panel exposes the effective validation expression, registered selector, response-series count, matching-pair evidence, endpoint error or timeout, possible causes, and remediation. Metric discovery remains troubleshooting evidence but does not override a successful feature contract.
 
 ## Reusable instances, cluster bindings, and authoritative query contracts
 

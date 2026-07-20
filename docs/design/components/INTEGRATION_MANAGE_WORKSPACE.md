@@ -69,6 +69,8 @@ Validation must expose more than a readiness label. The technical matrix provide
 
 The capability catalog remains visible before the first validation and uses `Not Observed` state rather than disappearing.
 
+Provider capability probes are evidence expressions, not necessarily executable shell commands. Prometheus and Alertmanager render the probe label as normal KAORI content and place the expression value on a Violet soft surface without a copy action. Kubernetes RBAC probes may retain the terminal/copy treatment only when the displayed value is a complete CLI command that can be executed directly.
+
 Dependent operational-domain readiness is shown separately from provider capability evidence. Full Validation is the authoritative action that rebuilds this contract. It must enqueue a dedicated Celery validation job, return the workspace immediately, display the standard loading bar under the block header, disable duplicate actions, and poll the task-specific partial through HTMX until completion.
 
 ## Runtime & History contract

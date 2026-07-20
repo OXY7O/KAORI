@@ -1,7 +1,7 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "components/context_guidance_card.html" as context_guidance_card %}
-{% import "components/terminal_command.html" as terminal_command %}
+{% import "components/technical_probe.html" as technical_probe %}
 <section id="alertmanager-validation-workspace" class="relative overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
          {% if validation_job and validation_job.is_active %}
          hx-get="{{ url_for('alertmanager.instance_validation_status', instance_id=instance.id, task_id=validation_job.task_id) }}"
@@ -80,7 +80,7 @@
                         <div class="border-t border-outline-subtle bg-surface-hover p-4">
                             <div class="grid gap-3 md:grid-cols-2">
                                 <div class="rounded-lg border border-outline-subtle bg-surface-card p-3"><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Latest Evidence</p><p class="mt-2 text-xs leading-5 text-content-secondary">{{ row.evidence }}</p></div>
-                                <div class="md:col-span-1">{{ terminal_command.render(row.probe, label='Technical Probe · Run from CLI') }}</div>
+                                <div class="md:col-span-1">{{ technical_probe.render(row.probe, label='Technical Probe') }}</div>
                                 <div class="rounded-lg border border-outline-subtle bg-surface-card p-3 md:col-span-2"><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Success Criteria</p><p class="mt-2 text-xs leading-5 text-content-secondary">{{ row.success_criteria }}</p></div>
                                 <div class="rounded-lg border border-brand-outline bg-kaori-soft p-3"><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-kaori-primary">Required Configuration</p><p class="mt-2 text-xs leading-5 text-content-secondary">{{ row.configuration_guidance }}</p></div>
                                 <div class="rounded-lg border border-outline-subtle bg-surface-card p-3"><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Operational Impact</p><p class="mt-2 text-xs leading-5 text-content-secondary">{{ row.impact }}</p></div>

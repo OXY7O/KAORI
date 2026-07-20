@@ -222,7 +222,11 @@ class PrometheusService:
             query_status = 'blocked'
             readiness = 'blocked'
         else:
-            query_audit = PromQLProfileAuditor(self.client).audit(execute_queries=True)
+            validation_client = PrometheusClient(
+                config,
+                request_timeout_seconds=max(int(config.timeout or 5), 30),
+            )
+            query_audit = PromQLProfileAuditor(validation_client).audit(execute_queries=True)
             contract_summary = query_audit.get('feature_contract_summary') or {}
             query_status = contract_summary.get('status', 'validation_required')
             readiness = resolution.endpoint_compatibility.readiness

@@ -33,7 +33,7 @@
                     </td>
                     <td class="px-4 py-4">
                         {% if row.binding %}
-                            <p class="max-w-[16rem] truncate font-mono text-xs text-content-secondary" title="{{ row.selector_summary }}">{{ row.selector_summary }}</p>
+                            <p class="max-w-[16rem] truncate text-xs font-medium text-content-secondary" title="{{ row.selector_summary }}">{{ row.selector_summary }}</p>
                             <p class="mt-1 text-xs text-content-muted">{{ 'Shared source' if row.shared_source else 'Dedicated or single-scope source' }}</p>
                         {% else %}
                             <span class="text-xs text-content-muted">Binding not configured</span>

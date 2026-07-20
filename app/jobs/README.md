@@ -31,3 +31,7 @@ Recommended initial policy:
 - subscribers: archived with the job and removed through the JobExecution cascade only after archive verification.
 
 Until the `job_execution` archive domain and its UI are implemented, deployments should monitor `job_executions` growth and must not enable ad-hoc database deletion scripts.
+
+## Registry refresh contract
+
+The Job Execution Registry provides an explicit HTMX `Refresh` action in its block header. Refresh preserves the active page, page size, and filters, swaps only `#job-execution-registry`, and uses the standard loading bar directly below the title header. The action does not reload the full Jobs & Executions page.
