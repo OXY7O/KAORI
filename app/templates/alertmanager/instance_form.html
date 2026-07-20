@@ -8,6 +8,7 @@
 {% import "components/related_page_card.html" as related_page_card %}
 {% import "components/form_action_bar.html" as form_action_bar %}
 {% import "components/context_guidance_card.html" as context_guidance_card %}
+{% import "components/information_guide_card.html" as information_guide_card %}
 {% block title %}{{ instance.name if instance else 'Register Alertmanager Instance' }} · KAORI{% endblock title %}
 {% block dashboard_content %}
     {% set submitted_form = draft_form if draft_form is defined else none %}
@@ -345,30 +346,29 @@
                     ) }}
 
                     {% set connection_type_items = [
-                        ('Externally Managed', 'Use when another team, service owner, or platform manages the Alertmanager lifecycle and KAORI only consumes the exposed connection.'),
-                        ('Standalone', 'Use for a dedicated, independently operated Alertmanager that is not presented as a shared organizational service.'),
-                        ('Shared Service', 'Use for a centralized Alertmanager intended to serve infrastructure assets, services, operational domains, and workflows through governed bindings.'),
-                        ('Managed for a Specific Scope', 'Use when ownership and lifecycle are aligned to one primary operational scope. Governed bindings may still make it eligible elsewhere.')
+                        ('building-2', 'Externally Managed', 'Use when another team, service owner, or platform manages the Alertmanager lifecycle and KAORI consumes the exposed connection.'),
+                        ('box', 'Standalone', 'Use for a dedicated, independently operated Alertmanager that is not presented as a shared organizational service.'),
+                        ('network', 'Shared Service', 'Use for a centralized Alertmanager intended to serve multiple infrastructure assets, services, domains, or workflows through governed bindings.'),
+                        ('target', 'Managed for a Specific Scope', 'Use when ownership and lifecycle align to one primary operational scope. Governed bindings may still extend eligibility.')
                     ] %}
-                    {{ context_guidance_card.render(
+                    {{ information_guide_card.render(
                         'Connection Type Guide',
-                        'Choose the ownership and deployment context for this endpoint.',
+                        'Compare the ownership and deployment models for this endpoint.',
                         connection_type_items,
                         icon='boxes'
                     ) }}
 
                     {% set connection_contract_items = [
-                        ('Connection Identity', 'is the canonical KAORI record for the Alertmanager connection. It is registered once and referenced by bindings.'),
-                        ('Connection Contract', 'covers the base URL, authentication, request timeout, TLS verification, and API v2 status reachability.'),
-                        ('Capability Contract', 'is established only by Full Validation after registration. It records supported APIs, detected version/profile, and readiness.'),
-                        ('Scope Bindings', 'determine where the source is eligible and how resolver priority selects primary, secondary, or fallback connections.')
+                        ('fingerprint', 'Connection Identity', 'The canonical KAORI record for the Alertmanager connection. It is registered once and referenced by bindings.'),
+                        ('file-check-2', 'Connection Contract', 'The base URL, authentication, request timeout, TLS verification, and API v2 status reachability used to access the source.'),
+                        ('badge-check', 'Capability Contract', 'Established only by Full Validation. It records supported APIs, detected version or profile, and readiness.'),
+                        ('link-2', 'Scope Bindings', 'Determine where the source is eligible and how resolver priority selects primary, secondary, or fallback connections.')
                     ] %}
-                    {{ context_guidance_card.render(
+                    {{ information_guide_card.render(
                         'Connection Identity & Contract',
-                        'How KAORI represents and evaluates this source.',
+                        'Reference the records that define source identity, readiness, and eligibility.',
                         connection_contract_items,
-                        icon='file-check-2',
-                        ordered=true
+                        icon='file-check-2'
                     ) }}
 
                     {% set after_registration_items = [
@@ -381,8 +381,7 @@
                         'After Registration',
                         'Complete these steps before the source is used operationally.',
                         after_registration_items,
-                        icon='list-checks',
-                        ordered=true
+                        icon='list-checks'
                     ) }}
                 {% else %}
                     {% set connection_lifecycle_items = [

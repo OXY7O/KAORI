@@ -2,6 +2,7 @@
 {% import "components/related_page_card.html" as related_page_card %}
 {% import "components/form_action_bar.html" as form_action_bar %}
 {% import "components/context_guidance_card.html" as context_guidance_card %}
+{% import "components/information_guide_card.html" as information_guide_card %}
 {% set current_auth_type = instance.auth_type or 'none' %}
 {% set field_classes = 'h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-normal text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20' %}
 {% set textarea_classes = 'min-h-24 w-full resize-y rounded-lg border border-outline-default bg-surface-card px-3.5 py-3 text-sm font-normal leading-6 text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20' %}
@@ -72,21 +73,20 @@
                 'Configuration Flow',
                 'How a saved change propagates through the integration.',
                 configuration_flow_items,
-                icon='route',
-                ordered=true
+                icon='route'
             ) }}
 
             {% set connection_type_items = [
-                ('Externally Managed', 'Lifecycle belongs to another team or service owner.'),
-                ('Standalone', 'An independent endpoint with a dedicated operational purpose.'),
-                ('Shared Service', 'A centralized connection reused across multiple scopes.'),
-                ('Managed for a Specific Scope', 'Ownership follows one primary context while governed bindings may extend usage.')
+                ('building-2', 'Externally Managed', 'Lifecycle belongs to another team, platform, or service owner.'),
+                ('box', 'Standalone', 'An independent endpoint with a dedicated operational purpose.'),
+                ('network', 'Shared Service', 'A centralized connection reused across multiple operational scopes.'),
+                ('target', 'Managed for a Specific Scope', 'Ownership follows one primary context while governed bindings may extend usage.')
             ] %}
-            {{ context_guidance_card.render(
-                'Connection Type',
-                'Ownership context does not restrict capability or scope eligibility.',
+            {{ information_guide_card.render(
+                'Connection Type Guide',
+                'Compare the ownership models without changing capability or scope eligibility.',
                 connection_type_items,
-                icon='info'
+                icon='boxes'
             ) }}
             {{ related_page_card.render(
                 'Alert Intelligence',

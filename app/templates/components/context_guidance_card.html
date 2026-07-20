@@ -1,4 +1,4 @@
-{% macro render(title, description, items, icon='info', ordered=false, open_by_default=false, aria_label=None) -%}
+{% macro render(title, description, items, icon='info', open_by_default=false, aria_label=None) -%}
 <details class="group overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
          aria-label="{{ aria_label or title }}"
          {% if open_by_default %}open{% endif %}>
@@ -21,14 +21,10 @@
 
     <div class="space-y-3 p-4 text-xs leading-5 text-content-muted">
         {% for item in items %}
-            {% if ordered %}
-                <div class="grid grid-cols-[24px_minmax(0,1fr)] gap-2">
-                    <span class="font-semibold text-kaori-primary">{{ '%02d'|format(loop.index) }}</span>
-                    <p><strong class="font-semibold text-content-secondary">{{ item[0] }}</strong> {{ item[1] }}</p>
-                </div>
-            {% else %}
+            <div class="grid grid-cols-[24px_minmax(0,1fr)] gap-2">
+                <span class="font-semibold text-kaori-primary">{{ '%02d'|format(loop.index) }}</span>
                 <p><strong class="font-semibold text-content-secondary">{{ item[0] }}</strong> {{ item[1] }}</p>
-            {% endif %}
+            </div>
         {% endfor %}
     </div>
 </details>

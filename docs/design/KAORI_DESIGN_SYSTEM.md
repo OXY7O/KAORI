@@ -270,7 +270,11 @@ Use the shared Info Flow component for short ordered governance or operational s
 
 ## Context Guidance Card
 
-Use the shared Context Guidance Card for compact secondary guidance in the right-side contextual column of create, edit, detail, configuration, and validation workspaces. The After Registration card on Register Alertmanager Instance is the reference implementation. The component uses native expandable behavior, two to five concise labeled items, generated two-digit markers for ordered guidance, and no embedded actions. It is normally closed; use the default-open state only when the guidance is essential and no separate primary Info Flow exists. See `components/CONTEXT_GUIDANCE_CARD.md`.
+Use the shared Context Guidance Card for compact secondary **ordered** guidance in the right-side contextual column of create, edit, detail, configuration, and validation workspaces. The After Registration card on Register Alertmanager Instance is the reference implementation. The component uses native expandable behavior, two to five concise steps, generated two-digit markers, and no embedded actions. It is normally closed; use the default-open state only when the guidance is essential and no separate primary Info Flow exists. See `components/CONTEXT_GUIDANCE_CARD.md`.
+
+## Information Guide Card
+
+Use the shared Information Guide Card for non-sequential option, concept, ownership-model, or contract references in contextual sidebars. Every peer item uses a related icon, Title Case label, and concise sentence-case explanation. Do not use numbering, arrows, or timeline connectors because the items may be read in any order. Connection Type Guide on Register Alertmanager Instance is the reference implementation. See `components/INFORMATION_GUIDE_CARD.md`.
 
 ## Related Workspace Contract
 

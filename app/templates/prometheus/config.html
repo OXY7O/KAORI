@@ -81,8 +81,7 @@
                             'Configuration Flow',
                             'Complete these steps after changing the connection.',
                             configuration_flow_items,
-                            icon='workflow',
-                            ordered=true
+                            icon='workflow'
                         ) }}
                         <section class="rounded-xl border border-outline-default bg-surface-card p-4"><h2 class="text-sm font-semibold text-content-primary">Cluster Binding</h2><p class="mt-2 text-sm font-semibold text-content-primary">{{ cluster.name }}</p><p class="mt-1 text-xs leading-5 text-content-muted">This page manages the effective Prometheus connection resolved for the selected managed cluster.</p></section>
                         {{ related_page_card.render(

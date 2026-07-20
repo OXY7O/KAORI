@@ -11,7 +11,7 @@ def read(relative_path: str) -> str:
 def test_shared_context_guidance_card_contract() -> None:
     component = read("app/templates/components/context_guidance_card.html")
 
-    assert "macro render(title, description, items" in component
+    assert "macro render(title, description, items, icon='info', open_by_default=false" in component
     assert "<details" in component
     assert "<summary" in component
     assert "Details" in component
@@ -21,6 +21,7 @@ def test_shared_context_guidance_card_contract() -> None:
     assert "focus-visible:ring-outline-focus" in component
     assert "{{ item[0] }}" in component
     assert "{{ item[1] }}" in component
+    assert "if ordered" not in component
 
 
 def test_alertmanager_after_registration_uses_shared_component() -> None:
@@ -30,8 +31,10 @@ def test_alertmanager_after_registration_uses_shared_component() -> None:
     assert "context_guidance_card.render(" in template
     assert "'After Registration'" in template
     assert "'Connection Type Guide'" in template
+    assert "information_guide_card.render(" in template
     assert "'Connection Identity & Contract'" in template
     assert "'Connection Lifecycle'" in template
+    assert "ordered=true" not in template
     assert "After Registration</h2>" not in template
 
 
@@ -72,6 +75,7 @@ def test_context_guidance_card_documentation_is_registered() -> None:
 
     assert "After Registration" in standard
     assert "two to five" in standard.lower()
+    assert "ordered" in standard.lower()
     assert "Context Guidance Card" in audit
     assert "components/CONTEXT_GUIDANCE_CARD.md" in readme
     assert "components/CONTEXT_GUIDANCE_CARD.md" in design_system

@@ -53,9 +53,9 @@ Added:
 app/templates/components/context_guidance_card.html
 ```
 
-The component supports:
+The component supports ordered operational guidance through:
 
-- ordered or unordered items;
+- ordered items with generated two-digit markers;
 - generated two-digit markers;
 - configurable icon;
 - default-open behavior for essential guidance;
@@ -63,21 +63,22 @@ The component supports:
 
 ### Alertmanager register/edit instance
 
-Migrated:
+Migrated ordered guidance:
 
-- Connection Type Guide;
-- Connection Identity & Contract;
 - After Registration;
 - Connection Lifecycle.
+
+Connection Type Guide and Connection Identity & Contract were subsequently moved to the Information Guide Card because they are non-sequential references, not steps.
 
 `After Registration` remains the visual reference and now consumes the shared component rather than local markup.
 
 ### Alertmanager instance configuration
 
-Migrated:
+Migrated ordered guidance:
 
-- Configuration Flow;
-- Connection Type.
+- Configuration Flow.
+
+Connection Type was subsequently moved to the Information Guide Card because its options are peers.
 
 The previous unnecessary Violet emphasis on Connection Type was removed. It is explanatory guidance, not a warning or status.
 
@@ -168,3 +169,7 @@ The guardrail prevents:
 ## Result
 
 Right-side integration guidance now uses one documented component with consistent hierarchy, geometry, casing, expansion behavior, and compact item formatting.
+
+## Semantic refinement
+
+The follow-up Information Guide Card audit separated non-sequential option and contract references from ordered Context Guidance Cards. See `INFORMATION_GUIDE_CARD_INTEGRATIONS_AUDIT_2026_07.md`.

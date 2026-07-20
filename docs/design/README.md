@@ -16,6 +16,7 @@
 - `components/OPERATIONAL_TOGGLE.md`
 - `components/FORM_ACTION_BAR.md`
 - `components/CONTEXT_GUIDANCE_CARD.md`
+- `components/INFORMATION_GUIDE_CARD.md`
 
 ## Reusable page patterns
 
