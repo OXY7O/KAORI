@@ -14,11 +14,15 @@ from app.alertmanager.resolver import resolve_alertmanager_sources
 from app.prometheus.repository import resolve_instance_for_cluster
 from app.kubernetes.service import test_cluster_connection
 from app.models import (
+    AlertmanagerBinding,
     AlertmanagerInstance,
     Cluster,
     ClusterInventory,
     ClusterStatus,
     NamespaceInventory,
+    PrometheusBinding,
+    Report,
+    ReportSchedule,
 )
 from app.models.integration import IntegrationBinding, IntegrationInstance, KubernetesConnection
 
@@ -566,12 +570,68 @@ def update_cluster(
     return cluster
 
 
-def delete_cluster(cluster: Cluster) -> None:
-    db.session.delete(
-        cluster,
+def delete_cluster(cluster: Cluster) -> dict[str, int]:
+    """Delete a managed Kubernetes registration and its scope associations.
+
+    Prometheus and Alertmanager source instances are reusable and therefore are
+    never deleted with the cluster. Only bindings that target this Kubernetes
+    scope are removed. Generated reports and schedules are preserved by
+    detaching their cluster reference before the cluster row is deleted.
+    """
+    cluster_id = str(cluster.id)
+    connection = cluster.kubernetes_connection
+    canonical = connection.integration_instance if connection else None
+
+    detached_reports = (
+        Report.query.filter(Report.cluster_id == cluster_id)
+        .update({Report.cluster_id: None}, synchronize_session=False)
+    )
+    detached_schedules = (
+        ReportSchedule.query.filter(ReportSchedule.cluster_id == cluster_id)
+        .update({ReportSchedule.cluster_id: None}, synchronize_session=False)
     )
 
+    canonical_bindings = (
+        IntegrationBinding.query.filter(
+            IntegrationBinding.asset_type == 'kubernetes_cluster',
+            IntegrationBinding.asset_key == cluster_id,
+        )
+        .delete(synchronize_session=False)
+    )
+    legacy_prometheus_bindings = (
+        PrometheusBinding.query.filter(
+            PrometheusBinding.scope_type == 'kubernetes_cluster',
+            PrometheusBinding.scope_key == cluster_id,
+        )
+        .delete(synchronize_session=False)
+    )
+    legacy_alertmanager_bindings = (
+        AlertmanagerBinding.query.filter(
+            AlertmanagerBinding.scope_type == 'kubernetes_cluster',
+            AlertmanagerBinding.scope_key == cluster_id,
+        )
+        .delete(synchronize_session=False)
+    )
+
+    # The Cluster relationship removes KubernetesConnection and all rows that
+    # carry a real cluster FK. Flush before deleting the canonical integration
+    # identity so SQLAlchemy does not attempt to delete the connection twice.
+    db.session.delete(cluster)
+    db.session.flush()
+
+    if canonical is not None:
+        db.session.delete(canonical)
+
     db.session.commit()
+
+    return {
+        'canonical_bindings': int(canonical_bindings or 0),
+        'legacy_prometheus_bindings': int(legacy_prometheus_bindings or 0),
+        'legacy_alertmanager_bindings': int(legacy_alertmanager_bindings or 0),
+        'detached_reports': int(detached_reports or 0),
+        'detached_schedules': int(detached_schedules or 0),
+        'canonical_instance_deleted': int(canonical is not None),
+    }
 
 
 def build_cluster_context(

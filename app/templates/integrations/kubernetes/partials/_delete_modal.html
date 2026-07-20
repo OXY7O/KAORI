@@ -17,7 +17,7 @@
       <p class="mt-1 text-sm font-semibold text-status-critical-text">This action cannot be undone.</p>
       <div class="mt-4 rounded-lg border border-status-critical-border bg-status-critical-soft p-3">
         <p class="text-xs leading-5 text-status-critical-text">
-          The canonical connection, stored cluster registration, inventory snapshots, runtime observations, and dependent configuration are removed according to database relationships. Activity Audit history remains available.
+          The Kubernetes registration, inventory snapshots, and its Prometheus and Alertmanager bindings will be removed. Shared source instances, generated reports, runtime observation history, and Activity Audit records remain available.
         </p>
       </div>
     </div>
@@ -27,7 +27,7 @@
               class="inline-flex h-10 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus/20">
         Cancel
       </button>
-      <form :action="deleteUrl" method="POST">
+      <form x-bind:action="deleteUrl" method="POST">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit"
                 data-operation-submit

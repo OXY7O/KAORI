@@ -19,6 +19,7 @@ from flask.typing import ResponseReturnValue
 from flask_login import current_user
 from redis.exceptions import RedisError
 
+from app.extensions import db
 from app.cluster.forms import ClusterCreateForm, ClusterEditForm
 from app.cluster.individual_sync_state import (
     build_individual_sync_snapshot,
@@ -946,11 +947,14 @@ def delete_cluster_route(cluster_id: str) -> ResponseReturnValue:
     cluster_environment = cluster.environment
     cluster_server = cluster.server
 
+    deletion_summary: dict[str, int] = {}
+
     try:
-        delete_cluster(
+        deletion_summary = delete_cluster(
             cluster,
         )
     except Exception as exc:
+        db.session.rollback()
         logger.exception(
             'Cluster deletion failed for %s.',
             cluster_id,
@@ -988,6 +992,7 @@ def delete_cluster_route(cluster_id: str) -> ResponseReturnValue:
                 'cluster_name': cluster_name,
                 'environment': cluster_environment,
                 'server': cluster_server,
+                **deletion_summary,
             },
             queue_feedback=True,
         )
