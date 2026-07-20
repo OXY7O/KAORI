@@ -9,7 +9,7 @@ from app.common.presentation import present_user_datetime
 from app.models import AlertmanagerInstance, Cluster, PrometheusInstance
 from app.models.integration import IntegrationBinding, IntegrationInstance, KubernetesConnection
 from app.models.integration_runtime import IntegrationRuntimeObservation
-from app.integrations.coverage import bound_source_for_scope
+from app.integrations.coverage import build_provider_coverage, bound_source_for_scope
 from app.prometheus.repository import cluster_bindings_for_instance
 
 
