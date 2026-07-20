@@ -37,3 +37,11 @@ This document defines reusable structures. It does not define domain-specific fi
 - Focus uses KAORI Violet.
 - Live lookup failures display a concise in-page state; full technical evidence belongs in Activity Audit Log.
 - A selector must not trigger a full-page reload when an HTMX interaction is appropriate.
+
+## Integration landing workspace pattern
+
+1. Provider overview remains above the workspace switcher.
+2. Integration Coverage and Connection Registry use one shared Violet tab bar. The selected tab uses solid KAORI Violet with white text; unselected tabs remain Violet outlined/soft rather than neutral gray.
+3. Coverage and Registry title boxes use the same icon, title, description, spacing, border, and loading-bar hierarchy. Provider-specific wording may differ, but the visual shell must not.
+4. Registry tables use explicit column widths. The final Action column is compact, right-aligned, and must not be the cause of horizontal overflow.
+5. Horizontal scrolling is allowed only when the available viewport is genuinely narrower than the compact technical table contract. Do not force an oversized minimum width by default.

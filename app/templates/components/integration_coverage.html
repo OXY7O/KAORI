@@ -1,24 +1,17 @@
-{% import "components/table_label.html" as table_label %}
 {% import "components/integration_coverage_content.html" as coverage_content %}
 {% macro render(provider, rows, stats, pagination, selected_query='', selected_readiness='', selected_compatibility='', selected_deployment_type='', registry_per_page=5, selected_coverage_query='', selected_coverage_environment='', selected_coverage_status='', coverage_environment_options=(), coverage_status_options=()) -%}
 <section id="integration-coverage" class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm" aria-labelledby="integration-coverage-title">
-    <header class="relative flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:px-6 lg:flex-row lg:items-start lg:justify-between">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex items-start gap-3">
             <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
                 <i data-lucide="route" class="h-5 w-5" aria-hidden="true"></i>
             </span>
             <div>
-                <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-kaori-primary">Operational Coverage</p>
-                <h2 id="integration-coverage-title" class="mt-1 text-lg font-semibold text-content-primary">Integration Coverage</h2>
+                <h2 id="integration-coverage-title" class="text-lg font-semibold text-content-primary">{{ provider.label }} Integration Coverage</h2>
                 <p class="mt-1 text-sm leading-6 text-content-secondary">Bind operational scopes to existing {{ provider.label }} sources.</p>
             </div>
         </div>
-        <div class="flex flex-wrap items-center gap-2">
-            {{ table_label.status_label(stats.ready ~ ' Ready', 'normal', 'circle-check') }}
-            {% if stats.attention %}{{ table_label.status_label(stats.attention ~ ' Attention', 'warning', 'triangle-alert') }}{% endif %}
-            {% if stats.uncovered %}{{ table_label.status_label(stats.uncovered ~ ' Not Bound', 'unknown', 'unlink') }}{% endif %}
-        </div>
-        <div id="{{ provider.key }}-coverage-loading" class="htmx-indicator absolute inset-x-0 bottom-0 h-1 overflow-hidden bg-kaori-soft">
+        <div id="{{ provider.key }}-coverage-loading" class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-kaori-soft">
             <div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div>
         </div>
     </header>

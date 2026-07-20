@@ -35,7 +35,7 @@ def test_alertmanager_registry_content_uses_kaori_table_contract() -> None:
         'table_label.metadata_label',
         'status_badge(row.compatibility)',
         'status_badge(row.readiness)',
-        'text-right sm:px-6">Action',
+        'w-[100px] whitespace-nowrap px-3 py-3.5 text-right">Action',
         'aria-label="Connections per page"',
         '<option value="{{ option }}"',
         'pagination.allowed_per_page',

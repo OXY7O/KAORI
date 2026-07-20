@@ -2,7 +2,17 @@
 {% import "components/table_label.html" as table_label %}
 {% from "integrations/partials/_status_badge.html" import status_badge %}
 <div class="overflow-x-auto">
-    <table class="min-w-[1180px] w-full text-left text-sm">
+    <table class="w-full min-w-[980px] table-fixed text-left text-sm">
+        <colgroup>
+            <col class="w-[170px]">
+            <col class="w-[160px]">
+            <col class="w-[105px]">
+            <col class="w-[135px]">
+            <col class="w-[100px]">
+            <col class="w-[90px]">
+            <col class="w-[120px]">
+            <col class="w-[100px]">
+        </colgroup>
         <thead class="border-b border-outline-subtle bg-surface-hover text-xs font-semibold text-content-muted">
             <tr>
                 <th class="px-5 py-3.5 sm:px-6">Connection</th>
@@ -12,7 +22,7 @@
                 <th class="px-4 py-3.5">Readiness</th>
                 <th class="px-4 py-3.5">Bindings</th>
                 <th class="px-4 py-3.5">Last Validated</th>
-                <th class="px-5 py-3.5 text-right sm:px-6">Action</th>
+                <th class="w-[100px] whitespace-nowrap px-3 py-3.5 text-right">Action</th>
             </tr>
         </thead>
         <tbody class="divide-y divide-outline-subtle">
@@ -49,8 +59,8 @@
                         {% endif %}
                     </td>
                     <td class="px-4 py-4 align-top text-sm text-content-secondary">{{ row.validated_at }}</td>
-                    <td class="px-5 py-4 text-right align-top sm:px-6">
-                        <a href="{{ url_for('alertmanager.instance_detail', instance_id=row.instance.id) }}" class="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary shadow-sm transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                    <td class="w-[100px] whitespace-nowrap px-3 py-4 text-right align-top">
+                        <a href="{{ url_for('alertmanager.instance_detail', instance_id=row.instance.id) }}" class="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs font-semibold text-content-secondary shadow-sm transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                             <i data-lucide="settings-2" class="h-4 w-4" aria-hidden="true"></i>Manage
                         </a>
                     </td>

@@ -130,3 +130,37 @@ def test_provider_registry_tables_share_the_same_column_contract() -> None:
     for fragment in ('status_badge(row.compatibility)', 'status_badge(row.readiness)', 'table_label.metadata_label'):
         assert fragment in prom
         assert fragment in alert
+
+def test_workspace_tabs_use_violet_selected_and_unselected_states() -> None:
+    tabs = read(TABS)
+    assert "border-kaori-primary bg-kaori-primary text-white shadow-sm" in tabs
+    assert "border-brand-outline bg-surface-card text-kaori-primary" in tabs
+    assert "border-white bg-white text-kaori-primary-dark" in tabs
+    assert "border-transparent bg-transparent text-content-secondary" not in tabs
+
+
+def test_coverage_title_box_matches_registry_header_hierarchy() -> None:
+    coverage = read(COMPONENT)
+    prom_registry = read(PROM_CARD)
+    alert_registry = read(ALERT_CARD)
+    shared_header = 'header class="border-b border-outline-subtle px-5 py-4 sm:px-6"'
+    shared_loader = 'htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-kaori-soft'
+    assert shared_header in coverage
+    assert shared_header in prom_registry
+    assert shared_header in alert_registry
+    assert shared_loader in coverage
+    assert shared_loader in prom_registry
+    assert shared_loader in alert_registry
+    assert 'Operational Coverage' not in coverage
+
+
+def test_registry_action_column_is_compact_and_table_width_is_reduced() -> None:
+    prom = read(PROM_CONTENT)
+    alert = read(ROOT / 'app/templates/integrations/alertmanager/partials/_inventory_content.html')
+    for source in (prom, alert):
+        assert 'min-w-[980px] table-fixed' in source
+        assert '<colgroup>' in source
+        assert 'w-[100px] whitespace-nowrap px-3 py-3.5 text-right">Action' in source
+        assert 'w-[100px] whitespace-nowrap px-3 py-4 text-right align-top' in source
+        assert 'min-w-[1180px]' not in source
+
