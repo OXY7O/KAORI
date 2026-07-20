@@ -67,8 +67,22 @@
                         </div>
                     </section>
 
-                    <section class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
-                        <div class="mb-4 flex items-start gap-3"><div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="network" class="h-4 w-4"></i></div><div><h3 class="text-sm font-semibold text-content-primary">Endpoint &amp; Access</h3><p class="mt-0.5 text-xs leading-5 text-content-muted">These settings are used by validation, runtime monitoring, and Prometheus-compatible query operations.</p></div></div>
+                    <section class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-elevated">
+                        <div class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-start sm:justify-between">
+                            <div class="flex items-start gap-3"><div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="network" class="h-4 w-4"></i></div><div><h3 class="text-sm font-semibold text-content-primary">Endpoint &amp; Access</h3><p class="mt-0.5 text-xs leading-5 text-content-muted">Test submitted endpoint, authentication, TLS, and timeout changes before saving them.</p></div></div>
+                            <button type="button"
+                                    hx-post="{{ url_for('prometheus.test_instance_configuration', instance_id=instance.id) }}"
+                                    hx-include="#prometheus-instance-form"
+                                    hx-target="#prometheus-configuration-test-result"
+                                    hx-swap="innerHTML"
+                                    hx-indicator="#prometheus-configuration-test-loading"
+                                    hx-disabled-elt="this"
+                                    class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-wait disabled:opacity-70">
+                                <i data-lucide="plug-zap" class="h-4 w-4"></i>Test Connection
+                            </button>
+                        </div>
+                        <div id="prometheus-configuration-test-loading" class="htmx-indicator pointer-events-none h-1 w-full overflow-hidden bg-kaori-soft" aria-label="Testing Prometheus configuration"><div class="notification-progress-indeterminate h-full bg-kaori-primary"></div></div>
+                        <div class="p-4">
                         <div>
                             <label for="{{ form.endpoint.id }}" class="mb-1.5 block text-sm font-semibold text-content-primary">Endpoint URL</label>
                             {{ form.endpoint(class_=field_classes) }}
@@ -93,6 +107,8 @@
                             <div><label for="{{ form.password.id }}" class="mb-1.5 block text-sm font-semibold text-content-primary">Password</label>{{ form.password(class_=field_classes, autocomplete='new-password', placeholder='Leave blank to keep the current password') }}{% for error in form.password.errors %}<p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>{% endfor %}</div>
                         </div>
                         <div x-show="authType === 'bearer'" x-cloak class="mt-4"><label for="{{ form.bearer_token.id }}" class="mb-1.5 block text-sm font-semibold text-content-primary">Bearer Token</label>{{ form.bearer_token(class_=field_classes, autocomplete='new-password', placeholder='Leave blank to keep the current token') }}{% for error in form.bearer_token.errors %}<p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>{% endfor %}</div>
+                        </div>
+                        <div id="prometheus-configuration-test-result" class="sr-only" aria-live="polite"></div>
                     </section>
 
                     <section class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">

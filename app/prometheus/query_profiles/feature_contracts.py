@@ -103,20 +103,26 @@ def _evaluate(client: Any, contract: FeatureContract, *, sample_namespace: str) 
         checks.append(_check(query_key, status, evidence, expression, len(rows), value_summary))
 
     label_ready = _required_labels_satisfied(contract.required_labels, observed_labels)
-    if successful != len(contract.query_keys):
-        status = 'failed'
-        observed = f'{successful} of {len(contract.query_keys)} registered analytics queries executed successfully.'
-    elif contract.key == 'storage.filesystem':
-        # /var is preferred; root is fallback. One complete pair plus canonical identity is sufficient.
+    if contract.key == 'storage.filesystem':
+        # /var is preferred; root is fallback. A complete size+available pair plus
+        # canonical node identity is required. A size metric alone proves capacity
+        # collection but cannot support filesystem utilization or headroom.
         var_ready = all(checks[i]['status'] == 'ready' for i in (0, 1))
         root_ready = all(checks[i]['status'] == 'ready' for i in (2, 3))
-        if (var_ready or root_ready) and label_ready:
-            status = 'ready'
-        elif not usable:
-            status = 'failed'
-        else:
-            status = 'failed'
-        observed = f'{usable} usable filesystem samples; observed labels: {", ".join(sorted(observed_labels)) or "none"}.'
+        status = 'ready' if (var_ready or root_ready) and label_ready else 'failed'
+        pair_evidence = (
+            f"/var size {_check_state(checks[0])}; /var available {_check_state(checks[1])}; "
+            f"/ size {_check_state(checks[2])}; / available {_check_state(checks[3])}; "
+            f"canonical node identity {'Ready' if label_ready else 'Missing'}."
+        )
+        observed = (
+            f'{pair_evidence} {successful} of {len(contract.query_keys)} queries executed; '
+            f'{usable} usable filesystem samples; observed labels: '
+            f'{", ".join(sorted(observed_labels)) or "none"}.'
+        )
+    elif successful != len(contract.query_keys):
+        status = 'failed'
+        observed = f'{successful} of {len(contract.query_keys)} registered analytics queries executed successfully.'
     elif usable:
         status = 'ready'
         observed = f'{usable} usable samples returned by the registered analytics query contract.'
@@ -128,7 +134,11 @@ def _evaluate(client: Any, contract: FeatureContract, *, sample_namespace: str) 
         observed = 'Registered queries executed but returned no usable samples.'
 
     status_label = {'ready': 'Ready', 'failed': 'Failed', 'not_observed': 'Not Observed'}[status]
-    remediation = _remediation(status, successful, len(contract.query_keys), usable)
+    remediation = (
+        _storage_remediation(checks, label_ready)
+        if contract.key == 'storage.filesystem' and status != 'ready'
+        else _remediation(status, successful, len(contract.query_keys), usable)
+    )
     return {
         'key': contract.key,
         'feature': contract.feature,
@@ -145,6 +155,42 @@ def _evaluate(client: Any, contract: FeatureContract, *, sample_namespace: str) 
         'recommendation': remediation,
     }
 
+
+
+def _check_state(check: dict[str, Any]) -> str:
+    if check.get('status') == 'ready':
+        return f"Ready ({check.get('series_count_display')})"
+    if check.get('error_detail'):
+        return f"Failed ({check.get('error_detail')})"
+    return 'No Data'
+
+
+def _storage_remediation(checks: list[dict[str, Any]], label_ready: bool) -> str:
+    var_missing = [
+        label
+        for label, check in zip(('/var size', '/var available'), checks[:2], strict=False)
+        if check.get('status') != 'ready'
+    ]
+    root_missing = [
+        label
+        for label, check in zip(('/ size', '/ available'), checks[2:4], strict=False)
+        if check.get('status') != 'ready'
+    ]
+    options = []
+    if var_missing:
+        options.append(f"complete the preferred /var pair by verifying {', '.join(var_missing)}")
+    if root_missing:
+        options.append(f"or complete the fallback / pair by verifying {', '.join(root_missing)}")
+    identity = (
+        ' Also expose a canonical node identity label (node, nodename, or kubernetes_node).'
+        if not label_ready
+        else ''
+    )
+    return (
+        f"KAORI observed only part of the filesystem contract: {'; '.join(options)}."
+        f'{identity} Storage readiness requires both node_filesystem_size_bytes and '
+        'node_filesystem_avail_bytes for one complete mount pair using the same scope selector.'
+    )
 
 def _usable_rows(rows: list[dict[str, Any]]) -> tuple[int, set[str], str | None]:
     usable = 0

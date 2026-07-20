@@ -1,5 +1,5 @@
 {% import "components/related_page_card.html" as related_page_card %}
-{% import "components/context_guidance_card.html" as context_guidance_card %}
+{% import "components/info_flow.html" as info_flow %}
 {% from "integrations/partials/_status_badge.html" import status_badge %}
 <div class="grid gap-5 xl:grid-cols-12 xl:items-start">
     <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm xl:col-span-8">
@@ -27,8 +27,8 @@
         <footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6"><p class="text-xs leading-5 text-content-secondary">Configuration changes reset readiness until worker validation confirms the updated contract.</p><a href="{{ url_for('cluster.edit_cluster', cluster_id=cluster.id) }}" class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover"><i data-lucide="settings-2" class="h-4 w-4"></i>Configure Connection</a></footer>
     </section>
     <aside class="space-y-4 xl:col-span-4">
-        {% set operational_flow_items = [('Configure Connection', 'Set identity, environment, kubeconfig ownership, and TLS policy.'), ('Run Full Validation', 'Discover served APIs, effective RBAC, stable adapters, and fallback requirements.'), ('Refresh and Synchronize', 'Record runtime evidence and update normalized Kubernetes inventory.')] %}
-        {{ context_guidance_card.render('Operational Flow', 'How this connection becomes eligible for KAORI operations.', operational_flow_items, icon='workflow') }}
+        {% set operational_flow_items = [('Configure Connection', 'Set identity, environment, kubeconfig ownership, and TLS policy.'), ('Test Connection', 'Confirm the submitted Kubernetes API endpoint, credentials, and TLS policy before saving connection changes.'), ('Run Full Validation', 'Discover served APIs, effective RBAC, stable adapters, lifecycle posture, and fallback requirements.'), ('Refresh and Synchronize', 'Record runtime evidence and update normalized Kubernetes inventory.')] %}
+        {{ info_flow.render('Operational Flow', 'How this connection becomes eligible for KAORI operations.', operational_flow_items, icon='workflow', note='A healthy API connection can still be Degraded when the Kubernetes version lifecycle, API fallback, or RBAC contract requires attention.', open_by_default=true) }}
         <div class="rounded-xl border border-status-info-border bg-status-info-soft p-4"><div class="flex items-start gap-3"><i data-lucide="landmark" class="mt-0.5 h-4 w-4 shrink-0 text-status-info-text"></i><div><p class="text-sm font-semibold text-status-info-text">Authority Boundary</p><p class="mt-1 text-xs leading-5 text-content-secondary">Kubernetes owns live state and API authorization. KAORI provides controlled access, normalized history, correlation, reporting, and Activity Audit.</p></div></div></div>
         {{ related_page_card.render('Kubernetes Inventory', 'This validated connection supplies normalized resource context to KAORI Inventory.', url_for('inventory.overview'), 'Open Kubernetes Inventory', icon='boxes', eyebrow='Related Operational Workspace', boundary='Kubernetes remains authoritative for live resources. KAORI Inventory presents synchronized context and history.') }}
     </aside>

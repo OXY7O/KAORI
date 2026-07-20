@@ -471,6 +471,74 @@ def test_new_instance_connection() -> ResponseReturnValue:
     return response
 
 
+@prometheus_bp.post('/instances/<int:instance_id>/test-configuration')
+@permission_required('settings.manage_integrations')
+def test_instance_configuration(instance_id: int) -> ResponseReturnValue:
+    """Test submitted edit settings without persisting them."""
+    instance = _instance_or_404(instance_id)
+    form = PrometheusInstanceForm()
+    form.existing_instance = instance
+    if not form.validate_on_submit():
+        result = {'connected': False}
+        feedback = record_operational_activity(
+            user_id=current_user.id,
+            event_type='prometheus_connection_test_failed',
+            status='error',
+            title='Prometheus configuration test failed',
+            message=f'Review the submitted settings for {instance.name}.',
+            detail='The edited connection form did not satisfy the Prometheus connection contract.',
+            action_url=url_for('prometheus.instance_detail', instance_id=instance.id) + '#configuration',
+            action_label='Review Prometheus configuration',
+            action_icon='settings-2',
+            metadata={
+                'instance_id': instance.id,
+                'fields': sorted(form.errors),
+                'draft_update': True,
+            },
+            queue_feedback=False,
+        )
+    else:
+        result = test_prometheus_form_connection(form, existing_instance=instance)
+        connected = bool(result.get('connected'))
+        feedback = record_operational_activity(
+            user_id=current_user.id,
+            event_type='prometheus_connection_test' if connected else 'prometheus_connection_test_failed',
+            status='success' if connected else 'error',
+            title='Prometheus configuration verified' if connected else 'Prometheus configuration test failed',
+            message=(
+                f'KAORI reached the submitted settings for {instance.name}.'
+                if connected
+                else f'KAORI could not verify the submitted settings for {instance.name}.'
+            ),
+            detail=(
+                f"{str(result.get('endpoint_product') or 'Prometheus').title()} "
+                f"{result.get('version') or 'unknown'} responded in {result.get('response_time_ms') or 0} ms. "
+                'Save the configuration, then run Full Validation.'
+                if connected
+                else result.get('error') or result.get('reason') or 'Review endpoint, authentication, TLS, and network reachability.'
+            ),
+            action_url=url_for('prometheus.instance_detail', instance_id=instance.id) + '#configuration',
+            action_label='Review Prometheus configuration',
+            action_icon='settings-2',
+            metadata={
+                'instance_id': instance.id,
+                'endpoint_host': result.get('endpoint_host'),
+                'endpoint_product': result.get('endpoint_product'),
+                'version': result.get('version'),
+                'compatibility_profile': result.get('compatibility_profile'),
+                'response_time_ms': result.get('response_time_ms'),
+                'failure_code': result.get('failure_code'),
+                'draft_update': True,
+            },
+            queue_feedback=False,
+        )
+    return render_template(
+        'prometheus/partials/_connection_test_result.html',
+        connection_feedback=feedback,
+        notification_context=get_navigation_notification_context(user_id=int(current_user.id)),
+    )
+
+
 @prometheus_bp.get('/instances/<int:instance_id>/edit')
 @permission_required('settings.manage_integrations')
 def edit_instance(instance_id: int) -> ResponseReturnValue:

@@ -87,3 +87,7 @@ This document defines reusable structures. It does not define domain-specific fi
 2. The right context panel contains a concise title, at most two compact metrics, and at most two actions.
 3. Do not place paragraph-length workflow explanation in the context panel. Detailed guidance belongs in the overview box, Info Flow, or content workspace.
 4. Add and Edit Kubernetes pages use the shared Hero Context Panel with two metrics and one Back to Registry action; their wider contextual rail uses an 8:4 main-to-side grid.
+
+### Dense Registry Action Width
+
+When a registry uses icon-only actions, the Actions column width must include icon width, inter-action gaps, and cell padding. Do not force five 32 px controls into a 150 px cell. The Kubernetes Connection Registry uses a dedicated 208 px right-aligned Actions column and explicit table width so controls never clip or leave an unexplained trailing surface.

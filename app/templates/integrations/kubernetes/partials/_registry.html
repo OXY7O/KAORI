@@ -13,15 +13,15 @@
   </header>
 
   <div class="overflow-x-auto">
-    <table class="min-w-[980px] table-fixed divide-y divide-outline-subtle text-left text-sm">
+    <table class="w-full min-w-[1088px] table-fixed divide-y divide-outline-subtle text-left text-sm">
       <thead class="bg-surface-hover text-xs text-content-muted">
         <tr>
-          <th class="w-[300px] px-5 py-3">Connection</th>
-          <th class="w-[120px] px-5 py-3">Environment</th>
-          <th class="w-[145px] px-5 py-3">Readiness</th>
-          <th class="w-[210px] px-5 py-3">Version &amp; Compatibility</th>
-          <th class="w-[135px] px-5 py-3">Last Validated</th>
-          <th class="w-[150px] px-3 py-3 text-right">Actions</th>
+          <th class="w-[290px] px-5 py-3">Connection</th>
+          <th class="w-[110px] px-4 py-3">Environment</th>
+          <th class="w-[135px] px-4 py-3">Readiness</th>
+          <th class="w-[210px] px-4 py-3">Version &amp; Compatibility</th>
+          <th class="w-[135px] px-4 py-3">Last Validated</th>
+          <th class="w-[208px] px-3 py-3 text-right">Actions</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-outline-subtle">
@@ -30,26 +30,26 @@
             <td class="px-5 py-4">
               <div class="flex items-start gap-3"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary"><i data-lucide="server-cog" class="h-4 w-4"></i></span><div class="min-w-0"><p class="truncate font-semibold text-content-primary" title="{{ row.cluster_name }}">{{ row.cluster_name }}</p><p class="mt-1 text-xs text-content-muted">Canonical #{{ row.integration_instance_id }} · Connection #{{ row.connection_id }}</p><p class="mt-1 truncate font-mono text-xs text-content-secondary" title="{{ row.server }}">{{ row.server }}</p></div></div>
             </td>
-            <td class="px-5 py-4"><span class="kaori-context-label inline-flex min-h-6 items-center rounded-md bg-kaori-soft px-2 text-[10px] font-semibold text-kaori-primary">{{ row.environment }}</span></td>
-            <td class="px-5 py-4">{{ status_badge(row.readiness) }}<p class="mt-2 text-xs text-content-muted">{{ row.binding_count }} binding(s)</p></td>
-            <td class="px-5 py-4"><p class="font-semibold text-content-primary">{{ row.version or 'Not discovered' }}</p><p class="mt-1 truncate text-xs text-content-muted" title="{{ row.compatibility_profile or 'Validation required' }}">{{ row.compatibility_profile or 'Validation required' }}</p></td>
-            <td class="px-5 py-4 text-content-secondary">{{ row.last_validated_at }}</td>
-            <td class="px-3 py-4 text-right">
-              <div class="flex justify-end gap-1.5 whitespace-nowrap">
-                <a href="{{ url_for('integrations.kubernetes_detail', cluster_id=row.cluster_id) }}" title="Manage {{ row.cluster_name }}" aria-label="Manage {{ row.cluster_name }}" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-outline-default text-content-secondary transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary"><i data-lucide="activity" class="h-4 w-4"></i><span class="sr-only">Manage</span></a>
-                <a href="{{ url_for('cluster.edit_cluster', cluster_id=row.cluster_id) }}" title="Configure {{ row.cluster_name }}" aria-label="Configure {{ row.cluster_name }}" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-outline-default text-content-secondary transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary"><i data-lucide="settings-2" class="h-4 w-4"></i><span class="sr-only">Configure</span></a>
+            <td class="px-4 py-4"><span class="kaori-context-label inline-flex min-h-6 items-center rounded-md bg-kaori-soft px-2 text-[10px] font-semibold text-kaori-primary">{{ row.environment }}</span></td>
+            <td class="px-4 py-4">{{ status_badge(row.readiness) }}<p class="mt-2 text-xs text-content-muted">{{ row.binding_count }} binding(s)</p></td>
+            <td class="px-4 py-4"><p class="font-semibold text-content-primary">{{ row.version or 'Not discovered' }}</p><p class="mt-1 truncate text-xs text-content-muted" title="{{ row.compatibility_profile or 'Validation required' }}">{{ row.compatibility_profile or 'Validation required' }}</p></td>
+            <td class="px-4 py-4 text-content-secondary">{{ row.last_validated_at }}</td>
+            <td class="w-[208px] px-3 py-4 text-right">
+              <div class="flex min-w-0 justify-end gap-1 whitespace-nowrap">
+                <a href="{{ url_for('integrations.kubernetes_detail', cluster_id=row.cluster_id) }}" title="Manage {{ row.cluster_name }}" aria-label="Manage {{ row.cluster_name }}" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-outline-default text-content-secondary transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary"><i data-lucide="activity" class="h-4 w-4"></i><span class="sr-only">Manage</span></a>
+                <a href="{{ url_for('cluster.edit_cluster', cluster_id=row.cluster_id) }}" title="Configure {{ row.cluster_name }}" aria-label="Configure {{ row.cluster_name }}" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-outline-default text-content-secondary transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary"><i data-lucide="settings-2" class="h-4 w-4"></i><span class="sr-only">Configure</span></a>
                 {% if row.prometheus_instance_id %}
-                  <a href="{{ url_for('prometheus.instance_detail', instance_id=row.prometheus_instance_id) }}#scope" title="Review Prometheus binding: {{ row.prometheus_name }}" aria-label="Review Prometheus binding" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-status-normal-border bg-status-normal-soft text-status-normal transition hover:brightness-95"><i data-lucide="chart-no-axes-combined" class="h-4 w-4"></i><span class="sr-only">Review Prometheus binding</span></a>
+                  <a href="{{ url_for('prometheus.instance_detail', instance_id=row.prometheus_instance_id) }}#scope" title="Review Prometheus binding: {{ row.prometheus_name }}" aria-label="Review Prometheus binding" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-status-normal-border bg-status-normal-soft text-status-normal transition hover:brightness-95"><i data-lucide="chart-no-axes-combined" class="h-4 w-4"></i><span class="sr-only">Review Prometheus binding</span></a>
                 {% else %}
-                  <a href="{{ url_for('integrations.bind_prometheus_source', scope_key=row.cluster_id) }}" title="Bind Prometheus source" aria-label="Bind Prometheus source" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary transition hover:bg-kaori-primary hover:text-white"><i data-lucide="chart-no-axes-combined" class="h-4 w-4"></i><span class="sr-only">Bind Prometheus</span></a>
+                  <a href="{{ url_for('integrations.bind_prometheus_source', scope_key=row.cluster_id) }}" title="Bind Prometheus source" aria-label="Bind Prometheus source" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary transition hover:bg-kaori-primary hover:text-white"><i data-lucide="chart-no-axes-combined" class="h-4 w-4"></i><span class="sr-only">Bind Prometheus</span></a>
                 {% endif %}
                 {% if row.alertmanager_instance_id %}
-                  <a href="{{ url_for('alertmanager.instance_detail', instance_id=row.alertmanager_instance_id) }}#scope" title="Review Alertmanager binding: {{ row.alertmanager_name }}" aria-label="Review Alertmanager binding" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-status-normal-border bg-status-normal-soft text-status-normal transition hover:brightness-95"><i data-lucide="siren" class="h-4 w-4"></i><span class="sr-only">Review Alertmanager binding</span></a>
+                  <a href="{{ url_for('alertmanager.instance_detail', instance_id=row.alertmanager_instance_id) }}#scope" title="Review Alertmanager binding: {{ row.alertmanager_name }}" aria-label="Review Alertmanager binding" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-status-normal-border bg-status-normal-soft text-status-normal transition hover:brightness-95"><i data-lucide="siren" class="h-4 w-4"></i><span class="sr-only">Review Alertmanager binding</span></a>
                 {% else %}
-                  <a href="{{ url_for('integrations.bind_alertmanager_source', scope_key=row.cluster_id) }}" title="Bind Alertmanager source" aria-label="Bind Alertmanager source" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary transition hover:bg-kaori-primary hover:text-white"><i data-lucide="siren" class="h-4 w-4"></i><span class="sr-only">Bind Alertmanager</span></a>
+                  <a href="{{ url_for('integrations.bind_alertmanager_source', scope_key=row.cluster_id) }}" title="Bind Alertmanager source" aria-label="Bind Alertmanager source" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary transition hover:bg-kaori-primary hover:text-white"><i data-lucide="siren" class="h-4 w-4"></i><span class="sr-only">Bind Alertmanager</span></a>
                 {% endif %}
                 {% if current_user.has_permission('clusters.manage') %}
-                  <button type="button" data-delete-url="{{ url_for('cluster.delete_cluster_route', cluster_id=row.cluster_id) }}" data-delete-name="{{ row.cluster_name }}" @click="openDelete($el.dataset.deleteUrl, $el.dataset.deleteName)" title="Delete {{ row.cluster_name }}" aria-label="Delete {{ row.cluster_name }}" class="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-status-critical-border text-status-critical transition hover:bg-status-critical-soft"><i data-lucide="trash-2" class="h-4 w-4"></i><span class="sr-only">Delete</span></button>
+                  <button type="button" data-delete-url="{{ url_for('cluster.delete_cluster_route', cluster_id=row.cluster_id) }}" data-delete-name="{{ row.cluster_name }}" @click="openDelete($el.dataset.deleteUrl, $el.dataset.deleteName)" title="Delete {{ row.cluster_name }}" aria-label="Delete {{ row.cluster_name }}" class="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-status-critical-border text-status-critical transition hover:bg-status-critical-soft"><i data-lucide="trash-2" class="h-4 w-4"></i><span class="sr-only">Delete</span></button>
                 {% endif %}
               </div>
             </td>

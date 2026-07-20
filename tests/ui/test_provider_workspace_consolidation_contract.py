@@ -109,10 +109,10 @@ def test_kubernetes_manage_workspace_matches_provider_tab_contract() -> None:
 
 def test_kubernetes_registry_uses_compact_icon_actions() -> None:
     registry = read('app/templates/integrations/kubernetes/partials/_registry.html')
-    assert 'min-w-[980px] table-fixed' in registry
-    assert 'w-[300px]' in registry
-    assert 'w-[150px]' in registry
-    assert registry.count('inline-flex h-9 w-9') >= 5
+    assert 'w-full min-w-[1088px] table-fixed' in registry
+    assert 'w-[290px]' in registry
+    assert 'w-[208px]' in registry
+    assert registry.count('inline-flex h-8 w-8') >= 5
     for label in ('Manage', 'Configure', 'Bind Prometheus', 'Bind Alertmanager', 'Delete'):
         assert f'<span class="sr-only">{label}</span>' in registry
     assert '>Manage</a>' not in registry

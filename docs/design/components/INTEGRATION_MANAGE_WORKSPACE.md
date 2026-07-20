@@ -180,3 +180,25 @@ Prometheus, Alertmanager, and Kubernetes use one Recent Runtime Observations com
 - default five rows and `5 / 10 / 25 / 50` page sizes;
 - enabled Previous/Next controls with active styling;
 - disabled Previous/Next controls as non-interactive elements with `aria-disabled="true"`.
+
+## Edit Connection Verification
+
+Provider manage workspaces retain a lightweight **Test Connection** action inside the Endpoint & Access header. The action tests the submitted draft settings without mutating the saved connection. When an edit form leaves a password or bearer token blank and keeps the same authentication type, KAORI may reuse the encrypted/stored secret for the probe only. A newly supplied secret overrides it. Test outcomes are toast-only operational feedback and are always recorded in Activity Audit.
+
+Edit verification does not gate Save by default. Saving a changed connection returns readiness to Validation Required, and Full Validation remains authoritative for compatibility, capabilities, RBAC evidence, and downstream readiness.
+
+## Readiness Evidence Boundary
+
+A provider can expose green capability rows while overall readiness remains Degraded because lifecycle, compatibility, authorization, retention, or runtime-health factors are evaluated separately. Every non-ready workspace must show the contributing factor, factor score, and remediation. Runtime history must retain the validation message so an operator can explain an historical score without reconstructing the original validation run.
+
+For Kubernetes specifically, a legacy Kubernetes release can keep stable API capability rows Ready while lowering the weighted compatibility/lifecycle factor. The workspace must state this explicitly rather than implying that a hidden capability failed.
+
+## Filesystem Analytics Contract
+
+The Prometheus Storage Filesystem Contract requires a complete capacity-and-availability pair for either `/var` or `/`:
+
+- `node_filesystem_size_bytes`
+- `node_filesystem_avail_bytes`
+- a canonical node identity label (`node`, `nodename`, or `kubernetes_node`)
+
+A size series alone proves filesystem capacity collection but cannot calculate utilization or remaining headroom. Validation evidence must display all four registered queries, identify the missing half of each pair, and avoid generic exporter remediation when the metric exists but only part of the contract is observable.

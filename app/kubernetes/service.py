@@ -117,11 +117,29 @@ def test_cluster_connection(
             compatibility_status = 'compatible_with_warnings'
             readiness_status = 'degraded'
 
-        messages = [compatibility.message]
+        readiness_reasons: list[str] = []
+        if lifecycle == 'legacy':
+            readiness_reasons.append(
+                f'Kubernetes {git_version} is in the KAORI legacy lifecycle band. '
+                'Stable APIs remain usable, but upgrade planning is required before readiness can return to Ready.'
+            )
         if discovery['legacy_features']:
-            messages.append('Legacy adapters selected for: ' + ', '.join(discovery['legacy_features']))
+            readiness_reasons.append(
+                'Legacy API adapters are selected for: ' + ', '.join(discovery['legacy_features']) + '.'
+            )
         if discovery['blocked_features']:
-            messages.append('Unavailable features: ' + ', '.join(discovery['blocked_features']))
+            readiness_reasons.append(
+                'Required capabilities are blocked for: ' + ', '.join(discovery['blocked_features']) + '.'
+            )
+        if compatibility.readiness == 'blocked':
+            readiness_reasons.append(compatibility.message)
+
+        discovery['lifecycle_status'] = lifecycle
+        discovery['detected_version'] = git_version
+        discovery['readiness_reasons'] = readiness_reasons
+
+        messages = [compatibility.message]
+        messages.extend(readiness_reasons)
 
         return {
             'success': True,

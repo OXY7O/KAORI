@@ -266,15 +266,19 @@ def validate_alertmanager_instance(instance: AlertmanagerInstance) -> dict[str, 
     return validate_source(instance, source_label=instance.name).to_dict()
 
 
-def test_alertmanager_form_connection(form: AlertmanagerInstanceForm) -> dict[str, Any]:
-    """Test draft connection settings without creating or mutating an instance.
+def test_alertmanager_form_connection(
+    form: AlertmanagerInstanceForm,
+    *,
+    existing_instance: AlertmanagerInstance | None = None,
+) -> dict[str, Any]:
+    """Test submitted connection settings without mutating an instance.
 
-    This probe is intentionally limited to the Alertmanager status endpoint. Full
-    capability discovery and readiness validation remain a separate post-registration
-    workflow.
+    This probe is intentionally limited to the Alertmanager status endpoint. Edit
+    forms may reuse the persisted secret when the operator leaves the secret field
+    blank and keeps the same authentication type.
     """
     try:
-        _validate_connection_settings(form)
+        _validate_connection_settings(form, instance=existing_instance)
     except ValueError as exc:
         return {
             'connected': False,
@@ -285,12 +289,20 @@ def test_alertmanager_form_connection(form: AlertmanagerInstanceForm) -> dict[st
             'request_path': '/api/v2/status',
         }
 
+    password = form.password
+    bearer_token = form.bearer_token
+    if existing_instance is not None and form.auth_type == existing_instance.auth_type:
+        if form.auth_type == 'basic' and not password:
+            password = existing_instance.password
+        elif form.auth_type == 'bearer' and not bearer_token:
+            bearer_token = existing_instance.bearer_token
+
     client = AlertmanagerClient(
         endpoint=form.endpoint,
         auth_type=form.auth_type,
         username=form.username,
-        password=form.password,
-        bearer_token=form.bearer_token,
+        password=password,
+        bearer_token=bearer_token,
         timeout=form.timeout,
         verify_ssl=form.verify_ssl,
     )

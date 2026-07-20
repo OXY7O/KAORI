@@ -48,6 +48,14 @@ class KubernetesRuntimeAdapter:
         )
         blocked = tuple(discovery.get('blocked_features') or ())
         legacy = tuple(discovery.get('legacy_features') or ())
+        lifecycle = str(
+            discovery.get('lifecycle_status')
+            or cluster.kubernetes_lifecycle_status
+            or 'unknown'
+        )
+        readiness_reasons = tuple(
+            str(item) for item in (discovery.get('readiness_reasons') or ()) if item
+        )
         selected_adapters = discovery.get('selected_adapters') or {}
         capabilities = tuple(sorted({key.split('.', 1)[0] for key in selected_adapters}))
         if connected:
@@ -64,11 +72,20 @@ class KubernetesRuntimeAdapter:
             ),
             HealthFactor(
                 'compatibility',
-                'API compatibility',
+                'API compatibility and lifecycle',
                 'success' if readiness == 'ready' else ('failed' if blocked else 'warning'),
                 30,
                 100 if readiness == 'ready' else (20 if blocked else 60),
-                getattr(connection, 'compatibility_profile', None) or cluster.kubernetes_compatibility_profile or '',
+                (
+                    ' '.join(readiness_reasons)
+                    or (
+                        f'Kubernetes {cluster.kubernetes_version or "unknown"} lifecycle: {lifecycle}.'
+                        if lifecycle != 'current'
+                        else getattr(connection, 'compatibility_profile', None)
+                        or cluster.kubernetes_compatibility_profile
+                        or ''
+                    )
+                ),
             ),
             HealthFactor(
                 'capabilities',
@@ -87,6 +104,23 @@ class KubernetesRuntimeAdapter:
                 'success' if connected else 'failed',
                 runtime_message or ('API connected.' if connected else 'API unavailable.'),
                 severity='critical' if not connected else 'info',
+            ),
+            DiagnosticResult(
+                'lifecycle',
+                'Version lifecycle',
+                'compatibility',
+                'warning' if lifecycle == 'legacy' else ('pending' if lifecycle == 'unknown' else 'success'),
+                (
+                    ' '.join(readiness_reasons)
+                    if readiness_reasons
+                    else f'Kubernetes {cluster.kubernetes_version or "unknown"} is in the {lifecycle} lifecycle band.'
+                ),
+                severity='warning' if lifecycle == 'legacy' else 'info',
+                recommendation=(
+                    'Plan an upgrade to a current Kubernetes release, then rerun Full Validation.'
+                    if lifecycle == 'legacy'
+                    else None
+                ),
             ),
             DiagnosticResult(
                 'compatibility',
@@ -126,7 +160,11 @@ class KubernetesRuntimeAdapter:
             ),
             last_success_at=cluster.last_check if connected else None,
             last_failure_at=cluster.last_check if not connected else None,
-            message=runtime_message or ('Kubernetes runtime is ready.' if connected else 'Kubernetes runtime requires attention.'),
+            message=(
+                ' '.join(readiness_reasons)
+                or runtime_message
+                or ('Kubernetes runtime is ready.' if connected else 'Kubernetes runtime requires attention.')
+            ),
         )
 
 

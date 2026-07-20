@@ -101,7 +101,12 @@ CAPABILITIES: dict[str, CapabilityDefinition] = {
         'Storage Analytics cannot calculate node filesystem capacity and availability reliably.', 'node_exporter relabeling or recording rules',
         'Run the validation query against the configured Prometheus or Thanos endpoint. When the metric exists but the contract query returns no canonical node series, review query filters, recording rules, and label transformation before changing the exporter.',
         expected_signals=('node_filesystem_size_bytes{node!=""}', 'node_filesystem_avail_bytes{node!=""}'),
-        validation_query='node_filesystem_size_bytes{mountpoint="/var",fstype!~"tmpfs|overlay"} or node_filesystem_size_bytes{mountpoint="/",fstype!~"tmpfs|overlay"}',
+        validation_query=(
+            'node_filesystem_size_bytes{mountpoint="/var",fstype!~"tmpfs|overlay"}\n'
+            'node_filesystem_avail_bytes{mountpoint="/var",fstype!~"tmpfs|overlay"}\n'
+            'node_filesystem_size_bytes{mountpoint="/",fstype!~"tmpfs|overlay"}\n'
+            'node_filesystem_avail_bytes{mountpoint="/",fstype!~"tmpfs|overlay"}'
+        ),
     ),
     'long_term_history': CapabilityDefinition(
         'long_term_history', 'Long-Term Metric History', ('Forecast', 'Historical reports'),

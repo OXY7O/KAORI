@@ -84,6 +84,11 @@ class ClusterEditForm(FlaskForm):
         ],
     )
 
+    kubeconfig = FileField(
+        'Replacement Kubeconfig',
+        validators=[Optional()],
+    )
+
     kube_verify_ssl = BooleanField(
         'Verify Kubernetes API TLS Certificate',
         default=True,

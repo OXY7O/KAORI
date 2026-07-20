@@ -908,6 +908,90 @@ def test_cluster(cluster_id: str) -> ResponseReturnValue:
     return redirect(request.referrer or url_for('integrations.kubernetes'))
 
 
+@cluster_bp.post('/<string:cluster_id>/edit/test-connection')
+@permission_required('clusters.manage')
+def test_edit_cluster_connection(cluster_id: str) -> ResponseReturnValue:
+    """Test submitted Kubernetes edit settings without persisting them."""
+    cluster = _get_cluster_or_404(cluster_id)
+    form = ClusterEditForm()
+    result: dict = {'success': False}
+    if not form.validate_on_submit():
+        feedback = record_operational_activity(
+            user_id=current_user.id,
+            event_type='cluster_connection_test_failed',
+            status='error',
+            title='Kubernetes configuration test failed',
+            message=f'Review the submitted settings for {cluster.name}.',
+            detail='The edited connection form contains invalid values.',
+            action_url=url_for('cluster.edit_cluster', cluster_id=cluster.id),
+            action_label='Review cluster settings',
+            action_icon='settings-2',
+            metadata={'cluster_id': cluster.id, 'fields': sorted(form.errors), 'draft_update': True},
+            queue_feedback=False,
+        )
+    else:
+        try:
+            if form.kubeconfig.data:
+                kube_content = form.kubeconfig.data.read().decode('utf-8')
+                kubeconfig_source = 'replacement'
+            else:
+                connection = cluster.kubernetes_connection
+                kube_content = (
+                    connection.kubeconfig
+                    if connection is not None and connection.kubeconfig
+                    else cluster.kubeconfig
+                )
+                if not kube_content:
+                    raise RuntimeError('No saved Kubernetes kubeconfig is available for this connection.')
+                kubeconfig_source = 'saved'
+            result = test_cluster_draft_connection(
+                kubeconfig_content=kube_content,
+                verify_ssl=bool(form.kube_verify_ssl.data),
+                allow_weak_tls=bool(form.kube_allow_weak_tls.data),
+            )
+        except (UnicodeDecodeError, ValueError, RuntimeError) as exc:
+            result = {'success': False, 'error': str(exc), 'failure_code': type(exc).__name__}
+            kubeconfig_source = 'replacement' if form.kubeconfig.data else 'saved'
+
+        connected = bool(result.get('success'))
+        feedback = record_operational_activity(
+            user_id=current_user.id,
+            event_type='cluster_connection_test' if connected else 'cluster_connection_test_failed',
+            status='success' if connected else 'error',
+            title='Kubernetes configuration verified' if connected else 'Kubernetes configuration test failed',
+            message=(
+                f'KAORI reached the submitted settings for {cluster.name}.'
+                if connected
+                else f'KAORI could not verify the submitted settings for {cluster.name}.'
+            ),
+            detail=(
+                f"Kubernetes {result.get('version') or 'unknown'} accepted the submitted transport and credential contract. Save the change, then run Full Validation."
+                if connected
+                else result.get('error') or result.get('reason') or 'Review kubeconfig credentials, API reachability, and TLS policy.'
+            ),
+            action_url=url_for('cluster.edit_cluster', cluster_id=cluster.id),
+            action_label='Review cluster settings',
+            action_icon='settings-2',
+            metadata={
+                'cluster_id': cluster.id,
+                'cluster_name': cluster.name,
+                'kubeconfig_source': kubeconfig_source,
+                'version': result.get('version'),
+                'platform': result.get('platform'),
+                'failure_code': result.get('failure_code'),
+                'endpoint_host': result.get('endpoint_host'),
+                'draft_update': True,
+            },
+            queue_feedback=False,
+        )
+
+    return render_template(
+        'cluster/partials/_connection_test_result.html',
+        connection_feedback=feedback,
+        notification_context=get_navigation_notification_context(user_id=int(current_user.id)),
+    )
+
+
 @cluster_bp.route(
     '/<string:cluster_id>/edit',
     methods=[
@@ -934,11 +1018,19 @@ def edit_cluster(cluster_id: str) -> ResponseReturnValue:
         try:
             previous_name = cluster.name
             previous_environment = cluster.environment
+            replacement_kubeconfig = None
+            if form.kubeconfig.data:
+                replacement_kubeconfig = form.kubeconfig.data.read().decode('utf-8')
+            connection_contract_changed = bool(replacement_kubeconfig) or (
+                bool(cluster.kube_verify_ssl) != bool(form.kube_verify_ssl.data)
+                or bool(cluster.kube_allow_weak_tls) != bool(form.kube_allow_weak_tls.data)
+            )
             update_cluster(
                 cluster=cluster,
                 name=name,
                 environment=environment,
                 description=form.description.data,
+                kubeconfig=replacement_kubeconfig,
                 kube_verify_ssl=bool(
                     form.kube_verify_ssl.data,
                 ),
@@ -953,7 +1045,11 @@ def edit_cluster(cluster_id: str) -> ResponseReturnValue:
                 status='success',
                 title='Cluster updated',
                 message=f'{cluster.name} configuration was updated successfully.',
-                detail='Cluster identity and Kubernetes API TLS settings now use the saved values. Protected Secret Reveal policy is managed separately under Settings.',
+                detail=(
+                    'Connection credentials or TLS policy changed, so readiness returned to Validation Required. Run Full Validation before operational use.'
+                    if connection_contract_changed
+                    else 'Cluster identity and descriptive metadata now use the saved values. Existing technical validation evidence was retained.'
+                ),
                 action_url=url_for('integrations.kubernetes'),
                 action_label='View clusters',
                 action_icon='server',
@@ -965,6 +1061,8 @@ def edit_cluster(cluster_id: str) -> ResponseReturnValue:
                     'previous_environment': previous_environment,
                     'verify_ssl': cluster.kube_verify_ssl,
                     'allow_weak_tls': cluster.kube_allow_weak_tls,
+                    'connection_contract_changed': connection_contract_changed,
+                    'kubeconfig_replaced': bool(replacement_kubeconfig),
                 },
                 queue_feedback=True,
             )

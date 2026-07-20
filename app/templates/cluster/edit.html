@@ -16,7 +16,7 @@
     {% set page_metric_two = ('scan-search', 'After Save', 'Full Validation', 'Refresh worker evidence') %}
     {% include "cluster/partials/_page_header.html" %}
 
-    {% set form_mode = "edit" %}{% set form_icon = "settings-2" %}{% set form_title = "Kubernetes Connection Configuration" %}{% set form_description = "Modify identity and transport policy while preserving the saved kubeconfig and operational history." %}{% set submit_label = "Update Connection" %}{% set action_helper = "Saving configuration resets readiness until worker validation confirms the updated contract." %}
+    {% set form_mode = "edit" %}{% set form_icon = "settings-2" %}{% set form_title = "Kubernetes Connection Configuration" %}{% set form_description = "Modify identity, rotate kubeconfig credentials when required, and test the submitted transport contract before saving." %}{% set submit_label = "Update Connection" %}{% set action_helper = "Test submitted credentials before saving. Connection or TLS changes reset readiness until Full Validation confirms the updated contract." %}
     <div class="grid gap-6 xl:grid-cols-12 xl:items-start">
         <div class="xl:col-span-8">{% include "cluster/partials/_form.html" %}</div>
         <aside class="space-y-4 xl:col-span-4 xl:sticky xl:top-5">

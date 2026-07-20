@@ -58,12 +58,11 @@
             <section class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-elevated">
                 {% call connection_validation_header.render(
                     'Endpoint & Access',
-                    'Define Kubernetes API credentials and transport trust, then verify reachability before registration.' if form_mode == 'add' else 'Review the saved Kubernetes API transport policy for this connection.',
+                    'Define Kubernetes API credentials and transport trust, then verify reachability before registration.' if form_mode == 'add' else 'Test saved or replacement credentials and TLS settings before saving the update.',
                     icon='network'
                 ) %}
-                    {% if form_mode == 'add' %}
-                        <button type="button"
-                                hx-post="{{ url_for('cluster.test_new_cluster_connection') }}"
+                    <button type="button"
+                                hx-post="{{ url_for('cluster.test_new_cluster_connection') if form_mode == 'add' else url_for('cluster.test_edit_cluster_connection', cluster_id=cluster.id) }}"
                                 hx-include="#cluster-registration-form"
                                 hx-encoding="multipart/form-data"
                                 hx-target="#kubernetes-connection-test-result"
@@ -74,24 +73,17 @@
                                 class="group inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-wait disabled:opacity-70">
                             <i data-lucide="plug-zap" class="h-4 w-4 group-[.htmx-request]:animate-pulse"></i>Test Connection
                         </button>
-                    {% endif %}
                 {% endcall %}
-                {% if form_mode == 'add' %}
-                    <div id="kubernetes-connection-test-loading" class="{{ table_ui.loading_bar_classes() }}" aria-label="Testing Kubernetes connection"><div class="notification-progress-indeterminate h-full bg-kaori-primary"></div></div>
-                {% endif %}
+                <div id="kubernetes-connection-test-loading" class="{{ table_ui.loading_bar_classes() }}" aria-label="Testing Kubernetes connection"><div class="notification-progress-indeterminate h-full bg-kaori-primary"></div></div>
                 <div class="space-y-5 p-4 sm:p-5">
-                    {% if form_mode == 'add' %}
-                        <label class="block"><span class="mb-2 block text-sm font-semibold text-content-primary">Kubeconfig</span><div class="rounded-lg border border-dashed border-outline-strong bg-kaori-soft p-4">{{ form.kubeconfig(class="w-full text-sm font-medium text-content-primary file:mr-3 file:rounded-md file:border-0 file:bg-kaori-primary file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:bg-kaori-primary-hover") }}<p class="mt-2 text-xs leading-5 text-content-secondary">Upload the least-privilege kubeconfig used by KAORI. Test Connection reads it in memory and does not create a cluster record.</p></div></label>
-                    {% else %}
-                        <div class="rounded-lg border border-brand-outline bg-kaori-soft p-4"><div class="flex items-start gap-3"><i data-lucide="key-round" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i><div><p class="text-sm font-semibold text-content-primary">Saved Kubeconfig Retained</p><p class="mt-1 text-xs leading-5 text-content-secondary">Editing metadata or TLS policy does not replace the stored kubeconfig. Rotate credentials through the approved credential lifecycle when required.</p></div></div></div>
-                    {% endif %}
+                    <label class="block"><span class="mb-2 block text-sm font-semibold text-content-primary">{{ 'Kubeconfig' if form_mode == 'add' else 'Replacement Kubeconfig' }}</span><div class="rounded-lg border border-dashed border-outline-strong bg-kaori-soft p-4">{{ form.kubeconfig(class="w-full text-sm font-medium text-content-primary file:mr-3 file:rounded-md file:border-0 file:bg-kaori-primary file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:bg-kaori-primary-hover") }}<p class="mt-2 text-xs leading-5 text-content-secondary">{% if form_mode == 'add' %}Upload the least-privilege kubeconfig used by KAORI. Test Connection reads it in memory and does not create a cluster record.{% else %}Optional. Leave blank to test and retain the saved kubeconfig, or upload a replacement to verify credential rotation before saving.{% endif %}</p></div></label>
                     <div class="space-y-3">
                         {% call operational_toggle.render('Verify Kubernetes API TLS Certificate', 'Reject untrusted or mismatched API server certificates.') %}{{ form.kube_verify_ssl(class="h-4 w-4 rounded border-outline-strong accent-kaori-primary focus:ring-kaori-primary") }}{% endcall %}
                         {% call operational_toggle.render('Allow Legacy TLS Certificate', 'Use only for an approved internal endpoint that cannot meet the current TLS policy.', tone='warning') %}{{ form.kube_allow_weak_tls(class="h-4 w-4 rounded border-status-warning-border accent-status-warning focus:ring-status-warning") }}{% endcall %}
                     </div>
                 </div>
             </section>
-            {% if form_mode == 'add' %}<div id="kubernetes-connection-test-result" class="sr-only" aria-live="polite"></div>{% endif %}
+            <div id="kubernetes-connection-test-result" class="sr-only" aria-live="polite"></div>
         </div>
 
         {% call form_action_bar.render(action_helper, aria_label='Cluster Form Actions') %}

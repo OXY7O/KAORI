@@ -25,6 +25,17 @@ def runtime_state_view(
         'health_summary': state.health.summary,
         'diagnostics': state.diagnostics,
         'factors': state.health.factors,
+        'attention_factors': [
+            {
+                'key': factor.key,
+                'label': factor.label,
+                'status': factor.status,
+                'score': factor.score,
+                'detail': factor.detail,
+            }
+            for factor in state.health.factors
+            if factor.status in {'warning', 'failed', 'unknown'} or factor.score < 85
+        ],
         'capability_profile': state.snapshot.profile,
         'compatibility_profile': state.snapshot.compatibility_profile,
         'capability_count': len(state.snapshot.capabilities),

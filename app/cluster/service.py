@@ -498,6 +498,7 @@ def create_cluster(
     cluster.name = name
     cluster.environment = environment
     cluster.description = description
+    cluster.kubeconfig = kubeconfig
     cluster.server = result['server']
     cluster.kube_verify_ssl = kube_verify_ssl
     cluster.kube_allow_weak_tls = kube_allow_weak_tls
@@ -591,6 +592,7 @@ def update_cluster(
     name: str,
     environment: str,
     description: str | None,
+    kubeconfig: str | None = None,
     kube_verify_ssl: bool = True,
     kube_allow_weak_tls: bool = False,
 ) -> Cluster:
@@ -602,12 +604,37 @@ def update_cluster(
     if existing:
         raise ValueError('Cluster name already exists')
 
+    connection_changed = bool(kubeconfig) or (
+        bool(cluster.kube_verify_ssl) != bool(kube_verify_ssl)
+        or bool(cluster.kube_allow_weak_tls) != bool(kube_allow_weak_tls)
+    )
+
     cluster.name = name
     cluster.environment = environment
     cluster.description = description
     cluster.kube_verify_ssl = kube_verify_ssl
     cluster.kube_allow_weak_tls = kube_allow_weak_tls
 
+    if kubeconfig:
+        parsed = parse_kubeconfig(kubeconfig)
+        cluster.kubeconfig = kubeconfig
+        cluster.server = parsed['server']
+
+    if connection_changed:
+        cluster.status = ClusterStatus.UNKNOWN.value
+        cluster.kubernetes_compatibility_status = 'validation_required'
+        cluster.kubernetes_compatibility_profile = None
+        cluster.kubernetes_readiness_status = 'validation_required'
+        cluster.kubernetes_lifecycle_status = None
+        cluster.kubernetes_api_discovery_summary = None
+        cluster.kubernetes_validation_message = (
+            'Kubernetes connection credentials or TLS policy changed. Run Full Validation '
+            'before KAORI treats this connection as ready.'
+        )
+        cluster.kubernetes_last_validated_at = None
+        cluster.last_check = None
+
+    _sync_kubernetes_runtime(cluster, kubeconfig=kubeconfig)
     db.session.commit()
 
     return cluster

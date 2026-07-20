@@ -334,6 +334,50 @@ def test_new_instance_connection() -> ResponseReturnValue:
     return response
 
 
+@alertmanager_bp.post('/instances/<int:instance_id>/test-configuration')
+@permission_required('settings.manage_integrations')
+def test_instance_configuration(instance_id: int) -> ResponseReturnValue:
+    """Test submitted edit settings without mutating the saved instance."""
+    instance = get_alertmanager_instance(instance_id)
+    if instance is None:
+        abort(404)
+    form = parse_alertmanager_instance_form(request.form)
+    result = test_alertmanager_form_connection(form, existing_instance=instance)
+    connected = bool(result.get('connected'))
+    feedback = record_instance_activity(
+        user_id=int(current_user.id),
+        instance=instance,
+        event_type='alertmanager_connection_test' if connected else 'alertmanager_connection_test_failed',
+        status='success' if connected else 'error',
+        title='Alertmanager configuration verified' if connected else 'Alertmanager configuration test failed',
+        message=(
+            f'KAORI reached the submitted settings for {instance.name}.'
+            if connected
+            else f'KAORI could not verify the submitted settings for {instance.name}.'
+        ),
+        detail=(
+            f"Alertmanager {result.get('version') or 'unknown'} responded in "
+            f"{result.get('response_time_ms') or 0} ms. Save the configuration, then run Full Validation."
+            if connected
+            else result.get('error') or result.get('reason') or 'Review endpoint, authentication, TLS, and network reachability.'
+        ),
+        metadata={
+            'endpoint_host': result.get('endpoint_host'),
+            'endpoint_port': result.get('endpoint_port'),
+            'version': result.get('version'),
+            'response_time_ms': result.get('response_time_ms'),
+            'failure_code': result.get('failure_code'),
+            'draft_update': True,
+        },
+        queue_feedback=False,
+    )
+    return render_template(
+        'alertmanager/partials/_connection_test_result.html',
+        connection_feedback=feedback,
+        notification_context=get_navigation_notification_context(user_id=int(current_user.id)),
+    )
+
+
 @alertmanager_bp.route('/instances/<int:instance_id>', methods=['GET', 'POST'])
 @permission_required('settings.manage_integrations')
 def instance_detail(instance_id: int) -> ResponseReturnValue:

@@ -188,6 +188,13 @@ class PromQLProfileAuditor:
             assessment['technical_check_count_display'] = (
                 f"{len(assessment['technical_checks'])} technical checks"
             )
+            validation_queries = [
+                query
+                for item in selected
+                for query in item.get('validation_queries', [])
+                if query
+            ]
+            assessment['validation_query'] = '\n'.join(dict.fromkeys(validation_queries)) or assessment.get('validation_query')
             assessment['recommendation'] = ' '.join(
                 item['recommendation'] for item in selected if item['status'] != 'ready'
             ) or 'No remediation is required. The exact registered Analytics queries passed.'

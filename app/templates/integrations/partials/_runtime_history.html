@@ -44,7 +44,7 @@
                     {% for row in runtime_history.rows %}
                         <tr class="align-top">
                             <td class="whitespace-nowrap px-5 py-4 text-sm font-semibold text-content-primary sm:px-6">{{ row.observed_at_display }}</td>
-                            <td class="px-4 py-4">{{ status_badge('ready' if row.health_status == 'healthy' else ('degraded' if row.health_status == 'degraded' else ('blocked' if row.health_status == 'unhealthy' else 'not_observed'))) }}<p class="mt-2 text-xs text-content-secondary">Readiness: {{ row.readiness_label }}</p></td>
+                            <td class="px-4 py-4">{{ status_badge('ready' if row.health_status == 'healthy' else ('degraded' if row.health_status == 'degraded' else ('blocked' if row.health_status == 'unhealthy' else 'not_observed'))) }}<p class="mt-2 text-xs text-content-secondary">Readiness: {{ row.readiness_label }}</p>{% if row.message %}<p class="mt-1 max-w-xs text-xs leading-5 text-content-muted">{{ row.message }}</p>{% endif %}</td>
                             <td class="px-4 py-4 text-sm font-semibold text-content-primary">{{ row.health_score_display }}</td>
                             <td class="px-4 py-4 text-sm text-content-secondary">{{ row.latency_display }}</td>
                             <td class="px-4 py-4"><span class="kaori-semantic-label inline-flex min-h-6 items-center rounded-md border border-outline-default bg-surface-hover px-2 py-1 text-[10px] font-semibold text-content-secondary">{{ row.trigger_type_label }}</span></td>

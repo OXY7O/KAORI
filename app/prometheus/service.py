@@ -477,23 +477,41 @@ class PrometheusService:
         return config
 
 
-def test_prometheus_form_connection(form: PrometheusInstanceForm) -> dict[str, Any]:
-    """Test draft Prometheus settings without creating or mutating an instance."""
+def test_prometheus_form_connection(
+    form: PrometheusInstanceForm,
+    *,
+    existing_instance: PrometheusInstance | None = None,
+) -> dict[str, Any]:
+    """Test submitted Prometheus settings without mutating the persisted instance.
+
+    Edit forms intentionally leave stored secrets blank. During an update test KAORI
+    reuses the saved password or bearer token only when the submitted authentication
+    type still matches the persisted contract. A newly supplied secret always wins.
+    """
     endpoint = (form.endpoint.data or '').strip()
+    auth_type = form.auth_type.data or 'none'
     detection_mode = form.version_detection_mode.data or 'automatic'
     source_major = (
         form.source_prometheus_major.data or None
         if detection_mode == 'manual'
         else None
     )
+    password = form.password.data or None
+    bearer_token = form.bearer_token.data or None
+    if existing_instance is not None and auth_type == existing_instance.auth_type:
+        if auth_type == 'basic' and not password:
+            password = existing_instance.password
+        elif auth_type == 'bearer' and not bearer_token:
+            bearer_token = existing_instance.bearer_token
+
     draft = PrometheusInstance(
         name=(form.name.data or '').strip() or 'Draft Prometheus connection',
         endpoint=endpoint,
         description=(form.description.data or '').strip() or None,
-        auth_type=form.auth_type.data or 'none',
+        auth_type=auth_type,
         username=(form.username.data or '').strip() or None,
-        password=form.password.data or None,
-        bearer_token=form.bearer_token.data or None,
+        password=password,
+        bearer_token=bearer_token,
         timeout=int(form.timeout.data or 5),
         verify_ssl=bool(form.verify_ssl.data),
         enabled=bool(form.enabled.data),
