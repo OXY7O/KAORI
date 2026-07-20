@@ -31,18 +31,23 @@ def test_shared_source_isolation_is_applied_at_consumer_boundaries() -> None:
     assert 'selector_filters(candidate.binding.selector_json)' in alertmanager_consumer
 
 
-def test_binding_validation_routes_exist_for_both_providers() -> None:
+def test_binding_validation_routes_enqueue_dedicated_worker_jobs() -> None:
     prom_routes = read('app/prometheus/routes.py')
     alert_routes = read('app/alertmanager/routes.py')
+    tasks = read('app/integrations/validation/tasks.py')
     prom_scope = read('app/templates/prometheus/partials/_detail_scope.html')
     alert_scope = read('app/templates/alertmanager/partials/_detail_scope.html')
 
     assert 'def validate_instance_binding(' in prom_routes
-    assert 'validate_prometheus_binding' in prom_routes
+    assert "enqueue_binding_validation(\n            provider_type='prometheus'" in prom_routes
     assert 'def validate_binding(instance_id: int, binding_id: int)' in alert_routes
-    assert 'validate_alertmanager_binding' in alert_routes
+    assert "enqueue_binding_validation(\n            provider_type='alertmanager'" in alert_routes
+    assert 'validate_prometheus_binding(instance=instance, binding=binding)' in tasks
+    assert 'validate_alertmanager_binding(instance=instance, binding=binding)' in tasks
     assert "url_for('prometheus.validate_instance_binding'" in prom_scope
     assert "url_for('alertmanager.validate_binding'" in alert_scope
+    assert 'hx-trigger="load delay:1500ms"' in prom_scope
+    assert 'hx-trigger="load delay:1500ms"' in alert_scope
 
 
 def test_legacy_negative_coverage_templates_are_removed() -> None:

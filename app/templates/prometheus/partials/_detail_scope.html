@@ -1,6 +1,12 @@
 {% import "components/table_label.html" as table_label %}
 {% from "integrations/partials/_status_badge.html" import status_badge %}
-<div id="prometheus-scope-workspace" class="space-y-4">
+<div id="prometheus-scope-workspace" class="space-y-4"
+     {% if binding_validation_job and binding_validation_job.is_active %}
+     hx-get="{{ url_for('prometheus.binding_validation_status', instance_id=instance.id, binding_id=binding_validation_job.binding_id, task_id=binding_validation_job.task_id) }}"
+     hx-trigger="load delay:1500ms"
+     hx-target="this"
+     hx-swap="outerHTML"
+     {% endif %}>
     <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
         <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
             <div class="flex min-w-0 items-start gap-3">
@@ -26,6 +32,13 @@
                 </span>
             </div>
         </header>
+        {% if binding_validation_job and binding_validation_job.is_active %}
+            <div class="h-1 w-full overflow-hidden bg-kaori-soft"><div class="notification-progress-indeterminate h-full bg-kaori-primary"></div></div>
+            <div class="flex flex-col gap-2 border-b border-brand-outline bg-kaori-soft px-5 py-3 text-xs text-content-secondary sm:flex-row sm:items-center sm:justify-between">
+                <span class="inline-flex items-center gap-2 font-semibold text-kaori-primary"><i data-lucide="loader-circle" class="h-3.5 w-3.5 animate-spin"></i>{{ binding_validation_job.title or 'Binding validation running' }}</span>
+                <span>Task {{ binding_validation_job.task_id[:8] }} · {{ binding_validation_job.elapsed_seconds }}s</span>
+            </div>
+        {% endif %}
 
         <div class="grid items-start gap-4 p-4 sm:p-5 xl:grid-cols-12">
             <div class="space-y-4 xl:col-span-8">
@@ -72,8 +85,11 @@
                                                 </button>
                                                 <form method="post" action="{{ url_for('prometheus.validate_instance_binding', instance_id=instance.id, binding_id=row.binding.id) }}" hx-post="{{ url_for('prometheus.validate_instance_binding', instance_id=instance.id, binding_id=row.binding.id) }}" hx-target="#prometheus-scope-workspace" hx-swap="outerHTML">
                                                     {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                                                    <button type="submit" class="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary">
-                                                        <i data-lucide="scan-search" class="h-3.5 w-3.5"></i>Validate
+                                                    <button type="submit"
+                                                            {% if binding_validation_job and binding_validation_job.is_active and binding_validation_job.binding_id == row.binding.id %}disabled{% endif %}
+                                                            class="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary disabled:cursor-wait disabled:opacity-60">
+                                                        <i data-lucide="{{ 'loader-circle' if binding_validation_job and binding_validation_job.is_active and binding_validation_job.binding_id == row.binding.id else 'scan-search' }}" class="h-3.5 w-3.5{% if binding_validation_job and binding_validation_job.is_active and binding_validation_job.binding_id == row.binding.id %} animate-spin{% endif %}"></i>
+                                                        {{ 'Running' if binding_validation_job and binding_validation_job.is_active and binding_validation_job.binding_id == row.binding.id else 'Validate' }}
                                                     </button>
                                                 </form>
                                                 <button type="button"

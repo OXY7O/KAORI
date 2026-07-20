@@ -27,6 +27,7 @@ from app.alertmanager.repository import (
 )
 from app.alertmanager.resolver import AlertmanagerSourceResolution, resolve_alertmanager_sources
 from app.alertmanager.validation import validate_source
+from app.alertmanager.status import mark_status
 from app.common.integration_errors import describe_integration_failure
 from app.extensions import db
 from app.integrations.binding_selectors import build_selector, selector_filters
@@ -229,6 +230,36 @@ def remove_alertmanager_instance(instance: AlertmanagerInstance) -> None:
     except Exception:
         db.session.rollback()
         raise
+
+
+def refresh_alertmanager_runtime_health(instance: AlertmanagerInstance) -> dict[str, Any]:
+    """Refresh Alertmanager reachability without rebuilding capability evidence."""
+    try:
+        result = build_client(instance).test_connection()
+    except Exception as exc:
+        mark_status(
+            instance,
+            status='disconnected',
+            error=str(exc),
+            response_time_ms=None,
+            commit=True,
+        )
+        raise
+    instance.detected_version = str(result.get('version') or instance.detected_version or 'unknown')
+    mark_status(
+        instance,
+        status='connected',
+        error=None,
+        response_time_ms=int(result.get('response_time_ms') or 0),
+        commit=False,
+    )
+    if not instance.readiness_status:
+        instance.readiness_status = 'validation_required'
+        instance.validation_message = (
+            'Runtime health is available. Run Full Validation to establish capability evidence.'
+        )
+    db.session.commit()
+    return result
 
 
 def validate_alertmanager_instance(instance: AlertmanagerInstance) -> dict[str, Any]:

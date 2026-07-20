@@ -247,6 +247,16 @@ class Config:
 
     RETENTION_CELERY_QUEUE = _retention_queue_name()
 
+    INTEGRATION_VALIDATION_CELERY_QUEUE = (
+        _env_str('INTEGRATION_VALIDATION_CELERY_QUEUE', 'integration-validation').strip()
+        or 'integration-validation'
+    )
+
+    INTEGRATION_VALIDATION_LOCK_TTL_SECONDS = _env_int(
+        'INTEGRATION_VALIDATION_LOCK_TTL_SECONDS',
+        7200,
+    )
+
     CELERY = {
         'broker_url': CELERY_BROKER_URL,
         'result_backend': CELERY_RESULT_BACKEND,
@@ -263,6 +273,7 @@ class Config:
             'app.cluster.tasks',
             'app.retention.tasks',
             'app.integrations.runtime.tasks',
+            'app.integrations.validation.tasks',
         ),
         'task_routes': {
             'app.cluster.tasks.sync_all_clusters': {
@@ -276,6 +287,15 @@ class Config:
             },
             'app.integrations.runtime.tasks.refresh_integration_runtime': {
                 'queue': _env_str('INTEGRATION_RUNTIME_CELERY_QUEUE', 'inventory').strip() or 'inventory',
+            },
+            'app.integrations.validation.tasks.validate_integration_instance': {
+                'queue': INTEGRATION_VALIDATION_CELERY_QUEUE,
+            },
+            'app.integrations.validation.tasks.validate_integration_binding': {
+                'queue': INTEGRATION_VALIDATION_CELERY_QUEUE,
+            },
+            'app.integrations.validation.tasks.refresh_integration_runtime_instance': {
+                'queue': INTEGRATION_VALIDATION_CELERY_QUEUE,
             },
         },
         'visibility_timeout': CELERY_VISIBILITY_TIMEOUT_SECONDS,

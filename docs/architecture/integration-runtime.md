@@ -169,21 +169,28 @@ Provider-specific logic must not be added to `app/integrations/runtime/`.
 app/integrations/runtime/
 ├── contracts.py
 ├── scoring.py
-├── refresh.py
-└── presentation.py
+├── monitoring.py
+├── repository.py
+├── presentation.py
+└── tasks.py                 # Beat dispatcher only
 
+app/integrations/validation/
+├── state.py                 # Redis locks and task metadata
+├── tasks.py                 # full, binding, and lightweight runtime jobs
+└── web.py                   # enqueue and polling boundary
+
+app/integrations/runtime/kubernetes_adapter.py
+app/prometheus/runtime_adapter.py
 app/alertmanager/runtime_adapter.py
 ```
 
-Alertmanager is the first adapter. Prometheus should become the second adapter after the shared contract is validated in production use.
+Kubernetes, Prometheus, and Alertmanager implement the provider-neutral runtime contract. Provider-specific probes remain inside their owning domains.
 
 ## Runtime evidence and scheduled monitoring
 
-A refresh is not only a UI action. Both manual HTMX refresh and Celery Beat
-must execute the same adapter orchestration and append a runtime observation.
-This provides validation history, health trend input, capability change evidence,
-and a stable data source for the shared Integrations dashboard. Provider
-credentials and configuration are never copied into the observation.
+A refresh is not only a UI action. Manual Runtime Refresh and scheduled monitoring both append a runtime observation, but scheduled monitoring must remain lightweight. Celery Beat performs no provider I/O; it fans out one independent task per provider instance to the dedicated validation queue. Prometheus and Alertmanager scheduled jobs verify reachability, identity, latency, and current health without rebuilding the full capability catalog. Full Validation remains a separate worker operation that rebuilds compatibility, capability, query/API contract, retention, and readiness evidence. Kubernetes runtime validation continues to use its provider adapter because API discovery is the Kubernetes runtime contract.
+
+Manual actions return after enqueueing and poll through HTMX. Redis prevents duplicate work and atomically blocks Full Validation from overlapping Runtime Refresh for the same instance. Provider credentials and raw validation payloads are never copied into task metadata or runtime observations.
 
 The runtime repository applies rolling retention after each append. It keeps the
 latest **100 observations per provider and provider-native instance ID**, then

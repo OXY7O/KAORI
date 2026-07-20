@@ -10,9 +10,16 @@ from flask_login import current_user
 from app.cluster.service import get_cluster_by_id
 from app.common.integration_errors import describe_integration_failure
 from app.common.presentation import present_user_datetime
-from app.integrations.runtime.monitoring import refresh_and_record
 from app.integrations.runtime.presentation import runtime_history_view, runtime_state_view
 from app.integrations.runtime.repository import paginate_runtime_history
+from app.integrations.validation.state import build_validation_snapshot, get_active_validation_task_id
+from app.integrations.validation.web import (
+    enqueue_binding_validation,
+    enqueue_instance_validation,
+    enqueue_runtime_health_refresh,
+    snapshot_feedback_for_user,
+    validate_snapshot_access,
+)
 from app.extensions.db import db
 from app.integrations.lifecycle import ensure_canonical_instance
 from app.models import Cluster, PrometheusInstance
@@ -40,7 +47,6 @@ from app.prometheus.service import (
     save_prometheus_instance,
     test_prometheus_form_connection,
     update_prometheus_binding_selector,
-    validate_prometheus_binding,
 )
 from app.rbac.decorators import permission_required
 
@@ -152,6 +158,38 @@ def _instance_detail_context(
         'prometheus.delete_instance',
         instance_id=instance.id,
     )
+    validation_task_id = get_active_validation_task_id(
+        provider_type='prometheus',
+        operation='full_validation',
+        instance_id=instance.id,
+    )
+    context['validation_job'] = (
+        build_validation_snapshot(validation_task_id)
+        if validation_task_id
+        else None
+    )
+    runtime_task_id = get_active_validation_task_id(
+        provider_type='prometheus',
+        operation='runtime_refresh',
+        instance_id=instance.id,
+    )
+    context['runtime_refresh_job'] = (
+        build_validation_snapshot(runtime_task_id)
+        if runtime_task_id
+        else None
+    )
+    binding_job = None
+    for binding in context.get('bindings', []):
+        task_id = get_active_validation_task_id(
+            provider_type='prometheus',
+            operation='binding_validation',
+            instance_id=instance.id,
+            binding_id=binding.id,
+        )
+        if task_id:
+            binding_job = build_validation_snapshot(task_id)
+            break
+    context['binding_validation_job'] = binding_job
     return context
 
 
@@ -701,25 +739,88 @@ def validate_instance_binding(instance_id: int, binding_id: int) -> ResponseRetu
     binding = db.session.get(IntegrationBinding, binding_id)
     if binding is None or binding.integration_instance_id != instance.integration_instance_id:
         abort(404)
-    result = validate_prometheus_binding(instance=instance, binding=binding)
-    feedback = record_operational_activity(
-        user_id=current_user.id,
-        event_type='prometheus_binding_validated',
-        status='success' if result['status'] == 'ready' else 'warning',
-        title='Prometheus binding validation completed',
-        message=result['message'],
-        detail=f"Binding status: {result['status'].replace('_', ' ').title()}.",
-        action_url=url_for('prometheus.instance_detail', instance_id=instance.id) + '#scope',
-        action_label='Review Prometheus scope',
-        action_icon='scan-search',
-        metadata={'instance_id': instance.id, 'binding_id': binding.id, **result},
-        queue_feedback=not _is_htmx_request(),
-    )
-    if _is_htmx_request():
+    is_htmx = _is_htmx_request()
+    try:
+        validation_job, created = enqueue_binding_validation(
+            provider_type='prometheus',
+            instance_id=instance.id,
+            binding_id=binding.id,
+            requested_by_user_id=int(current_user.id),
+        )
+        feedback = record_operational_activity(
+            user_id=int(current_user.id),
+            event_type='prometheus_binding_validation_queued' if created else 'prometheus_binding_validation_already_running',
+            status='info' if created else 'warning',
+            title='Prometheus binding validation queued' if created else 'Prometheus binding validation already running',
+            message=(
+                'KAORI queued the metrics identity validation.'
+                if created
+                else 'The metrics identity validation is already running.'
+            ),
+            detail=(
+                'The validation worker will execute the scope-isolated probe before this binding becomes eligible.'
+                if created
+                else 'KAORI kept the active task and did not enqueue a duplicate.'
+            ),
+            action_url=url_for('prometheus.instance_detail', instance_id=instance.id) + '#scope',
+            action_label='Review Prometheus scope',
+            action_icon='scan-search',
+            metadata={
+                'task_id': validation_job.get('task_id'),
+                'instance_id': instance.id,
+                'binding_id': binding.id,
+                'queue': current_app.config.get('INTEGRATION_VALIDATION_CELERY_QUEUE', 'integration-validation'),
+            },
+            queue_feedback=not is_htmx,
+        )
+    except Exception as exc:
+        logger.exception('Could not enqueue Prometheus binding validation for %s.', binding_id)
+        validation_job = None
+        feedback = record_operational_activity(
+            user_id=int(current_user.id),
+            event_type='prometheus_binding_validation_enqueue_failed',
+            status='error',
+            title='Prometheus binding validation not queued',
+            message='KAORI could not queue the metrics identity validation.',
+            detail='Verify Redis, the Celery broker, and the integration-validation worker before retrying.',
+            action_url=url_for('prometheus.instance_detail', instance_id=instance.id) + '#scope',
+            action_label='Review Prometheus scope',
+            action_icon='scan-search',
+            metadata={'instance_id': instance.id, 'binding_id': binding.id, 'reason': type(exc).__name__},
+            queue_feedback=not is_htmx,
+        )
+    if is_htmx:
         return _render_instance_partial(
-            'prometheus/partials/_detail_scope.html', instance, operation_feedback=feedback,
+            'prometheus/partials/_detail_scope.html',
+            instance,
+            operation_feedback=feedback,
+            binding_validation_job=validation_job,
         )
     return redirect(url_for('prometheus.instance_detail', instance_id=instance.id) + '#scope')
+
+
+@prometheus_bp.get('/instances/<int:instance_id>/bindings/<int:binding_id>/validate/status/<string:task_id>')
+@permission_required('settings.manage_integrations')
+def binding_validation_status(instance_id: int, binding_id: int, task_id: str) -> ResponseReturnValue:
+    instance = _instance_or_404(instance_id)
+    binding = db.session.get(IntegrationBinding, binding_id)
+    if binding is None or binding.integration_instance_id != instance.integration_instance_id:
+        abort(404)
+    snapshot = build_validation_snapshot(task_id)
+    if not validate_snapshot_access(
+        snapshot,
+        provider_type='prometheus',
+        instance_id=instance.id,
+        binding_id=binding.id,
+    ):
+        abort(404)
+    return _render_instance_partial(
+        'prometheus/partials/_detail_scope.html',
+        instance,
+        operation_feedback=snapshot_feedback_for_user(snapshot, user_id=int(current_user.id)),
+        binding_validation_job=snapshot,
+    )
+
 
 @prometheus_bp.post('/instances/<int:instance_id>/bindings/<int:binding_id>/delete')
 @permission_required('settings.manage_integrations')
@@ -910,46 +1011,47 @@ def instance_validate(instance_id: int) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
     is_htmx = _is_htmx_request()
     try:
-        result, _state, _observation = refresh_and_record(runtime_adapter, instance, trigger_type='manual')
-        ensure_canonical_instance(instance, provider_type='prometheus')
-        db.session.commit()
-        feedback = record_operational_activity(
-            user_id=current_user.id,
-            event_type='prometheus_compatibility_validation',
-            status='success' if result.get('success') else 'warning',
-            title='Prometheus validation completed',
-            message=f'Full Validation completed for {instance.name}.',
-            detail=result.get('message') or 'Compatibility, capabilities, query contracts, retention, and module readiness were evaluated.',
-            action_url=url_for('prometheus.instance_detail', instance_id=instance.id) + '#validation',
-            action_label='Review Prometheus validation',
-            action_icon='scan-search',
-            metadata={'instance_id': instance.id, 'instance_name': instance.name, 'readiness_status': result.get('readiness_status')},
-            queue_feedback=not is_htmx,
+        validation_job, created = enqueue_instance_validation(
+            provider_type='prometheus',
+            instance_id=instance.id,
+            requested_by_user_id=int(current_user.id),
         )
-    except PrometheusError as exc:
         feedback = record_operational_activity(
-            user_id=current_user.id,
-            event_type='prometheus_compatibility_validation',
-            status='error',
-            title='Prometheus validation failed',
-            message=f'Full Validation failed for {instance.name}.',
-            detail=str(exc),
+            user_id=int(current_user.id),
+            event_type='prometheus_full_validation_queued' if created else 'prometheus_full_validation_already_running',
+            status='info' if created else 'warning',
+            title='Prometheus validation queued' if created else 'Prometheus validation already running',
+            message=(
+                f'KAORI queued Full Validation for {instance.name}.'
+                if created
+                else f'Full Validation is already running for {instance.name}.'
+            ),
+            detail=(
+                'The dedicated validation worker will rebuild capability, query-contract, retention, and module-readiness evidence.'
+                if created
+                else 'KAORI kept the existing task and did not enqueue a duplicate validation job.'
+            ),
             action_url=url_for('prometheus.instance_detail', instance_id=instance.id) + '#validation',
             action_label='Review Prometheus validation',
             action_icon='scan-search',
-            metadata={'instance_id': instance.id, 'instance_name': instance.name},
+            metadata={
+                'task_id': validation_job.get('task_id'),
+                'instance_id': instance.id,
+                'instance_name': instance.name,
+                'queue': current_app.config.get('INTEGRATION_VALIDATION_CELERY_QUEUE', 'integration-validation'),
+            },
             queue_feedback=not is_htmx,
         )
     except Exception as exc:
-        db.session.rollback()
-        logger.exception('Prometheus full validation failed for %s.', instance_id)
+        logger.exception('Could not enqueue Prometheus Full Validation for %s.', instance_id)
+        validation_job = None
         feedback = record_operational_activity(
-            user_id=current_user.id,
-            event_type='prometheus_compatibility_validation',
+            user_id=int(current_user.id),
+            event_type='prometheus_full_validation_enqueue_failed',
             status='error',
-            title='Prometheus validation failed',
-            message=f'KAORI could not complete Full Validation for {instance.name}.',
-            detail='Review endpoint access, query permissions, runtime logs, and observation storage before retrying.',
+            title='Prometheus validation not queued',
+            message=f'KAORI could not queue Full Validation for {instance.name}.',
+            detail='Verify Redis, the Celery broker, and the integration-validation worker before retrying.',
             action_url=url_for('prometheus.instance_detail', instance_id=instance.id) + '#validation',
             action_label='Review Prometheus validation',
             action_icon='scan-search',
@@ -961,8 +1063,29 @@ def instance_validate(instance_id: int) -> ResponseReturnValue:
             'prometheus/partials/_detail_validation_content.html',
             instance,
             operation_feedback=feedback,
+            validation_job=validation_job,
         )
     return redirect(url_for('prometheus.instance_detail', instance_id=instance.id) + '#validation')
+
+
+@prometheus_bp.get('/instances/<int:instance_id>/validate/status/<string:task_id>')
+@permission_required('settings.manage_integrations')
+def instance_validation_status(instance_id: int, task_id: str) -> ResponseReturnValue:
+    instance = _instance_or_404(instance_id)
+    snapshot = build_validation_snapshot(task_id)
+    if not validate_snapshot_access(
+        snapshot,
+        provider_type='prometheus',
+        instance_id=instance.id,
+    ):
+        abort(404)
+    return _render_instance_partial(
+        'prometheus/partials/_detail_validation_content.html',
+        instance,
+        operation_feedback=snapshot_feedback_for_user(snapshot, user_id=int(current_user.id)),
+        validation_job=snapshot,
+    )
+
 
 @prometheus_bp.post('/instances/<int:instance_id>/runtime/refresh')
 @permission_required('settings.manage_integrations')
@@ -970,38 +1093,46 @@ def refresh_runtime(instance_id: int) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
     is_htmx = _is_htmx_request()
     try:
-        result, state, _observation = refresh_and_record(runtime_adapter, instance, trigger_type='manual')
-        ensure_canonical_instance(instance, provider_type='prometheus')
-        db.session.commit()
+        runtime_refresh_job, created = enqueue_runtime_health_refresh(
+            provider_type='prometheus',
+            instance_id=instance.id,
+            requested_by_user_id=int(current_user.id),
+        )
         feedback = record_operational_activity(
-            user_id=current_user.id,
-            event_type='prometheus_runtime_refreshed',
-            status='success' if state.health.status == 'healthy' else ('warning' if state.health.status == 'degraded' else 'error'),
-            title='Prometheus runtime refreshed',
-            message=f'{instance.name} runtime health is {state.health.status}.',
-            detail=result.get('message') or state.message,
+            user_id=int(current_user.id),
+            event_type='prometheus_runtime_refresh_queued' if created else 'prometheus_runtime_refresh_already_running',
+            status='info' if created else 'warning',
+            title='Prometheus runtime refresh queued' if created else 'Prometheus runtime refresh already running',
+            message=(
+                f'KAORI queued a lightweight runtime refresh for {instance.name}.'
+                if created
+                else f'A runtime refresh is already running for {instance.name}.'
+            ),
+            detail=(
+                'The validation worker will check endpoint health without discarding Full Validation evidence.'
+                if created
+                else 'KAORI kept the active task and did not enqueue a duplicate.'
+            ),
             action_url=url_for('prometheus.instance_detail', instance_id=instance.id) + '#runtime',
             action_label='Review Prometheus runtime',
             action_icon='activity',
             metadata={
+                'task_id': runtime_refresh_job.get('task_id'),
                 'instance_id': instance.id,
-                'health_status': state.health.status,
-                'health_score': state.health.score,
-                'readiness_status': state.readiness,
-                'latency_ms': state.latency_ms,
+                'queue': current_app.config.get('INTEGRATION_VALIDATION_CELERY_QUEUE', 'integration-validation'),
             },
             queue_feedback=not is_htmx,
         )
     except Exception as exc:
-        logger.exception('Prometheus runtime refresh failed for %s.', instance_id)
-        state = runtime_adapter.get_state(instance)
+        logger.exception('Could not enqueue Prometheus runtime refresh for %s.', instance_id)
+        runtime_refresh_job = None
         feedback = record_operational_activity(
-            user_id=current_user.id,
-            event_type='prometheus_runtime_refresh_failed',
+            user_id=int(current_user.id),
+            event_type='prometheus_runtime_refresh_enqueue_failed',
             status='error',
-            title='Prometheus runtime refresh failed',
-            message=f'KAORI could not refresh runtime health for {instance.name}.',
-            detail='Review endpoint reachability, authentication, TLS, query access, and runtime observation storage before retrying.',
+            title='Prometheus runtime refresh not queued',
+            message=f'KAORI could not queue runtime health refresh for {instance.name}.',
+            detail='Verify Redis, the Celery broker, and the integration-validation worker before retrying.',
             action_url=url_for('prometheus.instance_detail', instance_id=instance.id) + '#runtime',
             action_label='Review Prometheus runtime',
             action_icon='activity',
@@ -1013,8 +1144,29 @@ def refresh_runtime(instance_id: int) -> ResponseReturnValue:
             'prometheus/partials/_runtime_refresh_response.html',
             instance,
             operation_feedback=feedback,
+            runtime_refresh_job=runtime_refresh_job,
         )
     return redirect(url_for('prometheus.instance_detail', instance_id=instance.id) + '#runtime')
+
+
+@prometheus_bp.get('/instances/<int:instance_id>/runtime/refresh/status/<string:task_id>')
+@permission_required('settings.manage_integrations')
+def runtime_refresh_status(instance_id: int, task_id: str) -> ResponseReturnValue:
+    instance = _instance_or_404(instance_id)
+    snapshot = build_validation_snapshot(task_id)
+    if not validate_snapshot_access(
+        snapshot,
+        provider_type='prometheus',
+        instance_id=instance.id,
+    ):
+        abort(404)
+    return _render_instance_partial(
+        'prometheus/partials/_runtime_refresh_response.html',
+        instance,
+        operation_feedback=snapshot_feedback_for_user(snapshot, user_id=int(current_user.id)),
+        runtime_refresh_job=snapshot,
+    )
+
 
 @prometheus_bp.get('/instances/<int:instance_id>/runtime/history')
 @permission_required('settings.manage_integrations')
@@ -1229,117 +1381,84 @@ def test_connection(
 def validate_integration(
     cluster_id: str,
 ) -> ResponseReturnValue:
+    """Queue validation from a legacy cluster URL and open the canonical workspace."""
     cluster = _get_cluster_or_404(cluster_id)
+    instance = resolve_instance_for_cluster(cluster.id)
+    is_htmx = _is_htmx_request()
+    if instance is None:
+        record_operational_activity(
+            user_id=int(current_user.id),
+            event_type='prometheus_full_validation_enqueue_failed',
+            status='error',
+            title='Prometheus validation not queued',
+            message=f'{cluster.name} does not have a Prometheus source binding.',
+            detail='Bind an existing Prometheus connection before running Full Validation.',
+            action_url=url_for('integrations.prometheus_bind', cluster_id=cluster.id),
+            action_label='Bind Prometheus source',
+            action_icon='link-2',
+            metadata={'cluster_id': cluster.id, 'cluster_name': cluster.name, 'legacy_route': True},
+            queue_feedback=True,
+        )
+        location = url_for('integrations.prometheus_bind', cluster_id=cluster.id)
+        return _htmx_redirect(location) if is_htmx else redirect(location)
 
     try:
-        result, runtime_state_obj, _observation = refresh_and_record(runtime_adapter, _runtime_source(cluster), trigger_type='manual')
-        response_time = result.get('response_time', 0)
-        feedback = record_operational_activity(
-            user_id=current_user.id,
-            event_type='prometheus_compatibility_validation',
-            status='success' if result.get('success') else 'warning',
-            title='Prometheus validation completed',
-            message=f'Compatibility validation completed for {cluster.name}.',
+        validation_job, created = enqueue_instance_validation(
+            provider_type='prometheus',
+            instance_id=instance.id,
+            requested_by_user_id=int(current_user.id),
+        )
+        record_operational_activity(
+            user_id=int(current_user.id),
+            event_type='prometheus_full_validation_queued' if created else 'prometheus_full_validation_already_running',
+            status='info' if created else 'warning',
+            title='Prometheus validation queued' if created else 'Prometheus validation already running',
+            message=(
+                f'KAORI queued Full Validation for {instance.name}.'
+                if created
+                else f'Full Validation is already running for {instance.name}.'
+            ),
             detail=(
-                f"Profile {result.get('compatibility_profile') or 'not matched'}; "
-                f"readiness {result.get('readiness_status', 'unknown')}; "
-                f"completed in {response_time}s."
+                'The dedicated validation worker will rebuild capability and analytics-readiness evidence.'
+                if created
+                else 'KAORI kept the active worker task and did not enqueue a duplicate.'
             ),
-            action_url=url_for('prometheus.configuration', cluster_id=cluster.id),
-            action_label='View Prometheus settings',
-            action_icon='activity',
+            action_url=url_for('prometheus.instance_detail', instance_id=instance.id) + '#validation',
+            action_label='Review Prometheus validation',
+            action_icon='scan-search',
             metadata={
+                'task_id': validation_job.get('task_id'),
+                'instance_id': instance.id,
+                'instance_name': instance.name,
                 'cluster_id': cluster.id,
-                'cluster_name': cluster.name,
-                'endpoint_product': result.get('endpoint_product'),
-                'endpoint_version': result.get('endpoint_version', 'unknown'),
-                'source_prometheus_major': result.get('source_prometheus_major'),
-                'compatibility_profile': result.get('compatibility_profile'),
-                'readiness_status': result.get('readiness_status'),
-                'query_validation_status': result.get('query_validation_status'),
-                'response_time_seconds': response_time,
+                'legacy_route': True,
+                'queue': current_app.config.get('INTEGRATION_VALIDATION_CELERY_QUEUE', 'integration-validation'),
             },
+            queue_feedback=True,
         )
-
-        if request.headers.get('HX-Request') == 'true':
-            return render_template(
-                'prometheus/partials/_validation_response.html',
-                **feedback,
-                config=resolve_instance_for_cluster(cluster.id),
-                config_last_validated_at_display=present_user_datetime(
-                    resolve_instance_for_cluster(cluster.id).last_validated_at if resolve_instance_for_cluster(cluster.id) else None,
-                    empty='Not validated yet',
-                ),
-                runtime_state=(
-                    _runtime_view(cluster, runtime_adapter.get_state(_runtime_source(cluster)))
-                    if resolve_instance_for_cluster(cluster.id) else None
-                ),
-                notification_context=get_navigation_notification_context(
-                    user_id=current_user.id,
-                ),
-            )
-
-        return jsonify(result)
-
-    except PrometheusError as exc:
-        config = _runtime_source(cluster)
-        failure = describe_integration_failure(
-            exc,
-            service_name='Prometheus',
-            endpoint=config.endpoint if config is not None else None,
-            request_path='/api/v1/series',
-            timeout_seconds=(
-                min(max(int(config.timeout or 5), 1), 5)
-                if config is not None
-                else None
-            ),
-        )
-        logger.warning(
-            'Prometheus compatibility validation failed for cluster %s: %s',
-            cluster.id,
-            exc,
-            exc_info=True,
-        )
-        feedback = record_operational_activity(
-            user_id=current_user.id,
-            event_type='prometheus_compatibility_validation',
+    except Exception as exc:
+        logger.exception('Could not enqueue Prometheus validation from legacy cluster route %s.', cluster.id)
+        record_operational_activity(
+            user_id=int(current_user.id),
+            event_type='prometheus_full_validation_enqueue_failed',
             status='error',
-            title='Prometheus validation failed',
-            message=f'KAORI could not complete Prometheus validation for {cluster.name}.',
-            detail=failure['detail'],
-            action_url=url_for('prometheus.configuration', cluster_id=cluster.id),
-            action_label='Review Prometheus settings',
-            action_icon='activity',
+            title='Prometheus validation not queued',
+            message=f'KAORI could not queue Full Validation for {instance.name}.',
+            detail='Verify Redis, the Celery broker, and the integration-validation worker before retrying.',
+            action_url=url_for('prometheus.instance_detail', instance_id=instance.id) + '#validation',
+            action_label='Review Prometheus validation',
+            action_icon='scan-search',
             metadata={
+                'instance_id': instance.id,
                 'cluster_id': cluster.id,
-                'cluster_name': cluster.name,
-                'reason': failure['reason'],
-                'failure_code': failure['code'],
-                'endpoint_host': failure['endpoint_host'],
-                'endpoint_port': failure['endpoint_port'],
-                'request_path': failure['request_path'],
+                'legacy_route': True,
+                'reason': type(exc).__name__,
             },
+            queue_feedback=True,
         )
 
-        if request.headers.get('HX-Request') == 'true':
-            return render_template(
-                'prometheus/partials/_validation_response.html',
-                **feedback,
-                config=resolve_instance_for_cluster(cluster.id),
-                config_last_validated_at_display=present_user_datetime(
-                    resolve_instance_for_cluster(cluster.id).last_validated_at if resolve_instance_for_cluster(cluster.id) else None,
-                    empty='Not validated yet',
-                ),
-                runtime_state=(
-                    _runtime_view(cluster, runtime_adapter.get_state(_runtime_source(cluster)))
-                    if resolve_instance_for_cluster(cluster.id) else None
-                ),
-                notification_context=get_navigation_notification_context(
-                    user_id=current_user.id,
-                ),
-            )
-
-        return jsonify({'success': False, 'error': failure['detail']}), 400
+    location = url_for('prometheus.instance_detail', instance_id=instance.id) + '#validation'
+    return _htmx_redirect(location) if is_htmx else redirect(location)
 
 
 @prometheus_bp.get('/cluster/<string:cluster_id>/runtime/history')

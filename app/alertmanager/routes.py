@@ -4,7 +4,7 @@ import json
 import logging
 from dataclasses import replace
 
-from flask import Blueprint, abort, jsonify, make_response, redirect, render_template, request, url_for
+from flask import Blueprint, abort, current_app, jsonify, make_response, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 
@@ -30,11 +30,16 @@ from app.alertmanager.service import (
     test_alertmanager_connection,
     test_alertmanager_form_connection,
     update_alertmanager_binding_selector,
-    validate_alertmanager_instance,
-    validate_alertmanager_binding,
 )
-from app.integrations.runtime.monitoring import refresh_and_record as refresh_provider_runtime
 from app.integrations.runtime.presentation import runtime_state_view
+from app.integrations.validation.state import build_validation_snapshot, get_active_validation_task_id
+from app.integrations.validation.web import (
+    enqueue_binding_validation,
+    enqueue_instance_validation,
+    enqueue_runtime_health_refresh,
+    snapshot_feedback_for_user,
+    validate_snapshot_access,
+)
 from app.notifications.service import get_navigation_notification_context
 from app.rbac.decorators import permission_required
 
@@ -57,6 +62,43 @@ def _htmx_redirect(location: str) -> ResponseReturnValue:
     return response
 
 
+def _instance_context(instance) -> dict:
+    context = build_instance_context(instance)
+    validation_task_id = get_active_validation_task_id(
+        provider_type='alertmanager',
+        operation='full_validation',
+        instance_id=instance.id,
+    )
+    context['validation_job'] = (
+        build_validation_snapshot(validation_task_id)
+        if validation_task_id
+        else None
+    )
+    runtime_task_id = get_active_validation_task_id(
+        provider_type='alertmanager',
+        operation='runtime_refresh',
+        instance_id=instance.id,
+    )
+    context['runtime_refresh_job'] = (
+        build_validation_snapshot(runtime_task_id)
+        if runtime_task_id
+        else None
+    )
+    binding_job = None
+    for binding in context.get('bindings', []):
+        task_id = get_active_validation_task_id(
+            provider_type='alertmanager',
+            operation='binding_validation',
+            instance_id=instance.id,
+            binding_id=binding.id,
+        )
+        if task_id:
+            binding_job = build_validation_snapshot(task_id)
+            break
+    context['binding_validation_job'] = binding_job
+    return context
+
+
 def _render_instance_partial(
     template_name: str,
     instance,
@@ -64,7 +106,7 @@ def _render_instance_partial(
     operation_feedback: dict | None = None,
     **extra_context,
 ) -> str:
-    context = build_instance_context(instance)
+    context = _instance_context(instance)
     context.update(extra_context)
     context['operation_feedback'] = operation_feedback
     context['notification_context'] = get_navigation_notification_context(
@@ -347,7 +389,7 @@ def instance_detail(instance_id: int) -> ResponseReturnValue:
             )
         return redirect(url_for('alertmanager.instance_detail', instance_id=instance_id) + '#configuration')
 
-    return render_template('alertmanager/instance_detail.html', **build_instance_context(instance))
+    return render_template('alertmanager/instance_detail.html', **_instance_context(instance))
 
 @alertmanager_bp.post('/instances/<int:instance_id>/runtime/refresh')
 @permission_required('settings.manage_integrations')
@@ -355,65 +397,77 @@ def refresh_runtime(instance_id: int) -> ResponseReturnValue:
     instance = get_alertmanager_instance(instance_id)
     if instance is None:
         abort(404)
-
+    is_htmx = _is_htmx_request()
     try:
-        result, state, _observation = refresh_provider_runtime(
-            runtime_adapter,
-            instance,
-            trigger_type='manual',
+        runtime_refresh_job, created = enqueue_runtime_health_refresh(
+            provider_type='alertmanager',
+            instance_id=instance.id,
+            requested_by_user_id=int(current_user.id),
         )
-    except Exception as exc:  # pragma: no cover - defensive runtime persistence boundary
-        logger.exception('Alertmanager runtime refresh failed for %s.', instance_id)
-        state = runtime_adapter.get_state(instance)
         feedback = record_instance_activity(
             user_id=int(current_user.id),
             instance=instance,
-            event_type='alertmanager_runtime_refresh_failed',
-            status='error',
-            title='Alertmanager runtime refresh failed',
-            message=f'KAORI could not refresh runtime health for {instance.name}.',
-            detail='Review endpoint reachability, integration credentials, and runtime observation storage before retrying.',
-            metadata={
-                'reason': type(exc).__name__,
-                'health_status': state.health.status,
-                'readiness_status': state.readiness,
-            },
-            queue_feedback=False,
-        )
-    else:
-        refresh_succeeded = bool(result.connected)
-        feedback = record_instance_activity(
-            user_id=int(current_user.id),
-            instance=instance,
-            event_type='alertmanager_runtime_refreshed' if refresh_succeeded else 'alertmanager_runtime_refresh_failed',
-            status=(
-                'success'
-                if refresh_succeeded and state.health.status == 'healthy'
-                else ('warning' if refresh_succeeded and state.health.status == 'degraded' else 'error')
-            ),
-            title='Alertmanager runtime refreshed' if refresh_succeeded else 'Alertmanager runtime refresh failed',
+            event_type='alertmanager_runtime_refresh_queued' if created else 'alertmanager_runtime_refresh_already_running',
+            status='info' if created else 'warning',
+            title='Alertmanager runtime refresh queued' if created else 'Alertmanager runtime refresh already running',
             message=(
-                f'{instance.name} runtime health is {state.health.status}.'
-                if refresh_succeeded
-                else f'KAORI could not refresh runtime health for {instance.name}.'
+                f'KAORI queued a lightweight runtime refresh for {instance.name}.'
+                if created
+                else f'A runtime refresh is already running for {instance.name}.'
             ),
-            detail=result.reason or state.message,
+            detail=(
+                'The validation worker will check endpoint health without rebuilding capability evidence.'
+                if created
+                else 'KAORI kept the active task and did not enqueue a duplicate.'
+            ),
             metadata={
-                'health_status': state.health.status,
-                'health_score': state.health.score,
-                'readiness_status': state.readiness,
-                'latency_ms': state.latency_ms,
-                'capability_profile': state.snapshot.profile,
-                'capability_count': len(state.snapshot.capabilities),
+                'task_id': runtime_refresh_job.get('task_id'),
+                'queue': current_app.config.get('INTEGRATION_VALIDATION_CELERY_QUEUE', 'integration-validation'),
             },
-            queue_feedback=False,
+            queue_feedback=not is_htmx,
         )
+    except Exception as exc:
+        logger.exception('Could not enqueue Alertmanager runtime refresh for %s.', instance_id)
+        runtime_refresh_job = None
+        feedback = record_instance_activity(
+            user_id=int(current_user.id),
+            instance=instance,
+            event_type='alertmanager_runtime_refresh_enqueue_failed',
+            status='error',
+            title='Alertmanager runtime refresh not queued',
+            message=f'KAORI could not queue runtime health refresh for {instance.name}.',
+            detail='Verify Redis, the Celery broker, and the integration-validation worker before retrying.',
+            metadata={'reason': type(exc).__name__},
+            queue_feedback=not is_htmx,
+        )
+    if is_htmx:
+        return _render_instance_partial(
+            'alertmanager/partials/_runtime_refresh_response.html',
+            instance,
+            operation_feedback=feedback,
+            runtime_refresh_job=runtime_refresh_job,
+        )
+    return redirect(url_for('alertmanager.instance_detail', instance_id=instance_id) + '#runtime')
+
+
+@alertmanager_bp.get('/instances/<int:instance_id>/runtime/refresh/status/<string:task_id>')
+@permission_required('settings.manage_integrations')
+def runtime_refresh_status(instance_id: int, task_id: str) -> ResponseReturnValue:
+    instance = get_alertmanager_instance(instance_id)
+    if instance is None:
+        abort(404)
+    snapshot = build_validation_snapshot(task_id)
+    if not validate_snapshot_access(
+        snapshot,
+        provider_type='alertmanager',
+        instance_id=instance.id,
+    ):
+        abort(404)
     return _render_instance_partial(
         'alertmanager/partials/_runtime_refresh_response.html',
         instance,
-        operation_feedback=feedback,
-        runtime_state=runtime_state_view(state),
-        runtime_history=build_runtime_history_context(instance),
+        operation_feedback=snapshot_feedback_for_user(snapshot, user_id=int(current_user.id)),
+        runtime_refresh_job=snapshot,
     )
 
 
@@ -442,69 +496,80 @@ def validate_instance(instance_id: int) -> ResponseReturnValue:
     instance = get_alertmanager_instance(instance_id)
     if instance is None:
         abort(404)
-
+    is_htmx = _is_htmx_request()
     try:
-        result = validate_alertmanager_instance(instance)
-    except Exception as exc:  # pragma: no cover - defensive validation boundary
-        logger.exception('Alertmanager validation failed for %s.', instance_id)
+        validation_job, created = enqueue_instance_validation(
+            provider_type='alertmanager',
+            instance_id=instance.id,
+            requested_by_user_id=int(current_user.id),
+        )
         feedback = record_instance_activity(
             user_id=int(current_user.id),
             instance=instance,
-            event_type='alertmanager_instance_validation_failed',
-            status='error',
-            title='Alertmanager validation failed',
-            message=f'KAORI could not validate {instance.name}.',
-            detail='Review endpoint reachability, authentication, TLS settings, and KAORI logs before retrying.',
+            event_type='alertmanager_full_validation_queued' if created else 'alertmanager_full_validation_already_running',
+            status='info' if created else 'warning',
+            title='Alertmanager validation queued' if created else 'Alertmanager validation already running',
+            message=(
+                f'KAORI queued Full Validation for {instance.name}.'
+                if created
+                else f'Full Validation is already running for {instance.name}.'
+            ),
+            detail=(
+                'The dedicated validation worker will rebuild API, capability, compatibility, and readiness evidence.'
+                if created
+                else 'KAORI kept the existing task and did not enqueue a duplicate validation job.'
+            ),
             metadata={
-                'reason': type(exc).__name__,
+                'task_id': validation_job.get('task_id'),
+                'queue': current_app.config.get('INTEGRATION_VALIDATION_CELERY_QUEUE', 'integration-validation'),
             },
-            queue_feedback=not _is_htmx_request(),
+            queue_feedback=not is_htmx,
         )
-    else:
-        if result.get('connected'):
-            feedback = record_instance_activity(
-                user_id=int(current_user.id),
-                instance=instance,
-                event_type='alertmanager_instance_validated',
-                status='success' if result.get('readiness_status') == 'ready' else 'warning',
-                title='Alertmanager validation completed',
-                message=f'{instance.name} responded and its API capability profile was evaluated.',
-                detail=result.get('reason') or 'Alertmanager validation completed.',
-                metadata={
-                    'version': result.get('version'),
-                    'response_time_ms': result.get('response_time_ms'),
-                    'readiness_status': result.get('readiness_status'),
-                    'capabilities': result.get('capabilities', []),
-                },
-                queue_feedback=not _is_htmx_request(),
-            )
-        else:
-            feedback = record_instance_activity(
-                user_id=int(current_user.id),
-                instance=instance,
-                event_type='alertmanager_instance_validation_failed',
-                status='error',
-                title='Alertmanager validation failed',
-                message=f'KAORI could not validate {instance.name}.',
-                detail=result.get('error') or 'Review endpoint reachability, authentication, and TLS settings.',
-                metadata={
-                    'reason': result.get('reason'),
-                    'failure_code': result.get('failure_code'),
-                    'endpoint_host': result.get('endpoint_host'),
-                    'endpoint_port': result.get('endpoint_port'),
-                    'request_path': result.get('request_path'),
-                },
-                queue_feedback=not _is_htmx_request(),
-            )
-
-    if _is_htmx_request():
+    except Exception as exc:
+        logger.exception('Could not enqueue Alertmanager Full Validation for %s.', instance_id)
+        validation_job = None
+        feedback = record_instance_activity(
+            user_id=int(current_user.id),
+            instance=instance,
+            event_type='alertmanager_full_validation_enqueue_failed',
+            status='error',
+            title='Alertmanager validation not queued',
+            message=f'KAORI could not queue Full Validation for {instance.name}.',
+            detail='Verify Redis, the Celery broker, and the integration-validation worker before retrying.',
+            metadata={'reason': type(exc).__name__},
+            queue_feedback=not is_htmx,
+        )
+    if is_htmx:
         return _render_instance_partial(
             'alertmanager/partials/_detail_validation_content.html',
             instance,
             operation_feedback=feedback,
+            validation_job=validation_job,
             validation_scope_oob=True,
         )
     return redirect(url_for('alertmanager.instance_detail', instance_id=instance_id) + '#validation')
+
+
+@alertmanager_bp.get('/instances/<int:instance_id>/validate/status/<string:task_id>')
+@permission_required('settings.manage_integrations')
+def instance_validation_status(instance_id: int, task_id: str) -> ResponseReturnValue:
+    instance = get_alertmanager_instance(instance_id)
+    if instance is None:
+        abort(404)
+    snapshot = build_validation_snapshot(task_id)
+    if not validate_snapshot_access(
+        snapshot,
+        provider_type='alertmanager',
+        instance_id=instance.id,
+    ):
+        abort(404)
+    return _render_instance_partial(
+        'alertmanager/partials/_detail_validation_content.html',
+        instance,
+        operation_feedback=snapshot_feedback_for_user(snapshot, user_id=int(current_user.id)),
+        validation_job=snapshot,
+        validation_scope_oob=True,
+    )
 
 
 @alertmanager_bp.post('/instances/<int:instance_id>/bindings')
@@ -663,23 +728,83 @@ def validate_binding(instance_id: int, binding_id: int) -> ResponseReturnValue:
     binding = get_alertmanager_binding(binding_id)
     if instance is None or binding is None or binding.integration_instance_id != instance.integration_instance_id:
         abort(404)
-    result = validate_alertmanager_binding(instance=instance, binding=binding)
-    feedback = record_instance_activity(
-        user_id=int(current_user.id),
-        instance=instance,
-        event_type='alertmanager_binding_validated',
-        status='success' if result['status'] == 'ready' else 'warning',
-        title='Alertmanager binding validation completed',
-        message=result['message'],
-        detail=f"Binding status: {result['status'].replace('_', ' ').title()}.",
-        metadata={'binding_id': binding.id, **result},
-        queue_feedback=not _is_htmx_request(),
-    )
-    if _is_htmx_request():
+    is_htmx = _is_htmx_request()
+    try:
+        validation_job, created = enqueue_binding_validation(
+            provider_type='alertmanager',
+            instance_id=instance.id,
+            binding_id=binding.id,
+            requested_by_user_id=int(current_user.id),
+        )
+        feedback = record_instance_activity(
+            user_id=int(current_user.id),
+            instance=instance,
+            event_type='alertmanager_binding_validation_queued' if created else 'alertmanager_binding_validation_already_running',
+            status='info' if created else 'warning',
+            title='Alertmanager binding validation queued' if created else 'Alertmanager binding validation already running',
+            message=(
+                'KAORI queued the alert identity validation.'
+                if created
+                else 'The alert identity validation is already running.'
+            ),
+            detail=(
+                'The validation worker will check the scope filter before this binding becomes eligible.'
+                if created
+                else 'KAORI kept the active task and did not enqueue a duplicate.'
+            ),
+            metadata={
+                'task_id': validation_job.get('task_id'),
+                'binding_id': binding.id,
+                'queue': current_app.config.get('INTEGRATION_VALIDATION_CELERY_QUEUE', 'integration-validation'),
+            },
+            queue_feedback=not is_htmx,
+        )
+    except Exception as exc:
+        logger.exception('Could not enqueue Alertmanager binding validation for %s.', binding_id)
+        validation_job = None
+        feedback = record_instance_activity(
+            user_id=int(current_user.id),
+            instance=instance,
+            event_type='alertmanager_binding_validation_enqueue_failed',
+            status='error',
+            title='Alertmanager binding validation not queued',
+            message='KAORI could not queue the alert identity validation.',
+            detail='Verify Redis, the Celery broker, and the integration-validation worker before retrying.',
+            metadata={'binding_id': binding.id, 'reason': type(exc).__name__},
+            queue_feedback=not is_htmx,
+        )
+    if is_htmx:
         return _render_instance_partial(
-            'alertmanager/partials/_detail_scope.html', instance, operation_feedback=feedback,
+            'alertmanager/partials/_detail_scope.html',
+            instance,
+            operation_feedback=feedback,
+            binding_validation_job=validation_job,
         )
     return redirect(url_for('alertmanager.instance_detail', instance_id=instance.id) + '#scope')
+
+
+@alertmanager_bp.get('/instances/<int:instance_id>/bindings/<int:binding_id>/validate/status/<string:task_id>')
+@permission_required('settings.manage_integrations')
+def binding_validation_status(instance_id: int, binding_id: int, task_id: str) -> ResponseReturnValue:
+    instance = get_alertmanager_instance(instance_id)
+    binding = get_alertmanager_binding(binding_id)
+    if instance is None or binding is None or binding.integration_instance_id != instance.integration_instance_id:
+        abort(404)
+    snapshot = build_validation_snapshot(task_id)
+    if not validate_snapshot_access(
+        snapshot,
+        provider_type='alertmanager',
+        instance_id=instance.id,
+        binding_id=binding.id,
+    ):
+        abort(404)
+    return _render_instance_partial(
+        'alertmanager/partials/_detail_scope.html',
+        instance,
+        operation_feedback=snapshot_feedback_for_user(snapshot, user_id=int(current_user.id)),
+        binding_validation_job=snapshot,
+    )
+
 
 @alertmanager_bp.post('/instances/<int:instance_id>/bindings/<int:binding_id>/delete')
 @permission_required('settings.manage_integrations')

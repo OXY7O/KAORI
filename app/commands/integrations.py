@@ -19,13 +19,13 @@ from app.integrations.runtime.tasks import refresh_integration_runtime
 @click.option('--json-output', is_flag=True, help='Print the refresh result as JSON.')
 @with_appcontext
 def refresh_integration_runtime_command(json_output: bool) -> None:
-    """Refresh Kubernetes, Prometheus, and Alertmanager runtime state immediately."""
+    """Queue Kubernetes, Prometheus, and Alertmanager runtime health refreshes."""
     result = refresh_integration_runtime.run()
     if json_output:
         click.echo(json.dumps(result, indent=2, sort_keys=True, default=str))
         return
-    click.echo('KAORI integration runtime refresh')
-    click.echo(f"Refreshed: {result.get('refreshed', 0)}")
-    click.echo(f"Failed: {result.get('failed', 0)}")
+    click.echo('KAORI integration runtime refresh dispatch')
+    click.echo(f"Queued: {result.get('queued', 0)}")
+    click.echo(f"Skipped: {result.get('skipped', 0)}")
     for provider, detail in (result.get('providers') or {}).items():
-        click.echo(f"- {provider}: {detail.get('refreshed', 0)} refreshed, {detail.get('failed', 0)} failed")
+        click.echo(f"- {provider}: {detail.get('queued', 0)} queued, {detail.get('skipped', 0)} skipped")

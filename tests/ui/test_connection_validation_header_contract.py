@@ -18,7 +18,7 @@ def test_shared_connection_validation_header_contract() -> None:
 
 def test_connection_validation_header_is_used_across_integration_providers() -> None:
     expectations = {
-        "app/templates/integrations/kubernetes/detail.html": (
+        "app/templates/integrations/kubernetes/partials/_runtime_workspace.html": (
             "Refresh connection health and compatibility evidence.",
             "Refresh Runtime",
         ),

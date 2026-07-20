@@ -71,6 +71,7 @@ def test_alertmanager_normal_mutations_use_htmx_and_oob_feedback() -> None:
 def test_provider_routes_record_all_normal_action_outcomes() -> None:
     prom = read(PROM_ROUTES)
     alert = read(ALERT_ROUTES)
+    validation_tasks = read(ROOT / 'app/integrations/validation/tasks.py')
     for event in (
         'prometheus_instance_created',
         'prometheus_instance_create_rejected',
@@ -80,9 +81,12 @@ def test_provider_routes_record_all_normal_action_outcomes() -> None:
         'prometheus_instance_update_failed',
         'prometheus_connection_test',
         'prometheus_connection_test_failed',
-        'prometheus_compatibility_validation',
-        'prometheus_runtime_refreshed',
-        'prometheus_runtime_refresh_failed',
+        'prometheus_full_validation_queued',
+        'prometheus_full_validation_enqueue_failed',
+        'prometheus_runtime_refresh_queued',
+        'prometheus_runtime_refresh_enqueue_failed',
+        'prometheus_binding_validation_queued',
+        'prometheus_binding_validation_enqueue_failed',
         'prometheus_binding_created',
         'prometheus_binding_create_rejected',
         'prometheus_binding_create_failed',
@@ -102,10 +106,12 @@ def test_provider_routes_record_all_normal_action_outcomes() -> None:
         'alertmanager_instance_update_failed',
         'alertmanager_connection_test',
         'alertmanager_connection_test_failed',
-        'alertmanager_instance_validated',
-        'alertmanager_instance_validation_failed',
-        'alertmanager_runtime_refreshed',
-        'alertmanager_runtime_refresh_failed',
+        'alertmanager_full_validation_queued',
+        'alertmanager_full_validation_enqueue_failed',
+        'alertmanager_runtime_refresh_queued',
+        'alertmanager_runtime_refresh_enqueue_failed',
+        'alertmanager_binding_validation_queued',
+        'alertmanager_binding_validation_enqueue_failed',
         'alertmanager_binding_created',
         'alertmanager_binding_create_rejected',
         'alertmanager_binding_create_failed',
@@ -116,6 +122,9 @@ def test_provider_routes_record_all_normal_action_outcomes() -> None:
         'alertmanager_instance_delete_failed',
     ):
         assert event in alert
+    assert "event_type=f'{provider_type}_{operation}_completed'" in validation_tasks
+    assert "else f'{provider_type}_{operation}_failed'" in validation_tasks
+    assert 'queue_feedback=False' in validation_tasks
     assert '_htmx_redirect(location)' in prom
     assert '_htmx_redirect(location)' in alert
 

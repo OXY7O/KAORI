@@ -69,7 +69,7 @@ Validation must expose more than a readiness label. The technical matrix provide
 
 The capability catalog remains visible before the first validation and uses `Not Observed` state rather than disappearing.
 
-Dependent operational-domain readiness is shown separately from provider capability evidence. Full Validation is the authoritative action that rebuilds this contract.
+Dependent operational-domain readiness is shown separately from provider capability evidence. Full Validation is the authoritative action that rebuilds this contract. It must enqueue a dedicated Celery validation job, return the workspace immediately, display the standard loading bar under the block header, disable duplicate actions, and poll the task-specific partial through HTMX until completion.
 
 ## Runtime & History contract
 
@@ -82,7 +82,7 @@ Runtime follows the shared Alertmanager structure:
 - ordered Diagnostic Pipeline;
 - Recent Runtime Observations with default five rows and `5 / 10 / 25 / 50` page sizes.
 
-Runtime health and validation readiness are separate states. A source may be ready but currently unhealthy, or healthy but still awaiting Full Validation.
+Runtime health and validation readiness are separate states. A source may be ready but currently unhealthy, or healthy but still awaiting Full Validation. Runtime Refresh is a lightweight worker job and must preserve the latest full capability evidence; scheduled runtime monitoring must not rerun heavy capability discovery.
 
 ## Scope & Resolution contract
 
@@ -142,3 +142,6 @@ The provider remains authoritative for execution. KAORI provides validation, gov
 - [ ] Scope supports create, remove, resolution evidence, and governed deletion.
 - [ ] Empty and not-observed states render without provider access.
 - [ ] All actions have registered routes and server-side guardrails.
+- [ ] Test Connection remains synchronous and lightweight.
+- [ ] Full Validation, Runtime Refresh, and binding validation execute on the dedicated validation worker.
+- [ ] Queue, completion, and failure outcomes produce Activity Audit records and persistent toast feedback.

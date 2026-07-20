@@ -141,10 +141,34 @@ ID** and deletes older rows in the same transaction as the new observation. This
 also prunes legacy rows that do not yet carry a canonical integration-instance
 foreign key.
 
-Celery Beat invokes `app.integrations.runtime.tasks.refresh_integration_runtime`
-using the same provider adapter and orchestration path as HTMX manual refresh.
-The default interval is five minutes and can be controlled with
-`INTEGRATION_RUNTIME_MONITORING_*` environment variables.
+Celery Beat invokes `app.integrations.runtime.tasks.refresh_integration_runtime` as a dispatcher only. The dispatcher performs no provider I/O; it fans out one lightweight runtime-health job per provider instance to the dedicated `integration-validation` queue. One slow or unreachable source therefore cannot block the remaining integration portfolio. The default interval is five minutes and can be controlled with `INTEGRATION_RUNTIME_MONITORING_*` environment variables.
+
+## Validation execution boundary
+
+KAORI separates fast registration probes from durable operational validation:
+
+```text
+Test Connection
+→ synchronous Flask request
+→ lightweight reachability, authentication, TLS, and basic API proof
+
+Runtime Health Refresh
+→ dedicated Celery validation worker
+→ lightweight endpoint health and latency evidence
+→ preserves the latest full capability evidence
+
+Full Capability Validation
+→ dedicated Celery validation worker
+→ provider compatibility, capabilities, query/API contracts, retention, and readiness
+
+Scope Binding Validation
+→ dedicated Celery validation worker
+→ validates the binding selector against the selected reusable source
+```
+
+Manual actions return immediately after a job is queued. The provider workspace polls task status through HTMX and renders the completed worker result without reloading the page. Queue, already-running, enqueue-failure, completion, and validation-failure events are recorded in Activity Audit Log; user-triggered completion feedback is also surfaced as the persistent KAORI toast. Redis owns short-lived job locks and polling metadata, while Celery's result backend owns task state.
+
+The dedicated worker queue is configured through `INTEGRATION_VALIDATION_CELERY_QUEUE` and is intentionally separate from the `inventory` queue. Full validation and runtime refresh cannot overlap for the same provider instance. Scheduled refreshes are fan-out tasks and never execute full Prometheus or Alertmanager capability discovery every five minutes.
 
 ## Runtime history presentation
 

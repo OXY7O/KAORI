@@ -158,6 +158,54 @@ class PrometheusService:
             response_time=response_time,
         )
 
+    def refresh_runtime_health(self) -> dict[str, Any]:
+        """Refresh endpoint health without discarding capability evidence.
+
+        Scheduled runtime monitoring must stay lightweight. This probe verifies the
+        query API and endpoint identity while preserving the latest full-validation
+        capability, retention, module-readiness, and query-contract evidence.
+        """
+        started = time.perf_counter()
+        config = self.client.config
+        try:
+            result = self.client.query('vector(1)')
+            if result.get('status') != 'success':
+                raise PrometheusError('Prometheus-compatible query failed')
+
+            resolution = self._resolve_compatibility()
+            self._store_identity(config, resolution)
+            config.last_checked_at = datetime.now(UTC)
+            config.last_response_time_ms = round((time.perf_counter() - started) * 1000)
+            config.last_status = (
+                'incompatible'
+                if resolution.endpoint_compatibility.readiness == 'blocked'
+                else 'connected'
+            )
+            config.last_error = None
+            if resolution.endpoint_compatibility.readiness == 'blocked':
+                config.readiness_status = 'blocked'
+                config.validation_message = resolution.endpoint_compatibility.message
+            elif not config.readiness_status:
+                config.readiness_status = 'validation_required'
+                config.validation_message = (
+                    'Runtime health is available. Run Full Validation to establish capability evidence.'
+                )
+            db.session.commit()
+        except Exception as exc:
+            db.session.rollback()
+            config = self.client.config
+            config.last_checked_at = datetime.now(UTC)
+            config.last_response_time_ms = None
+            config.last_status = 'disconnected'
+            config.last_error = str(exc)[:1000]
+            db.session.commit()
+            raise
+
+        return self._result_payload(
+            config,
+            response_time=time.perf_counter() - started,
+        )
+
     def validate_integration(self) -> dict[str, Any]:
         """Run the complete PromQL, metric-schema, and retention validation."""
         started = time.perf_counter()

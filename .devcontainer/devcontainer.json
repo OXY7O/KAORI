@@ -10,6 +10,7 @@
     "db",
     "redis",
     "worker",
+    "validation-worker",
     "beat"
   ],
   "workspaceFolder": "/workspace/kaori",

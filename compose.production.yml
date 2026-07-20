@@ -90,6 +90,26 @@ services:
       - /tmp:rw,noexec,nosuid,size=128m
     stop_grace_period: 45s
 
+  validation-worker:
+    <<: *kaori-image
+    environment:
+      APP_ENV: production
+      WAIT_FOR_DB: "true"
+    init: true
+    restart: unless-stopped
+    read_only: true
+    command:
+      - sh
+      - -c
+      - >-
+        exec celery --app celery_worker:celery_app worker
+        --queues="$${INTEGRATION_VALIDATION_CELERY_QUEUE:-integration-validation}"
+        --loglevel="$${CELERY_LOG_LEVEL:-INFO}"
+        --concurrency="$${INTEGRATION_VALIDATION_WORKER_CONCURRENCY:-1}"
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=128m
+    stop_grace_period: 45s
+
   # Run exactly one Beat replica for each KAORI environment.
   beat:
     <<: *kaori-image

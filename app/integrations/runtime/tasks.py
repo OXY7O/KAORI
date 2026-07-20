@@ -4,40 +4,64 @@ import logging
 
 from celery import shared_task
 
-from app.alertmanager.runtime_adapter import runtime_adapter as alertmanager_runtime_adapter
-from app.extensions import db
 from app.models.alertmanager import AlertmanagerInstance
-from app.models.prometheus import PrometheusInstance
 from app.models.integration import KubernetesConnection
-from app.prometheus.runtime_adapter import runtime_adapter as prometheus_runtime_adapter
-from app.integrations.runtime.kubernetes_adapter import runtime_adapter as kubernetes_runtime_adapter
-
-from .monitoring import refresh_and_record
+from app.models.prometheus import PrometheusInstance
+from app.integrations.validation.tasks import enqueue_runtime_refresh
 
 logger = logging.getLogger(__name__)
 
 
-@shared_task(bind=True, name='app.integrations.runtime.tasks.refresh_integration_runtime', acks_late=True, reject_on_worker_lost=True)
+@shared_task(
+    bind=True,
+    name='app.integrations.runtime.tasks.refresh_integration_runtime',
+    acks_late=True,
+    reject_on_worker_lost=True,
+)
 def refresh_integration_runtime(self) -> dict[str, object]:
-    results: dict[str, object] = {'refreshed': 0, 'failed': 0, 'providers': {}}
-    providers = (
-        ('kubernetes', kubernetes_runtime_adapter, KubernetesConnection.query.order_by(KubernetesConnection.id.asc()).all()),
-        ('alertmanager', alertmanager_runtime_adapter, AlertmanagerInstance.query.filter_by(enabled=True).order_by(AlertmanagerInstance.id.asc()).all()),
-        ('prometheus', prometheus_runtime_adapter, PrometheusInstance.query.filter_by(enabled=True).order_by(PrometheusInstance.id.asc()).all()),
-    )
-    for provider, adapter, instances in providers:
-        provider_result = {'refreshed': 0, 'failed': 0, 'instances': []}
-        for instance in instances:
+    """Fan out lightweight provider health refreshes to the validation queue.
+
+    The Beat dispatcher intentionally performs no provider I/O. Each source receives
+    an independent Celery task so one slow endpoint cannot block other integrations.
+    Full capability validation remains an explicit on-demand validation job.
+    """
+    provider_ids = {
+        'kubernetes': [row.id for row in KubernetesConnection.query.order_by(KubernetesConnection.id.asc()).all()],
+        'alertmanager': [
+            row.id
+            for row in AlertmanagerInstance.query.filter_by(enabled=True).order_by(AlertmanagerInstance.id.asc()).all()
+        ],
+        'prometheus': [
+            row.id
+            for row in PrometheusInstance.query.filter_by(enabled=True).order_by(PrometheusInstance.id.asc()).all()
+        ],
+    }
+    result: dict[str, object] = {'queued': 0, 'skipped': 0, 'providers': {}}
+    for provider_type, instance_ids in provider_ids.items():
+        provider_result = {'queued': 0, 'skipped': 0, 'tasks': []}
+        for instance_id in instance_ids:
             try:
-                _, state, _ = refresh_and_record(adapter, instance, trigger_type='scheduled')
-                provider_result['refreshed'] += 1
-                results['refreshed'] += 1
-                provider_result['instances'].append({'id': instance.id, 'health': state.health.status, 'score': state.health.score})
+                task_id = enqueue_runtime_refresh(
+                    provider_type=provider_type,
+                    instance_id=int(instance_id),
+                )
             except Exception as exc:
-                db.session.rollback()
-                logger.exception('Runtime refresh failed for %s instance %s.', provider, instance.id)
-                provider_result['failed'] += 1
-                results['failed'] += 1
-                provider_result['instances'].append({'id': instance.id, 'error': str(exc)[:300]})
-        results['providers'][provider] = provider_result
-    return results
+                logger.exception(
+                    'Could not enqueue runtime refresh for %s instance %s.',
+                    provider_type,
+                    instance_id,
+                )
+                provider_result['skipped'] += 1
+                result['skipped'] += 1
+                provider_result['tasks'].append({'instance_id': instance_id, 'error': str(exc)[:300]})
+                continue
+            if task_id is None:
+                provider_result['skipped'] += 1
+                result['skipped'] += 1
+                provider_result['tasks'].append({'instance_id': instance_id, 'status': 'already_active'})
+                continue
+            provider_result['queued'] += 1
+            result['queued'] += 1
+            provider_result['tasks'].append({'instance_id': instance_id, 'task_id': task_id})
+        result['providers'][provider_type] = provider_result
+    return result

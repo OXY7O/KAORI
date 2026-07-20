@@ -25,7 +25,7 @@ This file is the operational reference for local development and container-based
    CELERY_RESULT_BACKEND=redis://redis:6379/3
    ```
 
-5. Run **Dev Containers: Rebuild Without Cache and Reopen in Container**. The Dev Container installs the locked frontend dependencies, rebuilds `app/static/css/output.css` from the canonical `frontend/styles.css` entrypoint, validates the KAORI design tokens, and starts the `worker` service on the Celery `inventory` queue.
+5. Run **Dev Containers: Rebuild Without Cache and Reopen in Container**. The Dev Container installs the locked frontend dependencies, rebuilds `app/static/css/output.css` from the canonical `frontend/styles.css` entrypoint, validates the KAORI design tokens, starts the `worker` service on the Celery `inventory` queue, and starts `validation-worker` on the dedicated `integration-validation` queue.
 6. In the Dev Container terminal, initialize a fresh database and the first administrator:
 
    ```bash
@@ -58,12 +58,12 @@ This file is the operational reference for local development and container-based
    docker compose `
      -f compose.yml `
      -f .devcontainer/compose.devcontainer.yml `
-     ps worker
+     ps worker validation-worker
 
    docker compose `
      -f compose.yml `
      -f .devcontainer/compose.devcontainer.yml `
-     logs --tail=100 worker
+     logs --tail=100 worker validation-worker
    ```
 
 10. Open <http://localhost:5000>.
@@ -78,7 +78,7 @@ Run the watcher only while editing templates or `frontend/styles.css`:
 npm run watch-css
 ```
 
-Start Flask using `F5`. The Celery worker is managed by Docker Compose; do not start another worker in the VS Code terminal unless the Compose worker is stopped. Do not create or activate a Windows `.venv`.
+Start Flask using `F5`. The Celery inventory worker and dedicated integration validation worker are managed by Docker Compose; do not start duplicate workers in the VS Code terminal unless the Compose services are stopped. Do not create or activate a Windows `.venv`.
 
 ### Sync All Cluster background behavior
 
@@ -101,12 +101,12 @@ Check the worker service from Windows PowerShell in the repository root:
 docker compose `
   -f compose.yml `
   -f .devcontainer/compose.devcontainer.yml `
-  ps worker
+  ps worker validation-worker
 
 docker compose `
   -f compose.yml `
   -f .devcontainer/compose.devcontainer.yml `
-  logs -f worker
+  logs -f worker validation-worker
 ```
 
 After changing Celery task code, restart the worker from Windows PowerShell so it loads the new Python code:
@@ -115,7 +115,7 @@ After changing Celery task code, restart the worker from Windows PowerShell so i
 docker compose `
   -f compose.yml `
   -f .devcontainer/compose.devcontainer.yml `
-  restart worker
+  restart worker validation-worker
 ```
 
 ### Reset the development database
@@ -239,7 +239,7 @@ Remove `ADMIN_PASSWORD` from `.env.production` immediately afterward.
 ### 6. Start or upgrade KAORI
 
 ```bash
-docker compose --env-file .env.production -f compose.production.yml up -d web worker
+docker compose --env-file .env.production -f compose.production.yml up -d web worker validation-worker beat
 ```
 
 Verify:
@@ -248,7 +248,7 @@ Verify:
 docker compose --env-file .env.production -f compose.production.yml ps
 
 docker compose --env-file .env.production -f compose.production.yml logs --tail=200 web
-docker compose --env-file .env.production -f compose.production.yml logs --tail=200 worker
+docker compose --env-file .env.production -f compose.production.yml logs --tail=200 worker validation-worker beat
 
 curl --fail http://127.0.0.1:5000/health/live
 curl --fail http://127.0.0.1:5000/health/ready
@@ -280,7 +280,7 @@ docker compose --env-file .env.production -f compose.production.yml run --rm val
 
 docker compose --env-file .env.production -f compose.production.yml run --rm migrate
 
-docker compose --env-file .env.production -f compose.production.yml up -d web worker
+docker compose --env-file .env.production -f compose.production.yml up -d web worker validation-worker beat
 ```
 
 Do not run `bootstrap-admin` again.
@@ -292,7 +292,7 @@ Set `KAORI_IMAGE` back to the previous immutable tag and run:
 ```bash
 docker compose --env-file .env.production -f compose.production.yml pull
 
-docker compose --env-file .env.production -f compose.production.yml up -d web worker
+docker compose --env-file .env.production -f compose.production.yml up -d web worker validation-worker beat
 ```
 
 Database rollback is separate. Restore a tested database backup only when the migration itself is not backward compatible.

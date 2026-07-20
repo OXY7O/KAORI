@@ -31,7 +31,7 @@ A Thanos version must never be displayed or persisted as a Prometheus version. T
 3. Run Full Validation -> metric discovery, label-schema checks, PromQL audit, and retention probes.
 4. Consumers may use the integration only when analytics readiness permits it.
 
-`Test Connection` remains intentionally fast. `Run Full Validation` is the explicit long-running operation and must provide operational toast feedback.
+`Test Connection` remains intentionally fast and synchronous because registration needs an immediate proof. `Run Full Validation` is queued to the dedicated `integration-validation` Celery worker. The Flask request returns after enqueueing, the workspace polls through HTMX, and queued/completed/failed lifecycle events are written to Activity Audit Log and surfaced through the persistent KAORI toast.
 
 ## Field ownership
 
@@ -46,6 +46,17 @@ All PromQL is owned by `app/prometheus/query_profiles`. Legacy domain `queries.p
 
 Runtime versions must come from endpoint APIs. Helm chart versions and chart app metadata are deployment metadata only and must never be used as binary compatibility evidence.
 
+
+## Worker execution contract
+
+Prometheus validation uses the following execution boundary:
+
+- registration `Test Connection`: synchronous lightweight request;
+- `Refresh Runtime`: asynchronous lightweight worker job;
+- `Run Full Validation`: asynchronous heavy worker job;
+- binding `Validate`: asynchronous scope-isolated worker job.
+
+The UI disables duplicate actions while a task lock exists and polls the task-specific status endpoint every 1.5 seconds. Full Validation and Runtime Refresh do not run concurrently for the same Prometheus instance. The worker records completion or failure to Activity Audit Log and returns sanitized toast feedback; credentials and raw query payloads are never placed in task metadata.
 
 ## Full validation performance and readiness
 
@@ -70,7 +81,7 @@ Each unavailable capability exposes:
 - source owner;
 - concrete remediation and an optional validation query.
 
-Prometheus is the second provider using the shared Integration Runtime Framework. Manual Full Validation and scheduled monitoring use the same runtime adapter, health scoring, rolling 100-record observation retention, and history model.
+Prometheus uses the shared Integration Runtime Framework with two distinct worker operations. Manual Full Validation rebuilds metric, label, PromQL, retention, capability, and module-readiness evidence. Scheduled Runtime Health Refresh performs only the lightweight `vector(1)` and endpoint-identity checks, preserves the latest full-validation evidence, and appends the rolling runtime observation. Both operations run on the dedicated validation worker, but scheduled monitoring does not repeat the full query audit every five minutes.
 
 ## Consumer boundary
 

@@ -196,6 +196,17 @@ Connection testing and Full Validation are separate contracts:
 - **Scope Binding** controls where the validated connection is eligible for
   primary, secondary, or fallback resolution.
 
+## Worker execution contract
+
+Alertmanager uses the same execution boundary as Prometheus:
+
+- registration `Test Connection` remains a synchronous, lightweight `/api/v2/status` probe;
+- `Refresh Runtime` is queued to the dedicated validation worker and preserves the latest capability evidence;
+- `Run Full Validation` is queued to the dedicated validation worker and rebuilds API, compatibility, capability, readiness, and diagnostic evidence;
+- scope binding validation is queued per binding and verifies the Alertmanager filter before resolver eligibility.
+
+The Flask request returns after enqueueing. The workspace polls task status through HTMX, blocks duplicate execution with a Redis lock, and publishes queued/completed/failed events to Activity Audit Log and persistent KAORI toast feedback. Full Validation and Runtime Refresh cannot overlap for the same instance.
+
 ## Validation diagnostics contract
 
 The **Validation & Capabilities** workspace is the technical source of truth for

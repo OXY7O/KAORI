@@ -100,6 +100,8 @@ def main() -> int:
         ('CLUSTER_SYNC_LOCK_TTL_SECONDS', 300),
         ('CLUSTER_SYNC_COMPLETED_TTL_SECONDS', 30),
         ('CELERY_WORKER_CONCURRENCY', 1),
+        ('INTEGRATION_VALIDATION_LOCK_TTL_SECONDS', 300),
+        ('INTEGRATION_VALIDATION_WORKER_CONCURRENCY', 1),
     ):
         raw = _value(name)
         try:
@@ -107,6 +109,12 @@ def main() -> int:
                 raise ValueError
         except ValueError:
             errors.append(f'{name} must be an integer greater than or equal to {minimum}.')
+
+    validation_queue = _value('INTEGRATION_VALIDATION_CELERY_QUEUE')
+    if not validation_queue:
+        errors.append('INTEGRATION_VALIDATION_CELERY_QUEUE is required for capability validation jobs.')
+    elif any(character.isspace() for character in validation_queue):
+        errors.append('INTEGRATION_VALIDATION_CELERY_QUEUE must not contain whitespace.')
 
     storage_backend = _value('PROD_REPORT_STORAGE_BACKEND').lower() or 'local'
     if storage_backend not in {'local', 's3'}:

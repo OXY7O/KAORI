@@ -1,10 +1,16 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "components/context_guidance_card.html" as context_guidance_card %}
-<section id="alertmanager-validation-workspace" class="relative overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+<section id="alertmanager-validation-workspace" class="relative overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
+         {% if validation_job and validation_job.is_active %}
+         hx-get="{{ url_for('alertmanager.instance_validation_status', instance_id=instance.id, task_id=validation_job.task_id) }}"
+         hx-trigger="load delay:1500ms"
+         hx-target="this"
+         hx-swap="outerHTML"
+         {% endif %}>
     <div class="relative">
         {% call connection_validation_header.render(
-            'Compatibility &amp; Capability Matrix',
+            'Compatibility & Capability Matrix',
             'Rebuild capability and readiness evidence.',
             icon='scan-search'
         ) %}
@@ -16,16 +22,28 @@
                   hx-disabled-elt="button"
                   hx-indicator="#alertmanager-validation-loading">
                 {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                <button type="submit" class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-70 cursor-pointer disabled:cursor-not-allowed">
-                    <i data-lucide="scan-line" class="h-4 w-4"></i>Run Full Validation
+                <button type="submit"
+                        {% if validation_job and validation_job.is_active %}disabled{% endif %}
+                        class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-70 cursor-pointer disabled:cursor-not-allowed">
+                    <i data-lucide="{{ 'loader-circle' if validation_job and validation_job.is_active else 'scan-line' }}" class="h-4 w-4{% if validation_job and validation_job.is_active %} animate-spin{% endif %}"></i>
+                    {{ 'Validation Running' if validation_job and validation_job.is_active else 'Run Full Validation' }}
                 </button>
             </form>
         {% endcall %}
         <div id="alertmanager-validation-loading"
-             class="htmx-indicator pointer-events-none absolute bottom-2 left-5 right-5 h-1 overflow-hidden rounded-full bg-kaori-soft"
+             class="{% if validation_job and validation_job.is_active %}block{% else %}htmx-indicator{% endif %} pointer-events-none h-1 w-full overflow-hidden bg-kaori-soft"
              aria-label="Running Alertmanager full validation">
-            <div class="notification-progress-indeterminate h-full rounded-full bg-kaori-primary"></div>
+            <div class="notification-progress-indeterminate h-full bg-kaori-primary"></div>
         </div>
+        {% if validation_job and validation_job.is_active %}
+            <div class="flex flex-col gap-2 border-b border-brand-outline bg-kaori-soft px-5 py-3 text-xs text-content-secondary sm:flex-row sm:items-center sm:justify-between">
+                <span class="inline-flex items-center gap-2 font-semibold text-kaori-primary">
+                    <i data-lucide="loader-circle" class="h-3.5 w-3.5 animate-spin"></i>
+                    {{ validation_job.title or 'Validation running in worker' }}
+                </span>
+                <span>Task {{ validation_job.task_id[:8] }} · {{ validation_job.state_label|title }} · {{ validation_job.elapsed_seconds }}s</span>
+            </div>
+        {% endif %}
     </div>
 
     <div class="grid gap-px border-b border-outline-subtle bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
