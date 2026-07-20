@@ -8,9 +8,9 @@
  <span class="font-semibold text-content-secondary ">{{ pagination.total_items }}</span>
  {{ row_label|default("items") }}
  </div>
- <label class="inline-flex items-center gap-2">
- <span class="text-xs font-medium text-content-muted">Rows per page</span>
  <select name="{{ page_size_name }}"
+ aria-label="{{ row_label|default('Items')|title }} per page"
+ title="{{ row_label|default('Items')|title }} per page"
  hx-get="{{ url_for(endpoint_name) }}"
  hx-trigger="change consume"
  hx-target="{{ target_id }}"
@@ -24,7 +24,6 @@
  {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
  {% endfor %}
  </select>
- </label>
  </div>
  <div class="flex items-center gap-2">
  {% if pagination.has_prev %}

@@ -52,8 +52,9 @@ def test_runtime_overview_uses_compact_metric_strip_filters_and_noninteractive_d
     assert 'hx-push-url="true"' in text
     assert 'aria-disabled="true"' in text
     assert '<span class="{{ pagination_ui.navigation_classes(disabled=true) }}" aria-disabled="true">' in text
-    assert '<span>Rows per page</span>' in text
-    assert text.index('<span>Rows per page</span>') < text.index('{% if runtime_pagination.has_prev %}')
+    assert '>Rows per page<' not in text
+    assert 'aria-label="Integration targets per page"' in text
+    assert text.index('aria-label="Integration targets per page"') < text.index('{% if runtime_pagination.has_prev %}')
     assert "page=1, provider=selected_provider" in text
 
 

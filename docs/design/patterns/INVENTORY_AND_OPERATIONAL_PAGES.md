@@ -62,7 +62,7 @@ This document defines reusable structures. It does not define domain-specific fi
 3. The lower contract row is Connection Contract, Binding Contract, and Authority Boundary.
 4. Provider Catalog, Runtime Overview, and Domain Coverage use one shared Violet tab bar; switching tabs must not reload the full page.
 5. Runtime filters and pagination update only the Runtime Overview region through HTMX and preserve `tab=runtime` in the URL.
-6. Runtime pagination keeps the result summary and visible `Rows per page` selector together on the left; Previous, numeric pages, and Next remain grouped on the right.
+6. Runtime pagination keeps the result summary and compact numeric page-size selector together on the left; Previous, numeric pages, and Next remain grouped on the right.
 7. Planned providers remain visible as compact roadmap entries and do not expose configuration actions.
 
 ## Pagination interaction contract

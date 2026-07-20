@@ -42,13 +42,13 @@ Rules:
 Desktop order:
 
 ```text
-Showing 1–5 of 27 pods    Rows per page [5 ▼]    [Previous] [1] [2] [3] [Next]
+Showing 1–5 of 27 pods    [5 ▼]    [Previous] [1] [2] [3] [Next]
 ```
 
 The footer belongs inside the table surface and uses a top border. It contains three logical groups:
 
 1. Result summary.
-2. A visible `Rows per page` label and selector.
+2. A compact page-size selector showing only the selected number.
 3. Previous, numeric page controls, and Next.
 
 On narrow screens, groups may wrap. The resource summary and page-size selector must remain available. Numeric page controls may be compacted, but Previous and Next remain accessible.
@@ -73,7 +73,7 @@ On narrow screens, groups may wrap. The resource summary and page-size selector 
 
 ## Accessibility
 
-- The page-size selector has a visible `Rows per page` label; `aria-label` may supplement but not replace it on standard table footers.
+- The page-size selector shows only the numeric value in the visible footer. A resource-specific `aria-label` and `title` provide the accessible meaning, for example `Jobs per page` or `Runtime observations per page`.
 - The current page is exposed with `aria-current="page"` when numeric controls are used.
 - Icon-only compact pagination controls require an accessible label.
 - Disabled controls must be semantically disabled where a button is used, or removed from the tab order where a link fallback is unavoidable.
@@ -95,7 +95,7 @@ The shared helpers are authoritative:
 - `pagination_ui.navigation_classes(disabled=false)` for active Previous and Next controls.
 - `pagination_ui.navigation_classes(disabled=true)` for disabled Previous and Next controls.
 - `pagination_ui.current_page_classes()` for the active page indicator.
-- `pagination_ui.page_size_classes()` for the Rows per page selector.
+- `pagination_ui.page_size_classes()` for the compact numeric page-size selector.
 
 Page templates may retain their route, HTMX, query-state, and accessibility attributes, but must not create provider- or module-specific visual classes for pagination navigation.
 

@@ -21,7 +21,7 @@ The audit reviewed pagination-related templates and normalization helpers across
 - Normalized inventory resource wording to lowercase sentence style.
 - Normalized pagination range separators to an en dash in reviewed templates.
 - Stabilized the shared Alerts and Anomalies empty summary at `0–0 of 0` instead of replacing the footer with an unrelated empty sentence.
-- Added a visible `Rows per page` label to the shared Alerts and Anomalies pagination component.
+- The current KAORI standard supersedes the earlier visible-label experiment: page-size selectors now show only the numeric value and use resource-specific accessibility labels.
 
 ## Existing compliant areas
 

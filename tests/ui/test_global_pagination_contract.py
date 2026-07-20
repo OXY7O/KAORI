@@ -31,8 +31,9 @@ def test_integrations_runtime_summary_names_its_resource() -> None:
     template = read("app/templates/integrations/partials/_runtime_overview.html")
     assert "integration target" in template
     assert "integration targets" in template
-    assert "<span>Rows per page</span>" in template
-    assert template.index("<span>Rows per page</span>") < template.index("{% if runtime_pagination.has_prev %}")
+    assert ">Rows per page<" not in template
+    assert 'aria-label="Integration targets per page"' in template
+    assert template.index('aria-label="Integration targets per page"') < template.index("{% if runtime_pagination.has_prev %}")
 
 
 def test_users_summary_uses_global_wording() -> None:
@@ -46,7 +47,8 @@ def test_alerts_empty_state_keeps_stable_pagination_summary() -> None:
     template = read("app/templates/analytics/alerts/partials/_pagination.html")
     assert "pagination.start_item if pagination.total_items else 0" in template
     assert "pagination.end_item if pagination.total_items else 0" in template
-    assert "Rows per page" in template
+    assert ">Rows per page<" not in template
+    assert "per page" in template
     assert "No {{ row_label" not in template
 
 

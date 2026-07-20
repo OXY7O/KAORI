@@ -19,7 +19,7 @@
                 <tr class="align-top transition hover:bg-surface-hover">
                     <td class="px-5 py-4 sm:px-6">
                         <p class="font-semibold text-content-primary">{{ row.scope_name }}</p>
-                        <p class="mt-1 max-w-[18rem] truncate text-xs text-content-muted" title="{{ row.scope_key }}">Managed Kubernetes cluster · {{ row.scope_key }}</p>
+                        {% if provider.key != 'alertmanager' %}<p class="mt-1 max-w-[18rem] truncate text-xs text-content-muted" title="{{ row.scope_key }}">Managed Kubernetes cluster · {{ row.scope_key }}</p>{% endif %}
                     </td>
                     <td class="px-4 py-4">{{ table_label.metadata_label(row.environment, 'layers-3') }}</td>
                     <td class="px-4 py-4">

@@ -10,6 +10,14 @@ from app.models.job import JobExecution
 
 ALLOWED_PER_PAGE = (5, 10, 25, 50)
 
+_JOB_ICONS = {
+    'runtime': 'activity',
+    'validation': 'scan-search',
+    'analytics': 'chart-no-axes-combined',
+    'forecasting': 'chart-spline',
+    'standard': 'workflow',
+}
+
 
 def _duration_label(job: JobExecution) -> str:
     start = job.started_at or job.queued_at
@@ -46,6 +54,7 @@ def _row(job: JobExecution) -> dict[str, Any]:
         'operation_label': job.operation.replace('_', ' ').title(),
         'workload_class': job.workload_class,
         'workload_label': job.workload_class.replace('_', ' ').title(),
+        'icon': _JOB_ICONS.get(job.workload_class, 'workflow'),
         'queue_name': job.queue_name,
         'priority': job.priority,
         'status': job.status,

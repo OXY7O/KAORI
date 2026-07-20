@@ -41,7 +41,7 @@ def test_runtime_history_is_shared_by_all_three_providers() -> None:
         assert "integrations/partials/_runtime_history.html" in read(wrapper)
     for fragment in (
         'Recent Runtime Observations',
-        'Rows per page',
+        'Runtime observations per page',
         'pagination_ui.navigation_classes(disabled=false)',
         'pagination_ui.navigation_classes(disabled=true)',
         'aria-disabled="true"',

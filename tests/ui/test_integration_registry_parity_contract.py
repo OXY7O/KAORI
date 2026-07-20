@@ -28,7 +28,7 @@ def test_integration_coverage_uses_shared_bind_first_component_above_each_regist
     component = read(COMPONENT)
     content = read(CONTENT)
     assert 'Integration Coverage' in component
-    assert 'Bind operational scopes to existing {{ provider.label }} sources.' in component
+    assert 'Bind scopes to existing {{ provider.label }} sources.' in component
     assert 'Bind Source' in content
     assert 'Review Binding' in content
     assert 'Operational Scopes Without' not in component
@@ -167,3 +167,9 @@ def test_registry_action_column_is_compact_and_table_width_is_reduced() -> None:
         assert 'min-w-[980px]' not in source
         assert 'min-w-[1180px]' not in source
 
+
+
+def test_alertmanager_coverage_hides_internal_scope_identifier() -> None:
+    content = read(CONTENT)
+    assert "provider.key != 'alertmanager'" in content
+    assert 'Managed Kubernetes cluster · {{ row.scope_key }}' in content

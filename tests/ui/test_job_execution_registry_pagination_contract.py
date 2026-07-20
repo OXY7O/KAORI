@@ -30,3 +30,20 @@ def test_jobs_page_size_change_resets_to_first_page_and_preserves_filters() -> N
     for field in ('status', 'workload', 'queue', 'search'):
         assert f'name="{field}"' in template
     assert 'onchange="this.form.requestSubmit()"' in template
+
+
+def test_jobs_registry_uses_compact_numeric_page_size_selector() -> None:
+    template = source()
+    assert '>Rows per page<' not in template
+    assert 'aria-label="Jobs per page"' in template
+    assert 'title="Jobs per page"' in template
+
+
+def test_jobs_registry_action_and_job_identity_follow_table_contract() -> None:
+    template = source()
+    assert '<colgroup>' in template
+    assert 'style="width: 115px;"' in template
+    assert '>Cancel<' in template
+    assert '>No Action<' in template
+    assert 'data-lucide="{{ row.icon }}"' in template
+    assert 'table_ui.loading_bar_classes()' in template

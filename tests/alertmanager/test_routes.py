@@ -93,7 +93,7 @@ def test_instance_inventory_detail_and_legacy_cluster_redirect(app) -> None:
     assert b'Cluster A Alertmanager' in partial.data
     assert b'alertmanager-inventory-content' not in partial.data
     assert b'alertmanager-inventory-filter-form' not in partial.data
-    assert b'Rows per page' in partial.data
+    assert b'Connections per page' in partial.data
 
     detail = client.get(f'/integrations/alertmanager/instances/{instance.id}')
     assert detail.status_code == 200

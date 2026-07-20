@@ -1,14 +1,16 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
-{% block title %}Job Executions · KAORI{% endblock %}
+{% from "integrations/partials/_status_badge.html" import status_badge %}
+{% block title %}Jobs & Executions · KAORI{% endblock %}
 {% block dashboard_content %}
+{% set execution_status = 'Attention' if job_stats.failed > 0 else ('Active' if job_stats.active > 0 else 'Stable') %}
 <div class="space-y-6">
     <section class="{{ page_hero.shell_classes() }}">
         <div class="{{ page_hero.layout_classes() }}">
             <div class="{{ page_hero.content_classes() }}">
-                {% call page_hero.intro('activity', 'Operations · Job Execution', 'list-checks') %}
+                {% call page_hero.intro('activity', 'Background Execution', 'list-checks') %}
                     <h1 class="{{ page_hero.title_classes() }}">Jobs & Executions</h1>
-                    <p class="mt-2 {{ page_hero.description_classes() }}">Track shared validation, runtime, analytics, and forecasting work across KAORI worker pools.</p>
+                    <p class="mt-2 {{ page_hero.description_classes() }}">Monitor queued, running, and completed work across KAORI worker pools.</p>
                     <div class="{{ page_hero.metadata_row_classes() }}">
                         {{ page_hero.meta_label('layers-3', job_stats.active ~ ' Active') }}
                         {{ page_hero.meta_label('cpu', job_stats.running ~ ' Running') }}
@@ -18,20 +20,21 @@
             </div>
             <aside class="{{ page_hero.aside_classes() }}" aria-label="Job execution posture">
                 <div class="{{ page_hero.context_panel_classes() }}">
-                    <div class="flex items-start justify-between gap-4">
-                        <div>
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
                             <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Execution Posture</p>
-                            <h2 class="{{ page_hero.context_panel_title_classes() }}">Worker Isolation</h2>
+                            <p class="{{ page_hero.context_panel_title_classes() }}">Worker Queue Readiness</p>
                         </div>
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-surface text-brand-foreground" aria-hidden="true"><i data-lucide="workflow" class="h-5 w-5"></i></span>
+                        {{ status_badge('degraded' if execution_status == 'Attention' else ('pending' if execution_status == 'Active' else 'ready'), execution_status) }}
                     </div>
                     <div class="{{ page_hero.context_panel_metrics_classes() }}">
-                        {{ page_hero.context_metric('activity', 'Active', job_stats.active, 'Queued or running jobs') }}
-                        {{ page_hero.context_metric('triangle-alert', 'Failed', job_stats.failed, 'Historical failures') }}
+                        {{ page_hero.context_metric('activity', 'Active', job_stats.active, 'Queued or running work') }}
+                        {{ page_hero.context_metric('triangle-alert', 'Failed', job_stats.failed, 'Executions requiring review') }}
                     </div>
-                    <div class="mt-auto pt-4">
-                        {{ page_hero.supporting_strip('database', 'Canonical State', 'PostgreSQL retains lifecycle state while Redis handles broker, locks, and transient progress.') }}
-                    </div>
+                    <a href="#job-execution-registry" class="mt-3 {{ page_hero.secondary_action_classes() }}">
+                        <i data-lucide="list-filter" class="h-4 w-4" aria-hidden="true"></i>
+                        Review Registry
+                    </a>
                 </div>
             </aside>
         </div>
