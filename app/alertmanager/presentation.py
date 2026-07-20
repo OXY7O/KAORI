@@ -9,6 +9,8 @@ from app.alertmanager.resolver import AlertmanagerSourceResolution, resolve_aler
 from app.alertmanager.runtime_adapter import runtime_adapter
 from app.alertmanager.sanitization import safe_endpoint
 from app.extensions import db
+from app.integrations.binding_selectors import selector_form_values, selector_is_configured, selector_summary
+from app.integrations.coverage import build_provider_coverage
 from app.integrations.runtime.presentation import runtime_history_view, runtime_state_view
 from app.integrations.runtime.repository import paginate_runtime_history
 from app.models.alertmanager import AlertmanagerInstance
@@ -23,6 +25,8 @@ def build_inventory_context(
     deployment_type: str = '',
     page: int = 1,
     per_page: int = 5,
+    coverage_page: int = 1,
+    coverage_per_page: int = 5,
 ) -> dict[str, Any]:
     instances = list_instances()
     rows = [_instance_row(instance) for instance in instances]
@@ -47,27 +51,11 @@ def build_inventory_context(
         'attention': sum(1 for row in rows if row['configured'] and row['readiness'] != 'ready'),
         'bindings': sum(row['binding_count'] for row in rows),
     }
-    covered_cluster_ids = {
-        binding.asset_key
-        for binding in (
-            IntegrationBinding.query
-            .join(
-                IntegrationInstance,
-                IntegrationBinding.integration_instance_id == IntegrationInstance.id,
-            )
-            .filter(
-                IntegrationInstance.provider_type == 'alertmanager',
-                IntegrationBinding.asset_type == 'kubernetes_cluster',
-                IntegrationBinding.enabled.is_(True),
-            )
-            .all()
-        )
-    }
-    uncovered_clusters = [
-        cluster
-        for cluster in Cluster.query.order_by(Cluster.name.asc()).all()
-        if cluster.id not in covered_cluster_ids
-    ]
+    coverage_context = build_provider_coverage(
+        'alertmanager',
+        page=coverage_page,
+        per_page=coverage_per_page,
+    )
     return {
         'rows': page_rows,
         'stats': stats,
@@ -78,7 +66,7 @@ def build_inventory_context(
         'readiness_options': sorted({row['readiness'] for row in rows}),
         'deployment_type_options': sorted({row['deployment_type'] for row in rows}),
         'binding_scope_counts': count_bindings_by_scope_type(),
-        'uncovered_clusters': uncovered_clusters,
+        **coverage_context,
     }
 
 
@@ -180,10 +168,17 @@ def _binding_row(binding: IntegrationBinding) -> dict[str, Any]:
         cluster = db.session.get(Cluster, binding.asset_key)
         if cluster is not None:
             label = cluster.name
+    selector_values = selector_form_values(binding.selector_json)
     return {
         'binding': binding,
         'scope_label': label,
         'scope_type_label': binding.asset_type.replace('_', ' ').title(),
+        'selector_summary': selector_summary(binding.selector_json),
+        'selector_configured': selector_is_configured(binding.selector_json),
+        'selector_label': selector_values['label'],
+        'selector_operator': selector_values['operator'],
+        'selector_value': selector_values['value'],
+        'validation_status': binding.validation_status or 'validation_required',
     }
 
 
@@ -237,6 +232,9 @@ def _source_resolution_rows(instance: AlertmanagerInstance) -> list[dict[str, An
         rows.append({
             'scope_type': binding.asset_type,
             'scope_type_label': binding.asset_type.replace('_', ' ').title(),
+        'selector_summary': selector_summary(binding.selector_json),
+        'selector_configured': selector_is_configured(binding.selector_json),
+        'validation_status': binding.validation_status or 'validation_required',
             'scope_key': binding.asset_key,
             'scope_label': _scope_label(binding.asset_type, binding.asset_key),
             'alerts': _resolution_view(alerts_resolution, current_instance_id=instance.id),

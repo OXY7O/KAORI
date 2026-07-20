@@ -35,8 +35,8 @@ def test_normal_templates_and_dependency_actions_do_not_force_cluster_compatibil
     dependencies = read(DEPENDENCIES)
     assert "prometheus.configuration" not in dependencies
     assert "alertmanager.cluster_alertmanager_config" not in dependencies
-    assert "url_for('prometheus.new_instance', cluster_id=cluster.id)" in dependencies
-    assert "url_for('alertmanager.new_instance', cluster_id=cluster.id)" in dependencies
+    assert "url_for('integrations.bind_prometheus_source', scope_key=cluster.id)" in dependencies
+    assert "url_for('integrations.bind_alertmanager_source', scope_key=cluster.id)" in dependencies
 
 
 def test_legacy_prometheus_registry_and_cluster_configuration_are_redirect_boundaries() -> None:
@@ -52,6 +52,6 @@ def test_legacy_prometheus_registry_and_cluster_configuration_are_redirect_bound
     cluster_end = "@prometheus_bp.route(\n    '/cluster/<string:cluster_id>/test'"
     cluster = routes[routes.index(cluster_start):routes.index(cluster_end)]
     assert "url_for('prometheus.instance_detail'" in cluster
-    assert "url_for('prometheus.new_instance'" in cluster
+    assert "url_for('integrations.bind_prometheus_source'" in cluster
     assert 'PrometheusConfigForm' not in cluster
     assert "'prometheus/config.html'" not in cluster

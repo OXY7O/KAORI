@@ -1177,7 +1177,7 @@ def _build_prometheus_service(
     cluster: Cluster,
 ) -> PrometheusService:
     return PrometheusService(
-        cluster=cluster,
+        cluster,
     )
 
 

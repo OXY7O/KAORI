@@ -29,6 +29,7 @@ from app.alertmanager.resolver import AlertmanagerSourceResolution, resolve_aler
 from app.alertmanager.validation import validate_source
 from app.common.integration_errors import describe_integration_failure
 from app.extensions import db
+from app.integrations.binding_selectors import build_selector, selector_filters
 from app.integrations.lifecycle import bind_instance, ensure_canonical_instance
 from app.models.alertmanager import AlertmanagerInstance
 from app.models.integration import IntegrationBinding, IntegrationInstance
@@ -170,6 +171,48 @@ def create_alertmanager_instance(
     return instance
 
 
+
+def validate_alertmanager_binding(
+    *,
+    instance: AlertmanagerInstance,
+    binding: IntegrationBinding,
+    commit: bool = True,
+) -> dict[str, Any]:
+    if instance.integration_instance_id != binding.integration_instance_id:
+        raise ValueError('The selected binding does not belong to this Alertmanager source.')
+    filters = list(selector_filters(binding.selector_json))
+    if binding.asset_type != 'global' and not filters:
+        binding.validation_status = 'blocked'
+        binding.validation_message = 'Configure an alert identity selector before validating this binding.'
+        binding.last_validated_at = datetime.now(UTC)
+        if commit:
+            db.session.commit()
+        return {'status': binding.validation_status, 'message': binding.validation_message, 'matched_alerts': 0}
+
+    try:
+        alerts = build_alertmanager_client(instance).get_alerts(filters=filters)
+        binding.validation_status = 'ready'
+        binding.validation_message = (
+            f'Alertmanager accepted the scope filter and returned {len(alerts)} active alert records.'
+        )
+        matched = len(alerts)
+    except Exception as exc:
+        binding.validation_status = 'blocked'
+        binding.validation_message = f'Binding validation failed: {exc}'
+        matched = 0
+    binding.last_validated_at = datetime.now(UTC)
+    if commit:
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            raise
+    return {
+        'status': binding.validation_status,
+        'message': binding.validation_message,
+        'matched_alerts': matched,
+    }
+
 def remove_alertmanager_instance(instance: AlertmanagerInstance) -> None:
     if get_alertmanager_bindings(instance.id):
         raise ValueError('Remove all scope bindings before deleting this Alertmanager instance.')
@@ -283,6 +326,43 @@ def add_alertmanager_binding(
     commit: bool = True,
 ) -> IntegrationBinding:
     return create_or_update_binding(instance=instance, form=form, commit=commit)
+
+
+def update_alertmanager_binding_selector(
+    *,
+    instance: AlertmanagerInstance,
+    binding: IntegrationBinding,
+    selector_label: str | None,
+    selector_value: str | None,
+    selector_operator: str = '=',
+    commit: bool = True,
+) -> IntegrationBinding:
+    if instance.integration_instance_id != binding.integration_instance_id:
+        raise ValueError('The selected binding does not belong to this Alertmanager source.')
+    if binding.asset_type == 'global':
+        raise ValueError('Global Alertmanager bindings do not require an alert identity selector.')
+    selector_json = build_selector(
+        label=selector_label,
+        value=selector_value,
+        operator=selector_operator,
+    )
+    if selector_json is None:
+        raise ValueError('Define an alert identity selector before saving this binding.')
+    binding.selector_json = selector_json
+    binding.validation_status = 'validation_required'
+    binding.validation_message = (
+        'Alert identity changed. Validate this binding before KAORI uses it for operational requests.'
+    )
+    binding.last_validated_at = None
+    if commit:
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            raise
+    else:
+        db.session.flush()
+    return binding
 
 
 def remove_alertmanager_binding(binding_id: int) -> IntegrationBinding | None:

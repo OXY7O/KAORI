@@ -608,3 +608,33 @@ This workspace consumes the shared KAORI palette and label components. Provider 
 ## Operational action feedback
 
 Alertmanager normal-flow mutations use HTMX, persist one Activity Audit event, and return matching out-of-band toast feedback. Configuration, validation, runtime refresh, binding changes, and rejected deletion remain on the current manage tab. Successful registration and instance deletion use `HX-Redirect`. Cluster compatibility routes are not linked by normal provider UI.
+
+## Shared-source binding and alert-isolation contract
+
+Alertmanager endpoints are reusable provider instances. KAORI must not create duplicate Alertmanager records merely because one endpoint serves several Kubernetes clusters or future server scopes. The supported flow is:
+
+1. Register the Alertmanager endpoint once.
+2. Use `Integration Coverage` or the Kubernetes integration row and choose `Bind Source`.
+3. Select the existing provider instance.
+4. Define the alert identity matcher exposed by Alertmanager, for example `cluster="k8s-production"`.
+5. Validate the binding from `Scope & Resolution` before alert and silence consumers may resolve it.
+
+The provider instance owns endpoint URL, authentication, TLS, timeout, detected version/profile, runtime capabilities, and health history. The canonical `IntegrationBinding` owns asset scope, role, priority, capability coverage, selector matchers, and binding-validation evidence. Credentials are never copied into the binding.
+
+`app/integrations/binding_selectors.py` renders canonical matchers into Alertmanager v2 `filter` parameters. The consumer facade appends the bound selector to alert reads and silence reads, while retaining caller-supplied filters. Source resolution requires a validated binding and, when one provider is shared across multiple enabled bindings, a configured selector for every scope.
+
+Alertmanager binding validation calls the alerts v2 API with the configured scope filter:
+
+- `ready`: Alertmanager accepted the filter; zero active alerts is valid because absence of a firing alert does not prove that the scope is invalid;
+- `blocked`: the selector is missing for a non-global scope or Alertmanager rejected/could not execute the filtered request.
+
+Migrated bindings are marked `legacy_unscoped`. A single legacy binding remains temporarily eligible. Shared use activates the isolation guard and blocks every unscoped binding until its selector is configured in place and validated.
+
+Normal-flow routes:
+
+- `GET|POST /integrations/alertmanager/bind?scope_key=<cluster-id>` selects and binds an existing source.
+- `POST /integrations/alertmanager/instances/<instance-id>/bindings/<binding-id>/selector` configures or replaces the alert identity without deleting the binding.
+- `POST /integrations/alertmanager/instances/<instance-id>/bindings/<binding-id>/validate` validates the Alertmanager filter contract.
+- Provider registration is a secondary action only when no eligible reusable connection exists.
+
+The canonical Alertmanager form already recognizes Kubernetes, server, server-group, HCI, storage-service, and global scope keys. The shared coverage workspace is currently exposed for managed Kubernetes because this source tree does not yet contain a first-class Server integration inventory and binding workspace.

@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Final
 
+from app.integrations.binding_selectors import selector_is_configured
 from app.integrations.resolver import resolve_integration
 from app.models.integration import IntegrationBinding
 from app.models.prometheus import PrometheusInstance
@@ -16,6 +17,7 @@ _BLOCKED_READINESS: Final[set[str]] = {'blocked', 'unavailable', 'disabled', 'in
 _READY_READINESS: Final[set[str]] = {'ready'}
 _DEGRADED_READINESS: Final[set[str]] = {'degraded'}
 _FAILED_HEALTH: Final[set[str]] = {'disconnected', 'error', 'failed', 'incompatible', 'unhealthy'}
+_ELIGIBLE_BINDING_VALIDATION: Final[set[str]] = {'ready', 'legacy_unscoped'}
 
 
 @dataclass(frozen=True, slots=True)
@@ -117,7 +119,15 @@ def _evaluate_binding(
         capability_rank = 0
         technical_eligible = True
 
-    binding_eligible = not missing_binding_capabilities
+    selector_required = _selector_required(binding)
+    selector_eligible = not selector_required or selector_is_configured(binding.selector_json)
+    binding_validation = (binding.validation_status or 'validation_required').strip().lower()
+    binding_validation_eligible = binding_validation in _ELIGIBLE_BINDING_VALIDATION
+    binding_eligible = (
+        not missing_binding_capabilities
+        and selector_eligible
+        and binding_validation_eligible
+    )
     readiness_eligible = readiness not in _BLOCKED_READINESS
     eligible = bool(
         instance.enabled
@@ -133,6 +143,10 @@ def _evaluate_binding(
         health=health,
         capability_state=capability_state,
         missing_binding=missing_binding_capabilities,
+        selector_required=selector_required,
+        selector_eligible=selector_eligible,
+        binding_validation=binding_validation,
+        binding_validation_eligible=binding_validation_eligible,
         missing_technical=missing_technical,
     )
     return ResolvedPrometheusSource(
@@ -179,7 +193,18 @@ def _decision_reason(
     capability_state: str,
     missing_binding: tuple[str, ...],
     missing_technical: tuple[str, ...],
+    selector_required: bool,
+    selector_eligible: bool,
+    binding_validation: str,
+    binding_validation_eligible: bool,
 ) -> str:
+    if selector_required and not selector_eligible:
+        return 'Shared Prometheus sources require a binding selector to isolate metrics for this scope.'
+    if not binding_validation_eligible:
+        return (
+            f'Binding validation state {binding_validation or "validation_required"} blocks source selection. '
+            'Validate the scope selector before operational use.'
+        )
     if missing_binding:
         return f'Missing binding coverage: {", ".join(missing_binding)}.'
     if capability_state == 'missing_required':
@@ -197,3 +222,12 @@ def _decision_reason(
     if readiness not in _READY_READINESS:
         return 'Source is usable but requires validation; a validated source is preferred.'
     return 'Source satisfies readiness, runtime health, binding coverage, and technical capability requirements.'
+
+
+def _selector_required(binding: IntegrationBinding) -> bool:
+    return (
+        IntegrationBinding.query.filter_by(
+            integration_instance_id=binding.integration_instance_id,
+            enabled=True,
+        ).count() > 1
+    )

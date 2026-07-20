@@ -6,7 +6,8 @@ PROM_CARD = ROOT / 'app/templates/integrations/prometheus/partials/_instance_inv
 PROM_CONTENT = ROOT / 'app/templates/integrations/prometheus/partials/_inventory_content.html'
 ALERT_LANDING = ROOT / 'app/templates/integrations/alertmanager.html'
 ALERT_CARD = ROOT / 'app/templates/integrations/alertmanager/partials/_inventory_card.html'
-COMPONENT = ROOT / 'app/templates/components/uncovered_operational_scopes.html'
+COMPONENT = ROOT / 'app/templates/components/integration_coverage.html'
+COVERAGE = ROOT / 'app/integrations/coverage.py'
 SERVICE = ROOT / 'app/integrations/service.py'
 PRESENTATION = ROOT / 'app/alertmanager/presentation.py'
 
@@ -15,24 +16,29 @@ def read(path: Path) -> str:
     return path.read_text(encoding='utf-8')
 
 
-def test_uncovered_scopes_use_shared_component_above_each_registry() -> None:
+def test_integration_coverage_uses_shared_bind_first_component_above_each_registry() -> None:
     prom = read(PROM_LANDING)
     alert = read(ALERT_LANDING)
-    assert 'Operational Scopes Without a Prometheus Source' in prom
-    assert 'Operational Scopes Without an Alertmanager Source' in alert
-    assert prom.index('Operational Scopes Without a Prometheus Source') < prom.index("_instance_inventory.html")
-    assert alert.index('Operational Scopes Without an Alertmanager Source') < alert.index("_inventory_card.html")
+    assert 'integration_coverage.render' in prom
+    assert 'integration_coverage.render' in alert
+    assert prom.index('integration_coverage.render') < prom.index("_instance_inventory.html")
+    assert alert.index('integration_coverage.render') < alert.index("_inventory_card.html")
     component = read(COMPONENT)
-    assert 'Register & Bind' in component
-    assert 'bg-status-warning-soft' in component
-    assert 'bg-kaori-primary' in component
+    assert 'Integration Coverage' in component
+    assert 'Bind Source' in component
+    assert 'Register a new connection only when no suitable source exists.' in component
+    assert 'Operational Scopes Without' not in component
 
 
-def test_alertmanager_inventory_builds_uncovered_cluster_coverage() -> None:
-    source = read(PRESENTATION)
-    assert "IntegrationInstance.provider_type == 'alertmanager'" in source
-    assert "IntegrationBinding.asset_type == 'kubernetes_cluster'" in source
-    assert "'uncovered_clusters': uncovered_clusters" in source
+def test_alertmanager_inventory_builds_provider_neutral_coverage() -> None:
+    presentation = read(PRESENTATION)
+    coverage = read(COVERAGE)
+    assert "build_provider_coverage(" in presentation
+    assert "'alertmanager'" in presentation
+    assert "IntegrationInstance.provider_type == provider_type" in coverage
+    assert "binding.asset_type == 'kubernetes_cluster'" in coverage
+    assert "'coverage_rows': page_rows" in coverage
+    assert "'source_options': source_options" in coverage
 
 
 def test_prometheus_filters_match_registry_pattern() -> None:

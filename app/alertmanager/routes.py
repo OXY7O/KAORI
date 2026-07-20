@@ -29,7 +29,9 @@ from app.alertmanager.service import (
     save_alertmanager_instance,
     test_alertmanager_connection,
     test_alertmanager_form_connection,
+    update_alertmanager_binding_selector,
     validate_alertmanager_instance,
+    validate_alertmanager_binding,
 )
 from app.integrations.runtime.monitoring import refresh_and_record as refresh_provider_runtime
 from app.integrations.runtime.presentation import runtime_state_view
@@ -144,6 +146,9 @@ def new_instance() -> ResponseReturnValue:
                             binding_role='primary',
                             priority=100,
                             enabled=True,
+                            selector_label='cluster',
+                            selector_value=initial_cluster.name,
+                            selector_operator='=',
                         )
                         if initial_cluster is not None
                         else None
@@ -582,6 +587,100 @@ def create_binding(instance_id: int) -> ResponseReturnValue:
     return redirect(url_for('alertmanager.instance_detail', instance_id=instance_id) + '#scope')
 
 
+
+@alertmanager_bp.post('/instances/<int:instance_id>/bindings/<int:binding_id>/selector')
+@permission_required('settings.manage_integrations')
+def update_binding_selector(instance_id: int, binding_id: int) -> ResponseReturnValue:
+    instance = get_alertmanager_instance(instance_id)
+    binding = get_alertmanager_binding(binding_id)
+    if instance is None or binding is None or binding.integration_instance_id != instance.integration_instance_id:
+        abort(404)
+    is_htmx = _is_htmx_request()
+    selector_label = request.form.get('selector_label', '').strip() or None
+    selector_value = request.form.get('selector_value', '').strip() or None
+    selector_operator = request.form.get('selector_operator', '=').strip() or '='
+    try:
+        update_alertmanager_binding_selector(
+            instance=instance,
+            binding=binding,
+            selector_label=selector_label,
+            selector_value=selector_value,
+            selector_operator=selector_operator,
+        )
+    except ValueError as exc:
+        feedback = record_instance_activity(
+            user_id=int(current_user.id),
+            instance=instance,
+            event_type='alertmanager_binding_selector_update_rejected',
+            status='error',
+            title='Alert identity not updated',
+            message='KAORI could not save the Alertmanager binding selector.',
+            detail=str(exc),
+            metadata={'binding_id': binding.id},
+            queue_feedback=not is_htmx,
+        )
+    except Exception as exc:
+        logger.exception('Alertmanager binding selector update failed for binding %s.', binding_id)
+        feedback = record_instance_activity(
+            user_id=int(current_user.id),
+            instance=instance,
+            event_type='alertmanager_binding_selector_update_failed',
+            status='error',
+            title='Alert identity not updated',
+            message='KAORI could not persist the Alertmanager binding selector.',
+            detail='Review KAORI logs and database connectivity before retrying.',
+            metadata={'binding_id': binding.id, 'reason': type(exc).__name__},
+            queue_feedback=not is_htmx,
+        )
+    else:
+        feedback = record_instance_activity(
+            user_id=int(current_user.id),
+            instance=instance,
+            event_type='alertmanager_binding_selector_updated',
+            status='success',
+            title='Alert identity updated',
+            message='The Alertmanager binding selector was saved.',
+            detail='Binding readiness returned to Validation Required. Validate the binding before operational use.',
+            metadata={
+                'binding_id': binding.id,
+                'selector_label': selector_label,
+                'selector_operator': selector_operator,
+                'selector_value': selector_value,
+            },
+            queue_feedback=not is_htmx,
+        )
+    if is_htmx:
+        return _render_instance_partial(
+            'alertmanager/partials/_detail_scope.html', instance, operation_feedback=feedback,
+        )
+    return redirect(url_for('alertmanager.instance_detail', instance_id=instance.id) + '#scope')
+
+
+@alertmanager_bp.post('/instances/<int:instance_id>/bindings/<int:binding_id>/validate')
+@permission_required('settings.manage_integrations')
+def validate_binding(instance_id: int, binding_id: int) -> ResponseReturnValue:
+    instance = get_alertmanager_instance(instance_id)
+    binding = get_alertmanager_binding(binding_id)
+    if instance is None or binding is None or binding.integration_instance_id != instance.integration_instance_id:
+        abort(404)
+    result = validate_alertmanager_binding(instance=instance, binding=binding)
+    feedback = record_instance_activity(
+        user_id=int(current_user.id),
+        instance=instance,
+        event_type='alertmanager_binding_validated',
+        status='success' if result['status'] == 'ready' else 'warning',
+        title='Alertmanager binding validation completed',
+        message=result['message'],
+        detail=f"Binding status: {result['status'].replace('_', ' ').title()}.",
+        metadata={'binding_id': binding.id, **result},
+        queue_feedback=not _is_htmx_request(),
+    )
+    if _is_htmx_request():
+        return _render_instance_partial(
+            'alertmanager/partials/_detail_scope.html', instance, operation_feedback=feedback,
+        )
+    return redirect(url_for('alertmanager.instance_detail', instance_id=instance.id) + '#scope')
+
 @alertmanager_bp.post('/instances/<int:instance_id>/bindings/<int:binding_id>/delete')
 @permission_required('settings.manage_integrations')
 def remove_binding(instance_id: int, binding_id: int) -> ResponseReturnValue:
@@ -698,7 +797,7 @@ def cluster_alertmanager_config(cluster_id: str) -> ResponseReturnValue:
     instance = materialize_legacy_cluster_config(cluster_id)
     if instance is not None:
         return redirect(url_for('alertmanager.instance_detail', instance_id=instance.id))
-    return redirect(url_for('alertmanager.new_instance', cluster_id=cluster_id))
+    return redirect(url_for('integrations.bind_alertmanager_source', scope_key=cluster_id))
 
 
 @alertmanager_bp.post('/cluster/<string:cluster_id>/test')

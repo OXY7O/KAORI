@@ -45,6 +45,9 @@ class AlertmanagerBindingForm:
     binding_role: str
     priority: int
     enabled: bool
+    selector_label: str | None = None
+    selector_value: str | None = None
+    selector_operator: str = '='
 
 
 # Legacy alias retained for imports outside the refactored integration routes.
@@ -120,6 +123,9 @@ def parse_alertmanager_binding_form(form_data: Mapping[str, Any]) -> Alertmanage
         binding_role=binding_role,
         priority=parse_priority(form_data.get('priority', 100)),
         enabled=parse_checkbox(form_data.get('enabled', '1')),
+        selector_label=clean_optional_value(form_data.get('selector_label')),
+        selector_value=clean_optional_value(form_data.get('selector_value')),
+        selector_operator=str(form_data.get('selector_operator', '=')).strip() or '=',
     )
 
 

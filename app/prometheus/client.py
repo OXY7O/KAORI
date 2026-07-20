@@ -5,6 +5,7 @@ from typing import Any
 import requests
 from requests.auth import HTTPBasicAuth
 
+from app.integrations.binding_selectors import BindingSelectorError, apply_promql_scope
 from app.models.prometheus import PrometheusInstance
 from app.prometheus.exceptions import (
     PrometheusAuthenticationError,
@@ -17,8 +18,11 @@ class PrometheusClient:
     def __init__(
         self,
         config: PrometheusInstance,
+        *,
+        scope_selector: dict[str, Any] | None = None,
     ) -> None:
         self.config = config
+        self.scope_selector = scope_selector
         self.base_url = config.endpoint.rstrip('/')
 
     def _build_headers(
@@ -76,10 +80,10 @@ class PrometheusClient:
         self,
         query: str,
     ) -> dict[str, Any]:
-        return self._get('/api/v1/query', {'query': query})
+        return self._get('/api/v1/query', {'query': self._scope_query(query)})
 
     def query_at(self, query: str, timestamp: float) -> dict[str, Any]:
-        return self._get('/api/v1/query', {'query': query, 'time': timestamp})
+        return self._get('/api/v1/query', {'query': self._scope_query(query), 'time': timestamp})
 
     def label_values(self, label: str) -> dict[str, Any]:
         return self._get(f'/api/v1/label/{label}/values')
@@ -92,7 +96,7 @@ class PrometheusClient:
         start: float | None = None,
         end: float | None = None,
     ) -> dict[str, Any]:
-        params: list[tuple[str, Any]] = [('match[]', metric) for metric in metrics]
+        params: list[tuple[str, Any]] = [('match[]', self._scope_query(metric)) for metric in metrics]
         if limit is not None:
             params.append(('limit', limit))
         if start is not None:
@@ -111,12 +115,19 @@ class PrometheusClient:
         return self._get(
             '/api/v1/query_range',
             {
-                'query': query,
+                'query': self._scope_query(query),
                 'start': start,
                 'end': end,
                 'step': step,
             },
         )
+
+
+    def _scope_query(self, query: str) -> str:
+        try:
+            return apply_promql_scope(query, self.scope_selector)
+        except BindingSelectorError as exc:
+            raise PrometheusQueryError(str(exc)) from exc
 
     def get_build_info(
         self,

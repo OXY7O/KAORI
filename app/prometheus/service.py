@@ -12,6 +12,7 @@ from app.integrations.compatibility import (
     evaluate_compatibility,
     get_profile,
 )
+from app.integrations.binding_selectors import build_selector, selector_is_configured
 from app.integrations.lifecycle import bind_instance, ensure_canonical_instance
 from app.models import Cluster, PrometheusInstance
 from app.models.integration import IntegrationBinding, IntegrationInstance
@@ -460,6 +461,9 @@ def save_prometheus_instance(
             asset_type=KUBERNETES_CLUSTER_SCOPE,
             asset_key=initial_cluster.id,
             capability_scope=['metrics', 'capacity', 'utilization', 'storage', 'workload', 'forecast', 'top_consumers', 'alert_metrics'],
+            selector_json=build_selector(label='cluster', value=initial_cluster.name),
+            validation_status='validation_required',
+            validation_message='Legacy cluster-assisted registration created a default selector. Verify the actual source label value before use.',
         )
     try:
         db.session.commit()
@@ -467,6 +471,57 @@ def save_prometheus_instance(
         db.session.rollback()
         raise
     return instance
+
+
+def validate_prometheus_binding(
+    *,
+    instance: PrometheusInstance,
+    binding: IntegrationBinding,
+    commit: bool = True,
+) -> dict[str, Any]:
+    if instance.integration_instance_id != binding.integration_instance_id:
+        raise ValueError('The selected binding does not belong to this Prometheus source.')
+    if not selector_is_configured(binding.selector_json):
+        binding.validation_status = 'blocked'
+        binding.validation_message = 'Configure a metrics identity selector before validating this binding.'
+        binding.last_validated_at = datetime.now(UTC)
+        if commit:
+            db.session.commit()
+        return {'status': binding.validation_status, 'message': binding.validation_message, 'matched_series': 0}
+
+    try:
+        payload = PrometheusClient(instance, scope_selector=binding.selector_json).query('count(kube_node_info)')
+        if not isinstance(payload, dict) or payload.get('status') != 'success':
+            detail = str((payload or {}).get('error') or 'Prometheus returned an unsuccessful query response.') if isinstance(payload, dict) else 'Prometheus returned an invalid query response.'
+            raise PrometheusError(detail)
+        result = ((payload.get('data') or {}).get('result') or [])
+        matched = 0.0
+        if result and isinstance(result[0], dict):
+            value = result[0].get('value') or []
+            if len(value) > 1:
+                matched = float(value[1])
+        if matched > 0:
+            binding.validation_status = 'ready'
+            binding.validation_message = f'Metrics identity matched {int(matched)} Kubernetes node series.'
+        else:
+            binding.validation_status = 'degraded'
+            binding.validation_message = 'The selector was accepted, but no kube_node_info series matched this operational scope.'
+    except Exception as exc:
+        binding.validation_status = 'blocked'
+        binding.validation_message = f'Binding validation failed: {exc}'
+        matched = 0.0
+    binding.last_validated_at = datetime.now(UTC)
+    if commit:
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            raise
+    return {
+        'status': binding.validation_status,
+        'message': binding.validation_message,
+        'matched_series': int(matched),
+    }
 
 def remove_prometheus_instance(instance: PrometheusInstance) -> None:
     """Delete a reusable Prometheus identity after governed bindings are removed.
@@ -497,3 +552,117 @@ def remove_prometheus_instance(instance: PrometheusInstance) -> None:
         db.session.rollback()
         raise
 
+
+
+PROMETHEUS_BINDING_CAPABILITIES = [
+    'metrics', 'capacity', 'utilization', 'storage', 'workload',
+    'forecast', 'top_consumers', 'alert_metrics',
+]
+
+def create_prometheus_binding(
+    *,
+    instance: PrometheusInstance,
+    cluster: Cluster,
+    role: str = 'primary',
+    priority: int = 100,
+    selector_label: str | None = None,
+    selector_value: str | None = None,
+    selector_operator: str = '=',
+    commit: bool = True,
+) -> IntegrationBinding:
+    normalized_role = str(role or 'primary').strip().lower()
+    if normalized_role not in {'primary', 'secondary', 'fallback'}:
+        raise ValueError('Select a supported source role.')
+    if priority < 1 or priority > 1000:
+        raise ValueError('Priority must be between 1 and 1000.')
+
+    selector_json = build_selector(
+        label=selector_label,
+        value=selector_value,
+        operator=selector_operator,
+    )
+    if selector_json is None:
+        raise ValueError('Define a metrics identity selector before binding this Prometheus source.')
+
+    canonical = ensure_canonical_instance(instance, provider_type='prometheus')
+    existing = IntegrationBinding.query.filter_by(
+        integration_instance_id=canonical.id,
+        asset_type=KUBERNETES_CLUSTER_SCOPE,
+        asset_key=cluster.id,
+    ).first()
+    if existing is not None:
+        raise ValueError('This Prometheus connection is already bound to the selected managed cluster.')
+
+    if normalized_role == 'primary':
+        conflicting_primary = (
+            IntegrationBinding.query
+            .join(IntegrationInstance, IntegrationBinding.integration_instance_id == IntegrationInstance.id)
+            .filter(
+                IntegrationInstance.provider_type == 'prometheus',
+                IntegrationBinding.asset_type == KUBERNETES_CLUSTER_SCOPE,
+                IntegrationBinding.asset_key == cluster.id,
+                IntegrationBinding.binding_role == 'primary',
+                IntegrationBinding.enabled.is_(True),
+            )
+            .first()
+        )
+        if conflicting_primary is not None:
+            raise ValueError('The selected managed cluster already has an enabled primary Prometheus source.')
+
+    binding = bind_instance(
+        canonical,
+        asset_type=KUBERNETES_CLUSTER_SCOPE,
+        asset_key=cluster.id,
+        role=normalized_role,
+        priority=priority,
+        capability_scope=PROMETHEUS_BINDING_CAPABILITIES,
+        selector_json=selector_json,
+        validation_status='validation_required',
+        validation_message=(
+            'Binding saved. Validate the metrics identity selector and source runtime before operational use.'
+        ),
+    )
+    if commit:
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            raise
+    else:
+        db.session.flush()
+    return binding
+
+
+def update_prometheus_binding_selector(
+    *,
+    instance: PrometheusInstance,
+    binding: IntegrationBinding,
+    selector_label: str | None,
+    selector_value: str | None,
+    selector_operator: str = '=',
+    commit: bool = True,
+) -> IntegrationBinding:
+    if instance.integration_instance_id != binding.integration_instance_id:
+        raise ValueError('The selected binding does not belong to this Prometheus source.')
+    selector_json = build_selector(
+        label=selector_label,
+        value=selector_value,
+        operator=selector_operator,
+    )
+    if selector_json is None:
+        raise ValueError('Define a metrics identity selector before saving this binding.')
+    binding.selector_json = selector_json
+    binding.validation_status = 'validation_required'
+    binding.validation_message = (
+        'Metrics identity changed. Validate this binding before KAORI uses it for operational queries.'
+    )
+    binding.last_validated_at = None
+    if commit:
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            raise
+    else:
+        db.session.flush()
+    return binding

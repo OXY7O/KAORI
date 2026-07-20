@@ -177,3 +177,34 @@ All full-page and HTMX partial responses use one manage-workspace context builde
 ## Operational action feedback
 
 Prometheus normal-flow mutations use HTMX, persist one Activity Audit event, and return matching out-of-band toast feedback. Configuration, validation, runtime refresh, binding changes, and rejected deletion remain on the current manage tab. Successful registration and instance deletion use `HX-Redirect`. Cluster compatibility routes are not linked by normal provider UI.
+
+## Shared-source binding and metrics-isolation contract
+
+Prometheus and Prometheus-compatible endpoints are connection resources, not one-record-per-cluster configuration. The supported operational flow is:
+
+1. Register the endpoint once in the Prometheus registry.
+2. Open `Integration Coverage` or a Kubernetes integration row and choose `Bind Source`.
+3. Select an existing enabled provider instance.
+4. Define the metrics identity selector exposed by that source, for example `cluster="k8s-production"`.
+5. Validate the binding from `Scope & Resolution` before Analytics may resolve it.
+
+The provider instance continues to own endpoint URL, credentials, TLS, timeout, detected product/version, compatibility profile, runtime capability evidence, and health history. `IntegrationBinding` owns scope identity, role, priority, capability coverage, selector matchers, and binding-validation evidence. Binding a second cluster does not duplicate the provider instance or its credentials.
+
+`app/integrations/binding_selectors.py` is the provider-neutral selector boundary. `PrometheusClient` applies the selected binding matcher to instant queries, range queries, point-in-time queries, and `/series` matchers. A query that already contains a conflicting matcher for the identity label is rejected rather than widened or silently rewritten. This prevents one Kubernetes scope from reading another scope through a shared endpoint.
+
+A newly saved binding has `validation_required` status and is not eligible for source resolution. Kubernetes binding validation executes a scoped `count(kube_node_info)` probe:
+
+- `ready`: one or more scoped node series were observed;
+- `degraded`: the selector was accepted but no scoped node series were observed;
+- `blocked`: selector configuration, endpoint execution, authentication, or query processing failed.
+
+Migrated bindings are marked `legacy_unscoped`. A single legacy binding remains temporarily eligible for compatibility. As soon as the same canonical provider instance has more than one enabled binding, every binding must have a selector; unscoped legacy bindings are blocked from resolution until their selector is configured in place and validated.
+
+Normal-flow routes:
+
+- `GET|POST /integrations/prometheus/bind?scope_key=<cluster-id>` selects and binds an existing source.
+- `POST /integrations/prometheus/instances/<instance-id>/bindings/<binding-id>/selector` configures or replaces the metrics identity without deleting the binding.
+- `POST /integrations/prometheus/instances/<instance-id>/bindings/<binding-id>/validate` validates scope isolation.
+- Provider registration remains a secondary action used only when no suitable endpoint has been registered.
+
+The current first-class binding workspace is implemented for managed Kubernetes clusters. The canonical selector schema is provider-neutral and can also represent server, server-group, HCI, storage, or global scopes when those asset registries and provider adapters are introduced.

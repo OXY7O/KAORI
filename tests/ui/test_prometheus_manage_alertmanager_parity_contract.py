@@ -3,6 +3,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 ROUTES = ROOT / 'app/prometheus/routes.py'
+SERVICE = ROOT / 'app/prometheus/service.py'
 FORMS = ROOT / 'app/prometheus/forms.py'
 PRESENTATION = ROOT / 'app/prometheus/presentation.py'
 DETAIL = ROOT / 'app/templates/prometheus/instance_detail.html'
@@ -108,6 +109,7 @@ def test_runtime_matches_alertmanager_health_and_history_contract() -> None:
 def test_scope_matches_alertmanager_binding_and_resolution_contract() -> None:
     scope = read(SCOPE)
     routes = read(ROUTES)
+    service = read(SERVICE)
 
     required = (
         'Scope &amp; Resolution',
@@ -126,7 +128,7 @@ def test_scope_matches_alertmanager_binding_and_resolution_contract() -> None:
     assert 'hx-target="#prometheus-scope-workspace"' in scope
     assert 'role=role' in routes
     assert 'binding_role=role' not in routes
-    assert 'IntegrationInstance.provider_type == \'prometheus\'' in routes
+    assert "IntegrationInstance.provider_type == 'prometheus'" in service
 
 
 def test_manage_workspace_uses_one_context_builder_for_full_and_partial_responses() -> None:

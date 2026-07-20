@@ -51,12 +51,12 @@ def prometheus_setup_blocker(cluster: Cluster) -> DependencyBlocker:
         'badge': 'Prometheus required',
         'title': 'Prometheus setup required',
         'description': (
-            f'Prometheus is not configured for {cluster.name}. Configure the integration to load live analytics.'
+            f'{cluster.name} is not bound to a Prometheus source. Select an existing registered source to load live analytics.'
         ),
         'diagnostic_detail': None,
         'icon': 'activity',
-        'action_label': 'Configure Prometheus',
-        'action_url': url_for('prometheus.new_instance', cluster_id=cluster.id),
+        'action_label': 'Bind Prometheus Source',
+        'action_url': url_for('integrations.bind_prometheus_source', scope_key=cluster.id),
         'permission': 'settings.manage_integrations',
     }
 
@@ -121,16 +121,16 @@ def alert_source_setup_blocker(
 
     if normalized_source == 'alertmanager':
         title = 'Alertmanager setup required'
-        description = f'Alertmanager is not configured for {cluster.name}. Configure it to load alert routing and lifecycle context.'
+        description = f'{cluster.name} is not bound to an Alertmanager source. Select an existing registered source to load alert routing and lifecycle context.'
         badge = 'Alertmanager required'
-        action_label = 'Configure Alertmanager'
-        action_url = url_for('alertmanager.new_instance', cluster_id=cluster.id)
+        action_label = 'Bind Alertmanager Source'
+        action_url = url_for('integrations.bind_alertmanager_source', scope_key=cluster.id)
     else:
         title = 'Alert source setup required'
-        description = f'No alert source is configured for {cluster.name}. Configure Alertmanager or Prometheus to load alert data.'
+        description = f'No alert source is bound to {cluster.name}. Select an existing Alertmanager or Prometheus source to load alert data.'
         badge = 'Alert source required'
-        action_label = 'Configure Alertmanager'
-        action_url = url_for('alertmanager.new_instance', cluster_id=cluster.id)
+        action_label = 'Bind Alertmanager Source'
+        action_url = url_for('integrations.bind_alertmanager_source', scope_key=cluster.id)
 
     return {
         'kind': 'alert_source_setup',

@@ -13,9 +13,9 @@ from app.integrations.runtime.monitoring import refresh_and_record
 from app.integrations.runtime.presentation import runtime_history_view, runtime_state_view
 from app.integrations.runtime.repository import paginate_runtime_history
 from app.extensions.db import db
-from app.integrations.lifecycle import bind_instance, ensure_canonical_instance
+from app.integrations.lifecycle import ensure_canonical_instance
 from app.models import Cluster, PrometheusInstance
-from app.models.integration import IntegrationBinding, IntegrationInstance
+from app.models.integration import IntegrationBinding
 from app.notifications.service import (
     get_navigation_notification_context,
     record_operational_activity,
@@ -33,8 +33,11 @@ from app.prometheus.repository import (
 from app.prometheus.runtime_adapter import runtime_adapter
 from app.prometheus.service import (
     PrometheusService,
+    create_prometheus_binding,
     remove_prometheus_instance,
     save_prometheus_instance,
+    update_prometheus_binding_selector,
+    validate_prometheus_binding,
 )
 from app.rbac.decorators import permission_required
 
@@ -326,85 +329,25 @@ def add_instance_binding(instance_id: int) -> ResponseReturnValue:
     cluster = get_cluster_by_id(cluster_id) if cluster_id else None
     role = (request.form.get('binding_role') or 'primary').strip().lower()
     priority = request.form.get('priority', 100, type=int) or 100
+    selector_label = request.form.get('selector_label', '').strip() or None
+    selector_value = request.form.get('selector_value', '').strip() or None
+    selector_operator = request.form.get('selector_operator', '=').strip() or '='
     is_htmx = _is_htmx_request()
-    operation_feedback = None
 
-    error = None
-    if cluster is None:
-        error = 'Select an available managed cluster.'
-    elif role not in {'primary', 'secondary', 'fallback'}:
-        error = 'Select a supported source role.'
-    elif priority < 1 or priority > 1000:
-        error = 'Priority must be between 1 and 1000.'
-    elif instance.integration_instance_id is not None and IntegrationBinding.query.filter_by(
-        integration_instance_id=instance.integration_instance_id,
-        asset_type='kubernetes_cluster',
-        asset_key=cluster.id,
-    ).first() is not None:
-        error = 'This Prometheus instance is already bound to the selected managed cluster.'
-    elif role == 'primary':
-        conflicting_primary = (
-            IntegrationBinding.query
-            .join(IntegrationInstance, IntegrationBinding.integration_instance_id == IntegrationInstance.id)
-            .filter(
-                IntegrationInstance.provider_type == 'prometheus',
-                IntegrationBinding.asset_type == 'kubernetes_cluster',
-                IntegrationBinding.asset_key == cluster.id,
-                IntegrationBinding.binding_role == 'primary',
-                IntegrationBinding.enabled.is_(True),
-            )
-            .first()
+    try:
+        if cluster is None:
+            raise ValueError('Select an available managed cluster.')
+        binding = create_prometheus_binding(
+            instance=instance,
+            cluster=cluster,
+            role=role,
+            priority=priority,
+            selector_label=selector_label,
+            selector_value=selector_value,
+            selector_operator=selector_operator,
         )
-        if conflicting_primary is not None:
-            error = 'The selected managed cluster already has an enabled primary Prometheus source.'
-
-    if error is None:
-        try:
-            canonical = ensure_canonical_instance(instance, provider_type='prometheus')
-            binding = bind_instance(
-                canonical,
-                asset_type='kubernetes_cluster',
-                asset_key=cluster.id,
-                role=role,
-                priority=priority,
-                capability_scope=[
-                    'metrics', 'capacity', 'utilization', 'storage', 'workload',
-                    'forecast', 'top_consumers', 'alert_metrics',
-                ],
-            )
-            db.session.commit()
-        except Exception as exc:
-            db.session.rollback()
-            logger.exception('Prometheus binding creation failed for instance %s.', instance_id)
-            error = 'KAORI could not save the scope binding. Review database connectivity and retry.'
-            operation_feedback = record_operational_activity(
-                user_id=current_user.id,
-                event_type='prometheus_binding_create_failed',
-                status='error',
-                title='Prometheus binding not saved',
-                message=f"KAORI could not bind {instance.name} to {cluster.name if cluster else 'the selected scope'}.",
-                detail=error,
-                action_url=url_for('prometheus.instance_detail', instance_id=instance.id) + '#scope',
-                action_label='Review Prometheus scope',
-                action_icon='waypoints',
-                metadata={'instance_id': instance.id, 'cluster_id': cluster.id if cluster else cluster_id or None, 'reason': type(exc).__name__},
-                queue_feedback=not is_htmx,
-            )
-        else:
-            operation_feedback = record_operational_activity(
-                user_id=current_user.id,
-                event_type='prometheus_binding_created',
-                status='success',
-                title='Prometheus binding created',
-                message=f'{instance.name} is now available to {cluster.name}.',
-                detail=f'{role.title()} source with priority {priority}.',
-                action_url=url_for('prometheus.instance_detail', instance_id=instance.id) + '#scope',
-                action_label='Review Prometheus scope',
-                action_icon='waypoints',
-                metadata={'instance_id': instance.id, 'binding_id': binding.id, 'cluster_id': cluster.id},
-                queue_feedback=not is_htmx,
-            )
-    else:
+    except ValueError as exc:
+        error = str(exc)
         operation_feedback = record_operational_activity(
             user_id=current_user.id,
             event_type='prometheus_binding_create_rejected',
@@ -415,7 +358,55 @@ def add_instance_binding(instance_id: int) -> ResponseReturnValue:
             action_url=url_for('prometheus.instance_detail', instance_id=instance.id) + '#scope',
             action_label='Review Prometheus scope',
             action_icon='waypoints',
-            metadata={'instance_id': instance.id, 'cluster_id': cluster.id if cluster else cluster_id or None, 'binding_role': role, 'priority': priority},
+            metadata={
+                'instance_id': instance.id,
+                'cluster_id': cluster.id if cluster else cluster_id or None,
+                'binding_role': role,
+                'priority': priority,
+                'selector_label': selector_label,
+            },
+            queue_feedback=not is_htmx,
+        )
+    except Exception as exc:
+        db.session.rollback()
+        logger.exception('Prometheus binding creation failed for instance %s.', instance_id)
+        error = 'KAORI could not save the scope binding. Review database connectivity and retry.'
+        operation_feedback = record_operational_activity(
+            user_id=current_user.id,
+            event_type='prometheus_binding_create_failed',
+            status='error',
+            title='Prometheus binding not saved',
+            message=f"KAORI could not bind {instance.name} to {cluster.name if cluster else 'the selected scope'}.",
+            detail=error,
+            action_url=url_for('prometheus.instance_detail', instance_id=instance.id) + '#scope',
+            action_label='Review Prometheus scope',
+            action_icon='waypoints',
+            metadata={
+                'instance_id': instance.id,
+                'cluster_id': cluster.id if cluster else cluster_id or None,
+                'reason': type(exc).__name__,
+            },
+            queue_feedback=not is_htmx,
+        )
+    else:
+        error = None
+        operation_feedback = record_operational_activity(
+            user_id=current_user.id,
+            event_type='prometheus_binding_created',
+            status='success',
+            title='Prometheus binding created',
+            message=f'{instance.name} is now available to {cluster.name}.',
+            detail=f'{role.title()} source with priority {priority}. Metrics identity: {selector_label or "unscoped"}.',
+            action_url=url_for('prometheus.instance_detail', instance_id=instance.id) + '#scope',
+            action_label='Review Prometheus scope',
+            action_icon='waypoints',
+            metadata={
+                'instance_id': instance.id,
+                'binding_id': binding.id,
+                'cluster_id': cluster.id,
+                'selector_label': selector_label,
+                'selector_value': selector_value,
+            },
             queue_feedback=not is_htmx,
         )
 
@@ -425,6 +416,110 @@ def add_instance_binding(instance_id: int) -> ResponseReturnValue:
             instance,
             operation_feedback=operation_feedback,
             binding_error=error,
+        )
+    return redirect(url_for('prometheus.instance_detail', instance_id=instance.id) + '#scope')
+
+
+@prometheus_bp.post('/instances/<int:instance_id>/bindings/<int:binding_id>/selector')
+@permission_required('settings.manage_integrations')
+def update_instance_binding_selector(instance_id: int, binding_id: int) -> ResponseReturnValue:
+    instance = _instance_or_404(instance_id)
+    binding = db.session.get(IntegrationBinding, binding_id)
+    if binding is None or binding.integration_instance_id != instance.integration_instance_id:
+        abort(404)
+    is_htmx = _is_htmx_request()
+    selector_label = request.form.get('selector_label', '').strip() or None
+    selector_value = request.form.get('selector_value', '').strip() or None
+    selector_operator = request.form.get('selector_operator', '=').strip() or '='
+    try:
+        update_prometheus_binding_selector(
+            instance=instance,
+            binding=binding,
+            selector_label=selector_label,
+            selector_value=selector_value,
+            selector_operator=selector_operator,
+        )
+    except ValueError as exc:
+        feedback = record_operational_activity(
+            user_id=current_user.id,
+            event_type='prometheus_binding_selector_update_rejected',
+            status='error',
+            title='Metrics identity not updated',
+            message='KAORI could not save the Prometheus binding selector.',
+            detail=str(exc),
+            action_url=url_for('prometheus.instance_detail', instance_id=instance.id) + '#scope',
+            action_label='Review Prometheus scope',
+            action_icon='scan-line',
+            metadata={'instance_id': instance.id, 'binding_id': binding.id},
+            queue_feedback=not is_htmx,
+        )
+    except Exception as exc:
+        db.session.rollback()
+        logger.exception('Prometheus binding selector update failed for binding %s.', binding_id)
+        feedback = record_operational_activity(
+            user_id=current_user.id,
+            event_type='prometheus_binding_selector_update_failed',
+            status='error',
+            title='Metrics identity not updated',
+            message='KAORI could not persist the Prometheus binding selector.',
+            detail='Review KAORI logs and database connectivity before retrying.',
+            action_url=url_for('prometheus.instance_detail', instance_id=instance.id) + '#scope',
+            action_label='Review Prometheus scope',
+            action_icon='scan-line',
+            metadata={'instance_id': instance.id, 'binding_id': binding.id, 'reason': type(exc).__name__},
+            queue_feedback=not is_htmx,
+        )
+    else:
+        feedback = record_operational_activity(
+            user_id=current_user.id,
+            event_type='prometheus_binding_selector_updated',
+            status='success',
+            title='Metrics identity updated',
+            message='The Prometheus binding selector was saved.',
+            detail='Binding readiness returned to Validation Required. Validate the binding before operational use.',
+            action_url=url_for('prometheus.instance_detail', instance_id=instance.id) + '#scope',
+            action_label='Validate binding',
+            action_icon='scan-search',
+            metadata={
+                'instance_id': instance.id,
+                'binding_id': binding.id,
+                'selector_label': selector_label,
+                'selector_operator': selector_operator,
+                'selector_value': selector_value,
+            },
+            queue_feedback=not is_htmx,
+        )
+    if is_htmx:
+        return _render_instance_partial(
+            'prometheus/partials/_detail_scope.html', instance, operation_feedback=feedback,
+        )
+    return redirect(url_for('prometheus.instance_detail', instance_id=instance.id) + '#scope')
+
+
+@prometheus_bp.post('/instances/<int:instance_id>/bindings/<int:binding_id>/validate')
+@permission_required('settings.manage_integrations')
+def validate_instance_binding(instance_id: int, binding_id: int) -> ResponseReturnValue:
+    instance = _instance_or_404(instance_id)
+    binding = db.session.get(IntegrationBinding, binding_id)
+    if binding is None or binding.integration_instance_id != instance.integration_instance_id:
+        abort(404)
+    result = validate_prometheus_binding(instance=instance, binding=binding)
+    feedback = record_operational_activity(
+        user_id=current_user.id,
+        event_type='prometheus_binding_validated',
+        status='success' if result['status'] == 'ready' else 'warning',
+        title='Prometheus binding validation completed',
+        message=result['message'],
+        detail=f"Binding status: {result['status'].replace('_', ' ').title()}.",
+        action_url=url_for('prometheus.instance_detail', instance_id=instance.id) + '#scope',
+        action_label='Review Prometheus scope',
+        action_icon='scan-search',
+        metadata={'instance_id': instance.id, 'binding_id': binding.id, **result},
+        queue_feedback=not _is_htmx_request(),
+    )
+    if _is_htmx_request():
+        return _render_instance_partial(
+            'prometheus/partials/_detail_scope.html', instance, operation_feedback=feedback,
         )
     return redirect(url_for('prometheus.instance_detail', instance_id=instance.id) + '#scope')
 
@@ -758,7 +853,7 @@ def configuration(cluster_id: str) -> ResponseReturnValue:
         return redirect(
             url_for('prometheus.instance_detail', instance_id=instance.id) + '#configuration'
         )
-    return redirect(url_for('prometheus.new_instance', cluster_id=cluster.id))
+    return redirect(url_for('integrations.bind_prometheus_source', scope_key=cluster.id))
 
 
 @prometheus_bp.route(

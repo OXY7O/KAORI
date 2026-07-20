@@ -6,7 +6,7 @@ from app.integrations.consumer import ConsumerDiagnostic, ConsumerResult, Consum
 from app.models import Cluster, PrometheusInstance
 from app.prometheus.client import PrometheusClient
 from app.prometheus.exceptions import PrometheusError
-from app.prometheus.repository import resolve_instance_for_cluster
+from app.prometheus.resolver import resolve_prometheus_sources
 
 DEFAULT_QUERY_CAPABILITIES = ('instant_query',)
 DEFAULT_RANGE_CAPABILITIES = ('range_query',)
@@ -22,13 +22,22 @@ class PrometheusConsumer:
 
     def __init__(self, cluster: Cluster) -> None:
         self.cluster = cluster
-        config = resolve_instance_for_cluster(cluster.id)
-        if config is None:
+        resolution = resolve_prometheus_sources(
+            scope_type='kubernetes_cluster',
+            scope_key=cluster.id,
+        )
+        selected = resolution.selected
+        if selected is None:
+            reasons = '; '.join(candidate.decision_reason for candidate in resolution.candidates)
             raise PrometheusError(
-                'No canonical Prometheus runtime is bound to this Kubernetes cluster.'
+                reasons or 'No canonical Prometheus runtime is bound to this Kubernetes cluster.'
             )
-        self.config = config
-        self.client = PrometheusClient(config)
+        self.config = selected.instance
+        self.binding = selected.binding
+        self.client = PrometheusClient(
+            self.config,
+            scope_selector=self.binding.selector_json,
+        )
 
     def query(
         self,

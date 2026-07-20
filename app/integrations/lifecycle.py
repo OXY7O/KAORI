@@ -55,6 +55,9 @@ def bind_instance(
     role: str = 'primary',
     priority: int = 100,
     capability_scope: list[str] | None = None,
+    selector_json: dict | None = None,
+    validation_status: str | None = None,
+    validation_message: str | None = None,
 ) -> IntegrationBinding:
     binding = IntegrationBinding.query.filter_by(
         integration_instance_id=canonical.id,
@@ -73,4 +76,10 @@ def bind_instance(
     binding.priority = priority
     binding.enabled = True
     binding.capability_scope = capability_scope
+    if selector_json is not None:
+        binding.selector_json = selector_json
+    if validation_status is not None:
+        binding.validation_status = validation_status
+    if validation_message is not None:
+        binding.validation_message = validation_message
     return binding

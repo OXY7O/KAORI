@@ -1,7 +1,7 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
 {% from "integrations/partials/_status_badge.html" import status_badge %}
-{% import "components/uncovered_operational_scopes.html" as uncovered_operational_scopes %}
+{% import "components/integration_coverage.html" as integration_coverage %}
 {% block title %}Prometheus Integrations · KAORI{% endblock title %}
 {% block dashboard_content %}
 {% set posture_status = 'Healthy' if stats.total > 0 and stats.ready == stats.configured else ('Attention' if stats.total > 0 else 'Not Configured') %}
@@ -65,7 +65,7 @@
                 ('Registered Connections', stats.total, 'Reusable metrics endpoints', 'server-cog'),
                 ('Validated Connections', stats.ready, 'Ready for operational use', 'badge-check'),
                 ('Needs Attention', stats.attention, 'Validation or runtime review', 'triangle-alert'),
-                ('Uncovered Scopes', uncovered_clusters|length, 'Clusters without an eligible source', 'unlink')
+                ('Uncovered Scopes', coverage_stats.uncovered, 'Clusters without an eligible source', 'unlink')
             ] %}
                 <article class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
                     <div class="flex items-start justify-between gap-3">
@@ -101,11 +101,16 @@
         </div>
     </section>
 
-    {{ uncovered_operational_scopes.render(
-        'Operational Scopes Without a Prometheus Source',
-        'Register and bind an eligible metrics connection before these clusters can use governed Prometheus-backed Analytics.',
-        uncovered_clusters,
-        'prometheus.new_instance'
+    {{ integration_coverage.render(
+        provider,
+        coverage_rows,
+        coverage_stats,
+        coverage_pagination,
+        selected_query=selected_query,
+        selected_readiness=selected_readiness,
+        selected_compatibility=selected_compatibility|default(''),
+        selected_deployment_type=selected_deployment_type|default(''),
+        registry_per_page=pagination.per_page
     ) }}
 
     {% include 'integrations/prometheus/partials/_instance_inventory.html' %}

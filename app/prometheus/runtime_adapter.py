@@ -6,6 +6,7 @@ from typing import Any
 from app.integrations.runtime.contracts import CapabilitySnapshot, DiagnosticResult, HealthFactor, RuntimeState
 from app.integrations.runtime.scoring import calculate_health
 from app.models.prometheus import PrometheusInstance
+from app.prometheus.repository import primary_cluster_id_for_instance
 from app.prometheus.service import PrometheusService
 
 
@@ -35,7 +36,7 @@ class PrometheusRuntimeAdapter:
                 'capability_assessments': assessments,
                 'feature_contract_summary': contract_summary,
                 'binding_type': 'kubernetes_cluster',
-                'cluster_id': str(getattr(instance, 'cluster_id', '') or next((b.scope_key for b in getattr(instance, 'bindings', []) if b.scope_type == 'kubernetes_cluster' and b.enabled), '')), 
+                'cluster_id': str(getattr(instance, 'cluster_id', '') or primary_cluster_id_for_instance(instance) or ''),
             },
         )
         return RuntimeState(

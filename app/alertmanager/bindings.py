@@ -1,13 +1,17 @@
 from __future__ import annotations
 
 from app.alertmanager.forms import AlertmanagerBindingForm
+from app.integrations.binding_selectors import build_selector
 from app.alertmanager.repository import find_binding, get_binding, list_bindings_for_scope
 from app.extensions import db
 from app.integrations.lifecycle import ensure_canonical_instance
 from app.models.alertmanager import AlertmanagerInstance
 from app.models.integration import IntegrationBinding
 
-DEFAULT_CAPABILITIES = ['alerts', 'silences', 'routing', 'receivers']
+DEFAULT_CAPABILITIES = [
+    'alerts', 'alerts_v2', 'silences', 'silences_v2',
+    'routing', 'receivers', 'status_v2',
+]
 
 
 def create_or_update_binding(
@@ -40,6 +44,13 @@ def create_or_update_binding(
             scope_key=scope_key,
         )
 
+    selector_json = build_selector(
+        label=form.selector_label,
+        value=form.selector_value,
+        operator=form.selector_operator,
+    )
+    if form.scope_type != 'global' and selector_json is None:
+        raise ValueError('Define an alert identity selector before binding this Alertmanager source.')
     canonical = ensure_canonical_instance(instance, provider_type='alertmanager')
     binding = IntegrationBinding(
         integration_instance_id=canonical.id,
@@ -49,6 +60,9 @@ def create_or_update_binding(
         priority=form.priority,
         enabled=form.enabled,
         capability_scope=DEFAULT_CAPABILITIES,
+        selector_json=selector_json,
+        validation_status='validation_required',
+        validation_message='Binding saved. Validate source labels and runtime evidence before relying on this shared scope.',
     )
     db.session.add(binding)
     if commit:

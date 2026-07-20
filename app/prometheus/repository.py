@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from app.integrations.resolver import provider_record, resolve_integration
 from app.models.prometheus import PrometheusInstance
 
 KUBERNETES_CLUSTER_SCOPE = 'kubernetes_cluster'
@@ -11,17 +10,15 @@ def resolve_instance_for_cluster(
     *,
     required_capabilities: tuple[str, ...] = (),
 ) -> PrometheusInstance | None:
-    resolution = resolve_integration(
-        provider_type='prometheus',
-        asset_type=KUBERNETES_CLUSTER_SCOPE,
-        asset_key=cluster_id,
-        required_capabilities=required_capabilities,
+    from app.prometheus.resolver import resolve_prometheus_sources
+
+    resolution = resolve_prometheus_sources(
+        scope_type=KUBERNETES_CLUSTER_SCOPE,
+        scope_key=cluster_id,
+        required_binding_capabilities=required_capabilities,
     )
     selected = resolution.selected
-    if selected is None:
-        return None
-    record = provider_record(selected.instance)
-    return record if isinstance(record, PrometheusInstance) else None
+    return selected.instance if selected is not None else None
 
 
 def get_instance(instance_id: int) -> PrometheusInstance | None:

@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from app.extensions.db import db
+from app.integrations.binding_selectors import selector_form_values, selector_is_configured, selector_summary
 from app.integrations.runtime.presentation import runtime_history_view, runtime_state_view
 from app.integrations.runtime.repository import paginate_runtime_history
 from app.models import Cluster, PrometheusInstance
@@ -301,10 +302,17 @@ def _capability_label(key: str) -> str:
 
 def _binding_row(binding: IntegrationBinding) -> dict[str, Any]:
     cluster = db.session.get(Cluster, binding.asset_key) if binding.asset_type == KUBERNETES_CLUSTER_SCOPE else None
+    selector_values = selector_form_values(binding.selector_json)
     return {
         'binding': binding,
         'scope_label': cluster.name if cluster is not None else binding.asset_key,
         'scope_type_label': 'Managed Cluster' if binding.asset_type == KUBERNETES_CLUSTER_SCOPE else binding.asset_type.replace('_', ' ').title(),
+        'selector_summary': selector_summary(binding.selector_json),
+        'selector_configured': selector_is_configured(binding.selector_json),
+        'selector_label': selector_values['label'],
+        'selector_operator': selector_values['operator'],
+        'selector_value': selector_values['value'],
+        'validation_status': binding.validation_status or 'validation_required',
     }
 
 

@@ -6,6 +6,7 @@ from app.alertmanager.contracts import AlertQuery
 from app.alertmanager.reader import read_alerts, read_silences
 from app.alertmanager.resolver import AlertmanagerSourceResolution, resolve_alertmanager_sources
 from app.alertmanager.sanitization import safe_endpoint
+from app.integrations.binding_selectors import selector_filters
 
 KUBERNETES_CLUSTER_SCOPE = 'kubernetes_cluster'
 
@@ -25,10 +26,11 @@ def list_alerts_for_scope(
     errors: list[str] = []
     for candidate in resolution.eligible_candidates:
         source = candidate.instance
+        scoped_query = _merge_alert_query(query, candidate.binding.selector_json)
         result = read_alerts(
             source,
             source_name=source.name,
-            query=query,
+            query=scoped_query,
             canonical_instance_id=source.id,
         )
         if result.get('connected'):
@@ -75,6 +77,7 @@ def list_silences_for_scope(
         result = read_silences(
             source,
             source_name=source.name,
+            filters=selector_filters(candidate.binding.selector_json),
             canonical_instance_id=source.id,
         )
         if result.get('connected'):
@@ -171,3 +174,18 @@ def _resolution_error(resolution: AlertmanagerSourceResolution) -> str | None:
         return None
     reasons = [candidate.decision_reason for candidate in resolution.candidates if not candidate.eligible]
     return '; '.join(reasons) if reasons else 'No eligible Alertmanager source is currently available.'
+
+
+def _merge_alert_query(query: AlertQuery | None, selector_json: dict | None) -> AlertQuery:
+    base = query or AlertQuery()
+    binding_filters = selector_filters(selector_json)
+    if not binding_filters:
+        return base
+    return AlertQuery(
+        active=base.active,
+        silenced=base.silenced,
+        inhibited=base.inhibited,
+        unprocessed=base.unprocessed,
+        receiver=base.receiver,
+        filters=tuple(dict.fromkeys((*binding_filters, *base.filters))),
+    )

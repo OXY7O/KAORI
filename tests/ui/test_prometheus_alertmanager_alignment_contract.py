@@ -40,12 +40,13 @@ def test_prometheus_landing_hero_matches_compact_alertmanager_contract() -> None
     assert 'Review validated metrics sources, query contracts' not in landing
 
 
-def test_uncovered_scope_action_uses_shared_global_component() -> None:
+def test_scope_coverage_uses_bind_existing_source_component() -> None:
     landing = LANDING.read_text(encoding='utf-8')
-    component = (ROOT / 'app/templates/components/uncovered_operational_scopes.html').read_text(encoding='utf-8')
+    component = (ROOT / 'app/templates/components/integration_coverage.html').read_text(encoding='utf-8')
 
-    assert 'Operational Scopes Without a Prometheus Source' in landing
-    for fragment in ('Register & Bind', 'inline-flex h-10', 'bg-kaori-primary', 'hover:bg-kaori-primary-hover', 'focus-visible:ring-2', 'focus-visible:ring-offset-2'):
+    assert 'integration_coverage.render' in landing
+    assert 'Operational Scopes Without a Prometheus Source' not in landing
+    for fragment in ('Integration Coverage', 'Bind Source', 'Review Binding', 'Register a new connection only when no suitable source exists.'):
         assert fragment in component
 
 

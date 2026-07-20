@@ -18,5 +18,7 @@ def test_kubernetes_workspace_exposes_prometheus_binding_actions():
     template = Path('app/templates/integrations/kubernetes.html').read_text()
 
     assert "'prometheus_instance_id': prometheus.id if prometheus else None" in service
-    assert "url_for('prometheus.new_instance', cluster_id=row.cluster_id)" in template
+    assert "url_for('integrations.bind_prometheus_source', scope_key=row.cluster_id)" in template
     assert "url_for('prometheus.instance_detail', instance_id=row.prometheus_instance_id)" in template
+    assert "url_for('integrations.bind_alertmanager_source', scope_key=row.cluster_id)" in template
+    assert "url_for('alertmanager.instance_detail', instance_id=row.alertmanager_instance_id)" in template

@@ -9,7 +9,8 @@ from app.common.presentation import present_user_datetime
 from app.models import AlertmanagerInstance, Cluster, PrometheusInstance
 from app.models.integration import IntegrationBinding, IntegrationInstance, KubernetesConnection
 from app.models.integration_runtime import IntegrationRuntimeObservation
-from app.prometheus.repository import resolve_instance_for_cluster
+from app.integrations.coverage import bound_source_for_scope
+from app.prometheus.repository import cluster_bindings_for_instance
 
 
 def safe_endpoint(value: str | None) -> str:
@@ -156,7 +157,12 @@ def build_kubernetes_page(*, page: int = 1, per_page: int = 5) -> dict[str, Any]
             integration_instance_id=connection.integration_instance_id,
             enabled=True,
         ).count()
-        prometheus = resolve_instance_for_cluster(cluster.id)
+        prometheus, prometheus_binding = bound_source_for_scope(
+            'prometheus', scope_type='kubernetes_cluster', scope_key=cluster.id,
+        )
+        alertmanager, alertmanager_binding = bound_source_for_scope(
+            'alertmanager', scope_type='kubernetes_cluster', scope_key=cluster.id,
+        )
         rows.append({
             'connection_id': connection.id,
             'integration_instance_id': connection.integration_instance_id,
@@ -170,6 +176,10 @@ def build_kubernetes_page(*, page: int = 1, per_page: int = 5) -> dict[str, Any]
             'binding_count': binding_count,
             'prometheus_instance_id': prometheus.id if prometheus else None,
             'prometheus_name': prometheus.name if prometheus else None,
+            'prometheus_binding_status': prometheus_binding.validation_status if prometheus_binding else None,
+            'alertmanager_instance_id': alertmanager.id if alertmanager else None,
+            'alertmanager_name': alertmanager.name if alertmanager else None,
+            'alertmanager_binding_status': alertmanager_binding.validation_status if alertmanager_binding else None,
             'last_validated_at': present_user_datetime(
                 connection.last_validated_at or cluster.kubernetes_last_validated_at,
                 empty='Not validated',
@@ -239,14 +249,14 @@ def build_prometheus_page(
     readiness: str = "",
     page: int = 1,
     per_page: int = 5,
+    coverage_page: int = 1,
+    coverage_per_page: int = 5,
 ) -> dict[str, Any]:
     clusters_by_id = {cluster.id: cluster for cluster in Cluster.query.all()}
     all_rows: list[dict[str, Any]] = []
-    covered_cluster_ids: set[str] = set()
     for instance in PrometheusInstance.query.order_by(PrometheusInstance.name.asc()).all():
-        bindings = [binding for binding in instance.bindings if binding.enabled and binding.scope_type == 'kubernetes_cluster']
-        cluster_ids = [binding.scope_key for binding in bindings]
-        covered_cluster_ids.update(cluster_ids)
+        bindings = cluster_bindings_for_instance(instance, enabled_only=True)
+        cluster_ids = [binding.asset_key for binding in bindings]
         bound_clusters = [clusters_by_id[key] for key in cluster_ids if key in clusters_by_id]
         environments = sorted({cluster.environment for cluster in bound_clusters if cluster.environment})
         readiness_value = instance.readiness_status or 'validation_required'
@@ -296,7 +306,11 @@ def build_prometheus_page(
     if readiness:
         filtered = [row for row in filtered if row['readiness'] == readiness]
     page_rows, pagination = _paginate(filtered, page=page, per_page=per_page)
-    uncovered = [cluster for cluster in clusters_by_id.values() if cluster.id not in covered_cluster_ids]
+    coverage_context = build_provider_coverage(
+        'prometheus',
+        page=coverage_page,
+        per_page=coverage_per_page,
+    )
     return {
         'rows': page_rows,
         'stats': {
@@ -308,7 +322,7 @@ def build_prometheus_page(
             'bindings': sum(row['binding_count'] for row in all_rows),
         },
         'pagination': pagination,
-        'uncovered_clusters': sorted(uncovered, key=lambda cluster: cluster.name.lower()),
+        **coverage_context,
         'selected_query': query,
         'selected_compatibility': compatibility,
         'selected_readiness': readiness,
@@ -324,6 +338,8 @@ def build_alertmanager_page(
     deployment_type: str = '',
     page: int = 1,
     per_page: int = 5,
+    coverage_page: int = 1,
+    coverage_per_page: int = 5,
 ) -> dict[str, Any]:
     from app.alertmanager.presentation import build_inventory_context
 
@@ -333,6 +349,8 @@ def build_alertmanager_page(
         deployment_type=deployment_type,
         page=page,
         per_page=per_page,
+        coverage_page=coverage_page,
+        coverage_per_page=coverage_per_page,
     )
 
 
