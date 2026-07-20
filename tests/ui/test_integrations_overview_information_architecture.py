@@ -16,21 +16,22 @@ def test_integrations_hero_has_exactly_two_visible_actions():
     assert "integrations.alertmanager" not in text
 
 
-def test_provider_catalog_precedes_operational_overview():
+def test_provider_catalog_precedes_runtime_overview():
     text = OVERVIEW.read_text(encoding="utf-8")
     assert text.index('id="provider-catalog"') < text.index("_runtime_overview.html")
-    assert "Provider catalog" in text
+    assert "Provider Catalog" in text
     assert "integrations.kubernetes" in text
     assert "integrations.prometheus" in text
     assert "integrations.alertmanager" in text
 
 
-def test_operational_overview_uses_compact_metric_strip():
+def test_runtime_overview_uses_compact_metric_strip_and_empty_state():
     text = RUNTIME.read_text(encoding="utf-8")
-    assert "Operational overview" in text
-    assert "Integration health" in text
+    assert "Runtime Overview" in text
+    assert "Integration Health and Capability Posture" in text
     assert "xl:grid-cols-5" in text
-    assert 'rounded-xl border border-border-soft bg-surface-muted/60 p-4' not in text
+    assert "No Runtime Targets Yet" in text
+    assert "runtime_has_targets" in text
 
 
 def test_integrations_ui_reference_records_scalable_page_contract():
@@ -38,3 +39,4 @@ def test_integrations_ui_reference_records_scalable_page_contract():
     assert "no more than two visible actions" in text
     assert "Provider Catalog" in text
     assert "must not require redesigning the hero" in text
+    assert "live Kubernetes, Prometheus, Thanos, or Alertmanager connectivity" in text

@@ -6,7 +6,6 @@ from urllib.parse import urlsplit
 from app.cluster.constants import get_environment_label
 from app.extensions.db import db
 from app.common.presentation import present_user_datetime
-from app.integrations.compatibility import get_profile
 from app.models import AlertmanagerInstance, Cluster, PrometheusInstance
 from app.models.integration import IntegrationBinding, IntegrationInstance, KubernetesConnection
 from app.models.integration_runtime import IntegrationRuntimeObservation
@@ -23,23 +22,6 @@ def safe_endpoint(value: str | None) -> str:
     return f'{parsed.scheme or "http"}://{host}{port}{path}'
 
 
-def _alertmanager_for_cluster(cluster_id: str):
-    from app.alertmanager.resolver import resolve_alertmanager_sources
-
-    resolution = resolve_alertmanager_sources(scope_type='kubernetes_cluster', scope_key=cluster_id)
-    selected = resolution.selected
-    return selected.instance if selected else None
-
-
-def build_rows() -> list[dict[str, Any]]:
-    clusters = Cluster.query.order_by(Cluster.name.asc()).all()
-    rows: list[dict[str, Any]] = []
-    for cluster in clusters:
-        rows.append(_row('prometheus', 'Prometheus', cluster, resolve_instance_for_cluster(cluster.id)))
-        rows.append(_row('alertmanager', 'Alertmanager', cluster, _alertmanager_for_cluster(cluster.id)))
-    return rows
-
-
 def build_integrations_overview(
     *,
     provider: str = "",
@@ -48,28 +30,31 @@ def build_integrations_overview(
     page: int = 1,
     per_page: int = 5,
 ) -> dict[str, Any]:
-    rows = build_rows()
-    prometheus_rows = [row for row in rows if row['key'] == 'prometheus']
-    alertmanager_instances = AlertmanagerInstance.query.all()
-    kubernetes_connections = KubernetesConnection.query.all()
-    total = len(kubernetes_connections) + len(prometheus_rows) + len(alertmanager_instances)
-    configured = len(kubernetes_connections) + sum(1 for row in prometheus_rows if row['configured']) + sum(
-        1 for instance in alertmanager_instances if instance.endpoint
+    """Build the Integrations landing page from persisted provider records only.
+
+    The landing page must remain available when no provider has been registered.
+    It intentionally avoids provider resolvers, live endpoint calls, and cluster-to-
+    provider assumptions so one absent integration cannot break the overview.
+    """
+    kubernetes_connections = (
+        KubernetesConnection.query
+        .join(Cluster)
+        .order_by(Cluster.created_at.asc(), Cluster.id.asc())
+        .all()
     )
-    ready = sum(1 for connection in kubernetes_connections if connection.readiness_status == 'ready') + sum(1 for row in prometheus_rows if row['readiness'] == 'ready') + sum(
-        1 for instance in alertmanager_instances if instance.readiness_status == 'ready'
+    prometheus_instances = PrometheusInstance.query.order_by(PrometheusInstance.name.asc()).all()
+    alertmanager_instances = AlertmanagerInstance.query.order_by(AlertmanagerInstance.name.asc()).all()
+
+    stats = _overview_stats(
+        kubernetes_connections=kubernetes_connections,
+        prometheus_instances=prometheus_instances,
+        alertmanager_instances=alertmanager_instances,
     )
-    blocked = sum(1 for connection in kubernetes_connections if connection.readiness_status == 'blocked') + sum(1 for row in prometheus_rows if row['readiness'] == 'blocked') + sum(
-        1 for instance in alertmanager_instances if instance.readiness_status == 'blocked'
+    runtime_rows = _runtime_overview_rows(
+        kubernetes_connections=kubernetes_connections,
+        prometheus_instances=prometheus_instances,
+        alertmanager_instances=alertmanager_instances,
     )
-    stats = {
-        'total': total,
-        'configured': configured,
-        'ready': ready,
-        'attention': max(configured - ready, 0),
-        'blocked': blocked,
-    }
-    runtime_rows = _runtime_overview_rows()
     filtered_runtime_rows = runtime_rows
     if provider:
         filtered_runtime_rows = [row for row in filtered_runtime_rows if row['provider'] == provider]
@@ -77,6 +62,7 @@ def build_integrations_overview(
         filtered_runtime_rows = [row for row in filtered_runtime_rows if row['health_status'] == health]
     if readiness:
         filtered_runtime_rows = [row for row in filtered_runtime_rows if row['readiness'] == readiness]
+
     page_rows, runtime_pagination = _paginate(filtered_runtime_rows, page=page, per_page=per_page)
     runtime_stats = {
         'total': len(runtime_rows),
@@ -87,13 +73,22 @@ def build_integrations_overview(
         'capability_attention': sum(1 for row in runtime_rows if row['capability_attention'] > 0),
     }
     return {
-        'rows': rows,
         'stats': stats,
-        'catalog': _catalog(rows),
-        'coverage': _coverage(rows),
+        'catalog': _catalog(
+            kubernetes_connections=kubernetes_connections,
+            prometheus_instances=prometheus_instances,
+            alertmanager_instances=alertmanager_instances,
+        ),
+        'coverage': _coverage(
+            kubernetes_connections=kubernetes_connections,
+            prometheus_instances=prometheus_instances,
+            alertmanager_instances=alertmanager_instances,
+        ),
         'runtime_rows': page_rows,
         'runtime_stats': runtime_stats,
         'runtime_pagination': runtime_pagination,
+        'runtime_has_targets': bool(runtime_rows),
+        'runtime_has_active_filters': bool(provider or health or readiness),
         'selected_provider': provider,
         'selected_health': health,
         'selected_readiness': readiness,
@@ -106,16 +101,50 @@ def build_integrations_overview(
             {'value': 'healthy', 'label': 'Healthy'},
             {'value': 'degraded', 'label': 'Degraded'},
             {'value': 'unhealthy', 'label': 'Unhealthy'},
-            {'value': 'not_observed', 'label': 'Not observed'},
+            {'value': 'not_observed', 'label': 'Not Observed'},
         ],
         'runtime_readiness_options': [
             {'value': 'ready', 'label': 'Ready'},
             {'value': 'degraded', 'label': 'Degraded'},
             {'value': 'blocked', 'label': 'Blocked'},
-            {'value': 'validation_required', 'label': 'Validation required'},
+            {'value': 'validation_required', 'label': 'Validation Required'},
         ],
     }
 
+
+def _kubernetes_readiness(connection: KubernetesConnection) -> str:
+    cluster = connection.cluster
+    return (
+        connection.readiness_status
+        or (cluster.kubernetes_readiness_status if cluster else None)
+        or 'validation_required'
+    )
+
+
+def _overview_stats(
+    *,
+    kubernetes_connections: list[KubernetesConnection],
+    prometheus_instances: list[PrometheusInstance],
+    alertmanager_instances: list[AlertmanagerInstance],
+) -> dict[str, int]:
+    configured = (
+        len(kubernetes_connections)
+        + sum(1 for instance in prometheus_instances if instance.endpoint)
+        + sum(1 for instance in alertmanager_instances if instance.endpoint)
+    )
+    readiness_values = [
+        *(_kubernetes_readiness(connection) for connection in kubernetes_connections),
+        *((instance.readiness_status or 'validation_required') for instance in prometheus_instances),
+        *((instance.readiness_status or 'validation_required') for instance in alertmanager_instances),
+    ]
+    ready = sum(1 for value in readiness_values if value == 'ready')
+    return {
+        'total': len(kubernetes_connections) + len(prometheus_instances) + len(alertmanager_instances),
+        'configured': configured,
+        'ready': ready,
+        'attention': max(configured - ready, 0),
+        'blocked': sum(1 for value in readiness_values if value == 'blocked'),
+    }
 
 
 def build_kubernetes_page(*, page: int = 1, per_page: int = 5) -> dict[str, Any]:
@@ -296,34 +325,41 @@ def build_alertmanager_page(
 
 
 
-def _coverage(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    prometheus_rows = [row for row in rows if row['key'] == 'prometheus']
-    alertmanager_instances = AlertmanagerInstance.query.all()
-    observability_total = len(prometheus_rows) + len(alertmanager_instances)
-    observability_configured = sum(1 for row in prometheus_rows if row['configured']) + sum(
-        1 for instance in alertmanager_instances if instance.endpoint
-    )
-    observability_ready = sum(1 for row in prometheus_rows if row['readiness'] == 'ready') + sum(
-        1 for instance in alertmanager_instances if instance.readiness_status == 'ready'
-    )
+def _coverage(
+    *,
+    kubernetes_connections: list[KubernetesConnection],
+    prometheus_instances: list[PrometheusInstance],
+    alertmanager_instances: list[AlertmanagerInstance],
+) -> list[dict[str, Any]]:
+    observability_instances = [*prometheus_instances, *alertmanager_instances]
     return [
+        {
+            'key': 'compute',
+            'label': 'Compute & Infrastructure',
+            'icon': 'boxes',
+            'configured': len(kubernetes_connections),
+            'ready': sum(1 for item in kubernetes_connections if _kubernetes_readiness(item) == 'ready'),
+            'total': len(kubernetes_connections),
+        },
         {
             'key': 'observability',
             'label': 'Observability',
             'icon': 'activity',
-            'configured': observability_configured,
-            'ready': observability_ready,
-            'total': observability_total,
+            'configured': sum(1 for item in observability_instances if item.endpoint),
+            'ready': sum(1 for item in observability_instances if item.readiness_status == 'ready'),
+            'total': len(observability_instances),
         },
         {'key': 'storage', 'label': 'Storage', 'icon': 'database', 'configured': 0, 'ready': 0, 'total': 0},
         {'key': 'security', 'label': 'Security', 'icon': 'shield-check', 'configured': 0, 'ready': 0, 'total': 0},
     ]
 
 
-def _catalog(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    configured_prometheus = sum(1 for row in rows if row['key'] == 'prometheus' and row['configured'])
-    configured_alertmanager = AlertmanagerInstance.query.filter(AlertmanagerInstance.endpoint != '').count()
-    configured_kubernetes = KubernetesConnection.query.count()
+def _catalog(
+    *,
+    kubernetes_connections: list[KubernetesConnection],
+    prometheus_instances: list[PrometheusInstance],
+    alertmanager_instances: list[AlertmanagerInstance],
+) -> list[dict[str, Any]]:
     return [
         {
             'key': 'kubernetes',
@@ -331,7 +367,7 @@ def _catalog(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
             'category': 'Compute & Infrastructure',
             'icon': 'boxes',
             'availability': 'available',
-            'configured': configured_kubernetes,
+            'configured': len(kubernetes_connections),
             'description': 'Canonical Kubernetes API connections, asset identity, discovery, readiness, and operational access.',
         },
         {
@@ -340,7 +376,7 @@ def _catalog(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
             'category': 'Observability',
             'icon': 'activity',
             'availability': 'available',
-            'configured': configured_prometheus,
+            'configured': sum(1 for instance in prometheus_instances if instance.endpoint),
             'description': 'Metrics collection and versioned PromQL validation for connected infrastructure assets.',
         },
         {
@@ -349,7 +385,7 @@ def _catalog(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
             'category': 'Observability',
             'icon': 'siren',
             'availability': 'available',
-            'configured': configured_alertmanager,
+            'configured': sum(1 for instance in alertmanager_instances if instance.endpoint),
             'description': 'Shared Alertmanager instances, asset bindings, alert retrieval, silence capability, and API compatibility validation.',
         },
         {
@@ -371,49 +407,6 @@ def _catalog(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
             'description': 'External secret and credential management with controlled access and auditability.',
         },
     ]
-
-def _stats(rows: list[dict[str, Any]]) -> dict[str, int]:
-    return {
-        'total': len(rows),
-        'configured': sum(1 for row in rows if row['configured']),
-        'ready': sum(1 for row in rows if row['readiness'] == 'ready'),
-        'attention': sum(1 for row in rows if row['configured'] and row['readiness'] != 'ready'),
-        'blocked': sum(1 for row in rows if row['readiness'] == 'blocked'),
-    }
-
-
-def _row(key: str, name: str, cluster: Cluster, config: object | None) -> dict[str, Any]:
-    configured = bool(config and getattr(config, 'endpoint', None))
-    profile_key = getattr(config, 'compatibility_profile', None) if config else None
-    endpoint_product = (
-        getattr(config, 'endpoint_product', None)
-        if key == 'prometheus' and config
-        else key
-    ) or key
-    profile = get_profile(endpoint_product, profile_key)
-    return {
-        'key': key,
-        'name': name,
-        'category': 'Observability',
-        'cluster': cluster,
-        'environment': cluster.environment,
-        'environment_label': get_environment_label(cluster.environment),
-        'configured': configured,
-        'endpoint': safe_endpoint(getattr(config, 'endpoint', None) if config else None),
-        'endpoint_product': endpoint_product,
-        'version': getattr(config, 'detected_version', None) if config else None,
-        'compatibility': (getattr(config, 'compatibility_status', None) if config else None) or ('validation_required' if configured else 'not_configured'),
-        'readiness': (getattr(config, 'readiness_status', None) if config else None) or ('validation_required' if configured else 'not_configured'),
-        'profile': profile_key,
-        'profile_support': profile.support_level if profile else None,
-        'validated_at': getattr(config, 'last_validated_at', None) if config else None,
-        'message': getattr(config, 'validation_message', None) if config else None,
-        'query_profile': getattr(config, 'query_profile', None) if key == 'prometheus' and config else None,
-        'version_detection_mode': getattr(config, 'version_detection_mode', 'automatic') if key == 'prometheus' and config else None,
-        'source_prometheus_major': getattr(config, 'source_prometheus_major', None) if key == 'prometheus' and config else None,
-        'query_status': getattr(config, 'query_validation_status', None) if key == 'prometheus' and config else None,
-        'retention': getattr(config, 'retention_validation_summary', None) if key == 'prometheus' and config else None,
-    }
 
 
 def _filter_prometheus_rows(
@@ -467,7 +460,12 @@ def _paginate(
     }
 
 
-def _runtime_overview_rows() -> list[dict[str, Any]]:
+def _runtime_overview_rows(
+    *,
+    kubernetes_connections: list[KubernetesConnection],
+    prometheus_instances: list[PrometheusInstance],
+    alertmanager_instances: list[AlertmanagerInstance],
+) -> list[dict[str, Any]]:
     latest: dict[tuple[str, str], IntegrationRuntimeObservation] = {}
     observations = IntegrationRuntimeObservation.query.order_by(
         IntegrationRuntimeObservation.observed_at.desc(),
@@ -477,7 +475,7 @@ def _runtime_overview_rows() -> list[dict[str, Any]]:
         latest.setdefault((observation.provider, observation.instance_id), observation)
 
     rows: list[dict[str, Any]] = []
-    for connection in KubernetesConnection.query.join(Cluster).order_by(Cluster.created_at.asc(), Cluster.id.asc()).all():
+    for connection in kubernetes_connections:
         cluster = connection.cluster
         canonical = db.session.get(IntegrationInstance, connection.integration_instance_id)
         observation = latest.get(('kubernetes', str(connection.id)))
@@ -486,6 +484,7 @@ def _runtime_overview_rows() -> list[dict[str, Any]]:
             'provider': 'kubernetes',
             'provider_label': 'Kubernetes',
             'instance_id': str(connection.id),
+            'cluster_id': str(cluster.id),
             'instance_name': canonical.name if canonical else f'{cluster.name} Kubernetes API',
             'scope_label': cluster.name,
             'endpoint_product': 'Kubernetes API',
@@ -500,11 +499,9 @@ def _runtime_overview_rows() -> list[dict[str, Any]]:
             'capability_attention': 0 if (connection.readiness_status or cluster.kubernetes_readiness_status) == 'ready' else 1,
             'capability_attention_display': 'Ready' if (connection.readiness_status or cluster.kubernetes_readiness_status) == 'ready' else 'Validation needs attention',
             'message': (observation.message if observation else None) or connection.validation_message or cluster.kubernetes_validation_message,
-            'detail_endpoint': 'cluster.edit_cluster',
-            'detail_kwargs': {'cluster_id': cluster.id},
         })
 
-    for instance in PrometheusInstance.query.order_by(PrometheusInstance.name.asc()).all():
+    for instance in prometheus_instances:
         observation = latest.get(('prometheus', str(instance.id)))
         assessments = ((instance.capabilities or {}).get('assessments') or [])
         attention = sum(1 for item in assessments if item.get('status') != 'available')
@@ -531,11 +528,9 @@ def _runtime_overview_rows() -> list[dict[str, Any]]:
                 f'{attention} item needs attention' if attention == 1 else f'{attention} items need attention'
             ),
             'message': (observation.message if observation else None) or instance.validation_message or instance.last_error,
-            'detail_endpoint': 'prometheus.instance_detail',
-            'detail_kwargs': {'instance_id': instance.id},
         })
 
-    for instance in AlertmanagerInstance.query.order_by(AlertmanagerInstance.name.asc()).all():
+    for instance in alertmanager_instances:
         observation = latest.get(('alertmanager', str(instance.id)))
         observed_at = observation.observed_at if observation else instance.last_checked_at
         latency_ms = observation.latency_ms if observation else instance.last_response_time_ms
@@ -562,8 +557,6 @@ def _runtime_overview_rows() -> list[dict[str, Any]]:
                 else f'{capability_attention} items need attention'
             ),
             'message': (observation.message if observation else None) or instance.validation_message or instance.last_error,
-            'detail_endpoint': 'alertmanager.instance_detail',
-            'detail_kwargs': {'instance_id': instance.id},
         })
 
     health_order = {'unhealthy': 0, 'degraded': 1, 'not_observed': 2, 'healthy': 3}
