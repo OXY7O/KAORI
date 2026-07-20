@@ -3,7 +3,7 @@
 {% import "components/operational_toggle.html" as operational_toggle %}
 {% import "components/related_page_card.html" as related_page_card %}
 {% import "components/form_action_bar.html" as form_action_bar %}
-{% import "components/context_guidance_card.html" as context_guidance_card %}
+{% import "components/info_flow.html" as info_flow %}
 {% block title %}{{ 'Edit' if instance else 'Register' }} Prometheus Connection · KAORI{% endblock title %}
 {% block dashboard_content %}
 <div class="kaori-integration-semantic space-y-6">
@@ -11,15 +11,15 @@
         <div class="{{ page_hero.layout_classes() }}">
             <div class="{{ page_hero.content_classes() }}">
                 {% call page_hero.intro('activity', 'Metrics Integration', 'chart-spline') %}
-                    <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">
+                    <h1 class="text-2xl font-semibold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">
                         {{ 'Edit Prometheus Connection' if instance else 'Register Prometheus Connection' }}
                     </h1>
                     <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">
                         {{ 'Update the reusable metrics connection contract, then run validation again.' if instance else 'Create a reusable metrics connection before validating capabilities and assigning scope bindings.' }}
                     </p>
                     <div class="mt-5 flex flex-wrap gap-2">
-                        {{ page_hero.meta_label('database-zap', 'Prometheus-compatible API') }}
-                        {{ page_hero.meta_label('shield-check', 'Capability-aware validation') }}
+                        {{ page_hero.meta_label('database-zap', 'Prometheus-Compatible API') }}
+                        {{ page_hero.meta_label('shield-check', 'Capability-Aware Validation') }}
                         {{ page_hero.meta_label('link-2', 'Governed Scope Binding') }}
                     </div>
                 {% endcall %}
@@ -28,7 +28,7 @@
                 <div class="{{ page_hero.context_panel_classes() }}">
                     <div>
                         <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Connection Workflow</p>
-                        <p class="mt-1 text-sm font-semibold text-brand-foreground">{{ 'Revalidate after changes' if instance else 'Register before validation' }}</p>
+                        <p class="mt-1 text-sm font-semibold text-brand-foreground">{{ 'Revalidate After Changes' if instance else 'Register Before Validation' }}</p>
                         <p class="mt-2 text-xs leading-5 text-brand-foreground-muted">Connection settings establish identity and access. Full Validation establishes API, query, metric, retention, and module readiness contracts.</p>
                     </div>
                     <a href="{{ url_for('prometheus.instance_detail', instance_id=instance.id) if instance else url_for('integrations.prometheus') }}" class="mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-white/80 bg-white px-4 text-sm font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80">
@@ -159,7 +159,7 @@
                 ('Run Full Validation', 'Validate query APIs, metric signals, retention, query contracts, and module readiness.'),
                 ('Assign Scope Bindings', 'Allow operational consumers to resolve this source by role and priority.')
             ] %}
-            {{ context_guidance_card.render(
+            {{ info_flow.render(
                 'Prometheus Integration Flow',
                 'How this configuration becomes an eligible metrics source.',
                 prometheus_flow_items,

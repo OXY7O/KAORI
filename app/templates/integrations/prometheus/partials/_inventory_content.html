@@ -33,12 +33,12 @@
                         <div class="mt-2">{{ table_label.metadata_label((row.endpoint_product or 'prometheus')|replace('_', ' ')|title, 'server-cog') }}</div>
                     </td>
                     <td class="px-4 py-4 align-top">
-                        <p class="font-semibold text-content-primary">{{ row.version or 'Not detected' }}</p>
+                        <p class="font-semibold text-content-primary">{{ row.version or 'Not Detected' }}</p>
                         <p class="mt-1 text-xs leading-5 text-content-muted">{{ row.capability_profile or row.query_profile or 'Capability profile pending' }}</p>
                     </td>
                     <td class="px-4 py-4 align-top">
                         {{ status_badge(row.compatibility) }}
-                        <p class="mt-2 max-w-[210px] text-xs leading-5 text-content-muted">{{ row.profile or 'Run Validation to establish compatibility.' }}</p>
+                        <p class="mt-2 max-w-[210px] text-xs leading-5 text-content-muted">{{ row.profile or 'Run Full Validation to establish compatibility.' }}</p>
                     </td>
                     <td class="px-4 py-4 align-top">{{ status_badge(row.readiness) }}</td>
                     <td class="px-4 py-4 align-top">

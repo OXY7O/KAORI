@@ -116,3 +116,5 @@ Alertmanager Instance Manage → Runtime & History → Health Interpretation is 
 - Contributing factors include icon, label, evidence, and score.
 - No decorative radial chart remains.
 - Detailed remediation stays in Diagnostic Pipeline or Validation.
+
+Prometheus Instance Manage and cluster-bound Prometheus Configuration are additional reference implementations. They must import the same shared component and must not maintain provider-local score ranges, gauges, or evidence-row geometry.

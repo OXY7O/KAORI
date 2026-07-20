@@ -30,7 +30,11 @@ from app.prometheus.repository import (
     resolve_instance_for_cluster,
 )
 from app.prometheus.runtime_adapter import runtime_adapter
-from app.prometheus.service import PrometheusService, save_prometheus_instance
+from app.prometheus.service import (
+    PrometheusService,
+    remove_prometheus_instance,
+    save_prometheus_instance,
+)
 from app.rbac.decorators import permission_required
 
 logger = logging.getLogger(__name__)
@@ -251,9 +255,103 @@ def delete_instance_binding(instance_id: int, binding_id: int) -> ResponseReturn
     ).first()
     if binding is None:
         abort(404)
-    db.session.delete(binding)
-    db.session.commit()
+    binding_metadata = {
+        'instance_id': instance.id,
+        'instance_name': instance.name,
+        'binding_id': binding.id,
+        'asset_type': binding.asset_type,
+        'asset_key': binding.asset_key,
+        'binding_role': binding.binding_role,
+    }
+    try:
+        db.session.delete(binding)
+        db.session.commit()
+    except Exception as exc:
+        db.session.rollback()
+        logger.exception('Prometheus binding deletion failed for binding %s.', binding_id)
+        record_operational_activity(
+            user_id=current_user.id,
+            event_type='prometheus_binding_delete_failed',
+            status='error',
+            title='Prometheus binding not removed',
+            message=f'KAORI could not remove the selected binding from {instance.name}.',
+            detail='Review KAORI logs and database connectivity before retrying.',
+            action_url=url_for('prometheus.instances'),
+            action_label='Review Prometheus bindings',
+            action_icon='waypoints',
+            metadata={**binding_metadata, 'reason': type(exc).__name__},
+            queue_feedback=True,
+        )
+    else:
+        record_operational_activity(
+            user_id=current_user.id,
+            event_type='prometheus_binding_deleted',
+            status='success',
+            title='Prometheus binding removed',
+            message=f'{instance.name} is no longer mapped to the selected managed cluster.',
+            detail=f'{binding.asset_type}:{binding.asset_key} was removed.',
+            action_url=url_for('prometheus.instances'),
+            action_label='Review Prometheus bindings',
+            action_icon='waypoints',
+            metadata=binding_metadata,
+            queue_feedback=True,
+        )
     return redirect(url_for('prometheus.instances'))
+
+
+@prometheus_bp.post('/instances/<int:instance_id>/delete')
+@permission_required('settings.manage_integrations')
+def delete_instance(instance_id: int) -> ResponseReturnValue:
+    instance = _instance_or_404(instance_id)
+    instance_name = instance.name
+    try:
+        remove_prometheus_instance(instance)
+    except ValueError as exc:
+        record_operational_activity(
+            user_id=current_user.id,
+            event_type='prometheus_instance_delete_rejected',
+            status='error',
+            title='Prometheus instance not deleted',
+            message=f'{instance_name} still has scope bindings.',
+            detail=str(exc),
+            action_url=url_for('prometheus.instance_detail', instance_id=instance_id) + '#scope',
+            action_label='Review Prometheus scope',
+            action_icon='waypoints',
+            metadata={'instance_id': instance_id, 'instance_name': instance_name},
+            queue_feedback=True,
+        )
+        return redirect(url_for('prometheus.instance_detail', instance_id=instance_id) + '#scope')
+    except Exception as exc:
+        logger.exception('Prometheus instance deletion failed for %s.', instance_id)
+        record_operational_activity(
+            user_id=current_user.id,
+            event_type='prometheus_instance_delete_failed',
+            status='error',
+            title='Prometheus instance not deleted',
+            message=f'KAORI could not delete {instance_name}.',
+            detail='Review KAORI logs and database connectivity before retrying the deletion.',
+            action_url=url_for('prometheus.instance_detail', instance_id=instance_id) + '#scope',
+            action_label='Review Prometheus scope',
+            action_icon='waypoints',
+            metadata={'instance_id': instance_id, 'instance_name': instance_name, 'reason': type(exc).__name__},
+            queue_feedback=True,
+        )
+        return redirect(url_for('prometheus.instance_detail', instance_id=instance_id) + '#scope')
+
+    record_operational_activity(
+        user_id=current_user.id,
+        event_type='prometheus_instance_deleted',
+        status='success',
+        title='Prometheus instance deleted',
+        message=f'{instance_name} was removed from the integration registry.',
+        detail='Historical runtime observations and Activity Audit records remain available.',
+        action_url=url_for('integrations.prometheus'),
+        action_label='Open Prometheus integrations',
+        action_icon='activity',
+        metadata={'instance_id': instance_id, 'instance_name': instance_name},
+        queue_feedback=True,
+    )
+    return redirect(url_for('integrations.prometheus'))
 
 
 @prometheus_bp.post('/instances/<int:instance_id>/test')

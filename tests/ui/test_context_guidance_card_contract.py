@@ -38,12 +38,9 @@ def test_alertmanager_after_registration_uses_shared_component() -> None:
     assert "After Registration</h2>" not in template
 
 
-def test_integration_guidance_migrations_use_shared_component() -> None:
+def test_secondary_integration_guidance_uses_context_component() -> None:
     expected = {
         "app/templates/integrations/kubernetes/detail.html": "'Operational Flow'",
-        "app/templates/prometheus/instance_form.html": "'Prometheus Integration Flow'",
-        "app/templates/prometheus/instance_detail.html": "'Operational Flow'",
-        "app/templates/prometheus/config.html": "'Configuration Flow'",
         "app/templates/alertmanager/partials/_detail_validation_content.html": "'When External Criteria Already Pass'",
     }
 
@@ -52,6 +49,21 @@ def test_integration_guidance_migrations_use_shared_component() -> None:
         assert 'components/context_guidance_card.html' in template, path
         assert "context_guidance_card.render(" in template, path
         assert title in template, path
+
+
+def test_primary_prometheus_workflows_use_info_flow() -> None:
+    expected = {
+        "app/templates/prometheus/instance_form.html": "'Prometheus Integration Flow'",
+        "app/templates/prometheus/instance_detail.html": "'Configuration Flow'",
+        "app/templates/prometheus/config.html": "'Configuration Flow'",
+    }
+
+    for path, title in expected.items():
+        template = read(path)
+        assert 'components/info_flow.html' in template, path
+        assert "info_flow.render(" in template, path
+        assert title in template, path
+        assert "context_guidance_card.render(" not in template, path
 
 
 def test_semantic_and_navigation_boxes_remain_separate() -> None:

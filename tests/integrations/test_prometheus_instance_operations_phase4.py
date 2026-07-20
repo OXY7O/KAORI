@@ -17,12 +17,17 @@ def test_prometheus_service_accepts_standalone_instance() -> None:
     assert 'self.instance = config' in source
 
 
-def test_prometheus_configuration_uses_instance_operations() -> None:
+def test_prometheus_cluster_configuration_uses_cluster_bound_operations() -> None:
     source = _read('app/templates/prometheus/config.html')
-    assert "prometheus.instance_test" in source
-    assert "prometheus.instance_validate" in source
-    assert "prometheus.test_connection" not in source
-    assert "prometheus.validate_integration" not in source
+    assert "prometheus.test_connection" in source
+    assert "prometheus.validate_integration" in source
+    assert "cluster_id=cluster.id" in source
+
+
+def test_prometheus_instance_detail_uses_instance_operations() -> None:
+    routes = _read('app/prometheus/routes.py')
+    assert "@prometheus_bp.post('/instances/<int:instance_id>/test')" in routes
+    assert "@prometheus_bp.post('/instances/<int:instance_id>/validate')" in routes
 
 
 def test_runtime_history_refresh_is_instance_scoped() -> None:

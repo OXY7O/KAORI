@@ -38,3 +38,7 @@ Use this test before adding documentation:
 - Mentions a provider, object type, route, column, metric, or domain action → module specification.
 
 - [`components/PAGINATION.md`](components/PAGINATION.md)
+
+## Current audits
+
+- `audits/PROMETHEUS_STYLE_AND_LIFECYCLE_AUDIT_2026_07.md`

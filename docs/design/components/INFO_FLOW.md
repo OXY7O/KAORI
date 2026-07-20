@@ -185,3 +185,13 @@ The component remains a single vertical timeline on all viewport sizes. Do not c
 - One optional flow-wide boundary note.
 - No metrics, tables, or embedded actions inside steps.
 - Technical casing preserved.
+
+## Prometheus reference implementations
+
+Prometheus uses Info Flow for primary ordered workflows:
+
+- Register/Edit Prometheus Connection → `Prometheus Integration Flow`;
+- Prometheus Instance Manage → `Configuration Flow`;
+- cluster-bound Prometheus Configuration → `Configuration Flow`.
+
+These remain primary flows even when positioned in a right-side column.

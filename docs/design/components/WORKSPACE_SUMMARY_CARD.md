@@ -65,3 +65,31 @@ Every row uses the same Violet surface because its cards are peer summaries.
 - Title Case title and concise sentence-case description.
 - No local hierarchy created through mixed card colors.
 - No action, metric, status, list, or expandable content.
+
+## Prometheus reference rows
+
+Prometheus Instance Manage and cluster-bound Prometheus Configuration use the same peer-level summary treatment:
+
+```text
+Configuration
+├── Connection Contract
+├── Change Impact
+└── Integration Flow or Cluster Context
+
+Validation
+├── What Validation Does
+├── Why It Matters
+└── Operator Flow
+
+Runtime
+├── Readiness Versus Health
+├── How Monitoring Works
+└── Resolver Correlation or Consumer Boundary
+
+Scope
+├── Binding
+├── Eligibility
+└── Resolution
+```
+
+All cards in one row use the same Violet treatment. Lifecycle warnings and destructive actions remain separate semantic panels.

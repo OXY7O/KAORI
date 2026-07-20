@@ -35,21 +35,32 @@ def list_instances() -> list[PrometheusInstance]:
     ).all()
 
 
-def cluster_bindings_for_instance(instance: PrometheusInstance):
+def cluster_bindings_for_instance(
+    instance: PrometheusInstance,
+    *,
+    enabled_only: bool = False,
+):
+    """Return managed-cluster bindings used by Prometheus administration views.
+
+    Management pages include disabled bindings so lifecycle actions never hide a
+    blocker. Runtime resolution can request enabled bindings explicitly.
+    """
     from app.models.integration import IntegrationBinding
 
     if instance.integration_instance_id is None:
         return []
-    return IntegrationBinding.query.filter_by(
+    query = IntegrationBinding.query.filter_by(
         integration_instance_id=instance.integration_instance_id,
         asset_type=KUBERNETES_CLUSTER_SCOPE,
-        enabled=True,
-    ).order_by(
+    )
+    if enabled_only:
+        query = query.filter_by(enabled=True)
+    return query.order_by(
         IntegrationBinding.priority.asc(),
         IntegrationBinding.id.asc(),
     ).all()
 
 
 def primary_cluster_id_for_instance(instance: PrometheusInstance) -> str | None:
-    bindings = cluster_bindings_for_instance(instance)
+    bindings = cluster_bindings_for_instance(instance, enabled_only=True)
     return bindings[0].asset_key if bindings else None

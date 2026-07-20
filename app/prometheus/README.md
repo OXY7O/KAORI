@@ -96,11 +96,11 @@ Storage readiness is validated with the same PromQL contract used by Storage Ana
 
 The Analytics Readiness panel exposes Expected, Observed, Technical Evidence, validation query, possible causes, and remediation. Metric availability remains visible as troubleshooting evidence but does not override a successful feature query contract.
 
-## Cluster-bound runtime and authoritative query contracts
+## Reusable instances, cluster bindings, and authoritative query contracts
 
-The current Prometheus integration is bound to a Kubernetes cluster rather than managed as a free-standing provider instance. It still uses the shared Integration Runtime adapter, observation, history, health-scoring, and presentation contracts used by Alertmanager.
+Prometheus-compatible endpoints are registered as reusable provider instances and associated with managed Kubernetes clusters through provider-neutral scope bindings. A connection may exist, be tested, and be validated before any cluster binding is assigned. Cluster-bound configuration and Analytics consumers resolve the effective eligible instance for the selected cluster.
 
-Runtime view models own route URLs and binding labels. Prometheus templates must not access `cluster.id` to build refresh actions. Full Validation executes the exact registered Kubernetes Analytics queries and stores a feature-contract summary. The resulting contract summary is authoritative for `query_validation_status` and Analytics readiness; metric-name and recent-series schema discovery remain technical diagnostics.
+Runtime view models own route URLs and binding labels. Shared runtime partials must not depend on a cluster object to build instance actions. Full Validation executes the exact registered Kubernetes Analytics queries and stores a feature-contract summary. The resulting contract summary is authoritative for `query_validation_status` and Analytics readiness; metric-name and recent-series schema discovery remain technical diagnostics.
 
 
 ## Query validation failure isolation
@@ -127,3 +127,30 @@ The KAORI semantic color contract applies globally. Primary Violet is limited to
 ### Global semantic color contract
 
 This workspace consumes the shared KAORI palette and label components. Provider templates must not introduce a separate status palette. Pending maps to Info, maintenance to Warning, and disabled/unknown to Neutral.
+
+## Prometheus Manage UI and lifecycle contract
+
+Prometheus administration follows the same KAORI workspace contract used by Alertmanager while preserving metrics-specific operations.
+
+### Workspace structure
+
+- `Configuration`, `Validation & Capabilities`, `Runtime & History`, and `Scope & Resolution` use one shared tab treatment with Title Case labels, contextual badges, and accessible `tablist` semantics.
+- Each domain begins with three peer-level Violet `Workspace Summary Card` components. A semantic warning or critical panel is added separately only when the state itself requires emphasis.
+- Primary ordered workflows use the shared `Info Flow` component. Supporting runtime interpretation uses the shared `Health Interpretation` component rather than provider-local gauges or score markup.
+- The provider landing page remains a registry and portfolio view. Destructive lifecycle actions are placed in the instance detail workspace, not in the hero or landing table.
+
+### Instance deletion
+
+A registered Prometheus instance can be deleted from:
+
+`Prometheus Instance Detail → Scope & Resolution → Instance Lifecycle & Deletion`
+
+Deletion is intentionally governed:
+
+1. Every provider-neutral scope binding must be removed first, including disabled bindings.
+2. KAORI displays a critical confirmation modal; browser `confirm()` prompts are not permitted.
+3. The provider record and canonical `IntegrationInstance` identity are deleted in one database transaction.
+4. Historical runtime observations and Activity Audit records remain available.
+5. Deletion does not call the Prometheus or Thanos endpoint and therefore does not depend on live provider availability.
+
+The delete button is disabled while bindings remain, and the service layer repeats the same blocker check so direct POST requests cannot bypass the lifecycle boundary.

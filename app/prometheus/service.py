@@ -14,6 +14,7 @@ from app.integrations.compatibility import (
 )
 from app.integrations.lifecycle import bind_instance, ensure_canonical_instance
 from app.models import Cluster, PrometheusInstance
+from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.prometheus.client import PrometheusClient
 from app.prometheus.consumer import PrometheusConsumer
 from app.prometheus.exceptions import PrometheusError
@@ -466,3 +467,33 @@ def save_prometheus_instance(
         db.session.rollback()
         raise
     return instance
+
+def remove_prometheus_instance(instance: PrometheusInstance) -> None:
+    """Delete a reusable Prometheus identity after governed bindings are removed.
+
+    Runtime observation history and Activity Audit records are intentionally retained.
+    The canonical integration identity is removed with the provider record only after
+    no provider-neutral scope bindings remain.
+    """
+    binding_count = 0
+    if instance.integration_instance_id is not None:
+        binding_count = IntegrationBinding.query.filter_by(
+            integration_instance_id=instance.integration_instance_id,
+        ).count()
+    if binding_count:
+        raise ValueError('Remove all scope bindings before deleting this Prometheus instance.')
+
+    canonical = (
+        db.session.get(IntegrationInstance, instance.integration_instance_id)
+        if instance.integration_instance_id
+        else None
+    )
+    db.session.delete(instance)
+    if canonical is not None:
+        db.session.delete(canonical)
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        raise
+
