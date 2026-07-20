@@ -21,6 +21,7 @@ This document is the entry point for KAORI's interface contract. New modules mus
 - `components/CONTEXT_GUIDANCE_CARD.md`
 - `components/INFORMATION_GUIDE_CARD.md`
 - `components/WORKSPACE_SUMMARY_CARD.md`
+- `components/HEALTH_INTERPRETATION.md`
 - `components/BUTTON.md`
 - `components/PAGINATION.md`
 - `components/EMPTY_ERROR_STATE.md`

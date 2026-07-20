@@ -18,6 +18,7 @@
 - `components/CONTEXT_GUIDANCE_CARD.md`
 - `components/INFORMATION_GUIDE_CARD.md`
 - `components/WORKSPACE_SUMMARY_CARD.md`
+- `components/HEALTH_INTERPRETATION.md`
 
 ## Reusable page patterns
 

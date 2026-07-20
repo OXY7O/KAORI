@@ -1,10 +1,9 @@
 {% import "components/table_label.html" as table_label %}
+{% import "components/health_interpretation.html" as health_interpretation %}
 {% set health_tone = 'normal' if runtime_state.health_status == 'healthy' else ('warning' if runtime_state.health_status == 'degraded' else ('critical' if runtime_state.health_status == 'unhealthy' else 'unknown')) %}
 {% set health_icon = 'circle-check' if runtime_state.health_status == 'healthy' else ('triangle-alert' if runtime_state.health_status == 'degraded' else ('octagon-alert' if runtime_state.health_status == 'unhealthy' else 'circle-help')) %}
 {% set readiness_tone = 'normal' if runtime_state.readiness == 'ready' else ('warning' if runtime_state.readiness == 'degraded' else ('critical' if runtime_state.readiness == 'blocked' else ('unknown' if runtime_state.readiness == 'not_configured' else 'info'))) %}
 {% set readiness_icon = 'circle-check' if runtime_state.readiness == 'ready' else ('triangle-alert' if runtime_state.readiness == 'degraded' else ('octagon-alert' if runtime_state.readiness == 'blocked' else ('circle-help' if runtime_state.readiness == 'not_configured' else 'badge-check'))) %}
-{% set score_tone = 'normal' if runtime_state.health_score >= 85 else ('warning' if runtime_state.health_score >= 60 else 'critical') %}
-{% set score_ring_class = 'text-status-normal' if score_tone == 'normal' else ('text-status-warning' if score_tone == 'warning' else 'text-status-critical') %}
 <section id="alertmanager-runtime-panel" class="relative overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
     <header class="relative flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div class="flex items-start gap-3">
@@ -86,77 +85,15 @@
     </div>
 
     <div class="space-y-4 p-5 sm:p-6">
-        <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
-            <header class="flex flex-col gap-2 border-b border-outline-subtle bg-surface-hover px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <h3 class="text-sm font-semibold text-content-primary">Health Interpretation</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">A compact explanation of the latest health score and the evidence that influenced it.</p>
-                </div>
-                {{ table_label.status_label(runtime_state.health_status_label, health_tone, health_icon) }}
-            </header>
-
-            <div class="grid items-center gap-5 p-4 lg:grid-cols-12">
-                <div class="flex items-center gap-4 lg:col-span-2">
-                    <div class="relative h-24 w-24 shrink-0" role="img" aria-label="Alertmanager health score {{ runtime_state.health_score }} out of 100">
-                        <svg viewBox="0 0 42 42" class="h-24 w-24" aria-hidden="true">
-                            <circle cx="21" cy="21" r="15.5" pathLength="100" fill="none" stroke="currentColor" stroke-width="3.5" class="text-content-disabled"></circle>
-                            <circle cx="21" cy="21" r="15.5" pathLength="100" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="100" stroke-dashoffset="{{ 100 - runtime_state.health_score }}" transform="rotate(-90 21 21)" class="{{ score_ring_class }}"></circle>
-                        </svg>
-                        <div class="absolute inset-0 flex flex-col items-center justify-center">
-                            <span class="text-2xl font-semibold leading-none text-content-primary">{{ runtime_state.health_score }}</span>
-                            <span class="mt-1 text-xs font-medium text-content-muted">of 100</span>
-                        </div>
-                    </div>
-                    <div class="min-w-0 lg:hidden">
-                        <p class="text-sm font-semibold text-content-primary">{{ runtime_state.health_summary }}</p>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">Latest runtime evidence only.</p>
-                    </div>
-                </div>
-
-                <div class="hidden min-w-0 lg:col-span-4 lg:block">
-                    <p class="text-sm font-semibold text-content-primary">{{ runtime_state.health_summary }}</p>
-                    <p class="mt-1.5 text-xs leading-5 text-content-secondary">Health is calculated from the latest runtime evidence. Readiness remains governed by configuration and Full Validation.</p>
-                    <div class="mt-3 grid grid-cols-3 gap-2">
-                        <div class="rounded-lg border border-status-critical-border bg-status-critical-soft px-2.5 py-2 text-center">
-                            <p class="text-xs font-semibold text-status-critical-text">0–59</p>
-                            <p class="mt-0.5 text-xs text-content-secondary">Critical</p>
-                        </div>
-                        <div class="rounded-lg border border-status-warning-border bg-status-warning-soft px-2.5 py-2 text-center">
-                            <p class="text-xs font-semibold text-status-warning-text">60–84</p>
-                            <p class="mt-0.5 text-xs text-content-secondary">Attention</p>
-                        </div>
-                        <div class="rounded-lg border border-status-normal-border bg-status-normal-soft px-2.5 py-2 text-center">
-                            <p class="text-xs font-semibold text-status-normal-text">85–100</p>
-                            <p class="mt-0.5 text-xs text-content-secondary">Healthy</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="lg:col-span-6">
-                    <div class="mb-3 flex items-center justify-between gap-3">
-                        <p class="text-xs font-semibold text-content-primary">Contributing Evidence</p>
-                        {{ table_label.metadata_label(runtime_state.factors|length ~ ' factors', 'scan-search') }}
-                    </div>
-                    <div class="grid gap-2 sm:grid-cols-2">
-                        {% for factor in runtime_state.factors %}
-                            {% set factor_tone = 'normal' if factor.score >= 85 else ('warning' if factor.score >= 60 else 'critical') %}
-                            {% set factor_icon = 'circle-check' if factor.score >= 85 else ('triangle-alert' if factor.score >= 60 else 'octagon-alert') %}
-                            <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
-                                <div class="flex items-start justify-between gap-3">
-                                    <div class="min-w-0">
-                                        <p class="truncate text-sm font-semibold text-content-primary">{{ factor.label }}</p>
-                                        {% if factor.detail %}<p class="mt-1 truncate text-xs text-content-secondary" title="{{ factor.detail }}">{{ factor.detail }}</p>{% endif %}
-                                    </div>
-                                    <div class="shrink-0">{{ table_label.status_label(factor.score ~ '/100', factor_tone, factor_icon) }}</div>
-                                </div>
-                            </article>
-                        {% else %}
-                            <div class="rounded-lg border border-dashed border-outline-default bg-surface-hover p-4 text-xs leading-5 text-content-secondary sm:col-span-2">No health factors are available yet. Run Validation and Refresh Runtime to build evidence.</div>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-        </section>
+        {{ health_interpretation.render(
+            runtime_state.health_score,
+            runtime_state.health_status_label,
+            health_tone,
+            health_icon,
+            runtime_state.health_summary,
+            runtime_state.factors,
+            readiness_label=runtime_state.readiness_label
+        ) }}
 
         <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
             <header class="flex flex-col gap-2 border-b border-outline-subtle bg-surface-hover px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">

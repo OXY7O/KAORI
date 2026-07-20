@@ -256,10 +256,14 @@ capability discovery, and latency factors. The UI interprets the score as:
 ```
 
 The runtime workspace uses a compact two-domain layout. **Health Interpretation**
-combines the score, semantic posture, threshold bar, and weighted factors in one
-operator card. **Diagnostic Pipeline** presents ordered checks as a technical
-sequence with evidence, duration, and remediation guidance without reserving
-unused vertical space.
+uses the shared provider-neutral component to combine the current score, semantic
+posture, fixed score ranges, explicit readiness boundary, and weighted evidence
+rows. It does not use a decorative radial chart. **Diagnostic Pipeline** presents
+ordered checks as a technical sequence with evidence, duration, and remediation
+guidance without reserving unused vertical space.
+
+Validation and Runtime each begin with three shared Violet Workspace Summary
+Cards. Equal summaries must not mix Violet and neutral local variants.
 
 Runtime history uses the global KAORI pagination contract: default `5`
 observations with `5`, `10`, `25`, and `50` as supported page sizes. KAORI keeps
@@ -420,9 +424,11 @@ Primary Configuration Form     Configuration Flow
 ```
 
 Connection Contract, Change Impact, and Integration Flow are peer summaries and
-therefore use the same Violet Workspace Summary Card. Configuration Flow is the
-primary ordered workflow for the tab and uses the shared Info Flow component even
-though it is placed in the right-side column. Connection Type Guide remains
+therefore use the same Violet Workspace Summary Card. The same rule applies to
+Validation and Runtime: each tab begins with three equal Violet summary cards,
+never one emphasized card plus two neutral local variants. Configuration Flow is
+the primary ordered workflow for the tab and uses the shared Info Flow component
+even though it is placed in the right-side column. Connection Type Guide remains
 non-sequential, while navigation to Alert Intelligence remains isolated in the
 Related Page Card. A generic page-context card is not used because the active tab,
 form sections, and summaries already establish the page responsibility.

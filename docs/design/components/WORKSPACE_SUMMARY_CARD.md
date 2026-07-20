@@ -49,13 +49,13 @@ Do not copy the card geometry into page-local templates.
 
 ## Reference implementation
 
-The three cards below the tabs on Alertmanager Instance Manage are the reference:
+Alertmanager Instance Manage provides the reference implementations across three tabs:
 
-- Connection Contract;
-- Change Impact;
-- Integration Flow.
+- Configuration: Connection Contract, Change Impact, Integration Flow;
+- Validation: What Validation Does, Why It Matters, Operator Flow;
+- Runtime: Readiness Versus Health, How Monitoring Works, Resolver Correlation.
 
-All three use the same Violet surface because they are peer summaries.
+Every row uses the same Violet surface because its cards are peer summaries.
 
 ## Review checklist
 
