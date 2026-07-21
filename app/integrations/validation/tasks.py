@@ -95,7 +95,12 @@ def _store_progress(task, metadata: dict[str, Any]) -> None:
     task_id = str(task.request.id)
     try:
         mark_job_running(task_id, message=str(metadata.get('message') or metadata.get('title') or 'Worker started'))
-        update_job_progress(task_id, message=str(metadata.get('detail') or metadata.get('message') or 'Worker started'))
+        update_job_progress(
+            task_id,
+            current=int(metadata.get('progress_current') or 0),
+            total=int(metadata.get('progress_total') or 0),
+            message=str(metadata.get('detail') or metadata.get('message') or 'Worker started'),
+        )
     except Exception:
         db.session.rollback()
         logger.exception('Could not update canonical job progress for task %s.', task_id)
@@ -103,6 +108,32 @@ def _store_progress(task, metadata: dict[str, Any]) -> None:
         task.update_state(state='PROGRESS', meta=metadata)
     except Exception:
         logger.exception('Could not publish validation progress for task %s.', task_id)
+    _store_metadata_safely(task_id=task_id, metadata=metadata)
+
+
+def _update_worker_phase(
+    task,
+    *,
+    current: int,
+    total: int,
+    message: str,
+) -> None:
+    task_id = str(task.request.id)
+    metadata = {
+        'task_id': task_id,
+        'status': 'info',
+        'title': 'Worker operation in progress',
+        'message': message,
+        'detail': message,
+        'progress_current': current,
+        'progress_total': total,
+    }
+    try:
+        update_job_progress(task_id, current=current, total=total, message=message)
+        task.update_state(state='PROGRESS', meta=metadata)
+    except Exception:
+        db.session.rollback()
+        logger.exception('Could not update worker phase for task %s.', task_id)
     _store_metadata_safely(task_id=task_id, metadata=metadata)
 
 
@@ -141,6 +172,7 @@ def _persist_failure_observation(
 ) -> None:
     """Best-effort persistence for failed runtime or validation attempts."""
     try:
+        _update_worker_phase(self, current=1, total=4, message='Connecting to the provider and loading the validation contract.')
         if provider_type == 'prometheus':
             instance = db.session.get(PrometheusInstance, instance_id)
             if instance is None:
@@ -291,6 +323,8 @@ def validate_integration_instance(
         'title': 'Integration validation running',
         'message': 'The validation worker is rebuilding operational evidence.',
         'detail': 'KAORI will update this workspace when the worker completes.',
+        'progress_current': 1,
+        'progress_total': 4,
     }
     if _canceled_before_worker_start(task_id):
         _release_job_safely(
@@ -303,6 +337,7 @@ def validate_integration_instance(
     _store_progress(self, base)
     operation = str(base['operation'])
     try:
+        _update_worker_phase(self, current=1, total=4, message='Connecting to the provider and loading the full validation contract.')
         if provider_type == 'prometheus':
             instance = db.session.get(PrometheusInstance, instance_id)
             if instance is None:
@@ -312,8 +347,10 @@ def validate_integration_instance(
                 instance,
                 trigger_type=trigger_type,
             )
+            _update_worker_phase(self, current=2, total=4, message='Prometheus capability evidence was collected; refreshing scope bindings.')
             ensure_canonical_instance(instance, provider_type='prometheus')
             binding_summary = _refresh_prometheus_bindings(instance)
+            _update_worker_phase(self, current=3, total=4, message='Prometheus scope bindings were refreshed; finalizing evidence.')
             db.session.commit()
             result_payload = dict(validation_result or {})
             result_payload['binding_validation_summary'] = binding_summary
@@ -332,8 +369,10 @@ def validate_integration_instance(
                 instance,
                 trigger_type=trigger_type,
             )
+            _update_worker_phase(self, current=2, total=4, message='Alertmanager capability evidence was collected; refreshing scope bindings.')
             ensure_canonical_instance(instance, provider_type='alertmanager')
             binding_summary = _refresh_alertmanager_bindings(instance)
+            _update_worker_phase(self, current=3, total=4, message='Alertmanager scope bindings were refreshed; finalizing evidence.')
             db.session.commit()
             result_payload = validation_result.to_dict() if hasattr(validation_result, 'to_dict') else dict(validation_result or {})
             result_payload['binding_validation_summary'] = binding_summary
@@ -357,6 +396,7 @@ def validate_integration_instance(
                 connection,
                 trigger_type=trigger_type,
             )
+            _update_worker_phase(self, current=3, total=4, message='Kubernetes compatibility, capability, and RBAC evidence was collected; finalizing the result.')
             result_payload = dict(validation_result or {})
             success = bool(result_payload.get('success'))
             status = 'success' if success and state.readiness == 'ready' else ('warning' if success else 'error')
@@ -546,6 +586,8 @@ def validate_integration_binding(
         'title': 'Binding validation running',
         'message': 'The validation worker is checking the scope selector.',
         'detail': 'Operational source resolution remains blocked until this job completes.',
+        'progress_current': 1,
+        'progress_total': 3,
     }
     if _canceled_before_worker_start(task_id):
         _release_job_safely(
@@ -558,6 +600,7 @@ def validate_integration_binding(
         return {**base, 'status': 'warning', 'title': 'Binding validation canceled', 'message': 'KAORI canceled the queued binding validation before provider execution.', 'detail': 'No provider request was started.', 'finished_at': _now_iso()}
     _store_progress(self, base)
     try:
+        _update_worker_phase(self, current=1, total=3, message='Loading the binding and its scope identity contract.')
         binding = db.session.get(IntegrationBinding, binding_id)
         if binding is None:
             raise LookupError('Integration binding no longer exists.')
@@ -576,6 +619,7 @@ def validate_integration_binding(
         else:
             raise ValueError(f'Unsupported binding provider: {provider_type}')
 
+        _update_worker_phase(self, current=2, total=3, message='The provider accepted the binding probe; finalizing scope evidence.')
         binding_status = str(result_payload.get('status') or 'validation_required')
         status = 'success' if binding_status == 'ready' else ('error' if binding_status == 'blocked' else 'warning')
         title = f'{provider_type.title()} binding validation completed'
@@ -684,6 +728,8 @@ def refresh_integration_runtime_instance(
         'title': 'Runtime health refresh running',
         'message': 'KAORI is refreshing lightweight provider health evidence.',
         'detail': 'Full capability evidence is preserved.',
+        'progress_current': 1,
+        'progress_total': 3,
     }
     if _canceled_before_worker_start(task_id):
         _release_job_safely(
@@ -695,6 +741,7 @@ def refresh_integration_runtime_instance(
         return {**base, 'status': 'warning', 'title': 'Runtime refresh canceled', 'message': 'KAORI canceled the queued runtime refresh before provider execution.', 'detail': 'No provider request was started.', 'finished_at': _now_iso()}
     _store_progress(self, base)
     try:
+        _update_worker_phase(self, current=1, total=3, message='Connecting to the provider for a lightweight runtime health check.')
         if provider_type == 'prometheus':
             instance = db.session.get(PrometheusInstance, instance_id)
             if instance is None:
@@ -730,6 +777,7 @@ def refresh_integration_runtime_instance(
             )
         else:
             raise ValueError(f'Unsupported integration provider: {provider_type}')
+        _update_worker_phase(self, current=2, total=3, message='Runtime health evidence was collected; persisting the observation.')
         completion_status = (
             'success'
             if state.health.status == 'healthy'

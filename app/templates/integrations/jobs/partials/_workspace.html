@@ -1,3 +1,4 @@
+{% import "components/table.html" as table_ui %}
 {% from "integrations/partials/_status_badge.html" import status_badge %}
 <section id="job-execution-workspace"
          class="space-y-5"
@@ -10,10 +11,6 @@
                 window.history.replaceState({}, '', url);
             }
          }">
-    <div id="job-workspace-loading" class="htmx-indicator pointer-events-none h-1 w-full overflow-hidden rounded-full bg-kaori-soft" aria-hidden="true">
-        <div class="notification-progress-indeterminate h-full bg-kaori-primary"></div>
-    </div>
-
     <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm" aria-labelledby="execution-overview-title">
         <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
             <div class="flex items-start gap-3">
@@ -24,6 +21,7 @@
                 </div>
             </div>
         </header>
+        <div id="job-workspace-loading" class="{{ table_ui.loading_bar_classes() }}" aria-hidden="true"><div class="notification-progress-indeterminate h-full bg-kaori-primary"></div></div>
         <div class="grid gap-3 p-5 sm:grid-cols-2 xl:grid-cols-4 sm:p-6">
             <div class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
                 <div class="flex items-center justify-between gap-3"><span class="flex h-9 w-9 items-center justify-center rounded-lg bg-status-info-soft text-status-info-text"><i data-lucide="layers-3" class="h-4 w-4"></i></span>{{ status_badge('pending' if job_stats.active else 'unknown', 'Active' if job_stats.active else 'Idle') }}</div>

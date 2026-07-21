@@ -54,6 +54,31 @@ def _row(job: JobExecution) -> dict[str, Any]:
     total = max(job.progress_total, 0)
     current = max(job.progress_current, 0)
     progress = min(int((current / total) * 100), 100) if total else (100 if job.is_terminal else 0)
+    if total > 0 or job.is_terminal:
+        progress_mode = 'determinate'
+        progress_label = f'{progress}%'
+    elif job.status == 'queued':
+        progress_mode = 'queued'
+        progress_label = 'Queued'
+    else:
+        progress_mode = 'indeterminate'
+        progress_label = 'In Progress'
+
+    if job_can_cancel(job):
+        action_state = 'cancel'
+        action_label = 'Cancel'
+        action_icon = 'square'
+        action_help = 'Request cancellation for this eligible job.'
+    elif job.is_active and job.workload_class in {'validation', 'runtime'}:
+        action_state = 'protected'
+        action_label = 'Protected Run'
+        action_icon = 'shield-check'
+        action_help = 'Provider operations are not force-terminated mid-request; queued jobs remain cancellable.'
+    else:
+        action_state = 'none'
+        action_label = 'No Action'
+        action_icon = 'minus'
+        action_help = 'This job has no available operator action.'
     requester = job.requested_by.display_label if job.requested_by is not None else 'KAORI Scheduler'
     scope = job.scope_key or (
         f'{job.provider_type}:{job.provider_instance_id}'
@@ -79,6 +104,8 @@ def _row(job: JobExecution) -> dict[str, Any]:
         'resource_group': job.resource_group,
         'requester': requester,
         'progress': progress,
+        'progress_mode': progress_mode,
+        'progress_label': progress_label,
         'progress_current': current,
         'progress_total': total,
         'progress_message': job.progress_message or 'Waiting for worker',
@@ -92,7 +119,11 @@ def _row(job: JobExecution) -> dict[str, Any]:
         'error_message': job.error_message,
         'is_active': job.is_active,
         'is_terminal': job.is_terminal,
-        'can_cancel': job_can_cancel(job),
+        'can_cancel': action_state == 'cancel',
+        'action_state': action_state,
+        'action_label': action_label,
+        'action_icon': action_icon,
+        'action_help': action_help,
     }
 
 

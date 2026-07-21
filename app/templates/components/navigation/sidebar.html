@@ -28,7 +28,7 @@
     or current_user.has_permission('reports.manage_storage')
 ) %}
 {% set can_integrations = current_user.is_authenticated and current_user.has_permission('settings.manage_integrations') %}
-{% set can_platform_operations = can_integrations %}
+{% set can_platform_operations = current_user.is_authenticated and current_user.has_permission('jobs.view') %}
 
 <aside id="app-sidebar"
        class="kubereport-sidebar relative flex h-full min-h-0 w-[250px] shrink-0 flex-col overflow-hidden rounded-2xl border border-brand-outline bg-surface-sidebar text-white shadow-2xl shadow-black/25 transition-[width] duration-200 [.sidebar-collapsed_&]:w-[78px]">

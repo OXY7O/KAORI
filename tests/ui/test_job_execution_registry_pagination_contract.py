@@ -48,7 +48,13 @@ def test_jobs_registry_uses_readable_six_column_contract() -> None:
     assert '>Execution Context<' in template
     assert '>Timing<' in template
     assert 'colspan="6"' in template
-    assert '>Cancel<' in template
+    assert 'row.action_label' in template
+    assert "current_user.has_permission('jobs.cancel')" in template
     assert '>No Action<' in template
     assert 'data-lucide="{{ row.icon }}"' in template
+    assert 'table_ui.block_header_classes()' in template
     assert 'table_ui.loading_bar_classes()' in template
+    assert template.index('table_ui.loading_bar_classes()') < template.index('<form class=')
+    assert 'progress_mode' in template
+    assert 'notification-progress-indeterminate' in template
+    assert 'Protected' in template

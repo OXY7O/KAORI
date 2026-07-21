@@ -41,7 +41,7 @@ def overview() -> ResponseReturnValue:
 
 
 @integrations_bp.get('/jobs')
-@permission_required('settings.manage_integrations')
+@permission_required('jobs.view')
 def jobs() -> ResponseReturnValue:
     context = build_job_execution_context(
         page=request.args.get('page', 1, type=int) or 1,
@@ -56,12 +56,14 @@ def jobs() -> ResponseReturnValue:
         fragment = request.args.get('fragment', 'workspace').strip()
         if fragment == 'registry':
             return render_template('integrations/jobs/partials/_registry.html', **context)
+        if fragment == 'active':
+            return render_template('integrations/jobs/partials/_active_jobs.html', **context)
         return render_template('integrations/jobs/partials/_workspace.html', **context)
     return render_template('integrations/jobs.html', **context)
 
 
 @integrations_bp.post('/jobs/<string:public_id>/cancel')
-@permission_required('settings.manage_integrations')
+@permission_required('jobs.cancel')
 def cancel_job(public_id: str) -> ResponseReturnValue:
     job = JobExecution.query.filter_by(public_id=public_id).first_or_404()
     is_htmx = request.headers.get('HX-Request') == 'true'
@@ -161,8 +163,11 @@ def cancel_job(public_id: str) -> ResponseReturnValue:
         )
         context['operation_feedback'] = feedback
         context['notification_context'] = get_navigation_notification_context(user_id=int(current_user.id))
-        if request.form.get('fragment', 'workspace').strip() == 'registry':
+        fragment = request.form.get('fragment', 'workspace').strip()
+        if fragment == 'registry':
             return render_template('integrations/jobs/partials/_registry.html', **context)
+        if fragment == 'active':
+            return render_template('integrations/jobs/partials/_active_jobs.html', **context)
         return render_template('integrations/jobs/partials/_workspace.html', **context)
     return redirect(url_for('integrations.jobs'))
 

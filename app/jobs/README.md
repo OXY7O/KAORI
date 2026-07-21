@@ -49,3 +49,18 @@ The workspace has three views:
 - **Queue Activity** for database-backed workload demand by queue. Queue Activity does not claim worker process liveness.
 
 The overview must distinguish canonical job state from actual worker health. Worker liveness belongs to deployment monitoring or Celery inspection, while this workspace remains the source of truth for execution lifecycle, ownership, progress, and results.
+
+## Progress and cancellation contract
+
+Active Work uses a determinate bar only when the worker publishes `progress_current` and `progress_total`. A running job without a trustworthy total uses an indeterminate animation and the label `In Progress`; KAORI must not display a decorative `0%` as if it were measured progress. Integration validation and runtime workers publish phase-level progress while analytics and forecasting workers publish chunk/model-phase progress.
+
+Queued jobs can be canceled before provider execution. Running analytics and forecasting jobs use cooperative checkpoints. Running validation and runtime provider calls are shown as **Protected Run** because KAORI does not force-terminate a network/API request mid-flight; this boundary is provider-neutral and applies equally to Kubernetes, Prometheus, and Alertmanager.
+
+## RBAC contract
+
+Jobs & Executions uses dedicated cross-domain permissions:
+
+- `jobs.view` opens Platform Operations and the execution workspace.
+- `jobs.cancel` requests cancellation for eligible jobs and depends on `jobs.view`.
+
+The jobs workspace must not reuse `settings.manage_integrations`. The migration preserves existing access for custom roles that previously reached the page through integration, Data Lifecycle, or Activity Audit permissions, after which administrators can review the narrower contracts in Roles & Access.

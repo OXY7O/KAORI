@@ -117,6 +117,8 @@ DEFAULT_PERMISSIONS = [
     ('reports.manage_templates', 'reports', 'manage_templates', 'Manage report templates.'),
     ('reports.manage_schedules', 'reports', 'manage_schedules', 'Manage report schedules.'),
     ('reports.manage_storage', 'reports', 'manage_storage', 'Manage report storage verification and cleanup.'),
+    ('jobs.view', 'operations', 'view_jobs', 'View KAORI background jobs, queue activity, progress, and execution outcomes.'),
+    ('jobs.cancel', 'operations', 'cancel_jobs', 'Request cancellation for eligible queued, analytics, and forecasting jobs.'),
     ('settings.view', 'settings', 'view', 'View settings pages.'),
     (
         'settings.manage_integrations',
@@ -226,6 +228,7 @@ DEFAULT_ROLE_PERMISSIONS = {
         'intelligence.view',
         'reports.view',
         'reports.generate',
+        'jobs.view',
         'settings.view',
     },
     'editor': {
@@ -253,6 +256,8 @@ DEFAULT_ROLE_PERMISSIONS = {
         'reports.manage_templates',
         'reports.manage_schedules',
         'reports.manage_storage',
+        'jobs.view',
+        'jobs.cancel',
         'settings.view',
         'settings.manage_integrations',
     },
@@ -268,6 +273,7 @@ DEFAULT_ROLE_PERMISSIONS = {
         'kubernetes_configmaps.view',
         'intelligence.view',
         'reports.view',
+        'jobs.view',
         'settings.view',
         'settings.view_operational_activity',
         'settings.export_operational_activity',

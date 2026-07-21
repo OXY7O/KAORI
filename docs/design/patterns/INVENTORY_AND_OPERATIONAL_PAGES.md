@@ -124,3 +124,12 @@ The registry remains server-paginated with default 5 and options 5/10/25/50. The
 5. Kubernetes detail also lists stable APIs selected by discovery and any legacy fallbacks recorded in that observation.
 6. Scheduled Runtime Health and Full Capability Validation must be described separately: scheduled refresh is lightweight and automatic; full validation is worker-based and on demand after registration or contract changes.
 
+
+### Jobs progress and action presentation
+
+- Active Work uses one full-width execution row per job, not a two-column card grid.
+- Workload icons are semantic and consistent: activity for runtime, scan-search for validation, analytics chart for batch analytics, chart-spline for forecasting, and workflow for general work.
+- Show a determinate percentage only when the worker has published a valid total. Otherwise use an indeterminate moving bar and the label `In Progress`; queued work uses `Queued` without false percentage precision.
+- Queued and cooperative heavy jobs may show `Cancel` when the user has `jobs.cancel`.
+- Running provider validation/runtime work shows `Protected Run` because provider requests are not force-terminated mid-flight.
+- Block loading indicators sit directly below the corresponding block header before filters or data content.
