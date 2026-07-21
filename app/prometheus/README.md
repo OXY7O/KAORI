@@ -219,3 +219,7 @@ Normal-flow routes:
 - Provider registration remains a secondary action used only when no suitable endpoint has been registered.
 
 The current first-class binding workspace is implemented for managed Kubernetes clusters. The canonical selector schema is provider-neutral and can also represent server, server-group, HCI, storage, or global scopes when those asset registries and provider adapters are introduced.
+
+## Binding evidence freshness
+
+Prometheus provider readiness and scope-binding readiness are independent contracts. Full Validation now refreshes every enabled binding after provider capability evidence is rebuilt. Binding validation checks multiple scoped kube-state-metrics identity signals (`kube_node_info`, `kube_namespace_status_phase`, and `kube_pod_info`) and records the first matching signal. Coverage treats binding evidence older than the provider validation timestamp as `Binding Validation Required` rather than presenting stale degraded evidence.

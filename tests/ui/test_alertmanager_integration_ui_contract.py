@@ -93,7 +93,6 @@ def test_alertmanager_runtime_panel_uses_semantic_kaori_statuses_and_htmx_indica
         'table_label.status_label',
         'id="alertmanager-runtime-loading"',
         'hx-indicator="#alertmanager-runtime-loading"',
-        'absolute bottom-2 left-5 right-5 h-1 overflow-hidden rounded-full bg-kaori-soft',
         'notification-progress-indeterminate h-full rounded-full bg-kaori-primary',
         'grid gap-3 border-b border-outline-subtle bg-surface-hover',
         'sm:grid-cols-2 sm:p-5 xl:grid-cols-4',
@@ -123,14 +122,14 @@ def test_alertmanager_runtime_panel_uses_semantic_kaori_statuses_and_htmx_indica
 
     required_history_fragments = (
         'id="alertmanager-history-loading"',
-        'absolute bottom-2 left-5 right-5 h-1 overflow-hidden rounded-full bg-kaori-soft',
-        'KAORI retains the latest {{ runtime_history.pagination.retention_limit }} records per connection.',
-        '{{ runtime_history.pagination.retention_limit }}-record retention',
+        'Retention is governed centrally by KAORI Data Lifecycle.',
+        "domain='runtime_observation'",
+        'Lifecycle Managed',
         'aria-label="Runtime observations per page"',
         'hx-trigger="change"',
-        'h-9 w-20 rounded-lg',
+        'pagination_ui.page_size_classes()',
         'Showing <span class="font-semibold text-content-primary">',
-        'Page {{ runtime_history.pagination.page }} / {{ runtime_history.pagination.total_pages }}',
+        'pagination_ui.numeric_pages(runtime_history.pagination.page, runtime_history.pagination.total_pages)',
     )
     missing = [fragment for fragment in required_history_fragments if fragment not in history]
     assert not missing, f'Alertmanager runtime history pagination contract is incomplete: {missing}'
@@ -259,7 +258,6 @@ def test_manage_alertmanager_detail_is_domain_tabbed_and_informative() -> None:
         'Operator flow',
         'alertmanager-validation-workspace',
         'id="alertmanager-validation-loading"',
-        'absolute bottom-2 left-5 right-5 h-1 overflow-hidden rounded-full bg-kaori-soft',
         'notification-progress-indeterminate h-full rounded-full bg-kaori-primary',
         'Readiness versus health',
         'How monitoring works',

@@ -8,13 +8,15 @@
             </span>
             <div>
                 <h2 class="text-base font-semibold text-content-primary">Recent Runtime Observations</h2>
-                <p class="mt-1 text-sm leading-6 text-content-secondary">Rolling runtime evidence for health changes, recovery, latency, and capability drift. KAORI retains the latest {{ runtime_history.pagination.retention_limit|default(100) }} records per connection.</p>
+                <p class="mt-1 text-sm leading-6 text-content-secondary">Runtime evidence for health changes, recovery, latency, and capability drift. Retention is governed centrally by KAORI Data Lifecycle.</p>
             </div>
         </div>
         <div class="flex flex-wrap items-center gap-2">
-            <span class="kaori-semantic-label inline-flex min-h-6 items-center gap-1.5 rounded-md border border-brand-outline bg-kaori-soft px-2 py-1 text-[10px] font-semibold text-kaori-primary-dark">
-                <i data-lucide="archive" class="h-3 w-3 text-kaori-primary"></i>{{ runtime_history.pagination.retention_limit|default(100) }}-record retention
-            </span>
+            {% if current_user.has_permission('settings.view_data_lifecycle') %}
+            <a href="{{ url_for('settings.data_lifecycle.index', tab='policies', domain='runtime_observation') }}" class="kaori-semantic-label inline-flex min-h-6 items-center gap-1.5 rounded-md border border-brand-outline bg-kaori-soft px-2 py-1 text-[10px] font-semibold text-kaori-primary-dark transition hover:bg-kaori-mist">
+                <i data-lucide="archive" class="h-3 w-3 text-kaori-primary"></i>Lifecycle Managed
+            </a>
+            {% endif %}
             <button type="button"
                     hx-get="{{ runtime_history_url }}?page={{ runtime_history.pagination.page }}&per_page={{ runtime_history.pagination.per_page }}"
                     hx-target="#{{ runtime_history_id }}"

@@ -7,7 +7,8 @@
      hx-target="this"
      hx-swap="outerHTML"
      {% endif %}>
-    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <div class="space-y-4">
+        <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
         <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
             <div class="flex min-w-0 items-start gap-3">
                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
@@ -39,8 +40,9 @@
                 <span>Task {{ binding_validation_job.task_id[:8] }} · {{ binding_validation_job.elapsed_seconds }}s</span>
             </div>
         {% endif %}
+        </section>
 
-        <div class="grid items-start gap-4 p-4 sm:p-5 xl:grid-cols-12">
+        <div class="grid items-start gap-4 xl:grid-cols-12">
             <div class="space-y-4 xl:col-span-8">
                 <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
                     <header class="flex flex-col gap-2 border-b border-outline-subtle bg-surface-hover px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
@@ -375,7 +377,7 @@
                 </div>
             </form>
         </div>
-    </section>
+    </div>
 
     <details class="group overflow-hidden rounded-xl border border-status-critical-border bg-surface-card shadow-sm">
         <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 [&::-webkit-details-marker]:hidden">

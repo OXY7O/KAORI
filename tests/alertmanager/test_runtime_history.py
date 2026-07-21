@@ -105,7 +105,7 @@ def test_runtime_history_view_uses_oldest_row_as_baseline(app):
     assert view['rows'][0]['transition'] is None
 
 
-def test_runtime_history_retains_only_latest_100_records_per_instance(app):
+def test_runtime_history_is_append_only_until_data_lifecycle_cleanup(app):
     base = datetime.now(UTC) - timedelta(hours=2)
     rows = [
         IntegrationRuntimeObservation(
@@ -159,8 +159,8 @@ def test_runtime_history_retains_only_latest_100_records_per_instance(app):
         provider='alertmanager',
         instance_id='retained-instance',
     )
-    assert retained_query.count() == 100
-    assert db.session.get(IntegrationRuntimeObservation, oldest_id) is None
+    assert retained_query.count() == 101
+    assert db.session.get(IntegrationRuntimeObservation, oldest_id) is not None
     assert db.session.get(IntegrationRuntimeObservation, newest.id) is not None
     assert IntegrationRuntimeObservation.query.filter_by(
         provider='alertmanager',

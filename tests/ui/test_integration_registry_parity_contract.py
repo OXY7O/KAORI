@@ -160,16 +160,17 @@ def test_registry_action_column_is_compact_and_table_width_is_reduced() -> None:
     prom = read(PROM_CONTENT)
     alert = read(ROOT / 'app/templates/integrations/alertmanager/partials/_inventory_content.html')
     for source in (prom, alert):
-        assert 'min-w-[860px] table-fixed' in source
+        assert 'min-w-[940px] table-fixed' in source
         assert '<colgroup>' in source
         assert 'w-[100px] whitespace-nowrap px-3 py-3.5 text-right">Action' in source
         assert 'w-[100px] whitespace-nowrap px-3 py-4 text-right align-top' in source
-        assert 'min-w-[980px]' not in source
         assert 'min-w-[1180px]' not in source
 
 
 
-def test_alertmanager_coverage_hides_internal_scope_identifier() -> None:
+def test_provider_coverage_uses_consistent_scope_identity_without_internal_id() -> None:
     content = read(CONTENT)
-    assert "provider.key != 'alertmanager'" in content
-    assert 'Managed Kubernetes cluster · {{ row.scope_key }}' in content
+    assert 'data-lucide="boxes"' in content
+    assert '>Managed Kubernetes cluster<' in content
+    assert 'Managed Kubernetes cluster · {{ row.scope_key }}' not in content
+    assert 'row.coverage_detail' not in content

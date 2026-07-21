@@ -248,7 +248,6 @@ def build_data_lifecycle_context(
         'eligible_total': selected_preview_count,
         'active_archive_total': sum(int(item['active_count']) for item in domain_cards),
         'planned_domains': [
-            {'name':'runtime_observation','label':'Runtime Observations','icon':'activity','description':'Provider health and capability drift evidence.'},
             {'name':'generated_report','label':'Generated Reports','icon':'file-text','description':'Generated report artifacts and metadata.'},
             {'name':'forecast_result','label':'Forecast Results','icon':'chart-spline','description':'Forecast outputs and analytical datasets.'},
         ],
@@ -273,17 +272,18 @@ def build_data_lifecycle_context(
 
 
 def _domain_label(name: str) -> str:
-    return {'operational_activity':'Activity Audit','job_execution':'Job Executions'}.get(name, name.replace('_',' ').title())
+    return {'operational_activity':'Activity Audit','job_execution':'Job Executions','runtime_observation':'Runtime Observations'}.get(name, name.replace('_',' ').title())
 
 
 def _domain_icon(name: str) -> str:
-    return {'operational_activity':'scroll-text','job_execution':'workflow'}.get(name,'database')
+    return {'operational_activity':'scroll-text','job_execution':'workflow','runtime_observation':'activity'}.get(name,'database')
 
 
 def _domain_description(name: str) -> str:
     return {
         'operational_activity':'Administrative activity and security-sensitive operational evidence.',
         'job_execution':'Canonical queue, progress, result-reference, and worker execution metadata.',
+        'runtime_observation':'Provider health, readiness, latency, and capability-drift evidence.',
     }.get(name,'KAORI operational data domain.')
 
 def _normalize_archive_filters(

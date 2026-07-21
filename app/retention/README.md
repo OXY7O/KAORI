@@ -76,3 +76,7 @@ flask archive-retention purge-archives --domain job_execution --execute
 7. Add domain-specific tests for preview, serialization, verified cleanup, protected active data, and partial failure.
 
 Restore/import remains an administrative capability and must include duplicate protection, schema compatibility validation, and explicit operator approval.
+
+## Runtime observation lifecycle
+
+`integration_runtime_observations` is an active `runtime_observation` lifecycle domain. Runtime writes are append-only and no longer delete older rows through a per-connection rolling limit. Hot retention, archive verification, and cleanup are controlled centrally from **Settings → Data Lifecycle**. The default policy keeps 90 days in PostgreSQL, retains verified archives for 365 days, and schedules the domain separately from Activity Audit and JobExecution.

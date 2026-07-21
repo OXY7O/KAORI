@@ -18,8 +18,13 @@
             {% for row in rows %}
                 <tr class="align-top transition hover:bg-surface-hover">
                     <td class="px-5 py-4 sm:px-6">
-                        <p class="font-semibold text-content-primary">{{ row.scope_name }}</p>
-                        {% if provider.key != 'alertmanager' %}<p class="mt-1 max-w-[18rem] truncate text-xs text-content-muted" title="{{ row.scope_key }}">Managed Kubernetes cluster · {{ row.scope_key }}</p>{% endif %}
+                        <div class="flex min-w-0 items-start gap-3">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="boxes" class="h-4 w-4"></i></span>
+                            <div class="min-w-0">
+                                <p class="truncate font-semibold text-content-primary" title="{{ row.scope_name }}">{{ row.scope_name }}</p>
+                                <p class="mt-1 text-xs text-content-muted">Managed Kubernetes cluster</p>
+                            </div>
+                        </div>
                     </td>
                     <td class="px-4 py-4">{{ table_label.metadata_label(row.environment, 'layers-3') }}</td>
                     <td class="px-4 py-4">
@@ -41,7 +46,6 @@
                     </td>
                     <td class="px-4 py-4">
                         {{ status_badge(row.coverage_status, row.coverage_label) }}
-                        <p class="mt-2 max-w-[18rem] text-xs leading-5 text-content-muted">{{ row.coverage_detail }}</p>
                     </td>
                     <td class="px-5 py-4 text-right sm:px-6">
                         {% if row.source_id %}

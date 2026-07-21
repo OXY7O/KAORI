@@ -313,8 +313,10 @@ def validate_integration_instance(
                 trigger_type=trigger_type,
             )
             ensure_canonical_instance(instance, provider_type='prometheus')
+            binding_summary = _refresh_prometheus_bindings(instance)
             db.session.commit()
             result_payload = dict(validation_result or {})
+            result_payload['binding_validation_summary'] = binding_summary
             readiness = str(result_payload.get('readiness_status') or state.readiness or 'validation_required')
             status = 'success' if readiness == 'ready' else ('error' if readiness == 'blocked' else 'warning')
             title = 'Prometheus validation completed' if status != 'error' else 'Prometheus validation requires attention'
@@ -437,6 +439,41 @@ def validate_integration_instance(
             operation=operation,
             instance_id=instance_id,
         )
+
+
+def _refresh_prometheus_bindings(instance: PrometheusInstance) -> dict[str, Any]:
+    if instance.integration_instance_id is None:
+        return {'total': 0, 'ready': 0, 'attention': 0}
+    bindings = (
+        IntegrationBinding.query.filter_by(
+            integration_instance_id=instance.integration_instance_id,
+            enabled=True,
+        )
+        .order_by(IntegrationBinding.id.asc())
+        .all()
+    )
+    ready = 0
+    results: list[dict[str, Any]] = []
+    for binding in bindings:
+        result = validate_prometheus_binding(
+            instance=instance,
+            binding=binding,
+            commit=False,
+        )
+        if result.get('status') == 'ready':
+            ready += 1
+        results.append({
+            'binding_id': binding.id,
+            'status': result.get('status'),
+            'matched_signal': result.get('matched_signal'),
+            'matched_series': result.get('matched_series'),
+        })
+    return {
+        'total': len(bindings),
+        'ready': ready,
+        'attention': len(bindings) - ready,
+        'results': results,
+    }
 
 
 @shared_task(

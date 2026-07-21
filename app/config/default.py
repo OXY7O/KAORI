@@ -471,7 +471,7 @@ class Config:
     ARCHIVE_OBJECT_PREFIX = _env_str('ARCHIVE_OBJECT_PREFIX', 'archives').strip().strip('/')
     ARCHIVE_SCHEDULED_DOMAINS = tuple(
         item.strip().lower().replace('-', '_')
-        for item in _env_str('ARCHIVE_SCHEDULED_DOMAINS', 'operational_activity,job_execution').split(',')
+        for item in _env_str('ARCHIVE_SCHEDULED_DOMAINS', 'operational_activity,job_execution,runtime_observation').split(',')
         if item.strip()
     )
     ARCHIVE_S3_BUCKET = _env_str('ARCHIVE_S3_BUCKET', _env_str('REPORT_S3_BUCKET', ''))
@@ -514,6 +514,14 @@ class Config:
     JOB_EXECUTION_FAILED_RETENTION_DAYS = _env_int('JOB_EXECUTION_FAILED_RETENTION_DAYS', 90)
     JOB_EXECUTION_RETENTION_SCHEDULE_HOUR = _bounded_env_int('JOB_EXECUTION_RETENTION_SCHEDULE_HOUR', 3, 0, 23)
     JOB_EXECUTION_RETENTION_SCHEDULE_MINUTE = _bounded_env_int('JOB_EXECUTION_RETENTION_SCHEDULE_MINUTE', 0, 0, 59)
+
+    # Provider runtime observation archive-first retention policy.
+    RUNTIME_OBSERVATION_RETENTION_ENABLED = _env_bool('RUNTIME_OBSERVATION_RETENTION_ENABLED', True)
+    RUNTIME_OBSERVATION_RETENTION_DAYS = _env_int('RUNTIME_OBSERVATION_RETENTION_DAYS', 90)
+    RUNTIME_OBSERVATION_ARCHIVE_RETENTION_DAYS = _env_int('RUNTIME_OBSERVATION_ARCHIVE_RETENTION_DAYS', 365)
+    RUNTIME_OBSERVATION_RETENTION_BATCH_SIZE = _env_int('RUNTIME_OBSERVATION_RETENTION_BATCH_SIZE', 5000)
+    RUNTIME_OBSERVATION_RETENTION_SCHEDULE_HOUR = _bounded_env_int('RUNTIME_OBSERVATION_RETENTION_SCHEDULE_HOUR', 3, 0, 23)
+    RUNTIME_OBSERVATION_RETENTION_SCHEDULE_MINUTE = _bounded_env_int('RUNTIME_OBSERVATION_RETENTION_SCHEDULE_MINUTE', 45, 0, 59)
 
     # Reports storage.
     # Supported values:
