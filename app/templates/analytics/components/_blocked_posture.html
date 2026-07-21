@@ -1,11 +1,11 @@
 {% import "components/table_label.html" as table_label %}
 {% set blocker_tone = 'warning' if dependency_blocker.kind in ['cluster_required', 'prometheus_setup', 'alert_source_setup'] else 'critical' %}
-{% set blocker_status = 'Setup required' if blocker_tone == 'warning' else 'Unavailable' %}
+{% set blocker_status = 'Setup Required' if blocker_tone == 'warning' else 'Unavailable' %}
 <div class="flex h-full min-h-[12rem] flex-col rounded-xl border border-brand-outline bg-brand-surface-strong p-4 backdrop-blur-md">
     <div class="flex items-start justify-between gap-4">
         <div class="min-w-0">
             <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">
-                {{ analytics_posture_label|default('Analytics posture') }}
+                {{ analytics_posture_label|default('Analytics Posture') }}
             </p>
             <p class="mt-1 text-3xl font-semibold leading-none text-brand-foreground">Blocked</p>
         </div>

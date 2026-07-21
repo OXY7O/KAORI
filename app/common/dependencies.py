@@ -33,12 +33,12 @@ def cluster_required_blocker() -> DependencyBlocker:
     return {
         'kind': 'cluster_required',
         'stage': 1,
-        'badge': 'Cluster required',
-        'title': 'Kubernetes cluster required',
+        'badge': 'Cluster Required',
+        'title': 'Kubernetes Cluster Required',
         'description': 'Add or select a Kubernetes cluster before loading analytics data.',
         'diagnostic_detail': None,
         'icon': 'server-cog',
-        'action_label': 'Add first cluster',
+        'action_label': 'Add Cluster',
         'action_url': url_for('cluster.add_cluster'),
         'permission': 'clusters.manage',
     }
@@ -48,15 +48,15 @@ def prometheus_setup_blocker(cluster: Cluster) -> DependencyBlocker:
     return {
         'kind': 'prometheus_setup',
         'stage': 2,
-        'badge': 'Prometheus required',
-        'title': 'Prometheus setup required',
+        'badge': 'Prometheus Required',
+        'title': 'Prometheus Setup Required',
         'description': (
-            f'{cluster.name} is not bound to a Prometheus source. Select an existing registered source to load live analytics.'
+            f'Prometheus is not configured for {cluster.name}. Configure the integration to load live analytics.'
         ),
         'diagnostic_detail': None,
         'icon': 'activity',
-        'action_label': 'Bind Prometheus Source',
-        'action_url': url_for('integrations.bind_prometheus_source', scope_key=cluster.id),
+        'action_label': 'Add Prometheus',
+        'action_url': url_for('prometheus.new_instance', cluster_id=cluster.id),
         'permission': 'settings.manage_integrations',
     }
 
@@ -69,8 +69,8 @@ def prometheus_connection_blocker(
     return {
         'kind': 'prometheus_connection',
         'stage': 3,
-        'badge': 'Prometheus unavailable',
-        'title': 'Prometheus connection unavailable',
+        'badge': 'Prometheus Unavailable',
+        'title': 'Prometheus Connection Unavailable',
         'description': (
             f'Prometheus is unreachable for {cluster.name}. Review the toast or Activity Log for technical details.'
         ),
@@ -94,8 +94,8 @@ def prometheus_capability_blocker(
     return {
         'kind': 'prometheus_capability',
         'stage': 3,
-        'badge': f'{feature_label} capability incomplete',
-        'title': f'{feature_label} integration contract is not ready',
+        'badge': f'{feature_label} Capability Incomplete',
+        'title': f'{feature_label} Integration Contract Not Ready',
         'description': (
             f'{cluster.name} is connected, but {feature_label} requires additional '
             f'capabilities: {labels}. Resolve them at the Prometheus/Thanos source before '
@@ -103,7 +103,7 @@ def prometheus_capability_blocker(
         ),
         'diagnostic_detail': None,
         'icon': 'shield-alert',
-        'action_label': 'Review capability remediation',
+        'action_label': 'Review Capability',
         'action_url': url_for('integrations.prometheus'),
         'permission': 'settings.manage_integrations',
     }
@@ -120,17 +120,17 @@ def alert_source_setup_blocker(
         return prometheus_setup_blocker(cluster)
 
     if normalized_source == 'alertmanager':
-        title = 'Alertmanager setup required'
-        description = f'{cluster.name} is not bound to an Alertmanager source. Select an existing registered source to load alert routing and lifecycle context.'
-        badge = 'Alertmanager required'
-        action_label = 'Bind Alertmanager Source'
-        action_url = url_for('integrations.bind_alertmanager_source', scope_key=cluster.id)
+        title = 'Alertmanager Setup Required'
+        description = f'Alertmanager is not configured for {cluster.name}. Configure it to load alert routing and lifecycle context.'
+        badge = 'Alertmanager Required'
+        action_label = 'Add Alertmanager'
+        action_url = url_for('alertmanager.new_instance', cluster_id=cluster.id)
     else:
-        title = 'Alert source setup required'
-        description = f'No alert source is bound to {cluster.name}. Select an existing Alertmanager or Prometheus source to load alert data.'
-        badge = 'Alert source required'
-        action_label = 'Bind Alertmanager Source'
-        action_url = url_for('integrations.bind_alertmanager_source', scope_key=cluster.id)
+        title = 'Alert Source Setup Required'
+        description = f'No alert source is configured for {cluster.name}. Configure Alertmanager or Prometheus to load alert data.'
+        badge = 'Alert Source Required'
+        action_label = 'Add Alertmanager'
+        action_url = url_for('alertmanager.new_instance', cluster_id=cluster.id)
 
     return {
         'kind': 'alert_source_setup',
@@ -162,14 +162,14 @@ def alert_source_connection_blocker(
     return {
         'kind': 'alert_source_connection',
         'stage': 3,
-        'badge': f'{source_label} unavailable',
-        'title': f'{source_label} connection unavailable',
+        'badge': f'{source_label} Unavailable',
+        'title': f'{source_label} Connection Unavailable',
         'description': (
             f'{source_label} is unreachable for {cluster.name}. Review the toast or Activity Log for technical details.'
         ),
         'diagnostic_detail': detail,
         'icon': 'triangle-alert',
-        'action_label': 'Review integration',
+        'action_label': 'Review Integration',
         'action_url': url_for(action_endpoint),
         'permission': 'settings.manage_integrations',
     }

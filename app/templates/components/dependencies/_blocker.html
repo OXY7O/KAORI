@@ -1,7 +1,7 @@
 {% import "components/table_label.html" as table_label %}
 {% if dependency_blocker %}
     {% set blocker_tone = 'warning' if dependency_blocker.kind in ['cluster_required', 'prometheus_setup', 'alert_source_setup'] else 'critical' %}
-    {% set blocker_status = 'Setup required' if blocker_tone == 'warning' else 'Unavailable' %}
+    {% set blocker_status = 'Setup Required' if blocker_tone == 'warning' else 'Unavailable' %}
     <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
         <div class="flex flex-col gap-4 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
             <div class="flex min-w-0 items-start gap-3.5">

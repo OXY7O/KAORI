@@ -1,61 +1,69 @@
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/table_label.html" as table_label %}
-{% from "integrations/partials/_status_badge.html" import status_badge %}
+{% set scope_type_labels = {
+    'kubernetes_cluster': 'Managed cluster',
+    'server': 'Infrastructure asset',
+    'server_group': 'Infrastructure asset group',
+    'hci_environment': 'Platform environment',
+    'storage_service': 'Infrastructure service',
+    'global': 'Global operational scope'
+} %}
 <div class="overflow-x-auto">
-    <table class="w-full min-w-[850px] table-fixed text-left text-sm">
-        <colgroup>
-            <col class="w-[212px]">
-            <col class="w-[100px]">
-            <col class="w-[128px]">
-            <col class="w-[94px]">
-            <col class="w-[96px]">
-            <col class="w-[122px]">
-            <col class="w-[88px]">
-        </colgroup>
-        <thead class="border-b border-outline-subtle bg-surface-hover text-xs font-semibold text-content-muted">
+    <table class="min-w-full text-left text-sm">
+        <thead class="bg-surface-hover text-xs font-semibold text-content-tertiary">
             <tr>
-                <th class="px-5 py-3.5 sm:px-6">Connection</th>
-                <th class="px-4 py-3.5">Runtime</th>
-                <th class="px-4 py-3.5">Compatibility</th>
-                <th class="px-4 py-3.5">Readiness</th>
-                <th class="px-4 py-3.5">Bindings</th>
-                <th class="px-4 py-3.5">Last Validated</th>
-                <th class="w-[88px] whitespace-nowrap px-2.5 py-3.5 text-right">Action</th>
+                <th class="px-5 py-3.5">Instance</th>
+                <th class="px-5 py-3.5">Endpoint</th>
+                <th class="px-5 py-3.5">Connection Type</th>
+                <th class="px-5 py-3.5">Version</th>
+                <th class="px-5 py-3.5">Readiness</th>
+                <th class="px-5 py-3.5">Bindings</th>
+                <th class="px-5 py-3.5 text-right">Action</th>
             </tr>
         </thead>
         <tbody class="divide-y divide-outline-subtle">
             {% for row in rows %}
+                {% set readiness_tone = 'normal' if row.readiness == 'ready' else ('warning' if row.readiness == 'degraded' else ('critical' if row.readiness == 'blocked' else ('unknown' if row.readiness == 'not_configured' else 'info'))) %}
+                {% set readiness_icon = 'circle-check' if row.readiness == 'ready' else ('triangle-alert' if row.readiness == 'degraded' else ('octagon-alert' if row.readiness == 'blocked' else ('circle-help' if row.readiness == 'not_configured' else 'badge-check'))) %}
                 <tr class="transition hover:bg-surface-hover">
-                    <td class="px-5 py-4 align-top sm:px-6">
-                        <div class="flex max-w-[212px] items-start gap-3">
-                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="siren" class="h-4 w-4" aria-hidden="true"></i></span>
+                    <td class="px-5 py-4 align-top">
+                        <div class="flex max-w-[260px] items-start gap-3">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                                <i data-lucide="siren" class="h-4 w-4" aria-hidden="true"></i>
+                            </span>
                             <div class="min-w-0">
                                 <p class="truncate font-semibold text-content-primary" title="{{ row.instance.name }}">{{ row.instance.name }}</p>
-                                <p class="mt-1 line-clamp-2 text-xs leading-5 text-content-muted">{{ row.instance.description or 'Reusable alert connection' }}</p>
+                                <p class="mt-1 max-w-[18rem] truncate text-xs text-content-muted" title="{{ row.instance.description or 'No description provided.' }}">{{ row.instance.description or 'No description provided.' }}</p>
                             </div>
                         </div>
                     </td>
-                    <td class="px-4 py-4 align-top">
-                        <div>{{ table_label.metadata_label(row.deployment_type|replace('_', ' ')|title, 'boxes') }}</div>
-                        <p class="mt-2 text-xs font-medium text-content-secondary">{{ row.version or 'Version not detected' }}</p>
+                    <td class="px-5 py-4 align-top">
+                        <span class="block max-w-[18rem] truncate font-sans text-sm font-normal text-content-secondary" title="{{ row.endpoint }}">{{ row.endpoint }}</span>
                     </td>
-                    <td class="px-4 py-4 align-top">
-                        {{ status_badge(row.compatibility) }}
-                        <p class="mt-2 max-w-[210px] truncate text-xs leading-5 text-content-muted" title="{{ row.profile or 'Run Full Validation to establish compatibility.' }}">{{ row.profile or 'Run Full Validation to establish compatibility.' }}</p>
+                    <td class="px-5 py-4 align-top">
+                        {{ table_label.metadata_label(row.deployment_type|replace('_', ' ')|title, 'boxes') }}
                     </td>
-                    <td class="px-4 py-4 align-top">{{ status_badge(row.readiness) }}</td>
-                    <td class="px-4 py-4 align-top">
+                    <td class="px-5 py-4 align-top text-content-secondary">
+                        {{ row.version or 'Not detected' }}
+                    </td>
+                    <td class="px-5 py-4 align-top">
+                        {{ table_label.status_label(row.readiness|replace('_', ' ')|title, readiness_tone, readiness_icon) }}
+                    </td>
+                    <td class="px-5 py-4 align-top">
                         <p class="font-semibold text-content-primary">{{ row.binding_count }}</p>
-                        {% if row.scope_types %}
-                            <p class="mt-1 max-w-[170px] truncate text-xs text-content-muted" title="{{ row.scope_types|join(', ') }}">{% for scope_type in row.scope_types %}{{ scope_type|replace('_', ' ')|title }}{% if not loop.last %}, {% endif %}{% endfor %}</p>
-                        {% else %}
-                            <p class="mt-1 text-xs text-content-muted">No scope bindings</p>
-                        {% endif %}
+                        <p class="mt-1 max-w-[14rem] truncate text-xs text-content-muted" title="{{ row.scope_types|length }} bound scope type{{ '' if row.scope_types|length == 1 else 's' }}">
+                            {% if row.scope_types %}
+                                {% for scope_type in row.scope_types %}{{ scope_type_labels.get(scope_type, scope_type|replace('_', ' ')|title) }}{% if not loop.last %}, {% endif %}{% endfor %}
+                            {% else %}
+                                No scope bindings
+                            {% endif %}
+                        </p>
                     </td>
-                    <td class="px-4 py-4 align-top text-xs font-medium leading-5 text-content-secondary">{{ row.validated_at }}</td>
-                    <td class="w-[88px] whitespace-nowrap px-2.5 py-4 text-right align-top">
-                        <a href="{{ url_for('alertmanager.instance_detail', instance_id=row.instance.id) }}" class="inline-flex h-8 items-center justify-center gap-1 rounded-lg border border-outline-default bg-surface-card px-2 text-[11px] font-semibold text-content-secondary shadow-sm transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                            <i data-lucide="settings-2" class="h-4 w-4" aria-hidden="true"></i>Manage
+                    <td class="px-5 py-4 text-right align-top">
+                        <a href="{{ url_for('alertmanager.instance_detail', instance_id=row.instance.id) }}"
+                           class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary shadow-sm transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                            <i data-lucide="settings-2" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                            Manage
                         </a>
                     </td>
                 </tr>
@@ -63,11 +71,11 @@
                 <tr>
                     <td colspan="7" class="p-0">
                         {% set empty_state_icon = 'siren' %}
-                        {% set empty_state_title = 'No Alertmanager connections found' %}
-                        {% set empty_state_description = 'Adjust the active filters or register a reusable alert connection.' %}
-                        {% set empty_state_min_height = 'min-h-[210px]' %}
-                        {% set empty_state_action_url = url_for('alertmanager.new_instance') if not selected_query and not selected_readiness and not selected_compatibility and not selected_deployment_type else none %}
-                        {% set empty_state_action_label = 'Register Connection' if empty_state_action_url else none %}
+                        {% set empty_state_title = 'No Alertmanager Connections Found' %}
+                        {% set empty_state_description = 'Register an Alertmanager connection or adjust the active filters.' %}
+                        {% set empty_state_min_height = 'min-h-[190px]' %}
+                        {% set empty_state_action_url = url_for('alertmanager.new_instance') if not selected_query and not selected_readiness and not selected_deployment_type else none %}
+                        {% set empty_state_action_label = 'Register Instance' if empty_state_action_url else none %}
                         {% set empty_state_permission = 'settings.manage_integrations' %}
                         {% include 'components/states/_empty_state.html' %}
                     </td>
@@ -77,52 +85,74 @@
     </table>
 </div>
 
-<footer class="flex flex-col gap-4 border-t border-outline-subtle bg-surface-hover px-5 py-3.5 text-xs text-content-muted sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+<footer class="flex flex-col gap-4 border-t border-outline-subtle bg-surface-hover px-5 py-3.5 text-xs text-content-muted lg:flex-row lg:items-center lg:justify-between">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-        <p>Showing <strong class="font-semibold text-content-primary">{{ pagination.start_item }}–{{ pagination.end_item }}</strong> of <strong class="font-semibold text-content-primary">{{ pagination.total_items }}</strong> connections</p>
-        <form method="get" action="{{ url_for('integrations.alertmanager') }}" hx-get="{{ url_for('integrations.alertmanager') }}" hx-target="#alertmanager-inventory-content" hx-swap="innerHTML" hx-indicator="#alertmanager-inventory-loading" hx-push-url="true" class="inline-flex items-center">
-            <input type="hidden" name="tab" value="registry">
+        <p>
+            Showing <span class="font-semibold text-content-primary">{{ pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ pagination.end_item }}</span>
+            of <span class="font-semibold text-content-primary">{{ pagination.total_items }}</span> {{ 'instance' if pagination.total_items == 1 else 'instances' }}
+        </p>
+        <form method="get"
+              action="{{ url_for('integrations.alertmanager') }}"
+              hx-get="{{ url_for('integrations.alertmanager') }}"
+              hx-target="#alertmanager-inventory-content"
+              hx-swap="innerHTML"
+              hx-push-url="true"
+              hx-indicator="#alertmanager-inventory-loading"
+              class="flex items-center">
             <input type="hidden" name="page" value="1">
             <input type="hidden" name="q" value="{{ selected_query }}">
-            <input type="hidden" name="compatibility" value="{{ selected_compatibility }}">
             <input type="hidden" name="readiness" value="{{ selected_readiness }}">
             <input type="hidden" name="deployment_type" value="{{ selected_deployment_type }}">
-            <input type="hidden" name="coverage_page" value="{{ coverage_pagination.page }}">
-            <input type="hidden" name="coverage_per_page" value="{{ coverage_pagination.per_page }}">
-            <input type="hidden" name="coverage_q" value="{{ selected_coverage_query }}">
-            <input type="hidden" name="coverage_environment" value="{{ selected_coverage_environment }}">
-            <input type="hidden" name="coverage_status" value="{{ selected_coverage_status }}">
-            <select name="per_page" aria-label="Connections per page" onchange="this.form.requestSubmit()" class="{{ pagination_ui.page_size_classes() }}">
-                {% for option in pagination.allowed_per_page %}<option value="{{ option }}" {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>{% endfor %}
+            <select name="per_page"
+                    aria-label="Rows per page"
+                    onchange="this.form.requestSubmit()"
+                    class="{{ pagination_ui.page_size_classes() }}">
+                {% for value in pagination.allowed_per_page %}
+                    <option value="{{ value }}" {% if pagination.per_page == value %}selected{% endif %}>{{ value }}</option>
+                {% endfor %}
             </select>
         </form>
     </div>
+
     <div class="flex flex-wrap items-center gap-2">
-        {% set base_args = {
-            'tab': 'registry',
-            'q': selected_query,
-            'compatibility': selected_compatibility,
-            'readiness': selected_readiness,
-            'deployment_type': selected_deployment_type,
-            'per_page': pagination.per_page,
-            'coverage_page': coverage_pagination.page,
-            'coverage_per_page': coverage_pagination.per_page,
-            'coverage_q': selected_coverage_query,
-            'coverage_environment': selected_coverage_environment,
-            'coverage_status': selected_coverage_status
-        } %}
         {% if pagination.has_prev %}
-            {% set prev_url = url_for('integrations.alertmanager', page=pagination.prev_page, **base_args) %}
-            <a href="{{ prev_url }}" hx-get="{{ prev_url }}" hx-target="#alertmanager-inventory-content" hx-swap="innerHTML" hx-indicator="#alertmanager-inventory-loading" hx-push-url="true" class="{{ pagination_ui.navigation_classes(disabled=false) }}"><i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>Previous</a>
+            {% set prev_url = url_for('integrations.alertmanager', q=selected_query, readiness=selected_readiness, deployment_type=selected_deployment_type, page=pagination.prev_page, per_page=pagination.per_page) %}
+            <a href="{{ prev_url }}"
+               hx-get="{{ prev_url }}"
+               hx-target="#alertmanager-inventory-content"
+               hx-swap="innerHTML"
+               hx-push-url="true"
+               hx-indicator="#alertmanager-inventory-loading"
+               class="{{ pagination_ui.navigation_classes(disabled=false) }}">
+                <i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>
+                Previous
+            </a>
         {% else %}
-            <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"><i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>Previous</span>
+            <span class="{{ pagination_ui.navigation_classes(disabled=true) }}">
+                <i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>
+                Previous
+            </span>
         {% endif %}
+
         {{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages) }}
+
         {% if pagination.has_next %}
-            {% set next_url = url_for('integrations.alertmanager', page=pagination.next_page, **base_args) %}
-            <a href="{{ next_url }}" hx-get="{{ next_url }}" hx-target="#alertmanager-inventory-content" hx-swap="innerHTML" hx-indicator="#alertmanager-inventory-loading" hx-push-url="true" class="{{ pagination_ui.navigation_classes(disabled=false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i></a>
+            {% set next_url = url_for('integrations.alertmanager', q=selected_query, readiness=selected_readiness, deployment_type=selected_deployment_type, page=pagination.next_page, per_page=pagination.per_page) %}
+            <a href="{{ next_url }}"
+               hx-get="{{ next_url }}"
+               hx-target="#alertmanager-inventory-content"
+               hx-swap="innerHTML"
+               hx-push-url="true"
+               hx-indicator="#alertmanager-inventory-loading"
+               class="{{ pagination_ui.navigation_classes(disabled=false) }}">
+                Next
+                <i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i>
+            </a>
         {% else %}
-            <span class="{{ pagination_ui.navigation_classes(disabled=true) }}">Next<i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i></span>
+            <span class="{{ pagination_ui.navigation_classes(disabled=true) }}">
+                Next
+                <i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i>
+            </span>
         {% endif %}
     </div>
 </footer>
