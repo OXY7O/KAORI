@@ -15,6 +15,7 @@ class RetentionPolicy:
     batch_size: int
     protect_unreviewed: bool = False
     protected_max_days: int | None = None
+    settings: dict[str, Any] | None = None
 
 
 @dataclass(frozen=True)

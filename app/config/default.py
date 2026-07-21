@@ -120,24 +120,22 @@ def _bounded_env_int(
 
 
 def _retention_queue_name() -> str:
-    return _env_str('RETENTION_CELERY_QUEUE', 'inventory').strip() or 'inventory'
+    return _env_str('RETENTION_CELERY_QUEUE', 'maintenance').strip() or 'maintenance'
 
 
 def _build_maintenance_beat_schedule() -> dict[str, dict[str, object]]:
     schedule: dict[str, dict[str, object]] = {}
-    if _env_bool('ACTIVITY_RETENTION_SCHEDULE_ENABLED', True):
-        schedule.update({
-        'operational-activity-retention': {
+    if (
+        _env_bool('ACTIVITY_RETENTION_SCHEDULE_ENABLED', True)
+        or _env_bool('JOB_EXECUTION_RETENTION_ENABLED', True)
+    ):
+        schedule['data-lifecycle-dispatcher'] = {
             'task': 'app.retention.tasks.run_scheduled_retention',
-            'schedule': crontab(
-                hour=_bounded_env_int('ACTIVITY_RETENTION_SCHEDULE_HOUR', 2, 0, 23),
-                minute=_bounded_env_int('ACTIVITY_RETENTION_SCHEDULE_MINUTE', 15, 0, 59),
-            ),
+            'schedule': crontab(minute='*/15'),
             'options': {
                 'queue': _retention_queue_name(),
             },
         }
-    })
     if _env_bool('INTEGRATION_RUNTIME_MONITORING_ENABLED', True):
         schedule['integration-runtime-monitoring'] = {
             'task': 'app.integrations.runtime.tasks.refresh_integration_runtime',
@@ -473,7 +471,7 @@ class Config:
     ARCHIVE_OBJECT_PREFIX = _env_str('ARCHIVE_OBJECT_PREFIX', 'archives').strip().strip('/')
     ARCHIVE_SCHEDULED_DOMAINS = tuple(
         item.strip().lower().replace('-', '_')
-        for item in _env_str('ARCHIVE_SCHEDULED_DOMAINS', 'operational_activity').split(',')
+        for item in _env_str('ARCHIVE_SCHEDULED_DOMAINS', 'operational_activity,job_execution').split(',')
         if item.strip()
     )
     ARCHIVE_S3_BUCKET = _env_str('ARCHIVE_S3_BUCKET', _env_str('REPORT_S3_BUCKET', ''))
@@ -503,6 +501,19 @@ class Config:
     ACTIVITY_RETENTION_SCHEDULE_ENABLED = _env_bool('ACTIVITY_RETENTION_SCHEDULE_ENABLED', True)
     ACTIVITY_RETENTION_SCHEDULE_HOUR = _bounded_env_int('ACTIVITY_RETENTION_SCHEDULE_HOUR', 2, 0, 23)
     ACTIVITY_RETENTION_SCHEDULE_MINUTE = _bounded_env_int('ACTIVITY_RETENTION_SCHEDULE_MINUTE', 15, 0, 59)
+
+    # Canonical JobExecution archive-first retention policy.
+    JOB_EXECUTION_RETENTION_ENABLED = _env_bool('JOB_EXECUTION_RETENTION_ENABLED', True)
+    JOB_EXECUTION_RETENTION_DAYS = _env_int('JOB_EXECUTION_RETENTION_DAYS', 90)
+    JOB_EXECUTION_ARCHIVE_RETENTION_DAYS = _env_int('JOB_EXECUTION_ARCHIVE_RETENTION_DAYS', 365)
+    JOB_EXECUTION_RETENTION_BATCH_SIZE = _env_int('JOB_EXECUTION_RETENTION_BATCH_SIZE', 2500)
+    JOB_EXECUTION_RUNTIME_RETENTION_DAYS = _env_int('JOB_EXECUTION_RUNTIME_RETENTION_DAYS', 30)
+    JOB_EXECUTION_VALIDATION_RETENTION_DAYS = _env_int('JOB_EXECUTION_VALIDATION_RETENTION_DAYS', 30)
+    JOB_EXECUTION_ANALYTICS_RETENTION_DAYS = _env_int('JOB_EXECUTION_ANALYTICS_RETENTION_DAYS', 90)
+    JOB_EXECUTION_FORECASTING_RETENTION_DAYS = _env_int('JOB_EXECUTION_FORECASTING_RETENTION_DAYS', 180)
+    JOB_EXECUTION_FAILED_RETENTION_DAYS = _env_int('JOB_EXECUTION_FAILED_RETENTION_DAYS', 90)
+    JOB_EXECUTION_RETENTION_SCHEDULE_HOUR = _bounded_env_int('JOB_EXECUTION_RETENTION_SCHEDULE_HOUR', 3, 0, 23)
+    JOB_EXECUTION_RETENTION_SCHEDULE_MINUTE = _bounded_env_int('JOB_EXECUTION_RETENTION_SCHEDULE_MINUTE', 0, 0, 59)
 
     # Reports storage.
     # Supported values:

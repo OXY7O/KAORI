@@ -23,6 +23,7 @@ class JobExecution(db.Model):
         Index('ix_job_executions_resource_status', 'resource_group', 'status'),
         Index('ix_job_executions_requester_status', 'requested_by_user_id', 'status'),
         Index('ix_job_executions_deduplication', 'deduplication_key'),
+        Index('ix_job_executions_retention_boundary', 'status', 'workload_class', 'completed_at'),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)

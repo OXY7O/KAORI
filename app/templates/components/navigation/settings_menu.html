@@ -1,4 +1,4 @@
-{% set settings_owned_endpoints = ["settings.general", "settings.account", "settings.reports"] %}
+{% set settings_owned_endpoints = ["settings.general", "settings.account", "settings.reports", "settings.data_lifecycle.index", "settings.data_lifecycle.preview", "settings.data_lifecycle.save_policy", "settings.data_lifecycle.run", "settings.data_lifecycle.verify", "settings.data_lifecycle.download"] %}
 {% set settings_active = request.endpoint in settings_owned_endpoints
 or (request.endpoint and request.endpoint.startswith('settings.secret_reveal.')) %}
 <details class="sidebar-menu space-y-1"
@@ -25,6 +25,12 @@ or (request.endpoint and request.endpoint.startswith('settings.secret_reveal.'))
            class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint == 'settings.account' else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] leading-4 transition">
             <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint == 'settings.account' else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span><i data-lucide="user" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">Account</span>
         </a>
+        {% if current_user.is_authenticated and current_user.has_permission('settings.view_data_lifecycle') %}
+            <a href="{{ url_for('settings.data_lifecycle.index') }}"
+               class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint and request.endpoint.startswith('settings.data_lifecycle.') else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] leading-4 transition">
+                <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint and request.endpoint.startswith('settings.data_lifecycle.') else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span><i data-lucide="archive-restore" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">Data Lifecycle</span>
+            </a>
+        {% endif %}
         {% if current_user.is_authenticated and current_user.has_permission('kubernetes_secrets.manage_reveal') %}
             <a href="{{ url_for('settings.secret_reveal.index') }}"
                class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint and request.endpoint.startswith('settings.secret_reveal.') else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] leading-4 transition">

@@ -11,8 +11,9 @@ from urllib.parse import urlparse
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from flask import current_app
-from sqlalchemy import func
+from sqlalchemy import case, func
 
+from app.models.job import JobExecution
 from app.models.archive import (
     ACTIVE_ARCHIVE_STATUSES,
     ARCHIVE_STATUS_CLEANUP_PARTIAL,
@@ -20,7 +21,8 @@ from app.models.archive import (
     ARCHIVE_STATUS_READY,
     ArchiveArtifact,
 )
-from app.retention.domains import get_archive_domain
+from app.retention.domains import DOMAIN_FACTORIES, get_archive_domain
+from app.retention.policy_service import get_or_create_policy
 from app.retention.service import paginate_archives, preview_retention
 from app.storage.service import StorageProfile, build_storage_profile
 
@@ -41,7 +43,8 @@ _ARCHIVE_STORAGE_OPTIONS = ("local", "s3")
 _STATUS_CACHE: dict[str, tuple[float, dict[str, Any]]] = {}
 
 
-def build_activity_retention_context(
+def build_domain_retention_context(
+    domain_name: str,
     *,
     include_preview: bool = False,
     archive_page: int = 1,
@@ -54,7 +57,7 @@ def build_activity_retention_context(
     feedback: dict[str, Any] | None = None,
     poll_once: bool = False,
 ) -> dict[str, Any]:
-    domain = get_archive_domain("operational_activity")
+    domain = get_archive_domain(domain_name)
     policy = domain.build_policy()
     storage_profile = build_storage_profile("archive")
     filters = _normalize_archive_filters(
@@ -83,9 +86,10 @@ def build_activity_retention_context(
     storage = _build_storage_context(
         storage_profile, archive_posture.get("last_verified")
     )
-    schedule_enabled = _bool_config("ACTIVITY_RETENTION_SCHEDULE_ENABLED", True)
-    schedule_hour = _int_config("ACTIVITY_RETENTION_SCHEDULE_HOUR", 2)
-    schedule_minute = _int_config("ACTIVITY_RETENTION_SCHEDULE_MINUTE", 15)
+    stored_policy = get_or_create_policy(domain.name, policy)
+    schedule_enabled = bool(stored_policy.schedule_enabled)
+    schedule_hour = int(stored_policy.schedule_hour)
+    schedule_minute = int(stored_policy.schedule_minute)
     schedule_timezone = str(current_app.config.get("CELERY_TIMEZONE", "UTC") or "UTC")
 
     pagination_total = int(archive_pagination.total or 0)
@@ -93,6 +97,10 @@ def build_activity_retention_context(
 
     return {
         "domain": domain.name,
+        "domain_label": _domain_label(domain.name),
+        "domain_icon": _domain_icon(domain.name),
+        "source_model": domain.source_model,
+        "operation_mode": stored_policy.operation_mode,
         "enabled": policy.enabled,
         "retention_days": policy.retention_days,
         "archive_retention_days": policy.archive_retention_days,
@@ -110,7 +118,7 @@ def build_activity_retention_context(
             timezone_name=schedule_timezone,
         ),
         "queue_name": str(
-            current_app.config.get("RETENTION_CELERY_QUEUE", "inventory") or "inventory"
+            current_app.config.get("RETENTION_CELERY_QUEUE", "maintenance") or "maintenance"
         ),
         "worker": worker,
         "storage": storage,
@@ -150,6 +158,134 @@ def build_activity_retention_context(
     }
 
 
+
+def build_activity_retention_context(**kwargs) -> dict[str, Any]:
+    return build_domain_retention_context('operational_activity', **kwargs)
+
+
+def build_data_lifecycle_context(
+    *,
+    selected_domain: str = 'operational_activity',
+    active_tab: str = 'policies',
+    include_preview: bool = False,
+    archive_page: int = 1,
+    archive_per_page: int = 5,
+    archive_status: str = 'all',
+    archive_trigger: str = 'all',
+    archive_mode: str = 'all',
+    archive_storage: str = 'all',
+    archive_search: str = '',
+    archive_domain: str = 'all',
+    feedback: dict[str, Any] | None = None,
+    poll_once: bool = False,
+) -> dict[str, Any]:
+    supported = tuple(sorted(DOMAIN_FACTORIES))
+    selected = selected_domain if selected_domain in supported else supported[0]
+    selected_context = build_domain_retention_context(
+        selected,
+        include_preview=include_preview,
+        archive_page=1,
+        archive_per_page=5,
+        feedback=feedback,
+        poll_once=poll_once,
+    )
+    domain_cards = []
+    posture_map = _build_domain_posture_summaries(supported)
+    selected_preview_count = (selected_context.get('preview') or {}).get('record_count')
+    for domain_name in supported:
+        domain = get_archive_domain(domain_name)
+        policy = domain.build_policy()
+        stored = get_or_create_policy(domain_name, policy)
+        posture = posture_map.get(domain_name, {'active_count': 0, 'failed_count': 0, 'total_archives': 0})
+        preview_count = selected_preview_count if domain_name == selected else None
+        domain_cards.append({
+            'name': domain_name,
+            'label': _domain_label(domain_name),
+            'icon': _domain_icon(domain_name),
+            'description': _domain_description(domain_name),
+            'source_model': domain.source_model,
+            'enabled': stored.enabled,
+            'hot_retention_days': stored.hot_retention_days,
+            'archive_retention_days': stored.archive_retention_days,
+            'batch_size': stored.batch_size,
+            'operation_mode': stored.operation_mode,
+            'schedule_enabled': stored.schedule_enabled,
+            'schedule_hour': stored.schedule_hour,
+            'schedule_minute': stored.schedule_minute,
+            'eligible_count': preview_count,
+            'active_count': posture['active_count'],
+            'failed_count': posture['failed_count'],
+            'total_archives': posture['total_archives'],
+            'settings': dict(stored.settings_json or {}),
+        })
+
+    history_filters = _normalize_archive_filters(
+        status=archive_status, trigger_type=archive_trigger,
+        operation_mode=archive_mode, storage_backend=archive_storage,
+        search=archive_search,
+    )
+    history_domain = archive_domain if archive_domain in supported else 'all'
+    history_pagination = paginate_archives(
+        domain_name=None if history_domain == 'all' else history_domain,
+        page=archive_page, per_page=archive_per_page,
+        status=history_filters['status'], trigger_type=history_filters['trigger_type'],
+        operation_mode=history_filters['operation_mode'],
+        storage_backend=history_filters['storage_backend'], search=history_filters['search'],
+    )
+    total = int(history_pagination.total or 0)
+    active_lifecycle_jobs = JobExecution.query.filter(
+        JobExecution.job_type == 'data_lifecycle',
+        JobExecution.scope_key == selected,
+        JobExecution.status.in_(('queued', 'running', 'retrying', 'cancel_requested')),
+    ).count()
+    selected_context.update({
+        'active_tab': active_tab if active_tab in {'policies','storage','history'} else 'policies',
+        'active_lifecycle_jobs': int(active_lifecycle_jobs or 0),
+        'selected_domain': selected,
+        'domains': domain_cards,
+        'managed_domain_count': len(domain_cards),
+        'enabled_domain_count': sum(1 for item in domain_cards if item['enabled']),
+        'eligible_total': selected_preview_count,
+        'active_archive_total': sum(int(item['active_count']) for item in domain_cards),
+        'planned_domains': [
+            {'name':'runtime_observation','label':'Runtime Observations','icon':'activity','description':'Provider health and capability drift evidence.'},
+            {'name':'generated_report','label':'Generated Reports','icon':'file-text','description':'Generated report artifacts and metadata.'},
+            {'name':'forecast_result','label':'Forecast Results','icon':'chart-spline','description':'Forecast outputs and analytical datasets.'},
+        ],
+        'history_archives': [_serialize_archive(item) | {'domain': item.domain, 'domain_label': _domain_label(item.domain), 'domain_icon': _domain_icon(item.domain)} for item in history_pagination.items],
+        'history_filters': history_filters | {'domain': history_domain},
+        'history_filter_options': {
+            'domains': supported, 'statuses': _ARCHIVE_STATUS_OPTIONS,
+            'triggers': _ARCHIVE_TRIGGER_OPTIONS, 'modes': _ARCHIVE_MODE_OPTIONS,
+            'storage_backends': _ARCHIVE_STORAGE_OPTIONS,
+        },
+        'history_pagination': {
+            'page': history_pagination.page, 'pages': max(int(history_pagination.pages or 0),1),
+            'per_page': history_pagination.per_page, 'total': total,
+            'start_item': ((history_pagination.page-1)*history_pagination.per_page+1) if total else 0,
+            'end_item': min(history_pagination.page*history_pagination.per_page,total),
+            'has_prev': history_pagination.has_prev, 'has_next': history_pagination.has_next,
+            'prev_num': history_pagination.prev_num, 'next_num': history_pagination.next_num,
+            'allowed_per_page': _ARCHIVE_PER_PAGE_OPTIONS,
+        },
+    })
+    return selected_context
+
+
+def _domain_label(name: str) -> str:
+    return {'operational_activity':'Activity Audit','job_execution':'Job Executions'}.get(name, name.replace('_',' ').title())
+
+
+def _domain_icon(name: str) -> str:
+    return {'operational_activity':'scroll-text','job_execution':'workflow'}.get(name,'database')
+
+
+def _domain_description(name: str) -> str:
+    return {
+        'operational_activity':'Administrative activity and security-sensitive operational evidence.',
+        'job_execution':'Canonical queue, progress, result-reference, and worker execution metadata.',
+    }.get(name,'KAORI operational data domain.')
+
 def _normalize_archive_filters(
     *,
     status: str,
@@ -176,6 +312,28 @@ def _normalize_archive_filters(
         "search": str(search or "").strip(),
     }
 
+
+
+def _build_domain_posture_summaries(domain_names: tuple[str, ...]) -> dict[str, dict[str, int]]:
+    rows = (
+        ArchiveArtifact.query.filter(ArchiveArtifact.domain.in_(domain_names))
+        .with_entities(
+            ArchiveArtifact.domain,
+            func.count(ArchiveArtifact.id),
+            func.sum(case((ArchiveArtifact.status.in_(tuple(ACTIVE_ARCHIVE_STATUSES)), 1), else_=0)),
+            func.sum(case((ArchiveArtifact.status == ARCHIVE_STATUS_FAILED, 1), else_=0)),
+        )
+        .group_by(ArchiveArtifact.domain)
+        .all()
+    )
+    return {
+        str(domain): {
+            'total_archives': int(total or 0),
+            'active_count': int(active or 0),
+            'failed_count': int(failed or 0),
+        }
+        for domain, total, active, failed in rows
+    }
 
 def _build_archive_posture(domain_name: str) -> dict[str, Any]:
     domain_query = ArchiveArtifact.query.filter(ArchiveArtifact.domain == domain_name)

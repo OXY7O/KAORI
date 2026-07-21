@@ -36,6 +36,8 @@ PERMISSION_DEPENDENCIES: dict[str, set[str]] = {
     'reports.manage_storage': {'reports.view'},
     'settings.export_operational_activity': {'settings.view_operational_activity'},
     'settings.manage_operational_activity_retention': {'settings.view_operational_activity'},
+    'settings.export_data_lifecycle': {'settings.view_data_lifecycle'},
+    'settings.manage_data_lifecycle': {'settings.view_data_lifecycle'},
     'users.manage': {'users.view'},
     'users.reset_password': {'users.view'},
     'users.activate': {'users.view'},

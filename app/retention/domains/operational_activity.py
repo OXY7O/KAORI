@@ -10,6 +10,7 @@ from sqlalchemy import and_, func, or_
 from app.extensions import db
 from app.models.notification import Notification
 from app.models.user import User
+from app.retention.policy_service import resolve_policy
 from app.retention.types import ArchiveBoundary, PartialCleanupError, RetentionPolicy
 
 
@@ -26,7 +27,7 @@ class OperationalActivityArchiveDomain:
         protected_max_days = _positive_int_config('ACTIVITY_RETENTION_PROTECTED_MAX_DAYS', 180)
         protected_max_days = max(protected_max_days, retention_days)
 
-        return RetentionPolicy(
+        fallback = RetentionPolicy(
             domain=self.name,
             enabled=_bool_config('ACTIVITY_RETENTION_ENABLED', True),
             retention_days=retention_days,
@@ -34,7 +35,9 @@ class OperationalActivityArchiveDomain:
             batch_size=batch_size,
             protect_unreviewed=protect_unreviewed,
             protected_max_days=protected_max_days,
+            settings={},
         )
+        return resolve_policy(self.name, fallback)
 
     def inspect_boundary(
         self,

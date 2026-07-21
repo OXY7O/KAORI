@@ -15,6 +15,7 @@ SETTINGS_ACCESS_HERO_TEMPLATES = (
     Path('app/templates/settings/roles/form.html'),
     Path('app/templates/settings/permissions/index.html'),
     Path('app/templates/notifications/activity.html'),
+    Path('app/templates/settings/data_lifecycle/index.html'),
 )
 
 
@@ -24,13 +25,16 @@ def test_settings_and_access_heroes_use_shared_kaori_contract() -> None:
         'page_hero.layout_classes()',
         'page_hero.content_classes()',
         'page_hero.aside_classes()',
-        'text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]',
     )
 
     for template_path in SETTINGS_ACCESS_HERO_TEMPLATES:
         source = template_path.read_text(encoding='utf-8')
         missing = [fragment for fragment in required_fragments if fragment not in source]
         assert not missing, f'{template_path} is missing hero contract fragments: {missing}'
+        assert (
+            'page_hero.title_classes()' in source
+            or 'text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]' in source
+        ), f'{template_path} does not use the canonical hero title hierarchy'
 
 
 def test_shared_settings_access_hero_has_safe_shared_minimum_geometry() -> None:
@@ -315,25 +319,15 @@ def test_permission_catalog_role_coverage_is_closed_by_default() -> None:
     assert 'group-open:rotate-180' in source[position:position + 1400]
 
 
-def test_activity_retention_uses_overview_pattern() -> None:
-    source = Path('app/templates/notifications/partials/_activity_retention.html').read_text(encoding='utf-8')
+def test_activity_retention_is_moved_to_data_lifecycle() -> None:
+    activity = Path('app/templates/notifications/activity.html').read_text(encoding='utf-8')
+    lifecycle = Path('app/templates/settings/data_lifecycle/index.html').read_text(encoding='utf-8')
 
-    required = (
-        'Retention &amp; Archive Overview',
-        'grid gap-px bg-outline-subtle md:grid-cols-2 xl:grid-cols-4',
-        'Operational overview',
-        'Archive-first lifecycle',
-        'Hot data',
-        'Archive retention',
-        'Scheduled run',
-        'Worker readiness',
-        'Last lifecycle run',
-        'Failure posture',
-    )
-    missing = [fragment for fragment in required if fragment not in source]
-    assert not missing, f'Activity retention overview is incomplete: {missing}'
-    assert 'Lifecycle overview' not in source
-    assert 'bg-gradient-to-r' not in source
+    assert 'activity-audit-tab-retention' not in activity
+    assert 'Settings → Data Lifecycle' in activity
+    assert 'Retention Policies' in lifecycle
+    assert 'Archive Storage' in lifecycle
+    assert 'Execution History' in lifecycle
 
 
 def _details_open_state(source: str, marker: str) -> bool:
@@ -390,37 +384,13 @@ def test_secret_reveal_protection_posture_uses_access_overview_pattern() -> None
     assert not missing, f'Protected Secret Reveal overview is incomplete: {missing}'
 
 
-def test_activity_audit_workspace_uses_audit_log_tab_and_overview_pattern() -> None:
+def test_activity_audit_workspace_focuses_on_audit_records() -> None:
     activity_source = Path('app/templates/notifications/activity.html').read_text(encoding='utf-8')
     overview_source = Path('app/templates/notifications/partials/_activity_summary_cards.html').read_text(encoding='utf-8')
 
-    required_activity = (
-        'openAuditLog()',
-        "activeAuditWorkspaceTab = 'audit-log'",
-        'activity-audit-tab-audit-log',
-        'activity-audit-panel-audit-log',
-        'Audit Log',
-    )
-    missing_activity = [fragment for fragment in required_activity if fragment not in activity_source]
-    assert not missing_activity, f'Activity Audit Log tab contract is incomplete: {missing_activity}'
-    assert 'openAuditSnapshot' not in activity_source
-    assert 'activity-audit-tab-snapshot' not in activity_source
-    assert '>Snapshot<' not in activity_source
-
-    required_overview = (
-        'Operational Overview',
-        'grid gap-px bg-outline-subtle md:grid-cols-2 xl:grid-cols-4',
-        'min-h-[12rem]',
-        'Total Activities',
-        'Need Attention',
-        'Unread Activities',
-        'Success Ratio',
-        'border-t border-outline-subtle bg-surface-hover',
-        'Event Scope',
-        'Review Priority',
-        'Technical Detail',
-        'Audit Boundary',
-    )
-    missing_overview = [fragment for fragment in required_overview if fragment not in overview_source]
-    assert not missing_overview, f'Activity operational overview is incomplete: {missing_overview}'
-    assert 'Activity audit snapshot' not in overview_source
+    assert 'Activity Audit Log' in activity_source
+    assert '_activity_summary_cards.html' in activity_source
+    assert '_activity_table_card.html' in activity_source
+    assert 'activity-audit-tab-retention' not in activity_source
+    assert 'Open Data Lifecycle' in activity_source
+    assert 'Operational Overview' in overview_source

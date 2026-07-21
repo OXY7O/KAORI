@@ -1,24 +1,38 @@
-# KAORI Archive-First Retention Foundation
+# KAORI Data Lifecycle Foundation
 
-This package provides the shared lifecycle used by the unified Activity Audit Log now and by reports and future high-volume domains later.
+This package provides the shared archive-first lifecycle used by **Settings → Data Lifecycle**. The engine is domain-neutral: each source table supplies a small adapter, while policy persistence, archive writing, checksum verification, cleanup, scheduling, storage, canonical jobs, notifications, and execution history remain shared.
+
+## Current managed domains
+
+- `operational_activity`: canonical Activity Audit records.
+- `job_execution`: terminal canonical worker executions and subscriber snapshots.
+
+Planned domains such as runtime observations, generated reports, analytics datasets, and forecast results should be added as adapters rather than separate retention subsystems.
 
 ## Safety invariants
 
-1. Cleanup never starts until the data archive and manifest are uploaded and independently verified by size and SHA-256 checksum.
-2. The archive selection is frozen by cutoff and maximum source ID.
-3. Cleanup receives the exact `source.record_id` values read back from the verified JSONL archive, so later changes to source rows cannot expand the cleanup selection.
-4. Jobs are serialized per domain with a PostgreSQL advisory lock; non-PostgreSQL development uses a process-local fallback lock.
+1. Cleanup never starts until data and manifest artifacts are uploaded and independently verified by size and SHA-256 checksum.
+2. Selection is frozen by cutoff and maximum source ID.
+3. Cleanup receives the exact `source.record_id` values read back from the verified JSONL archive.
+4. Lifecycle executions are canonical `JobExecution` records and deduplicate per data domain.
 5. Archive object keys are immutable because they contain the archive UUID.
-6. Registry rows preserve a non-secret storage locator snapshot so archives remain addressable after the active Local/S3 profile changes.
-7. Cleanup is batched and partial completion is retained as `cleanup_partial`; the verified archive is never removed automatically because cleanup failed.
+6. Registry rows preserve a non-secret storage locator snapshot after the active Local/S3 profile changes.
+7. Cleanup is batched; partial completion is recorded as `cleanup_partial` and never removes the verified archive.
+8. Active source records are protected by each domain adapter. The Job Execution adapter archives only terminal jobs and never follows `result_reference` into analytics, forecast, report, or dataset storage.
+
+## Scale and scheduling
+
+Celery Beat runs a lightweight dispatcher every 15 minutes. Persistent per-domain policies decide whether a domain is due and at what hour/minute. Due domains are fanned out as separate maintenance jobs, so Activity Audit and Job Execution retention do not create one large database/storage burst.
+
+The Data Lifecycle UI does not count every eligible record on ordinary page loads. Operators request an exact read-only preview only when needed. Source queries use indexed retention boundaries and bounded batches.
 
 ## Artifact format
 
-- Data: compressed JSON Lines (`.jsonl.gz`) for streaming and large datasets.
-- Manifest: formatted JSON containing schema, selection boundary, record count, policy, storage locator, and data checksum.
-- Registry: `archive_artifacts` stores lifecycle status, checksum, backend, object keys, counts, and execution metadata.
+- Data: compressed JSON Lines (`.jsonl.gz`) for streaming large datasets.
+- Manifest: JSON with schema, selection boundary, record count, policy, storage locator, and checksum.
+- Registry: `archive_artifacts` stores lifecycle status, object keys, counts, checksums, and execution metadata.
 
-Every archived record must contain:
+Every archived record contains:
 
 ```json
 {
@@ -31,29 +45,34 @@ Every archived record must contain:
 }
 ```
 
-## Triggers
+## UI and CLI
 
-UI, CLI, and Celery Beat all call the same retention service.
+The canonical UI is `/settings/data-lifecycle` with three workspaces:
+
+- Retention Policies
+- Archive Storage
+- Execution History
+
+Legacy Activity Audit retention routes redirect to this workspace.
+
+CLI and worker triggers still call the same service:
 
 ```bash
 flask archive-retention preview --domain operational_activity
 flask archive-retention run --domain operational_activity --archive-only
-flask archive-retention run --domain operational_activity --cleanup
+flask archive-retention run --domain job_execution --cleanup
 flask archive-retention verify <archive-id>
-flask archive-retention purge-archives --domain operational_activity
-flask archive-retention purge-archives --domain operational_activity --execute
+flask archive-retention purge-archives --domain job_execution --execute
 ```
 
-## Adding a future domain
+## Adding another domain
 
 1. Implement the `ArchiveDomain` protocol in `app/retention/domains/`.
 2. Register the adapter in `DOMAIN_FACTORIES`.
-3. Add domain-specific retention configuration.
-4. Add the domain name to `ARCHIVE_SCHEDULED_DOMAINS` when scheduled cleanup is approved.
-5. Add domain-specific RBAC and UI entry points while keeping archive/verify/cleanup logic in the shared service.
+3. Define indexed eligibility boundaries and immutable serialization.
+4. Explicitly define dependency and result-ownership rules; never rely on broad cascade deletion.
+5. Add a seeded `DataLifecyclePolicy` and migration only when persistence defaults are required.
+6. Add the domain to `ARCHIVE_SCHEDULED_DOMAINS` after scheduled execution is approved.
+7. Add domain-specific tests for preview, serialization, verified cleanup, protected active data, and partial failure.
 
-Authentication events are already covered by the `operational_activity` adapter because they use the canonical Activity Audit Log. A generated-report artifact adapter remains planned. Restore/import remains an administrative CLI concern and must include duplicate protection.
-
-## Current operational activity semantics
-
-The first adapter reads from the existing notification-oriented activity model. Its optional protection policy therefore maps "unreviewed" to `read_at IS NULL` for now. The UI labels this accurately as **Protected unread**. When KAORI introduces a dedicated immutable audit-event model with `reviewed_at` and `reviewed_by_user_id`, only the domain adapter should change; the shared archive, verification, registry, storage, cleanup, and scheduling services remain unchanged.
+Restore/import remains an administrative capability and must include duplicate protection, schema compatibility validation, and explicit operator approval.

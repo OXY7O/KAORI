@@ -73,3 +73,17 @@ Recommended ownership:
 - delivery and lifecycle defaults: default storage policy, retention period, download expiry, and schedule execution posture.
 
 The operational Reports module remains responsible for Generate, Generated Reports, Templates, Schedules, and Storage operations. A dedicated `reports.manage_settings` permission is recommended before the placeholder becomes an editable configuration surface; `settings.manage_integrations` should remain focused on integration configuration.
+
+## Data Lifecycle contract
+
+`/settings/data-lifecycle` is the centralized cross-domain control plane for KAORI retention, archive storage, cleanup, verification, and lifecycle execution history. Activity Audit no longer owns a retention tab; it links to this workspace instead.
+
+The page is deliberately domain-driven so growth does not create one menu per table:
+
+- a compact domain selector exposes only registered adapters;
+- the selected domain owns its policy detail and exact preview;
+- Archive Storage is shared across domains;
+- Execution History is filterable across all domains;
+- future domains appear only after their lifecycle adapter and safety boundaries exist.
+
+Policy changes and manual archive operations require `settings.manage_data_lifecycle`. Read-only users see disabled policy controls. Verified archive downloads require `settings.export_data_lifecycle`. Every change, request, completion, failure, and verification produces persistent KAORI operational feedback and Activity Audit evidence.

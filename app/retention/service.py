@@ -211,7 +211,7 @@ def list_archives(
 
 def paginate_archives(
     *,
-    domain_name: str,
+    domain_name: str | None,
     page: int = 1,
     per_page: int = 5,
     status: str = 'all',
@@ -225,7 +225,9 @@ def paginate_archives(
     if normalized_per_page not in {5, 10, 25, 50}:
         normalized_per_page = 5
 
-    query = ArchiveArtifact.query.filter(ArchiveArtifact.domain == domain_name)
+    query = ArchiveArtifact.query
+    if domain_name:
+        query = query.filter(ArchiveArtifact.domain == domain_name)
 
     if status != 'all':
         query = query.filter(ArchiveArtifact.status == status)

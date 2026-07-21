@@ -7,6 +7,7 @@ from app.models.identity import ExternalIdentityLink, IdentityProvider
 from app.models.integration import IntegrationBinding, IntegrationInstance, KubernetesConnection
 from app.models.integration_runtime import IntegrationRuntimeObservation
 from app.models.job import JobExecution, JobExecutionSubscriber
+from app.models.lifecycle import DataLifecyclePolicy
 from app.models.inventory import (
     ClusterInventory,
     ConfigurationInventory,
@@ -33,6 +34,7 @@ __all__ = [
     'IntegrationRuntimeObservation',
     'JobExecution',
     'JobExecutionSubscriber',
+    'DataLifecyclePolicy',
     'IntegrationInstance',
     'IntegrationBinding',
     'KubernetesConnection',

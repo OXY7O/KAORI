@@ -997,6 +997,9 @@
   .max-h-\[68vh\] {
     max-height: 68vh;
   }
+  .max-h-\[580px\] {
+    max-height: 580px;
+  }
   .min-h-0 {
     min-height: 0;
   }
@@ -1053,9 +1056,6 @@
   }
   .min-h-\[7\.25rem\] {
     min-height: 7.25rem;
-  }
-  .min-h-\[11rem\] {
-    min-height: 11rem;
   }
   .min-h-\[12rem\] {
     min-height: 12rem;
@@ -1297,14 +1297,26 @@
   .w-\[120px\] {
     width: 120px;
   }
+  .w-\[130px\] {
+    width: 130px;
+  }
   .w-\[135px\] {
     width: 135px;
   }
   .w-\[136px\] {
     width: 136px;
   }
+  .w-\[140px\] {
+    width: 140px;
+  }
+  .w-\[150px\] {
+    width: 150px;
+  }
   .w-\[170px\] {
     width: 170px;
+  }
+  .w-\[180px\] {
+    width: 180px;
   }
   .w-\[208px\] {
     width: 208px;
@@ -1498,17 +1510,32 @@
   .min-w-\[116px\] {
     min-width: 116px;
   }
+  .min-w-\[135px\] {
+    min-width: 135px;
+  }
   .min-w-\[136px\] {
     min-width: 136px;
   }
+  .min-w-\[140px\] {
+    min-width: 140px;
+  }
+  .min-w-\[145px\] {
+    min-width: 145px;
+  }
   .min-w-\[150px\] {
     min-width: 150px;
+  }
+  .min-w-\[160px\] {
+    min-width: 160px;
   }
   .min-w-\[170px\] {
     min-width: 170px;
   }
   .min-w-\[190px\] {
     min-width: 190px;
+  }
+  .min-w-\[220px\] {
+    min-width: 220px;
   }
   .min-w-\[260px\] {
     min-width: 260px;
@@ -2437,12 +2464,6 @@
       background-color: color-mix(in oklab, var(--kaori-brand-soft) 70%, transparent);
     }
   }
-  .bg-kaori-soft\/80 {
-    background-color: var(--kaori-brand-soft);
-    @supports (color: color-mix(in lab, red, red)) {
-      background-color: color-mix(in oklab, var(--kaori-brand-soft) 80%, transparent);
-    }
-  }
   .bg-lime-50 {
     background-color: var(--color-lime-50);
   }
@@ -2556,12 +2577,6 @@
   }
   .bg-slate-800 {
     background-color: var(--color-slate-800);
-  }
-  .bg-slate-900\/70 {
-    background-color: color-mix(in srgb, oklch(20.8% 0.042 265.755) 70%, transparent);
-    @supports (color: color-mix(in lab, red, red)) {
-      background-color: color-mix(in oklab, var(--color-slate-900) 70%, transparent);
-    }
   }
   .bg-status-critical {
     background-color: var(--kaori-status-critical);
@@ -3088,9 +3103,6 @@
   }
   .pr-12 {
     padding-right: calc(var(--spacing) * 12);
-  }
-  .pb-0\.5 {
-    padding-bottom: calc(var(--spacing) * 0.5);
   }
   .pb-2 {
     padding-bottom: calc(var(--spacing) * 2);
@@ -4968,6 +4980,13 @@
       }
     }
   }
+  .hover\:bg-status-critical {
+    &:hover {
+      @media (hover: hover) {
+        background-color: var(--kaori-status-critical);
+      }
+    }
+  }
   .hover\:bg-status-critical-soft {
     &:hover {
       @media (hover: hover) {
@@ -5140,6 +5159,13 @@
       }
     }
   }
+  .hover\:underline {
+    &:hover {
+      @media (hover: hover) {
+        text-decoration-line: underline;
+      }
+    }
+  }
   .hover\:opacity-80 {
     &:hover {
       @media (hover: hover) {
@@ -5246,6 +5272,14 @@
       --tw-ring-color: color-mix(in srgb, oklch(69.6% 0.17 162.48) 20%, transparent);
       @supports (color: color-mix(in lab, red, red)) {
         --tw-ring-color: color-mix(in oklab, var(--color-emerald-500) 20%, transparent);
+      }
+    }
+  }
+  .focus\:ring-kaori-accent\/30 {
+    &:focus {
+      --tw-ring-color: var(--kaori-brand-accent);
+      @supports (color: color-mix(in lab, red, red)) {
+        --tw-ring-color: color-mix(in oklab, var(--kaori-brand-accent) 30%, transparent);
       }
     }
   }
@@ -5741,11 +5775,6 @@
       grid-template-columns: minmax(0,1fr) 180px auto;
     }
   }
-  .sm\:grid-cols-\[minmax\(0\,1fr\)_minmax\(11rem\,0\.72fr\)\] {
-    @media (width >= 40rem) {
-      grid-template-columns: minmax(0,1fr) minmax(11rem,0.72fr);
-    }
-  }
   .sm\:grid-cols-\[minmax\(220px\,320px\)_190px\] {
     @media (width >= 40rem) {
       grid-template-columns: minmax(220px,320px) 190px;
@@ -5769,11 +5798,6 @@
   .sm\:items-start {
     @media (width >= 40rem) {
       align-items: flex-start;
-    }
-  }
-  .sm\:items-stretch {
-    @media (width >= 40rem) {
-      align-items: stretch;
     }
   }
   .sm\:justify-between {
@@ -7044,14 +7068,6 @@
       }
     }
   }
-  .dark\:border-rose-500\/20 {
-    &:where(.dark, .dark *) {
-      border-color: color-mix(in srgb, oklch(64.5% 0.246 16.439) 20%, transparent);
-      @supports (color: color-mix(in lab, red, red)) {
-        border-color: color-mix(in oklab, var(--color-rose-500) 20%, transparent);
-      }
-    }
-  }
   .dark\:border-rose-900 {
     &:where(.dark, .dark *) {
       border-color: var(--color-rose-900);
@@ -7102,11 +7118,6 @@
       @supports (color: color-mix(in lab, red, red)) {
         border-color: color-mix(in oklab, var(--color-violet-900) 50%, transparent);
       }
-    }
-  }
-  .dark\:border-b-surface-card {
-    &:where(.dark, .dark *) {
-      border-bottom-color: var(--kaori-surface-card);
     }
   }
   .dark\:bg-amber-300 {
@@ -7745,22 +7756,6 @@
       background-color: var(--kaori-surface-card);
     }
   }
-  .dark\:bg-surface-card\/20 {
-    &:where(.dark, .dark *) {
-      background-color: var(--kaori-surface-card);
-      @supports (color: color-mix(in lab, red, red)) {
-        background-color: color-mix(in oklab, var(--kaori-surface-card) 20%, transparent);
-      }
-    }
-  }
-  .dark\:bg-surface-card\/30 {
-    &:where(.dark, .dark *) {
-      background-color: var(--kaori-surface-card);
-      @supports (color: color-mix(in lab, red, red)) {
-        background-color: color-mix(in oklab, var(--kaori-surface-card) 30%, transparent);
-      }
-    }
-  }
   .dark\:bg-surface-card\/40 {
     &:where(.dark, .dark *) {
       background-color: var(--kaori-surface-card);
@@ -8077,11 +8072,6 @@
   .dark\:text-indigo-950 {
     &:where(.dark, .dark *) {
       color: var(--color-indigo-950);
-    }
-  }
-  .dark\:text-kaori-accent {
-    &:where(.dark, .dark *) {
-      color: var(--kaori-brand-accent);
     }
   }
   .dark\:text-kaori-primary {
@@ -8489,14 +8479,6 @@
       --tw-ring-color: var(--color-rose-900);
     }
   }
-  .dark\:ring-rose-900\/40 {
-    &:where(.dark, .dark *) {
-      --tw-ring-color: color-mix(in srgb, oklch(41% 0.159 10.272) 40%, transparent);
-      @supports (color: color-mix(in lab, red, red)) {
-        --tw-ring-color: color-mix(in oklab, var(--color-rose-900) 40%, transparent);
-      }
-    }
-  }
   .dark\:ring-sky-400\/20 {
     &:where(.dark, .dark *) {
       --tw-ring-color: color-mix(in srgb, oklch(74.6% 0.16 232.661) 20%, transparent);
@@ -8757,15 +8739,6 @@
       &:hover {
         @media (hover: hover) {
           background-color: var(--kaori-brand-primary);
-        }
-      }
-    }
-  }
-  .dark\:hover\:bg-kaori-soft {
-    &:where(.dark, .dark *) {
-      &:hover {
-        @media (hover: hover) {
-          background-color: var(--kaori-brand-soft);
         }
       }
     }
