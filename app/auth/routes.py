@@ -15,6 +15,7 @@ from app.auth.providers.oauth import (
     generate_state,
     state_fingerprint,
 )
+from app.auth.readiness import check_authentication_database_readiness
 from app.auth.results import AuthResult
 from app.auth.services import (
     DATABASE_UNAVAILABLE_MESSAGE,
@@ -70,6 +71,20 @@ def _complete_successful_login(result: AuthResult, *, remember_requested: bool =
     methods=['POST'],
 )
 def login():
+    readiness = check_authentication_database_readiness()
+    if not readiness.ready:
+        # The setup page explains the database state directly.  Remove stale
+        # authentication flashes so a fresh-database condition never appears
+        # as several unrelated login failures.
+        session.pop('_flashes', None)
+        return (
+            render_template(
+                'auth/setup_required.html',
+                readiness=readiness,
+            ),
+            503,
+        )
+
     if current_user.is_authenticated:
         return redirect(url_for('welcome.index'))
 

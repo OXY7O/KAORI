@@ -4,7 +4,7 @@ import os
 import re
 from datetime import UTC, datetime
 
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.auth.providers.oauth import SsoIdentity
 from app.auth.results import AuthResult
@@ -17,12 +17,19 @@ class SsoAdmissionError(RuntimeError):
 
 
 def enabled_sso_providers() -> list[IdentityProvider]:
-    providers = (
-        IdentityProvider.query.filter(IdentityProvider.enabled.is_(True))
-        .filter(IdentityProvider.provider_type.in_(('google_oidc', 'github_oauth')))
-        .order_by(IdentityProvider.display_name.asc())
-        .all()
-    )
+    try:
+        providers = (
+            IdentityProvider.query.filter(IdentityProvider.enabled.is_(True))
+            .filter(IdentityProvider.provider_type.in_(('google_oidc', 'github_oauth')))
+            .order_by(IdentityProvider.display_name.asc())
+            .all()
+        )
+    except SQLAlchemyError:
+        # Authentication readiness is handled by the login route. Keep this helper
+        # defensive so a missing or temporarily unavailable schema never causes a 500.
+        db.session.rollback()
+        return []
+
     return [
         provider
         for provider in providers

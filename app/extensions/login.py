@@ -1,33 +1,54 @@
-from flask import flash, session
+from __future__ import annotations
+
+from flask import redirect, request, session, url_for
 from flask_login import LoginManager
 from sqlalchemy.exc import SQLAlchemyError
 
+from app.auth.readiness import check_authentication_database_readiness
+from app.common.flashes import flash_once
 from app.models.user import User
 
-# Initialize login manager
 login_manager = LoginManager()
-
-# Configure login manager
 login_manager.login_view = 'auth.login'  # pyright: ignore
-login_manager.login_message = 'Please login first'
+# Authentication notifications are emitted by the custom unauthorized handler.
+# Keeping Flask-Login's default message disabled prevents duplicate flashes.
+login_manager.login_message = None
 
 
-# User loader callback for login manager
 @login_manager.user_loader
-def load_user(user_id):
+def load_user(user_id: str):
+    """Resolve a session user without producing user-facing side effects.
+
+    A user loader may run several times during one browser navigation.  It must
+    therefore never flash.  Database readiness and notification decisions are
+    handled once by the login route or unauthorized handler.
+    """
+
     try:
         user = User.query.get(int(user_id))
         if user is not None and not user.is_active:
             session.clear()
             return None
         return user
-    except ValueError:
+    except (TypeError, ValueError):
         session.clear()
         return None
     except SQLAlchemyError:
         session.clear()
-        flash(
-            'Your login session could not be validated because the database connection is unavailable. Please sign in again.',  # noqa: E501
-            'danger',
-        )
         return None
+
+
+@login_manager.unauthorized_handler
+def handle_unauthorized():
+    """Redirect unauthenticated requests with one context-appropriate message."""
+
+    readiness = check_authentication_database_readiness()
+    login_url = url_for('auth.login', next=request.full_path.rstrip('?'))
+
+    # A fresh or unavailable database is explained by the setup page itself.
+    # Flashing here would create misleading "Please sign in" notifications.
+    if not readiness.ready:
+        return redirect(login_url)
+
+    flash_once('Please sign in to continue.', 'warning')
+    return redirect(login_url)
