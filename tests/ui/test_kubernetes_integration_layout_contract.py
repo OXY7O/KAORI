@@ -16,13 +16,35 @@ def test_kubernetes_page_keeps_operating_model_between_hero_and_registry():
     assert source.index(operating_model) < source.index(registry)
 
 
-def test_operating_model_preserves_three_canonical_concepts():
+def test_operating_model_explains_canonical_integration_stages():
     source = OPERATING_MODEL.read_text(encoding="utf-8")
 
     assert "Integration Operating Model" in source
-    assert "Connection Contract" in source
-    assert "Capability Discovery" in source
-    assert "Authority Boundary" in source
+    for stage in ("Connection", "Discovery", "Inventory", "Runtime"):
+        assert f">{stage}<" in source
+
+    for output in ("API Endpoint", "Runtime Profile", "Workloads", "Observations"):
+        assert output in source
+
+
+def test_operating_model_documents_boundary_and_lifecycle():
+    source = OPERATING_MODEL.read_text(encoding="utf-8")
+
+    assert "Operational Boundary" in source
+    assert "KAORI Reads" in source
+    assert "KAORI Does Not Modify" in source
+    assert "dedicated Kubernetes Operations workflows" in source
+    assert "Integration Lifecycle" in source
+
+    for step in ("Register", "Validate", "Discover", "Synchronize", "Observe", "Ready"):
+        assert f"('{step}'," in source
+
+
+def test_operating_model_keeps_kaori_title_case_labels():
+    source = OPERATING_MODEL.read_text(encoding="utf-8")
+
+    for label in ("Stage 1", "Stage 2", "Stage 3", "Stage 4", "Operational Boundary", "Integration Lifecycle"):
+        assert label in source
 
 
 def test_delete_action_has_alpine_handler():
