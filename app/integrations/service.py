@@ -6,10 +6,11 @@ from urllib.parse import urlsplit
 from app.cluster.constants import get_environment_label
 from app.extensions.db import db
 from app.common.presentation import present_user_datetime
-from app.models import AlertmanagerInstance, Cluster, PrometheusInstance
+from app.models import AlertmanagerInstance, Cluster, PrometheusInstance, Report, ReportSchedule
 from app.models.integration import IntegrationBinding, IntegrationInstance, KubernetesConnection
 from app.models.integration_runtime import IntegrationRuntimeObservation
 from app.integrations.coverage import build_provider_coverage, bound_source_for_scope
+from app.integrations.deletion import kubernetes_deletion_guard
 from app.prometheus.repository import cluster_bindings_for_instance
 
 
@@ -237,6 +238,43 @@ def build_kubernetes_detail(cluster_id: str) -> dict[str, Any] | None:
             'message': value.get('message') or '',
         })
     state = runtime_adapter.get_state(connection)
+    capability_scope = next((
+        binding.capability_scope or []
+        for binding in connection.integration_instance.bindings
+        if binding.asset_type == 'kubernetes_cluster' and binding.asset_key == cluster.id
+    ), [])
+    prometheus_source, prometheus_binding = bound_source_for_scope(
+        'prometheus',
+        scope_type='kubernetes_cluster',
+        scope_key=cluster.id,
+    )
+    alertmanager_source, alertmanager_binding = bound_source_for_scope(
+        'alertmanager',
+        scope_type='kubernetes_cluster',
+        scope_key=cluster.id,
+    )
+    report_count = Report.query.filter(Report.cluster_id == cluster.id).count()
+    schedule_count = ReportSchedule.query.filter(ReportSchedule.cluster_id == cluster.id).count()
+    deletion_guard = kubernetes_deletion_guard(
+        connection_id=connection.id,
+        cluster_id=cluster.id,
+    )
+    source_bindings = [
+        {
+            'provider': 'Prometheus',
+            'icon': 'activity',
+            'name': prometheus_source.name if prometheus_source else 'Not bound',
+            'status': prometheus_binding.validation_status if prometheus_binding else 'not_bound',
+            'role': prometheus_binding.binding_role if prometheus_binding else None,
+        },
+        {
+            'provider': 'Alertmanager',
+            'icon': 'siren',
+            'name': alertmanager_source.name if alertmanager_source else 'Not bound',
+            'status': alertmanager_binding.validation_status if alertmanager_binding else 'not_bound',
+            'role': alertmanager_binding.binding_role if alertmanager_binding else None,
+        },
+    ]
     return {
         'connection': connection,
         'cluster': cluster,
@@ -247,7 +285,16 @@ def build_kubernetes_detail(cluster_id: str) -> dict[str, Any] | None:
         'blocked_features': discovery.get('blocked_features') or [],
         'legacy_features': discovery.get('legacy_features') or [],
         'selected_adapters': discovery.get('selected_adapters') or {},
-        'capability_scope': next((binding.capability_scope or [] for binding in connection.integration_instance.bindings if binding.asset_type == 'kubernetes_cluster' and binding.asset_key == cluster.id), []),
+        'capability_scope': capability_scope,
+        'source_bindings': source_bindings,
+        'deletion_guard': deletion_guard,
+        'operational_use': {
+            'node_count': int(cluster.node_count or 0),
+            'capability_count': len(capability_scope),
+            'binding_count': sum(1 for row in source_bindings if row['status'] != 'not_bound'),
+            'report_count': report_count,
+            'schedule_count': schedule_count,
+        },
     }
 
 def build_prometheus_page(

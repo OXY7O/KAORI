@@ -10,6 +10,7 @@ from sqlalchemy import func, or_
 
 from app.extensions import db
 from app.integrations.kubernetes import kubeconfig_for_cluster
+from app.integrations.deletion import DeletionBlocked, kubernetes_deletion_guard
 from app.alertmanager.resolver import resolve_alertmanager_sources
 from app.prometheus.repository import resolve_instance_for_cluster
 from app.kubernetes.service import test_cluster_connection, test_cluster_runtime_health
@@ -651,6 +652,14 @@ def delete_cluster(cluster: Cluster) -> dict[str, int]:
     cluster_id = str(cluster.id)
     connection = cluster.kubernetes_connection
     canonical = connection.integration_instance if connection else None
+
+    if connection is not None:
+        guard = kubernetes_deletion_guard(
+            connection_id=connection.id,
+            cluster_id=cluster_id,
+        )
+        if guard.blocked:
+            raise DeletionBlocked(guard)
 
     detached_reports = (
         Report.query.filter(Report.cluster_id == cluster_id)

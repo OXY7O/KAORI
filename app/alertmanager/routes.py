@@ -32,6 +32,7 @@ from app.alertmanager.service import (
     update_alertmanager_binding_selector,
 )
 from app.integrations.runtime.presentation import runtime_state_view
+from app.integrations.deletion import DeletionBlocked
 from app.integrations.validation.state import build_validation_snapshot, get_active_validation_task_id
 from app.integrations.validation.web import (
     enqueue_binding_validation,
@@ -912,6 +913,21 @@ def delete_instance(instance_id: int) -> ResponseReturnValue:
     is_htmx = _is_htmx_request()
     try:
         remove_alertmanager_instance(instance)
+    except DeletionBlocked as exc:
+        feedback = record_instance_activity(
+            user_id=int(current_user.id),
+            instance=instance,
+            event_type='alertmanager_instance_delete_rejected',
+            status='warning',
+            title='Alertmanager instance deletion blocked',
+            message=f'{instance_name} still has active operational dependencies.',
+            detail=str(exc),
+            metadata={'active_jobs': exc.guard.active_jobs},
+            queue_feedback=not is_htmx,
+        )
+        if is_htmx:
+            return _render_instance_partial('alertmanager/partials/_detail_scope.html', instance, operation_feedback=feedback)
+        return redirect(url_for('alertmanager.instance_detail', instance_id=instance_id) + '#scope')
     except ValueError as exc:
         feedback = record_instance_activity(
             user_id=int(current_user.id),

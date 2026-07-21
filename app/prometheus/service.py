@@ -16,12 +16,9 @@ from app.integrations.compatibility import (
 )
 from app.integrations.binding_selectors import build_selector, selector_is_configured
 from app.integrations.lifecycle import bind_instance, ensure_canonical_instance, invalidate_bindings
+from app.integrations.deletion import DeletionBlocked, provider_deletion_guard
 from app.models import Cluster, PrometheusInstance
 from app.models.integration import IntegrationBinding, IntegrationInstance
-from app.prometheus.binding_contract import (
-    PROMETHEUS_BINDING_CAPABILITIES,
-    normalize_prometheus_binding_capabilities,
-)
 from app.prometheus.client import PrometheusClient
 from app.prometheus.consumer import PrometheusConsumer
 from app.prometheus.exceptions import PrometheusError
@@ -483,7 +480,10 @@ class PrometheusService:
             canonical,
             asset_type=KUBERNETES_CLUSTER_SCOPE,
             asset_key=cluster.id,
-            capability_scope=list(PROMETHEUS_BINDING_CAPABILITIES),
+            capability_scope=[
+                'metrics', 'capacity', 'utilization', 'storage', 'workload',
+                'forecast', 'top_consumers', 'alert_metrics',
+            ],
         )
         db.session.commit()
         return config
@@ -650,7 +650,7 @@ def save_prometheus_instance(
             canonical,
             asset_type=KUBERNETES_CLUSTER_SCOPE,
             asset_key=initial_cluster.id,
-            capability_scope=list(PROMETHEUS_BINDING_CAPABILITIES),
+            capability_scope=['metrics', 'capacity', 'utilization', 'storage', 'workload', 'forecast', 'top_consumers', 'alert_metrics'],
             selector_json=build_selector(label='cluster', value=initial_cluster.name),
             validation_status='validation_required',
             validation_message='Legacy cluster-assisted registration created a default selector. Verify the actual source label value before use.',
@@ -677,7 +677,6 @@ def validate_prometheus_binding(
     """
     if instance.integration_instance_id != binding.integration_instance_id:
         raise ValueError('The selected binding does not belong to this Prometheus source.')
-    normalize_prometheus_binding_capabilities(binding)
     if not selector_is_configured(binding.selector_json):
         binding.validation_status = 'blocked'
         binding.validation_message = 'Configure a metrics identity selector before validating this binding.'
@@ -763,19 +762,30 @@ def validate_prometheus_binding(
     }
 
 def remove_prometheus_instance(instance: PrometheusInstance) -> None:
-    """Delete a reusable Prometheus identity after governed bindings are removed.
+    """Delete a reusable Prometheus identity after governed dependencies are removed.
 
-    Runtime observation history and Activity Audit records are intentionally retained.
-    The canonical integration identity is removed with the provider record only after
-    no provider-neutral scope bindings remain.
+    Runtime observation history, canonical JobExecution history, and Activity Audit
+    records are intentionally retained. Shared-source bindings and active provider
+    jobs must be resolved before the connection identity can be deleted.
     """
-    binding_count = 0
+    canonical_binding_count = 0
     if instance.integration_instance_id is not None:
-        binding_count = IntegrationBinding.query.filter_by(
+        canonical_binding_count = IntegrationBinding.query.filter_by(
             integration_instance_id=instance.integration_instance_id,
         ).count()
-    if binding_count:
-        raise ValueError('Remove all scope bindings before deleting this Prometheus instance.')
+    legacy_binding_count = len(instance.bindings or ())
+    if canonical_binding_count or legacy_binding_count:
+        raise ValueError(
+            'Remove all scope bindings before deleting this Prometheus instance. '
+            f'Canonical bindings: {canonical_binding_count}; legacy bindings: {legacy_binding_count}.'
+        )
+
+    guard = provider_deletion_guard(
+        provider_type='prometheus',
+        provider_instance_id=instance.id,
+    )
+    if guard.blocked:
+        raise DeletionBlocked(guard)
 
     canonical = (
         db.session.get(IntegrationInstance, instance.integration_instance_id)
@@ -793,6 +803,10 @@ def remove_prometheus_instance(instance: PrometheusInstance) -> None:
 
 
 
+PROMETHEUS_BINDING_CAPABILITIES = [
+    'metrics', 'capacity', 'utilization', 'storage', 'workload',
+    'forecast', 'top_consumers', 'alert_metrics',
+]
 
 def create_prometheus_binding(
     *,
@@ -850,7 +864,7 @@ def create_prometheus_binding(
         asset_key=cluster.id,
         role=normalized_role,
         priority=priority,
-        capability_scope=list(PROMETHEUS_BINDING_CAPABILITIES),
+        capability_scope=PROMETHEUS_BINDING_CAPABILITIES,
         selector_json=selector_json,
         validation_status='validation_required',
         validation_message=(

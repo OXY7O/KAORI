@@ -64,3 +64,7 @@ Jobs & Executions uses dedicated cross-domain permissions:
 - `jobs.cancel` requests cancellation for eligible jobs and depends on `jobs.view`.
 
 The jobs workspace must not reuse `settings.manage_integrations`. The migration preserves existing access for custom roles that previously reached the page through integration, Data Lifecycle, or Activity Audit permissions, after which administrators can review the narrower contracts in Roles & Access.
+
+## Status Refresh Contract
+
+The manual **Refresh Status** action is HTMX-only and refreshes the execution workspace plus hero counters through out-of-band swaps. A user must not need a full page reload to see changes in Active, Running, Attention, or the Execution Overview metrics.

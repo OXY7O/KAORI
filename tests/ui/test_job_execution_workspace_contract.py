@@ -11,6 +11,8 @@ README = ROOT / 'app/jobs/README.md'
 SIDEBAR = ROOT / 'app/templates/components/navigation/sidebar.html'
 INTEGRATIONS_MENU = ROOT / 'app/templates/components/navigation/integrations_menu.html'
 OPERATIONS_MENU = ROOT / 'app/templates/components/navigation/platform_operations_menu.html'
+HERO_METADATA = ROOT / 'app/templates/integrations/jobs/partials/_hero_metadata.html'
+HERO_CONTEXT = ROOT / 'app/templates/integrations/jobs/partials/_hero_context_metrics.html'
 
 
 def read(path: Path) -> str:
@@ -21,8 +23,8 @@ def test_jobs_hero_uses_canonical_typography_and_compact_context_panel() -> None
     page = read(PAGE)
     assert 'text-2xl font-semibold leading-tight tracking-tight' in page
     assert 'text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base' in page
-    assert 'mt-5 flex flex-wrap gap-2' in page
-    assert page.count('page_hero.context_metric(') == 2
+    assert 'mt-5 flex flex-wrap gap-2' in read(HERO_METADATA)
+    assert read(HERO_CONTEXT).count('page_hero.context_metric(') == 2
     assert 'page_hero.supporting_strip' not in page
     assert 'Monitor background work, progress, and execution outcomes across KAORI.' in page
     assert 'Background Work Status' in page

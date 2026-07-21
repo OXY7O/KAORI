@@ -202,3 +202,26 @@ The Prometheus Storage Filesystem Contract requires a complete capacity-and-avai
 - a canonical node identity label (`node`, `nodename`, or `kubernetes_node`)
 
 A size series alone proves filesystem capacity collection but cannot calculate utilization or remaining headroom. Validation evidence must display all four registered queries, identify the missing half of each pair, and avoid generic exporter remediation when the metric exists but only part of the contract is observable.
+
+## Governed Integration Deletion
+
+Provider deletion is a dependency-aware lifecycle operation, not a raw row delete.
+
+- Prometheus and Alertmanager require all canonical and legacy scope bindings to be removed first.
+- Kubernetes removes only bindings that target the deleted cluster; reusable Prometheus and Alertmanager source instances remain intact.
+- Active validation, runtime, analytics, forecasting, or maintenance jobs block deletion while they still reference the provider or Kubernetes scope.
+- Kubernetes deletion is also blocked while Protected Secret Reveal requests remain `pending` or `approved`.
+- Generated reports and schedules are detached and retained. Runtime observations, canonical JobExecution history, and Activity Audit evidence remain available under their own lifecycle policies.
+- The manage workspace must show the remove/retain boundary and current blockers before enabling a destructive action.
+
+## Inventory & Operational Use
+
+The Kubernetes lifecycle workspace uses one full-width information block before the danger zone. It must expose:
+
+- compact inventory, capability, binding, and reporting metrics;
+- the KAORI domains that consume the connection;
+- the effective Prometheus and Alertmanager source bindings;
+- the exact data removed with the registration;
+- the historical and reusable records retained after deletion.
+
+The destructive control remains in a separate `Connection Lifecycle` block so operational context is readable before the user reaches the delete action.

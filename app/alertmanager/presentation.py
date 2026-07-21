@@ -12,6 +12,7 @@ from app.alertmanager.sanitization import safe_endpoint
 from app.common.presentation import present_user_datetime
 from app.extensions import db
 from app.integrations.binding_selectors import selector_form_values, selector_is_configured, selector_summary
+from app.integrations.deletion import provider_deletion_guard
 from app.integrations.coverage import build_provider_coverage
 from app.integrations.runtime.presentation import runtime_history_view, runtime_state_view
 from app.integrations.runtime.repository import paginate_runtime_history
@@ -145,9 +146,15 @@ def build_instance_context(instance: AlertmanagerInstance | None = None) -> dict
                 else capability.remediation[0] if capability.remediation else 'Review the integration configuration and rerun Full Validation.'
             ),
         })
+    deletion_guard = (
+        provider_deletion_guard(provider_type='alertmanager', provider_instance_id=instance.id)
+        if instance is not None
+        else None
+    )
     return {
         'instance': instance,
         'bindings': bindings,
+        'deletion_guard': deletion_guard,
         'binding_rows': [_binding_row(binding) for binding in bindings],
         'clusters': clusters,
         'capability_rows': capability_rows,

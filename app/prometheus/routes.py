@@ -22,6 +22,7 @@ from app.integrations.validation.web import (
 )
 from app.extensions.db import db
 from app.integrations.lifecycle import ensure_canonical_instance
+from app.integrations.deletion import DeletionBlocked
 from app.models import Cluster, PrometheusInstance
 from app.models.integration import IntegrationBinding
 from app.notifications.service import (
@@ -961,6 +962,27 @@ def delete_instance(instance_id: int) -> ResponseReturnValue:
     is_htmx = _is_htmx_request()
     try:
         remove_prometheus_instance(instance)
+    except DeletionBlocked as exc:
+        feedback = record_operational_activity(
+            user_id=current_user.id,
+            event_type='prometheus_instance_delete_rejected',
+            status='warning',
+            title='Prometheus instance deletion blocked',
+            message=f'{instance_name} still has active operational dependencies.',
+            detail=str(exc),
+            action_url=url_for('integrations.jobs', search=instance_name),
+            action_label='Review active jobs',
+            action_icon='list-checks',
+            metadata={
+                'instance_id': instance_id,
+                'instance_name': instance_name,
+                'active_jobs': exc.guard.active_jobs,
+            },
+            queue_feedback=not is_htmx,
+        )
+        if is_htmx:
+            return _render_instance_partial('prometheus/partials/_detail_scope.html', instance, operation_feedback=feedback)
+        return redirect(url_for('prometheus.instance_detail', instance_id=instance_id) + '#scope')
     except ValueError as exc:
         feedback = record_operational_activity(
             user_id=current_user.id,

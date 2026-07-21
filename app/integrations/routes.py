@@ -58,6 +58,8 @@ def jobs() -> ResponseReturnValue:
             return render_template('integrations/jobs/partials/_registry.html', **context)
         if fragment == 'active':
             return render_template('integrations/jobs/partials/_active_jobs.html', **context)
+        if fragment == 'status':
+            return render_template('integrations/jobs/partials/_status_refresh.html', **context)
         return render_template('integrations/jobs/partials/_workspace.html', **context)
     return render_template('integrations/jobs.html', **context)
 
@@ -168,6 +170,8 @@ def cancel_job(public_id: str) -> ResponseReturnValue:
             return render_template('integrations/jobs/partials/_registry.html', **context)
         if fragment == 'active':
             return render_template('integrations/jobs/partials/_active_jobs.html', **context)
+        if fragment == 'status':
+            return render_template('integrations/jobs/partials/_status_refresh.html', **context)
         return render_template('integrations/jobs/partials/_workspace.html', **context)
     return redirect(url_for('integrations.jobs'))
 

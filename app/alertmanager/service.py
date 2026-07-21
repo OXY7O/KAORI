@@ -32,6 +32,7 @@ from app.common.integration_errors import describe_integration_failure
 from app.extensions import db
 from app.integrations.binding_selectors import build_selector, selector_filters
 from app.integrations.lifecycle import bind_instance, ensure_canonical_instance, invalidate_bindings
+from app.integrations.deletion import DeletionBlocked, provider_deletion_guard
 from app.models.alertmanager import AlertmanagerInstance
 from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.models.cluster import Cluster
@@ -223,8 +224,21 @@ def validate_alertmanager_binding(
     }
 
 def remove_alertmanager_instance(instance: AlertmanagerInstance) -> None:
-    if get_alertmanager_bindings(instance.id):
-        raise ValueError('Remove all scope bindings before deleting this Alertmanager instance.')
+    canonical_bindings = get_alertmanager_bindings(instance.id)
+    legacy_binding_count = len(instance.bindings or ())
+    if canonical_bindings or legacy_binding_count:
+        raise ValueError(
+            'Remove all scope bindings before deleting this Alertmanager instance. '
+            f'Canonical bindings: {len(canonical_bindings)}; legacy bindings: {legacy_binding_count}.'
+        )
+
+    guard = provider_deletion_guard(
+        provider_type='alertmanager',
+        provider_instance_id=instance.id,
+    )
+    if guard.blocked:
+        raise DeletionBlocked(guard)
+
     canonical = (
         db.session.get(IntegrationInstance, instance.integration_instance_id)
         if instance.integration_instance_id

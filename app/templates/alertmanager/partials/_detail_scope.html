@@ -391,23 +391,24 @@
         <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 [&::-webkit-details-marker]:hidden">
             <div>
                 <p class="text-sm font-semibold text-content-primary">Instance Lifecycle &amp; Deletion</p>
-                <p class="mt-1 text-xs leading-5 text-content-secondary">Remove every scope binding before deleting the connection identity and stored credentials.</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Resolve scope bindings and active provider jobs before deleting the connection identity and stored credentials.</p>
             </div>
             <i data-lucide="chevron-down" class="h-4 w-4 text-content-muted transition group-open:rotate-180"></i>
         </summary>
         <div class="flex flex-col gap-4 border-t border-status-critical-border bg-status-critical-soft p-5 lg:flex-row lg:items-center lg:justify-between">
             <div>
-                <p class="text-sm font-semibold text-status-critical-text">Deletion Is Blocked While Bindings Remain</p>
-                <p class="mt-1 text-xs leading-5 text-content-secondary">Historical Activity Audit records are retained after deletion.</p>
+                <p class="text-sm font-semibold text-status-critical-text">Governed Deletion Boundary</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Bindings and active provider jobs block deletion. Runtime observations, JobExecution records, and Activity Audit remain available.</p>
+                {% if deletion_guard and deletion_guard.active_jobs %}<p class="mt-2 inline-flex items-center gap-1.5 rounded-md border border-status-warning-border bg-status-warning-soft px-2 py-1 text-[11px] font-semibold text-status-warning-text"><i data-lucide="loader-circle" class="h-3.5 w-3.5"></i>{{ deletion_guard.active_jobs }} Active Job{% if deletion_guard.active_jobs != 1 %}s{% endif %}</p>{% endif %}
             </div>
             <button type="button"
                     data-alertmanager-delete-button
                     data-delete-url="{{ url_for('alertmanager.delete_instance', instance_id=instance.id) }}"
                     data-delete-title="Delete Alertmanager instance?"
                     data-delete-name="{{ instance.name }}"
-                    data-delete-detail="The connection identity, endpoint configuration, and saved credentials will be removed. Historical operational activity remains available in Activity Audit Log."
+                    data-delete-detail="The connection identity, endpoint configuration, and saved credentials will be removed. Runtime observations, JobExecution history, and Activity Audit records remain available."
                     data-delete-action-label="Delete instance"
-                    {% if bindings %}disabled{% endif %}
+                    {% if bindings or (deletion_guard and deletion_guard.blocked) %}disabled{% endif %}
                     class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-status-critical-border bg-surface-card px-4 text-sm font-semibold text-status-critical-text transition hover:bg-status-critical-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed">
                 <i data-lucide="trash-2" class="h-4 w-4"></i>
                 Delete Instance

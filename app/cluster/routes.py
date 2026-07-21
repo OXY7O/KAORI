@@ -23,6 +23,7 @@ from redis.exceptions import RedisError
 
 from app.extensions import db
 from app.integrations.validation.web import enqueue_runtime_health_refresh
+from app.integrations.deletion import DeletionBlocked
 from app.cluster.forms import ClusterCreateForm, ClusterEditForm
 from app.cluster.registration import issue_cluster_registration_proof, verify_cluster_registration_proof
 from app.cluster.individual_sync_state import (
@@ -1166,6 +1167,27 @@ def delete_cluster_route(cluster_id: str) -> ResponseReturnValue:
         deletion_summary = delete_cluster(
             cluster,
         )
+    except DeletionBlocked as exc:
+        db.session.rollback()
+        record_operational_activity(
+            user_id=current_user.id,
+            event_type='cluster_delete_rejected',
+            status='warning',
+            title='Cluster deletion blocked',
+            message=f'{cluster_name} still has active operational dependencies.',
+            detail=str(exc),
+            action_url=url_for('integrations.kubernetes_detail', cluster_id=cluster_id) + '#inventory',
+            action_label='Review cluster lifecycle',
+            action_icon='shield-alert',
+            metadata={
+                'cluster_id': cluster_id,
+                'cluster_name': cluster_name,
+                'active_jobs': exc.guard.active_jobs,
+                'active_secret_reveal_requests': exc.guard.active_requests,
+            },
+            queue_feedback=True,
+        )
+        return redirect(url_for('integrations.kubernetes_detail', cluster_id=cluster_id) + '#inventory')
     except Exception as exc:
         db.session.rollback()
         logger.exception(

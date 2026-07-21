@@ -47,9 +47,9 @@ def test_prometheus_delete_action_is_contextual_and_blocked_by_bindings() -> Non
         'data-prometheus-delete-button',
         'data-delete-url="{{ delete_instance_url }}"',
         '{% if delete_instance_url %}',
-        '{% if bindings %}disabled{% endif %}',
-        'Deletion Is Blocked While Bindings Remain',
-        'Historical runtime observations and Activity Audit records are retained after deletion.',
+        '{% if bindings or (deletion_guard and deletion_guard.blocked) %}disabled{% endif %}',
+        'Governed Deletion Boundary',
+        'Bindings and active provider jobs block deletion.',
     )
     missing = [fragment for fragment in required if fragment not in scope]
     assert not missing, f'Prometheus deletion workspace is incomplete: {missing}'

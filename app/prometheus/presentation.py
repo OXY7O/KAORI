@@ -4,6 +4,7 @@ from typing import Any
 
 from app.extensions.db import db
 from app.integrations.binding_selectors import selector_form_values, selector_is_configured, selector_summary
+from app.integrations.deletion import provider_deletion_guard
 from app.integrations.runtime.presentation import runtime_history_view, runtime_state_view
 from app.integrations.runtime.repository import paginate_runtime_history
 from app.models import Cluster, PrometheusInstance
@@ -119,9 +120,15 @@ def build_instance_context(
         if row['available']
     }
 
+    deletion_guard = provider_deletion_guard(
+        provider_type='prometheus',
+        provider_instance_id=instance.id,
+    )
+
     return {
         'instance': instance,
         'bindings': bindings,
+        'deletion_guard': deletion_guard,
         'binding_rows': [_binding_row(binding) for binding in bindings],
         'clusters': clusters,
         'clusters_by_id': {cluster.id: cluster for cluster in clusters},
@@ -396,10 +403,6 @@ def _resolution_view(
             'is_selected': bool(selected and selected.instance.id == candidate.instance.id and selected.binding.id == candidate.binding.id),
         }
         candidates.append(row)
-    current_candidate = next(
-        (item for item in candidates if item['is_current_instance']),
-        candidates[0] if candidates else None,
-    )
     return {
         'label': label,
         'icon': icon,
@@ -412,11 +415,6 @@ def _resolution_view(
         'selected_role': selected.binding.binding_role if selected else None,
         'selected_operational_state': selected.operational_state if selected else 'unavailable',
         'current_instance_selected': bool(selected and selected.instance.id == current_instance_id),
-        'primary_blocker': (
-            current_candidate['decision_reason']
-            if current_candidate is not None and not current_candidate['eligible']
-            else None
-        ),
         'candidates': candidates,
     }
 
