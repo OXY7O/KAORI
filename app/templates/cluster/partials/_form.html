@@ -59,7 +59,9 @@
                 {% call connection_validation_header.render(
                     'Endpoint & Access',
                     'Define Kubernetes API credentials and transport trust, then verify reachability before registration.' if form_mode == 'add' else 'Test saved or replacement credentials and TLS settings before saving the update.',
-                    icon='network'
+                    icon='network',
+                    loading_id='kubernetes-connection-test-loading',
+                    loading_label='Testing Kubernetes connection'
                 ) %}
                     <button type="button"
                                 hx-post="{{ url_for('cluster.test_new_cluster_connection') if form_mode == 'add' else url_for('cluster.test_edit_cluster_connection', cluster_id=cluster.id) }}"
@@ -74,7 +76,6 @@
                             <i data-lucide="plug-zap" class="h-4 w-4 group-[.htmx-request]:animate-pulse"></i>Test Connection
                         </button>
                 {% endcall %}
-                <div id="kubernetes-connection-test-loading" class="{{ table_ui.loading_bar_classes() }}" aria-label="Testing Kubernetes connection"><div class="notification-progress-indeterminate h-full bg-kaori-primary"></div></div>
                 <div class="space-y-5 p-4 sm:p-5">
                     <label class="block"><span class="mb-2 block text-sm font-semibold text-content-primary">{{ 'Kubeconfig' if form_mode == 'add' else 'Replacement Kubeconfig' }}</span><div class="rounded-lg border border-dashed border-outline-strong bg-kaori-soft p-4">{{ form.kubeconfig(class="w-full text-sm font-medium text-content-primary file:mr-3 file:rounded-md file:border-0 file:bg-kaori-primary file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:bg-kaori-primary-hover") }}<p class="mt-2 text-xs leading-5 text-content-secondary">{% if form_mode == 'add' %}Upload the least-privilege kubeconfig used by KAORI. Test Connection reads it in memory and does not create a cluster record.{% else %}Optional. Leave blank to test and retain the saved kubeconfig, or upload a replacement to verify credential rotation before saving.{% endif %}</p></div></label>
                     <div class="space-y-3">

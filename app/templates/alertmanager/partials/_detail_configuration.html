@@ -4,6 +4,7 @@
 {% import "components/info_flow.html" as info_flow %}
 {% import "components/information_guide_card.html" as information_guide_card %}
 {% import "components/workspace_summary_card.html" as workspace_summary_card %}
+{% import "components/loading_bar.html" as loading_bar %}
 {% set current_auth_type = instance.auth_type or 'none' %}
 {% set field_classes = 'h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-normal text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20' %}
 {% set textarea_classes = 'min-h-24 w-full resize-y rounded-lg border border-outline-default bg-surface-card px-3.5 py-3 text-sm font-normal leading-6 text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20' %}
@@ -52,7 +53,8 @@
                     </section>
 
                     <section class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-elevated">
-                        <div class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div class="border-b border-outline-subtle px-4 py-4">
+                            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                             <div class="flex items-start gap-3"><div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="network" class="h-4 w-4"></i></div><div><h3 class="text-sm font-semibold text-content-primary">Endpoint &amp; Access</h3><p class="mt-0.5 text-xs leading-5 text-content-muted">Test submitted endpoint, authentication, TLS, and timeout changes before saving them.</p></div></div>
                             <button type="button"
                                     hx-post="{{ url_for('alertmanager.test_instance_configuration', instance_id=instance.id) }}"
@@ -64,8 +66,9 @@
                                     class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-wait disabled:opacity-70">
                                 <i data-lucide="plug-zap" class="h-4 w-4"></i>Test Connection
                             </button>
+                            </div>
+                            {{ loading_bar.render('alertmanager-configuration-test-loading', label='Testing Alertmanager configuration') }}
                         </div>
-                        <div id="alertmanager-configuration-test-loading" class="htmx-indicator pointer-events-none h-1 w-full overflow-hidden bg-kaori-soft" aria-label="Testing Alertmanager configuration"><div class="notification-progress-indeterminate h-full bg-kaori-primary"></div></div>
                         <div class="p-4">
                         <div><label for="alertmanager-endpoint" class="mb-1.5 block text-sm font-semibold text-content-primary">Endpoint URL</label><input id="alertmanager-endpoint" type="url" name="endpoint" required value="{{ instance.endpoint }}" class="{{ field_classes }}"><p class="mt-1.5 text-xs leading-5 text-content-muted">Provide the base URL reachable from the KAORI runtime. Do not append <span class="font-semibold text-kaori-primary">/api/v2</span>.</p></div>
                         <div class="mt-4 grid gap-4 lg:grid-cols-2">

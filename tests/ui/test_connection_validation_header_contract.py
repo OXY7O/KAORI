@@ -14,6 +14,9 @@ def test_shared_connection_validation_header_contract() -> None:
     assert "max-w-2xl text-xs leading-5" in source
     assert "caller()" in source
     assert "lg:items-center lg:justify-between" in source
+    assert 'components/loading_bar.html' in source
+    assert 'loading_bar.render' in source
+    assert 'loading_id=None' in source
 
 
 def test_connection_validation_header_is_used_across_integration_providers() -> None:
@@ -56,22 +59,24 @@ def test_alertmanager_endpoint_header_does_not_repeat_long_api_explanation() -> 
 
 
 
-def test_registration_connection_test_loading_bar_sits_directly_below_header() -> None:
+def test_registration_connection_test_loading_bar_is_owned_by_header() -> None:
     expectations = {
         "app/templates/alertmanager/instance_form.html": "alertmanager-connection-test-loading",
         "app/templates/prometheus/instance_form.html": "prometheus-connection-test-loading",
+        "app/templates/cluster/partials/_form.html": "kubernetes-connection-test-loading",
     }
+    header = read("app/templates/components/connection_validation_header.html")
+    loading = read("app/templates/components/loading_bar.html")
+    assert "loading_bar.render" in header
+    assert "mt-4 h-1 overflow-hidden rounded-full bg-kaori-soft" in loading
+    assert "w-1/3 animate-pulse rounded-full bg-kaori-primary" in loading
     for relative, indicator_id in expectations.items():
         source = read(relative)
         assert "'Endpoint & Access'" in source
-        assert "'Endpoint &amp; Access'" not in source
-        assert 'components/table.html' in source
-        assert 'class="{{ table_ui.loading_bar_classes() }}"' in source
-        header_end = source.index('{% endcall %}', source.index("'Endpoint & Access'"))
-        indicator = source.index(f'id="{indicator_id}"')
-        content = source.index('<div class="p-4">', header_end)
-        assert header_end < indicator < content
-        assert 'absolute bottom-2' not in source[header_end:content]
+        assert f"loading_id='{indicator_id}'" in source
+        assert f'hx-indicator="#{indicator_id}"' in source
+        assert 'absolute bottom-2' not in source
+
 
 def test_connection_validation_header_standard_is_documented() -> None:
     standard = read("docs/design/components/CONNECTION_VALIDATION_HEADER.md")

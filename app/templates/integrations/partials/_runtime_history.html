@@ -1,7 +1,9 @@
 {% import "components/pagination.html" as pagination_ui %}
+{% import "components/loading_bar.html" as loading_bar %}
 {% from "integrations/partials/_status_badge.html" import status_badge %}
 <section id="{{ runtime_history_id }}"{% if runtime_history_oob|default(false) %} hx-swap-oob="outerHTML"{% endif %} class="relative overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div class="flex items-start gap-3">
             <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                 <i data-lucide="history" class="h-5 w-5"></i>
@@ -27,10 +29,9 @@
                 <i data-lucide="refresh-cw" class="h-4 w-4"></i>Refresh History
             </button>
         </div>
+        </div>
+        {{ loading_bar.render(runtime_history_loading_id, label='Refreshing ' ~ provider_label ~ ' runtime history') }}
     </header>
-    <div id="{{ runtime_history_loading_id }}" class="htmx-indicator pointer-events-none h-1 w-full overflow-hidden bg-kaori-soft" aria-label="Refreshing {{ provider_label }} runtime history">
-        <div class="notification-progress-indeterminate h-full bg-kaori-primary"></div>
-    </div>
 
     {% if runtime_history.rows %}
         <div class="grid gap-px border-b border-outline-subtle bg-outline-subtle sm:grid-cols-4">

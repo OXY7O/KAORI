@@ -225,3 +225,7 @@ The Kubernetes lifecycle workspace uses one full-width information block before 
 - the historical and reusable records retained after deletion.
 
 The destructive control remains in a separate `Connection Lifecycle` block so operational context is readable before the user reaches the delete action.
+
+## Technical Check Presentation
+
+Prometheus and Alertmanager expose executable provider expressions inside expandable **Technical Checks**. Kubernetes follows the same disclosure pattern and provides a runnable `kubectl` shell script that verifies API serving, resource discovery, effective RBAC, and a bounded live read. Explanatory evidence remains normal KAORI typography; only runnable queries, requests, or scripts use monospace and Copy.

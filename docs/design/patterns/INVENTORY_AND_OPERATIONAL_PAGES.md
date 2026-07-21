@@ -70,7 +70,7 @@ This document defines reusable structures. It does not define domain-specific fi
 1. A disabled Previous or Next control must be rendered as a non-interactive element, never as an anchor with an `href`.
 2. Disabled controls use `aria-disabled="true"` and the shared disabled navigation classes.
 3. Active pagination and page-size changes should update only the owning table or workspace region through HTMX when practical.
-4. The loading bar belongs directly below the owning block header and must target the same partial region.
+4. The loading bar belongs inside the owning block header, directly below the title/action row, and must target the same partial region. Use the Activity Audit Table rounded Violet track and pulsing one-third segment.
 
 
 ## Kubernetes registry action-density contract

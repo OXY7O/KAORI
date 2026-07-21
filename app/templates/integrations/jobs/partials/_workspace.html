@@ -1,4 +1,5 @@
 {% import "components/table.html" as table_ui %}
+{% import "components/loading_bar.html" as loading_bar %}
 {% from "integrations/partials/_status_badge.html" import status_badge %}
 <section id="job-execution-workspace"
          class="space-y-5"
@@ -20,8 +21,8 @@
                     <p class="mt-1 text-sm leading-6 text-content-secondary">Current workload posture across KAORI worker queues.</p>
                 </div>
             </div>
+            {{ loading_bar.render('job-workspace-loading', label='Refreshing Jobs and Executions status') }}
         </header>
-        <div id="job-workspace-loading" class="{{ table_ui.loading_bar_classes() }}" aria-hidden="true"><div class="notification-progress-indeterminate h-full bg-kaori-primary"></div></div>
         <div class="grid gap-3 p-5 sm:grid-cols-2 xl:grid-cols-4 sm:p-6">
             <div class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
                 <div class="flex items-center justify-between gap-3"><span class="flex h-9 w-9 items-center justify-center rounded-lg bg-status-info-soft text-status-info-text"><i data-lucide="layers-3" class="h-4 w-4"></i></span>{{ status_badge('pending' if job_stats.active else 'unknown', 'Active' if job_stats.active else 'Idle') }}</div>

@@ -11,7 +11,10 @@
     {% call connection_validation_header.render(
         'Runtime Health & Diagnostics',
         'Refresh connection health and compatibility evidence.',
-        icon='activity'
+        icon='activity',
+        loading_id='kubernetes-runtime-validation-loading',
+        loading_active=validation_job and validation_job.is_active,
+        loading_label='Refreshing Kubernetes runtime health'
     ) %}
         <form method="post"
               action="{{ url_for('integrations.kubernetes_runtime_refresh', cluster_id=cluster.id) }}"
@@ -30,10 +33,6 @@
             </button>
         </form>
     {% endcall %}
-    <div id="kubernetes-runtime-validation-loading"
-         class="{% if validation_job and validation_job.is_active %}block{% else %}htmx-indicator{% endif %} pointer-events-none h-1 w-full overflow-hidden bg-kaori-soft">
-        <div class="notification-progress-indeterminate h-full bg-kaori-primary"></div>
-    </div>
     {% if validation_job and validation_job.is_active %}
         <div class="flex flex-col gap-2 border-b border-brand-outline bg-kaori-soft px-5 py-3 text-xs text-content-secondary sm:flex-row sm:items-center sm:justify-between">
             <span class="inline-flex items-center gap-2 font-semibold text-kaori-primary">

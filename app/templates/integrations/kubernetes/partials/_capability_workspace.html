@@ -1,5 +1,5 @@
 {% import "components/connection_validation_header.html" as connection_validation_header %}
-{% import "components/terminal_command.html" as terminal_command %}
+{% import "components/technical_check.html" as technical_check %}
 {% from "integrations/partials/_status_badge.html" import status_badge %}
 <section id="kubernetes-capability-workspace"
          class="relative overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
@@ -9,13 +9,19 @@
          hx-target="this"
          hx-swap="outerHTML"
          {% endif %}>
-    {% call connection_validation_header.render('Compatibility & Capability Matrix', 'Validate served Kubernetes APIs, effective RBAC, stable adapters, fallbacks, and blocked operational domains.', icon='scan-search') %}
+    {% call connection_validation_header.render(
+        'Compatibility & Capability Matrix',
+        'Validate served Kubernetes APIs, effective RBAC, stable adapters, fallbacks, and blocked operational domains.',
+        icon='scan-search',
+        loading_id='kubernetes-capability-loading',
+        loading_active=validation_job and validation_job.is_active,
+        loading_label='Running Kubernetes full validation'
+    ) %}
         <form method="post" action="{{ url_for('integrations.kubernetes_capability_validate', cluster_id=cluster.id) }}" hx-post="{{ url_for('integrations.kubernetes_capability_validate', cluster_id=cluster.id) }}" hx-target="#kubernetes-capability-workspace" hx-swap="outerHTML" hx-disabled-elt="button" hx-indicator="#kubernetes-capability-loading">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" {% if validation_job and validation_job.is_active %}disabled{% endif %} class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover disabled:cursor-wait disabled:opacity-70"><i data-lucide="{{ 'loader-circle' if validation_job and validation_job.is_active else 'scan-line' }}" class="h-4 w-4{% if validation_job and validation_job.is_active %} animate-spin{% endif %}"></i>{{ 'Validation Running' if validation_job and validation_job.is_active else 'Run Full Validation' }}</button>
         </form>
     {% endcall %}
-    <div id="kubernetes-capability-loading" class="{% if validation_job and validation_job.is_active %}block{% else %}htmx-indicator{% endif %} pointer-events-none h-1 w-full overflow-hidden bg-kaori-soft"><div class="notification-progress-indeterminate h-full bg-kaori-primary"></div></div>
     {% if validation_job and validation_job.is_active %}<div class="flex flex-col gap-2 border-b border-brand-outline bg-kaori-soft px-5 py-3 text-xs text-content-secondary sm:flex-row sm:items-center sm:justify-between"><span class="inline-flex items-center gap-2 font-semibold text-kaori-primary"><i data-lucide="loader-circle" class="h-3.5 w-3.5 animate-spin"></i>{{ validation_job.title or 'Kubernetes validation running in worker' }}</span><span>Task {{ validation_job.task_id[:8] }} · {{ validation_job.state_label|title }} · {{ validation_job.elapsed_seconds }}s</span></div>{% endif %}
 
     <div class="grid gap-px border-b border-outline-subtle bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
@@ -43,7 +49,7 @@
     {% endif %}
     <div class="grid items-start gap-5 p-5 sm:p-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.65fr)]">
         <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
-            <header class="border-b border-outline-subtle bg-surface-hover px-4 py-3"><p class="text-sm font-semibold text-content-primary">Kubernetes API Capability Detail</p><p class="mt-1 text-xs leading-5 text-content-secondary">Expand a feature to inspect the selected API, evidence, CLI verification command, impact, and exact remediation.</p></header>
+            <header class="border-b border-outline-subtle bg-surface-hover px-4 py-3"><p class="text-sm font-semibold text-content-primary">Kubernetes API Capability Detail</p><p class="mt-1 text-xs leading-5 text-content-secondary">Expand a feature to inspect the selected API, evidence, runnable technical checks, impact, and exact remediation.</p></header>
             <div class="divide-y divide-outline-subtle">
                 {% for row in feature_rows %}
                     {% set tone = 'ready' if row.status == 'ready' else ('degraded' if row.status == 'legacy' else 'blocked') %}
@@ -55,8 +61,46 @@
                         <div class="space-y-3 border-t border-outline-subtle bg-surface-hover p-4">
                             <div class="grid gap-3 md:grid-cols-2"><div class="rounded-lg border border-outline-subtle bg-surface-card p-3"><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Selected API</p><p class="mt-2 font-mono text-xs font-semibold text-content-primary">{{ row.api_version }}</p><p class="mt-1 text-xs text-content-secondary">Stability: {{ row.stability|title }}</p></div><div class="rounded-lg border border-outline-subtle bg-surface-card p-3"><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Operational Impact</p><p class="mt-2 text-xs leading-5 text-content-secondary">{% if row.status == 'ready' %}KAORI can use this capability through the preferred stable API.{% elif row.status == 'legacy' %}The capability remains available, but upgrade planning is required before the fallback API is removed upstream.{% else %}Dependent inventory or operational features remain unavailable until API serving or RBAC access is corrected.{% endif %}</p></div></div>
                             {% set api_group = row.api_version.split('/')[0] if '/' in row.api_version else '' %}
-                            {% set cli_command = 'kubectl auth can-i list ' ~ row.resource ~ (' --api-group=' ~ api_group if api_group else '') %}
-                            {{ terminal_command.render(cli_command, label='Kubernetes RBAC Verification') }}
+                            {% set api_resource = row.resource ~ ('.' ~ api_group if api_group else '') %}
+                            {% set discovery_path = '/apis/' ~ row.api_version if '/' in row.api_version else '/api/' ~ row.api_version %}
+                            {% set check_tone = 'normal' if row.status == 'ready' else ('warning' if row.status == 'legacy' else 'critical') %}
+                            {% set check_icon = 'circle-check' if row.status == 'ready' else ('triangle-alert' if row.status == 'legacy' else 'circle-x') %}
+                            {% set check_status = 'Ready' if row.status == 'ready' else ('Legacy Fallback' if row.status == 'legacy' else 'Blocked') %}
+                            {% set api_group_argument = '--api-group=' ~ api_group if api_group else '--api-group=""' %}
+                            {% set runnable_script -%}
+set -euo pipefail
+
+# Confirm the selected API version is served
+kubectl get --raw "{{ discovery_path }}" >/dev/null
+
+# Confirm the expected resource is discoverable
+kubectl api-resources {{ api_group_argument }} -o name | grep -Fx "{{ api_resource }}"
+
+# Confirm the current identity can list the resource cluster-wide
+kubectl auth can-i list "{{ api_resource }}" --all-namespaces
+
+# Execute a bounded live read through the same API contract
+kubectl get "{{ api_resource }}" --all-namespaces --limit=1 -o name
+                            {%- endset %}
+                            {% set kubernetes_check = {
+                                'label': 'Kubernetes API and RBAC Check',
+                                'evidence': row.message,
+                                'status_label': check_status,
+                                'tone': check_tone,
+                                'icon': check_icon,
+                                'value_summary': 'Selected API: ' ~ row.api_version ~ ' · Resource: ' ~ api_resource,
+                                'query': runnable_script,
+                                'query_help': 'Run this script from a shell where kubectl uses the same cluster and service-account identity registered in KAORI.'
+                            } %}
+                            <section class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-card">
+                                <header class="border-b border-outline-subtle bg-surface-hover px-4 py-3">
+                                    <p class="text-sm font-semibold text-content-primary">Technical Checks</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">Expand the check to inspect and copy the exact runnable Kubernetes discovery, RBAC, and bounded-read script.</p>
+                                </header>
+                                <div class="p-3">
+                                    {{ technical_check.render(kubernetes_check, query_label='Runnable Kubernetes Script') }}
+                                </div>
+                            </section>
                             <div class="rounded-lg border {% if row.status == 'ready' %}border-status-normal-border bg-status-normal-soft{% elif row.status == 'legacy' %}border-status-warning-border bg-status-warning-soft{% else %}border-status-critical-border bg-status-critical-soft{% endif %} p-3"><p class="text-xs font-semibold {% if row.status == 'ready' %}text-status-normal-text{% elif row.status == 'legacy' %}text-status-warning-text{% else %}text-status-critical-text{% endif %}">What to Do</p><p class="mt-1 text-xs leading-5 text-content-secondary">{% if row.status == 'ready' %}No corrective action is required. Revalidate after Kubernetes upgrades or RBAC changes.{% elif row.status == 'legacy' %}Upgrade the cluster or API extension so the stable API is served, then rerun Full Validation and confirm the fallback disappears.{% else %}Ensure the resource API is served and grant the KAORI service account the required get and list verbs. Do not use an older API to bypass missing authorization.{% endif %}</p></div>
                         </div>
                     </details>

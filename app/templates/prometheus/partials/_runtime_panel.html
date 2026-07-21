@@ -1,5 +1,6 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/health_interpretation.html" as health_interpretation %}
+{% import "components/loading_bar.html" as loading_bar %}
 {% set health_tone = 'normal' if runtime_state.health_status == 'healthy' else ('warning' if runtime_state.health_status == 'degraded' else ('critical' if runtime_state.health_status == 'unhealthy' else 'unknown')) %}
 {% set health_icon = 'circle-check' if runtime_state.health_status == 'healthy' else ('triangle-alert' if runtime_state.health_status == 'degraded' else ('octagon-alert' if runtime_state.health_status == 'unhealthy' else 'circle-help')) %}
 {% set readiness_tone = 'normal' if runtime_state.readiness == 'ready' else ('warning' if runtime_state.readiness == 'degraded' else ('critical' if runtime_state.readiness == 'blocked' else ('unknown' if runtime_state.readiness == 'not_configured' else 'info'))) %}
@@ -11,7 +12,8 @@
          hx-target="this"
          hx-swap="outerHTML"
          {% endif %}>
-    <header class="relative flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div class="flex items-start gap-3">
             <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="activity" class="h-5 w-5" aria-hidden="true"></i></span>
             <div><h2 class="text-base font-semibold text-content-primary">Runtime Health &amp; Diagnostics</h2><p class="mt-1 text-sm leading-6 text-content-secondary">Current health evidence, validation posture, response behavior, and technical checks.</p></div>
@@ -26,12 +28,13 @@
                 class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-70 cursor-pointer disabled:cursor-not-allowed">
             <i data-lucide="{{ 'loader-circle' if runtime_refresh_job and runtime_refresh_job.is_active else 'refresh-cw' }}" class="h-4 w-4{% if runtime_refresh_job and runtime_refresh_job.is_active %} animate-spin{% endif %}" aria-hidden="true"></i>{{ 'Refresh Running' if runtime_refresh_job and runtime_refresh_job.is_active else 'Refresh Runtime' }}
         </button>
+        </div>
+        {{ loading_bar.render(
+            'prometheus-runtime-loading',
+            active=runtime_refresh_job and runtime_refresh_job.is_active,
+            label='Refreshing Prometheus runtime health'
+        ) }}
     </header>
-    <div id="prometheus-runtime-loading"
-         class="{% if runtime_refresh_job and runtime_refresh_job.is_active %}block{% else %}htmx-indicator{% endif %} pointer-events-none h-1 w-full overflow-hidden bg-kaori-soft"
-         aria-label="Refreshing Prometheus runtime health">
-        <div class="notification-progress-indeterminate h-full bg-kaori-primary"></div>
-    </div>
     {% if runtime_refresh_job and runtime_refresh_job.is_active %}
         <div class="flex flex-col gap-2 border-b border-brand-outline bg-kaori-soft px-5 py-3 text-xs text-content-secondary sm:flex-row sm:items-center sm:justify-between">
             <span class="inline-flex items-center gap-2 font-semibold text-kaori-primary"><i data-lucide="loader-circle" class="h-3.5 w-3.5 animate-spin"></i>{{ runtime_refresh_job.title or 'Runtime refresh running in worker' }}</span>

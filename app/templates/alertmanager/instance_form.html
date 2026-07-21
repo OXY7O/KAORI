@@ -217,7 +217,9 @@
                             {% call connection_validation_header.render(
                                 'Endpoint & Access',
                                 'Validate endpoint access before registration.',
-                                icon='network'
+                                icon='network',
+                                loading_id='alertmanager-connection-test-loading',
+                                loading_label='Testing Alertmanager connection'
                             ) %}
                                 {% if not instance %}
                                     <button type="button"
@@ -234,13 +236,6 @@
                                     </button>
                                 {% endif %}
                             {% endcall %}
-                            {% if not instance %}
-                                <div id="alertmanager-connection-test-loading"
-                                     class="{{ table_ui.loading_bar_classes() }}"
-                                     aria-label="Testing Alertmanager connection">
-                                    <div class="notification-progress-indeterminate h-full bg-kaori-primary"></div>
-                                </div>
-                            {% endif %}
                             <div class="p-4">
                             <div>
                                 <label for="alertmanager-endpoint" class="mb-1.5 block text-sm font-semibold text-content-primary">Endpoint URL</label>

@@ -1,7 +1,9 @@
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/table.html" as table_ui %}
+{% import "components/loading_bar.html" as loading_bar %}
 <section id="job-execution-registry" class="{{ table_ui.block_classes() }}" aria-labelledby="job-execution-registry-title">
-    <header class="{{ table_ui.block_header_classes() }}">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div class="flex items-start gap-3">
             <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="list-checks" class="h-5 w-5"></i></span>
             <div>
@@ -20,10 +22,9 @@
             <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
             Refresh
         </button>
+        </div>
+        {{ loading_bar.render('job-execution-loading', label='Refreshing Job Execution Registry') }}
     </header>
-    <div id="job-execution-loading" class="{{ table_ui.loading_bar_classes() }}" aria-hidden="true">
-        <div class="notification-progress-indeterminate h-full bg-kaori-primary"></div>
-    </div>
 
     <form class="grid gap-3 border-b border-outline-subtle bg-surface-card px-5 py-4 sm:grid-cols-2 lg:grid-cols-4 sm:px-6"
           hx-get="{{ url_for('integrations.jobs') }}"

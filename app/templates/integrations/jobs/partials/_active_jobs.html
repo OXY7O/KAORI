@@ -1,4 +1,5 @@
 {% import "components/table.html" as table_ui %}
+{% import "components/loading_bar.html" as loading_bar %}
 {% from "integrations/partials/_status_badge.html" import status_badge %}
 {% set active_refresh_url = url_for('integrations.jobs', fragment='active', tab='active') %}
 <section id="active-job-workspace"
@@ -11,7 +12,8 @@
          hx-swap="outerHTML"
          hx-indicator="#active-job-loading"
          {% endif %}>
-    <header class="{{ table_ui.block_header_classes() }}">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div class="flex items-start gap-3">
             <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="activity" class="h-5 w-5"></i></span>
             <div>
@@ -32,10 +34,9 @@
                 Refresh
             </button>
         </div>
+        </div>
+        {{ loading_bar.render('active-job-loading', label='Refreshing active job status') }}
     </header>
-    <div id="active-job-loading" class="{{ table_ui.loading_bar_classes() }}" aria-hidden="true">
-        <div class="notification-progress-indeterminate h-full bg-kaori-primary"></div>
-    </div>
 
     {% if active_job_rows %}
         <div class="divide-y divide-outline-subtle">
