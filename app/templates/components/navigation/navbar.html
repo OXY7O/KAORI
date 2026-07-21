@@ -1,32 +1,4 @@
-{% set endpoint = request.endpoint or '' %}
-{% if endpoint == 'welcome.index' %}
-    {% set nav_workspace = "Welcome" %}
-    {% set nav_icon = "sparkles" %}
-{% elif endpoint.startswith('kubernetes_dashboard.') %}
-    {% set nav_workspace = "Kubernetes Operations" %}
-    {% set nav_icon = "layout-dashboard" %}
-{% elif endpoint.startswith('cluster.') %}
-    {% set nav_workspace = "Kubernetes Cluster" %}
-    {% set nav_icon = "server" %}
-{% elif endpoint.startswith('inventory.') %}
-    {% set nav_workspace = "K8s Inventory" %}
-    {% set nav_icon = "boxes" %}
-{% elif endpoint.startswith('analytics.') %}
-    {% set nav_workspace = "K8s Analytics" %}
-    {% set nav_icon = "bar-chart-3" %}
-{% elif endpoint.startswith('intelligence.') %}
-    {% set nav_workspace = "Intelligence" %}
-{% elif endpoint.startswith('reports.') %}
-    {% set nav_workspace = "Reports" %}
-    {% set nav_icon = "file-text" %}
-{% elif endpoint.startswith('settings.') %}
-    {% set nav_workspace = "Settings" %}
-    {% set nav_icon = "settings-2" %}
-{% else %}
-    {% set nav_workspace = "Workspace" %}
-    {% set nav_icon = "compass" %}
-{% endif %}
-{% set current_page_label = nav_workspace %}
+{% set breadcrumb_items = navigation_breadcrumb|default([], true) %}
 {% set current_user_role = current_user.role|default('admin', true)|replace('_', ' ')|title %}
 <header class="sticky top-0 z-30 border-b border-outline-subtle bg-surface-card/90 backdrop-blur-xl transition-colors duration-300"
         x-data="{ quickOpen: false, notificationOpen: false, userOpen: false }">
@@ -53,12 +25,21 @@
                     <i data-lucide="panel-left-open" class="h-4.5 w-4.5"></i>
                 </span>
             </button>
-            <div class="inline-flex h-10 min-w-0 items-center gap-2 rounded-xl border border-outline-default bg-surface-card px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-content-muted shadow-sm transition">
-                <span class="truncate">KAORI</span>
-                <i data-lucide="chevron-right"
-                   class="h-3.5 w-3.5 flex-shrink-0 text-content-muted"></i>
-                <span class="truncate text-kaori-primary">{{ current_page_label }}</span>
-            </div>
+            <nav class="inline-flex h-10 min-w-0 max-w-[min(42rem,calc(100vw-8rem))] items-center gap-1.5 overflow-hidden rounded-xl border border-outline-default bg-surface-card px-3 py-2 text-xs font-semibold shadow-sm transition"
+                 aria-label="Breadcrumb">
+                <span class="flex-shrink-0 uppercase tracking-[0.12em] text-content-muted">KAORI</span>
+                {% for item in breadcrumb_items %}
+                    {% if item.label != 'KAORI' %}
+                        <i data-lucide="chevron-right"
+                           class="h-3.5 w-3.5 flex-shrink-0 text-content-disabled"
+                           aria-hidden="true"></i>
+                        <span class="truncate {{ 'text-kaori-primary' if loop.last else 'text-content-secondary' }}"
+                              {% if loop.last %}aria-current="page"{% endif %}>
+                            {{ item.label }}
+                        </span>
+                    {% endif %}
+                {% endfor %}
+            </nav>
         </div>
         <!-- Center: future global search placeholder -->
         <div class="hidden min-w-0 flex-1 justify-center xl:flex">

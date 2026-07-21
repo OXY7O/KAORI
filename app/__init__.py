@@ -1,7 +1,7 @@
 import os
 from datetime import datetime
 
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 from flask_login import current_user
 from flask_wtf.csrf import generate_csrf
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -13,6 +13,7 @@ from app.cluster.constants import get_environment_label
 from app.cluster.onboarding import build_cluster_onboarding_context
 from app.cluster.routes import cluster_bp
 from app.commands import register_commands
+from app.common.navigation import build_navigation_breadcrumb
 from app.common.timezone import (
     format_user_date,
     format_user_datetime,
@@ -107,6 +108,10 @@ def create_app(config_name: str | None = None):
             'load_navigation_notification_context': load_navigation_notification_context,
             'load_quick_action_feedback': load_quick_action_feedback,
             'cluster_onboarding': build_cluster_onboarding_context(),
+            'navigation_breadcrumb': build_navigation_breadcrumb(
+                request.endpoint,
+                request.path,
+            ),
         }
 
     def _user_time_preferences():
