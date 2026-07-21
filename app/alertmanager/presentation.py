@@ -11,6 +11,7 @@ from app.integrations.registry import get_integration
 from app.alertmanager.sanitization import safe_endpoint
 from app.common.presentation import present_user_datetime
 from app.extensions import db
+from app.integrations.binding_posture import resolve_binding_operational_posture
 from app.integrations.binding_selectors import selector_form_values, selector_is_configured, selector_summary
 from app.integrations.deletion import provider_deletion_guard
 from app.integrations.coverage import build_provider_coverage
@@ -155,7 +156,14 @@ def build_instance_context(instance: AlertmanagerInstance | None = None) -> dict
         'instance': instance,
         'bindings': bindings,
         'deletion_guard': deletion_guard,
-        'binding_rows': [_binding_row(binding) for binding in bindings],
+        'binding_rows': [
+            _binding_row(
+                binding,
+                source_readiness=instance.readiness_status if instance else 'validation_required',
+                source_enabled=instance.enabled if instance else False,
+            )
+            for binding in bindings
+        ],
         'clusters': clusters,
         'capability_rows': capability_rows,
         'module_readiness_rows': evaluate_module_readiness(observed_capabilities),
@@ -214,13 +222,19 @@ def _instance_row(instance: AlertmanagerInstance) -> dict[str, Any]:
     }
 
 
-def _binding_row(binding: IntegrationBinding) -> dict[str, Any]:
+def _binding_row(binding: IntegrationBinding, *, source_readiness: str | None = None, source_enabled: bool = True) -> dict[str, Any]:
     label = binding.asset_key
     if binding.asset_type == 'kubernetes_cluster':
         cluster = db.session.get(Cluster, binding.asset_key)
         if cluster is not None:
             label = cluster.name
     selector_values = selector_form_values(binding.selector_json)
+    operational_posture = resolve_binding_operational_posture(
+        source_readiness=source_readiness,
+        binding_validation=binding.validation_status,
+        source_enabled=source_enabled,
+        binding_enabled=binding.enabled,
+    )
     return {
         'binding': binding,
         'scope_label': label,
@@ -231,6 +245,10 @@ def _binding_row(binding: IntegrationBinding) -> dict[str, Any]:
         'selector_operator': selector_values['operator'],
         'selector_value': selector_values['value'],
         'validation_status': binding.validation_status or 'validation_required',
+        'source_readiness': source_readiness or 'validation_required',
+        'operational_status': operational_posture['status'],
+        'operational_label': operational_posture['label'],
+        'operational_message': operational_posture['message'],
     }
 
 
