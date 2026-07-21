@@ -1,0 +1,60 @@
+<section aria-labelledby="kubernetes-operating-model-title"
+         class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+  <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+    <div class="flex items-start gap-3">
+      <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+        <i data-lucide="waypoints" class="h-5 w-5"></i>
+      </span>
+      <div>
+        <h2 id="kubernetes-operating-model-title" class="text-base font-semibold text-content-primary">Integration Operating Model</h2>
+        <p class="mt-0.5 text-xs leading-5 text-content-muted">
+          Understand how KAORI registers Kubernetes access, discovers capabilities, and preserves the external authority boundary.
+        </p>
+      </div>
+    </div>
+  </header>
+
+  <div class="grid divide-y divide-outline-subtle lg:grid-cols-3 lg:divide-x lg:divide-y-0">
+    <article class="p-5 sm:p-6">
+      <div class="flex items-start gap-3">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+          <i data-lucide="plug-zap" class="h-5 w-5"></i>
+        </span>
+        <div>
+          <h3 class="text-sm font-semibold text-content-primary">Connection Contract</h3>
+          <p class="mt-1 text-xs leading-5 text-content-muted">
+            Endpoint, authentication, TLS, API discovery, and inventory access define the canonical Kubernetes connection.
+          </p>
+        </div>
+      </div>
+    </article>
+
+    <article class="p-5 sm:p-6">
+      <div class="flex items-start gap-3">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+          <i data-lucide="scan-search" class="h-5 w-5"></i>
+        </span>
+        <div>
+          <h3 class="text-sm font-semibold text-content-primary">Capability Discovery</h3>
+          <p class="mt-1 text-xs leading-5 text-content-muted">
+            KAORI selects stable APIs first and records compatible fallback versions with actionable technical evidence.
+          </p>
+        </div>
+      </div>
+    </article>
+
+    <article class="p-5 sm:p-6">
+      <div class="flex items-start gap-3">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+          <i data-lucide="database" class="h-5 w-5"></i>
+        </span>
+        <div>
+          <h3 class="text-sm font-semibold text-content-primary">Authority Boundary</h3>
+          <p class="mt-1 text-xs leading-5 text-content-muted">
+            Kubernetes remains authoritative for live resources. KAORI stores normalized inventory, runtime evidence, governance context, and audit history.
+          </p>
+        </div>
+      </div>
+    </article>
+  </div>
+</section>

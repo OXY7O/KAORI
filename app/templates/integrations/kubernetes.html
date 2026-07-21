@@ -5,7 +5,16 @@
 {% block title %}Kubernetes Integrations · KAORI{% endblock %}
 {% block dashboard_content %}
 <div class="kaori-integration-semantic space-y-6"
-     x-data="{ deleteModal: false, deleteUrl: '', deleteName: '' }">
+     x-data="{
+       deleteModal: false,
+       deleteUrl: '',
+       deleteName: '',
+       openDelete(url, name) {
+         this.deleteUrl = url;
+         this.deleteName = name;
+         this.deleteModal = true;
+       }
+     }">
   <section class="{{ page_hero.shell_classes() }}">
     <div class="{{ page_hero.layout_classes() }}">
       <div class="{{ page_hero.content_classes() }}">
@@ -52,26 +61,7 @@
     </div>
   </section>
 
-  <section class="grid gap-4 lg:grid-cols-3">
-    <article class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
-      <div class="flex items-start gap-3">
-        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="plug-zap" class="h-5 w-5"></i></span>
-        <div><h2 class="text-base font-semibold text-content-primary">Connection Contract</h2><p class="mt-1 text-xs leading-5 text-content-muted">Endpoint, authentication, TLS, API discovery, and inventory access define the canonical Kubernetes connection.</p></div>
-      </div>
-    </article>
-    <article class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
-      <div class="flex items-start gap-3">
-        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="scan-search" class="h-5 w-5"></i></span>
-        <div><h2 class="text-base font-semibold text-content-primary">Capability Discovery</h2><p class="mt-1 text-xs leading-5 text-content-muted">KAORI selects stable APIs first and records compatible fallback versions with actionable technical evidence.</p></div>
-      </div>
-    </article>
-    <article class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
-      <div class="flex items-start gap-3">
-        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="database" class="h-5 w-5"></i></span>
-        <div><h2 class="text-base font-semibold text-content-primary">Authority Boundary</h2><p class="mt-1 text-xs leading-5 text-content-muted">Kubernetes remains authoritative for live resources. KAORI stores normalized inventory, runtime evidence, governance context, and audit history.</p></div>
-      </div>
-    </article>
-  </section>
+  {% include 'integrations/kubernetes/partials/_operating_model.html' %}
 
   {% include 'integrations/kubernetes/partials/_registry.html' %}
   {% include 'integrations/kubernetes/partials/_delete_modal.html' %}
