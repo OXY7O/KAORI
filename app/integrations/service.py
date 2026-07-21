@@ -47,8 +47,18 @@ def build_integrations_overview(
         .order_by(Cluster.created_at.asc(), Cluster.id.asc())
         .all()
     )
-    prometheus_instances = PrometheusInstance.query.order_by(PrometheusInstance.name.asc()).all()
-    alertmanager_instances = AlertmanagerInstance.query.order_by(AlertmanagerInstance.name.asc()).all()
+    prometheus_instances = (
+        PrometheusInstance.query
+        .join(PrometheusInstance.integration_instance)
+        .order_by(IntegrationInstance.name.asc())
+        .all()
+    )
+    alertmanager_instances = (
+        AlertmanagerInstance.query
+        .join(AlertmanagerInstance.integration_instance)
+        .order_by(IntegrationInstance.name.asc())
+        .all()
+    )
 
     stats = _overview_stats(
         kubernetes_connections=kubernetes_connections,
@@ -443,7 +453,12 @@ def build_prometheus_page(
 ) -> dict[str, Any]:
     clusters_by_id = {cluster.id: cluster for cluster in Cluster.query.all()}
     all_rows: list[dict[str, Any]] = []
-    for instance in PrometheusInstance.query.order_by(PrometheusInstance.name.asc()).all():
+    for instance in (
+        PrometheusInstance.query
+        .join(PrometheusInstance.integration_instance)
+        .order_by(IntegrationInstance.name.asc())
+        .all()
+    ):
         bindings = cluster_bindings_for_instance(instance, enabled_only=True)
         cluster_ids = [binding.asset_key for binding in bindings]
         bound_clusters = [clusters_by_id[key] for key in cluster_ids if key in clusters_by_id]

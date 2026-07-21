@@ -7,43 +7,37 @@ from app.models.integration import IntegrationBinding, IntegrationInstance
 
 
 def ensure_canonical_instance(provider_record: Any, *, provider_type: str) -> IntegrationInstance:
-    """Create or update the canonical identity for a provider record.
+    """Return the canonical identity owned by a provider-specific record.
 
-    A new provider row can already be pending in the SQLAlchemy session while its
-    ``integration_instance_id`` column is NOT NULL.  Flushing the whole session
-    while creating the canonical identity would therefore try to insert the
-    provider row too early.  Flush only the new IntegrationInstance first, assign
-    its generated ID to the provider, and let the caller flush the complete unit
-    of work afterwards.
+    Shared identity and runtime fields live only on IntegrationInstance. Provider
+    records expose those values through SQLAlchemy association proxies and retain
+    only connection-specific configuration and evidence.
     """
-    canonical_id = getattr(provider_record, 'integration_instance_id', None)
-    canonical = db.session.get(IntegrationInstance, canonical_id) if canonical_id else None
-
+    canonical = getattr(provider_record, 'integration_instance', None)
     if canonical is None:
+        name = str(getattr(provider_record, 'name', '') or '').strip()
+        if not name:
+            raise ValueError('Provider identity requires a name before persistence.')
         canonical = IntegrationInstance(
             provider_type=provider_type,
-            name=provider_record.name,
+            name=name,
+            enabled=True,
+            readiness_status='validation_required',
         )
+        provider_record.integration_instance = canonical
         db.session.add(canonical)
 
-        # Critical: do not flush the complete session here. The provider record
-        # may still have integration_instance_id=None and a NOT NULL constraint.
-        db.session.flush([canonical])
-        provider_record.integration_instance_id = canonical.id
+    if canonical.provider_type != provider_type:
+        raise ValueError(
+            f'Provider identity mismatch: expected {provider_type}, found {canonical.provider_type}.'
+        )
 
-    canonical.name = provider_record.name
-    canonical.description = getattr(provider_record, 'description', None)
-    canonical.enabled = bool(getattr(provider_record, 'enabled', True))
-    canonical.readiness_status = getattr(provider_record, 'readiness_status', None)
-    canonical.health_status = getattr(provider_record, 'last_status', None)
-    canonical.last_error = getattr(provider_record, 'last_error', None)
-    canonical.last_checked_at = getattr(provider_record, 'last_checked_at', None)
-    canonical.metadata_json = {
-        # This is intentionally None before the provider's first flush and is
-        # refreshed by the second lifecycle call after the provider receives ID.
+    metadata = dict(canonical.metadata_json or {})
+    metadata.update({
         'provider_record_id': getattr(provider_record, 'id', None),
         'endpoint_product': getattr(provider_record, 'endpoint_product', None),
-    }
+    })
+    canonical.metadata_json = metadata
     return canonical
 
 

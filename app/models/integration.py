@@ -9,7 +9,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.extensions.db import db
 
 if TYPE_CHECKING:
-    pass
+    from app.models.alertmanager import AlertmanagerInstance
+    from app.models.prometheus import PrometheusInstance
 
 
 class IntegrationInstance(db.Model):
@@ -38,6 +39,19 @@ class IntegrationInstance(db.Model):
         cascade='all, delete-orphan',
         passive_deletes=True,
         order_by='IntegrationBinding.priority.asc(), IntegrationBinding.id.asc()',
+    )
+
+    prometheus_record: Mapped[PrometheusInstance | None] = relationship(
+        'PrometheusInstance',
+        back_populates='integration_instance',
+        uselist=False,
+        passive_deletes=True,
+    )
+    alertmanager_record: Mapped[AlertmanagerInstance | None] = relationship(
+        'AlertmanagerInstance',
+        back_populates='integration_instance',
+        uselist=False,
+        passive_deletes=True,
     )
 
     __table_args__ = (

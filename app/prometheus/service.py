@@ -489,7 +489,15 @@ def save_prometheus_instance(
     if not endpoint.startswith(('http://', 'https://')):
         raise PrometheusError('Endpoint must start with http:// or https://')
 
-    duplicate = PrometheusInstance.query.filter_by(name=(form.name.data or '').strip()).first()
+    duplicate = (
+        PrometheusInstance.query
+        .join(PrometheusInstance.integration_instance)
+        .filter(
+            IntegrationInstance.provider_type == 'prometheus',
+            IntegrationInstance.name == (form.name.data or '').strip(),
+        )
+        .first()
+    )
     if duplicate is not None and (instance is None or duplicate.id != instance.id):
         raise PrometheusError('A Prometheus instance with this name already exists.')
 

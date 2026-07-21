@@ -10,7 +10,11 @@ PROVIDER_TYPE = 'alertmanager'
 
 
 def list_instances() -> list[AlertmanagerInstance]:
-    statement = select(AlertmanagerInstance).order_by(AlertmanagerInstance.name.asc())
+    statement = (
+        select(AlertmanagerInstance)
+        .join(AlertmanagerInstance.integration_instance)
+        .order_by(IntegrationInstance.name.asc())
+    )
     return list(db.session.execute(statement).scalars().all())
 
 
@@ -19,7 +23,14 @@ def get_instance(instance_id: int) -> AlertmanagerInstance | None:
 
 
 def get_instance_by_name(name: str) -> AlertmanagerInstance | None:
-    statement = select(AlertmanagerInstance).where(AlertmanagerInstance.name == name)
+    statement = (
+        select(AlertmanagerInstance)
+        .join(AlertmanagerInstance.integration_instance)
+        .where(
+            IntegrationInstance.provider_type == PROVIDER_TYPE,
+            IntegrationInstance.name == name,
+        )
+    )
     return db.session.execute(statement).scalar_one_or_none()
 
 

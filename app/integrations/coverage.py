@@ -290,9 +290,19 @@ def bound_source_for_scope(provider_type: str, *, scope_type: str, scope_key: st
 
 def _instances(provider_type: str) -> list[Any]:
     if provider_type == 'prometheus':
-        return PrometheusInstance.query.order_by(PrometheusInstance.name.asc()).all()
+        return (
+            PrometheusInstance.query
+            .join(PrometheusInstance.integration_instance)
+            .order_by(IntegrationInstance.name.asc())
+            .all()
+        )
     if provider_type == 'alertmanager':
-        return AlertmanagerInstance.query.order_by(AlertmanagerInstance.name.asc()).all()
+        return (
+            AlertmanagerInstance.query
+            .join(AlertmanagerInstance.integration_instance)
+            .order_by(IntegrationInstance.name.asc())
+            .all()
+        )
     raise ValueError(f'Unsupported integration provider: {provider_type}.')
 
 
