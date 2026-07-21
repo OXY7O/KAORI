@@ -49,19 +49,40 @@ kubernetes_operations_bp = Blueprint(
 
 @kubernetes_operations_bp.before_request
 def block_clusterless_operations():
+    """Block every Kubernetes operation until a canonical cluster exists.
+
+    The guard applies to full-page, direct URL, HTMX, and mutation requests. A
+    database failure remains distinct from the legitimate zero-cluster state
+    and is handled by the global database-readiness flow.
+    """
     if has_registered_clusters() is not False:
         return None
 
-    if request.method == 'GET':
-        if request.headers.get('HX-Request') == 'true' or request.args.get('partial_mode'):
-            return render_template('components/cluster/_onboarding_banner.html')
-        return None
+    is_partial = (
+        request.headers.get('HX-Request') == 'true'
+        or request.args.get('partial_mode')
+    )
+    if is_partial:
+        return render_template('components/cluster/_onboarding_banner.html'), 409
 
-    if request.headers.get('HX-Request') == 'true':
-        return render_template('components/cluster/_onboarding_banner.html')
+    if request.method == 'GET':
+        return render_template(
+            'kubernetes_operations/cluster_required.html',
+            requested_operation=_requested_operation_label(),
+        ), 409
 
     flash('Add a Kubernetes cluster before running Kubernetes operations.', 'warning')
     return redirect(url_for('cluster.list_clusters'))
+
+
+def _requested_operation_label() -> str:
+    """Return a user-facing operation name for the prerequisite page."""
+    endpoint = request.endpoint or ''
+    if 'configmap' in endpoint:
+        return 'ConfigMap Management'
+    if 'secret' in endpoint:
+        return 'Secret Management'
+    return 'Kubernetes Operations'
 
 
 

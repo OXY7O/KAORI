@@ -1,0 +1,35 @@
+{% extends "layouts/app.html" %}
+{% block title %}Kubernetes Cluster Required{% endblock title %}
+{% block dashboard_content %}
+<div class="grid gap-6">
+    <section class="relative overflow-hidden rounded-2xl border border-brand-outline bg-kaori-primary p-5 text-brand-foreground shadow-sm lg:p-6">
+        <div class="relative grid gap-5 xl:grid-cols-12 xl:items-center">
+            <div class="min-w-0 xl:col-span-8">
+                <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-brand-foreground-muted">
+                    <i data-lucide="workflow" class="h-4 w-4" aria-hidden="true"></i>
+                    Kubernetes Operations
+                </div>
+                <h1 class="mt-3 text-2xl font-semibold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">Kubernetes Cluster Required</h1>
+                <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">
+                    {{ requested_operation }} is unavailable until KAORI has a registered Kubernetes cluster and canonical connection.
+                </p>
+            </div>
+            <div class="xl:col-span-4">
+                <div class="rounded-xl border border-white/20 bg-white/10 p-4 backdrop-blur-sm">
+                    <div class="flex items-start gap-3">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/15">
+                            <i data-lucide="shield-alert" class="h-5 w-5" aria-hidden="true"></i>
+                        </span>
+                        <div>
+                            <p class="text-sm font-semibold text-brand-foreground">Operational Guardrail Active</p>
+                            <p class="mt-1 text-xs leading-5 text-brand-foreground-muted">KAORI blocks live Kubernetes operations before a valid cluster boundary exists.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    {% include "components/cluster/_onboarding_banner.html" %}
+</div>
+{% endblock dashboard_content %}

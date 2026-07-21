@@ -16,6 +16,7 @@ _KUBERNETES_SCOPE_BLUEPRINTS = {
     'kubernetes_dashboard',
     'governance',
     'inventory',
+    'kubernetes_operations',
 }
 
 _BANNER_EXCLUDED_ENDPOINTS = {
