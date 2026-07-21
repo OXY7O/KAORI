@@ -19,3 +19,12 @@ def test_coverage_rows_show_status_only_and_consistent_scope_identity() -> None:
     assert 'Managed Kubernetes cluster' in template
     assert 'Managed Kubernetes cluster · {{ row.scope_key }}' not in template
     assert 'title="{{ row.scope_key }}"' not in template
+
+
+def test_alertmanager_full_validation_refreshes_binding_evidence() -> None:
+    tasks = Path('app/integrations/validation/tasks.py').read_text(encoding='utf-8')
+    assert "ensure_canonical_instance(instance, provider_type='alertmanager')" in tasks
+    assert 'binding_summary = _refresh_alertmanager_bindings(instance)' in tasks
+    assert "result_payload['binding_validation_summary'] = binding_summary" in tasks
+    assert 'validate_alertmanager_binding(' in tasks
+    assert "'matched_alerts': result.get('matched_alerts')" in tasks

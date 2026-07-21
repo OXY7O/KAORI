@@ -332,7 +332,11 @@ def validate_integration_instance(
                 instance,
                 trigger_type=trigger_type,
             )
+            ensure_canonical_instance(instance, provider_type='alertmanager')
+            binding_summary = _refresh_alertmanager_bindings(instance)
+            db.session.commit()
             result_payload = validation_result.to_dict() if hasattr(validation_result, 'to_dict') else dict(validation_result or {})
+            result_payload['binding_validation_summary'] = binding_summary
             readiness = str(result_payload.get('readiness_status') or state.readiness or 'validation_required')
             connected = bool(result_payload.get('connected'))
             status = 'success' if connected and readiness == 'ready' else ('warning' if connected else 'error')
@@ -467,6 +471,41 @@ def _refresh_prometheus_bindings(instance: PrometheusInstance) -> dict[str, Any]
             'status': result.get('status'),
             'matched_signal': result.get('matched_signal'),
             'matched_series': result.get('matched_series'),
+        })
+    return {
+        'total': len(bindings),
+        'ready': ready,
+        'attention': len(bindings) - ready,
+        'results': results,
+    }
+
+
+
+def _refresh_alertmanager_bindings(instance: AlertmanagerInstance) -> dict[str, Any]:
+    if instance.integration_instance_id is None:
+        return {'total': 0, 'ready': 0, 'attention': 0}
+    bindings = (
+        IntegrationBinding.query.filter_by(
+            integration_instance_id=instance.integration_instance_id,
+            enabled=True,
+        )
+        .order_by(IntegrationBinding.id.asc())
+        .all()
+    )
+    ready = 0
+    results: list[dict[str, Any]] = []
+    for binding in bindings:
+        result = validate_alertmanager_binding(
+            instance=instance,
+            binding=binding,
+            commit=False,
+        )
+        if result.get('status') == 'ready':
+            ready += 1
+        results.append({
+            'binding_id': binding.id,
+            'status': result.get('status'),
+            'matched_alerts': result.get('matched_alerts'),
         })
     return {
         'total': len(bindings),
