@@ -37,3 +37,14 @@ Optional parameters include `empty_state_secondary_action_url`, `empty_state_sec
 - `Admin Required`: the current user cannot perform the setup action.
 
 Do not use empty states to represent authorization failures, dependency blockers, validation failures, or runtime errors. Those conditions require their dedicated KAORI state patterns.
+
+## Canonical State Architecture
+
+KAORI has two canonical visual state components:
+
+- `components/states/_empty_state.html` for initial empty, filtered no-result, and collected-data-empty conditions.
+- `components/states/_blocked_state.html` for unmet prerequisites and unavailable dependencies.
+
+Domain-specific templates may remain as parameter adapters only when a route renders that template directly or when many callers depend on its context contract. An adapter must only map domain context into canonical component parameters; it must not contain duplicate card, button, label, icon, or spacing markup.
+
+Legacy visual partials must be deleted after their callers are migrated. The UI contract tests reject references to the removed analytics overview empty-state partial and reject duplicate visual markup in the approved blocker adapters.

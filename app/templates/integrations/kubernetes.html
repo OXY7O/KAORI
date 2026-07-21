@@ -102,29 +102,19 @@
             </div></td>
           </tr>
           {% else %}
-          <tr>
-            <td colspan="6" class="px-5 py-10 sm:px-6 sm:py-12">
-              <div class="mx-auto flex max-w-xl flex-col items-center rounded-xl border border-dashed border-outline-default bg-surface-muted/40 px-6 py-10 text-center">
-                <span class="flex h-12 w-12 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary" aria-hidden="true">
-                  <i data-lucide="boxes" class="h-6 w-6"></i>
-                </span>
-                <span class="mt-4 inline-flex min-h-6 items-center rounded-md bg-kaori-soft px-2 text-[10px] font-semibold text-kaori-primary">Setup Required</span>
-                <h3 class="mt-3 text-base font-semibold text-content-primary">No Kubernetes Connections Found</h3>
-                <p class="mt-2 max-w-md text-sm leading-6 text-content-secondary">
-                  Register the first Kubernetes API connection so KAORI can validate compatibility, discover capabilities, and prepare inventory workflows.
-                </p>
-                {% if current_user.has_permission('clusters.manage') %}
-                <a href="{{ url_for('cluster.add_cluster') }}"
-                   class="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus/40">
-                  <i data-lucide="plus" class="h-4 w-4" aria-hidden="true"></i>
-                  Add Cluster
-                </a>
-                {% else %}
-                <span class="mt-5 inline-flex min-h-6 items-center rounded-md bg-surface-card px-2 text-[10px] font-semibold text-content-secondary ring-1 ring-inset ring-outline-default">Admin Required</span>
-                {% endif %}
-              </div>
-            </td>
-          </tr>
+          <tr><td colspan="6" class="p-0">
+            {% set empty_state_icon = 'boxes' %}
+            {% set empty_state_label = 'Setup Required' %}
+            {% set empty_state_title = 'No Kubernetes Connections Found' %}
+            {% set empty_state_description = 'Register the first Kubernetes API connection so KAORI can validate compatibility, discover capabilities, and prepare inventory workflows.' %}
+            {% set empty_state_action_url = url_for('cluster.add_cluster') %}
+            {% set empty_state_action_label = 'Add Cluster' %}
+            {% set empty_state_action_icon = 'plus' %}
+            {% set empty_state_permission = 'clusters.manage' %}
+            {% set empty_state_show_admin_required = true %}
+            {% set empty_state_min_height = 'min-h-[220px]' %}
+            {% include 'components/states/_empty_state.html' %}
+          </td></tr>
           {% endfor %}
         </tbody>
       </table>

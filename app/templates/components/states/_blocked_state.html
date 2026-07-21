@@ -1,0 +1,70 @@
+{% import "components/table_label.html" as table_label %}
+{% set state_icon = blocked_state_icon|default('triangle-alert') %}
+{% set state_label = blocked_state_label|default('Setup Required') %}
+{% set state_title = blocked_state_title|default('Configuration Required') %}
+{% set state_description = blocked_state_description|default('Complete the required configuration before continuing in KAORI.') %}
+{% set state_stage = blocked_state_stage|default(none) %}
+{% set state_badge = blocked_state_badge|default(none) %}
+{% set state_badge_icon = blocked_state_badge_icon|default(state_icon) %}
+{% set state_tone = blocked_state_tone|default('warning') %}
+{% set state_action_url = blocked_state_action_url|default(none) %}
+{% set state_action_label = blocked_state_action_label|default(none) %}
+{% set state_action_icon = blocked_state_action_icon|default('arrow-right') %}
+{% set state_permission = blocked_state_permission|default(none) %}
+{% set state_show_admin_required = blocked_state_show_admin_required|default(false) %}
+{% set state_variant = blocked_state_variant|default('section') %}
+{% set permission_granted = not state_permission or current_user.has_permission(state_permission) %}
+
+{% if state_variant == 'posture' %}
+<div class="flex h-full min-h-[12rem] flex-col rounded-xl border border-brand-outline bg-brand-surface-strong p-4 backdrop-blur-md" data-kaori-blocked-state>
+    <div class="flex items-start justify-between gap-4">
+        <div class="min-w-0">
+            <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">{{ blocked_state_eyebrow|default('Operational Posture') }}</p>
+            <p class="mt-1 text-3xl font-semibold leading-none text-brand-foreground">Blocked</p>
+        </div>
+        {{ table_label.status_label(state_label, state_tone, state_icon) }}
+    </div>
+    <div class="mt-3 rounded-lg border border-brand-outline bg-brand-surface px-3 py-3">
+        <p class="text-sm font-semibold text-brand-foreground">{{ state_title }}</p>
+        <p class="mt-1 text-xs leading-5 text-brand-foreground-muted">{{ state_description }}</p>
+    </div>
+    {% if state_stage or state_badge %}
+    <div class="mt-auto flex flex-wrap gap-2 pt-3">
+        {% if state_stage %}{{ table_label.metadata_label('Step ' ~ state_stage, 'list-ordered') }}{% endif %}
+        {% if state_badge %}{{ table_label.metadata_label(state_badge, state_badge_icon) }}{% endif %}
+    </div>
+    {% endif %}
+</div>
+{% else %}
+<section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm" data-kaori-blocked-state>
+    <div class="flex flex-col gap-5 px-5 py-5 lg:flex-row lg:items-center lg:justify-between">
+        <div class="flex min-w-0 items-start gap-4">
+            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                <i data-lucide="{{ state_icon }}" class="h-5 w-5"></i>
+            </span>
+            <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                    <h2 class="text-base font-semibold text-content-primary">{{ state_title }}</h2>
+                    {{ table_label.status_label(state_label, state_tone, state_icon) }}
+                    {% if state_stage %}{{ table_label.metadata_label('Step ' ~ state_stage, 'list-ordered') }}{% endif %}
+                </div>
+                <p class="mt-1 max-w-4xl text-sm leading-6 text-content-secondary">{{ state_description }}</p>
+                {% if blocked_state_steps %}
+                <div class="mt-3 flex flex-wrap gap-2">
+                    {% for step in blocked_state_steps %}
+                    <span class="inline-flex min-h-8 items-center rounded-md border border-outline-default bg-kaori-soft px-3 py-1.5 text-xs font-semibold text-kaori-primary">{{ loop.index }}. {{ step }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% if permission_granted and state_action_url and state_action_label %}
+        <a href="{{ state_action_url }}" class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card">
+            <i data-lucide="{{ state_action_icon }}" class="h-4 w-4" aria-hidden="true"></i>{{ state_action_label }}
+        </a>
+        {% elif not permission_granted and state_show_admin_required %}
+        <span class="inline-flex h-10 shrink-0 items-center gap-2 rounded-lg border border-outline-default bg-surface-hover px-4 text-sm font-semibold text-content-secondary"><i data-lucide="shield" class="h-4 w-4 text-kaori-primary"></i>Admin Required</span>
+        {% endif %}
+    </div>
+</section>
+{% endif %}

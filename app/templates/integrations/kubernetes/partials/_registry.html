@@ -55,7 +55,7 @@
             </td>
           </tr>
         {% else %}
-          <tr><td colspan="6" class="px-5 py-12 text-center"><p class="text-sm font-semibold text-content-primary">No Kubernetes Connections Registered</p><p class="mt-1 text-xs text-content-muted">Register a Kubernetes API connection to begin capability discovery and source binding.</p></td></tr>
+          <tr><td colspan="6" class="p-0">{% set empty_state_icon = 'boxes' %}{% set empty_state_label = 'Setup Required' %}{% set empty_state_title = 'No Kubernetes Connections Registered' %}{% set empty_state_description = 'Register a Kubernetes API connection so KAORI can begin capability discovery and source binding.' %}{% set empty_state_action_url = url_for('cluster.add_cluster') %}{% set empty_state_action_label = 'Add Cluster' %}{% set empty_state_action_icon = 'plus' %}{% set empty_state_permission = 'clusters.manage' %}{% set empty_state_show_admin_required = true %}{% set empty_state_min_height = 'min-h-[190px]' %}{% include 'components/states/_empty_state.html' %}</td></tr>
         {% endfor %}
       </tbody>
     </table>

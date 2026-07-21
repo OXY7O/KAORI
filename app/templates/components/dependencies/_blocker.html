@@ -1,31 +1,13 @@
-{% import "components/table_label.html" as table_label %}
 {% if dependency_blocker %}
     {% set blocker_tone = 'warning' if dependency_blocker.kind in ['cluster_required', 'prometheus_setup', 'alert_source_setup'] else 'critical' %}
-    {% set blocker_status = 'Setup Required' if blocker_tone == 'warning' else 'Unavailable' %}
-    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-        <div class="flex flex-col gap-4 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
-            <div class="flex min-w-0 items-start gap-3.5">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                    <i data-lucide="{{ dependency_blocker.icon }}" class="h-5 w-5" aria-hidden="true"></i>
-                </span>
-                <div class="min-w-0">
-                    <div class="flex flex-wrap items-center gap-2">
-                        <h2 class="text-sm font-semibold text-content-primary sm:text-base">{{ dependency_blocker.title }}</h2>
-                        {{ table_label.status_label(blocker_status, blocker_tone, 'triangle-alert' if blocker_tone == 'warning' else 'circle-x') }}
-                        {{ table_label.metadata_label('Step ' ~ dependency_blocker.stage, 'list-ordered') }}
-                    </div>
-                    <p class="mt-1 max-w-4xl text-sm leading-6 text-content-muted">{{ dependency_blocker.description }}</p>
-                </div>
-            </div>
-            {% if dependency_blocker.action_url and dependency_blocker.action_label %}
-                {% if not dependency_blocker.permission or current_user.has_permission(dependency_blocker.permission) %}
-                    <a href="{{ dependency_blocker.action_url }}"
-                       class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card">
-                        {{ dependency_blocker.action_label }}
-                        <i data-lucide="arrow-right" class="h-4 w-4" aria-hidden="true"></i>
-                    </a>
-                {% endif %}
-            {% endif %}
-        </div>
-    </section>
+    {% set blocked_state_icon = dependency_blocker.icon %}
+    {% set blocked_state_label = 'Setup Required' if blocker_tone == 'warning' else 'Unavailable' %}
+    {% set blocked_state_title = dependency_blocker.title %}
+    {% set blocked_state_description = dependency_blocker.description %}
+    {% set blocked_state_stage = dependency_blocker.stage %}
+    {% set blocked_state_tone = blocker_tone %}
+    {% set blocked_state_action_url = dependency_blocker.action_url %}
+    {% set blocked_state_action_label = dependency_blocker.action_label %}
+    {% set blocked_state_permission = dependency_blocker.permission %}
+    {% include 'components/states/_blocked_state.html' %}
 {% endif %}

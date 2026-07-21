@@ -1,22 +1,12 @@
-{% import "components/table_label.html" as table_label %}
 {% set blocker_tone = 'warning' if dependency_blocker.kind in ['cluster_required', 'prometheus_setup', 'alert_source_setup'] else 'critical' %}
-{% set blocker_status = 'Setup Required' if blocker_tone == 'warning' else 'Unavailable' %}
-<div class="flex h-full min-h-[12rem] flex-col rounded-xl border border-brand-outline bg-brand-surface-strong p-4 backdrop-blur-md">
-    <div class="flex items-start justify-between gap-4">
-        <div class="min-w-0">
-            <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">
-                {{ analytics_posture_label|default('Analytics Posture') }}
-            </p>
-            <p class="mt-1 text-3xl font-semibold leading-none text-brand-foreground">Blocked</p>
-        </div>
-        {{ table_label.status_label(blocker_status, blocker_tone, 'triangle-alert' if blocker_tone == 'warning' else 'circle-x') }}
-    </div>
-    <div class="mt-3 rounded-lg border border-brand-outline bg-brand-surface px-3 py-3">
-        <p class="text-sm font-semibold text-brand-foreground">{{ dependency_blocker.title }}</p>
-        <p class="mt-1 text-xs leading-5 text-brand-foreground-muted">{{ dependency_blocker.description }}</p>
-    </div>
-    <div class="mt-auto flex flex-wrap gap-2 pt-3">
-        {{ table_label.metadata_label('Step ' ~ dependency_blocker.stage, 'list-ordered') }}
-        {{ table_label.metadata_label(dependency_blocker.badge, dependency_blocker.icon) }}
-    </div>
-</div>
+{% set blocked_state_variant = 'posture' %}
+{% set blocked_state_eyebrow = analytics_posture_label|default('Analytics Posture') %}
+{% set blocked_state_icon = 'triangle-alert' if blocker_tone == 'warning' else 'circle-x' %}
+{% set blocked_state_label = 'Setup Required' if blocker_tone == 'warning' else 'Unavailable' %}
+{% set blocked_state_title = dependency_blocker.title %}
+{% set blocked_state_description = dependency_blocker.description %}
+{% set blocked_state_stage = dependency_blocker.stage %}
+{% set blocked_state_badge = dependency_blocker.badge %}
+{% set blocked_state_badge_icon = dependency_blocker.icon %}
+{% set blocked_state_tone = blocker_tone %}
+{% include 'components/states/_blocked_state.html' %}

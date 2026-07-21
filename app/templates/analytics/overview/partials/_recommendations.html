@@ -57,9 +57,13 @@
                     {% endfor %}
                 </div>
             {% else %}
-                {% with message="No prioritized action available yet." %}
-                    {% include "analytics/overview/partials/_empty_state.html" %}
-                {% endwith %}
+                {% set empty_state_icon = 'lightbulb' %}
+                {% set empty_state_label = 'No Data' %}
+                {% set empty_state_title = 'No Prioritized Actions Available' %}
+                {% set empty_state_description = 'KAORI will surface prioritized actions after analytics evidence is available.' %}
+                {% set empty_state_variant = 'panel' %}
+                {% set empty_state_min_height = 'min-h-[150px]' %}
+                {% include 'components/states/_empty_state.html' %}
             {% endif %}
         </div>
     </details>

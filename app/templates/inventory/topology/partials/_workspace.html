@@ -262,12 +262,14 @@
                  aria-label="Interactive Kubernetes topology graph"
                  class="absolute inset-0 z-10 h-full w-full"></div>
             <div id="topology-empty-state" class="pointer-events-none absolute inset-0 hidden items-center justify-center p-8">
-                <div class="max-w-md rounded-xl border border-dashed border-outline-strong bg-kaori-soft px-6 py-8 text-center shadow-sm">
-                    <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-surface-card text-kaori-primary">
-                        <i data-lucide="waypoints" class="h-6 w-6"></i>
-                    </span>
-                    <h3 class="mt-4 text-base font-semibold text-kaori-primary">No Topology Resources Found</h3>
-                    <p class="mt-2 text-sm leading-6 text-content-secondary">Adjust the cluster, namespace, scope, or depth. Run inventory sync if this cluster has not been collected yet.</p>
+                <div class="pointer-events-auto w-full max-w-md">
+                    {% set empty_state_icon = 'waypoints' %}
+                    {% set empty_state_label = 'No Results' %}
+                    {% set empty_state_title = 'No Topology Resources Found' %}
+                    {% set empty_state_description = 'Adjust the cluster, namespace, scope, or depth. Run inventory sync if KAORI has not collected this cluster yet.' %}
+                    {% set empty_state_variant = 'panel' %}
+                    {% set empty_state_min_height = 'min-h-[220px]' %}
+                    {% include 'components/states/_empty_state.html' %}
                 </div>
             </div>
         </div>

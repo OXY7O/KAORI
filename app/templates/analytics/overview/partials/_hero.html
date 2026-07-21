@@ -26,7 +26,8 @@
 
             <aside class="xl:col-span-5" aria-label="Analytics operational posture">
                 {% if dependency_blocker %}
-                    {% include "analytics/overview/partials/_hero_posture_blocked.html" %}
+                    {% set analytics_posture_label = 'Operational Posture' %}
+                    {% include 'analytics/components/_blocked_posture.html' %}
                 {% else %}
                     <div id="overview-hero-posture"
                          class="h-full"

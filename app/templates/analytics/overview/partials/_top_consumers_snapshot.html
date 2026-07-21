@@ -83,9 +83,13 @@
                             {% endfor %}
                         </div>
                     {% else %}
-                        {% with message="No top consumer data available yet." %}
-                            {% include "analytics/overview/partials/_empty_state.html" %}
-                        {% endwith %}
+                        {% set empty_state_icon = 'users' %}
+                        {% set empty_state_label = 'No Data' %}
+                        {% set empty_state_title = 'No Top Consumer Data Available' %}
+                        {% set empty_state_description = 'Top consumer data will appear after KAORI collects utilization metrics.' %}
+                        {% set empty_state_variant = 'panel' %}
+                        {% set empty_state_min_height = 'min-h-[150px]' %}
+                        {% include 'components/states/_empty_state.html' %}
                     {% endif %}
                 </div>
             </details>

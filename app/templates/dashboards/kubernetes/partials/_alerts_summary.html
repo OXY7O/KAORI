@@ -23,9 +23,12 @@
 
     <div x-cloak x-show="open" x-transition class="p-5">
         {% if not dashboard.selected_cluster_id %}
-            {% with message="Select a cluster to view AlertManager and Prometheus alert signals." %}
-                {% include "dashboards/kubernetes/partials/_cluster_required_empty_state.html" %}
-            {% endwith %}
+            {% set blocked_state_icon = 'server-off' %}
+            {% set blocked_state_label = 'Cluster Required' %}
+            {% set blocked_state_title = 'Select Cluster' %}
+            {% set blocked_state_description = "Select a cluster to view AlertManager and Prometheus alert signals." %}
+            {% set blocked_state_tone = 'warning' %}
+            {% include 'components/states/_blocked_state.html' %}
         {% else %}
             {% set total_alerts = dashboard.alerts_snapshot.critical + dashboard.alerts_snapshot.warning + dashboard.alerts_snapshot.info %}
             <div class="grid grid-cols-3 gap-3">

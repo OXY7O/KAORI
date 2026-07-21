@@ -1,39 +1,11 @@
-<section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <div class="flex flex-col gap-5 px-5 py-5 lg:flex-row lg:items-center lg:justify-between">
-        <div class="flex min-w-0 items-start gap-4">
-            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                <i data-lucide="server-cog" class="h-5 w-5"></i>
-            </div>
-            <div class="min-w-0">
-                <div class="flex flex-wrap items-center gap-2">
-                    <h2 class="text-base font-semibold text-content-primary">Connect Your First Kubernetes Cluster</h2>
-                    <span class="inline-flex items-center gap-1.5 rounded-md border border-status-warning-border bg-status-warning-soft px-2.5 py-1 text-xs font-semibold text-status-warning-text">
-                        <i data-lucide="triangle-alert" class="h-3.5 w-3.5"></i>
-                        Setup Required
-                    </span>
-                </div>
-                <p class="mt-1 max-w-4xl text-sm leading-6 text-content-secondary">
-                    Add a cluster to unlock Kubernetes dashboards, inventory, analytics, operations, integrations, and governance workflows.
-                </p>
-                <div class="mt-3 flex flex-wrap gap-2">
-                    <span class="inline-flex min-h-8 items-center rounded-md border border-outline-default bg-kaori-soft px-3 py-1.5 text-xs font-semibold text-kaori-primary">1. Add Cluster</span>
-                    <span class="inline-flex min-h-8 items-center rounded-md border border-outline-default bg-kaori-soft px-3 py-1.5 text-xs font-semibold text-kaori-primary">2. Configure Integrations</span>
-                    <span class="inline-flex min-h-8 items-center rounded-md border border-outline-default bg-kaori-soft px-3 py-1.5 text-xs font-semibold text-kaori-primary">3. Run Sync</span>
-                </div>
-            </div>
-        </div>
-
-        {% if cluster_onboarding.can_manage_clusters %}
-            <a href="{{ url_for('cluster.add_cluster') }}"
-               class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card">
-                <i data-lucide="plus" class="h-4 w-4"></i>
-                Add Cluster
-            </a>
-        {% else %}
-            <span class="inline-flex h-10 shrink-0 items-center gap-2 rounded-lg border border-outline-default bg-surface-hover px-4 text-sm font-semibold text-content-secondary">
-                <i data-lucide="shield" class="h-4 w-4 text-kaori-primary"></i>
-                Admin Required
-            </span>
-        {% endif %}
-    </div>
-</section>
+{% set blocked_state_icon = 'server-cog' %}
+{% set blocked_state_label = 'Setup Required' %}
+{% set blocked_state_title = 'Connect Your First Kubernetes Cluster' %}
+{% set blocked_state_description = 'Add a cluster to unlock Kubernetes dashboards, inventory, analytics, operations, integrations, and governance workflows in KAORI.' %}
+{% set blocked_state_steps = ['Add Cluster', 'Configure Integrations', 'Run Sync'] %}
+{% set blocked_state_action_url = url_for('cluster.add_cluster') %}
+{% set blocked_state_action_label = 'Add Cluster' %}
+{% set blocked_state_action_icon = 'plus' %}
+{% set blocked_state_permission = 'clusters.manage' %}
+{% set blocked_state_show_admin_required = true %}
+{% include 'components/states/_blocked_state.html' %}
