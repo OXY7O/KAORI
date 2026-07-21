@@ -285,14 +285,54 @@ def build_kubernetes_page(*, page: int = 1, per_page: int = 5) -> dict[str, Any]
     )
     rows = [_build_kubernetes_registry_row(connection) for connection in connections]
     page_rows, pagination = _paginate(rows, page=page, per_page=per_page)
+    total = len(rows)
+    kubernetes_ready = sum(1 for row in rows if row['readiness'] == 'ready')
+    kubernetes_attention = total - kubernetes_ready
+
+    prometheus_configured = sum(1 for row in rows if row['prometheus_instance_id'])
+    prometheus_source_ready = sum(
+        1 for row in rows if row['prometheus_source_status'] == 'ready'
+    )
+    prometheus_binding_ready = sum(
+        1 for row in rows if row['prometheus_binding_status'] == 'ready'
+    )
+    prometheus_operational = sum(
+        1 for row in rows if row['prometheus_operational']['status'] == 'ready'
+    )
+
+    alertmanager_configured = sum(1 for row in rows if row['alertmanager_instance_id'])
+    alertmanager_source_ready = sum(
+        1 for row in rows if row['alertmanager_source_status'] == 'ready'
+    )
+    alertmanager_binding_ready = sum(
+        1 for row in rows if row['alertmanager_binding_status'] == 'ready'
+    )
+    alertmanager_operational = sum(
+        1 for row in rows if row['alertmanager_operational']['status'] == 'ready'
+    )
+
+    fully_operational = sum(
+        1 for row in rows if row['coverage_summary']['status'] == 'ready'
+    )
+    source_bindings = sum(row['source_binding_count'] for row in rows)
+
     return {
         'rows': page_rows,
         'pagination': pagination,
         'stats': {
-            'total': len(rows),
-            'ready': sum(1 for row in rows if row['readiness'] == 'ready'),
-            'attention': sum(1 for row in rows if row['readiness'] != 'ready'),
-            'bindings': sum(row['binding_count'] for row in rows),
+            'total': total,
+            'ready': kubernetes_ready,
+            'attention': kubernetes_attention,
+            'bindings': source_bindings,
+            'fully_operational': fully_operational,
+            'prometheus_configured': prometheus_configured,
+            'prometheus_source_ready': prometheus_source_ready,
+            'prometheus_binding_ready': prometheus_binding_ready,
+            'prometheus_operational': prometheus_operational,
+            'alertmanager_configured': alertmanager_configured,
+            'alertmanager_source_ready': alertmanager_source_ready,
+            'alertmanager_binding_ready': alertmanager_binding_ready,
+            'alertmanager_operational': alertmanager_operational,
         },
     }
 
