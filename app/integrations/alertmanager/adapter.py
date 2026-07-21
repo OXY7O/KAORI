@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from datetime import UTC, datetime
+from typing import Any
 
 from app.integrations.alertmanager.contracts import ValidationResult
 from app.integrations.alertmanager.validation import validate_source
@@ -37,7 +39,12 @@ class AlertmanagerRuntimeAdapter:
             return self.get_state(instance, validation_result=kwargs.get('validation_result'))
         raise ValueError(f'Unsupported Alertmanager integration operation: {operation}')
 
-    def get_state(self, instance: AlertmanagerInstance, *, validation_result: ValidationResult | None = None) -> RuntimeState:
+    def get_state(
+        self,
+        instance: AlertmanagerInstance,
+        *,
+        validation_result: ValidationResult | Mapping[str, Any] | None = None,
+    ) -> RuntimeState:
         now = datetime.now(UTC)
         diagnostics = self._diagnostics(instance, validation_result)
         factors = self._factors(instance, diagnostics)
@@ -67,18 +74,55 @@ class AlertmanagerRuntimeAdapter:
         )
 
     @staticmethod
-    def _diagnostics(instance: AlertmanagerInstance, result: ValidationResult | None) -> tuple[DiagnosticResult, ...]:
-        if result and result.validation_steps:
-            return tuple(DiagnosticResult(
-                key=step.key,
-                label=step.label,
-                category='api' if step.key.endswith('_v2') else 'compatibility',
-                status=step.status,
-                detail=step.detail,
-                duration_ms=step.response_time_ms,
-                severity='critical' if step.status == 'failed' else 'info',
-                recommendation='Review endpoint, credentials, TLS, and provider logs.' if step.status == 'failed' else None,
-            ) for step in result.validation_steps)
+    def _validation_steps(
+        result: ValidationResult | Mapping[str, Any] | None,
+    ) -> tuple[Any, ...]:
+        """Return validation steps from either canonical objects or serialized payloads.
+
+        Full validation returns ``ValidationResult`` while lightweight runtime
+        health returns a dictionary. Worker boundaries may also serialize the
+        canonical result before runtime state construction, so the adapter must
+        accept both representations.
+        """
+        if result is None:
+            return ()
+        if isinstance(result, Mapping):
+            steps = result.get('validation_steps') or ()
+            return tuple(step for step in steps if isinstance(step, Mapping))
+        return tuple(getattr(result, 'validation_steps', ()) or ())
+
+    @staticmethod
+    def _diagnostics(
+        instance: AlertmanagerInstance,
+        result: ValidationResult | Mapping[str, Any] | None,
+    ) -> tuple[DiagnosticResult, ...]:
+        steps = AlertmanagerRuntimeAdapter._validation_steps(result)
+        if steps:
+            diagnostics: list[DiagnosticResult] = []
+            for step in steps:
+                if isinstance(step, Mapping):
+                    key = str(step.get('key') or 'validation')
+                    label = str(step.get('label') or 'Validation')
+                    step_status = str(step.get('status') or 'unknown')
+                    detail = str(step.get('detail') or 'No validation detail was recorded.')
+                    response_time_ms = step.get('response_time_ms')
+                else:
+                    key = str(step.key)
+                    label = str(step.label)
+                    step_status = str(step.status)
+                    detail = str(step.detail)
+                    response_time_ms = step.response_time_ms
+                diagnostics.append(DiagnosticResult(
+                    key=key,
+                    label=label,
+                    category='api' if key.endswith('_v2') else 'compatibility',
+                    status=step_status,
+                    detail=detail,
+                    duration_ms=response_time_ms,
+                    severity='critical' if step_status == 'failed' else 'info',
+                    recommendation='Review endpoint, credentials, TLS, and provider logs.' if step_status == 'failed' else None,
+                ))
+            return tuple(diagnostics)
         status = 'success' if instance.last_status == 'connected' else ('failed' if instance.last_status in {'error', 'disconnected', 'incompatible'} else 'unknown')
         return (DiagnosticResult('runtime', 'Runtime observation', 'runtime', status, instance.last_error or instance.validation_message or 'Validation has not been observed.'),)
 
