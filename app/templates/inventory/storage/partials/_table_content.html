@@ -23,7 +23,7 @@
                 </tr>
                 <tr id="storage-detail-row-{{ item.id }}" class="hidden border-0"><td colspan="8" class="w-full p-0 leading-none align-top"><div class="w-full min-w-0 overflow-x-auto" id="storage-detail-content-{{ item.id }}" data-open="false"></div></td></tr>
             {% else %}
-                <tr><td colspan="8" class="p-0">{% set empty_state_icon='hard-drive' %}{% set empty_state_title='No storage inventory found' %}{% set empty_state_description='Adjust filters or sync cluster inventory to collect Kubernetes storage data.' %}{% set empty_state_min_height='min-h-[190px]' %}{% include 'components/states/_empty_state.html' %}</td></tr>
+                <tr><td colspan="8" class="p-0">{% set empty_state_icon='hard-drive' %}{% set empty_state_title='No Storage Inventory Found' %}{% set empty_state_description='Adjust filters or sync cluster inventory to collect Kubernetes storage data.' %}{% set empty_state_min_height='min-h-[190px]' %}{% include 'components/states/_empty_state.html' %}</td></tr>
             {% endfor %}
         </tbody>
     </table>

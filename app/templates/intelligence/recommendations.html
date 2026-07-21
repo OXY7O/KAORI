@@ -359,14 +359,13 @@
  </tr>
  {% else %}
  <tr>
- <td colspan="5" class="px-6 py-10 text-center">
- <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-kaori-soft text-content-muted ">
- <i data-lucide="shield-check" class="h-6 w-6"></i>
- </div>
- <h3 class="mt-3 text-base font-black text-content-primary ">No active recommendations found</h3>
- <p class="mx-auto mt-1 max-w-xl text-sm leading-6 text-content-muted ">
- No current resource state matches the available recommendation evaluators. Open Catalog to review which rules are defined, or sync inventory and metrics again.
- </p>
+ <td colspan="5" class="p-0">
+ {% set empty_state_icon = "shield-check" %}
+ {% set empty_state_label = "No Results" %}
+ {% set empty_state_title = "No Active Recommendations Found" %}
+ {% set empty_state_description = "No current resource state matches the available evaluators. Review the catalog or sync inventory and metrics again." %}
+ {% set empty_state_min_height = "min-h-[210px]" %}
+ {% include "components/states/_empty_state.html" %}
  </td>
  </tr>
  {% endfor %}
@@ -442,13 +441,12 @@
  </div>
  </article>
  {% else %}
- <div class="p-8 text-center">
- <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-kaori-soft text-content-muted ">
- <i data-lucide="search-x" class="h-6 w-6"></i>
- </div>
- <h3 class="mt-3 text-base font-bold text-content-primary ">No catalog rules found</h3>
- <p class="mt-1 text-sm text-content-muted ">Adjust the filters or search keyword to view more rule definitions.</p>
- </div>
+ {% set empty_state_icon = "search-x" %}
+ {% set empty_state_label = "No Results" %}
+ {% set empty_state_title = "No Catalog Rules Found" %}
+ {% set empty_state_description = "Adjust the filters or search keyword to view more rule definitions." %}
+ {% set empty_state_min_height = "min-h-[210px]" %}
+ {% include "components/states/_empty_state.html" %}
  {% endfor %}
  </div>
  {% endif %}

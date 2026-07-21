@@ -1,20 +1,51 @@
 {% set state_icon = empty_state_icon|default('inbox') %}
-{% set state_title = empty_state_title|default('No data available') %}
+{% set state_label = empty_state_label|default('No Data') %}
+{% set state_title = empty_state_title|default('No Data Available') %}
 {% set state_description = empty_state_description|default('Data will appear after the required source has been configured and collected.') %}
 {% set state_min_height = empty_state_min_height|default('min-h-[180px]') %}
 {% set state_container_class = empty_state_container_class|default('') %}
-<div class="{{ state_min_height }} {{ state_container_class }} flex flex-col items-center justify-center px-6 py-10 text-center">
-    <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+{% set state_variant = empty_state_variant|default('default') %}
+{% set primary_url = empty_state_action_url|default(none) %}
+{% set primary_label = empty_state_action_label|default(none) %}
+{% set primary_icon = empty_state_action_icon|default('arrow-right') %}
+{% set secondary_url = empty_state_secondary_action_url|default(none) %}
+{% set secondary_label = empty_state_secondary_action_label|default(none) %}
+{% set secondary_icon = empty_state_secondary_action_icon|default('book-open') %}
+{% set permission = empty_state_permission|default(none) %}
+{% set permission_granted = not permission or current_user.has_permission(permission) %}
+{% set show_admin_required = empty_state_show_admin_required|default(false) %}
+{% set panel_classes = 'border border-dashed border-outline-default bg-surface-muted/40 rounded-xl' if state_variant == 'panel' else '' %}
+
+<div class="{{ state_min_height }} {{ state_container_class }} {{ panel_classes }} flex flex-col items-center justify-center px-6 py-10 text-center" data-kaori-empty-state>
+    <span class="flex h-12 w-12 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary" aria-hidden="true">
         <i data-lucide="{{ state_icon }}" class="h-6 w-6"></i>
-    </div>
-    <h3 class="mt-4 text-sm font-semibold text-kaori-primary">{{ state_title }}</h3>
-    <p class="mt-1 max-w-2xl text-sm leading-6 text-content-muted">{{ state_description }}</p>
-    {% if empty_state_action_url|default(none) and empty_state_action_label|default(none) %}
-        {% if not empty_state_permission|default(none) or current_user.has_permission(empty_state_permission) %}
-            <a href="{{ empty_state_action_url }}" class="mt-5 inline-flex h-10 items-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                <i data-lucide="arrow-right" class="h-4 w-4"></i>
-                {{ empty_state_action_label }}
-            </a>
-        {% endif %}
+    </span>
+
+    {% if state_label %}
+        <span class="mt-4 inline-flex min-h-6 items-center rounded-md border border-brand-outline bg-kaori-soft px-2 text-[10px] font-semibold text-kaori-primary">
+            {{ state_label }}
+        </span>
+    {% endif %}
+
+    <h3 class="{{ 'mt-3' if state_label else 'mt-4' }} text-base font-semibold text-content-primary">{{ state_title }}</h3>
+    <p class="mt-2 max-w-2xl text-sm leading-6 text-content-secondary">{{ state_description }}</p>
+
+    {% if permission_granted and ((primary_url and primary_label) or (secondary_url and secondary_label)) %}
+        <div class="mt-5 flex flex-wrap items-center justify-center gap-2">
+            {% if primary_url and primary_label %}
+                <a href="{{ primary_url }}" class="inline-flex h-10 items-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2">
+                    <i data-lucide="{{ primary_icon }}" class="h-4 w-4" aria-hidden="true"></i>
+                    {{ primary_label }}
+                </a>
+            {% endif %}
+            {% if secondary_url and secondary_label %}
+                <a href="{{ secondary_url }}" class="inline-flex h-10 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary shadow-sm transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2">
+                    <i data-lucide="{{ secondary_icon }}" class="h-4 w-4" aria-hidden="true"></i>
+                    {{ secondary_label }}
+                </a>
+            {% endif %}
+        </div>
+    {% elif not permission_granted and show_admin_required %}
+        <span class="mt-5 inline-flex min-h-6 items-center rounded-md border border-outline-default bg-surface-card px-2 text-[10px] font-semibold text-content-secondary">Admin Required</span>
     {% endif %}
 </div>

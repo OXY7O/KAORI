@@ -85,11 +85,11 @@
                     <td colspan="4" class="p-0">
                         {% if namespace_summary.total %}
                             {% set empty_state_icon = "search" %}
-                            {% set empty_state_title = "No namespace matches the current filters" %}
+                            {% set empty_state_title = "No Namespace Matches The Current Filters" %}
                             {% set empty_state_description = "Adjust the search or reveal policy filter to show namespace settings." %}
                         {% else %}
                             {% set empty_state_icon = "box" %}
-                            {% set empty_state_title = "No live namespace available" %}
+                            {% set empty_state_title = "No Live Namespace Available" %}
                             {% set empty_state_description = "Reload the live namespace list and verify Kubernetes connectivity before enabling namespace-level Secret Reveal." %}
                         {% endif %}
                         {% set empty_state_min_height = "min-h-[190px]" %}

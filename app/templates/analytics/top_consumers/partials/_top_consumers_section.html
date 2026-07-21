@@ -202,7 +202,7 @@
  </div>
  {% else %}
  {% set empty_state_icon = "bar-chart-3" %}
- {% set empty_state_title = "No top consumer data available" %}
+ {% set empty_state_title = "No Top Consumer Data Available" %}
  {% set empty_state_description = payload.message|default('Top consumer data will appear after Prometheus returns resource metrics for the selected filters.', true) %}
  {% set empty_state_min_height = "min-h-[560px]" %}
  {% include "components/states/_empty_state.html" %}
@@ -360,7 +360,7 @@
  </div>
  {% else %}
  {% set empty_state_icon = "list-checks" %}
- {% set empty_state_title = "No consumer recommendations available" %}
+ {% set empty_state_title = "No Consumer Recommendations Available" %}
  {% set empty_state_description = "Recommendations will appear when consumer metrics cross configured operational thresholds." %}
  {% set empty_state_min_height = "min-h-[180px]" %}
  {% include "components/states/_empty_state.html" %}

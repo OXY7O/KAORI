@@ -67,8 +67,14 @@
                 <tr>
                     <td colspan="6" class="p-0">
                         {% set empty_state_icon = 'route' %}
-                        {% set empty_state_title = 'No operational scopes found' %}
+                        {% set empty_state_label = 'Setup Required' if not selected_coverage_query and not selected_coverage_environment and not selected_coverage_status else 'No Results' %}
+                        {% set empty_state_title = 'No Operational Scopes Found' %}
                         {% set empty_state_description = 'Adjust the coverage filters or register a Kubernetes connection.' %}
+                        {% set empty_state_action_url = url_for('cluster.add_cluster') %}
+                        {% set empty_state_action_label = 'Add Cluster' %}
+                        {% set empty_state_action_icon = 'plus' %}
+                        {% set empty_state_permission = 'clusters.manage' %}
+                        {% set empty_state_show_admin_required = true %}
                         {% set empty_state_min_height = 'min-h-[210px]' %}
                         {% include 'components/states/_empty_state.html' %}
                     </td>
