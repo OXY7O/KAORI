@@ -13,12 +13,13 @@
   </header>
 
   <div class="overflow-x-auto">
-    <table class="w-full min-w-[1088px] table-fixed divide-y divide-outline-subtle text-left text-sm">
+    <table class="w-full min-w-[1320px] table-fixed divide-y divide-outline-subtle text-left text-sm">
       <thead class="bg-surface-hover text-xs text-content-muted">
         <tr>
           <th class="w-[290px] px-5 py-3">Connection</th>
           <th class="w-[110px] px-4 py-3">Environment</th>
-          <th class="w-[135px] px-4 py-3">Readiness</th>
+          <th class="w-[145px] px-4 py-3">Kubernetes API</th>
+          <th class="w-[250px] px-4 py-3">Operational Coverage</th>
           <th class="w-[210px] px-4 py-3">Version &amp; Compatibility</th>
           <th class="w-[135px] px-4 py-3">Last Validated</th>
           <th class="w-[208px] px-3 py-3 text-right">Actions</th>
@@ -31,7 +32,17 @@
               <div class="flex items-start gap-3"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary"><i data-lucide="server-cog" class="h-4 w-4"></i></span><div class="min-w-0"><p class="truncate font-semibold text-content-primary" title="{{ row.cluster_name }}">{{ row.cluster_name }}</p><p class="mt-1 text-xs text-content-muted">Canonical #{{ row.integration_instance_id }} · Connection #{{ row.connection_id }}</p><p class="mt-1 truncate font-mono text-xs text-content-secondary" title="{{ row.server }}">{{ row.server }}</p></div></div>
             </td>
             <td class="px-4 py-4"><span class="kaori-context-label inline-flex min-h-6 items-center rounded-md bg-kaori-soft px-2 text-[10px] font-semibold text-kaori-primary">{{ row.environment }}</span></td>
-            <td class="px-4 py-4">{{ status_badge(row.readiness) }}<p class="mt-2 text-xs text-content-muted">{{ row.binding_count }} binding(s)</p></td>
+            <td class="px-4 py-4">
+              {{ status_badge(row.readiness) }}
+              <p class="mt-2 text-xs leading-5 text-content-muted">API access, RBAC, compatibility, and capabilities.</p>
+            </td>
+            <td class="px-4 py-4">
+              <div class="space-y-2">
+                <div class="flex items-center justify-between gap-2"><span class="text-xs font-medium text-content-secondary">Inventory</span>{{ status_badge(row.inventory_coverage.status, row.inventory_coverage.label) }}</div>
+                <div class="flex items-center justify-between gap-2"><span class="text-xs font-medium text-content-secondary">Analytics</span>{{ status_badge(row.metrics_coverage.status, row.metrics_coverage.label) }}</div>
+                <div class="flex items-center justify-between gap-2"><span class="text-xs font-medium text-content-secondary">Alerts</span>{{ status_badge(row.alerts_coverage.status, row.alerts_coverage.label) }}</div>
+              </div>
+            </td>
             <td class="px-4 py-4"><p class="font-semibold text-content-primary">{{ row.version or 'Not discovered' }}</p><p class="mt-1 truncate text-xs text-content-muted" title="{{ row.compatibility_profile or 'Validation required' }}">{{ row.compatibility_profile or 'Validation required' }}</p></td>
             <td class="px-4 py-4 text-content-secondary">{{ row.last_validated_at }}</td>
             <td class="w-[208px] px-3 py-4 text-right">
@@ -55,7 +66,7 @@
             </td>
           </tr>
         {% else %}
-          <tr><td colspan="6" class="p-0">{% set empty_state_icon = 'boxes' %}{% set empty_state_label = 'Setup Required' %}{% set empty_state_title = 'No Kubernetes Connections Registered' %}{% set empty_state_description = 'Register a Kubernetes API connection so KAORI can begin capability discovery and source binding.' %}{% set empty_state_action_url = url_for('cluster.add_cluster') %}{% set empty_state_action_label = 'Add Cluster' %}{% set empty_state_action_icon = 'plus' %}{% set empty_state_permission = 'clusters.manage' %}{% set empty_state_show_admin_required = true %}{% set empty_state_min_height = 'min-h-[190px]' %}{% include 'components/states/_empty_state.html' %}</td></tr>
+          <tr><td colspan="7" class="p-0">{% set empty_state_icon = 'boxes' %}{% set empty_state_label = 'Setup Required' %}{% set empty_state_title = 'No Kubernetes Connections Registered' %}{% set empty_state_description = 'Register a Kubernetes API connection so KAORI can begin capability discovery and source binding.' %}{% set empty_state_action_url = url_for('cluster.add_cluster') %}{% set empty_state_action_label = 'Add Cluster' %}{% set empty_state_action_icon = 'plus' %}{% set empty_state_permission = 'clusters.manage' %}{% set empty_state_show_admin_required = true %}{% set empty_state_min_height = 'min-h-[190px]' %}{% include 'components/states/_empty_state.html' %}</td></tr>
         {% endfor %}
       </tbody>
     </table>

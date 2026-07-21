@@ -5,7 +5,6 @@ from typing import Any
 from flask import url_for
 
 from app.extensions.db import db
-from app.integrations.binding_posture import resolve_binding_operational_posture
 from app.integrations.binding_selectors import selector_form_values, selector_is_configured, selector_summary
 from app.integrations.deletion import provider_deletion_guard
 from app.integrations.runtime.presentation import runtime_history_view, runtime_state_view
@@ -16,6 +15,7 @@ from app.integrations.prometheus.capabilities import CAPABILITIES, definition as
 from app.prometheus.repository import KUBERNETES_CLUSTER_SCOPE, cluster_bindings_for_instance
 from app.integrations.registry import get_integration
 from app.prometheus.resolver import PrometheusSourceResolution, resolve_prometheus_sources
+from app.integrations.readiness import resolve_binding_operational_status
 
 
 _CORE_CAPABILITIES = {
@@ -136,14 +136,7 @@ def build_instance_context(
         'instance': instance,
         'bindings': bindings,
         'deletion_guard': deletion_guard,
-        'binding_rows': [
-            _binding_row(
-                binding,
-                source_readiness=instance.readiness_status,
-                source_enabled=instance.enabled,
-            )
-            for binding in bindings
-        ],
+        'binding_rows': [_binding_row(binding, instance) for binding in bindings],
         'clusters': clusters,
         'clusters_by_id': {cluster.id: cluster for cluster in clusters},
         'capability_rows': capability_rows,
@@ -338,13 +331,14 @@ def _capability_label(key: str) -> str:
     return item.label if item else key.replace('_', ' ').title()
 
 
-def _binding_row(binding: IntegrationBinding, *, source_readiness: str | None = None, source_enabled: bool = True) -> dict[str, Any]:
+def _binding_row(binding: IntegrationBinding, source: PrometheusInstance) -> dict[str, Any]:
     cluster = db.session.get(Cluster, binding.asset_key) if binding.asset_type == KUBERNETES_CLUSTER_SCOPE else None
     selector_values = selector_form_values(binding.selector_json)
-    operational_posture = resolve_binding_operational_posture(
+    source_readiness = source.readiness_status or 'validation_required'
+    operational = resolve_binding_operational_status(
         source_readiness=source_readiness,
         binding_validation=binding.validation_status,
-        source_enabled=source_enabled,
+        source_enabled=source.enabled,
         binding_enabled=binding.enabled,
     )
     return {
@@ -357,10 +351,9 @@ def _binding_row(binding: IntegrationBinding, *, source_readiness: str | None = 
         'selector_operator': selector_values['operator'],
         'selector_value': selector_values['value'],
         'validation_status': binding.validation_status or 'validation_required',
-        'source_readiness': source_readiness or 'validation_required',
-        'operational_status': operational_posture['status'],
-        'operational_label': operational_posture['label'],
-        'operational_message': operational_posture['message'],
+        'source_readiness': source_readiness,
+        'operational_status': operational['status'],
+        'operational_label': operational['label'],
     }
 
 

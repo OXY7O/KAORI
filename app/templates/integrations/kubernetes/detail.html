@@ -43,13 +43,13 @@
                     <div class="flex items-start justify-between gap-4">
                         <div>
                             <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Connection Posture</p>
-                            <h2 class="{{ page_hero.context_panel_title_classes() }}">Readiness &amp; Capability Coverage</h2>
+                            <h2 class="{{ page_hero.context_panel_title_classes() }}">Kubernetes API Readiness</h2>
                         </div>
                         {{ status_badge('ready' if source_posture == 'Ready' else ('degraded' if source_posture == 'Attention' else 'validation_required'), source_posture) }}
                     </div>
                     <div class="mt-4 grid grid-cols-2 gap-2">
                         <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5">
-                            <div class="flex items-center gap-2 text-brand-foreground"><i data-lucide="shield-check" class="h-3.5 w-3.5"></i><p class="text-[11px] font-semibold">Readiness</p></div>
+                            <div class="flex items-center gap-2 text-brand-foreground"><i data-lucide="shield-check" class="h-3.5 w-3.5"></i><p class="text-[11px] font-semibold">Kubernetes API</p></div>
                             <p class="mt-1.5 truncate text-sm font-semibold text-brand-foreground">{{ readiness|replace('_', ' ')|title }}</p>
                             <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Produced by worker validation</p>
                         </div>

@@ -13,6 +13,7 @@ from app.models.runtime import IntegrationRuntimeObservation
 from app.integrations.coverage import build_provider_coverage, bound_source_for_scope
 from app.integrations.deletion import kubernetes_deletion_guard
 from app.prometheus.repository import cluster_bindings_for_instance
+from app.integrations.readiness import resolve_cluster_coverage
 
 
 def safe_endpoint(value: str | None) -> str:
@@ -168,6 +169,16 @@ def build_kubernetes_page(*, page: int = 1, per_page: int = 5) -> dict[str, Any]
         alertmanager, alertmanager_binding = bound_source_for_scope(
             'alertmanager', scope_type='kubernetes_cluster', scope_key=cluster.id,
         )
+        metrics_coverage = resolve_cluster_coverage(
+            kubernetes_readiness=connection.readiness_status,
+            source=prometheus,
+            binding=prometheus_binding,
+        )
+        alerts_coverage = resolve_cluster_coverage(
+            kubernetes_readiness=connection.readiness_status,
+            source=alertmanager,
+            binding=alertmanager_binding,
+        )
         rows.append({
             'connection_id': connection.id,
             'integration_instance_id': connection.integration_instance_id,
@@ -176,6 +187,9 @@ def build_kubernetes_page(*, page: int = 1, per_page: int = 5) -> dict[str, Any]
             'environment': get_environment_label(cluster.environment),
             'server': connection.server or 'Not discovered',
             'readiness': connection.readiness_status or 'validation_required',
+            'inventory_coverage': {'status': 'ready', 'label': 'Ready'} if (connection.readiness_status or 'validation_required') == 'ready' else {'status': 'validation_required', 'label': 'Waiting For Validation'},
+            'metrics_coverage': metrics_coverage,
+            'alerts_coverage': alerts_coverage,
             'compatibility_profile': connection.compatibility_profile,
             'version': connection.detected_version,
             'binding_count': binding_count,
@@ -199,15 +213,6 @@ def build_kubernetes_page(*, page: int = 1, per_page: int = 5) -> dict[str, Any]
             'ready': sum(1 for row in rows if row['readiness'] == 'ready'),
             'attention': sum(1 for row in rows if row['readiness'] != 'ready'),
             'bindings': sum(row['binding_count'] for row in rows),
-            'prometheus_bound': sum(1 for row in rows if row['prometheus_instance_id']),
-            'alertmanager_bound': sum(1 for row in rows if row['alertmanager_instance_id']),
-            'fully_observable': sum(
-                1
-                for row in rows
-                if row['readiness'] == 'ready'
-                and row['prometheus_instance_id']
-                and row['alertmanager_instance_id']
-            ),
         },
     }
 
