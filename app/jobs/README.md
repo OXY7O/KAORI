@@ -35,3 +35,17 @@ Until the `job_execution` archive domain and its UI are implemented, deployments
 ## Registry refresh contract
 
 The Job Execution Registry provides an explicit HTMX `Refresh` action in its block header. Refresh preserves the active page, page size, and filters, swaps only `#job-execution-registry`, and uses the standard loading bar directly below the title header. The action does not reload the full Jobs & Executions page.
+
+## Navigation and Workspace Contract
+
+Jobs & Executions is a cross-domain KAORI operational workspace. It is presented under **Platform Operations**, not inside the Integrations submenu, because the registry covers validation, runtime, analytics, forecasting, reporting, lifecycle, and future background workloads.
+
+The `/integrations/jobs` URL is retained as a compatibility path for existing bookmarks, notifications, and audit action links. Information architecture is controlled by sidebar placement rather than forcing a breaking URL migration.
+
+The workspace has three views:
+
+- **Active Work** for live progress and cancellation boundaries.
+- **Execution Registry** for searchable historical execution records.
+- **Queue Activity** for database-backed workload demand by queue. Queue Activity does not claim worker process liveness.
+
+The overview must distinguish canonical job state from actual worker health. Worker liveness belongs to deployment monitoring or Celery inspection, while this workspace remains the source of truth for execution lifecycle, ownership, progress, and results.

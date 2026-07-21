@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from sqlalchemy import or_
@@ -9,6 +10,10 @@ from app.jobs.service import job_can_cancel
 from app.models.job import JobExecution
 
 ALLOWED_PER_PAGE = (5, 10, 25, 50)
+_ACTIVE_STATUSES = ('queued', 'running', 'retrying', 'cancel_requested')
+_ATTENTION_STATUSES = ('retrying', 'cancel_requested', 'failed', 'partially_succeeded')
+_TERMINAL_STATUSES = ('succeeded', 'partially_succeeded', 'failed', 'canceled', 'expired')
+_ALLOWED_TABS = ('active', 'registry', 'queues')
 
 _JOB_ICONS = {
     'runtime': 'activity',
@@ -16,6 +21,15 @@ _JOB_ICONS = {
     'analytics': 'chart-no-axes-combined',
     'forecasting': 'chart-spline',
     'standard': 'workflow',
+}
+
+_QUEUE_ICONS = {
+    'integration-runtime': 'activity',
+    'integration-validation': 'scan-search',
+    'analytics-batch': 'chart-no-axes-combined',
+    'forecasting': 'chart-spline',
+    'maintenance': 'archive-restore',
+    'inventory': 'database-zap',
 }
 
 
@@ -60,6 +74,7 @@ def _row(job: JobExecution) -> dict[str, Any]:
         'status': job.status,
         'status_label': job.status.replace('_', ' ').title(),
         'provider_type': job.provider_type,
+        'provider_label': (job.provider_type or 'KAORI').replace('_', ' ').title(),
         'scope': scope,
         'resource_group': job.resource_group,
         'requester': requester,
@@ -72,12 +87,64 @@ def _row(job: JobExecution) -> dict[str, Any]:
         'queued_at': present_user_datetime(job.queued_at, empty='Not queued'),
         'started_at': present_user_datetime(job.started_at, empty='Not started'),
         'completed_at': present_user_datetime(job.completed_at, empty='In progress'),
+        'updated_at': present_user_datetime(job.updated_at, empty='Not updated'),
         'duration': _duration_label(job),
         'error_message': job.error_message,
         'is_active': job.is_active,
         'is_terminal': job.is_terminal,
         'can_cancel': job_can_cancel(job),
     }
+
+
+def _queue_icon(queue_name: str) -> str:
+    if queue_name in _QUEUE_ICONS:
+        return _QUEUE_ICONS[queue_name]
+    if 'runtime' in queue_name:
+        return 'activity'
+    if 'validation' in queue_name:
+        return 'scan-search'
+    if 'forecast' in queue_name:
+        return 'chart-spline'
+    if 'analytics' in queue_name:
+        return 'chart-no-axes-combined'
+    if 'maintenance' in queue_name or 'retention' in queue_name:
+        return 'archive-restore'
+    return 'workflow'
+
+
+def _queue_activity(queue_names: list[str], cutoff: datetime) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for queue_name in queue_names:
+        query = JobExecution.query.filter(JobExecution.queue_name == queue_name)
+        active = query.filter(JobExecution.status.in_(_ACTIVE_STATUSES)).count()
+        queued = query.filter_by(status='queued').count()
+        running = query.filter_by(status='running').count()
+        attention = query.filter(JobExecution.status.in_(_ATTENTION_STATUSES)).count()
+        completed_24h = query.filter(
+            JobExecution.status.in_(_TERMINAL_STATUSES),
+            JobExecution.completed_at.isnot(None),
+            JobExecution.completed_at >= cutoff,
+        ).count()
+        failed_24h = query.filter(
+            JobExecution.status == 'failed',
+            JobExecution.completed_at.isnot(None),
+            JobExecution.completed_at >= cutoff,
+        ).count()
+        latest = query.order_by(JobExecution.updated_at.desc(), JobExecution.id.desc()).first()
+        state = 'attention' if failed_24h or attention else ('active' if active else 'idle')
+        rows.append({
+            'name': queue_name,
+            'icon': _queue_icon(queue_name),
+            'state': state,
+            'active': active,
+            'queued': queued,
+            'running': running,
+            'attention': attention,
+            'completed_24h': completed_24h,
+            'failed_24h': failed_24h,
+            'latest_activity': present_user_datetime(latest.updated_at, empty='No activity') if latest else 'No activity',
+        })
+    return rows
 
 
 def build_job_execution_context(
@@ -88,9 +155,13 @@ def build_job_execution_context(
     workload: str = '',
     queue: str = '',
     search: str = '',
+    tab: str = 'active',
 ) -> dict[str, Any]:
     selected_per_page = per_page if per_page in ALLOWED_PER_PAGE else ALLOWED_PER_PAGE[0]
     selected_page = max(page, 1)
+    selected_tab = tab if tab in _ALLOWED_TABS else _ALLOWED_TABS[0]
+    cutoff = datetime.now(UTC) - timedelta(hours=24)
+
     query = JobExecution.query
     if status:
         query = query.filter(JobExecution.status == status)
@@ -107,6 +178,7 @@ def build_job_execution_context(
             JobExecution.scope_key.ilike(value),
             JobExecution.resource_group.ilike(value),
             JobExecution.public_id.ilike(value),
+            JobExecution.queue_name.ilike(value),
         ))
     query = query.order_by(JobExecution.created_at.desc(), JobExecution.id.desc())
     paginated = query.paginate(page=selected_page, per_page=selected_per_page, error_out=False)
@@ -114,23 +186,48 @@ def build_job_execution_context(
     current_page = min(max(paginated.page, 1), total_pages)
     items = [_row(job) for job in paginated.items]
 
-    active_count = JobExecution.query.filter(JobExecution.status.in_(('queued', 'running', 'retrying', 'cancel_requested'))).count()
+    active_query = JobExecution.query.filter(JobExecution.status.in_(_ACTIVE_STATUSES))
+    active_jobs = [
+        _row(job)
+        for job in active_query.order_by(JobExecution.updated_at.desc(), JobExecution.id.desc()).limit(6).all()
+    ]
+    active_count = active_query.count()
+    queued_count = JobExecution.query.filter_by(status='queued').count()
     running_count = JobExecution.query.filter_by(status='running').count()
-    heavy_count = JobExecution.query.filter(
-        JobExecution.status.in_(('queued', 'running', 'retrying', 'cancel_requested')),
-        JobExecution.workload_class.in_(('analytics', 'forecasting')),
-    ).count()
+    heavy_count = active_query.filter(JobExecution.workload_class.in_(('analytics', 'forecasting'))).count()
+    attention_count = JobExecution.query.filter(JobExecution.status.in_(_ATTENTION_STATUSES)).count()
     failed_count = JobExecution.query.filter_by(status='failed').count()
-    queue_options = [row[0] for row in JobExecution.query.with_entities(JobExecution.queue_name).distinct().order_by(JobExecution.queue_name.asc()).all()]
+    completed_24h_count = JobExecution.query.filter(
+        JobExecution.status.in_(_TERMINAL_STATUSES),
+        JobExecution.completed_at.isnot(None),
+        JobExecution.completed_at >= cutoff,
+    ).count()
+    total_count = JobExecution.query.count()
+    queue_options = [
+        row[0]
+        for row in JobExecution.query.with_entities(JobExecution.queue_name)
+        .distinct()
+        .order_by(JobExecution.queue_name.asc())
+        .all()
+    ]
+    queue_rows = _queue_activity(queue_options, cutoff)
 
     start_item = ((current_page - 1) * selected_per_page) + 1 if paginated.total else 0
     return {
         'job_rows': items,
+        'active_job_rows': active_jobs,
+        'active_job_overflow': max(active_count - len(active_jobs), 0),
+        'job_queue_rows': queue_rows,
         'job_stats': {
+            'total': total_count,
             'active': active_count,
+            'queued': queued_count,
             'running': running_count,
             'heavy': heavy_count,
+            'attention': attention_count,
             'failed': failed_count,
+            'completed_24h': completed_24h_count,
+            'queues': len(queue_options),
         },
         'job_pagination': {
             'page': current_page,
@@ -149,6 +246,7 @@ def build_job_execution_context(
         'selected_job_status': status,
         'selected_job_workload': workload,
         'selected_job_queue': queue,
+        'selected_job_tab': selected_tab,
         'job_search': search,
         'job_has_filters': bool(status or workload or queue or search),
         'job_status_options': [
@@ -170,4 +268,5 @@ def build_job_execution_context(
             ('standard', 'Standard'),
         ],
         'job_queue_options': queue_options,
+        'job_last_refreshed_at': present_user_datetime(datetime.now(UTC), empty='Just now'),
     }

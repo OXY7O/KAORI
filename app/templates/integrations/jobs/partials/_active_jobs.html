@@ -1,0 +1,50 @@
+{% from "integrations/partials/_status_badge.html" import status_badge %}
+<section id="active-job-workspace" class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm" aria-labelledby="active-job-workspace-title">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div class="flex items-start gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="activity" class="h-5 w-5"></i></span>
+                <div><h2 id="active-job-workspace-title" class="text-lg font-semibold text-content-primary">Active Work</h2><p class="mt-1 text-sm leading-6 text-content-secondary">Follow queued, running, retrying, and cancellation-requested jobs.</p></div>
+            </div>
+            <p class="text-xs font-medium text-content-muted">Updated {{ job_last_refreshed_at }}</p>
+        </div>
+    </header>
+    {% if active_job_rows %}
+        <div class="grid gap-4 p-5 lg:grid-cols-2 sm:p-6">
+            {% for row in active_job_rows %}
+                <article class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
+                    <div class="flex items-start justify-between gap-4">
+                        <div class="flex min-w-0 items-start gap-3">
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-brand-outline bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="{{ row.icon }}" class="h-4 w-4"></i></span>
+                            <div class="min-w-0"><h3 class="truncate text-sm font-semibold text-content-primary" title="{{ row.operation_label }}">{{ row.operation_label }}</h3><p class="mt-1 truncate text-xs text-content-muted" title="{{ row.scope }}">{{ row.provider_label }} · {{ row.scope }}</p></div>
+                        </div>
+                        {% set semantic = 'warning' if row.status in ['retrying', 'cancel_requested'] else 'info' %}
+                        <span class="inline-flex min-h-6 shrink-0 items-center rounded-md border border-status-{{ semantic }}-border bg-status-{{ semantic }}-soft px-2 text-[10px] font-semibold text-status-{{ semantic }}-text">{{ row.status_label }}</span>
+                    </div>
+                    <div class="mt-4">
+                        <div class="flex items-center justify-between gap-3 text-xs"><span class="font-medium text-content-secondary">{{ row.progress_message }}</span><span class="font-semibold text-kaori-primary">{{ row.progress }}%</span></div>
+                        <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-kaori-soft"><div class="h-full bg-kaori-primary" style="width: {{ row.progress }}%"></div></div>
+                    </div>
+                    <dl class="mt-4 grid gap-3 sm:grid-cols-2">
+                        <div class="rounded-lg border border-outline-subtle bg-surface-card p-3"><dt class="text-xs font-semibold text-content-muted">Queue</dt><dd class="mt-1 break-words text-sm font-medium text-content-primary">{{ row.queue_name }}</dd></div>
+                        <div class="rounded-lg border border-outline-subtle bg-surface-card p-3"><dt class="text-xs font-semibold text-content-muted">Requested By</dt><dd class="mt-1 text-sm font-medium text-content-primary">{{ row.requester }}</dd></div>
+                        <div class="rounded-lg border border-outline-subtle bg-surface-card p-3"><dt class="text-xs font-semibold text-content-muted">Started</dt><dd class="mt-1 text-sm font-medium text-content-primary">{{ row.started_at }}</dd></div>
+                        <div class="rounded-lg border border-outline-subtle bg-surface-card p-3"><dt class="text-xs font-semibold text-content-muted">Attempt</dt><dd class="mt-1 text-sm font-medium text-content-primary">{{ row.attempt_count }}/{{ row.max_attempts }}</dd></div>
+                    </dl>
+                    <div class="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-outline-subtle pt-4">
+                        <p class="text-xs text-content-muted">Execution {{ row.public_id[:8] }}</p>
+                        {% if row.can_cancel %}
+                            <form method="post" action="{{ url_for('integrations.cancel_job', public_id=row.public_id) }}" hx-post="{{ url_for('integrations.cancel_job', public_id=row.public_id) }}" hx-target="#job-execution-workspace" hx-swap="outerHTML" hx-indicator="#job-workspace-loading" class="inline-flex">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="fragment" value="workspace"><input type="hidden" name="tab" value="active">
+                                <button type="submit" class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-status-critical-border bg-status-critical-soft px-3 text-xs font-semibold text-status-critical-text transition hover:bg-status-critical hover:text-white"><i data-lucide="square" class="h-3.5 w-3.5"></i>Cancel</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+        {% if active_job_overflow > 0 %}<div class="border-t border-outline-subtle px-5 py-4 text-center text-sm text-content-secondary sm:px-6">{{ active_job_overflow }} additional active job{{ '' if active_job_overflow == 1 else 's' }} available in the Execution Registry.</div>{% endif %}
+    {% else %}
+        <div class="px-6 py-14 text-center"><span class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-status-normal-soft text-status-normal-text"><i data-lucide="circle-check-big" class="h-5 w-5"></i></span><h3 class="mt-4 text-base font-semibold text-content-primary">No Active Work</h3><p class="mt-1 text-sm leading-6 text-content-secondary">KAORI has no queued, running, retrying, or cancellation-requested jobs.</p></div>
+    {% endif %}
+</section>

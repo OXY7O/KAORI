@@ -99,3 +99,18 @@ When a registry uses icon-only actions, the Actions column width must include ic
 - Metrics Identity and Alert Identity values use normal KAORI table/body typography; monospace is reserved for executable commands or code-oriented evidence.
 - Provider registry Connection columns remain proportional and must not push Runtime, Compatibility, Readiness, or Last Validated off-screen.
 - Prometheus and Alertmanager registries reserve the largest column for Connection identity. Readiness and Action remain compact; Action may use a smaller labeled Manage control as long as accessibility and focus treatment remain intact.
+
+## Jobs & Executions Workspace
+
+Jobs & Executions is a cross-domain **Platform Operations** workspace. Do not place it inside a provider-specific Integrations submenu because it covers validation, runtime, analytics, forecasting, reporting, lifecycle, and future background work.
+
+Required hierarchy:
+
+1. Standard KAORI hero with compact execution posture.
+2. Execution Overview with Active, Running, Needs Attention, and Completed-in-24-hours metrics.
+3. Violet workspace tabs: Active Work, Execution Registry, Queue Activity.
+4. Active jobs use responsive cards with progress, queue, requester, timing, and cancellation boundary.
+5. Execution Registry uses a compact six-column table: Job, Execution Context, Status, Progress, Timing, Action.
+6. Queue Activity describes canonical database-backed execution demand and must not claim worker process liveness.
+
+The registry remains server-paginated with default 5 and options 5/10/25/50. The visible page-size control is numeric only. Refresh, filters, pagination, and cancellation use HTMX without reloading the hero.

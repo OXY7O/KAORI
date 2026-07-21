@@ -1,0 +1,10 @@
+{% set jobs_active = request.endpoint in ['integrations.jobs', 'integrations.cancel_job'] %}
+<a href="{{ url_for('integrations.jobs') }}"
+   title="Jobs & Executions"
+   aria-label="Jobs & Executions"
+   class="{{ 'bg-kaori-primary text-white shadow-lg shadow-kaori-primary/20 ring-1 ring-white/10' if jobs_active else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} sidebar-parent-link group flex min-h-11 items-center gap-2.5 rounded-lg px-2.5 py-2 text-[12px] font-semibold transition [.sidebar-collapsed_&]:justify-center [.sidebar-collapsed_&]:px-2">
+    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ 'bg-white/15 text-white' if jobs_active else 'bg-white/5 text-brand-foreground-muted group-hover:bg-white/10 group-hover:text-white' }} transition">
+        <i data-lucide="list-checks" class="h-4 w-4"></i>
+    </span>
+    <span class="sidebar-expanded-only truncate whitespace-nowrap">Jobs &amp; Executions</span>
+</a>

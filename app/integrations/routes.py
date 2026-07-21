@@ -50,9 +50,13 @@ def jobs() -> ResponseReturnValue:
         workload=request.args.get('workload', '').strip(),
         queue=request.args.get('queue', '').strip(),
         search=request.args.get('search', '').strip(),
+        tab=request.args.get('tab', 'active').strip(),
     )
     if request.headers.get('HX-Request') == 'true':
-        return render_template('integrations/jobs/partials/_registry.html', **context)
+        fragment = request.args.get('fragment', 'workspace').strip()
+        if fragment == 'registry':
+            return render_template('integrations/jobs/partials/_registry.html', **context)
+        return render_template('integrations/jobs/partials/_workspace.html', **context)
     return render_template('integrations/jobs.html', **context)
 
 
@@ -153,10 +157,13 @@ def cancel_job(public_id: str) -> ResponseReturnValue:
             workload=request.form.get('workload', '').strip(),
             queue=request.form.get('queue', '').strip(),
             search=request.form.get('search', '').strip(),
+            tab=request.form.get('tab', 'active').strip(),
         )
         context['operation_feedback'] = feedback
         context['notification_context'] = get_navigation_notification_context(user_id=int(current_user.id))
-        return render_template('integrations/jobs/partials/_registry.html', **context)
+        if request.form.get('fragment', 'workspace').strip() == 'registry':
+            return render_template('integrations/jobs/partials/_registry.html', **context)
+        return render_template('integrations/jobs/partials/_workspace.html', **context)
     return redirect(url_for('integrations.jobs'))
 
 
