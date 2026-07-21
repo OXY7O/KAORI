@@ -910,10 +910,10 @@ def sync_inventory(
             current_stage = 'API discovery'
             discovery = KubernetesDiscovery(core_api.api_client).discover()
             adapters = discovery['selected_adapters']
-            cluster.kubernetes_compatibility_profile = discovery['api_profile']
-            cluster.kubernetes_compatibility_status = discovery['compatibility_status']
-            cluster.kubernetes_readiness_status = discovery['readiness_status']
-            cluster.kubernetes_api_discovery_summary = discovery
+            connection.compatibility_profile = discovery['api_profile']
+            connection.compatibility_status = discovery['compatibility_status']
+            connection.readiness_status = discovery['readiness_status']
+            connection.discovery_summary = discovery
 
             cronjob_items = None
             cronjob_adapter = adapters.get('inventory.cronjobs')

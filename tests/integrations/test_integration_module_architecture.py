@@ -52,15 +52,9 @@ def test_domain_services_call_registry_instead_of_transport_facades() -> None:
         assert 'AlertmanagerClient(' not in source, path
 
 
-def test_legacy_provider_urls_are_redirect_only() -> None:
-    source = read('app/integrations/legacy_routes.py')
-    assert '@legacy_integrations_bp.get' in source
-    assert '@legacy_integrations_bp.post' not in source
-    assert '@legacy_integrations_bp.route' not in source
-    assert "response.headers['Deprecation'] = 'true'" in source
-    assert "response.headers['Sunset']" in source
-    assert 'test_connection(' not in source
-    assert 'enqueue_' not in source
+def test_legacy_provider_http_facade_is_removed() -> None:
+    assert not (ROOT / 'app/integrations/legacy_routes.py').exists()
+    assert 'legacy_integrations_bp' not in read('app/__init__.py')
 
 
 def test_provider_routes_do_not_register_cluster_scoped_operations() -> None:

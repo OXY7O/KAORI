@@ -33,7 +33,6 @@ wire protocol.
 | `app/integrations/validation/` | Canonical asynchronous validation and runtime-refresh orchestration. |
 | `app/integrations/lifecycle.py` | Canonical `IntegrationInstance` and `IntegrationBinding` lifecycle. |
 | `app/integrations/deletion.py` | Provider-neutral dependency and active-job deletion guards. |
-| `app/integrations/legacy_routes.py` | GET-only bookmark redirects. No provider I/O and no mutation routes. |
 
 ## Provider modules
 

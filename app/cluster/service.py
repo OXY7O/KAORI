@@ -300,13 +300,14 @@ def get_cluster_summary(
         inventory = inventories.get(
             cluster.id,
         )
+        connection = cluster.kubernetes_connection
 
         inventory_summary[cluster.id] = {
-            'version': cluster.kubernetes_version or (inventory.kubernetes_version if inventory else '-'),
-            'compatibility_status': cluster.kubernetes_compatibility_status or 'not_checked',
-            'readiness_status': cluster.kubernetes_readiness_status or 'not_checked',
-            'lifecycle_status': cluster.kubernetes_lifecycle_status or 'unknown',
-            'api_profile': cluster.kubernetes_compatibility_profile or 'not_checked',
+            'version': (connection.detected_version if connection else None) or (inventory.kubernetes_version if inventory else '-'),
+            'compatibility_status': (connection.compatibility_status if connection else None) or 'not_checked',
+            'readiness_status': (connection.readiness_status if connection else None) or 'not_checked',
+            'lifecycle_status': (connection.lifecycle_status if connection else None) or 'unknown',
+            'api_profile': (connection.compatibility_profile if connection else None) or 'not_checked',
             'namespaces': namespace_counts.get(
                 cluster.id,
                 0,
@@ -417,7 +418,7 @@ def _sync_kubernetes_runtime(
             description=cluster.description,
             environment=cluster.environment,
             enabled=True,
-            readiness_status=cluster.kubernetes_readiness_status,
+            readiness_status=connection.readiness_status if connection else 'validation_required',
             health_status=cluster.status,
             last_checked_at=cluster.last_check,
             metadata_json={'asset_type': 'kubernetes_cluster', 'asset_key': cluster.id},
@@ -428,7 +429,7 @@ def _sync_kubernetes_runtime(
         canonical.name = f'{cluster.name} Kubernetes API'
         canonical.description = cluster.description
         canonical.environment = cluster.environment
-        canonical.readiness_status = cluster.kubernetes_readiness_status
+        canonical.readiness_status = connection.readiness_status if connection else 'validation_required'
         canonical.health_status = cluster.status
         canonical.last_checked_at = cluster.last_check
 
@@ -455,11 +456,10 @@ def _sync_kubernetes_runtime(
         if allow_weak_tls is not None:
             connection.allow_weak_tls = bool(allow_weak_tls)
 
-    connection.compatibility_profile = cluster.kubernetes_compatibility_profile
-    connection.readiness_status = cluster.kubernetes_readiness_status
-    connection.validation_message = cluster.kubernetes_validation_message
-    connection.last_validated_at = cluster.kubernetes_last_validated_at
-    connection.discovery_summary = cluster.kubernetes_api_discovery_summary
+    canonical.readiness_status = connection.readiness_status or 'validation_required'
+    canonical.health_status = cluster.status
+    canonical.last_checked_at = cluster.last_check
+    canonical.last_error = connection.validation_message
 
     binding = IntegrationBinding.query.filter_by(
         integration_instance_id=canonical.id,
@@ -554,8 +554,8 @@ def refresh_cluster_runtime_health(cluster: Cluster) -> dict[str, Any]:
     cluster.last_check = datetime.now(UTC)
     if result['success']:
         cluster.status = ClusterStatus.CONNECTED.value
-        cluster.kubernetes_version = result.get('version') or cluster.kubernetes_version
-        cluster.kubernetes_platform = result.get('platform') or cluster.kubernetes_platform
+        connection.detected_version = result.get('version') or connection.detected_version
+        connection.detected_platform = result.get('platform') or connection.detected_platform
     else:
         cluster.status = ClusterStatus.FAILED.value
 
@@ -581,15 +581,15 @@ def run_test_cluster(cluster: Cluster) -> dict[str, Any]:
         cluster.status = ClusterStatus.CONNECTED.value
 
         cluster.node_count = result.get('node_count', 0)
-        cluster.kubernetes_version = result.get('version')
-        cluster.kubernetes_platform = result.get('platform')
-        cluster.kubernetes_compatibility_status = result.get('compatibility_status')
-        cluster.kubernetes_compatibility_profile = result.get('compatibility_profile')
-        cluster.kubernetes_readiness_status = result.get('readiness_status')
-        cluster.kubernetes_lifecycle_status = result.get('lifecycle_status')
-        cluster.kubernetes_api_discovery_summary = result.get('api_discovery_summary')
-        cluster.kubernetes_validation_message = result.get('validation_message')
-        cluster.kubernetes_last_validated_at = datetime.now(UTC)
+        connection.detected_version = result.get('version')
+        connection.detected_platform = result.get('platform')
+        connection.compatibility_status = result.get('compatibility_status')
+        connection.compatibility_profile = result.get('compatibility_profile')
+        connection.readiness_status = result.get('readiness_status')
+        connection.lifecycle_status = result.get('lifecycle_status')
+        connection.discovery_summary = result.get('api_discovery_summary')
+        connection.validation_message = result.get('validation_message')
+        connection.last_validated_at = datetime.now(UTC)
 
     else:
         cluster.status = ClusterStatus.FAILED.value
@@ -632,16 +632,16 @@ def update_cluster(
 
     if connection_changed:
         cluster.status = ClusterStatus.UNKNOWN.value
-        cluster.kubernetes_compatibility_status = 'validation_required'
-        cluster.kubernetes_compatibility_profile = None
-        cluster.kubernetes_readiness_status = 'validation_required'
-        cluster.kubernetes_lifecycle_status = None
-        cluster.kubernetes_api_discovery_summary = None
-        cluster.kubernetes_validation_message = (
+        connection.compatibility_status = 'validation_required'
+        connection.compatibility_profile = None
+        connection.readiness_status = 'validation_required'
+        connection.lifecycle_status = None
+        connection.discovery_summary = None
+        connection.validation_message = (
             'Kubernetes connection credentials or TLS policy changed. Run Full Validation '
             'before KAORI treats this connection as ready.'
         )
-        cluster.kubernetes_last_validated_at = None
+        connection.last_validated_at = None
         cluster.last_check = None
 
     _sync_kubernetes_runtime(

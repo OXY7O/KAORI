@@ -13,4 +13,4 @@ Domain services call the Integration Registry for provider operations.
 Persistence uses `PrometheusInstance`, `IntegrationInstance`, and
 `IntegrationBinding` only. There are no Python import facades for the retired
 provider package; old URL bookmarks are handled centrally by
-`app/integrations/legacy_routes.py` as GET-only redirects.
+canonical integration routes only; retired bookmark redirects are removed.

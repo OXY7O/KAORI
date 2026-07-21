@@ -101,20 +101,10 @@ def test_legacy_kubernetes_cluster_test_cannot_bypass_the_worker() -> None:
     assert 'legacy_route' in block
 
 
-def test_legacy_provider_urls_are_get_only_bookmark_redirects() -> None:
-    legacy = read('app/integrations/legacy_routes.py')
-    prom_routes = read('app/prometheus/routes.py')
-    alert_routes = read('app/alertmanager/routes.py')
-
-    assert "@legacy_integrations_bp.get('/prometheus/cluster/<string:cluster_id>')" in legacy
-    assert "@legacy_integrations_bp.get('/alertmanager/cluster/<string:cluster_id>')" in legacy
-    assert 'resolve_instance_for_cluster(cluster_id)' in legacy
-    assert "scope_type='kubernetes_cluster'" in legacy
-    assert 'scope_key=cluster_id' in legacy
-    assert '@legacy_integrations_bp.post' not in legacy
-    assert "'/cluster/<string:cluster_id>/validate'" not in prom_routes
-    assert "'/cluster/<string:cluster_id>/test'" not in prom_routes
-    assert "'/cluster/<string:cluster_id>/test'" not in alert_routes
+def test_legacy_provider_bookmark_blueprint_is_removed() -> None:
+    assert not (ROOT / 'app/integrations/legacy_routes.py').exists()
+    application = read('app/__init__.py')
+    assert 'legacy_integrations_bp' not in application
 
 
 def test_binding_validation_runs_in_worker_not_flask_request() -> None:

@@ -1,0 +1,97 @@
+<section aria-labelledby="kubernetes-integration-coverage-title"
+         class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+  <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div class="flex items-start gap-3">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+          <i data-lucide="workflow" class="h-5 w-5"></i>
+        </span>
+        <div>
+          <h2 id="kubernetes-integration-coverage-title" class="text-base font-semibold text-content-primary">Kubernetes Integration Coverage</h2>
+          <p class="mt-0.5 max-w-3xl text-xs leading-5 text-content-muted">
+            Review the Kubernetes API connections managed by KAORI and the observability sources bound to each cluster.
+          </p>
+        </div>
+      </div>
+      <span class="inline-flex min-h-6 w-fit items-center rounded-md border border-kaori-outline bg-kaori-soft px-2 text-[10px] font-semibold text-kaori-primary-dark">
+        {{ stats.fully_observable }} Fully Connected
+      </span>
+    </div>
+  </header>
+
+  <div class="grid divide-y divide-outline-subtle lg:grid-cols-3 lg:divide-x lg:divide-y-0">
+    <article class="p-5 sm:p-6">
+      <div class="flex items-start justify-between gap-4">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary" aria-hidden="true">
+          <i data-lucide="server-cog" class="h-5 w-5"></i>
+        </span>
+        <span class="text-2xl font-bold text-content-primary">{{ stats.ready }}<span class="text-sm font-semibold text-content-muted">/{{ stats.total }}</span></span>
+      </div>
+      <h3 class="mt-4 text-sm font-semibold text-content-primary">Kubernetes API</h3>
+      <p class="mt-1 text-xs leading-5 text-content-muted">
+        The primary cluster connection used for capability discovery, inventory synchronization, governance, and Kubernetes Operations workflows.
+      </p>
+      <div class="mt-4 flex flex-wrap gap-1.5">
+        <span class="inline-flex min-h-6 items-center rounded-md border border-status-normal-border bg-status-normal-soft px-2 text-[10px] font-semibold text-status-normal">{{ stats.ready }} Ready</span>
+        <span class="inline-flex min-h-6 items-center rounded-md border border-status-warning-border bg-status-warning-soft px-2 text-[10px] font-semibold text-status-warning">{{ stats.attention }} Attention</span>
+      </div>
+    </article>
+
+    <article class="p-5 sm:p-6">
+      <div class="flex items-start justify-between gap-4">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary" aria-hidden="true">
+          <i data-lucide="chart-no-axes-combined" class="h-5 w-5"></i>
+        </span>
+        <span class="text-2xl font-bold text-content-primary">{{ stats.prometheus_bound }}<span class="text-sm font-semibold text-content-muted">/{{ stats.total }}</span></span>
+      </div>
+      <h3 class="mt-4 text-sm font-semibold text-content-primary">Metrics Source</h3>
+      <p class="mt-1 text-xs leading-5 text-content-muted">
+        A Prometheus or Thanos source supplies live utilization, capacity, forecasting, and top-consumer data for the selected cluster.
+      </p>
+      <div class="mt-4 flex flex-wrap gap-1.5">
+        <span class="inline-flex min-h-6 items-center rounded-md border border-outline-subtle bg-surface-subtle px-2 text-[10px] font-semibold text-content-secondary">Required For Analytics</span>
+        <span class="inline-flex min-h-6 items-center rounded-md border border-outline-subtle bg-surface-subtle px-2 text-[10px] font-semibold text-content-secondary">Cluster Scoped</span>
+      </div>
+    </article>
+
+    <article class="p-5 sm:p-6">
+      <div class="flex items-start justify-between gap-4">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary" aria-hidden="true">
+          <i data-lucide="siren" class="h-5 w-5"></i>
+        </span>
+        <span class="text-2xl font-bold text-content-primary">{{ stats.alertmanager_bound }}<span class="text-sm font-semibold text-content-muted">/{{ stats.total }}</span></span>
+      </div>
+      <h3 class="mt-4 text-sm font-semibold text-content-primary">Alert Source</h3>
+      <p class="mt-1 text-xs leading-5 text-content-muted">
+        Alertmanager provides active alerts, routing context, inhibition evidence, and the alert signals used by KAORI intelligence workflows.
+      </p>
+      <div class="mt-4 flex flex-wrap gap-1.5">
+        <span class="inline-flex min-h-6 items-center rounded-md border border-outline-subtle bg-surface-subtle px-2 text-[10px] font-semibold text-content-secondary">Required For Alerts</span>
+        <span class="inline-flex min-h-6 items-center rounded-md border border-outline-subtle bg-surface-subtle px-2 text-[10px] font-semibold text-content-secondary">Cluster Scoped</span>
+      </div>
+    </article>
+  </div>
+
+  <div class="border-t border-outline-subtle bg-surface-subtle px-5 py-4 sm:px-6">
+    <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
+      <div>
+        <div class="flex items-center gap-2">
+          <i data-lucide="route" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+          <h3 class="text-sm font-semibold text-content-primary">Recommended Setup Order</h3>
+        </div>
+        <p class="mt-1 text-xs leading-5 text-content-muted">
+          Register and validate the Kubernetes API first, then bind Prometheus and Alertmanager from the connection registry. Inventory can run after Kubernetes validation; Analytics and Alerts require their corresponding source bindings.
+        </p>
+      </div>
+      <ol class="flex flex-wrap items-center gap-2 text-[10px] font-semibold" aria-label="Recommended Kubernetes integration setup order">
+        <li class="inline-flex min-h-6 items-center rounded-md border border-kaori-outline bg-kaori-soft px-2 text-kaori-primary-dark">1. Register</li>
+        <li aria-hidden="true" class="text-content-muted"><i data-lucide="chevron-right" class="h-3.5 w-3.5"></i></li>
+        <li class="inline-flex min-h-6 items-center rounded-md border border-kaori-outline bg-kaori-soft px-2 text-kaori-primary-dark">2. Validate</li>
+        <li aria-hidden="true" class="text-content-muted"><i data-lucide="chevron-right" class="h-3.5 w-3.5"></i></li>
+        <li class="inline-flex min-h-6 items-center rounded-md border border-outline-subtle bg-surface-card px-2 text-content-secondary">3. Bind Metrics</li>
+        <li aria-hidden="true" class="text-content-muted"><i data-lucide="chevron-right" class="h-3.5 w-3.5"></i></li>
+        <li class="inline-flex min-h-6 items-center rounded-md border border-outline-subtle bg-surface-card px-2 text-content-secondary">4. Bind Alerts</li>
+      </ol>
+    </div>
+  </div>
+</section>

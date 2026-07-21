@@ -20,7 +20,7 @@ Route → Domain Service → Integration Registry → Adapter → External Syste
   queue.
 - Every provider declares capability keys and compatibility profiles.
 - SQLAlchemy models remain centralized under `app/models/`.
-- Old bookmark support is GET-only redirect logic in `legacy_routes.py`.
+- Retired bookmark routes are removed; canonical integration URLs are the only supported entry points.
 
 ## Shared contracts
 

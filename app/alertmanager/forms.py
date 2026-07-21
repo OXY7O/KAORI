@@ -50,10 +50,6 @@ class AlertmanagerBindingForm:
     selector_operator: str = '='
 
 
-# Legacy alias retained for imports outside the refactored integration routes.
-AlertmanagerConfigForm = AlertmanagerInstanceForm
-
-
 def parse_alertmanager_instance_form(form_data: Mapping[str, Any]) -> AlertmanagerInstanceForm:
     auth_type = str(form_data.get('auth_type', 'none')).strip().lower()
     if auth_type not in SUPPORTED_AUTH_TYPES:
@@ -75,23 +71,6 @@ def parse_alertmanager_instance_form(form_data: Mapping[str, Any]) -> Alertmanag
         timeout=parse_timeout(form_data.get('timeout', 5)),
         verify_ssl=parse_checkbox(form_data.get('verify_ssl')),
         enabled=parse_checkbox(form_data.get('enabled', '1')),
-    )
-
-
-def parse_alertmanager_config_form(form_data: Mapping[str, Any]) -> AlertmanagerConfigForm:
-    parsed = parse_alertmanager_instance_form(form_data)
-    return AlertmanagerConfigForm(
-        name=parsed.name or 'Alertmanager',
-        description=parsed.description,
-        deployment_type=parsed.deployment_type,
-        endpoint=parsed.endpoint,
-        auth_type=parsed.auth_type,
-        username=parsed.username,
-        password=parsed.password,
-        bearer_token=parsed.bearer_token,
-        timeout=parsed.timeout,
-        verify_ssl=parsed.verify_ssl,
-        enabled=parsed.enabled,
     )
 
 

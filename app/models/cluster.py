@@ -49,16 +49,6 @@ class Cluster(db.Model):
 
     node_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
-    kubernetes_version: Mapped[str | None] = mapped_column(String(64), nullable=True)
-    kubernetes_platform: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    kubernetes_compatibility_status: Mapped[str | None] = mapped_column(String(40), nullable=True)
-    kubernetes_compatibility_profile: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    kubernetes_readiness_status: Mapped[str | None] = mapped_column(String(40), nullable=True)
-    kubernetes_lifecycle_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
-    kubernetes_api_discovery_summary: Mapped[dict | None] = mapped_column(JSON, nullable=True)
-    kubernetes_validation_message: Mapped[str | None] = mapped_column(Text, nullable=True)
-    kubernetes_last_validated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-
     last_check: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))

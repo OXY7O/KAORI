@@ -62,26 +62,23 @@ class KubernetesRuntimeAdapter:
         connected = cluster.status == 'connected'
         readiness = (
             getattr(connection, 'readiness_status', None)
-            or cluster.kubernetes_readiness_status
             or ('ready' if connected else 'validation_required')
         )
-        discovery = getattr(connection, 'discovery_summary', None) or cluster.kubernetes_api_discovery_summary or {}
+        discovery = connection.discovery_summary or {}
         validation_payload = validation_result if isinstance(validation_result, dict) else {}
         runtime_message = (
             validation_payload.get('validation_message')
             or validation_payload.get('message')
             or validation_payload.get('error')
-            or cluster.kubernetes_validation_message
             or ''
         )
         blocked = tuple(discovery.get('blocked_features') or ())
         legacy = tuple(discovery.get('legacy_features') or ())
         lifecycle = str(
             discovery.get('lifecycle_status')
-            or cluster.kubernetes_lifecycle_status
             or 'unknown'
         )
-        lifecycle_policy = kubernetes_lifecycle_policy(cluster.kubernetes_version)
+        lifecycle_policy = kubernetes_lifecycle_policy(connection.detected_version)
         readiness_reasons = tuple(
             str(item) for item in (discovery.get('readiness_reasons') or ()) if item
         )
@@ -108,11 +105,9 @@ class KubernetesRuntimeAdapter:
                 (
                     ' '.join(readiness_reasons)
                     or (
-                        f'Kubernetes {cluster.kubernetes_version or "unknown"} lifecycle: {lifecycle}.'
+                        f'Kubernetes {connection.detected_version or "unknown"} lifecycle: {lifecycle}.'
                         if lifecycle != 'current'
-                        else getattr(connection, 'compatibility_profile', None)
-                        or cluster.kubernetes_compatibility_profile
-                        or ''
+                        else connection.compatibility_profile or ''
                     )
                 ),
             ),
@@ -170,18 +165,18 @@ class KubernetesRuntimeAdapter:
             provider=self.provider,
             instance_id=str(getattr(connection, 'id', cluster.id)),
             instance_name=getattr(getattr(connection, 'integration_instance', None), 'name', None) or cluster.name,
-            observed_at=cluster.last_check or getattr(connection, 'last_validated_at', None) or cluster.kubernetes_last_validated_at or now,
+            observed_at=cluster.last_check or connection.last_validated_at or now,
             readiness=readiness,
             health=calculate_health(factors),
             diagnostics=tuple(diagnostics),
             snapshot=CapabilitySnapshot(
-                profile=getattr(connection, 'compatibility_profile', None) or cluster.kubernetes_compatibility_profile,
-                compatibility_profile=getattr(connection, 'compatibility_profile', None) or cluster.kubernetes_compatibility_profile,
+                profile=connection.compatibility_profile,
+                compatibility_profile=connection.compatibility_profile,
                 capabilities=capabilities,
-                observed_at=cluster.last_check or getattr(connection, 'last_validated_at', None) or now,
+                observed_at=cluster.last_check or connection.last_validated_at or now,
                 metadata={
-                    'version': cluster.kubernetes_version,
-                    'platform': cluster.kubernetes_platform,
+                    'version': connection.detected_version,
+                    'platform': connection.detected_platform,
                     'lifecycle_status': lifecycle,
                     'lifecycle_policy': lifecycle_policy,
                     'readiness_reasons': list(readiness_reasons),

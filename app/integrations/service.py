@@ -124,12 +124,7 @@ def build_integrations_overview(
 
 
 def _kubernetes_readiness(connection: KubernetesConnection) -> str:
-    cluster = connection.cluster
-    return (
-        connection.readiness_status
-        or (cluster.kubernetes_readiness_status if cluster else None)
-        or 'validation_required'
-    )
+    return connection.readiness_status or 'validation_required'
 
 
 def _overview_stats(
@@ -180,9 +175,9 @@ def build_kubernetes_page(*, page: int = 1, per_page: int = 5) -> dict[str, Any]
             'cluster_name': cluster.name,
             'environment': get_environment_label(cluster.environment),
             'server': connection.server or 'Not discovered',
-            'readiness': connection.readiness_status or cluster.kubernetes_readiness_status or 'validation_required',
-            'compatibility_profile': connection.compatibility_profile or cluster.kubernetes_compatibility_profile,
-            'version': cluster.kubernetes_version,
+            'readiness': connection.readiness_status or 'validation_required',
+            'compatibility_profile': connection.compatibility_profile,
+            'version': connection.detected_version,
             'binding_count': binding_count,
             'prometheus_instance_id': prometheus.id if prometheus else None,
             'prometheus_name': prometheus.name if prometheus else None,
@@ -191,7 +186,7 @@ def build_kubernetes_page(*, page: int = 1, per_page: int = 5) -> dict[str, Any]
             'alertmanager_name': alertmanager.name if alertmanager else None,
             'alertmanager_binding_status': alertmanager_binding.validation_status if alertmanager_binding else None,
             'last_validated_at': present_user_datetime(
-                connection.last_validated_at or cluster.kubernetes_last_validated_at,
+                connection.last_validated_at,
                 empty='Not validated',
             ),
         })
@@ -204,6 +199,15 @@ def build_kubernetes_page(*, page: int = 1, per_page: int = 5) -> dict[str, Any]
             'ready': sum(1 for row in rows if row['readiness'] == 'ready'),
             'attention': sum(1 for row in rows if row['readiness'] != 'ready'),
             'bindings': sum(row['binding_count'] for row in rows),
+            'prometheus_bound': sum(1 for row in rows if row['prometheus_instance_id']),
+            'alertmanager_bound': sum(1 for row in rows if row['alertmanager_instance_id']),
+            'fully_observable': sum(
+                1
+                for row in rows
+                if row['readiness'] == 'ready'
+                and row['prometheus_instance_id']
+                and row['alertmanager_instance_id']
+            ),
         },
     }
 
@@ -221,7 +225,7 @@ def build_kubernetes_detail(cluster_id: str) -> dict[str, Any] | None:
     if connection is None:
         return None
     cluster = connection.cluster
-    discovery = connection.discovery_summary or cluster.kubernetes_api_discovery_summary or {}
+    discovery = connection.discovery_summary or {}
     features = discovery.get('features') or {}
     feature_rows = []
     for key, value in sorted(features.items()):
@@ -568,7 +572,7 @@ def _runtime_overview_rows(
         cluster = connection.cluster
         canonical = db.session.get(IntegrationInstance, connection.integration_instance_id)
         observation = latest.get(('kubernetes', str(connection.id)))
-        observed_at = observation.observed_at if observation else (connection.last_validated_at or cluster.kubernetes_last_validated_at)
+        observed_at = observation.observed_at if observation else (connection.last_validated_at)
         rows.append({
             'provider': 'kubernetes',
             'provider_label': 'Kubernetes',
@@ -579,15 +583,15 @@ def _runtime_overview_rows(
             'endpoint_product': 'Kubernetes API',
             'health_status': observation.health_status if observation else ('healthy' if cluster.status == 'connected' else 'not_observed'),
             'health_score': observation.health_score if observation else None,
-            'readiness': connection.readiness_status or cluster.kubernetes_readiness_status or 'validation_required',
+            'readiness': connection.readiness_status or 'validation_required',
             'observed_at': observed_at,
             'observed_at_display': present_user_datetime(observed_at, empty='Not observed'),
             'latency_ms': observation.latency_ms if observation else None,
             'latency_display': f'{observation.latency_ms} ms' if observation and observation.latency_ms is not None else None,
-            'capability_profile': connection.compatibility_profile or cluster.kubernetes_compatibility_profile,
-            'capability_attention': 0 if (connection.readiness_status or cluster.kubernetes_readiness_status) == 'ready' else 1,
-            'capability_attention_display': 'Ready' if (connection.readiness_status or cluster.kubernetes_readiness_status) == 'ready' else 'Validation needs attention',
-            'message': (observation.message if observation else None) or connection.validation_message or cluster.kubernetes_validation_message,
+            'capability_profile': connection.compatibility_profile,
+            'capability_attention': 0 if (connection.readiness_status) == 'ready' else 1,
+            'capability_attention_display': 'Ready' if (connection.readiness_status) == 'ready' else 'Validation needs attention',
+            'message': (observation.message if observation else None) or connection.validation_message or connection.validation_message,
         })
 
     for instance in prometheus_instances:

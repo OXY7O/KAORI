@@ -22,7 +22,7 @@ from app.models import Cluster, PrometheusInstance
 from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.prometheus.consumer import PrometheusConsumer
 from app.integrations.prometheus.exceptions import PrometheusError
-from app.prometheus.forms import PrometheusConfigForm, PrometheusInstanceForm
+from app.prometheus.forms import PrometheusInstanceForm
 from app.integrations.prometheus.query_profiles.audit import PromQLProfileAuditor
 from app.prometheus.repository import KUBERNETES_CLUSTER_SCOPE, resolve_instance_for_cluster
 
@@ -395,99 +395,6 @@ class PrometheusService:
                 or 'Prometheus integration is not validated for Kubernetes Analytics.'
             )
 
-    @staticmethod
-    def save_config(cluster: Cluster, form: PrometheusConfigForm) -> PrometheusInstance:
-        config = resolve_instance_for_cluster(cluster.id)
-        endpoint = form.endpoint.data
-        auth_type = form.auth_type.data
-        timeout = form.timeout.data
-        verify_ssl = form.verify_ssl.data
-
-        if not endpoint:
-            raise PrometheusError('Endpoint is required')
-        endpoint = endpoint.strip()
-        if not endpoint.startswith(('http://', 'https://')):
-            endpoint = f'http://{endpoint}'
-        if not auth_type:
-            raise PrometheusError('Authentication type is required')
-        if timeout is None:
-            raise PrometheusError('Timeout is required')
-
-        if not config:
-            config = PrometheusInstance(
-                name=f'{cluster.name} Prometheus [{cluster.id}]',
-                endpoint=endpoint,
-            )
-            db.session.add(config)
-            db.session.flush()
-
-        config.endpoint = endpoint
-        config.auth_type = auth_type
-        config.timeout = timeout
-        config.verify_ssl = verify_ssl
-
-        if auth_type == 'none':
-            config.username = None
-            config.password = None
-            config.bearer_token = None
-        elif auth_type == 'basic':
-            config.username = form.username.data
-            config.password = form.password.data
-            config.bearer_token = None
-        elif auth_type == 'bearer':
-            config.username = None
-            config.password = None
-            config.bearer_token = form.bearer_token.data
-
-        config.version_detection_mode = form.version_detection_mode.data or 'automatic'
-        config.endpoint_product = (
-            'thanos' if config.version_detection_mode == 'manual' else 'prometheus'
-        )
-        config.source_prometheus_major = (
-            (form.source_prometheus_major.data or None)
-            if config.version_detection_mode == 'manual'
-            else None
-        )
-
-        config.detected_version = None
-        config.compatibility_status = 'validation_required'
-        config.readiness_status = 'validation_required'
-        config.compatibility_profile = None
-        config.query_profile = None
-        config.query_validation_status = 'validation_required'
-        config.query_validation_summary = None
-        config.retention_validation_summary = None
-        config.capability_profile = None
-        config.capabilities = None
-        config.module_readiness = None
-        config.last_status = None
-        config.last_error = None
-        config.last_response_time_ms = None
-        config.last_checked_at = None
-        config.validation_message = (
-            'Configuration changed. Test the endpoint, then run full validation before '
-            'KAORI uses it for Kubernetes Analytics.'
-        )
-        config.last_validated_at = None
-        canonical = ensure_canonical_instance(config, provider_type='prometheus')
-        invalidate_bindings(
-            canonical,
-            message=(
-                'Prometheus connection settings changed. Run Full Validation to refresh '
-                'the provider and all affected scope bindings.'
-            ),
-        )
-        bind_instance(
-            canonical,
-            asset_type=KUBERNETES_CLUSTER_SCOPE,
-            asset_key=cluster.id,
-            capability_scope=[
-                'metrics', 'capacity', 'utilization', 'storage', 'workload',
-                'forecast', 'top_consumers', 'alert_metrics',
-            ],
-        )
-        db.session.commit()
-        return config
 
 
 def test_prometheus_form_connection(
