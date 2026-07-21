@@ -4,7 +4,7 @@ from flask_login import current_user
 
 from app.extensions import db
 from app.integrations.coverage import build_binding_workspace
-from app.integrations.service import build_alertmanager_page, build_integrations_overview, build_kubernetes_detail, build_kubernetes_page, build_prometheus_page
+from app.integrations.service import build_alertmanager_page, build_integrations_overview, build_kubernetes_detail, build_kubernetes_page, build_kubernetes_registry_row, build_prometheus_page
 from app.rbac.decorators import permission_required
 from app.integrations.runtime.repository import paginate_runtime_history
 from app.integrations.runtime.presentation import runtime_history_view
@@ -214,6 +214,18 @@ def _kubernetes_detail_context(cluster_id: str, *, include_history: bool = False
         )
         context['history'] = runtime_history_view(rows, pagination=pagination)
     return context
+
+
+@integrations_bp.get('/kubernetes/<string:cluster_id>/registry-details')
+@permission_required('settings.manage_integrations')
+def kubernetes_registry_details(cluster_id: str) -> ResponseReturnValue:
+    row = build_kubernetes_registry_row(cluster_id)
+    if row is None:
+        abort(404)
+    return render_template(
+        'integrations/kubernetes/partials/_registry_detail_content.html',
+        row=row,
+    )
 
 
 @integrations_bp.get('/kubernetes/<string:cluster_id>')

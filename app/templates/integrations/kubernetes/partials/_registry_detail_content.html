@@ -1,0 +1,58 @@
+{% import "components/table_label.html" as table_label %}
+{% import "components/details/_detail_content.html" as detail %}
+
+{% set readiness_tone = 'normal' if row.readiness == 'ready' else ('critical' if row.readiness == 'blocked' else 'warning') %}
+{% set readiness_label = row.readiness|replace('_', ' ')|title %}
+
+<div class="bg-surface-hover px-4 py-4">
+    <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+        <header class="flex flex-col gap-3 border-b border-outline-subtle bg-surface-elevated px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                    <i data-lucide="server-cog" class="h-5 w-5"></i>
+                </span>
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h3 class="truncate text-sm font-semibold text-content-primary">{{ row.cluster_name }}</h3>
+                        {{ table_label.metadata_label(row.environment, 'layers-3') }}
+                    </div>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">
+                        Kubernetes connection, compatibility, readiness gates, and observability bindings.
+                    </p>
+                </div>
+            </div>
+            <div class="self-start sm:self-auto">
+                {{ table_label.status_label(readiness_label, readiness_tone) }}
+            </div>
+        </header>
+
+        <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
+            {% call detail.detail_card('Connection identity', 'badge-info', 'Connection #' ~ row.connection_id, 'metadata', 'unknown', 'min-h-72') %}
+                {{ detail.detail_row('Cluster', row.cluster_name) }}
+                {{ detail.detail_row('Environment', row.environment) }}
+                {{ detail.detail_row('API endpoint', row.server, true) }}
+                {{ detail.detail_row('Canonical instance', '#' ~ row.integration_instance_id) }}
+            {% endcall %}
+
+            {% call detail.detail_card('Kubernetes API', 'shield-check', readiness_label, 'status', readiness_tone, 'min-h-72') %}
+                {{ detail.detail_row('Version', row.version or 'Not Discovered') }}
+                {{ detail.detail_row('Compatibility', row.compatibility_profile or 'Validation Required') }}
+                {{ detail.detail_row('Last validated', row.last_validated_at) }}
+                {{ detail.status_row('API readiness', readiness_label, readiness_tone) }}
+            {% endcall %}
+
+            {% call detail.detail_card('Operational coverage', 'chart-no-axes-combined', '3 Consumers', 'metadata', 'unknown', 'min-h-72') %}
+                {{ detail.status_row('Inventory', row.inventory_coverage.label, row.inventory_coverage.status) }}
+                {{ detail.status_row('Analytics', row.metrics_coverage.label, row.metrics_coverage.status) }}
+                {{ detail.status_row('Alerts', row.alerts_coverage.label, row.alerts_coverage.status) }}
+            {% endcall %}
+
+            {% call detail.detail_card('Source bindings', 'waypoints', row.binding_count ~ ' Active', 'metadata', 'unknown', 'min-h-72') %}
+                {{ detail.detail_row('Prometheus', row.prometheus_name or 'Not Bound') }}
+                {{ detail.detail_row('Metrics binding', (row.prometheus_binding_status or 'Not Bound')|replace('_', ' ')|title) }}
+                {{ detail.detail_row('Alertmanager', row.alertmanager_name or 'Not Bound') }}
+                {{ detail.detail_row('Alert binding', (row.alertmanager_binding_status or 'Not Bound')|replace('_', ' ')|title) }}
+            {% endcall %}
+        </div>
+    </div>
+</div>

@@ -154,56 +154,72 @@ def _overview_stats(
     }
 
 
+def _build_kubernetes_registry_row(connection: KubernetesConnection) -> dict[str, Any]:
+    cluster = connection.cluster
+    binding_count = IntegrationBinding.query.filter_by(
+        integration_instance_id=connection.integration_instance_id,
+        enabled=True,
+    ).count()
+    prometheus, prometheus_binding = bound_source_for_scope(
+        'prometheus', scope_type='kubernetes_cluster', scope_key=cluster.id,
+    )
+    alertmanager, alertmanager_binding = bound_source_for_scope(
+        'alertmanager', scope_type='kubernetes_cluster', scope_key=cluster.id,
+    )
+    metrics_coverage = resolve_cluster_coverage(
+        kubernetes_readiness=connection.readiness_status,
+        source=prometheus,
+        binding=prometheus_binding,
+    )
+    alerts_coverage = resolve_cluster_coverage(
+        kubernetes_readiness=connection.readiness_status,
+        source=alertmanager,
+        binding=alertmanager_binding,
+    )
+    readiness = connection.readiness_status or 'validation_required'
+    return {
+        'connection_id': connection.id,
+        'integration_instance_id': connection.integration_instance_id,
+        'cluster_id': cluster.id,
+        'cluster_name': cluster.name,
+        'environment': get_environment_label(cluster.environment),
+        'server': connection.server or 'Not discovered',
+        'readiness': readiness,
+        'inventory_coverage': (
+            {'status': 'ready', 'label': 'Ready'}
+            if readiness == 'ready'
+            else {'status': 'validation_required', 'label': 'Waiting For Validation'}
+        ),
+        'metrics_coverage': metrics_coverage,
+        'alerts_coverage': alerts_coverage,
+        'compatibility_profile': connection.compatibility_profile,
+        'version': connection.detected_version,
+        'binding_count': binding_count,
+        'prometheus_instance_id': prometheus.id if prometheus else None,
+        'prometheus_name': prometheus.name if prometheus else None,
+        'prometheus_binding_status': prometheus_binding.validation_status if prometheus_binding else None,
+        'alertmanager_instance_id': alertmanager.id if alertmanager else None,
+        'alertmanager_name': alertmanager.name if alertmanager else None,
+        'alertmanager_binding_status': alertmanager_binding.validation_status if alertmanager_binding else None,
+        'last_validated_at': present_user_datetime(connection.last_validated_at, empty='Not validated'),
+    }
+
+
+def build_kubernetes_registry_row(cluster_id: str) -> dict[str, Any] | None:
+    connection = KubernetesConnection.query.filter_by(cluster_id=cluster_id).first()
+    if connection is None:
+        return None
+    return _build_kubernetes_registry_row(connection)
+
+
 def build_kubernetes_page(*, page: int = 1, per_page: int = 5) -> dict[str, Any]:
-    connections = KubernetesConnection.query.join(Cluster).order_by(Cluster.created_at.asc(), Cluster.id.asc()).all()
-    rows = []
-    for connection in connections:
-        cluster = connection.cluster
-        binding_count = IntegrationBinding.query.filter_by(
-            integration_instance_id=connection.integration_instance_id,
-            enabled=True,
-        ).count()
-        prometheus, prometheus_binding = bound_source_for_scope(
-            'prometheus', scope_type='kubernetes_cluster', scope_key=cluster.id,
-        )
-        alertmanager, alertmanager_binding = bound_source_for_scope(
-            'alertmanager', scope_type='kubernetes_cluster', scope_key=cluster.id,
-        )
-        metrics_coverage = resolve_cluster_coverage(
-            kubernetes_readiness=connection.readiness_status,
-            source=prometheus,
-            binding=prometheus_binding,
-        )
-        alerts_coverage = resolve_cluster_coverage(
-            kubernetes_readiness=connection.readiness_status,
-            source=alertmanager,
-            binding=alertmanager_binding,
-        )
-        rows.append({
-            'connection_id': connection.id,
-            'integration_instance_id': connection.integration_instance_id,
-            'cluster_id': cluster.id,
-            'cluster_name': cluster.name,
-            'environment': get_environment_label(cluster.environment),
-            'server': connection.server or 'Not discovered',
-            'readiness': connection.readiness_status or 'validation_required',
-            'inventory_coverage': {'status': 'ready', 'label': 'Ready'} if (connection.readiness_status or 'validation_required') == 'ready' else {'status': 'validation_required', 'label': 'Waiting For Validation'},
-            'metrics_coverage': metrics_coverage,
-            'alerts_coverage': alerts_coverage,
-            'compatibility_profile': connection.compatibility_profile,
-            'version': connection.detected_version,
-            'binding_count': binding_count,
-            'prometheus_instance_id': prometheus.id if prometheus else None,
-            'prometheus_name': prometheus.name if prometheus else None,
-            'prometheus_binding_status': prometheus_binding.validation_status if prometheus_binding else None,
-            'alertmanager_instance_id': alertmanager.id if alertmanager else None,
-            'alertmanager_name': alertmanager.name if alertmanager else None,
-            'alertmanager_binding_status': alertmanager_binding.validation_status if alertmanager_binding else None,
-            'last_validated_at': present_user_datetime(
-                connection.last_validated_at,
-                empty='Not validated',
-            ),
-        })
+    connections = (
+        KubernetesConnection.query
+        .join(Cluster)
+        .order_by(Cluster.created_at.asc(), Cluster.id.asc())
+        .all()
+    )
+    rows = [_build_kubernetes_registry_row(connection) for connection in connections]
     page_rows, pagination = _paginate(rows, page=page, per_page=per_page)
     return {
         'rows': page_rows,
