@@ -13,7 +13,10 @@
 {% set state_permission = blocked_state_permission|default(none) %}
 {% set state_show_admin_required = blocked_state_show_admin_required|default(false) %}
 {% set state_variant = blocked_state_variant|default('section') %}
-{% set permission_granted = not state_permission or current_user.has_permission(state_permission) %}
+{% set permission_granted = blocked_state_permission_granted|default(none) %}
+{% if permission_granted is none %}
+    {% set permission_granted = (not state_permission) or ((current_user is defined) and current_user.has_permission(state_permission)) %}
+{% endif %}
 
 {% if state_variant == 'posture' %}
 <div class="flex h-full min-h-[12rem] flex-col rounded-xl border border-brand-outline bg-brand-surface-strong p-4 backdrop-blur-md" data-kaori-blocked-state>

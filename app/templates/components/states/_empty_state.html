@@ -12,7 +12,10 @@
 {% set secondary_label = empty_state_secondary_action_label|default(none) %}
 {% set secondary_icon = empty_state_secondary_action_icon|default('book-open') %}
 {% set permission = empty_state_permission|default(none) %}
-{% set permission_granted = not permission or current_user.has_permission(permission) %}
+{% set permission_granted = empty_state_permission_granted|default(none) %}
+{% if permission_granted is none %}
+    {% set permission_granted = (not permission) or ((current_user is defined) and current_user.has_permission(permission)) %}
+{% endif %}
 {% set show_admin_required = empty_state_show_admin_required|default(false) %}
 {% set panel_classes = 'border border-dashed border-outline-default bg-surface-muted/40 rounded-xl' if state_variant == 'panel' else '' %}
 
