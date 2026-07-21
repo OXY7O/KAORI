@@ -47,9 +47,13 @@ def resolve_cluster_coverage(
     """Resolve one downstream domain gate for a Kubernetes cluster."""
     kubernetes = kubernetes_readiness or "validation_required"
     if kubernetes != _READY:
+        if kubernetes == "blocked":
+            return {"status": "blocked", "label": "Kubernetes Blocked"}
+        if kubernetes == "degraded":
+            return {"status": "degraded", "label": "Kubernetes Degraded"}
         return {
-            "status": "blocked" if kubernetes == "blocked" else "validation_required",
-            "label": "Waiting For Kubernetes",
+            "status": "validation_required",
+            "label": "Kubernetes Validation Required",
         }
     if source is None or binding is None:
         return {"status": "not_configured", "label": "Not Configured"}

@@ -46,17 +46,6 @@
       </thead>
 
       {% for row in rows %}
-        {% set coverage = namespace(ready=0) %}
-        {% if row.inventory_coverage.status == 'ready' %}
-          {% set coverage.ready = coverage.ready + 1 %}
-        {% endif %}
-        {% if row.metrics_coverage.status == 'ready' %}
-          {% set coverage.ready = coverage.ready + 1 %}
-        {% endif %}
-        {% if row.alerts_coverage.status == 'ready' %}
-          {% set coverage.ready = coverage.ready + 1 %}
-        {% endif %}
-
         <tbody class="divide-y divide-outline-subtle">
           <tr class="align-middle transition hover:bg-surface-hover">
             <td class="px-4 py-4">
@@ -90,13 +79,7 @@
             </td>
 
             <td class="px-3 py-4">
-              {% if coverage.ready == 3 %}
-                {{ status_badge('ready', '3 of 3 Ready') }}
-              {% elif coverage.ready > 0 %}
-                {{ status_badge('degraded', coverage.ready ~ ' of 3 Ready') }}
-              {% else %}
-                {{ status_badge('validation_required', 'Setup Required') }}
-              {% endif %}
+              {{ status_badge(row.coverage_summary.status, row.coverage_summary.label) }}
             </td>
 
             <td class="px-3 py-4">
