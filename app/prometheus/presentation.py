@@ -396,6 +396,10 @@ def _resolution_view(
             'is_selected': bool(selected and selected.instance.id == candidate.instance.id and selected.binding.id == candidate.binding.id),
         }
         candidates.append(row)
+    current_candidate = next(
+        (item for item in candidates if item['is_current_instance']),
+        candidates[0] if candidates else None,
+    )
     return {
         'label': label,
         'icon': icon,
@@ -408,6 +412,11 @@ def _resolution_view(
         'selected_role': selected.binding.binding_role if selected else None,
         'selected_operational_state': selected.operational_state if selected else 'unavailable',
         'current_instance_selected': bool(selected and selected.instance.id == current_instance_id),
+        'primary_blocker': (
+            current_candidate['decision_reason']
+            if current_candidate is not None and not current_candidate['eligible']
+            else None
+        ),
         'candidates': candidates,
     }
 

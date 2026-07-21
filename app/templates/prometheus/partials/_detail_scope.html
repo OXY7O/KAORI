@@ -200,7 +200,10 @@
                                                         {% if consumer.selected_instance_name %}
                                                             <p class="mt-1 truncate text-xs text-content-secondary" title="{{ consumer.selected_instance_name }}">Selected: {{ consumer.selected_instance_name }}</p>
                                                         {% else %}
-                                                            <p class="mt-1 text-xs text-status-critical-text">No eligible source</p>
+                                                            <p class="mt-1 text-xs font-semibold text-status-critical-text">No eligible source</p>
+                                                            {% if consumer.primary_blocker %}
+                                                                <p class="mt-1 line-clamp-2 text-[11px] leading-4 text-content-muted" title="{{ consumer.primary_blocker }}">{{ consumer.primary_blocker }}</p>
+                                                            {% endif %}
                                                         {% endif %}
                                                     </div>
                                                 </div>

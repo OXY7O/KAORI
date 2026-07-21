@@ -223,3 +223,11 @@ The current first-class binding workspace is implemented for managed Kubernetes 
 ## Binding evidence freshness
 
 Prometheus provider readiness and scope-binding readiness are independent contracts. Full Validation now refreshes every enabled binding after provider capability evidence is rebuilt. Binding validation checks multiple scoped kube-state-metrics identity signals (`kube_node_info`, `kube_namespace_status_phase`, and `kube_pod_info`) and records the first matching signal. Coverage treats binding evidence older than the provider validation timestamp as `Binding Validation Required` rather than presenting stale degraded evidence.
+
+## Effective source resolution consistency
+
+`Effective Source Resolution` evaluates one bound Prometheus source against six consumer domains: Kubernetes Overview, Utilization, Capacity, Storage, Workload, and Forecast. A source-level runtime score is not itself an eligibility decision; each consumer also checks binding validation, selector isolation, binding capability authorization, and its technical capability evidence.
+
+Managed-cluster Prometheus bindings inherit the complete KAORI binding contract because the current UI does not expose capability narrowing. Legacy or partial `capability_scope` values are normalized during binding validation, and the resolver uses the same effective contract immediately so historical rows do not make every consumer unavailable. Technical availability is reconciled from both the persisted `available` list and capability assessments marked `available` or `ready`.
+
+When a consumer has no eligible source, the collapsed consumer card must show the current connection's primary blocker. Exact candidate evidence remains available inside the expandable detail.

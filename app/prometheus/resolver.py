@@ -7,6 +7,7 @@ from app.integrations.binding_selectors import selector_is_configured
 from app.integrations.resolver import resolve_integration
 from app.models.integration import IntegrationBinding
 from app.models.prometheus import PrometheusInstance
+from app.prometheus.binding_contract import effective_prometheus_binding_capabilities
 
 _ROLE_ORDER: Final[dict[str, int]] = {
     'primary': 0,
@@ -70,11 +71,15 @@ def resolve_prometheus_sources(
         ).first()
         if provider_instance is None:
             continue
+        effective_binding_scope = set(effective_prometheus_binding_capabilities(item.binding))
+        missing_binding_capabilities = tuple(
+            sorted(set(required_binding_capabilities) - effective_binding_scope)
+        )
         candidates.append(
             _evaluate_binding(
                 item.binding,
                 provider_instance,
-                missing_binding_capabilities=item.missing_capabilities,
+                missing_binding_capabilities=missing_binding_capabilities,
                 required_technical_capabilities=required_technical_capabilities,
             )
         )
@@ -97,7 +102,13 @@ def _evaluate_binding(
 ) -> ResolvedPrometheusSource:
     readiness = (instance.readiness_status or '').strip().lower()
     health = (instance.last_status or '').strip().lower()
-    observed = set((instance.capabilities or {}).get('available') or ())
+    capability_payload = instance.capabilities or {}
+    observed = set(capability_payload.get('available') or ())
+    observed.update(
+        str(item.get('key'))
+        for item in (capability_payload.get('assessments') or ())
+        if item.get('key') and str(item.get('status') or '').strip().lower() in {'available', 'ready'}
+    )
     missing_technical = tuple(sorted(set(required_technical_capabilities) - observed))
 
     if not required_technical_capabilities:
