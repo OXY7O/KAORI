@@ -178,22 +178,12 @@
                                     'environment': selected_environment,
                                 } %}
                                 {% if current_user.has_permission('clusters.sync') %}
-                                    <form method="POST"
-                                          action="{{ url_for('cluster.test_cluster', cluster_id=cluster.id, **table_query) }}"
-                                          hx-post="{{ url_for('cluster.test_cluster', cluster_id=cluster.id, **table_query) }}"
-                                          hx-target="this"
-                                          hx-swap="none"
-                                          data-operational-refresh-url="{{ url_for('cluster.cluster_table', **table_query) }}"
-                                          data-operational-progress-title="Cluster connection test in progress"
-                                          data-operational-progress-message="Testing Kubernetes API connectivity for {{ cluster.name|e }}."
-                                          class="inline-flex">
-                                        <button type="submit"
-                                                title="Test cluster connection"
-                                                hx-disabled-elt="this"
-                                                class="group inline-flex h-9 w-9 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-kaori-primary transition hover:border-outline-focus hover:bg-kaori-soft disabled:cursor-wait disabled:opacity-70 cursor-pointer disabled:cursor-not-allowed">
-                                            <i data-lucide="plug-zap" class="h-4 w-4 group-[.htmx-request]:animate-spin"></i>
-                                        </button>
-                                    </form>
+                                    <a href="{{ url_for('integrations.kubernetes_detail', cluster_id=cluster.id) }}#runtime"
+                                       title="Review Kubernetes runtime"
+                                       class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs font-semibold text-kaori-primary transition hover:border-outline-focus hover:bg-kaori-soft">
+                                        <i data-lucide="activity" class="h-4 w-4"></i>
+                                        Runtime
+                                    </a>
                                     <form method="POST"
                                           action="{{ url_for('inventory.sync', cluster_id=cluster.id, **table_query) }}"
                                           hx-post="{{ url_for('inventory.sync', cluster_id=cluster.id, **table_query) }}"

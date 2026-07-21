@@ -89,16 +89,12 @@ def test_manual_full_validation_routes_only_enqueue_and_poll() -> None:
     assert "get_integration('alertmanager').adapter" in tasks
 
 
-def test_legacy_kubernetes_cluster_test_cannot_bypass_the_worker() -> None:
+def test_legacy_kubernetes_cluster_test_route_is_removed() -> None:
     routes = read('app/cluster/routes.py')
-    block = route_block(
-        routes,
-        'def test_cluster(cluster_id: str)',
-        "@cluster_bp.route(\n    '/<string:cluster_id>/edit',",
-    )
-    assert 'enqueue_runtime_health_refresh(' in block
-    assert 'run_test_cluster(' not in block
-    assert 'legacy_route' in block
+    table = read('app/templates/cluster/partials/_table.html')
+    assert 'def test_cluster(cluster_id: str)' not in routes
+    assert "url_for('cluster.test_cluster'" not in table
+    assert "url_for('integrations.kubernetes_detail'" in table
 
 
 def test_legacy_provider_bookmark_blueprint_is_removed() -> None:

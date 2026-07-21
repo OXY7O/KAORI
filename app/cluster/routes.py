@@ -19,7 +19,6 @@ from flask_login import current_user
 from redis.exceptions import RedisError
 
 from app.extensions import db
-from app.integrations.validation.web import enqueue_runtime_health_refresh
 from app.integrations.deletion import DeletionBlocked
 from app.cluster.forms import ClusterCreateForm, ClusterEditForm
 from app.cluster.registration import issue_cluster_registration_proof, verify_cluster_registration_proof
@@ -688,89 +687,6 @@ def test_new_cluster_connection() -> ResponseReturnValue:
         'kubernetes-connection-tested': {'connected': bool(result.get('success')), 'proof': proof}
     }, separators=(',', ':'))
     return response
-
-
-@cluster_bp.route(
-    '/<string:cluster_id>/test',
-    methods=[
-        'POST',
-    ],
-)
-@permission_required('clusters.sync')
-def test_cluster(cluster_id: str) -> ResponseReturnValue:
-    """Compatibility endpoint for the legacy cluster table.
-
-    The action now queues the same lightweight runtime refresh used by the
-    canonical Kubernetes workspace; provider I/O never runs in the Flask request.
-    """
-    cluster = _get_cluster_or_404(cluster_id)
-    connection = KubernetesConnection.query.filter_by(cluster_id=cluster.id).first()
-    is_htmx = request.headers.get('HX-Request') == 'true'
-    try:
-        if connection is None:
-            raise LookupError('Canonical Kubernetes connection is not available.')
-        validation_job, created = enqueue_runtime_health_refresh(
-            provider_type='kubernetes',
-            instance_id=connection.id,
-            requested_by_user_id=int(current_user.id),
-        )
-        feedback = record_operational_activity(
-            user_id=int(current_user.id),
-            event_type='cluster_runtime_refresh_queued' if created else 'cluster_runtime_refresh_already_running',
-            status='info' if created else 'warning',
-            title='Cluster runtime refresh queued' if created else 'Cluster runtime refresh already running',
-            message=(
-                f'KAORI queued a lightweight Kubernetes API health check for {cluster.name}.'
-                if created
-                else f'A validation or runtime refresh is already running for {cluster.name}.'
-            ),
-            detail=(
-                'The integration-validation worker will check API reachability and version while preserving capability evidence.'
-                if created
-                else 'KAORI retained the active worker task and did not enqueue a duplicate refresh.'
-            ),
-            action_url=url_for('integrations.kubernetes_detail', cluster_id=cluster.id) + '#runtime',
-            action_label='Review Kubernetes runtime',
-            action_icon='activity',
-            metadata={
-                'cluster_id': cluster.id,
-                'cluster_name': cluster.name,
-                'connection_id': connection.id,
-                'task_id': validation_job.get('task_id'),
-                'legacy_route': True,
-            },
-            queue_feedback=not is_htmx,
-        )
-    except Exception as exc:
-        logger.exception('Could not queue legacy Kubernetes runtime refresh for %s.', cluster.id)
-        feedback = record_operational_activity(
-            user_id=int(current_user.id),
-            event_type='cluster_runtime_refresh_enqueue_failed',
-            status='error',
-            title='Cluster runtime refresh not queued',
-            message=f'KAORI could not queue the Kubernetes API health check for {cluster.name}.',
-            detail='Verify Redis, the Celery broker, and the integration-validation worker before retrying.',
-            action_url=url_for('integrations.kubernetes_detail', cluster_id=cluster.id) + '#runtime',
-            action_label='Review Kubernetes runtime',
-            action_icon='activity',
-            metadata={
-                'cluster_id': cluster.id,
-                'cluster_name': cluster.name,
-                'connection_id': connection.id if connection else None,
-                'reason': type(exc).__name__,
-                'legacy_route': True,
-            },
-            queue_feedback=not is_htmx,
-        )
-
-    if is_htmx:
-        table_html = render_template(
-            'cluster/partials/_table.html',
-            **_build_cluster_context_from_request(),
-        )
-        return f'{table_html}{_render_operational_toast(feedback, toast_oob=True)}'
-
-    return redirect(request.referrer or url_for('integrations.kubernetes'))
 
 
 @cluster_bp.post('/<string:cluster_id>/edit/test-connection')

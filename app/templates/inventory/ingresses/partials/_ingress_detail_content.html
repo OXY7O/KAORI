@@ -1,6 +1,6 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/detail_object.html" as detail_object %}
-{% import "components/inventory_detail_tip.html" as inventory_tip %}
+{% import "components/detail_tip.html" as inventory_tip %}
 
 {% macro detail_row(label, value='-', break_all=false) -%}
     {% set display_value = value if value not in [None, ''] else '-' %}

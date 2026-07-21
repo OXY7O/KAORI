@@ -88,7 +88,7 @@ the move.
 | Path | Responsibility |
 |---|---|
 | `routes.py` | Registers the Kubernetes Analytics blueprint and connects overview and workspace endpoints to their route handlers. |
-| `base/` | Contains legacy/shared Prometheus-oriented service behavior. New shared code should be placed here only when it is truly reusable by multiple Kubernetes analytics workspaces. |
+| `base/` | Contains provider-neutral analytics contracts and shared orchestration used by multiple Kubernetes analytics workspaces. |
 | `common/` | Owns Kubernetes analytics request parameters, selected-cluster context, cache helpers, common payloads, and shared base-service utilities. Avoid turning this folder into an unstructured dumping ground. |
 | `overview/` | Builds the Kubernetes Analytics overview and lazy section payloads. |
 | `utilization/` | Computes resource utilization and Kubernetes readiness/capacity usage context. |
@@ -314,7 +314,7 @@ Consumers should not import internal normalizers or summary builders directly.
 6. Extract routing, silences, inhibition, ownership, and readiness one at a time,
    each with focused tests.
 7. Extract signal overview and snapshot builders.
-8. Leave `service.py` as a compatibility facade while callers migrate.
+8. Keep `service.py` as a thin public facade that delegates to canonical modules; do not retain compatibility shims.
 9. Move the package to `app/kubernetes/analytics/alerts` only after module
    boundaries and tests are stable.
 
@@ -379,7 +379,7 @@ reasons to change. These are review triggers, not hard coding rules.
 
 Prometheus and Thanos reads must enter analytics through
 `app.prometheus.consumer.PrometheusConsumer`, directly or through the temporary
-`PrometheusService` compatibility wrapper. New analytics code must declare the
+canonical Prometheus consumer contract. New analytics code must declare the
 capabilities required by a query when the requirement is more specific than the
 base Instant Query or Range Query API.
 

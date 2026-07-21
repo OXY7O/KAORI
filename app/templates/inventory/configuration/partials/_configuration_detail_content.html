@@ -1,6 +1,6 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/detail_object.html" as detail_object %}
-{% import "components/inventory_detail_tip.html" as inventory_tip %}
+{% import "components/detail_tip.html" as inventory_tip %}
 {% macro detail_row(label, value='-', break_all=false) -%}
     {% set display_value=value if value not in [None,''] else '-' %}<div class="flex items-start justify-between gap-3"><span class="shrink-0 text-xs font-normal leading-5 text-content-muted">{{ label }}</span><span class="max-w-[68%] {{ 'break-all' if break_all else 'break-words' }} text-right text-xs font-medium leading-5 text-content-secondary" title="{{ display_value }}">{{ display_value }}</span></div>
 {%- endmacro %}

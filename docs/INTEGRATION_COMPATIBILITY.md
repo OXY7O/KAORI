@@ -75,16 +75,17 @@ Integration list pages never render passwords, bearer tokens, embedded URL crede
 A matching version profile does not itself make an integration ready. Required API endpoints, capabilities, metrics, labels, and query probes must also pass.
 
 
-## Route ownership and legacy compatibility
+## Route ownership
 
-Canonical integration routes are owned by the integration-specific blueprints under
-`/integrations/prometheus` and `/integrations/alertmanager`. The same blueprints are
-registered once more with unique legacy registration names for `/prometheus` and
-`/alertmanager`; this preserves old deep links without maintaining redirect-only
-wrapper blueprints. Settings shortcuts use explicit `308` redirects to the canonical
-integration list pages. New code and generated links must always use canonical
-`integrations.*`, `prometheus.*`, and `alertmanager.*` endpoints.
+KAORI exposes one canonical management route per integration domain:
 
+- `/integrations/kubernetes`
+- `/integrations/prometheus`
+- `/integrations/alertmanager`
+
+Provider blueprints may expose domain detail and operation endpoints, but KAORI does
+not register legacy compatibility blueprints or active shim routes. Development
+bookmarks are intentionally not retained when a canonical route replaces them.
 
 ## Direct Prometheus and intermediary endpoints
 

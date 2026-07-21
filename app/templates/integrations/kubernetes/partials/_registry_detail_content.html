@@ -1,6 +1,6 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/details/_detail_content.html" as detail %}
-{% import "components/inventory_detail_tip.html" as inventory_tip %}
+{% import "components/detail_tip.html" as inventory_tip %}
 
 {% set readiness_tone = 'normal' if row.readiness == 'ready' else ('critical' if row.readiness == 'blocked' else 'warning') %}
 {% set readiness_label = row.readiness|replace('_', ' ')|title %}

@@ -1,5 +1,5 @@
 {% import "components/table_label.html" as table_label %}
-{% import "components/inventory_detail_tip.html" as inventory_tip %}
+{% import "components/detail_tip.html" as inventory_tip %}
 {% set namespace_status_tone = 'normal' if namespace.status == 'Active' else ('warning' if namespace.status == 'Terminating' else 'unknown') %}
 {% set namespace_status_icon = 'circle-check' if namespace.status == 'Active' else ('triangle-alert' if namespace.status == 'Terminating' else 'circle-help') %}
 {% set psa_enforce_display = 'No namespace policy' if namespace.pod_security_enforce in [None, '', 'Not configured'] else namespace.pod_security_enforce %}
