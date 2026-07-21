@@ -91,3 +91,10 @@ This document defines reusable structures. It does not define domain-specific fi
 ### Dense Registry Action Width
 
 When a registry uses icon-only actions, the Actions column width must include icon width, inter-action gaps, and cell padding. Do not force five 32 px controls into a 150 px cell. The Kubernetes Connection Registry uses a dedicated 208 px right-aligned Actions column and explicit table width so controls never clip or leave an unexplained trailing surface.
+
+### Shared-source binding workspace
+
+- Scope Bindings must occupy a full-width block before resolver and creation panels.
+- Do not use horizontally scrolling binding tables for selector-heavy content. Use responsive binding cards with standard KAORI typography.
+- Metrics Identity and Alert Identity values use normal KAORI table/body typography; monospace is reserved for executable commands or code-oriented evidence.
+- Provider registry Connection columns remain proportional and must not push Runtime, Compatibility, Readiness, or Last Validated off-screen.

@@ -1,14 +1,14 @@
 {% import "components/pagination.html" as pagination_ui %}
 {% from "integrations/partials/_status_badge.html" import status_badge %}
 <div class="overflow-x-auto">
-    <table class="w-full min-w-[940px] table-fixed text-left text-sm">
+    <table class="w-full min-w-[860px] table-fixed text-left text-sm">
         <colgroup>
-            <col class="w-[230px]">
+            <col class="w-[190px]">
+            <col class="w-[100px]">
+            <col class="w-[130px]">
             <col class="w-[110px]">
-            <col class="w-[150px]">
-            <col class="w-[120px]">
-            <col class="w-[110px]">
-            <col class="w-[120px]">
+            <col class="w-[100px]">
+            <col class="w-[130px]">
             <col class="w-[100px]">
         </colgroup>
         <thead class="border-b border-outline-subtle bg-surface-hover text-xs font-semibold text-content-muted">
@@ -26,7 +26,7 @@
             {% for row in rows %}
                 <tr class="transition hover:bg-surface-hover">
                     <td class="px-5 py-4 align-top sm:px-6">
-                        <div class="flex max-w-[250px] items-start gap-3">
+                        <div class="flex max-w-[190px] items-start gap-3">
                             <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="activity" class="h-4 w-4" aria-hidden="true"></i></span>
                             <div class="min-w-0">
                                 <p class="truncate font-semibold text-content-primary" title="{{ row.name }}">{{ row.name }}</p>
@@ -48,7 +48,7 @@
                         {% for cluster in row.bound_clusters[:2] %}<p class="mt-1 max-w-[170px] truncate text-xs text-content-muted" title="{{ cluster.name }}">{{ cluster.name }}</p>{% endfor %}
                         {% if row.binding_count > 2 %}<p class="mt-1 text-xs font-semibold text-kaori-primary-dark">+{{ row.binding_count - 2 }} more</p>{% elif not row.binding_count %}<p class="mt-1 text-xs text-content-muted">No scope bindings</p>{% endif %}
                     </td>
-                    <td class="px-4 py-4 align-top text-sm text-content-secondary">{{ row.validated_at }}</td>
+                    <td class="px-4 py-4 align-top text-xs font-medium leading-5 text-content-secondary">{{ row.validated_at }}</td>
                     <td class="w-[100px] whitespace-nowrap px-3 py-4 text-right align-top">
                         <a href="{{ url_for('prometheus.instance_detail', instance_id=row.instance_id) }}" class="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs font-semibold text-content-secondary shadow-sm transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                             <i data-lucide="settings-2" class="h-4 w-4" aria-hidden="true"></i>Manage
