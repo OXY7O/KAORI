@@ -1,72 +1,211 @@
 {% import "components/pagination.html" as pagination_ui %}
 {% from "integrations/partials/_status_badge.html" import status_badge %}
-<section id="kubernetes-connection-registry" class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+
+<section id="kubernetes-connection-registry"
+         class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
   <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div class="flex items-start gap-3">
-        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="list-tree" class="h-5 w-5" aria-hidden="true"></i></span>
-        <div><h2 class="text-base font-semibold text-content-primary">Kubernetes Connection Registry</h2><p class="mt-0.5 text-xs leading-5 text-content-muted">Canonical API connections, compatibility, runtime readiness, and observability bindings.</p></div>
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+          <i data-lucide="list-tree" class="h-5 w-5" aria-hidden="true"></i>
+        </span>
+        <div>
+          <h2 class="text-base font-semibold text-content-primary">Kubernetes Connection Registry</h2>
+          <p class="mt-0.5 text-xs leading-5 text-content-muted">
+            Canonical Kubernetes API connections and downstream operational coverage.
+          </p>
+        </div>
       </div>
-      <span class="kaori-context-label inline-flex min-h-6 items-center rounded-md bg-kaori-soft px-2 text-[10px] font-semibold text-kaori-primary">{{ pagination.total_items }} registered</span>
+
+      <span class="kaori-context-label inline-flex min-h-6 items-center rounded-md bg-kaori-soft px-2 text-[10px] font-semibold text-kaori-primary">
+        {{ pagination.total_items }} registered
+      </span>
     </div>
-    <div id="kubernetes-registry-loading" class="htmx-indicator mt-3 h-0.5 overflow-hidden rounded-full bg-kaori-soft" aria-hidden="true"><div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div></div>
+
+    <div id="kubernetes-registry-loading"
+         class="htmx-indicator mt-3 h-0.5 overflow-hidden rounded-full bg-kaori-soft"
+         aria-hidden="true">
+      <div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div>
+    </div>
   </header>
 
   <div class="overflow-x-auto">
-    <table class="w-full min-w-[1320px] table-fixed divide-y divide-outline-subtle text-left text-sm">
+    <table class="w-full min-w-[1120px] table-fixed divide-y divide-outline-subtle text-left text-sm">
       <thead class="bg-surface-hover text-xs text-content-muted">
         <tr>
-          <th class="w-[290px] px-5 py-3">Connection</th>
-          <th class="w-[110px] px-4 py-3">Environment</th>
-          <th class="w-[145px] px-4 py-3">Kubernetes API</th>
-          <th class="w-[250px] px-4 py-3">Operational Coverage</th>
-          <th class="w-[210px] px-4 py-3">Version &amp; Compatibility</th>
-          <th class="w-[135px] px-4 py-3">Last Validated</th>
-          <th class="w-[208px] px-3 py-3 text-right">Actions</th>
+          <th class="w-[330px] px-5 py-3">Connection</th>
+          <th class="w-[160px] px-4 py-3">Kubernetes API</th>
+          <th class="w-[280px] px-4 py-3">Operational Coverage</th>
+          <th class="w-[210px] px-4 py-3">Version &amp; Validation</th>
+          <th class="w-[180px] px-3 py-3 text-right">Actions</th>
         </tr>
       </thead>
+
       <tbody class="divide-y divide-outline-subtle">
         {% for row in rows %}
           <tr class="align-top transition hover:bg-surface-hover">
             <td class="px-5 py-4">
-              <div class="flex items-start gap-3"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary"><i data-lucide="server-cog" class="h-4 w-4"></i></span><div class="min-w-0"><p class="truncate font-semibold text-content-primary" title="{{ row.cluster_name }}">{{ row.cluster_name }}</p><p class="mt-1 text-xs text-content-muted">Canonical #{{ row.integration_instance_id }} · Connection #{{ row.connection_id }}</p><p class="mt-1 truncate font-mono text-xs text-content-secondary" title="{{ row.server }}">{{ row.server }}</p></div></div>
-            </td>
-            <td class="px-4 py-4"><span class="kaori-context-label inline-flex min-h-6 items-center rounded-md bg-kaori-soft px-2 text-[10px] font-semibold text-kaori-primary">{{ row.environment }}</span></td>
-            <td class="px-4 py-4">
-              {{ status_badge(row.readiness) }}
-              <p class="mt-2 text-xs leading-5 text-content-muted">API access, RBAC, compatibility, and capabilities.</p>
-            </td>
-            <td class="px-4 py-4">
-              <div class="space-y-2">
-                <div class="flex items-center justify-between gap-2"><span class="text-xs font-medium text-content-secondary">Inventory</span>{{ status_badge(row.inventory_coverage.status, row.inventory_coverage.label) }}</div>
-                <div class="flex items-center justify-between gap-2"><span class="text-xs font-medium text-content-secondary">Analytics</span>{{ status_badge(row.metrics_coverage.status, row.metrics_coverage.label) }}</div>
-                <div class="flex items-center justify-between gap-2"><span class="text-xs font-medium text-content-secondary">Alerts</span>{{ status_badge(row.alerts_coverage.status, row.alerts_coverage.label) }}</div>
+              <div class="flex items-start gap-3">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary">
+                  <i data-lucide="server-cog" class="h-4 w-4" aria-hidden="true"></i>
+                </span>
+
+                <div class="min-w-0">
+                  <p class="truncate font-semibold text-content-primary"
+                     title="{{ row.cluster_name }}">
+                    {{ row.cluster_name }}
+                  </p>
+
+                  <div class="mt-1 flex flex-wrap items-center gap-1.5">
+                    <span class="kaori-context-label inline-flex min-h-6 items-center rounded-md bg-kaori-soft px-2 text-[10px] font-semibold text-kaori-primary">
+                      {{ row.environment }}
+                    </span>
+                    <span class="text-xs text-content-muted">
+                      Canonical #{{ row.integration_instance_id }} · Connection #{{ row.connection_id }}
+                    </span>
+                  </div>
+
+                  <p class="mt-1.5 truncate font-mono text-xs text-content-secondary"
+                     title="{{ row.server }}">
+                    {{ row.server }}
+                  </p>
+                </div>
               </div>
             </td>
-            <td class="px-4 py-4"><p class="font-semibold text-content-primary">{{ row.version or 'Not discovered' }}</p><p class="mt-1 truncate text-xs text-content-muted" title="{{ row.compatibility_profile or 'Validation required' }}">{{ row.compatibility_profile or 'Validation required' }}</p></td>
-            <td class="px-4 py-4 text-content-secondary">{{ row.last_validated_at }}</td>
-            <td class="w-[208px] px-3 py-4 text-right">
+
+            <td class="px-4 py-4">
+              {{ status_badge(row.readiness) }}
+              <p class="mt-2 text-xs text-content-muted">
+                API, RBAC, and capabilities
+              </p>
+            </td>
+
+            <td class="px-4 py-4">
+              <div class="grid gap-2">
+                <div class="grid grid-cols-[72px_minmax(0,1fr)] items-center gap-2">
+                  <span class="text-xs font-medium text-content-secondary">Inventory</span>
+                  <div class="min-w-0">
+                    {{ status_badge(row.inventory_coverage.status, row.inventory_coverage.label) }}
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-[72px_minmax(0,1fr)] items-center gap-2">
+                  <span class="text-xs font-medium text-content-secondary">Analytics</span>
+                  <div class="min-w-0">
+                    {{ status_badge(row.metrics_coverage.status, row.metrics_coverage.label) }}
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-[72px_minmax(0,1fr)] items-center gap-2">
+                  <span class="text-xs font-medium text-content-secondary">Alerts</span>
+                  <div class="min-w-0">
+                    {{ status_badge(row.alerts_coverage.status, row.alerts_coverage.label) }}
+                  </div>
+                </div>
+              </div>
+            </td>
+
+            <td class="px-4 py-4">
+              <p class="font-semibold text-content-primary">
+                {{ row.version or 'Not Discovered' }}
+              </p>
+              <p class="mt-1 truncate text-xs text-content-muted"
+                 title="{{ row.compatibility_profile or 'Validation Required' }}">
+                {{ row.compatibility_profile or 'Validation Required' }}
+              </p>
+              <p class="mt-2 text-xs text-content-muted">
+                Last Validated
+              </p>
+              <p class="mt-0.5 text-xs font-medium text-content-secondary">
+                {{ row.last_validated_at }}
+              </p>
+            </td>
+
+            <td class="w-[180px] px-3 py-4 text-right">
               <div class="flex min-w-0 justify-end gap-1 whitespace-nowrap">
-                <a href="{{ url_for('integrations.kubernetes_detail', cluster_id=row.cluster_id) }}" title="Manage {{ row.cluster_name }}" aria-label="Manage {{ row.cluster_name }}" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-outline-default text-content-secondary transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary"><i data-lucide="activity" class="h-4 w-4"></i><span class="sr-only">Manage</span></a>
-                <a href="{{ url_for('cluster.edit_cluster', cluster_id=row.cluster_id) }}" title="Configure {{ row.cluster_name }}" aria-label="Configure {{ row.cluster_name }}" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-outline-default text-content-secondary transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary"><i data-lucide="settings-2" class="h-4 w-4"></i><span class="sr-only">Configure</span></a>
+                <a href="{{ url_for('integrations.kubernetes_detail', cluster_id=row.cluster_id) }}"
+                   title="Manage {{ row.cluster_name }}"
+                   aria-label="Manage {{ row.cluster_name }}"
+                   class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-outline-default text-content-secondary transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary">
+                  <i data-lucide="activity" class="h-4 w-4"></i>
+                  <span class="sr-only">Manage</span>
+                </a>
+
+                <a href="{{ url_for('cluster.edit_cluster', cluster_id=row.cluster_id) }}"
+                   title="Configure {{ row.cluster_name }}"
+                   aria-label="Configure {{ row.cluster_name }}"
+                   class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-outline-default text-content-secondary transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary">
+                  <i data-lucide="settings-2" class="h-4 w-4"></i>
+                  <span class="sr-only">Configure</span>
+                </a>
+
                 {% if row.prometheus_instance_id %}
-                  <a href="{{ url_for('prometheus.instance_detail', instance_id=row.prometheus_instance_id) }}#scope" title="Review Prometheus binding: {{ row.prometheus_name }}" aria-label="Review Prometheus binding" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-status-normal-border bg-status-normal-soft text-status-normal transition hover:brightness-95"><i data-lucide="chart-no-axes-combined" class="h-4 w-4"></i><span class="sr-only">Review Prometheus binding</span></a>
+                  <a href="{{ url_for('prometheus.instance_detail', instance_id=row.prometheus_instance_id) }}#scope"
+                     title="Review Prometheus binding: {{ row.prometheus_name }}"
+                     aria-label="Review Prometheus binding"
+                     class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-status-normal-border bg-status-normal-soft text-status-normal transition hover:brightness-95">
+                    <i data-lucide="chart-no-axes-combined" class="h-4 w-4"></i>
+                    <span class="sr-only">Review Prometheus Binding</span>
+                  </a>
                 {% else %}
-                  <a href="{{ url_for('integrations.bind_prometheus_source', scope_key=row.cluster_id) }}" title="Bind Prometheus source" aria-label="Bind Prometheus source" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary transition hover:bg-kaori-primary hover:text-white"><i data-lucide="chart-no-axes-combined" class="h-4 w-4"></i><span class="sr-only">Bind Prometheus</span></a>
+                  <a href="{{ url_for('integrations.bind_prometheus_source', scope_key=row.cluster_id) }}"
+                     title="Bind Prometheus source"
+                     aria-label="Bind Prometheus source"
+                     class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary transition hover:bg-kaori-primary hover:text-white">
+                    <i data-lucide="chart-no-axes-combined" class="h-4 w-4"></i>
+                    <span class="sr-only">Bind Prometheus</span>
+                  </a>
                 {% endif %}
+
                 {% if row.alertmanager_instance_id %}
-                  <a href="{{ url_for('alertmanager.instance_detail', instance_id=row.alertmanager_instance_id) }}#scope" title="Review Alertmanager binding: {{ row.alertmanager_name }}" aria-label="Review Alertmanager binding" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-status-normal-border bg-status-normal-soft text-status-normal transition hover:brightness-95"><i data-lucide="siren" class="h-4 w-4"></i><span class="sr-only">Review Alertmanager binding</span></a>
+                  <a href="{{ url_for('alertmanager.instance_detail', instance_id=row.alertmanager_instance_id) }}#scope"
+                     title="Review Alertmanager binding: {{ row.alertmanager_name }}"
+                     aria-label="Review Alertmanager binding"
+                     class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-status-normal-border bg-status-normal-soft text-status-normal transition hover:brightness-95">
+                    <i data-lucide="siren" class="h-4 w-4"></i>
+                    <span class="sr-only">Review Alertmanager Binding</span>
+                  </a>
                 {% else %}
-                  <a href="{{ url_for('integrations.bind_alertmanager_source', scope_key=row.cluster_id) }}" title="Bind Alertmanager source" aria-label="Bind Alertmanager source" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary transition hover:bg-kaori-primary hover:text-white"><i data-lucide="siren" class="h-4 w-4"></i><span class="sr-only">Bind Alertmanager</span></a>
+                  <a href="{{ url_for('integrations.bind_alertmanager_source', scope_key=row.cluster_id) }}"
+                     title="Bind Alertmanager source"
+                     aria-label="Bind Alertmanager source"
+                     class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary transition hover:bg-kaori-primary hover:text-white">
+                    <i data-lucide="siren" class="h-4 w-4"></i>
+                    <span class="sr-only">Bind Alertmanager</span>
+                  </a>
                 {% endif %}
+
                 {% if current_user.has_permission('clusters.manage') %}
-                  <button type="button" data-delete-url="{{ url_for('cluster.delete_cluster_route', cluster_id=row.cluster_id) }}" data-delete-name="{{ row.cluster_name }}" @click="openDelete($el.dataset.deleteUrl, $el.dataset.deleteName)" title="Delete {{ row.cluster_name }}" aria-label="Delete {{ row.cluster_name }}" class="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-status-critical-border text-status-critical transition hover:bg-status-critical-soft"><i data-lucide="trash-2" class="h-4 w-4"></i><span class="sr-only">Delete</span></button>
+                  <button type="button"
+                          data-delete-url="{{ url_for('cluster.delete_cluster_route', cluster_id=row.cluster_id) }}"
+                          data-delete-name="{{ row.cluster_name }}"
+                          @click="openDelete($el.dataset.deleteUrl, $el.dataset.deleteName)"
+                          title="Delete {{ row.cluster_name }}"
+                          aria-label="Delete {{ row.cluster_name }}"
+                          class="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-status-critical-border text-status-critical transition hover:bg-status-critical-soft">
+                    <i data-lucide="trash-2" class="h-4 w-4"></i>
+                    <span class="sr-only">Delete</span>
+                  </button>
                 {% endif %}
               </div>
             </td>
           </tr>
         {% else %}
-          <tr><td colspan="7" class="p-0">{% set empty_state_icon = 'boxes' %}{% set empty_state_label = 'Setup Required' %}{% set empty_state_title = 'No Kubernetes Connections Registered' %}{% set empty_state_description = 'Register a Kubernetes API connection so KAORI can begin capability discovery and source binding.' %}{% set empty_state_action_url = url_for('cluster.add_cluster') %}{% set empty_state_action_label = 'Add Cluster' %}{% set empty_state_action_icon = 'plus' %}{% set empty_state_permission = 'clusters.manage' %}{% set empty_state_show_admin_required = true %}{% set empty_state_min_height = 'min-h-[190px]' %}{% include 'components/states/_empty_state.html' %}</td></tr>
+          <tr>
+            <td colspan="5" class="p-0">
+              {% set empty_state_icon = 'boxes' %}
+              {% set empty_state_label = 'Setup Required' %}
+              {% set empty_state_title = 'No Kubernetes Connections Registered' %}
+              {% set empty_state_description = 'Register a Kubernetes API connection so KAORI can begin capability discovery and source binding.' %}
+              {% set empty_state_action_url = url_for('cluster.add_cluster') %}
+              {% set empty_state_action_label = 'Add Cluster' %}
+              {% set empty_state_action_icon = 'plus' %}
+              {% set empty_state_permission = 'clusters.manage' %}
+              {% set empty_state_show_admin_required = true %}
+              {% set empty_state_min_height = 'min-h-[190px]' %}
+              {% include 'components/states/_empty_state.html' %}
+            </td>
+          </tr>
         {% endfor %}
       </tbody>
     </table>
@@ -74,13 +213,71 @@
 
   <footer class="flex flex-col gap-3 border-t border-outline-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
     <div class="flex items-center gap-3 text-xs text-content-muted">
-      <span>Showing {{ pagination.start_item }}–{{ pagination.end_item }} of {{ pagination.total_items }} connections</span>
-      <form class="inline-flex items-center"><select name="per_page" aria-label="Connections per page" title="Connections per page" class="{{ pagination_ui.page_size_classes() }}" hx-get="{{ url_for('integrations.kubernetes', page=1) }}" hx-target="#kubernetes-connection-registry" hx-swap="outerHTML" hx-indicator="#kubernetes-registry-loading" hx-push-url="true" hx-trigger="change">{% for size in pagination.allowed_per_page %}<option value="{{ size }}" {% if pagination.per_page == size %}selected{% endif %}>{{ size }}</option>{% endfor %}</select></form>
+      <span>
+        Showing {{ pagination.start_item }}–{{ pagination.end_item }}
+        of {{ pagination.total_items }} connections
+      </span>
+
+      <form class="inline-flex items-center">
+        <select name="per_page"
+                aria-label="Connections per page"
+                title="Connections per page"
+                class="{{ pagination_ui.page_size_classes() }}"
+                hx-get="{{ url_for('integrations.kubernetes', page=1) }}"
+                hx-target="#kubernetes-connection-registry"
+                hx-swap="outerHTML"
+                hx-indicator="#kubernetes-registry-loading"
+                hx-push-url="true"
+                hx-trigger="change">
+          {% for size in pagination.allowed_per_page %}
+            <option value="{{ size }}" {% if pagination.per_page == size %}selected{% endif %}>
+              {{ size }}
+            </option>
+          {% endfor %}
+        </select>
+      </form>
     </div>
+
     <nav class="flex items-center gap-2" aria-label="Kubernetes registry pagination">
-      {% if pagination.has_prev %}{% set prev_url = url_for('integrations.kubernetes', page=pagination.prev_page, per_page=pagination.per_page) %}<a href="{{ prev_url }}" hx-get="{{ prev_url }}" hx-target="#kubernetes-connection-registry" hx-swap="outerHTML" hx-indicator="#kubernetes-registry-loading" hx-push-url="true" class="{{ pagination_ui.navigation_classes(disabled=false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>{% else %}<span class="{{ pagination_ui.navigation_classes(disabled=true) }}" aria-disabled="true"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>{% endif %}
+      {% if pagination.has_prev %}
+        {% set prev_url = url_for('integrations.kubernetes', page=pagination.prev_page, per_page=pagination.per_page) %}
+        <a href="{{ prev_url }}"
+           hx-get="{{ prev_url }}"
+           hx-target="#kubernetes-connection-registry"
+           hx-swap="outerHTML"
+           hx-indicator="#kubernetes-registry-loading"
+           hx-push-url="true"
+           class="{{ pagination_ui.navigation_classes(disabled=false) }}">
+          <i data-lucide="chevron-left" class="h-4 w-4"></i>
+          Previous
+        </a>
+      {% else %}
+        <span class="{{ pagination_ui.navigation_classes(disabled=true) }}" aria-disabled="true">
+          <i data-lucide="chevron-left" class="h-4 w-4"></i>
+          Previous
+        </span>
+      {% endif %}
+
       {{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages) }}
-      {% if pagination.has_next %}{% set next_url = url_for('integrations.kubernetes', page=pagination.next_page, per_page=pagination.per_page) %}<a href="{{ next_url }}" hx-get="{{ next_url }}" hx-target="#kubernetes-connection-registry" hx-swap="outerHTML" hx-indicator="#kubernetes-registry-loading" hx-push-url="true" class="{{ pagination_ui.navigation_classes(disabled=false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>{% else %}<span class="{{ pagination_ui.navigation_classes(disabled=true) }}" aria-disabled="true">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>{% endif %}
+
+      {% if pagination.has_next %}
+        {% set next_url = url_for('integrations.kubernetes', page=pagination.next_page, per_page=pagination.per_page) %}
+        <a href="{{ next_url }}"
+           hx-get="{{ next_url }}"
+           hx-target="#kubernetes-connection-registry"
+           hx-swap="outerHTML"
+           hx-indicator="#kubernetes-registry-loading"
+           hx-push-url="true"
+           class="{{ pagination_ui.navigation_classes(disabled=false) }}">
+          Next
+          <i data-lucide="chevron-right" class="h-4 w-4"></i>
+        </a>
+      {% else %}
+        <span class="{{ pagination_ui.navigation_classes(disabled=true) }}" aria-disabled="true">
+          Next
+          <i data-lucide="chevron-right" class="h-4 w-4"></i>
+        </span>
+      {% endif %}
     </nav>
   </footer>
 </section>
