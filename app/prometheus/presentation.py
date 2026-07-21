@@ -107,7 +107,7 @@ def build_instance_context(
         actions={
             'refresh_url': url_for('prometheus.refresh_runtime', instance_id=instance.id),
             'configuration_url': url_for('prometheus.instance_detail', instance_id=instance.id, _anchor='configuration'),
-            'history_url': url_for('prometheus.runtime_history', instance_id=instance.id),
+            'history_url': url_for('prometheus.instance_runtime_history', instance_id=instance.id),
         },
     )
     rows, pagination = paginate_runtime_history(
