@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
+from typing import Any
+
 from app.common.presentation import present_count, present_key_label, present_milliseconds, present_user_datetime
+from app.integrations.compatibility import kubernetes_lifecycle_policy
 from app.integrations.runtime.contracts import RuntimeState
 
 
@@ -12,6 +16,7 @@ def runtime_state_view(
 ) -> dict[str, object]:
     actions = actions or {}
     binding = binding or {}
+    metadata = state.snapshot.metadata or {}
     return {
         'provider': state.provider,
         'instance_id': state.instance_id,
@@ -41,6 +46,8 @@ def runtime_state_view(
         'capability_count': len(state.snapshot.capabilities),
         'capability_count_display': present_count(len(state.snapshot.capabilities), 'capability'),
         'capabilities': state.snapshot.capabilities,
+        'capability_metadata': metadata,
+        'lifecycle_context': _kubernetes_lifecycle_context(state.provider, metadata),
         'latency_ms': state.latency_ms,
         'latency_display': present_milliseconds(state.latency_ms),
         'last_success_at': state.last_success_at,
@@ -71,7 +78,9 @@ def runtime_history_view(rows, *, pagination: dict[str, object]) -> dict[str, ob
     rendered_rows = []
     for row in rendered_source_rows:
         previous_row = previous_by_id.get(row.id)
-        current_capabilities = set((row.capability_snapshot or {}).get('capabilities') or [])
+        snapshot = row.capability_snapshot or {}
+        metadata = snapshot.get('metadata') or {}
+        current_capabilities = set(snapshot.get('capabilities') or [])
         previous_capabilities = set(
             ((previous_row.capability_snapshot or {}).get('capabilities') or [])
             if previous_row is not None
@@ -88,8 +97,11 @@ def runtime_history_view(rows, *, pagination: dict[str, object]) -> dict[str, ob
             else []
         )
         transition = _runtime_transition(row, previous_row)
+        diagnostics = _diagnostic_rows(row.diagnostics or [])
+        lifecycle_context = _kubernetes_lifecycle_context(row.provider, metadata)
         rendered_rows.append({
             'id': row.id,
+            'detail_id': f'runtime-observation-{row.id}',
             'observed_at': row.observed_at,
             'observed_at_display': present_user_datetime(row.observed_at, empty='Unknown', include_seconds=True),
             'trigger_type': row.trigger_type,
@@ -106,11 +118,16 @@ def runtime_history_view(rows, *, pagination: dict[str, object]) -> dict[str, ob
             'capability_profile': row.capability_profile,
             'capability_count': len(current_capabilities),
             'capability_count_display': present_count(len(current_capabilities), 'observed capability'),
+            'capabilities': sorted(current_capabilities),
             'transition': transition,
             'added_capabilities': added_capabilities,
             'removed_capabilities': removed_capabilities,
             'capability_changed': bool(added_capabilities or removed_capabilities),
             'message': row.message,
+            'diagnostics': diagnostics,
+            'diagnostic_count': len(diagnostics),
+            'lifecycle_context': lifecycle_context,
+            'has_detail': bool(row.message or diagnostics or current_capabilities or lifecycle_context),
         })
 
     health_counts = {'healthy': 0, 'degraded': 0, 'unhealthy': 0}
@@ -125,6 +142,66 @@ def runtime_history_view(rows, *, pagination: dict[str, object]) -> dict[str, ob
         'latest_status': latest.health_status if latest else 'not_observed',
         'latest_score': latest.health_score if latest else None,
         'health_counts': health_counts,
+    }
+
+
+def _diagnostic_rows(items: list[object]) -> list[dict[str, object]]:
+    rows: list[dict[str, object]] = []
+    for item in items:
+        if isinstance(item, Mapping):
+            status = str(item.get('status') or 'unknown')
+            rows.append({
+                'key': str(item.get('key') or ''),
+                'label': str(item.get('label') or present_key_label(str(item.get('key') or 'Diagnostic'))),
+                'category': str(item.get('category') or ''),
+                'category_label': present_key_label(str(item.get('category') or 'runtime')),
+                'status': status,
+                'status_label': present_key_label(status),
+                'detail': str(item.get('detail') or 'No diagnostic detail was recorded.'),
+                'severity': str(item.get('severity') or 'info'),
+                'recommendation': str(item.get('recommendation') or ''),
+                'duration_ms': item.get('duration_ms'),
+                'duration_display': present_milliseconds(item.get('duration_ms')),
+            })
+    return rows
+
+
+def _kubernetes_lifecycle_context(provider: str, metadata: Mapping[str, Any] | None) -> dict[str, object] | None:
+    if provider != 'kubernetes':
+        return None
+    metadata = metadata or {}
+    version = str(metadata.get('version') or '')
+    policy = metadata.get('lifecycle_policy')
+    if not isinstance(policy, Mapping):
+        policy = kubernetes_lifecycle_policy(version)
+    selected_adapters = metadata.get('selected_adapters') or {}
+    stable_apis: list[str] = []
+    legacy_apis: list[str] = []
+    if isinstance(selected_adapters, Mapping):
+        for feature_key, adapter in selected_adapters.items():
+            if not isinstance(adapter, Mapping):
+                continue
+            group = str(adapter.get('group') or '')
+            api_version = str(adapter.get('version') or '')
+            resource = str(adapter.get('resource') or '')
+            api = f'{group}/{api_version}' if group else api_version
+            label = f'{api} · {resource}' if resource else api
+            if str(adapter.get('stability') or 'stable') == 'legacy':
+                legacy_apis.append(label)
+            else:
+                stable_apis.append(label)
+    return {
+        'detected_version': str(policy.get('detected_version') or (f'v{version}' if version else 'Unknown')),
+        'lifecycle_status': str(metadata.get('lifecycle_status') or policy.get('lifecycle_status') or 'unknown'),
+        'lifecycle_status_label': present_key_label(str(metadata.get('lifecycle_status') or policy.get('lifecycle_status') or 'unknown')),
+        'current_version_band': str(policy.get('current_version_band') or 'Not defined'),
+        'supported_version_band': str(policy.get('supported_version_band') or 'Not defined'),
+        'supported_constraint': str(policy.get('supported_constraint') or 'Not defined'),
+        'stable_apis': sorted(stable_apis),
+        'legacy_apis': sorted(legacy_apis),
+        'stable_api_count': len(stable_apis),
+        'legacy_api_count': len(legacy_apis),
+        'readiness_reasons': [str(item) for item in (metadata.get('readiness_reasons') or []) if item],
     }
 
 

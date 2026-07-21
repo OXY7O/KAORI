@@ -26,3 +26,16 @@ def test_runtime_observation_is_an_active_data_lifecycle_domain() -> None:
     assert "'runtime_observation':'Provider health, readiness, latency, and capability-drift evidence.'" in presentation
     assert 'RUNTIME_OBSERVATION_RETENTION_DAYS' in config
     assert 'operational_activity,job_execution,runtime_observation' in config
+
+def test_runtime_observation_detail_is_expandable_and_keeps_long_evidence_out_of_summary() -> None:
+    history = Path('app/templates/integrations/partials/_runtime_history.html').read_text(encoding='utf-8')
+    presentation = Path('app/integrations/runtime/presentation.py').read_text(encoding='utf-8')
+    assert '<details id="{{ row.detail_id }}"' in history
+    assert 'View Detail' in history
+    assert 'Health Detail' in history
+    assert 'Diagnostic Evidence' in history
+    assert 'row.message' in history
+    assert "'diagnostics': diagnostics" in presentation
+    assert "'lifecycle_context': lifecycle_context" in presentation
+    assert "'has_detail': bool(" in presentation
+

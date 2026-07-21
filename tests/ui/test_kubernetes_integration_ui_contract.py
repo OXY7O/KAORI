@@ -70,13 +70,19 @@ def test_kubernetes_detail_is_domain_workspace_with_delete_lifecycle():
     assert 'cluster.name|tojson' not in template
 
 
-def test_kubernetes_runtime_history_uses_shared_standard_table():
+def test_kubernetes_runtime_history_uses_shared_expandable_detail_pattern():
     wrapper = _read('app/templates/integrations/kubernetes/partials/_runtime_history.html')
     shared = _read('app/templates/integrations/partials/_runtime_history.html')
     assert "integrations/partials/_runtime_history.html" in wrapper
     assert 'Recent Runtime Observations' in shared
-    assert '<table' in shared
-    assert 'rounded-xl' in shared
+    assert '<details id="{{ row.detail_id }}"' in shared
+    assert 'View Detail' in shared
+    assert 'Health Detail' in shared
+    assert 'Diagnostic Evidence' in shared
+    assert 'Kubernetes Version Lifecycle' in shared
+    assert 'KAORI Current Band' in shared
+    assert 'Accepted Compatibility Contract' in shared
+    assert 'Selected Stable APIs' in shared
     assert 'pagination_ui.navigation_classes(disabled=false)' in shared
     assert 'pagination_ui.navigation_classes(disabled=true)' in shared
 

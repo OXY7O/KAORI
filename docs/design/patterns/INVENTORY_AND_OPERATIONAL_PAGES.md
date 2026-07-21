@@ -114,3 +114,13 @@ Required hierarchy:
 6. Queue Activity describes canonical database-backed execution demand and must not claim worker process liveness.
 
 The registry remains server-paginated with default 5 and options 5/10/25/50. The visible page-size control is numeric only. Refresh, filters, pagination, and cancellation use HTMX without reloading the hero.
+
+## Runtime observation detail pattern
+
+1. Recent Runtime Observations uses compact expandable observation cards rather than forcing long health evidence into a horizontal table row.
+2. The collapsed summary shows observed time, health/readiness, score, capability profile, transition, and a clear `View Detail` affordance.
+3. The expanded detail owns health narrative, latency, compatibility, capability changes, immutable diagnostics, and recommended action.
+4. Kubernetes observations show both the KAORI current lifecycle band and the wider accepted compatibility contract. A version may be technically accepted while still classified as legacy.
+5. Kubernetes detail also lists stable APIs selected by discovery and any legacy fallbacks recorded in that observation.
+6. Scheduled Runtime Health and Full Capability Validation must be described separately: scheduled refresh is lightweight and automatic; full validation is worker-based and on demand after registration or contract changes.
+

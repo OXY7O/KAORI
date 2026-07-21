@@ -36,12 +36,19 @@ class CompatibilityResult:
     missing_capabilities: tuple[str, ...] = ()
 
 
+KUBERNETES_SUPPORTED_VERSION_CONSTRAINT = '>=1.20,<2.0'
+KUBERNETES_CURRENT_MIN_VERSION = Version('1.34')
+KUBERNETES_CURRENT_MAX_VERSION_EXCLUSIVE = Version('1.37')
+KUBERNETES_CURRENT_VERSION_LABEL = 'v1.34–v1.36'
+KUBERNETES_SUPPORTED_VERSION_LABEL = 'v1.20–v1.x'
+
+
 PROFILES: dict[str, tuple[CompatibilityProfile, ...]] = {
     'kubernetes': (
         CompatibilityProfile(
             'kubernetes-api-v1',
             'kubernetes',
-            '>=1.20,<2.0',
+            KUBERNETES_SUPPORTED_VERSION_CONSTRAINT,
             'supported',
             (),
             'KAORI Kubernetes API contract v1. Live API discovery and feature-level RBAC determine readiness.',
@@ -69,11 +76,30 @@ def kubernetes_lifecycle(version: str | None) -> str:
         parsed = Version(normalized)
     except InvalidVersion:
         return 'unknown'
-    if Version('1.34') <= parsed < Version('1.37'):
+    if KUBERNETES_CURRENT_MIN_VERSION <= parsed < KUBERNETES_CURRENT_MAX_VERSION_EXCLUSIVE:
         return 'current'
-    if Version('1.20') <= parsed < Version('1.34'):
+    if Version('1.20') <= parsed < KUBERNETES_CURRENT_MIN_VERSION:
         return 'legacy'
     return 'unknown'
+
+
+def kubernetes_lifecycle_policy(version: str | None) -> dict[str, str]:
+    """Return the KAORI version-lifecycle contract shown to operators.
+
+    The current band is an explicit KAORI support policy, not a claim about the
+    upstream Kubernetes support calendar. Keeping it centralized prevents runtime,
+    validation, and history views from presenting different accepted ranges.
+    """
+    detected = normalize_runtime_version(version or '') or 'unknown'
+    lifecycle = kubernetes_lifecycle(detected)
+    return {
+        'detected_version': f'v{detected}' if detected != 'unknown' else 'Unknown',
+        'lifecycle_status': lifecycle,
+        'current_version_band': KUBERNETES_CURRENT_VERSION_LABEL,
+        'supported_version_band': KUBERNETES_SUPPORTED_VERSION_LABEL,
+        'supported_constraint': KUBERNETES_SUPPORTED_VERSION_CONSTRAINT,
+        'policy_label': 'KAORI Kubernetes lifecycle policy',
+    }
 
 
 

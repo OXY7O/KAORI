@@ -127,6 +127,27 @@ that every source is processed at the same time. A secondary source is selected
 when it is healthier or when the primary source lacks a capability required by
 the requested operation.
 
+## What canonical means in KAORI
+
+In KAORI, **canonical** means the one normalized record or contract that the rest
+of the application treats as the authoritative internal identity. It does not
+mean KAORI replaces the external system as the real-world authority.
+
+Examples:
+
+- One Kubernetes cluster has one canonical KAORI connection identity, even when
+  inventory, runtime, analytics, and governance all refer to it.
+- One Prometheus endpoint is registered once as a canonical source and can be
+  shared through multiple isolated bindings.
+- One background request has one canonical `JobExecution`; multiple users attach
+  as subscribers instead of creating duplicate worker tasks.
+- Kubernetes, Prometheus, and Alertmanager remain authoritative for their live
+  resources and data. KAORI's canonical record is the normalized control-plane
+  representation used for correlation, policy, history, and audit.
+
+The practical rule is: **one internal identity, many references, no duplicate
+configuration records for the same real source**.
+
 ## Runtime persistence and monitoring
 
 Every manual or scheduled runtime refresh must append one
@@ -135,11 +156,10 @@ readiness, health score, diagnostics, compatibility, and the capability
 snapshot observed during that run. Provider configuration remains in the
 provider-owned model; historical runtime evidence remains in the shared model.
 
-Runtime persistence uses rolling per-instance retention. The shared repository
-keeps the latest **100 observations for each provider and provider-native instance
-ID** and deletes older rows in the same transaction as the new observation. This
-also prunes legacy rows that do not yet carry a canonical integration-instance
-foreign key.
+Runtime observations are append-only at write time. KAORI does not prune provider
+history while recording a new observation. Hot retention, archive creation,
+verification, and cleanup are governed centrally by the `runtime_observation`
+domain in **Settings → Data Lifecycle**.
 
 Celery Beat invokes `app.integrations.runtime.tasks.refresh_integration_runtime` as a dispatcher only. The dispatcher performs no provider I/O; it fans out one lightweight runtime-health job per provider instance to the dedicated `integration-runtime` queue. One slow or unreachable source therefore cannot block the remaining integration portfolio. The default interval is five minutes and can be controlled with `INTEGRATION_RUNTIME_MONITORING_*` environment variables.
 
@@ -178,13 +198,12 @@ with 5, 10, 25, and 50 options and uses HTMX for pagination and refresh. Paginat
 must keep the result summary and page-size selector together on the left, with page
 navigation grouped on the right.
 
-Each observation may expose:
-
-- health and score at the observation time;
-- manual or scheduled trigger source;
-- latency and readiness;
-- recovery, degradation, and unhealthy transition markers; and
-- capability additions or removals compared with the immediately older snapshot.
+Each observation exposes a compact summary and an expandable detail view. The
+summary is optimized for scanning; the expanded view owns long health messages,
+readiness, timing, compatibility, capability changes, provider diagnostics, and
+recommended actions. Kubernetes observations additionally show the detected
+version, the KAORI current lifecycle band, the broader accepted compatibility
+contract, selected stable APIs, and any legacy API fallbacks.
 
 The history UI must not calculate provider health or capability support. It only
 presents retained append-only runtime evidence already produced by the adapter and

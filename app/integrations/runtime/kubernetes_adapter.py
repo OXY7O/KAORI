@@ -5,6 +5,7 @@ from typing import Any
 
 from app.integrations.runtime.contracts import CapabilitySnapshot, DiagnosticResult, HealthFactor, RuntimeState
 from app.integrations.runtime.scoring import calculate_health
+from app.integrations.compatibility import kubernetes_lifecycle_policy
 from app.models.integration import KubernetesConnection
 
 
@@ -53,6 +54,7 @@ class KubernetesRuntimeAdapter:
             or cluster.kubernetes_lifecycle_status
             or 'unknown'
         )
+        lifecycle_policy = kubernetes_lifecycle_policy(cluster.kubernetes_version)
         readiness_reasons = tuple(
             str(item) for item in (discovery.get('readiness_reasons') or ()) if item
         )
@@ -111,13 +113,13 @@ class KubernetesRuntimeAdapter:
                 'compatibility',
                 'warning' if lifecycle == 'legacy' else ('pending' if lifecycle == 'unknown' else 'success'),
                 (
-                    ' '.join(readiness_reasons)
-                    if readiness_reasons
-                    else f'Kubernetes {cluster.kubernetes_version or "unknown"} is in the {lifecycle} lifecycle band.'
+                    (' '.join(readiness_reasons) + ' ' if readiness_reasons else '')
+                    + f"KAORI current lifecycle band: {lifecycle_policy['current_version_band']}; "
+                    + f"accepted compatibility contract: {lifecycle_policy['supported_constraint']}."
                 ),
                 severity='warning' if lifecycle == 'legacy' else 'info',
                 recommendation=(
-                    'Plan an upgrade to a current Kubernetes release, then rerun Full Validation.'
+                    f"Plan an upgrade into the KAORI current lifecycle band {lifecycle_policy['current_version_band']}, then rerun Full Validation."
                     if lifecycle == 'legacy'
                     else None
                 ),
@@ -153,6 +155,9 @@ class KubernetesRuntimeAdapter:
                 metadata={
                     'version': cluster.kubernetes_version,
                     'platform': cluster.kubernetes_platform,
+                    'lifecycle_status': lifecycle,
+                    'lifecycle_policy': lifecycle_policy,
+                    'readiness_reasons': list(readiness_reasons),
                     'blocked_features': list(blocked),
                     'legacy_features': list(legacy),
                     'selected_adapters': selected_adapters,
