@@ -31,7 +31,7 @@ from app.alertmanager.status import mark_status
 from app.common.integration_errors import describe_integration_failure
 from app.extensions import db
 from app.integrations.binding_selectors import build_selector, selector_filters
-from app.integrations.lifecycle import bind_instance, ensure_canonical_instance
+from app.integrations.lifecycle import bind_instance, ensure_canonical_instance, invalidate_bindings
 from app.models.alertmanager import AlertmanagerInstance
 from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.models.cluster import Cluster
@@ -140,7 +140,15 @@ def save_alertmanager_instance(
     db.session.flush()
 
     # Refresh canonical metadata after the provider row has received its ID.
-    ensure_canonical_instance(instance, provider_type='alertmanager')
+    canonical = ensure_canonical_instance(instance, provider_type='alertmanager')
+    if not creating:
+        invalidate_bindings(
+            canonical,
+            message=(
+                'Alertmanager connection settings changed. Run Full Validation to refresh '
+                'the provider and all affected scope bindings.'
+            ),
+        )
     if commit:
         try:
             db.session.commit()

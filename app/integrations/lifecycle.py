@@ -47,6 +47,30 @@ def ensure_canonical_instance(provider_record: Any, *, provider_type: str) -> In
     return canonical
 
 
+def invalidate_bindings(
+    canonical: IntegrationInstance,
+    *,
+    message: str,
+) -> int:
+    """Invalidate provider bindings when the connection contract changes.
+
+    Binding freshness is state-driven, not timestamp-driven. Runtime and full
+    provider validation may update provider timestamps without changing the
+    selector contract. Only an explicit connection or selector change should
+    return a binding to ``validation_required``.
+    """
+    count = 0
+    for binding in IntegrationBinding.query.filter_by(
+        integration_instance_id=canonical.id,
+        enabled=True,
+    ).all():
+        binding.validation_status = 'validation_required'
+        binding.validation_message = message
+        binding.last_validated_at = None
+        count += 1
+    return count
+
+
 def bind_instance(
     canonical: IntegrationInstance,
     *,

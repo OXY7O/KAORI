@@ -10,7 +10,8 @@ def test_prometheus_full_validation_refreshes_binding_evidence() -> None:
     for signal in ('kube_node_info', 'kube_namespace_status_phase', 'kube_pod_info'):
         assert signal in service
     assert 'matched_signal' in service
-    assert 'Provider evidence changed after the last scope validation.' in coverage
+    assert 'Provider evidence changed after the last scope validation.' not in coverage
+    assert 'Binding validity is explicit state, not a timestamp comparison.' in coverage
 
 
 def test_coverage_rows_show_status_only_and_consistent_scope_identity() -> None:
@@ -28,3 +29,14 @@ def test_alertmanager_full_validation_refreshes_binding_evidence() -> None:
     assert "result_payload['binding_validation_summary'] = binding_summary" in tasks
     assert 'validate_alertmanager_binding(' in tasks
     assert "'matched_alerts': result.get('matched_alerts')" in tasks
+
+
+def test_connection_contract_changes_explicitly_invalidate_bindings() -> None:
+    lifecycle = Path('app/integrations/lifecycle.py').read_text(encoding='utf-8')
+    prometheus = Path('app/prometheus/service.py').read_text(encoding='utf-8')
+    alertmanager = Path('app/alertmanager/service.py').read_text(encoding='utf-8')
+    assert 'def invalidate_bindings(' in lifecycle
+    assert "binding.validation_status = 'validation_required'" in lifecycle
+    assert 'binding.last_validated_at = None' in lifecycle
+    assert 'invalidate_bindings(' in prometheus
+    assert 'invalidate_bindings(' in alertmanager

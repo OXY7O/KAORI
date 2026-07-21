@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
 from typing import Any
 
 from app.cluster.constants import get_environment_label
@@ -310,16 +309,10 @@ def _coverage_status(
         return 'blocked', 'Source Missing', 'The binding points to a provider record that no longer exists.'
     if shared and not selector_configured:
         return 'blocked', 'Isolation Required', 'This shared source needs a selector before it can safely serve multiple scopes.'
-    source_validated_at = getattr(selected_source, 'last_validated_at', None)
-    binding_validated_at = selected_binding.last_validated_at
-    if source_validated_at is not None and (
-        binding_validated_at is None or _as_comparable_datetime(binding_validated_at) < _as_comparable_datetime(source_validated_at)
-    ):
-        return (
-            'validation_required',
-            'Binding Validation Required',
-            'Provider evidence changed after the last scope validation. Revalidate this binding to refresh coverage.',
-        )
+    # Binding validity is explicit state, not a timestamp comparison. Provider
+    # runtime/full-validation timestamps can move without changing the binding
+    # selector or scope contract. Configuration and selector update paths
+    # explicitly invalidate affected bindings.
     binding_status = (selected_binding.validation_status or 'validation_required').lower()
     if binding_status == 'blocked':
         return 'blocked', 'Binding Blocked', selected_binding.validation_message or 'The source binding failed scope validation.'
@@ -335,13 +328,6 @@ def _coverage_status(
     if readiness == 'blocked':
         return 'blocked', 'Blocked', 'The source is bound but provider readiness currently blocks operational use.'
     return 'validation_required', 'Validation Required', 'The source is bound; complete provider and binding validation before use.'
-
-
-
-def _as_comparable_datetime(value: datetime) -> datetime:
-    if value.tzinfo is None:
-        return value.replace(tzinfo=UTC)
-    return value.astimezone(UTC)
 
 def _role_rank(role: str) -> int:
     return {'primary': 0, 'secondary': 1, 'fallback': 2}.get(role, 9)

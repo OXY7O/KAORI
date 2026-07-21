@@ -15,7 +15,7 @@ from app.integrations.compatibility import (
     get_profile,
 )
 from app.integrations.binding_selectors import build_selector, selector_is_configured
-from app.integrations.lifecycle import bind_instance, ensure_canonical_instance
+from app.integrations.lifecycle import bind_instance, ensure_canonical_instance, invalidate_bindings
 from app.models import Cluster, PrometheusInstance
 from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.prometheus.client import PrometheusClient
@@ -468,6 +468,13 @@ class PrometheusService:
         )
         config.last_validated_at = None
         canonical = ensure_canonical_instance(config, provider_type='prometheus')
+        invalidate_bindings(
+            canonical,
+            message=(
+                'Prometheus connection settings changed. Run Full Validation to refresh '
+                'the provider and all affected scope bindings.'
+            ),
+        )
         bind_instance(
             canonical,
             asset_type=KUBERNETES_CLUSTER_SCOPE,
@@ -629,6 +636,14 @@ def save_prometheus_instance(
     canonical = ensure_canonical_instance(instance, provider_type='prometheus')
     db.session.flush()
     ensure_canonical_instance(instance, provider_type='prometheus')
+    if not creating:
+        invalidate_bindings(
+            canonical,
+            message=(
+                'Prometheus connection settings changed. Run Full Validation to refresh '
+                'the provider and all affected scope bindings.'
+            ),
+        )
     if initial_cluster is not None:
         bind_instance(
             canonical,
