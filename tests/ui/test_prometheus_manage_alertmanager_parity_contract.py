@@ -61,7 +61,9 @@ def test_validation_exposes_full_technical_capability_contract() -> None:
     required = (
         'Capability Technical Detail',
         'Latest Evidence',
-        'Technical Probe',
+        'Why KAORI Checks This',
+        'Technical Checks',
+        'Full PromQL Query',
         'Success Criteria',
         'Required Configuration',
         'Operational Impact',
@@ -97,7 +99,7 @@ def test_runtime_matches_alertmanager_health_and_history_contract() -> None:
         assert value in panel
     for value in (
         'Recent Runtime Observations',
-        'record retention',
+        'Manage Lifecycle',
         'Readiness:',
         'Capability Snapshot',
         'No State Change',

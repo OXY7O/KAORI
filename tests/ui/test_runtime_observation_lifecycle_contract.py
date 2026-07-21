@@ -9,6 +9,7 @@ def test_runtime_observations_are_not_pruned_at_write_time() -> None:
     assert "'retention_limit'" not in repository
     assert 'Retention is governed centrally by KAORI Data Lifecycle.' in history
     assert "domain='runtime_observation'" in history
+    assert 'Manage Lifecycle' in history
     assert '>Rows per page<' not in history
     assert 'aria-label="Runtime observations per page"' in history
 

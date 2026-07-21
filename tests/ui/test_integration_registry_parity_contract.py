@@ -160,12 +160,12 @@ def test_registry_action_column_is_compact_and_table_width_is_reduced() -> None:
     prom = read(PROM_CONTENT)
     alert = read(ROOT / 'app/templates/integrations/alertmanager/partials/_inventory_content.html')
     for source in (prom, alert):
-        assert 'min-w-[860px] table-fixed' in source
+        assert 'min-w-[850px] table-fixed' in source
         assert '<colgroup>' in source
-        assert 'w-[100px] whitespace-nowrap px-3 py-3.5 text-right">Action' in source
-        assert 'w-[100px] whitespace-nowrap px-3 py-4 text-right align-top' in source
+        assert 'w-[88px] whitespace-nowrap px-2.5 py-3.5 text-right">Action' in source
+        assert 'w-[88px] whitespace-nowrap px-2.5 py-4 text-right align-top' in source
         assert 'min-w-[1180px]' not in source
-        assert '<col class="w-[190px]">' in source
+        assert '<col class="w-[212px]">' in source
         assert 'text-xs font-medium leading-5 text-content-secondary">{{ row.validated_at }}' in source
 
 

@@ -98,3 +98,4 @@ When a registry uses icon-only actions, the Actions column width must include ic
 - Do not use horizontally scrolling binding tables for selector-heavy content. Use responsive binding cards with standard KAORI typography.
 - Metrics Identity and Alert Identity values use normal KAORI table/body typography; monospace is reserved for executable commands or code-oriented evidence.
 - Provider registry Connection columns remain proportional and must not push Runtime, Compatibility, Readiness, or Last Validated off-screen.
+- Prometheus and Alertmanager registries reserve the largest column for Connection identity. Readiness and Action remain compact; Action may use a smaller labeled Manage control as long as accessibility and focus treatment remain intact.

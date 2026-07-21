@@ -2,6 +2,7 @@
 {% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "components/context_guidance_card.html" as context_guidance_card %}
 {% import "components/technical_probe.html" as technical_probe %}
+{% import "components/technical_check.html" as technical_check %}
 <section id="alertmanager-validation-workspace" class="relative overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
          {% if validation_job and validation_job.is_active %}
          hx-get="{{ url_for('alertmanager.instance_validation_status', instance_id=instance.id, task_id=validation_job.task_id) }}"
@@ -58,7 +59,7 @@
         <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
             <header class="border-b border-outline-subtle bg-surface-hover px-4 py-3">
                 <p class="text-sm font-semibold text-content-primary">Capability Technical Detail</p>
-                <p class="mt-1 text-xs leading-5 text-content-secondary">Expand a row to see the exact probe, success criteria, required configuration, impact, and fixing steps.</p>
+                <p class="mt-1 text-sm leading-6 text-content-secondary">Expand a capability to review why KAORI checks it, the latest evidence, exact provider requests, success criteria, impact, and remediation.</p>
             </header>
             <div class="divide-y divide-outline-subtle">
                 {% for row in capability_rows %}
@@ -70,7 +71,7 @@
                                     {{ table_label.metadata_label(row.category|title, 'braces') }}
                                     {% if row.required %}{{ table_label.status_label('Required', 'info', 'shield-check') }}{% else %}{{ table_label.status_label('Optional', 'unknown', 'circle-dashed') }}{% endif %}
                                 </div>
-                                <p class="mt-2 text-xs leading-5 text-content-secondary">{{ row.description }}</p>
+                                <p class="mt-2 text-sm leading-6 text-content-secondary">{{ row.description }}</p>
                             </div>
                             <div class="flex shrink-0 items-center gap-2">
                                 {{ table_label.status_label(row.status_label, row.status_tone, row.status_icon) }}
@@ -79,19 +80,45 @@
                         </summary>
                         <div class="border-t border-outline-subtle bg-surface-hover p-4">
                             <div class="grid gap-3 md:grid-cols-2">
-                                <div class="rounded-lg border border-outline-subtle bg-surface-card p-3"><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Latest Evidence</p><p class="mt-2 text-xs leading-5 text-content-secondary">{{ row.evidence }}</p></div>
-                                <div class="md:col-span-1">{{ technical_probe.render(row.probe, label='Technical Probe') }}</div>
-                                <div class="rounded-lg border border-outline-subtle bg-surface-card p-3 md:col-span-2"><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Success Criteria</p><p class="mt-2 text-xs leading-5 text-content-secondary">{{ row.success_criteria }}</p></div>
-                                <div class="rounded-lg border border-brand-outline bg-kaori-soft p-3"><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-kaori-primary">Required Configuration</p><p class="mt-2 text-xs leading-5 text-content-secondary">{{ row.configuration_guidance }}</p></div>
-                                <div class="rounded-lg border border-outline-subtle bg-surface-card p-3"><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Operational Impact</p><p class="mt-2 text-xs leading-5 text-content-secondary">{{ row.impact }}</p></div>
+                                <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
+                                    <p class="text-xs font-semibold text-content-muted">Latest Evidence</p>
+                                    <p class="mt-2 text-sm leading-6 text-content-secondary">{{ row.evidence }}</p>
+                                </div>
+                                <div>{{ technical_probe.render(row.probe, label='Why KAORI Checks This') }}</div>
+                                <div class="rounded-lg border border-outline-subtle bg-surface-card p-3 md:col-span-2">
+                                    <p class="text-xs font-semibold text-content-muted">Success Criteria</p>
+                                    <p class="mt-2 text-sm leading-6 text-content-secondary">{{ row.success_criteria }}</p>
+                                </div>
+                                <div class="rounded-lg border border-brand-outline bg-kaori-soft p-3">
+                                    <p class="text-xs font-semibold text-kaori-primary-dark">Required Configuration</p>
+                                    <p class="mt-2 text-sm leading-6 text-content-secondary">{{ row.configuration_guidance }}</p>
+                                </div>
+                                <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
+                                    <p class="text-xs font-semibold text-content-muted">Operational Impact</p>
+                                    <p class="mt-2 text-sm leading-6 text-content-secondary">{{ row.impact }}</p>
+                                </div>
                             </div>
+
+                            {% if row.technical_checks %}
+                                <section class="mt-3 overflow-hidden rounded-lg border border-outline-subtle bg-surface-card">
+                                    <header class="border-b border-outline-subtle px-4 py-3">
+                                        <p class="text-sm font-semibold text-content-primary">Technical Checks</p>
+                                        <p class="mt-1 text-sm leading-6 text-content-secondary">Expand a check to view the complete API request target and the evidence returned by the configured Alertmanager source.</p>
+                                    </header>
+                                    <div class="space-y-3 p-3">
+                                        {% for check in row.technical_checks %}
+                                            {{ technical_check.render(check, query_label='Full API Request') }}
+                                        {% endfor %}
+                                    </div>
+                                </section>
+                            {% endif %}
                             <div class="mt-3 rounded-lg border {% if row.available %}border-status-normal-border bg-status-normal-soft{% elif row.required %}border-status-critical-border bg-status-critical-soft{% else %}border-status-warning-border bg-status-warning-soft{% endif %} p-3">
                                 <p class="text-xs font-semibold {% if row.available %}text-status-normal-text{% elif row.required %}text-status-critical-text{% else %}text-status-warning-text{% endif %}">Recommended Action</p>
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ row.next_action }}</p>
+                                <p class="mt-1 text-sm leading-6 text-content-secondary">{{ row.next_action }}</p>
                                 {% if not row.available and row.remediation %}
                                     <ol class="mt-3 space-y-2">
                                         {% for step in row.remediation %}
-                                            <li class="flex items-start gap-2 text-xs leading-5 text-content-secondary"><span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-outline-default bg-surface-card text-[10px] font-semibold text-kaori-primary">{{ loop.index }}</span><span>{{ step }}</span></li>
+                                            <li class="flex items-start gap-2 text-sm leading-6 text-content-secondary"><span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-outline-default bg-surface-card text-[10px] font-semibold text-kaori-primary">{{ loop.index }}</span><span>{{ step }}</span></li>
                                         {% endfor %}
                                     </ol>
                                 {% endif %}
@@ -104,7 +131,7 @@
 
         <aside class="space-y-4">
             <div class="rounded-xl border border-brand-outline bg-kaori-soft p-4">
-                <div class="flex items-start gap-3"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-surface-card text-kaori-primary"><i data-lucide="workflow" class="h-4 w-4"></i></span><div><p class="text-sm font-semibold text-content-primary">How KAORI Uses This Evidence</p><p class="mt-1 text-xs leading-5 text-content-secondary">Readiness and source resolution consume the latest capability snapshot. Fix required gaps first, rerun Full Validation, refresh runtime, then confirm the effective source.</p></div></div>
+                <div class="flex items-start gap-3"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-surface-card text-kaori-primary"><i data-lucide="workflow" class="h-4 w-4"></i></span><div><p class="text-sm font-semibold text-content-primary">How KAORI Uses This Evidence</p><p class="mt-1 text-sm leading-6 text-content-secondary">Readiness and source resolution consume the latest capability snapshot. Fix required gaps first, rerun Full Validation, refresh runtime, then confirm the effective source.</p></div></div>
             </div>
             {% set external_criteria_items = [
                 ('Capture Sanitized Evidence', 'from the documented probe without credentials, tokens, personal data, or unrelated alert content.'),
@@ -119,21 +146,21 @@
                 icon='list-checks'
             ) }}
             <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
-                <header class="border-b border-outline-subtle bg-surface-hover px-4 py-3"><p class="text-sm font-semibold text-content-primary">Operational Domain Readiness</p><p class="mt-1 text-xs leading-5 text-content-secondary">Shows which KAORI functions can safely use this connection.</p></header>
+                <header class="border-b border-outline-subtle bg-surface-hover px-4 py-3"><p class="text-sm font-semibold text-content-primary">Operational Domain Readiness</p><p class="mt-1 text-sm leading-6 text-content-secondary">Shows which KAORI functions can safely use this connection.</p></header>
                 <div class="divide-y divide-outline-subtle">
                     {% for row in module_readiness_rows %}
                         {% set module_tone = 'normal' if row.status == 'ready' else ('warning' if row.status == 'degraded' else 'critical') %}
                         {% set module_icon = 'circle-check' if row.status == 'ready' else ('triangle-alert' if row.status == 'degraded' else 'octagon-alert') %}
                         <details class="group">
                             <summary class="flex cursor-pointer list-none items-start justify-between gap-3 px-4 py-4 transition hover:bg-surface-hover [&::-webkit-details-marker]:hidden">
-                                <div><p class="text-sm font-semibold text-content-primary">{{ row.label }}</p><p class="mt-1 text-xs leading-5 text-content-secondary">{{ row.description }}</p></div>
+                                <div><p class="text-sm font-semibold text-content-primary">{{ row.label }}</p><p class="mt-1 text-sm leading-6 text-content-secondary">{{ row.description }}</p></div>
                                 <div class="flex shrink-0 items-center gap-2">{{ table_label.status_label(row.status|title, module_tone, module_icon) }}<i data-lucide="chevron-down" class="h-4 w-4 text-content-muted transition group-open:rotate-180"></i></div>
                             </summary>
                             <div class="space-y-3 border-t border-outline-subtle bg-surface-hover p-4">
-                                <div><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Required Capabilities</p><p class="mt-1 text-xs leading-5 text-content-secondary">{{ row.required_capability_labels|join(', ') }}</p></div>
-                                {% if row.optional_capability_labels %}<div><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Optional Enrichment</p><p class="mt-1 text-xs leading-5 text-content-secondary">{{ row.optional_capability_labels|join(', ') }}</p></div>{% endif %}
+                                <div><p class="text-xs font-semibold text-content-muted">Required Capabilities</p><p class="mt-1 text-sm leading-6 text-content-secondary">{{ row.required_capability_labels|join(', ') }}</p></div>
+                                {% if row.optional_capability_labels %}<div><p class="text-xs font-semibold text-content-muted">Optional Enrichment</p><p class="mt-1 text-sm leading-6 text-content-secondary">{{ row.optional_capability_labels|join(', ') }}</p></div>{% endif %}
                                 {% if row.missing_required_labels %}<div class="rounded-lg border border-status-critical-border bg-status-critical-soft p-3"><p class="text-xs font-semibold text-status-critical-text">Blocking Gaps</p><p class="mt-1 text-xs leading-5 text-content-secondary">{{ row.missing_required_labels|join(', ') }}</p></div>{% elif row.missing_optional_labels %}<div class="rounded-lg border border-status-warning-border bg-status-warning-soft p-3"><p class="text-xs font-semibold text-status-warning-text">Enrichment Gaps</p><p class="mt-1 text-xs leading-5 text-content-secondary">{{ row.missing_optional_labels|join(', ') }}</p></div>{% endif %}
-                                <div><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-kaori-primary">What to Do</p><p class="mt-1 text-xs leading-5 text-content-secondary">{{ row.operator_guidance }}</p></div>
+                                <div><p class="text-xs font-semibold text-kaori-primary-dark">What to Do</p><p class="mt-1 text-sm leading-6 text-content-secondary">{{ row.operator_guidance }}</p></div>
                             </div>
                         </details>
                     {% endfor %}

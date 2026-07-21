@@ -1,11 +1,13 @@
 {% macro render(value, label='Technical Probe') -%}
-<section class="overflow-hidden rounded-lg border border-brand-outline bg-surface-card">
-    <header class="border-b border-brand-outline px-3 py-2.5">
-        <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">{{ label }}</p>
-        <p class="mt-1 text-[11px] leading-4 text-content-muted">Validation expression used internally by KAORI; this is not a standalone shell command.</p>
-    </header>
-    <div class="bg-kaori-soft px-3 py-3">
-        <p class="whitespace-pre-wrap break-words font-mono text-xs leading-5 text-kaori-primary-dark">{{ value or 'No technical probe recorded.' }}</p>
+<section class="rounded-lg border border-brand-outline bg-kaori-soft p-3">
+    <div class="flex items-start gap-3">
+        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-surface-card text-kaori-primary">
+            <i data-lucide="circle-help" class="h-4 w-4" aria-hidden="true"></i>
+        </span>
+        <div class="min-w-0">
+            <p class="text-xs font-semibold text-kaori-primary-dark">{{ label }}</p>
+            <p class="mt-1 text-sm leading-6 text-content-secondary">{{ value or 'KAORI checks this capability to establish provider readiness and dependent operational coverage.' }}</p>
+        </div>
     </div>
 </section>
 {%- endmacro %}

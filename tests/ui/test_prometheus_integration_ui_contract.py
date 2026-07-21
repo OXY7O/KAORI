@@ -62,7 +62,7 @@ def test_prometheus_registry_uses_htmx_filters_and_standard_pagination() -> None
     assert 'Instances & Bindings' not in wrapper
 
     required_content = (
-        'min-w-[860px] table-fixed',
+        'min-w-[850px] table-fixed',
         'status_badge(row.compatibility)',
         'status_badge(row.readiness)',
         'Showing <strong class="font-semibold text-content-primary"',
@@ -123,7 +123,7 @@ def test_prometheus_runtime_history_and_binding_workspace_follow_kaori_violet() 
     assert not missing, f'Prometheus runtime workspace is incomplete: {missing}'
 
     required_history = (
-        'record retention',
+        'Manage Lifecycle',
         'Showing <span class="font-semibold text-content-primary"',
         'aria-label="Runtime observations per page"',
         'pagination_ui.numeric_pages(runtime_history.pagination.page, runtime_history.pagination.total_pages)',

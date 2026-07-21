@@ -32,11 +32,20 @@ def test_job_registry_refreshes_current_view_with_htmx() -> None:
     assert 'per_page=job_pagination.per_page' in source
 
 
-def test_prometheus_and_alertmanager_use_non_copyable_technical_probe_values() -> None:
-    component = read("app/templates/components/technical_probe.html")
+def test_prometheus_and_alertmanager_separate_probe_reason_from_runnable_checks() -> None:
+    probe_component = read("app/templates/components/technical_probe.html")
+    check_component = read("app/templates/components/technical_check.html")
     prometheus = read("app/templates/prometheus/partials/_detail_validation_content.html")
     alertmanager = read("app/templates/alertmanager/partials/_detail_validation_content.html")
-    assert 'bg-kaori-soft' in component
-    assert 'navigator.clipboard' not in component
-    assert "technical_probe.render(row.probe, label='Technical Probe')" in prometheus
-    assert "technical_probe.render(row.probe, label='Technical Probe')" in alertmanager
+    assert 'Why KAORI Checks This' in prometheus
+    assert 'Why KAORI Checks This' in alertmanager
+    assert 'navigator.clipboard' not in probe_component
+    assert 'navigator.clipboard' in check_component
+    assert "technical_check.render(check, query_label='Full PromQL Query')" in prometheus
+    assert "technical_check.render(check, query_label='Full API Request')" in alertmanager
+    prometheus_presentation = read("app/prometheus/presentation.py")
+    alertmanager_presentation = read("app/alertmanager/presentation.py")
+    assert 'Exact executable queries are available under Technical Checks.' in prometheus_presentation
+    assert "'query': str(check.get('query') or '')" in prometheus_presentation
+    assert 'Exact request targets are available under Technical Checks.' in alertmanager_presentation
+    assert "'query': request_target" in alertmanager_presentation

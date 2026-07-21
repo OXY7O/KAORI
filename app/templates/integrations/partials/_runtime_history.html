@@ -13,8 +13,8 @@
         </div>
         <div class="flex flex-wrap items-center gap-2">
             {% if current_user.has_permission('settings.view_data_lifecycle') %}
-            <a href="{{ url_for('settings.data_lifecycle.index', tab='policies', domain='runtime_observation') }}" class="kaori-semantic-label inline-flex min-h-6 items-center gap-1.5 rounded-md border border-brand-outline bg-kaori-soft px-2 py-1 text-[10px] font-semibold text-kaori-primary-dark transition hover:bg-kaori-mist">
-                <i data-lucide="archive" class="h-3 w-3 text-kaori-primary"></i>Lifecycle Managed
+            <a href="{{ url_for('settings.data_lifecycle.index', tab='policies', domain='runtime_observation') }}" class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-brand-outline bg-kaori-soft px-4 py-2 text-sm font-semibold text-kaori-primary-dark shadow-sm transition hover:bg-kaori-mist focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                <i data-lucide="archive" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>Manage Lifecycle
             </a>
             {% endif %}
             <button type="button"

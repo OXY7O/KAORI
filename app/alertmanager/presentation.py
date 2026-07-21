@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from app.alertmanager.capabilities import CAPABILITIES, CAPABILITY_BY_KEY
@@ -84,6 +85,15 @@ def build_inventory_context(
     }
 
 
+def _alertmanager_request_target(endpoint: str, probe: str) -> str:
+    match = re.search(r'GET\s+(/api/v2/[A-Za-z0-9_./-]+)', probe or '')
+    if not match:
+        return probe or 'No provider request recorded.'
+    path = match.group(1).rstrip('.,')
+    base = str(endpoint or '').rstrip('/')
+    return f'GET {base}{path}' if base else f'GET {path}'
+
+
 def build_instance_context(instance: AlertmanagerInstance | None = None) -> dict[str, Any]:
     clusters = Cluster.query.order_by(Cluster.created_at.asc(), Cluster.id.asc()).all()
     bindings = list_bindings_for_instance(instance.id) if instance else []
@@ -91,6 +101,12 @@ def build_instance_context(instance: AlertmanagerInstance | None = None) -> dict
     capability_rows = []
     for capability in CAPABILITIES:
         available = capability.key in observed_capabilities
+        evidence = (
+            'Observed during the latest Full Validation.'
+            if available
+            else 'Not observed in the latest Full Validation evidence.'
+        )
+        request_target = _alertmanager_request_target(instance.endpoint if instance else '', capability.probe)
         capability_rows.append({
             'key': capability.key,
             'label': capability.label,
@@ -101,16 +117,28 @@ def build_instance_context(instance: AlertmanagerInstance | None = None) -> dict
             'status_label': 'Observed' if available else ('Required missing' if capability.required else 'Not observed'),
             'status_tone': 'normal' if available else ('critical' if capability.required else 'warning'),
             'status_icon': 'circle-check' if available else ('octagon-alert' if capability.required else 'triangle-alert'),
-            'probe': capability.probe,
+            'probe': (
+                f'KAORI checks this capability to confirm that the configured Alertmanager source can support '
+                f'{capability.impact.rstrip(".").lower()}. Exact request targets are available under Technical Checks.'
+            ),
+            'technical_checks': [{
+                'label': 'Alertmanager API Request',
+                'status': 'available' if available else 'not_observed',
+                'status_label': 'Ready' if available else 'Not Observed',
+                'evidence': evidence,
+                'query': request_target,
+                'registered_query': request_target,
+                'series_count_display': '',
+                'value_summary': '',
+                'error_detail': '',
+                'tone': 'normal' if available else 'warning',
+                'icon': 'circle-check' if available else 'triangle-alert',
+            }],
             'success_criteria': capability.success_criteria,
             'configuration_guidance': capability.configuration_guidance,
             'impact': capability.impact,
             'remediation': list(capability.remediation),
-            'evidence': (
-                'Observed during the latest Full Validation.'
-                if available
-                else 'Not observed in the latest Full Validation evidence.'
-            ),
+            'evidence': evidence,
             'next_action': (
                 'No immediate change is required. Revalidate after connection, proxy, authentication, or alert payload changes.'
                 if available

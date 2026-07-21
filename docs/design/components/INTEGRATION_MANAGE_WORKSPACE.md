@@ -159,23 +159,21 @@ Kubernetes uses the same manage-workspace hierarchy as Alertmanager and Promethe
 
 The Kubernetes Add flow requires a successful synchronous Test Connection before Save Connection is enabled. KAORI issues a short-lived signed proof bound to the current user, identity fields, TLS policy, and kubeconfig fingerprint. Any form change invalidates the proof. The server verifies the proof and repeats the connection probe immediately before persistence. Test, rejection, persistence, and failure outcomes must create persistent toast feedback and Activity Audit records.
 
-## Shared terminal evidence
+## Capability evidence and runnable checks
 
-Technical probes that can be executed from a shell are rendered with the shared terminal component rather than a neutral text box. The terminal contract includes:
+Capability Technical Detail separates explanation from executable evidence:
 
-- dark technical surface and monospace command text;
-- a visible prompt marker;
-- a concise label identifying the probe context;
-- an accessible Copy action;
-- sanitized commands only—never secrets, bearer tokens, passwords, or raw kubeconfig material.
-
-Use this presentation for PromQL probes, Alertmanager API checks, `kubectl auth can-i`, and similar operator-verification commands.
+- **Why KAORI Checks This** uses normal KAORI body typography and explains the operational reason for the capability check.
+- **Technical Checks** is expandable and contains the complete PromQL expression, Alertmanager API request target, or another provider-specific check.
+- Runnable expressions use a Violet technical surface, monospace only for the expression itself, and an accessible Copy action.
+- Shell-style terminal presentation is reserved for actual CLI commands such as `kubectl auth can-i`; PromQL and API request targets must not be presented with a fake shell prompt.
+- Technical evidence must never contain passwords, bearer tokens, kubeconfig data, or other secrets.
 
 ## Shared runtime-history component
 
 Prometheus, Alertmanager, and Kubernetes use one Recent Runtime Observations component. Provider wrappers supply only the provider label, route, loading ID, and runtime-history context. The shared component owns:
 
-- title box and retention label;
+- title box and a `Manage Lifecycle` button when the user can view Data Lifecycle;
 - summary metrics;
 - technical observation table;
 - empty state;

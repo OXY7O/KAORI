@@ -175,11 +175,15 @@ def _capability_row(item: dict[str, Any]) -> dict[str, Any]:
     recommendation = str(item.get('recommendation') or (definition.recommendation if definition else 'Review the metrics pipeline and rerun Full Validation.'))
     possible_causes = [str(value) for value in item.get('possible_causes') or () if value]
 
-    probe_parts: list[str] = []
-    if validation_query:
-        probe_parts.append(str(validation_query))
-    if technical_checks:
-        probe_parts.append(f'{len(technical_checks)} technical checks')
+    if validation_query and not any(check.get('query') for check in technical_checks):
+        technical_checks.insert(0, {
+            'label': 'Validation Query',
+            'status': 'available' if available else status,
+            'status_label': 'Ready' if available else status.replace('_', ' ').title(),
+            'evidence': item.get('observed') or item.get('evidence') or 'The validator did not record a query result.',
+            'query': str(validation_query),
+            'registered_query': str(validation_query),
+        })
 
     return {
         'key': key,
@@ -192,7 +196,7 @@ def _capability_row(item: dict[str, Any]) -> dict[str, Any]:
         'status_tone': status_tone,
         'status_icon': status_icon,
         'evidence': item.get('observed') or item.get('evidence') or 'No technical evidence recorded.',
-        'probe': ' · '.join(probe_parts) or 'Capability discovery and exact registered query evidence.',
+        'probe': _probe_reason(key, required_by, source_owner),
         'success_criteria': item.get('expected') or _expected_criteria(expected_signals),
         'configuration_guidance': recommendation,
         'impact': item.get('impact') or (definition.impact if definition else 'Dependent analytics may be degraded.'),
@@ -209,16 +213,29 @@ def _capability_row(item: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _technical_check_row(check: dict[str, Any]) -> dict[str, str]:
+def _technical_check_row(check: dict[str, Any]) -> dict[str, Any]:
     status = str(check.get('status') or 'not_observed')
     return {
         'label': str(check.get('label') or 'Technical Check'),
         'status': status,
         'status_label': str(check.get('status_label') or status.replace('_', ' ').title()),
         'evidence': str(check.get('evidence') or 'No evidence recorded.'),
-        'tone': 'normal' if status == 'available' else ('critical' if status in {'missing', 'misconfigured', 'unsupported'} else 'warning'),
-        'icon': 'circle-check' if status == 'available' else ('octagon-alert' if status in {'missing', 'misconfigured', 'unsupported'} else 'triangle-alert'),
+        'query': str(check.get('query') or ''),
+        'registered_query': str(check.get('registered_query') or ''),
+        'series_count_display': str(check.get('series_count_display') or ''),
+        'value_summary': str(check.get('value_summary') or ''),
+        'error_detail': str(check.get('error_detail') or ''),
+        'tone': 'normal' if status in {'available', 'ready'} else ('critical' if status in {'missing', 'misconfigured', 'unsupported', 'failed'} else 'warning'),
+        'icon': 'circle-check' if status in {'available', 'ready'} else ('octagon-alert' if status in {'missing', 'misconfigured', 'unsupported', 'failed'} else 'triangle-alert'),
     }
+
+
+def _probe_reason(key: str, required_by: list[str], source_owner: str) -> str:
+    consumers = ', '.join(required_by) if required_by else 'KAORI operational consumers'
+    return (
+        f'KAORI checks this capability to confirm that {source_owner} can provide reliable evidence '
+        f'for {consumers}. Exact executable queries are available under Technical Checks.'
+    )
 
 
 def _capability_category(key: str) -> str:

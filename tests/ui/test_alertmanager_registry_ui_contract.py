@@ -35,7 +35,7 @@ def test_alertmanager_registry_content_uses_kaori_table_contract() -> None:
         'table_label.metadata_label',
         'status_badge(row.compatibility)',
         'status_badge(row.readiness)',
-        'w-[100px] whitespace-nowrap px-3 py-3.5 text-right">Action',
+        'w-[88px] whitespace-nowrap px-2.5 py-3.5 text-right">Action',
         'aria-label="Connections per page"',
         '<option value="{{ option }}"',
         'pagination.allowed_per_page',
@@ -49,7 +49,7 @@ def test_alertmanager_registry_content_uses_kaori_table_contract() -> None:
     assert not missing, f'Alertmanager registry table contract is incomplete: {missing}'
     assert 'font-mono' not in source
     assert '>Endpoint<' not in source
-    assert 'min-w-[860px] table-fixed' in source
+    assert 'min-w-[850px] table-fixed' in source
 
 def test_alertmanager_registry_copy_uses_global_operational_positioning() -> None:
     source = Path(
