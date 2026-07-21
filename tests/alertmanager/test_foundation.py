@@ -17,12 +17,8 @@ from app.alertmanager.service import (  # noqa: E402
     save_alertmanager_instance,
 )
 from app.extensions import db  # noqa: E402
-from app.models import (  # noqa: E402
-    AlertmanagerBinding,
-    AlertmanagerConfig,
-    AlertmanagerInstance,
-    Cluster,
-)
+from app.models import AlertmanagerInstance, Cluster  # noqa: E402
+from app.models.integration import IntegrationBinding  # noqa: E402
 
 
 @pytest.fixture
@@ -57,7 +53,6 @@ def _cluster(name: str = 'Cluster A') -> Cluster:
     cluster = Cluster(
         name=name,
         environment='production',
-        kubeconfig='apiVersion: v1\nclusters: []',
     )
     db.session.add(cluster)
     db.session.flush()
@@ -105,7 +100,7 @@ def test_scope_status_exposes_only_sanitized_console_endpoint(app) -> None:
             endpoint='https://alertmanager.example.test/proxy',
         )
     )
-    create_or_update_binding(
+    binding = create_or_update_binding(
         instance=instance,
         form=AlertmanagerBindingForm(
             scope_type='kubernetes_cluster',
@@ -113,8 +108,12 @@ def test_scope_status_exposes_only_sanitized_console_endpoint(app) -> None:
             binding_role='primary',
             priority=100,
             enabled=True,
+            selector_label='cluster',
+            selector_value=cluster.id,
         ),
     )
+    binding.validation_status = 'ready'
+    db.session.commit()
 
     status = get_scope_status(scope_type='kubernetes_cluster', scope_key=cluster.id)
     assert status['endpoint'] == 'https://alertmanager.example.test/proxy'
@@ -124,7 +123,7 @@ def test_scope_resolver_reads_canonical_alerts_from_bound_instance(app, monkeypa
     instance = save_alertmanager_instance(form=_instance_form(auth_type='none', username=None, password=None))
     instance.readiness_status = 'ready'
     db.session.commit()
-    create_or_update_binding(
+    binding = create_or_update_binding(
         instance=instance,
         form=AlertmanagerBindingForm(
             scope_type='kubernetes_cluster',
@@ -132,8 +131,12 @@ def test_scope_resolver_reads_canonical_alerts_from_bound_instance(app, monkeypa
             binding_role='primary',
             priority=100,
             enabled=True,
+            selector_label='cluster',
+            selector_value=cluster.id,
         ),
     )
+    binding.validation_status = 'ready'
+    db.session.commit()
 
     class FakeClient:
         def get_alerts(self, **_kwargs: Any) -> list[dict[str, Any]]:
@@ -153,7 +156,7 @@ def test_scope_resolver_reads_canonical_alerts_from_bound_instance(app, monkeypa
                 }
             ]
 
-    monkeypatch.setattr('app.alertmanager.reader.build_client', lambda _source: FakeClient())
+    monkeypatch.setattr('app.integrations.alertmanager.reader.build_client', lambda _source: FakeClient())
     result = list_alerts_for_scope(
         scope_type='kubernetes_cluster',
         scope_key=cluster.id,
@@ -177,6 +180,8 @@ def test_only_one_primary_source_is_allowed_per_scope(app) -> None:
         binding_role='primary',
         priority=100,
         enabled=True,
+        selector_label='cluster',
+        selector_value=cluster.id,
     )
     create_or_update_binding(instance=first, form=primary)
 
@@ -191,9 +196,11 @@ def test_only_one_primary_source_is_allowed_per_scope(app) -> None:
             binding_role='fallback',
             priority=200,
             enabled=True,
+            selector_label='cluster',
+            selector_value=cluster.id,
         ),
     )
-    assert AlertmanagerBinding.query.count() == 2
+    assert IntegrationBinding.query.count() == 2
 
 
 
@@ -206,6 +213,8 @@ def test_instance_and_initial_binding_are_created_atomically(app) -> None:
         binding_role='primary',
         priority=100,
         enabled=True,
+        selector_label='cluster',
+        selector_value=cluster.id,
     )
     create_or_update_binding(instance=existing, form=primary)
 
@@ -217,29 +226,40 @@ def test_instance_and_initial_binding_are_created_atomically(app) -> None:
 
     assert AlertmanagerInstance.query.filter_by(name='Rejected New Source').one_or_none() is None
     assert AlertmanagerInstance.query.count() == 1
-    assert AlertmanagerBinding.query.count() == 1
+    assert IntegrationBinding.query.count() == 1
 
-def test_legacy_cluster_config_materializes_instance_and_binding(app) -> None:
+def test_legacy_cluster_bookmark_helper_resolves_canonical_binding(app) -> None:
     cluster = _cluster('Legacy Cluster')
-    legacy = AlertmanagerConfig(
-        cluster_id=cluster.id,
-        endpoint='http://legacy-alertmanager:9093',
-        auth_type='none',
-        timeout=5,
-        verify_ssl=True,
-        readiness_status='ready',
-        last_status='connected',
+    source = save_alertmanager_instance(
+        form=_instance_form(
+            name='Canonical Alertmanager',
+            deployment_type='cluster_managed',
+            endpoint='http://canonical-alertmanager:9093',
+            auth_type='none',
+            username=None,
+            password=None,
+        )
     )
-    db.session.add(legacy)
+    binding = create_or_update_binding(
+        instance=source,
+        form=AlertmanagerBindingForm(
+            scope_type='kubernetes_cluster',
+            scope_key=cluster.id,
+            binding_role='primary',
+            priority=100,
+            enabled=True,
+            selector_label='cluster',
+            selector_value=cluster.id,
+        ),
+    )
+    binding.validation_status = 'ready'
     db.session.commit()
 
     instance = materialize_legacy_cluster_config(cluster.id)
     assert instance is not None
-    assert instance.endpoint == legacy.endpoint
-    assert instance.deployment_type == 'cluster_managed'
-    assert len(instance.bindings) == 1
-    assert instance.bindings[0].scope_type == 'kubernetes_cluster'
-    assert instance.bindings[0].scope_key == cluster.id
-
-    assert materialize_legacy_cluster_config(cluster.id).id == instance.id
+    assert instance.id == source.id
+    assert instance.endpoint == 'http://canonical-alertmanager:9093'
+    assert len(instance.integration_instance.bindings) == 1
+    assert instance.integration_instance.bindings[0].asset_type == 'kubernetes_cluster'
+    assert instance.integration_instance.bindings[0].asset_key == cluster.id
     assert AlertmanagerInstance.query.count() == 1

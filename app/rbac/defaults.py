@@ -133,18 +133,6 @@ DEFAULT_PERMISSIONS = [
         'View cross-user operational activity and background action audit records.',
     ),
     (
-        'settings.export_operational_activity',
-        'access',
-        'export_operational_activity',
-        'Download operational activity archive data and manifests.',
-    ),
-    (
-        'settings.manage_operational_activity_retention',
-        'access',
-        'manage_operational_activity_retention',
-        'Preview, run, verify, and maintain operational activity retention archives.',
-    ),
-    (
         'settings.view_data_lifecycle',
         'settings',
         'view_data_lifecycle',
@@ -276,7 +264,7 @@ DEFAULT_ROLE_PERMISSIONS = {
         'jobs.view',
         'settings.view',
         'settings.view_operational_activity',
-        'settings.export_operational_activity',
+        'settings.export_data_lifecycle',
         'settings.view_data_lifecycle',
         'settings.export_data_lifecycle',
         'users.view',

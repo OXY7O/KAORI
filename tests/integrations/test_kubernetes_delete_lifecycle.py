@@ -15,8 +15,8 @@ def test_cluster_delete_detaches_history_and_removes_scope_bindings():
     assert 'ReportSchedule.query.filter(ReportSchedule.cluster_id == cluster_id)' in block
     assert "IntegrationBinding.asset_type == 'kubernetes_cluster'" in block
     assert 'IntegrationBinding.asset_key == cluster_id' in block
-    assert "PrometheusBinding.scope_type == 'kubernetes_cluster'" in block
-    assert "AlertmanagerBinding.scope_type == 'kubernetes_cluster'" in block
+    assert 'PrometheusBinding' not in block
+    assert 'AlertmanagerBinding' not in block
 
 
 def test_cluster_delete_removes_only_kubernetes_canonical_instance():

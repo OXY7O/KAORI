@@ -3,7 +3,7 @@ from __future__ import annotations
 from math import ceil
 
 from app.extensions.db import db
-from app.models.integration_runtime import IntegrationRuntimeObservation
+from app.models.runtime import IntegrationRuntimeObservation
 
 from .contracts import RuntimeState
 

@@ -85,8 +85,8 @@ def test_manual_full_validation_routes_only_enqueue_and_poll() -> None:
     assert 'refresh_and_record(' not in alert_block
     assert 'validate_integration_instance' in tasks
     assert 'refresh_and_record(' in tasks
-    assert 'prometheus_runtime_adapter' in tasks
-    assert 'alertmanager_runtime_adapter' in tasks
+    assert "get_integration('prometheus').adapter" in tasks
+    assert "get_integration('alertmanager').adapter" in tasks
 
 
 def test_legacy_kubernetes_cluster_test_cannot_bypass_the_worker() -> None:
@@ -101,17 +101,20 @@ def test_legacy_kubernetes_cluster_test_cannot_bypass_the_worker() -> None:
     assert 'legacy_route' in block
 
 
-def test_legacy_prometheus_cluster_validation_cannot_bypass_the_worker() -> None:
-    routes = read('app/prometheus/routes.py')
-    block = route_block(
-        routes,
-        'def validate_integration(\n    cluster_id: str,',
-        "@prometheus_bp.get('/cluster/<string:cluster_id>/runtime/history')",
-    )
-    assert 'enqueue_instance_validation(' in block
-    assert 'refresh_and_record(' not in block
-    assert "url_for('prometheus.instance_detail', instance_id=instance.id) + '#validation'" in block
-    assert 'legacy_route' in block
+def test_legacy_provider_urls_are_get_only_bookmark_redirects() -> None:
+    legacy = read('app/integrations/legacy_routes.py')
+    prom_routes = read('app/prometheus/routes.py')
+    alert_routes = read('app/alertmanager/routes.py')
+
+    assert "@legacy_integrations_bp.get('/prometheus/cluster/<string:cluster_id>')" in legacy
+    assert "@legacy_integrations_bp.get('/alertmanager/cluster/<string:cluster_id>')" in legacy
+    assert 'resolve_instance_for_cluster(cluster_id)' in legacy
+    assert "scope_type='kubernetes_cluster'" in legacy
+    assert 'scope_key=cluster_id' in legacy
+    assert '@legacy_integrations_bp.post' not in legacy
+    assert "'/cluster/<string:cluster_id>/validate'" not in prom_routes
+    assert "'/cluster/<string:cluster_id>/test'" not in prom_routes
+    assert "'/cluster/<string:cluster_id>/test'" not in alert_routes
 
 
 def test_binding_validation_runs_in_worker_not_flask_request() -> None:
@@ -142,16 +145,18 @@ def test_runtime_monitoring_fans_out_lightweight_per_instance_jobs() -> None:
     tasks = read('app/integrations/validation/tasks.py')
     prometheus_service = read('app/prometheus/service.py')
     alertmanager_service = read('app/alertmanager/service.py')
-    kubernetes_service = read('app/kubernetes/service.py')
+    kubernetes_service = read('app/integrations/kubernetes/validation.py')
     cluster_service = read('app/cluster/service.py')
-    kubernetes_adapter = read('app/integrations/runtime/kubernetes_adapter.py')
+    kubernetes_adapter = read('app/integrations/kubernetes/adapter.py')
+    prometheus_adapter = read('app/integrations/prometheus/adapter.py')
+    alertmanager_adapter = read('app/integrations/alertmanager/adapter.py')
 
     assert 'The Beat dispatcher intentionally performs no provider I/O.' in dispatcher
     assert 'enqueue_runtime_refresh(' in dispatcher
     assert 'refresh_and_record(' not in dispatcher
     assert 'refresh_integration_runtime_instance' in tasks
-    assert 'PrometheusService(instance).refresh_runtime_health()' in tasks
-    assert 'refresh_alertmanager_runtime_health(instance)' in tasks
+    assert 'integration = get_integration(provider_type)' in tasks
+    assert "integration.execute('runtime.health', instance)" in tasks
     assert 'def _persist_failure_observation(' in tasks
     assert 'persist_runtime_state(' in tasks
     assert 'def refresh_runtime_health(self)' in prometheus_service
@@ -161,7 +166,8 @@ def test_runtime_monitoring_fans_out_lightweight_per_instance_jobs() -> None:
     assert 'def refresh_cluster_runtime_health(' in cluster_service
     assert 'Preserve compatibility, readiness, API discovery, and capability evidence.' in cluster_service
     assert 'def refresh_health(' in kubernetes_adapter
-    assert 'kubernetes_runtime_adapter.refresh_health(instance)' in tasks
+    assert 'def refresh_health(' in prometheus_adapter
+    assert 'def refresh_health(' in alertmanager_adapter
 
 
 def test_full_validation_and_runtime_refresh_do_not_overlap_per_instance() -> None:

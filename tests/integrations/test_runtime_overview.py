@@ -15,7 +15,6 @@ def test_runtime_overview_pagination_defaults_to_kaori_standard():
 def test_prometheus_runtime_overview_opens_instance_workspace_without_binding():
     source = Path('app/integrations/service.py').read_text(encoding='utf-8')
 
-    assert "'detail_endpoint': 'prometheus.instance_detail'" in source
-    assert "'detail_kwargs': {'instance_id': instance.id}" in source
-    assert "'detail_endpoint': 'prometheus.configuration'" not in source
-    assert "{'cluster_id': primary_binding.scope_key} if primary_binding else {}" not in source
+    assert "'provider': 'prometheus'" in source
+    assert "'instance_id': str(instance.id)" in source
+    assert 'primary_binding.scope_key' not in source

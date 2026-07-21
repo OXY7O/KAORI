@@ -6,8 +6,9 @@ def _read(path: str) -> str:
 
 
 def test_runtime_adapter_validates_instance_directly() -> None:
-    source = _read('app/prometheus/runtime_adapter.py')
+    source = _read('app/integrations/prometheus/adapter.py')
     assert 'PrometheusService(instance).validate_integration()' in source
+    assert "operation == 'client.build'" in source
     assert 'instance.bindings' not in source.split('def refresh', 1)[1].split('def get_state', 1)[0]
 
 
@@ -17,11 +18,8 @@ def test_prometheus_service_accepts_standalone_instance() -> None:
     assert 'self.instance = config' in source
 
 
-def test_prometheus_cluster_configuration_uses_cluster_bound_operations() -> None:
-    source = _read('app/templates/prometheus/config.html')
-    assert "prometheus.test_connection" in source
-    assert "prometheus.validate_integration" in source
-    assert "cluster_id=cluster.id" in source
+def test_prometheus_cluster_configuration_template_is_removed() -> None:
+    assert not Path('app/templates/prometheus/config.html').exists()
 
 
 def test_prometheus_instance_detail_uses_instance_operations() -> None:

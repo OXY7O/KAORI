@@ -1,4 +1,4 @@
-from app.prometheus.query_profiles.audit import PromQLProfileAuditor
+from app.integrations.prometheus.query_profiles.audit import PromQLProfileAuditor
 
 
 class FakeClient:

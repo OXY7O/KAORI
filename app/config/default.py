@@ -204,6 +204,14 @@ class Config:
         'change-me',
     )
 
+    INTEGRATION_CREDENTIAL_KEY = _env_optional_str(
+        'INTEGRATION_CREDENTIAL_KEY',
+    )
+    INTEGRATION_CREDENTIAL_PREVIOUS_KEYS = _env_str(
+        'INTEGRATION_CREDENTIAL_PREVIOUS_KEYS',
+        '',
+    )
+
     SQLALCHEMY_DATABASE_URI = _env_str(
         'DATABASE_URL',
     )
@@ -282,6 +290,7 @@ class Config:
     CELERY = {
         'broker_url': CELERY_BROKER_URL,
         'result_backend': CELERY_RESULT_BACKEND,
+        'task_default_queue': 'default',
         'task_track_started': True,
         'task_send_sent_event': True,
         'worker_send_task_events': True,
@@ -306,6 +315,9 @@ class Config:
         ),
         'task_routes': {
             'app.cluster.tasks.sync_all_clusters': {
+                'queue': 'inventory',
+            },
+            'app.cluster.tasks.sync_single_cluster': {
                 'queue': 'inventory',
             },
             'app.retention.tasks.run_domain_retention': {

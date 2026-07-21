@@ -22,8 +22,8 @@ def test_prometheus_routes_do_not_fallback_to_cluster_relationship():
 
 
 def test_prometheus_client_and_runtime_adapter_are_instance_only():
-    client = _source('app/prometheus/client.py')
-    adapter = _source('app/prometheus/runtime_adapter.py')
+    client = _source('app/integrations/prometheus/client.py')
+    adapter = _source('app/integrations/prometheus/adapter.py')
     assert 'PrometheusConfig' not in client
     assert 'PrometheusConfig' not in adapter
     assert 'PrometheusInstance' in client
@@ -35,5 +35,6 @@ def test_integrations_overview_reads_standalone_provider_instances():
     assert 'PrometheusConfig.query' not in source
     assert 'AlertmanagerConfig.query' not in source
     assert 'PrometheusInstance.query' in source
-    assert 'resolve_instance_for_cluster' in source
-    assert 'resolve_alertmanager_sources' in source
+    assert 'resolve_instance_for_cluster' not in source
+    assert 'resolve_alertmanager_sources' not in source
+    assert 'AlertmanagerInstance.query' in source

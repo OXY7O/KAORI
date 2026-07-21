@@ -187,6 +187,9 @@ Set at least:
 KAORI_IMAGE=ghcr.io/<organization>/kaori:v1.0.0
 APP_VERSION=1.0.0
 SECRET_KEY=<64-or-more-random-characters>
+INTEGRATION_CREDENTIAL_KEY=<dedicated-credential-encryption-key>
+# Set only while rotating keys; remove after all credentials are re-saved.
+INTEGRATION_CREDENTIAL_PREVIOUS_KEYS=
 TRUSTED_HOSTS=kaori.example.com,127.0.0.1,localhost
 DATABASE_URL=postgresql://...
 REDIS_URL=redis://...
@@ -200,6 +203,17 @@ Generate a secret example:
 ```bash
 python3 -c "import secrets; print(secrets.token_urlsafe(64))"
 ```
+
+Generate the dedicated integration credential key:
+
+```bash
+python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+```
+
+Keep `INTEGRATION_CREDENTIAL_KEY` stable across web and worker replicas. During
+rotation, set the new key as active and place old keys in
+`INTEGRATION_CREDENTIAL_PREVIOUS_KEYS` until every stored integration credential
+has been re-saved with the new key.
 
 Log in to a private registry when required:
 

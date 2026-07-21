@@ -2,10 +2,11 @@ from pathlib import Path
 
 
 def test_canonical_runtime_models_exist():
-    source = Path('app/models/integration.py').read_text()
-    assert 'class IntegrationInstance' in source
-    assert 'class IntegrationBinding' in source
-    assert 'class KubernetesConnection' in source
+    integration = Path('app/models/integration.py').read_text()
+    kubernetes = Path('app/models/kubernetes.py').read_text()
+    assert 'class IntegrationInstance' in integration
+    assert 'class IntegrationBinding' in integration
+    assert 'class KubernetesConnection' in kubernetes
 
 
 def test_analytics_dependency_uses_provider_neutral_resolution():
@@ -33,5 +34,5 @@ def test_inventory_and_analytics_templates_do_not_format_datetime():
 
 
 def test_runtime_observation_has_canonical_fk():
-    source = Path('app/models/integration_runtime.py').read_text()
+    source = Path('app/models/runtime.py').read_text()
     assert 'integration_instance_id' in source

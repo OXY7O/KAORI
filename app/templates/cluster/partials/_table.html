@@ -86,14 +86,14 @@
                                 </div>
                                 <div class="min-w-0">
                                     <p class="truncate font-semibold text-content-primary">{{ cluster.name }}</p>
-                                    <p class="mt-1 max-w-md truncate text-xs text-content-muted" title="{{ cluster.server or '-' }}">{{ cluster.server or '-' }}</p>
+                                    <p class="mt-1 max-w-md truncate text-xs text-content-muted" title="{{ cluster.kubernetes_connection.server or '-' }}">{{ cluster.kubernetes_connection.server or '-' }}</p>
 
-                                    {% if cluster.kube_allow_weak_tls or not cluster.kube_verify_ssl %}
+                                    {% if cluster.kubernetes_connection.allow_weak_tls or not cluster.kubernetes_connection.verify_ssl %}
                                         <div class="mt-2 flex flex-wrap items-center gap-1.5">
-                                            {% if cluster.kube_allow_weak_tls %}
+                                            {% if cluster.kubernetes_connection.allow_weak_tls %}
                                                 {{ status_label('Legacy TLS', 'warning', 'shield-alert') }}
                                             {% endif %}
-                                            {% if not cluster.kube_verify_ssl %}
+                                            {% if not cluster.kubernetes_connection.verify_ssl %}
                                                 {{ status_label('TLS verification off', 'warning', 'shield-off') }}
                                             {% endif %}
                                         </div>

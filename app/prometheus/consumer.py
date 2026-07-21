@@ -3,9 +3,9 @@ from __future__ import annotations
 from typing import Any
 
 from app.integrations.consumer import ConsumerDiagnostic, ConsumerResult, ConsumerSource
-from app.models import Cluster, PrometheusInstance
-from app.prometheus.client import PrometheusClient
-from app.prometheus.exceptions import PrometheusError
+from app.integrations.registry import get_integration
+from app.models import Cluster
+from app.integrations.prometheus.exceptions import PrometheusError
 from app.prometheus.resolver import resolve_prometheus_sources
 
 DEFAULT_QUERY_CAPABILITIES = ('instant_query',)
@@ -34,7 +34,8 @@ class PrometheusConsumer:
             )
         self.config = selected.instance
         self.binding = selected.binding
-        self.client = PrometheusClient(
+        self.client = get_integration('prometheus').execute(
+            'client.build',
             self.config,
             scope_selector=self.binding.selector_json,
         )
@@ -262,13 +263,14 @@ class PrometheusConsumer:
         return tuple(missing)
 
     def _source(self) -> ConsumerSource:
+        config = self.config
         return ConsumerSource(
             provider='prometheus',
-            instance_id=self.config.id,
-            instance_name=self.config.name,
-            endpoint_product=self.config.endpoint_product,
-            compatibility_profile=self.config.compatibility_profile,
-            capability_profile=self.config.capability_profile,
-            readiness=self.config.readiness_status,
-            health=self.config.last_status,
+            instance_id=getattr(config, 'id', None),
+            instance_name=getattr(config, 'name', None) or getattr(self.cluster, 'name', None) or 'Prometheus',
+            endpoint_product=getattr(config, 'endpoint_product', None),
+            compatibility_profile=getattr(config, 'compatibility_profile', None),
+            capability_profile=getattr(config, 'capability_profile', None),
+            readiness=getattr(config, 'readiness_status', None),
+            health=getattr(config, 'last_status', None),
         )

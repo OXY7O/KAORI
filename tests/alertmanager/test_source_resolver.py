@@ -10,7 +10,7 @@ os.environ.setdefault('TEST_DATABASE_URL', 'sqlite+pysqlite:///:memory:')
 from app import create_app  # noqa: E402
 from app.alertmanager.bindings import create_or_update_binding  # noqa: E402
 from app.alertmanager.consumer import list_alerts_for_scope  # noqa: E402
-from app.alertmanager.exceptions import AlertmanagerConnectionError  # noqa: E402
+from app.integrations.alertmanager.exceptions import AlertmanagerConnectionError  # noqa: E402
 from app.alertmanager.forms import AlertmanagerBindingForm, AlertmanagerInstanceForm  # noqa: E402
 from app.alertmanager.resolver import resolve_alertmanager_sources  # noqa: E402
 from app.alertmanager.service import save_alertmanager_instance  # noqa: E402
@@ -32,7 +32,6 @@ def _cluster() -> Cluster:
     cluster = Cluster()
     cluster.name = 'Resolver Cluster'
     cluster.environment = 'production'
-    cluster.kubeconfig = 'apiVersion: v1\nclusters: []'
     db.session.add(cluster)
     db.session.flush()
     return cluster
@@ -54,7 +53,7 @@ def _instance(name: str, *, role: str, cluster_id: str, priority: int = 100):
             enabled=True,
         )
     )
-    create_or_update_binding(
+    binding = create_or_update_binding(
         instance=instance,
         form=AlertmanagerBindingForm(
             scope_type='kubernetes_cluster',
@@ -62,8 +61,12 @@ def _instance(name: str, *, role: str, cluster_id: str, priority: int = 100):
             binding_role=role,
             priority=priority,
             enabled=True,
+            selector_label='cluster',
+            selector_value=cluster_id,
         ),
     )
+    binding.validation_status = 'ready'
+    db.session.commit()
     return instance
 
 
@@ -145,7 +148,7 @@ def test_runtime_failure_falls_through_and_records_selection_trace(app, monkeypa
             }]
 
     monkeypatch.setattr(
-        'app.alertmanager.reader.build_client',
+        'app.integrations.alertmanager.reader.build_client',
         lambda source: FakeClient(source.name),
     )
     result = list_alerts_for_scope(

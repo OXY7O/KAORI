@@ -41,8 +41,8 @@ def test_edit_connection_tests_reuse_saved_secret_without_persistence() -> None:
 
 
 def test_kubernetes_readiness_exposes_factor_level_degraded_evidence() -> None:
-    service = read("app/kubernetes/service.py")
-    adapter = read("app/integrations/runtime/kubernetes_adapter.py")
+    service = read("app/integrations/kubernetes/validation.py")
+    adapter = read("app/integrations/kubernetes/adapter.py")
     presentation = read("app/integrations/runtime/presentation.py")
     runtime = read("app/templates/integrations/kubernetes/partials/_runtime_workspace.html")
     capability = read("app/templates/integrations/kubernetes/partials/_capability_workspace.html")
@@ -66,9 +66,9 @@ def test_kubernetes_operational_flow_uses_shared_flow_component() -> None:
 
 
 def test_filesystem_contract_explains_size_and_available_pairs() -> None:
-    contracts = read("app/prometheus/query_profiles/feature_contracts.py")
-    audit = read("app/prometheus/query_profiles/audit.py")
-    capabilities = read("app/prometheus/capabilities.py")
+    contracts = read("app/integrations/prometheus/query_profiles/feature_contracts.py")
+    audit = read("app/integrations/prometheus/query_profiles/audit.py")
+    capabilities = read("app/integrations/prometheus/capabilities.py")
     for fragment in (
         "/var size",
         "/var available",

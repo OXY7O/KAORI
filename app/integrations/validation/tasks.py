@@ -7,14 +7,12 @@ from typing import Any
 from celery import shared_task
 from flask import current_app
 
-from app.alertmanager.runtime_adapter import runtime_adapter as alertmanager_runtime_adapter
 from app.alertmanager.service import (
-    refresh_alertmanager_runtime_health,
     validate_alertmanager_binding,
 )
 from app.extensions import db
 from app.integrations.lifecycle import ensure_canonical_instance
-from app.integrations.runtime.kubernetes_adapter import runtime_adapter as kubernetes_runtime_adapter
+from app.integrations.registry import get_integration
 from app.integrations.runtime.monitoring import refresh_and_record
 from app.integrations.runtime.repository import persist_runtime_state
 from app.integrations.validation.state import (
@@ -35,11 +33,11 @@ from app.jobs.service import (
     update_job_progress,
 )
 from app.models.alertmanager import AlertmanagerInstance
-from app.models.integration import IntegrationBinding, KubernetesConnection
+from app.models.integration import IntegrationBinding
+from app.models.kubernetes import KubernetesConnection
 from app.models.prometheus import PrometheusInstance
 from app.notifications.service import record_operational_activity
-from app.prometheus.runtime_adapter import runtime_adapter as prometheus_runtime_adapter
-from app.prometheus.service import PrometheusService, validate_prometheus_binding
+from app.prometheus.service import validate_prometheus_binding
 
 logger = logging.getLogger(__name__)
 
@@ -172,7 +170,6 @@ def _persist_failure_observation(
 ) -> None:
     """Best-effort persistence for failed runtime or validation attempts."""
     try:
-        _update_worker_phase(self, current=1, total=4, message='Connecting to the provider and loading the validation contract.')
         if provider_type == 'prometheus':
             instance = db.session.get(PrometheusInstance, instance_id)
             if instance is None:
@@ -182,17 +179,17 @@ def _persist_failure_observation(
             instance.last_error = str(error)[:1000]
             instance.last_response_time_ms = None
             db.session.commit()
-            state = prometheus_runtime_adapter.get_state(instance)
+            state = get_integration('prometheus').adapter.get_state(instance)
         elif provider_type == 'alertmanager':
             instance = db.session.get(AlertmanagerInstance, instance_id)
             if instance is None:
                 return
-            state = alertmanager_runtime_adapter.get_state(instance)
+            state = get_integration('alertmanager').adapter.get_state(instance)
         elif provider_type == 'kubernetes':
             instance = db.session.get(KubernetesConnection, instance_id)
             if instance is None:
                 return
-            state = kubernetes_runtime_adapter.get_state(instance)
+            state = get_integration('kubernetes').adapter.get_state(instance)
         else:
             return
         persist_runtime_state(
@@ -343,7 +340,7 @@ def validate_integration_instance(
             if instance is None:
                 raise LookupError('Prometheus instance no longer exists.')
             validation_result, state, _ = refresh_and_record(
-                prometheus_runtime_adapter,
+                get_integration('prometheus').adapter,
                 instance,
                 trigger_type=trigger_type,
             )
@@ -365,7 +362,7 @@ def validate_integration_instance(
             if instance is None:
                 raise LookupError('Alertmanager instance no longer exists.')
             validation_result, state, _ = refresh_and_record(
-                alertmanager_runtime_adapter,
+                get_integration('alertmanager').adapter,
                 instance,
                 trigger_type=trigger_type,
             )
@@ -392,7 +389,7 @@ def validate_integration_instance(
             if connection is None:
                 raise LookupError('Kubernetes connection no longer exists.')
             validation_result, state, _ = refresh_and_record(
-                kubernetes_runtime_adapter,
+                get_integration('kubernetes').adapter,
                 connection,
                 trigger_type=trigger_type,
             )
@@ -742,41 +739,15 @@ def refresh_integration_runtime_instance(
     _store_progress(self, base)
     try:
         _update_worker_phase(self, current=1, total=3, message='Connecting to the provider for a lightweight runtime health check.')
-        if provider_type == 'prometheus':
-            instance = db.session.get(PrometheusInstance, instance_id)
-            if instance is None:
-                raise LookupError('Prometheus instance no longer exists.')
-            result_payload = PrometheusService(instance).refresh_runtime_health()
-            state = prometheus_runtime_adapter.get_state(instance, validation_result=result_payload)
-            persist_runtime_state(
-                state,
-                trigger_type=trigger_type,
-                integration_instance_id=instance.integration_instance_id,
-            )
-        elif provider_type == 'alertmanager':
-            instance = db.session.get(AlertmanagerInstance, instance_id)
-            if instance is None:
-                raise LookupError('Alertmanager instance no longer exists.')
-            result_payload = refresh_alertmanager_runtime_health(instance)
-            state = alertmanager_runtime_adapter.get_state(instance)
-            persist_runtime_state(
-                state,
-                trigger_type=trigger_type,
-                integration_instance_id=instance.integration_instance_id,
-            )
-        elif provider_type == 'kubernetes':
-            instance = db.session.get(KubernetesConnection, instance_id)
-            if instance is None:
-                raise LookupError('Kubernetes connection no longer exists.')
-            result_payload = kubernetes_runtime_adapter.refresh_health(instance)
-            state = kubernetes_runtime_adapter.get_state(instance, validation_result=result_payload)
-            persist_runtime_state(
-                state,
-                trigger_type=trigger_type,
-                integration_instance_id=instance.integration_instance_id,
-            )
-        else:
-            raise ValueError(f'Unsupported integration provider: {provider_type}')
+        integration = get_integration(provider_type)
+        instance = integration.get_instance(instance_id)
+        result_payload = integration.execute('runtime.health', instance)
+        state = integration.adapter.get_state(instance, validation_result=result_payload)
+        persist_runtime_state(
+            state,
+            trigger_type=trigger_type,
+            integration_instance_id=instance.integration_instance_id,
+        )
         _update_worker_phase(self, current=2, total=3, message='Runtime health evidence was collected; persisting the observation.')
         completion_status = (
             'success'

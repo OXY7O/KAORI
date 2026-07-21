@@ -3,11 +3,11 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from app.alertmanager.capabilities import CAPABILITIES, CAPABILITY_BY_KEY
+from app.integrations.alertmanager.capabilities import CAPABILITIES, CAPABILITY_BY_KEY
 from app.alertmanager.repository import count_bindings_by_scope_type, list_bindings_for_instance, list_instances
-from app.alertmanager.requirements import evaluate_module_readiness
+from app.integrations.alertmanager.requirements import evaluate_module_readiness
 from app.alertmanager.resolver import AlertmanagerSourceResolution, resolve_alertmanager_sources
-from app.alertmanager.runtime_adapter import runtime_adapter
+from app.integrations.registry import get_integration
 from app.alertmanager.sanitization import safe_endpoint
 from app.common.presentation import present_user_datetime
 from app.extensions import db
@@ -17,7 +17,7 @@ from app.integrations.coverage import build_provider_coverage
 from app.integrations.runtime.presentation import runtime_history_view, runtime_state_view
 from app.integrations.runtime.repository import paginate_runtime_history
 from app.models.alertmanager import AlertmanagerInstance
-from app.models.integration import IntegrationBinding, IntegrationInstance
+from app.models.integration import IntegrationBinding
 from app.models.cluster import Cluster
 
 
@@ -166,7 +166,7 @@ def build_instance_context(instance: AlertmanagerInstance | None = None) -> dict
             'optional_missing': sum(1 for capability in CAPABILITIES if not capability.required and capability.key not in observed_capabilities),
         },
         'source_resolution_rows': _source_resolution_rows(instance) if instance else [],
-        'runtime_state': runtime_state_view(runtime_adapter.get_state(instance)) if instance else None,
+        'runtime_state': runtime_state_view(get_integration('alertmanager').adapter.get_state(instance)) if instance else None,
         'runtime_history': build_runtime_history_context(instance) if instance else None,
         'scope_type_labels': {
             'kubernetes_cluster': 'Managed cluster',

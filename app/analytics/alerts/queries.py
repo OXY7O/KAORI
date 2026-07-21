@@ -1,6 +1,6 @@
 """Compatibility exports backed by the versioned PromQL query catalog."""
 
-from app.prometheus.query_profiles import get_query_expression
+from app.integrations.prometheus.query_profiles import get_query_expression
 
 PROMETHEUS_ALERTS_QUERY = get_query_expression('analytics.alerts.queries.PROMETHEUS_ALERTS_QUERY')
 PROMETHEUS_FIRING_ALERTS_QUERY = get_query_expression('analytics.alerts.queries.PROMETHEUS_FIRING_ALERTS_QUERY')

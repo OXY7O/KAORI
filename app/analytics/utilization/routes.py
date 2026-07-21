@@ -23,7 +23,7 @@ from app.intelligence.recommendation_engine import (
     count_actionable_recommendations,
     format_recommendation_cards,
 )
-from app.prometheus.exceptions import PrometheusError
+from app.integrations.prometheus.exceptions import PrometheusError
 from app.prometheus.repository import resolve_instance_for_cluster
 from app.prometheus.service import PrometheusService
 from app.rbac.decorators import permission_required

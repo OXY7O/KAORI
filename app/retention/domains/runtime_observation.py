@@ -8,7 +8,7 @@ from flask import current_app
 from sqlalchemy import func
 
 from app.extensions import db
-from app.models.integration_runtime import IntegrationRuntimeObservation
+from app.models.runtime import IntegrationRuntimeObservation
 from app.retention.policy_service import resolve_policy
 from app.retention.types import ArchiveBoundary, PartialCleanupError, RetentionPolicy
 

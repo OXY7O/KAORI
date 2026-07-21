@@ -14,7 +14,7 @@ from kubernetes.config.config_exception import ConfigException
 from urllib3.exceptions import HTTPError as Urllib3HTTPError
 
 from app.extensions import db
-from app.kubernetes.tls import legacy_tls_context
+from app.integrations.kubernetes.tls import legacy_tls_context
 from app.models import Cluster, SecretRevealRequest
 from app.kubernetes_operations.secrets.live_service import (
     LiveSecretSnapshot,
@@ -686,7 +686,7 @@ def reveal_secret_value(request_id: str, *, user_id: int) -> RevealedSecretValue
     secret_object = None
     secret_data: dict[str, str] = {}
     try:
-        with legacy_tls_context(enabled=bool(cluster.kube_allow_weak_tls)):
+        with legacy_tls_context(enabled=bool(cluster.kubernetes_connection.allow_weak_tls)):
             secret_object = core_api(cluster).read_namespaced_secret(
                 name=record.secret_name,
                 namespace=record.namespace,

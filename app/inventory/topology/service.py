@@ -540,7 +540,7 @@ def build_topology_graph(
                 fields=[
                     _field('Environment', get_environment_label(cluster.environment)),
                     _field('Status', cluster.status),
-                    _field('API server', cluster.server),
+                    _field('API server', cluster.kubernetes_connection.server),
                     _field('Kubernetes version', inventory_row.kubernetes_version if inventory_row else None),
                     _field('Nodes', cluster.node_count),
                 ],

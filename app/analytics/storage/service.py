@@ -32,9 +32,9 @@ from app.intelligence.recommendation_engine import (
     format_recommendation_cards,
 )
 from app.models import Cluster
-from app.prometheus.capabilities import definition as capability_definition
+from app.integrations.prometheus.capabilities import definition as capability_definition
 from app.prometheus.consumer import PrometheusConsumer
-from app.prometheus.exceptions import PrometheusError
+from app.integrations.prometheus.exceptions import PrometheusError
 from app.prometheus.service import PrometheusService
 
 

@@ -83,12 +83,35 @@ services:
       - -c
       - >-
         exec celery --app celery_worker:celery_app worker
-        --queues=inventory,maintenance
+        --queues=inventory
         --loglevel="$${CELERY_LOG_LEVEL:-INFO}"
         --concurrency="$${CELERY_WORKER_CONCURRENCY:-1}"
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=128m
     stop_grace_period: 45s
+
+  maintenance-worker:
+    <<: *kaori-image
+    environment:
+      APP_ENV: production
+      WAIT_FOR_DB: "true"
+    init: true
+    restart: unless-stopped
+    read_only: true
+    command:
+      - sh
+      - -c
+      - >-
+        exec celery --app celery_worker:celery_app worker
+        --queues="$${JOB_MAINTENANCE_CELERY_QUEUE:-maintenance}"
+        --loglevel="$${CELERY_LOG_LEVEL:-INFO}"
+        --concurrency="$${JOB_MAINTENANCE_WORKER_CONCURRENCY:-1}"
+        --max-tasks-per-child="$${JOB_MAINTENANCE_MAX_TASKS_PER_CHILD:-500}"
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=128m
+    stop_grace_period: 45s
+    cpus: "${JOB_MAINTENANCE_WORKER_CPU_LIMIT:-0.5}"
+    mem_limit: "${JOB_MAINTENANCE_WORKER_MEMORY_LIMIT:-512m}"
 
   runtime-worker:
     <<: *kaori-image

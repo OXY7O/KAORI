@@ -9,23 +9,21 @@ import yaml
 from sqlalchemy import func, or_
 
 from app.extensions import db
-from app.integrations.kubernetes import kubeconfig_for_cluster
+from app.integrations.kubernetes import connection_for_cluster
 from app.integrations.deletion import DeletionBlocked, kubernetes_deletion_guard
 from app.alertmanager.resolver import resolve_alertmanager_sources
 from app.prometheus.repository import resolve_instance_for_cluster
-from app.kubernetes.service import test_cluster_connection, test_cluster_runtime_health
+from app.integrations.kubernetes.validation import test_cluster_connection, test_cluster_runtime_health
 from app.models import (
-    AlertmanagerBinding,
-    AlertmanagerInstance,
     Cluster,
     ClusterInventory,
     ClusterStatus,
     NamespaceInventory,
-    PrometheusBinding,
     Report,
     ReportSchedule,
 )
-from app.models.integration import IntegrationBinding, IntegrationInstance, KubernetesConnection
+from app.models.integration import IntegrationBinding, IntegrationInstance
+from app.models.kubernetes import KubernetesConnection
 
 DEFAULT_CLUSTER_PER_PAGE = 5
 CLUSTER_PER_PAGE_OPTIONS = [
@@ -144,7 +142,10 @@ def get_filtered_cluster_query(
     search: str,
     environment: str,
 ):
-    query = Cluster.query
+    query = Cluster.query.outerjoin(
+        KubernetesConnection,
+        KubernetesConnection.cluster_id == Cluster.id,
+    )
 
     if environment != 'all':
         query = query.filter(
@@ -164,7 +165,7 @@ def get_filtered_cluster_query(
                 Cluster.environment.ilike(
                     like_pattern,
                 ),
-                Cluster.server.ilike(
+                KubernetesConnection.server.ilike(
                     like_pattern,
                 ),
                 Cluster.status.ilike(
@@ -394,7 +395,19 @@ def get_cluster_by_id(cluster_id: str) -> Cluster | None:
 
 
 
-def _sync_kubernetes_runtime(cluster: Cluster, *, kubeconfig: str | None = None) -> KubernetesConnection:
+def _sync_kubernetes_runtime(
+    cluster: Cluster,
+    *,
+    kubeconfig: str | None = None,
+    server: str | None = None,
+    verify_ssl: bool | None = None,
+    allow_weak_tls: bool | None = None,
+) -> KubernetesConnection:
+    """Converge canonical identity, provider record, and asset binding.
+
+    Cluster is the Kubernetes asset. KubernetesConnection is the only connection
+    and credential authority; this function never writes provider data to Cluster.
+    """
     connection = cluster.kubernetes_connection
     canonical = connection.integration_instance if connection else None
     if canonical is None:
@@ -420,16 +433,28 @@ def _sync_kubernetes_runtime(cluster: Cluster, *, kubeconfig: str | None = None)
         canonical.last_checked_at = cluster.last_check
 
     if connection is None:
+        if not kubeconfig:
+            raise ValueError('Kubeconfig is required when creating a Kubernetes connection.')
         connection = KubernetesConnection(
             integration_instance_id=canonical.id,
             cluster_id=cluster.id,
-            kubeconfig=kubeconfig or '',
+            kubeconfig=kubeconfig,
+            verify_ssl=True if verify_ssl is None else bool(verify_ssl),
+            allow_weak_tls=False if allow_weak_tls is None else bool(allow_weak_tls),
+            server=server,
         )
         db.session.add(connection)
-    connection.kubeconfig = kubeconfig or connection.kubeconfig
-    connection.verify_ssl = cluster.kube_verify_ssl
-    connection.allow_weak_tls = cluster.kube_allow_weak_tls
-    connection.server = cluster.server
+        cluster.kubernetes_connection = connection
+    else:
+        if kubeconfig is not None:
+            connection.kubeconfig = kubeconfig
+        if server is not None:
+            connection.server = server
+        if verify_ssl is not None:
+            connection.verify_ssl = bool(verify_ssl)
+        if allow_weak_tls is not None:
+            connection.allow_weak_tls = bool(allow_weak_tls)
+
     connection.compatibility_profile = cluster.kubernetes_compatibility_profile
     connection.readiness_status = cluster.kubernetes_readiness_status
     connection.validation_message = cluster.kubernetes_validation_message
@@ -499,16 +524,18 @@ def create_cluster(
     cluster.name = name
     cluster.environment = environment
     cluster.description = description
-    cluster.kubeconfig = kubeconfig
-    cluster.server = result['server']
-    cluster.kube_verify_ssl = kube_verify_ssl
-    cluster.kube_allow_weak_tls = kube_allow_weak_tls
 
     db.session.add(
         cluster,
     )
     db.session.flush()
-    _sync_kubernetes_runtime(cluster, kubeconfig=kubeconfig)
+    _sync_kubernetes_runtime(
+        cluster,
+        kubeconfig=kubeconfig,
+        server=result['server'],
+        verify_ssl=kube_verify_ssl,
+        allow_weak_tls=kube_allow_weak_tls,
+    )
     db.session.commit()
 
     return cluster
@@ -517,11 +544,12 @@ def create_cluster(
 
 def refresh_cluster_runtime_health(cluster: Cluster) -> dict[str, Any]:
     """Refresh lightweight API health without rebuilding capability evidence."""
+    connection = connection_for_cluster(cluster)
     result = test_cluster_runtime_health(
-        kubeconfig_content=kubeconfig_for_cluster(cluster),
-        endpoint=cluster.server,
-        verify_ssl=bool(getattr(cluster, 'kube_verify_ssl', True)),
-        allow_weak_tls=bool(getattr(cluster, 'kube_allow_weak_tls', False)),
+        kubeconfig_content=connection.kubeconfig,
+        endpoint=connection.server,
+        verify_ssl=bool(connection.verify_ssl),
+        allow_weak_tls=bool(connection.allow_weak_tls),
     )
     cluster.last_check = datetime.now(UTC)
     if result['success']:
@@ -537,27 +565,12 @@ def refresh_cluster_runtime_health(cluster: Cluster) -> dict[str, Any]:
     return result
 
 def run_test_cluster(cluster: Cluster) -> dict[str, Any]:
-    verify_ssl = bool(
-        getattr(
-            cluster,
-            'kube_verify_ssl',
-            True,
-        )
-    )
-
-    allow_weak_tls = bool(
-        getattr(
-            cluster,
-            'kube_allow_weak_tls',
-            False,
-        )
-    )
-
+    connection = connection_for_cluster(cluster)
     result = test_cluster_connection(
-        kubeconfig_content=kubeconfig_for_cluster(cluster),
-        endpoint=cluster.server,
-        verify_ssl=verify_ssl,
-        allow_weak_tls=allow_weak_tls,
+        kubeconfig_content=connection.kubeconfig,
+        endpoint=connection.server,
+        verify_ssl=bool(connection.verify_ssl),
+        allow_weak_tls=bool(connection.allow_weak_tls),
     )
 
     cluster.last_check = datetime.now(
@@ -605,21 +618,17 @@ def update_cluster(
     if existing:
         raise ValueError('Cluster name already exists')
 
+    connection = connection_for_cluster(cluster)
     connection_changed = bool(kubeconfig) or (
-        bool(cluster.kube_verify_ssl) != bool(kube_verify_ssl)
-        or bool(cluster.kube_allow_weak_tls) != bool(kube_allow_weak_tls)
+        bool(connection.verify_ssl) != bool(kube_verify_ssl)
+        or bool(connection.allow_weak_tls) != bool(kube_allow_weak_tls)
     )
 
     cluster.name = name
     cluster.environment = environment
     cluster.description = description
-    cluster.kube_verify_ssl = kube_verify_ssl
-    cluster.kube_allow_weak_tls = kube_allow_weak_tls
 
-    if kubeconfig:
-        parsed = parse_kubeconfig(kubeconfig)
-        cluster.kubeconfig = kubeconfig
-        cluster.server = parsed['server']
+    parsed = parse_kubeconfig(kubeconfig) if kubeconfig else None
 
     if connection_changed:
         cluster.status = ClusterStatus.UNKNOWN.value
@@ -635,7 +644,13 @@ def update_cluster(
         cluster.kubernetes_last_validated_at = None
         cluster.last_check = None
 
-    _sync_kubernetes_runtime(cluster, kubeconfig=kubeconfig)
+    _sync_kubernetes_runtime(
+        cluster,
+        kubeconfig=kubeconfig,
+        server=parsed['server'] if parsed else connection.server,
+        verify_ssl=kube_verify_ssl,
+        allow_weak_tls=kube_allow_weak_tls,
+    )
     db.session.commit()
 
     return cluster
@@ -677,20 +692,7 @@ def delete_cluster(cluster: Cluster) -> dict[str, int]:
         )
         .delete(synchronize_session=False)
     )
-    legacy_prometheus_bindings = (
-        PrometheusBinding.query.filter(
-            PrometheusBinding.scope_type == 'kubernetes_cluster',
-            PrometheusBinding.scope_key == cluster_id,
-        )
-        .delete(synchronize_session=False)
-    )
-    legacy_alertmanager_bindings = (
-        AlertmanagerBinding.query.filter(
-            AlertmanagerBinding.scope_type == 'kubernetes_cluster',
-            AlertmanagerBinding.scope_key == cluster_id,
-        )
-        .delete(synchronize_session=False)
-    )
+
 
     # The Cluster relationship removes KubernetesConnection and all rows that
     # carry a real cluster FK. Flush before deleting the canonical integration
@@ -705,8 +707,6 @@ def delete_cluster(cluster: Cluster) -> dict[str, int]:
 
     return {
         'canonical_bindings': int(canonical_bindings or 0),
-        'legacy_prometheus_bindings': int(legacy_prometheus_bindings or 0),
-        'legacy_alertmanager_bindings': int(legacy_alertmanager_bindings or 0),
         'detached_reports': int(detached_reports or 0),
         'detached_schedules': int(detached_schedules or 0),
         'canonical_instance_deleted': int(canonical is not None),

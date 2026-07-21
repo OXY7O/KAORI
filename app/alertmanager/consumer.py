@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.alertmanager.contracts import AlertQuery
-from app.alertmanager.reader import read_alerts, read_silences
+from app.integrations.alertmanager.contracts import AlertQuery
+from app.integrations.alertmanager.reader import read_alerts, read_silences
 from app.alertmanager.resolver import AlertmanagerSourceResolution, resolve_alertmanager_sources
 from app.alertmanager.sanitization import safe_endpoint
 from app.integrations.binding_selectors import selector_filters

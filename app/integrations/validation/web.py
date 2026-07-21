@@ -19,7 +19,6 @@ from app.integrations.validation.tasks import (
 from app.jobs.constants import WORKLOAD_RUNTIME, WORKLOAD_VALIDATION
 from app.jobs.fingerprint import build_deduplication_key
 from app.jobs.service import (
-    attach_job_subscriber,
     create_or_attach_job,
     find_active_job,
     mark_job_failed,

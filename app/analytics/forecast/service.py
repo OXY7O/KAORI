@@ -21,7 +21,7 @@ from app.intelligence.recommendation_engine import (
     format_recommendation_cards,
 )
 from app.models import Cluster
-from app.prometheus.exceptions import PrometheusError
+from app.integrations.prometheus.exceptions import PrometheusError
 from app.prometheus.service import PrometheusService
 
 WARNING_THRESHOLD = 75.0

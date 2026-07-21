@@ -1,4 +1,4 @@
-from app.prometheus.capabilities import definition
+from app.integrations.prometheus.capabilities import definition
 
 
 def test_storage_identity_capability_has_actionable_remediation():

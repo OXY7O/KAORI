@@ -1,4 +1,4 @@
-from app.prometheus.query_profiles.feature_contracts import _usable_rows
+from app.integrations.prometheus.query_profiles.feature_contracts import _usable_rows
 
 
 def test_aggregate_vector_without_labels_is_usable():

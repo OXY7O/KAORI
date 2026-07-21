@@ -19,7 +19,7 @@ from app.common.dependencies import (
     prometheus_setup_blocker,
 )
 from app.models import Cluster
-from app.prometheus.exceptions import PrometheusError
+from app.integrations.prometheus.exceptions import PrometheusError
 from app.prometheus.repository import resolve_instance_for_cluster
 from app.prometheus.service import PrometheusService
 

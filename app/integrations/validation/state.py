@@ -146,15 +146,21 @@ def get_active_validation_task_id(
     except Exception:
         # During migration/bootstrap Redis remains a compatibility fallback.
         pass
-    client = _redis_client()
-    value = client.get(
-        _lock_key(
-            provider_type=provider_type,
-            operation=operation,
-            instance_id=instance_id,
-            binding_id=binding_id,
+    # Redis is a compatibility lock during the JobExecution cutover. Read paths
+    # must remain available when Redis is intentionally disabled in tests or
+    # temporarily unavailable; the persistent job registry is the authority.
+    try:
+        client = _redis_client()
+        value = client.get(
+            _lock_key(
+                provider_type=provider_type,
+                operation=operation,
+                instance_id=instance_id,
+                binding_id=binding_id,
+            )
         )
-    )
+    except Exception:
+        return None
     task_id = cast(str | None, value) or None
     if task_id is None:
         return None

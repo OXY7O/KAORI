@@ -9,7 +9,8 @@ def read(path: str) -> str:
 
 def test_prometheus_consumer_resolves_canonical_instance():
     content = read('app/prometheus/consumer.py')
-    assert 'resolve_instance_for_cluster(cluster.id)' in content
+    assert 'resolve_prometheus_sources(' in content
+    assert "get_integration('prometheus').execute(" in content
     assert 'PrometheusConfig.query' not in content
     assert 'from app.models import Cluster, PrometheusConfig' not in content
 
@@ -17,13 +18,14 @@ def test_prometheus_consumer_resolves_canonical_instance():
 def test_unbound_instance_detail_is_available():
     routes = read('app/prometheus/routes.py')
     template = read('app/templates/prometheus/instance_detail.html')
-    assert "@prometheus_bp.get('/instances/<int:instance_id>')" in routes
+    assert "@prometheus_bp.route('/instances/<int:instance_id>', methods=['GET', 'POST'])" in routes
     assert 'cluster = _cluster_for_instance_or_404(instance)' not in routes.split('def instance_detail', 1)[1].split('@prometheus_bp.post', 1)[0]
-    assert 'Runtime is standalone' in template
-    assert "url_for('prometheus.instance_validate'" in template
+    assert "('runtime', 'Runtime & History'" in template
+    validation = read('app/templates/prometheus/partials/_detail_validation_content.html')
+    assert "url_for('prometheus.instance_validate'" in validation
 
 
-def test_instances_page_always_exposes_runtime_detail():
-    content = read('app/templates/prometheus/instances.html')
-    assert 'Open runtime' in content
-    assert '{% if row.primary_cluster_id %}' not in content
+def test_provider_landing_always_exposes_instance_workspace():
+    content = read('app/templates/integrations/prometheus/partials/_inventory_content.html')
+    assert "url_for('prometheus.instance_detail', instance_id=row.instance_id)" in content
+    assert 'primary_cluster_id' not in content

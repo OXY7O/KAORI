@@ -142,7 +142,7 @@
                                 </td>
                                 <td class="px-4 py-3">
                                     <p class="font-semibold text-content-primary">{{ step.label }}</p>
-                                    <p class="mt-1 text-xs text-content-secondary">{{ step.category|replace('_', ' ')|title }}</p>
+                                    <p class="mt-1 text-xs text-content-secondary">{{ step.category_label }}</p>
                                 </td>
                                 <td class="px-4 py-3">{{ table_label.status_label('Passed' if step.status == 'success' else ('Failed' if step.status == 'failed' else 'Pending'), step_tone, step_icon) }}</td>
                                 <td class="px-4 py-3 text-xs leading-5 text-content-secondary">{{ step.detail or 'No evidence recorded.' }}</td>

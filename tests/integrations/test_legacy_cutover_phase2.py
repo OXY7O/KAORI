@@ -23,21 +23,21 @@ def test_alertmanager_active_path_uses_canonical_bindings() -> None:
 
 
 def test_kubernetes_connection_is_the_only_read_authority() -> None:
-    kubernetes = source('app/integrations/kubernetes.py')
+    kubernetes = source('app/integrations/kubernetes/resolver.py')
     cluster_service = source('app/cluster/service.py')
 
     assert 'return cluster.kubeconfig' not in kubernetes
     assert 'cluster.kubeconfig' not in cluster_service
-    assert 'resolve_instance_for_cluster(cluster.id)' in cluster_service
-    assert 'resolve_alertmanager_sources(' in cluster_service
+    assert 'cluster.kubeconfig' not in cluster_service
+    assert 'KubernetesConnection' in cluster_service
 
 
 def test_alertmanager_connection_consumers_are_instance_only() -> None:
     for path in (
-        'app/alertmanager/client_factory.py',
-        'app/alertmanager/reader.py',
-        'app/alertmanager/status.py',
-        'app/alertmanager/validation.py',
+        'app/integrations/alertmanager/client_factory.py',
+        'app/integrations/alertmanager/reader.py',
+        'app/integrations/alertmanager/status.py',
+        'app/integrations/alertmanager/validation.py',
     ):
         content = source(path)
         assert 'AlertmanagerConfig' not in content

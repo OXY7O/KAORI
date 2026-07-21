@@ -10,7 +10,7 @@ from app import create_app
 from app.extensions import db
 from app.integrations.runtime.contracts import CapabilitySnapshot, HealthState, RuntimeState
 from app.integrations.runtime.repository import persist_runtime_state
-from app.models.integration_runtime import IntegrationRuntimeObservation
+from app.models.runtime import IntegrationRuntimeObservation
 
 
 @pytest.fixture

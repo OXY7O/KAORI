@@ -21,7 +21,7 @@ def test_bind_first_workspaces_are_available_for_both_providers() -> None:
 
 
 def test_shared_source_isolation_is_applied_at_consumer_boundaries() -> None:
-    prometheus_client = read('app/prometheus/client.py')
+    prometheus_client = read('app/integrations/prometheus/client.py')
     prometheus_consumer = read('app/prometheus/consumer.py')
     alertmanager_consumer = read('app/alertmanager/consumer.py')
 

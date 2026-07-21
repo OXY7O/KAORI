@@ -11,9 +11,8 @@ from kubernetes.client.exceptions import ApiException
 from kubernetes.config.config_exception import ConfigException
 from urllib3.exceptions import HTTPError as Urllib3HTTPError
 
-from app.integrations.kubernetes import kubeconfig_for_cluster
-from app.kubernetes.client import KubernetesClient
-from app.kubernetes.tls import legacy_tls_context
+from app.integrations.kubernetes.tls import legacy_tls_context
+from app.integrations.registry import get_integration
 from app.models.cluster import Cluster
 from app.models.inventory import ConfigurationInventory, PodInventory
 
@@ -255,15 +254,15 @@ def _parse_entries(form: Any) -> tuple[dict[str, str], dict[str, bytes]]:
 
 
 def _api(cluster: Cluster) -> CoreV1Api:
-    return KubernetesClient(
-        kubeconfig_for_cluster(cluster),
-        verify_ssl=bool(cluster.kube_verify_ssl),
+    return get_integration('kubernetes').execute(
+        'client.build',
+        cluster.kubernetes_connection,
     ).core_api()
 
 
 def _live_call(cluster: Cluster, operation: str, callback: Any) -> Any:
     try:
-        with legacy_tls_context(enabled=bool(cluster.kube_allow_weak_tls)):
+        with legacy_tls_context(enabled=bool(cluster.kubernetes_connection.allow_weak_tls)):
             return callback(_api(cluster))
     except ApiException:
         raise

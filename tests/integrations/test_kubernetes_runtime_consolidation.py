@@ -18,14 +18,14 @@ def test_kubernetes_is_managed_from_integrations_workspace() -> None:
 
 
 def test_kubernetes_runtime_uses_canonical_connection_and_worker_fanout() -> None:
-    adapter = _read('app/integrations/runtime/kubernetes_adapter.py')
+    adapter = _read('app/integrations/kubernetes/adapter.py')
     dispatcher = _read('app/integrations/runtime/tasks.py')
     validation_tasks = _read('app/integrations/validation/tasks.py')
     assert 'KubernetesConnection' in adapter
     assert "provider = 'kubernetes'" in adapter
     assert "'kubernetes': [row.id for row in KubernetesConnection.query" in dispatcher
     assert 'enqueue_runtime_refresh(' in dispatcher
-    assert 'kubernetes_runtime_adapter' in validation_tasks
+    assert "get_integration('kubernetes').adapter" in validation_tasks
     assert 'refresh_integration_runtime_instance' in validation_tasks
     assert 'blocked_features' in adapter
     assert 'legacy_features' in adapter

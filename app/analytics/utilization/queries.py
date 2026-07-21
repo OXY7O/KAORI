@@ -1,6 +1,6 @@
 """Compatibility exports backed by the versioned PromQL query catalog."""
 
-from app.prometheus.query_profiles import get_query_expression
+from app.integrations.prometheus.query_profiles import get_query_expression
 
 CPU_CAPACITY = get_query_expression('analytics.utilization.queries.CPU_CAPACITY')
 CPU_USAGE = get_query_expression('analytics.utilization.queries.CPU_USAGE')

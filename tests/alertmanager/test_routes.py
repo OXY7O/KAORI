@@ -42,7 +42,6 @@ def test_instance_inventory_detail_and_legacy_cluster_redirect(app) -> None:
     cluster = Cluster(
         name='Cluster A',
         environment='production',
-        kubeconfig='apiVersion: v1\nclusters: []',
     )
     db.session.add_all([user, cluster])
     db.session.flush()
@@ -70,6 +69,8 @@ def test_instance_inventory_detail_and_legacy_cluster_redirect(app) -> None:
             binding_role='primary',
             priority=100,
             enabled=True,
+            selector_label='cluster',
+            selector_value=cluster.id,
         ),
     )
 
@@ -78,12 +79,12 @@ def test_instance_inventory_detail_and_legacy_cluster_redirect(app) -> None:
 
     inventory = client.get('/integrations/alertmanager')
     assert inventory.status_code == 200
-    assert b'Alertmanager Instance Registry' in inventory.data
+    assert b'Alertmanager Integrations' in inventory.data
     assert b'Cluster A Alertmanager' in inventory.data
-    assert b'scope bindings' in inventory.data
-    assert b'Integration posture' in inventory.data
+    assert b'Scope Bindings' in inventory.data
+    assert b'Integration Posture' in inventory.data
     assert b'Alertmanager Integration Overview' in inventory.data
-    assert b'Register Instance' in inventory.data
+    assert b'Register Connection' in inventory.data
 
     partial = client.get(
         '/integrations/alertmanager?q=Cluster+A&per_page=5',
@@ -91,7 +92,7 @@ def test_instance_inventory_detail_and_legacy_cluster_redirect(app) -> None:
     )
     assert partial.status_code == 200
     assert b'Cluster A Alertmanager' in partial.data
-    assert b'alertmanager-inventory-content' not in partial.data
+    assert b'<div id="alertmanager-inventory-content">' not in partial.data
     assert b'alertmanager-inventory-filter-form' not in partial.data
     assert b'Connections per page' in partial.data
 
@@ -104,17 +105,17 @@ def test_instance_inventory_detail_and_legacy_cluster_redirect(app) -> None:
     assert b'Validation &amp; Capabilities' in detail.data
     assert b'Runtime &amp; History' in detail.data
     assert b'Scope &amp; Resolution' in detail.data
-    assert b'Connection contract' in detail.data
-    assert b'Runtime Health & Diagnostics' in detail.data
+    assert b'Connection Contract' in detail.data
+    assert b'Runtime Health &amp; Diagnostics' in detail.data
 
-    legacy = client.get(f'/integrations/alertmanager/cluster/{cluster.id}')
+    legacy = client.get(f'/alertmanager/cluster/{cluster.id}')
     assert legacy.status_code == 302
     assert legacy.headers['Location'].endswith(f'/integrations/alertmanager/instances/{instance.id}')
 
 
 def test_scope_binding_save_uses_htmx_and_rejects_duplicate_scope(app) -> None:
     user = User(username='binding-admin', email='binding-admin@example.test', is_super_admin=True)
-    cluster = Cluster(name='Development Cluster', environment='development', kubeconfig='apiVersion: v1\nclusters: []')
+    cluster = Cluster(name='Development Cluster', environment='development')
     db.session.add_all([user, cluster])
     db.session.flush()
     instance = save_alertmanager_instance(
@@ -142,6 +143,9 @@ def test_scope_binding_save_uses_htmx_and_rejects_duplicate_scope(app) -> None:
         'binding_role': 'primary',
         'priority': '100',
         'enabled': '1',
+        'selector_label': 'cluster',
+        'selector_operator': '=',
+        'selector_value': cluster.id,
     }
 
     created = client.post(
@@ -174,7 +178,7 @@ def test_scope_binding_save_uses_htmx_and_rejects_duplicate_scope(app) -> None:
 
 def test_primary_binding_conflict_identifies_existing_source(app) -> None:
     user = User(username='primary-admin', email='primary-admin@example.test', is_super_admin=True)
-    cluster = Cluster(name='Shared Cluster', environment='production', kubeconfig='apiVersion: v1\nclusters: []')
+    cluster = Cluster(name='Shared Cluster', environment='production')
     db.session.add_all([user, cluster])
     db.session.flush()
 
@@ -197,6 +201,7 @@ def test_primary_binding_conflict_identifies_existing_source(app) -> None:
         form=AlertmanagerBindingForm(
             scope_type='kubernetes_cluster', scope_key=cluster.id,
             binding_role='primary', priority=100, enabled=True,
+            selector_label='cluster', selector_value=cluster.id,
         ),
     )
 
@@ -210,6 +215,9 @@ def test_primary_binding_conflict_identifies_existing_source(app) -> None:
             'binding_role': 'primary',
             'priority': '100',
             'enabled': '1',
+            'selector_label': 'cluster',
+            'selector_operator': '=',
+            'selector_value': cluster.id,
         },
         headers={'HX-Request': 'true'},
     )
@@ -224,7 +232,6 @@ def test_new_instance_page_prefills_cluster_binding_context(app) -> None:
     cluster = Cluster(
         name='Platform Cluster',
         environment='production',
-        kubeconfig='apiVersion: v1\nclusters: []',
     )
     db.session.add_all([user, cluster])
     db.session.commit()
@@ -237,7 +244,7 @@ def test_new_instance_page_prefills_cluster_binding_context(app) -> None:
     assert b'Register Alertmanager Instance' in response.data
     assert b'Platform Cluster Alertmanager' in response.data
     assert b'Initial Scope Binding' in response.data
-    assert b'Alertmanager Scope &amp; Workflow' in response.data
+    assert b'Pre-save Requirements' in response.data
     assert b'Test Connection' in response.data
     assert b'Connection Identity &amp; Contract' in response.data
     assert b'Connection Type Guide' in response.data

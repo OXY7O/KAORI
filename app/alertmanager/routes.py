@@ -4,7 +4,7 @@ import json
 import logging
 from dataclasses import replace
 
-from flask import Blueprint, abort, current_app, jsonify, make_response, redirect, render_template, request, url_for
+from flask import Blueprint, abort, current_app, make_response, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 
@@ -16,22 +16,18 @@ from app.alertmanager.forms import (
 from app.alertmanager.notifications import record_instance_activity
 from app.alertmanager.presentation import build_instance_context, build_runtime_history_context
 from app.alertmanager.registration import issue_registration_proof, verify_registration_proof
-from app.alertmanager.runtime_adapter import runtime_adapter
 from app.alertmanager.service import (
     add_alertmanager_binding,
     create_alertmanager_instance,
     get_alertmanager_binding,
     get_alertmanager_instance,
     get_cluster_by_id,
-    materialize_legacy_cluster_config,
     remove_alertmanager_binding,
     remove_alertmanager_instance,
     save_alertmanager_instance,
-    test_alertmanager_connection,
     test_alertmanager_form_connection,
     update_alertmanager_binding_selector,
 )
-from app.integrations.runtime.presentation import runtime_state_view
 from app.integrations.deletion import DeletionBlocked
 from app.integrations.validation.state import build_validation_snapshot, get_active_validation_task_id
 from app.integrations.validation.web import (
@@ -972,76 +968,3 @@ def delete_instance(instance_id: int) -> ResponseReturnValue:
     )
     location = url_for('integrations.alertmanager')
     return _htmx_redirect(location) if is_htmx else redirect(location)
-
-@alertmanager_bp.route('/cluster/<string:cluster_id>', methods=['GET', 'POST'])
-@permission_required('settings.manage_integrations')
-def cluster_alertmanager_config(cluster_id: str) -> ResponseReturnValue:
-    cluster = get_cluster_by_id(cluster_id)
-    if cluster is None:
-        abort(404)
-    instance = materialize_legacy_cluster_config(cluster_id)
-    if instance is not None:
-        return redirect(url_for('alertmanager.instance_detail', instance_id=instance.id))
-    return redirect(url_for('integrations.bind_alertmanager_source', scope_key=cluster_id))
-
-
-@alertmanager_bp.post('/cluster/<string:cluster_id>/test')
-@permission_required('settings.manage_integrations')
-def test_cluster_alertmanager(cluster_id: str) -> ResponseReturnValue:
-    cluster = get_cluster_by_id(cluster_id)
-    if cluster is None:
-        abort(404)
-    instance = materialize_legacy_cluster_config(cluster_id)
-    try:
-        result = test_alertmanager_connection(cluster_id=cluster_id)
-    except Exception as exc:  # pragma: no cover - defensive compatibility boundary
-        logger.exception('Alertmanager compatibility connection test failed for cluster %s.', cluster_id)
-        result = {
-            'connected': False,
-            'error': 'KAORI could not complete the Alertmanager connection test.',
-            'reason': 'Review endpoint reachability, authentication, TLS settings, scope bindings, and KAORI logs.',
-            'failure_code': type(exc).__name__,
-        }
-    connected = bool(result.get('connected'))
-    feedback = record_instance_activity(
-        user_id=int(current_user.id),
-        instance=instance,
-        event_type='alertmanager_connection_test' if connected else 'alertmanager_connection_test_failed',
-        status='success' if connected else 'error',
-        title='Alertmanager connection verified' if connected else 'Alertmanager connection test failed',
-        message=(
-            f'KAORI reached the Alertmanager connection bound to {cluster.name}.'
-            if connected
-            else f'KAORI could not reach an Alertmanager connection for {cluster.name}.'
-        ),
-        detail=(
-            result.get('reason')
-            or result.get('error')
-            or 'Review endpoint reachability, authentication, TLS settings, and scope bindings.'
-        ),
-        metadata={
-            'cluster_id': cluster.id,
-            'cluster_name': cluster.name,
-            'version': result.get('version'),
-            'response_time_ms': result.get('response_time_ms'),
-            'failure_code': result.get('failure_code'),
-            'compatibility_route': True,
-        },
-        queue_feedback=False,
-    )
-    if _is_htmx_request():
-        return render_template(
-            'components/navigation/_quick_sync_result.html',
-            **feedback,
-            notification_context=get_navigation_notification_context(user_id=int(current_user.id)),
-        )
-    return jsonify(
-        {
-            'success': result.get('connected', False),
-            'version': result.get('version', 'unknown'),
-            'response_time_ms': result.get('response_time_ms', 0),
-            'error': result.get('error'),
-            'reason': result.get('reason'),
-            'failure_code': result.get('failure_code'),
-        }
-    )

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from flask import Blueprint, current_app, redirect, render_template, request, send_file, url_for
+from flask import Blueprint, current_app, render_template, request, send_file, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 

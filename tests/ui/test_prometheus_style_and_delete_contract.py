@@ -39,7 +39,6 @@ def test_prometheus_instance_delete_route_and_service_are_governed() -> None:
 
 
 def test_prometheus_delete_action_is_contextual_and_blocked_by_bindings() -> None:
-    detail = DETAIL.read_text(encoding='utf-8')
     scope = SCOPE.read_text(encoding='utf-8')
 
     required = (
@@ -79,7 +78,6 @@ def test_prometheus_destructive_actions_use_shared_modal_not_browser_confirm() -
 
 
 def test_prometheus_workspaces_reuse_global_style_components() -> None:
-    detail = DETAIL.read_text(encoding='utf-8')
     form = FORM.read_text(encoding='utf-8')
     config = CONFIG.read_text(encoding='utf-8')
     inline_configuration = CONFIG_DETAIL.read_text(encoding='utf-8')

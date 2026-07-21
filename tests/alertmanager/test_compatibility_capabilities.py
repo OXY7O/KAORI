@@ -1,6 +1,6 @@
-from app.alertmanager.probes import discover_payload_capabilities
-from app.alertmanager.profiles import resolve_profile
-from app.alertmanager.requirements import evaluate_module_readiness
+from app.integrations.alertmanager.probes import discover_payload_capabilities
+from app.integrations.alertmanager.profiles import resolve_profile
+from app.integrations.alertmanager.requirements import evaluate_module_readiness
 
 
 def test_payload_capability_discovery_uses_observed_alert_metadata():

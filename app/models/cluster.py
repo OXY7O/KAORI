@@ -11,9 +11,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.extensions import db
 
 if TYPE_CHECKING:
-    from app.models.alertmanager import AlertmanagerConfig
-    from app.models.integration import KubernetesConnection
-    from app.models.prometheus import PrometheusConfig
+    from app.models.kubernetes import KubernetesConnection
 
 
 class ClusterStatus(StrEnum):
@@ -33,20 +31,6 @@ class Cluster(db.Model):
 
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    kubeconfig: Mapped[str] = mapped_column(Text, nullable=False)
-
-    kube_verify_ssl: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=False,
-        default=True,
-    )
-
-    kube_allow_weak_tls: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=False,
-        default=False,
-    )
-
 
     secret_reveal_encryption_verified: Mapped[bool] = mapped_column(
         Boolean,
@@ -60,7 +44,6 @@ class Cluster(db.Model):
         default=False,
     )
 
-    server: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     status: Mapped[str] = mapped_column(String(20), nullable=False, default=ClusterStatus.UNKNOWN.value)
 
@@ -93,19 +76,6 @@ class Cluster(db.Model):
         uselist=False,
     )
 
-    prometheus_config: Mapped[PrometheusConfig | None] = relationship(
-        back_populates='cluster',
-        uselist=False,
-        cascade='all, delete-orphan',
-    )
-
-    alertmanager_config: Mapped[AlertmanagerConfig | None] = relationship(
-        'AlertmanagerConfig',
-        back_populates='cluster',
-        cascade='all, delete-orphan',
-        passive_deletes=True,
-        uselist=False,
-    )
 
     def __repr__(self) -> str:
         return f'<Cluster {self.name}>'

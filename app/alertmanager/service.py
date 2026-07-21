@@ -5,15 +5,13 @@ from typing import Any
 from urllib.parse import urlsplit
 
 from app.alertmanager.bindings import create_or_update_binding, delete_binding, resolve_sources
-from app.alertmanager.client import AlertmanagerClient
-from app.alertmanager.client_factory import build_client
 from app.alertmanager.consumer import (
     KUBERNETES_CLUSTER_SCOPE,
     get_scope_status,
     list_alerts_for_scope,
     list_silences_for_scope,
 )
-from app.alertmanager.exceptions import AlertmanagerError
+from app.integrations.alertmanager.exceptions import AlertmanagerError
 from app.alertmanager.forms import (
     AlertmanagerBindingForm,
     AlertmanagerInstanceForm,
@@ -26,12 +24,13 @@ from app.alertmanager.repository import (
     list_instances,
 )
 from app.alertmanager.resolver import AlertmanagerSourceResolution, resolve_alertmanager_sources
-from app.alertmanager.validation import validate_source
-from app.alertmanager.status import mark_status
+from app.integrations.alertmanager.validation import validate_source
+from app.integrations.alertmanager.status import mark_status
 from app.common.integration_errors import describe_integration_failure
 from app.extensions import db
 from app.integrations.binding_selectors import build_selector, selector_filters
-from app.integrations.lifecycle import bind_instance, ensure_canonical_instance, invalidate_bindings
+from app.integrations.lifecycle import ensure_canonical_instance, invalidate_bindings
+from app.integrations.registry import get_integration
 from app.integrations.deletion import DeletionBlocked, provider_deletion_guard
 from app.models.alertmanager import AlertmanagerInstance
 from app.models.integration import IntegrationBinding, IntegrationInstance
@@ -225,11 +224,10 @@ def validate_alertmanager_binding(
 
 def remove_alertmanager_instance(instance: AlertmanagerInstance) -> None:
     canonical_bindings = get_alertmanager_bindings(instance.id)
-    legacy_binding_count = len(instance.bindings or ())
-    if canonical_bindings or legacy_binding_count:
+    if canonical_bindings:
         raise ValueError(
             'Remove all scope bindings before deleting this Alertmanager instance. '
-            f'Canonical bindings: {len(canonical_bindings)}; legacy bindings: {legacy_binding_count}.'
+            f'Canonical bindings: {len(canonical_bindings)}.'
         )
 
     guard = provider_deletion_guard(
@@ -257,7 +255,7 @@ def remove_alertmanager_instance(instance: AlertmanagerInstance) -> None:
 def refresh_alertmanager_runtime_health(instance: AlertmanagerInstance) -> dict[str, Any]:
     """Refresh Alertmanager reachability without rebuilding capability evidence."""
     try:
-        result = build_client(instance).test_connection()
+        result = get_integration('alertmanager').execute('client.build', instance).test_connection()
     except Exception as exc:
         mark_status(
             instance,
@@ -319,7 +317,8 @@ def test_alertmanager_form_connection(
         elif form.auth_type == 'bearer' and not bearer_token:
             bearer_token = existing_instance.bearer_token
 
-    client = AlertmanagerClient(
+    draft = AlertmanagerInstance(
+        name='Connection Test',
         endpoint=form.endpoint,
         auth_type=form.auth_type,
         username=form.username,
@@ -328,6 +327,7 @@ def test_alertmanager_form_connection(
         timeout=form.timeout,
         verify_ssl=form.verify_ssl,
     )
+    client = get_integration('alertmanager').execute('client.build', draft)
     try:
         result = client.test_connection()
     except AlertmanagerError as exc:
@@ -455,7 +455,7 @@ def materialize_legacy_cluster_config(cluster_id: str) -> AlertmanagerInstance |
 
 
 def build_alertmanager_client(config: AlertmanagerInstance):
-    return build_client(config)
+    return get_integration('alertmanager').execute('client.build', config)
 
 
 def test_alertmanager_connection(*, cluster_id: str) -> dict[str, Any]:

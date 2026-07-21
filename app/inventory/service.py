@@ -8,7 +8,7 @@ from kubernetes.client.exceptions import ApiException
 from sqlalchemy import func, or_, select
 
 from app.extensions import db
-from app.integrations.kubernetes import kubeconfig_for_cluster
+from app.integrations.registry import get_integration
 from app.inventory.collector import (
     get_cluster_version,
     get_configuration_inventory,
@@ -20,9 +20,8 @@ from app.inventory.collector import (
     get_storage_inventory,
     get_workloads,
 )
-from app.kubernetes.client import KubernetesClient
-from app.kubernetes.compatibility import KubernetesDiscovery, list_cluster_resource
-from app.kubernetes.tls import legacy_tls_context
+from app.integrations.kubernetes.compatibility import KubernetesDiscovery, list_cluster_resource
+from app.integrations.kubernetes.tls import legacy_tls_context
 from app.models import (
     Cluster,
     ClusterInventory,
@@ -879,21 +878,10 @@ def _lock_cluster_inventory_sync(
 def sync_inventory(
     cluster: Cluster,
 ) -> None:
-    verify_ssl = bool(
-        getattr(
-            cluster,
-            'kube_verify_ssl',
-            True,
-        )
-    )
-
-    allow_weak_tls = bool(
-        getattr(
-            cluster,
-            'kube_allow_weak_tls',
-            False,
-        )
-    )
+    connection = cluster.kubernetes_connection
+    if connection is None:
+        raise ValueError('The selected cluster has no canonical Kubernetes connection.')
+    allow_weak_tls = bool(connection.allow_weak_tls)
 
     current_stage = 'cluster lock'
 
@@ -905,10 +893,7 @@ def sync_inventory(
         with legacy_tls_context(
             enabled=allow_weak_tls,
         ):
-            client = KubernetesClient(
-                kubeconfig_content=kubeconfig_for_cluster(cluster),
-                verify_ssl=verify_ssl,
-            )
+            client = get_integration('kubernetes').execute('client.build', connection)
 
             core_api = client.core_api()
 
@@ -1298,14 +1283,14 @@ def get_inventory_overview() -> dict[str, Any]:
                 'id': cluster.id,
                 'name': cluster.name,
                 'environment': cluster.environment,
-                'server': cluster.server,
+                'server': cluster.kubernetes_connection.server,
                 'status': cluster.status,
                 'node_count': node_count,
                 'last_check': cluster.last_check,
                 'created_at': cluster.created_at,
                 'updated_at': cluster.updated_at,
-                'kube_verify_ssl': cluster.kube_verify_ssl,
-                'kube_allow_weak_tls': cluster.kube_allow_weak_tls,
+                'kube_verify_ssl': cluster.kubernetes_connection.verify_ssl,
+                'kube_allow_weak_tls': cluster.kubernetes_connection.allow_weak_tls,
                 'workload_count': workload_count,
                 'pod_count': pod_count,
                 'service_count': service_count,

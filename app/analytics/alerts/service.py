@@ -29,7 +29,7 @@ from app.intelligence.recommendation_engine import (
     format_recommendation_cards,
 )
 from app.models import Cluster, NamespaceInventory
-from app.prometheus.exceptions import PrometheusError
+from app.integrations.prometheus.exceptions import PrometheusError
 from app.prometheus.repository import resolve_instance_for_cluster
 from app.prometheus.service import PrometheusService
 

@@ -10,9 +10,8 @@ from kubernetes.client.exceptions import ApiException
 from kubernetes.config.config_exception import ConfigException
 from urllib3.exceptions import HTTPError as Urllib3HTTPError
 
-from app.integrations.kubernetes import kubeconfig_for_cluster
-from app.kubernetes.client import KubernetesClient
-from app.kubernetes.tls import legacy_tls_context
+from app.integrations.kubernetes.tls import legacy_tls_context
+from app.integrations.registry import get_integration
 from app.models import Cluster, ConfigurationInventory
 
 _DNS_LABEL = re.compile(r"^[a-z0-9](?:[-a-z0-9]*[a-z0-9])?$")
@@ -61,9 +60,9 @@ def get_cluster(cluster_id: str | None) -> Cluster:
 
 
 def core_api(cluster: Cluster) -> CoreV1Api:
-    return KubernetesClient(
-        kubeconfig_for_cluster(cluster),
-        verify_ssl=bool(cluster.kube_verify_ssl),
+    return get_integration('kubernetes').execute(
+        'client.build',
+        cluster.kubernetes_connection,
     ).core_api()
 
 
@@ -139,7 +138,7 @@ def list_live_namespaces(
         return []
     cluster = get_cluster(normalized)
     try:
-        with legacy_tls_context(enabled=bool(cluster.kube_allow_weak_tls)):
+        with legacy_tls_context(enabled=bool(cluster.kubernetes_connection.allow_weak_tls)):
             response = cast(V1NamespaceList, core_api(cluster).list_namespace())
     except ApiException as exc:
         raise _api_error(exc, "namespace lookup") from exc
@@ -165,7 +164,7 @@ def list_live_namespaces(
 def verify_live_namespace(cluster: Cluster, namespace: str | None) -> str:
     normalized = validate_resource_name(namespace, "Namespace", namespace=True)
     try:
-        with legacy_tls_context(enabled=bool(cluster.kube_allow_weak_tls)):
+        with legacy_tls_context(enabled=bool(cluster.kubernetes_connection.allow_weak_tls)):
             core_api(cluster).read_namespace(name=normalized)
     except ApiException as exc:
         raise _api_error(exc, "namespace verification") from exc
@@ -198,7 +197,7 @@ def list_live_secrets(
     )
     response: V1SecretList | None = None
     try:
-        with legacy_tls_context(enabled=bool(cluster.kube_allow_weak_tls)):
+        with legacy_tls_context(enabled=bool(cluster.kubernetes_connection.allow_weak_tls)):
             response = cast(
                 V1SecretList,
                 core_api(cluster).list_namespaced_secret(
@@ -255,7 +254,7 @@ def read_live_secret(
     normalized_name = validate_resource_name(secret_name, "Secret name")
     secret: V1Secret | None = None
     try:
-        with legacy_tls_context(enabled=bool(cluster.kube_allow_weak_tls)):
+        with legacy_tls_context(enabled=bool(cluster.kubernetes_connection.allow_weak_tls)):
             secret = cast(
                 V1Secret,
                 core_api(cluster).read_namespaced_secret(

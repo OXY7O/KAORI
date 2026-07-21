@@ -1,6 +1,6 @@
 """Compatibility exports backed by the versioned PromQL query catalog."""
 
-from app.prometheus.query_profiles import get_query_expression
+from app.integrations.prometheus.query_profiles import get_query_expression
 
 NAMESPACE_ACTIVE_QUERY = get_query_expression('analytics.workload.queries.NAMESPACE_ACTIVE_QUERY')
 TENANT_QUOTA_HARD_QUERY = get_query_expression('analytics.workload.queries.TENANT_QUOTA_HARD_QUERY')

@@ -1,16 +1,10 @@
 import logging
-from datetime import UTC, datetime
-from uuid import uuid4
 
-from flask import Blueprint, abort, current_app, jsonify, redirect, render_template, request, url_for
+from flask import Blueprint, abort, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user
 
-from app.cluster.individual_sync_state import (
-    INDIVIDUAL_CLUSTER_SYNC_QUEUE,
-    INDIVIDUAL_CLUSTER_SYNC_TASK_NAME,
-    register_individual_sync_task,
-)
 from app.cluster.onboarding import has_registered_clusters
+from app.cluster.sync_jobs import enqueue_cluster_inventory_sync
 from app.cluster.service import build_cluster_context
 from app.inventory.service import (
     get_cluster_by_id,
@@ -85,45 +79,22 @@ def sync(cluster_id: str):
     if cluster is None:
         abort(404)
 
-    task_id = str(uuid4())
-    created_at = datetime.now(UTC).isoformat()
-    metadata = {
-        'cluster_id': cluster.id,
-        'cluster_name': cluster.name,
-        'requested_by_user_id': current_user.id,
-        'created_at': created_at,
-        'started_at': created_at,
-        'status': 'info',
-        'title': 'Cluster inventory sync in progress',
-        'message': f'Synchronizing Kubernetes inventory for {cluster.name}.',
-    }
-
     try:
-        register_individual_sync_task(
-            task_id=task_id,
-            user_id=current_user.id,
-            metadata=metadata,
-        )
-        current_app.extensions['celery'].send_task(
-            INDIVIDUAL_CLUSTER_SYNC_TASK_NAME,
-            kwargs={
-                'cluster_id': cluster.id,
-                'requested_by_user_id': current_user.id,
-            },
-            task_id=task_id,
-            queue=INDIVIDUAL_CLUSTER_SYNC_QUEUE,
+        job, created = enqueue_cluster_inventory_sync(
+            cluster=cluster,
+            requested_by_user_id=int(current_user.id),
         )
     except Exception:
-        logger.exception('Could not enqueue inventory synchronization for cluster %s.', cluster.id)
+        logger.exception('Could not enqueue canonical inventory synchronization for cluster %s.', cluster.id)
         feedback = record_operational_activity(
             user_id=current_user.id,
             event_type='kubernetes_inventory_sync',
             status='error',
             title='Cluster inventory sync could not start',
             message=f'{cluster.name} inventory synchronization could not be queued.',
-            detail='Verify Redis and the Celery inventory worker before retrying.',
-            action_url=url_for('cluster.list_clusters'),
-            action_label='View clusters',
+            detail='Verify PostgreSQL, Redis, and the Celery inventory worker before retrying.',
+            action_url=url_for('integrations.kubernetes_detail', cluster_id=cluster.id),
+            action_label='Review Kubernetes connection',
             action_icon='server',
             metadata={
                 'cluster_id': cluster.id,
@@ -139,21 +110,33 @@ def sync(cluster_id: str):
                 notification_context=get_navigation_notification_context(user_id=current_user.id),
             ), 503
         queue_quick_action_feedback(feedback)
-        return redirect(request.referrer or url_for('cluster.list_clusters'))
+        return redirect(request.referrer or url_for('integrations.kubernetes'))
 
+    metadata = {
+        'cluster_id': cluster.id,
+        'cluster_name': cluster.name,
+        'requested_by_user_id': current_user.id,
+        'created_at': job.queued_at.isoformat() if job.queued_at else None,
+        'started_at': job.started_at.isoformat() if job.started_at else None,
+        'status': 'info',
+        'title': 'Cluster inventory sync in progress',
+        'message': (
+            f'Synchronizing Kubernetes inventory for {cluster.name}.'
+            if created
+            else f'Using the active Kubernetes inventory job for {cluster.name}.'
+        ),
+        'task_id': str(job.celery_task_id),
+        'job_execution_id': job.id,
+        'celery_state': 'PENDING',
+        'state_label': 'pending',
+        'elapsed_seconds': 0,
+    }
     if request.headers.get('HX-Request') == 'true':
         return render_template(
             'components/navigation/_individual_sync_status.html',
-            sync={
-                **metadata,
-                'task_id': task_id,
-                'celery_state': 'PENDING',
-                'state_label': 'pending',
-                'elapsed_seconds': 0,
-            },
+            sync=metadata,
         ), 202
-
-    return redirect(request.referrer or url_for('cluster.list_clusters'))
+    return redirect(request.referrer or url_for('integrations.kubernetes'))
 
 
 def _paginate_resource_clusters(rows, page: int, per_page: int) -> tuple[list[dict], dict]:

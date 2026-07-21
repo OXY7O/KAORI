@@ -50,6 +50,31 @@ def main() -> int:
     elif _contains_placeholder(secret_key):
         errors.append('SECRET_KEY still contains a placeholder value.')
 
+    credential_key = _value('INTEGRATION_CREDENTIAL_KEY')
+    if len(credential_key) < 32:
+        errors.append('INTEGRATION_CREDENTIAL_KEY must contain at least 32 characters.')
+    elif _contains_placeholder(credential_key):
+        errors.append('INTEGRATION_CREDENTIAL_KEY still contains a placeholder value.')
+    elif credential_key == secret_key:
+        errors.append('INTEGRATION_CREDENTIAL_KEY must be independent from SECRET_KEY.')
+
+    previous_credential_keys = [
+        value.strip()
+        for value in _value('INTEGRATION_CREDENTIAL_PREVIOUS_KEYS').split(',')
+        if value.strip()
+    ]
+    for index, previous_key in enumerate(previous_credential_keys, start=1):
+        if len(previous_key) < 32:
+            errors.append(
+                f'INTEGRATION_CREDENTIAL_PREVIOUS_KEYS entry {index} must contain at least 32 characters.'
+            )
+        elif _contains_placeholder(previous_key):
+            errors.append(
+                f'INTEGRATION_CREDENTIAL_PREVIOUS_KEYS entry {index} contains a placeholder value.'
+            )
+    if credential_key and credential_key in previous_credential_keys:
+        errors.append('INTEGRATION_CREDENTIAL_PREVIOUS_KEYS must not include the active key.')
+
     database_url = _value('DATABASE_URL')
     if not database_url:
         errors.append('DATABASE_URL is required.')

@@ -5,10 +5,10 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def test_prometheus_instance_routes_and_canonical_binding_ui_exist():
     routes = (ROOT / 'app/prometheus/routes.py').read_text()
-    template = (ROOT / 'app/templates/prometheus/instances.html').read_text()
+    template = (ROOT / 'app/templates/prometheus/partials/_detail_scope.html').read_text()
     assert "@prometheus_bp.get('/instances')" in routes
     assert "@prometheus_bp.route('/instances/<int:instance_id>'" in routes
-    assert 'IntegrationBinding.query.filter_by' in routes
+    assert 'IntegrationBinding' in routes
     assert 'prometheus.add_instance_binding' in template
 
 

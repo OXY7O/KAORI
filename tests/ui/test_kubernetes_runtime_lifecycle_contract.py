@@ -12,7 +12,7 @@ def test_kubernetes_runtime_distinguishes_automatic_health_from_on_demand_valida
 
 def test_kubernetes_lifecycle_policy_and_history_show_current_and_accepted_ranges() -> None:
     compatibility = Path('app/integrations/compatibility.py').read_text(encoding='utf-8')
-    adapter = Path('app/integrations/runtime/kubernetes_adapter.py').read_text(encoding='utf-8')
+    adapter = Path('app/integrations/kubernetes/adapter.py').read_text(encoding='utf-8')
     history = Path('app/templates/integrations/partials/_runtime_history.html').read_text(encoding='utf-8')
     assert "KUBERNETES_CURRENT_VERSION_LABEL = 'v1.34–v1.36'" in compatibility
     assert "KUBERNETES_SUPPORTED_VERSION_CONSTRAINT = '>=1.20,<2.0'" in compatibility

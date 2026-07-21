@@ -79,7 +79,7 @@ def test_promql_scope_preserves_label_lists_durations_strings_and_comments() -> 
 
 def test_all_registered_promql_profile_metrics_receive_scope_matcher() -> None:
     selector = build_selector(label='cluster', value='k8s-vm-dev')
-    profile_path = Path(__file__).resolve().parents[2] / 'app/prometheus/query_profiles/kubernetes_v1.py'
+    profile_path = Path(__file__).resolve().parents[2] / 'app/integrations/prometheus/query_profiles/kubernetes_v1.py'
     tree = ast.parse(profile_path.read_text(encoding='utf-8'))
     checked = 0
 

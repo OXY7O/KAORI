@@ -4,7 +4,7 @@ import pytest
 
 from app.integrations.consumer import ConsumerDiagnostic, ConsumerResult, ConsumerSource
 from app.prometheus.consumer import PrometheusConsumer
-from app.prometheus.exceptions import PrometheusError
+from app.integrations.prometheus.exceptions import PrometheusError
 
 
 def test_consumer_result_exposes_safe_canonical_shape():

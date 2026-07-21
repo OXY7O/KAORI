@@ -13,11 +13,12 @@ import importlib.util, sys, types
 from dataclasses import dataclass
 from pathlib import Path
 app=types.ModuleType("app"); app.__path__=[]; sys.modules["app"]=app
-prom=types.ModuleType("app.prometheus"); prom.__path__=[]; sys.modules["app.prometheus"]=prom
-exc=types.ModuleType("app.prometheus.exceptions")
+integrations=types.ModuleType("app.integrations"); integrations.__path__=[]; sys.modules["app.integrations"]=integrations
+prom=types.ModuleType("app.integrations.prometheus"); prom.__path__=[]; sys.modules["app.integrations.prometheus"]=prom
+exc=types.ModuleType("app.integrations.prometheus.exceptions")
 class PrometheusError(Exception): pass
-exc.PrometheusError=PrometheusError; sys.modules["app.prometheus.exceptions"]=exc
-qp=types.ModuleType("app.prometheus.query_profiles"); qp.__path__=[]
+exc.PrometheusError=PrometheusError; sys.modules["app.integrations.prometheus.exceptions"]=exc
+qp=types.ModuleType("app.integrations.prometheus.query_profiles"); qp.__path__=[]
 @dataclass
 class Query: expression: str
 expressions={
@@ -26,9 +27,9 @@ expressions={
 "analytics.storage.queries.NODE_ROOT_FILESYSTEM_SIZE_QUERY": 'node_filesystem_size_bytes{mountpoint="/"}',
 "analytics.storage.queries.NODE_ROOT_FILESYSTEM_AVAILABLE_QUERY": 'node_filesystem_avail_bytes{mountpoint="/"}',
 }
-qp.get_query=lambda key: Query(expressions.get(key, "vector(1)")); sys.modules["app.prometheus.query_profiles"]=qp
+qp.get_query=lambda key: Query(expressions.get(key, "vector(1)")); sys.modules["app.integrations.prometheus.query_profiles"]=qp
 name="feature_contracts_regression"
-spec=importlib.util.spec_from_file_location(name, Path("app/prometheus/query_profiles/feature_contracts.py"))
+spec=importlib.util.spec_from_file_location(name, Path("app/integrations/prometheus/query_profiles/feature_contracts.py"))
 module=importlib.util.module_from_spec(spec); sys.modules[name]=module; spec.loader.exec_module(module)
 contract=next(item for item in module.FEATURE_CONTRACTS if item.key == "storage.filesystem")
 class Client:

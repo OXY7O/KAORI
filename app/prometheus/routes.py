@@ -3,14 +3,12 @@ from __future__ import annotations
 import json
 import logging
 
-from flask import Blueprint, abort, current_app, jsonify, make_response, redirect, render_template, request, url_for
+from flask import Blueprint, abort, current_app, make_response, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 
 from app.cluster.service import get_cluster_by_id
-from app.common.integration_errors import describe_integration_failure
-from app.common.presentation import present_user_datetime
-from app.integrations.runtime.presentation import runtime_history_view, runtime_state_view
+from app.integrations.runtime.presentation import runtime_history_view
 from app.integrations.runtime.repository import paginate_runtime_history
 from app.integrations.validation.state import build_validation_snapshot, get_active_validation_task_id
 from app.integrations.validation.web import (
@@ -23,24 +21,19 @@ from app.integrations.validation.web import (
 from app.extensions.db import db
 from app.integrations.lifecycle import ensure_canonical_instance
 from app.integrations.deletion import DeletionBlocked
-from app.models import Cluster, PrometheusInstance
+from app.models import PrometheusInstance
 from app.models.integration import IntegrationBinding
 from app.notifications.service import (
     get_navigation_notification_context,
     record_operational_activity,
 )
-from app.prometheus.exceptions import PrometheusError
-from app.prometheus.forms import PrometheusConfigForm, PrometheusInstanceForm
-from app.prometheus.presentation import build_instance_context, build_runtime_history_context
+from app.integrations.prometheus.exceptions import PrometheusError
+from app.prometheus.forms import PrometheusInstanceForm
+from app.prometheus.presentation import build_instance_context
 from app.prometheus.registration import issue_registration_proof, verify_registration_proof
 from app.prometheus.repository import (
-    cluster_bindings_for_instance,
     get_instance,
-    list_instances,
-    primary_cluster_id_for_instance,
-    resolve_instance_for_cluster,
 )
-from app.prometheus.runtime_adapter import runtime_adapter
 from app.prometheus.service import (
     PrometheusService,
     create_prometheus_binding,
@@ -54,21 +47,6 @@ from app.rbac.decorators import permission_required
 logger = logging.getLogger(__name__)
 
 
-def _runtime_view(cluster, state):
-    """Build a self-contained, cluster-bound Prometheus runtime view model."""
-    return runtime_state_view(
-        state,
-        actions={
-            'refresh_url': url_for('prometheus.validate_integration', cluster_id=cluster.id),
-            'configuration_url': url_for('prometheus.configuration', cluster_id=cluster.id),
-        },
-        binding={
-            'type': 'kubernetes_cluster',
-            'id': str(cluster.id),
-            'name': cluster.name,
-            'label': f'Kubernetes cluster {cluster.name}',
-        },
-    )
 
 prometheus_bp = Blueprint(
     'prometheus',
@@ -76,24 +54,6 @@ prometheus_bp = Blueprint(
     url_prefix='/integrations/prometheus',
 )
 
-
-def _get_cluster_or_404(
-    cluster_id: str,
-) -> Cluster:
-    cluster = get_cluster_by_id(
-        cluster_id,
-    )
-
-    if cluster is None:
-        abort(
-            404,
-        )
-
-    return cluster
-
-
-def _runtime_source(cluster):
-    return resolve_instance_for_cluster(cluster.id)
 
 
 def _instance_or_404(instance_id: int) -> PrometheusInstance:
@@ -193,12 +153,6 @@ def _instance_detail_context(
     context['binding_validation_job'] = binding_job
     return context
 
-
-def _cluster_for_instance_or_404(instance: PrometheusInstance) -> Cluster:
-    cluster_id = primary_cluster_id_for_instance(instance)
-    if cluster_id is None:
-        abort(409, description='Prometheus instance has no enabled Kubernetes cluster binding.')
-    return _get_cluster_or_404(cluster_id)
 
 
 @prometheus_bp.route('/instances/new', methods=['GET', 'POST'])
@@ -1270,299 +1224,5 @@ def instance_runtime_history(instance_id: int) -> ResponseReturnValue:
     return render_template(
         'prometheus/partials/_runtime_history.html',
         instance=instance,
-        runtime_history=runtime_history_view(rows, pagination=pagination),
-    )
-
-
-
-@prometheus_bp.route(
-    '/cluster/<string:cluster_id>',
-    methods=['GET', 'POST'],
-)
-@permission_required('settings.manage_integrations')
-def configuration(cluster_id: str) -> ResponseReturnValue:
-    """Redirect legacy cluster configuration to the canonical instance flow.
-
-    Cluster-bound configuration is retained only as a migration boundary. New
-    configuration, validation, runtime, and scope actions belong to the
-    provider-neutral instance workspace.
-    """
-    cluster = _get_cluster_or_404(cluster_id)
-    instance = _runtime_source(cluster)
-    if instance is not None:
-        return redirect(
-            url_for('prometheus.instance_detail', instance_id=instance.id) + '#configuration'
-        )
-    return redirect(url_for('integrations.bind_prometheus_source', scope_key=cluster.id))
-
-
-@prometheus_bp.route(
-    '/cluster/<string:cluster_id>/test',
-    methods=[
-        'POST',
-    ],
-)
-@permission_required('settings.manage_integrations')
-def test_connection(
-    cluster_id: str,
-) -> ResponseReturnValue:
-    cluster = _get_cluster_or_404(
-        cluster_id,
-    )
-
-    try:
-        service = PrometheusService(
-            cluster,
-        )
-
-        result = service.test_connection()
-        response_time = result.get('response_time', 0)
-        feedback = record_operational_activity(
-            user_id=current_user.id,
-            event_type='prometheus_connection_test',
-            status='success',
-            title='Prometheus connection verified',
-            message=f'KAORI connected to Prometheus for {cluster.name}.',
-            detail=f'{(result.get("endpoint_product") or "endpoint").title()} {result.get("endpoint_version", "unknown")} responded in {response_time}s.',
-            action_url=url_for('prometheus.configuration', cluster_id=cluster.id),
-            action_label='View Prometheus settings',
-            action_icon='activity',
-            metadata={
-                'cluster_id': cluster.id,
-                'cluster_name': cluster.name,
-                'endpoint_product': result.get('endpoint_product'),
-                'endpoint_version': result.get('endpoint_version', 'unknown'),
-                'source_prometheus_major': result.get('source_prometheus_major'),
-                'response_time_seconds': response_time,
-            },
-        )
-
-        if request.headers.get('HX-Request') == 'true':
-            return render_template(
-                'prometheus/partials/_validation_response.html',
-                **feedback,
-                config=resolve_instance_for_cluster(cluster.id),
-                config_last_validated_at_display=present_user_datetime(
-                    resolve_instance_for_cluster(cluster.id).last_validated_at if resolve_instance_for_cluster(cluster.id) else None,
-                    empty='Not validated yet',
-                ),
-                runtime_state=(
-                    _runtime_view(cluster, runtime_adapter.get_state(_runtime_source(cluster)))
-                    if resolve_instance_for_cluster(cluster.id) else None
-                ),
-                notification_context=get_navigation_notification_context(
-                    user_id=current_user.id,
-                ),
-            )
-
-        return jsonify(result)
-
-    except PrometheusError as exc:
-        config = _runtime_source(cluster)
-        failure = describe_integration_failure(
-            exc,
-            service_name='Prometheus',
-            endpoint=config.endpoint if config is not None else None,
-            request_path='/api/v1/query',
-            timeout_seconds=(min(max(int(config.timeout or 5), 1), 5) if config is not None else None),
-        )
-        logger.warning(
-            'Prometheus connection test failed for cluster %s: %s',
-            cluster.id,
-            exc,
-            exc_info=True,
-        )
-        feedback = record_operational_activity(
-            user_id=current_user.id,
-            event_type='prometheus_connection_test',
-            status='error',
-            title='Prometheus connection failed',
-            message=f'KAORI could not connect to Prometheus for {cluster.name}.',
-            detail=failure['detail'],
-            action_url=url_for('prometheus.configuration', cluster_id=cluster.id),
-            action_label='Review Prometheus settings',
-            action_icon='activity',
-            metadata={
-                'cluster_id': cluster.id,
-                'cluster_name': cluster.name,
-                'reason': failure['reason'],
-                'failure_code': failure['code'],
-                'endpoint_host': failure['endpoint_host'],
-                'endpoint_port': failure['endpoint_port'],
-                'request_path': failure['request_path'],
-            },
-        )
-
-        if request.headers.get('HX-Request') == 'true':
-            return render_template(
-                'prometheus/partials/_validation_response.html',
-                **feedback,
-                config=resolve_instance_for_cluster(cluster.id),
-                config_last_validated_at_display=present_user_datetime(
-                    resolve_instance_for_cluster(cluster.id).last_validated_at if resolve_instance_for_cluster(cluster.id) else None,
-                    empty='Not validated yet',
-                ),
-                runtime_state=(
-                    _runtime_view(cluster, runtime_adapter.get_state(_runtime_source(cluster)))
-                    if resolve_instance_for_cluster(cluster.id) else None
-                ),
-                notification_context=get_navigation_notification_context(
-                    user_id=current_user.id,
-                ),
-            )
-
-        return jsonify(
-            {
-                'success': False,
-                'error': failure['detail'],
-                'reason': failure['reason'],
-                'failure_code': failure['code'],
-            }
-        ), 400
-    except Exception as exc:
-        logger.exception(
-            'Prometheus connection test failed unexpectedly for cluster %s.',
-            cluster.id,
-        )
-        feedback = record_operational_activity(
-            user_id=current_user.id,
-            event_type='prometheus_connection_test',
-            status='error',
-            title='Prometheus connection test failed',
-            message=f'The Prometheus test for {cluster.name} could not complete.',
-            detail='Review application logs, endpoint reachability, authentication, and TLS settings before retrying.',
-            action_url=url_for('prometheus.configuration', cluster_id=cluster.id),
-            action_label='Review Prometheus settings',
-            action_icon='activity',
-            metadata={
-                'cluster_id': cluster.id,
-                'cluster_name': cluster.name,
-                'reason': type(exc).__name__,
-            },
-        )
-
-        if request.headers.get('HX-Request') == 'true':
-            return render_template(
-                'prometheus/partials/_validation_response.html',
-                **feedback,
-                config=resolve_instance_for_cluster(cluster.id),
-                config_last_validated_at_display=present_user_datetime(
-                    resolve_instance_for_cluster(cluster.id).last_validated_at if resolve_instance_for_cluster(cluster.id) else None,
-                    empty='Not validated yet',
-                ),
-                runtime_state=(
-                    _runtime_view(cluster, runtime_adapter.get_state(_runtime_source(cluster)))
-                    if resolve_instance_for_cluster(cluster.id) else None
-                ),
-                notification_context=get_navigation_notification_context(
-                    user_id=current_user.id,
-                ),
-            )
-
-        return jsonify(
-            {
-                'success': False,
-                'error': 'Prometheus connection test could not complete.',
-            }
-        ), 500
-
-@prometheus_bp.post('/cluster/<string:cluster_id>/validate')
-@permission_required('settings.manage_integrations')
-def validate_integration(
-    cluster_id: str,
-) -> ResponseReturnValue:
-    """Queue validation from a legacy cluster URL and open the canonical workspace."""
-    cluster = _get_cluster_or_404(cluster_id)
-    instance = resolve_instance_for_cluster(cluster.id)
-    is_htmx = _is_htmx_request()
-    if instance is None:
-        record_operational_activity(
-            user_id=int(current_user.id),
-            event_type='prometheus_full_validation_enqueue_failed',
-            status='error',
-            title='Prometheus validation not queued',
-            message=f'{cluster.name} does not have a Prometheus source binding.',
-            detail='Bind an existing Prometheus connection before running Full Validation.',
-            action_url=url_for('integrations.prometheus_bind', cluster_id=cluster.id),
-            action_label='Bind Prometheus source',
-            action_icon='link-2',
-            metadata={'cluster_id': cluster.id, 'cluster_name': cluster.name, 'legacy_route': True},
-            queue_feedback=True,
-        )
-        location = url_for('integrations.prometheus_bind', cluster_id=cluster.id)
-        return _htmx_redirect(location) if is_htmx else redirect(location)
-
-    try:
-        validation_job, created = enqueue_instance_validation(
-            provider_type='prometheus',
-            instance_id=instance.id,
-            requested_by_user_id=int(current_user.id),
-        )
-        record_operational_activity(
-            user_id=int(current_user.id),
-            event_type='prometheus_full_validation_queued' if created else 'prometheus_full_validation_already_running',
-            status='info' if created else 'warning',
-            title='Prometheus validation queued' if created else 'Prometheus validation already running',
-            message=(
-                f'KAORI queued Full Validation for {instance.name}.'
-                if created
-                else f'Full Validation is already running for {instance.name}.'
-            ),
-            detail=(
-                'The dedicated validation worker will rebuild capability and analytics-readiness evidence.'
-                if created
-                else 'KAORI kept the active worker task and did not enqueue a duplicate.'
-            ),
-            action_url=url_for('prometheus.instance_detail', instance_id=instance.id) + '#validation',
-            action_label='Review Prometheus validation',
-            action_icon='scan-search',
-            metadata={
-                'task_id': validation_job.get('task_id'),
-                'instance_id': instance.id,
-                'instance_name': instance.name,
-                'cluster_id': cluster.id,
-                'legacy_route': True,
-                'queue': current_app.config.get('INTEGRATION_VALIDATION_CELERY_QUEUE', 'integration-validation'),
-            },
-            queue_feedback=True,
-        )
-    except Exception as exc:
-        logger.exception('Could not enqueue Prometheus validation from legacy cluster route %s.', cluster.id)
-        record_operational_activity(
-            user_id=int(current_user.id),
-            event_type='prometheus_full_validation_enqueue_failed',
-            status='error',
-            title='Prometheus validation not queued',
-            message=f'KAORI could not queue Full Validation for {instance.name}.',
-            detail='Verify Redis, the Celery broker, and the integration-validation worker before retrying.',
-            action_url=url_for('prometheus.instance_detail', instance_id=instance.id) + '#validation',
-            action_label='Review Prometheus validation',
-            action_icon='scan-search',
-            metadata={
-                'instance_id': instance.id,
-                'cluster_id': cluster.id,
-                'legacy_route': True,
-                'reason': type(exc).__name__,
-            },
-            queue_feedback=True,
-        )
-
-    location = url_for('prometheus.instance_detail', instance_id=instance.id) + '#validation'
-    return _htmx_redirect(location) if is_htmx else redirect(location)
-
-
-@prometheus_bp.get('/cluster/<string:cluster_id>/runtime/history')
-@permission_required('settings.manage_integrations')
-def runtime_history(cluster_id: str) -> ResponseReturnValue:
-    cluster = _get_cluster_or_404(cluster_id)
-    config = _runtime_source(cluster)
-    if config is None:
-        abort(404)
-    page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 5, type=int)
-    rows, pagination = paginate_runtime_history('prometheus', str(config.id), page=page, per_page=per_page)
-    return render_template(
-        'prometheus/partials/_runtime_history.html',
-        cluster=cluster, config=config,
         runtime_history=runtime_history_view(rows, pagination=pagination),
     )

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from flask import url_for
+
 from app.extensions.db import db
 from app.integrations.binding_selectors import selector_form_values, selector_is_configured, selector_summary
 from app.integrations.deletion import provider_deletion_guard
@@ -9,9 +11,9 @@ from app.integrations.runtime.presentation import runtime_history_view, runtime_
 from app.integrations.runtime.repository import paginate_runtime_history
 from app.models import Cluster, PrometheusInstance
 from app.models.integration import IntegrationBinding
-from app.prometheus.capabilities import CAPABILITIES, definition as capability_definition
+from app.integrations.prometheus.capabilities import CAPABILITIES, definition as capability_definition
 from app.prometheus.repository import KUBERNETES_CLUSTER_SCOPE, cluster_bindings_for_instance
-from app.prometheus.runtime_adapter import runtime_adapter
+from app.integrations.registry import get_integration
 from app.prometheus.resolver import PrometheusSourceResolution, resolve_prometheus_sources
 
 
@@ -101,8 +103,12 @@ def build_instance_context(
     assessments = list((instance.capabilities or {}).get('assessments') or ())
     assessment_map = {str(item.get('key') or ''): item for item in assessments if item.get('key')}
     runtime_state = runtime_state_view(
-        runtime_adapter.get_state(instance),
-        actions={},
+        get_integration('prometheus').adapter.get_state(instance),
+        actions={
+            'refresh_url': url_for('prometheus.refresh_runtime', instance_id=instance.id),
+            'configuration_url': url_for('prometheus.instance_detail', instance_id=instance.id, _anchor='configuration'),
+            'history_url': url_for('prometheus.runtime_history', instance_id=instance.id),
+        },
     )
     rows, pagination = paginate_runtime_history(
         'prometheus',

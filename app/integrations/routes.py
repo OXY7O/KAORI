@@ -19,7 +19,7 @@ from app.integrations.validation.web import (
 )
 from app.models import AlertmanagerInstance, Cluster, PrometheusInstance
 from app.models.job import JobExecution
-from app.models.integration import KubernetesConnection
+from app.models.kubernetes import KubernetesConnection
 from app.notifications.service import get_navigation_notification_context, record_operational_activity
 
 integrations_bp = Blueprint('integrations', __name__, url_prefix='/integrations')

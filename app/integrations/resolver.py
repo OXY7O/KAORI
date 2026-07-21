@@ -91,6 +91,6 @@ def provider_record(instance: IntegrationInstance) -> Any | None:
         from app.models.alertmanager import AlertmanagerInstance
         return AlertmanagerInstance.query.filter_by(integration_instance_id=instance.id).first()
     if instance.provider_type == 'kubernetes':
-        from app.models.integration import KubernetesConnection
+        from app.models.kubernetes import KubernetesConnection
         return KubernetesConnection.query.filter_by(integration_instance_id=instance.id).first()
     return None

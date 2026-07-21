@@ -7,10 +7,9 @@ from typing import Any
 from kubernetes.client import V1Ingress, V1Secret
 
 from app.governance.tls_certificates.constants import TLS_CRT_KEY, TLS_SECRET_TYPE, TLS_STATUS_INVALID
-from app.governance.tls_certificates.validator import decode_secret_data, parse_certificate
-from app.integrations.kubernetes import kubeconfig_for_cluster
-from app.kubernetes.client import KubernetesClient
-from app.kubernetes.tls import legacy_tls_context
+from app.governance.tls_certificates.certificate import decode_secret_data, parse_certificate
+from app.integrations.registry import get_integration
+from app.integrations.kubernetes.tls import legacy_tls_context
 from app.models import Cluster
 
 
@@ -24,10 +23,10 @@ def _response_items(response: Any) -> list[Any]:
     return raw_items
 
 
-def build_kubernetes_client(cluster: Cluster) -> KubernetesClient:
-    return KubernetesClient(
-        kubeconfig_for_cluster(cluster),
-        verify_ssl=bool(cluster.kube_verify_ssl),
+def build_kubernetes_client(cluster: Cluster):
+    return get_integration('kubernetes').execute(
+        'client.build',
+        cluster.kubernetes_connection,
     )
 
 
@@ -63,7 +62,7 @@ def _ingress_tls_usage(ingress: V1Ingress) -> list[dict[str, Any]]:
 
 
 def collect_ingress_tls_usage(cluster: Cluster) -> dict[tuple[str, str], dict[str, Any]]:
-    with legacy_tls_context(enabled=bool(cluster.kube_allow_weak_tls)):
+    with legacy_tls_context(enabled=bool(cluster.kubernetes_connection.allow_weak_tls)):
         client = build_kubernetes_client(cluster)
         networking_api = client.networking_api()
         response = networking_api.list_ingress_for_all_namespaces()
@@ -160,7 +159,7 @@ def collect_tls_certificates(cluster: Cluster) -> list[dict[str, Any]]:
     except Exception:
         usage_map = {}
 
-    with legacy_tls_context(enabled=bool(cluster.kube_allow_weak_tls)):
+    with legacy_tls_context(enabled=bool(cluster.kubernetes_connection.allow_weak_tls)):
         client = build_kubernetes_client(cluster)
         core_api = client.core_api()
         response = core_api.list_secret_for_all_namespaces()

@@ -1,6 +1,6 @@
 """Compatibility exports backed by the versioned PromQL query catalog."""
 
-from app.prometheus.query_profiles import get_query_expression
+from app.integrations.prometheus.query_profiles import get_query_expression
 
 NAMESPACE_ACTIVE_QUERY = get_query_expression('analytics.storage.queries.NAMESPACE_ACTIVE_QUERY')
 NODE_VAR_FILESYSTEM_SIZE_QUERY = get_query_expression('analytics.storage.queries.NODE_VAR_FILESYSTEM_SIZE_QUERY')

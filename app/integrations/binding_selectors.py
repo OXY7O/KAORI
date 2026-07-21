@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import Any, Iterable
+from typing import Any
 
 _LABEL_RE = re.compile(r'^[A-Za-z_][A-Za-z0-9_]*$')
 _NUMBER_RE = re.compile(r'(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?')
@@ -142,7 +142,7 @@ def _inject_explicit_selectors(expression: str, matchers: tuple[BindingMatcher, 
             continue
 
         end = _find_selector_end(expression, index)
-        content = expression[index + 1:end - 1]
+        content = expression[index + 1 : end - 1]
         additions = _missing_matchers(content, matchers)
         if additions:
             rendered = ','.join(matcher.as_filter() for matcher in additions)
@@ -169,9 +169,7 @@ def _missing_matchers(content: str, matchers: tuple[BindingMatcher, ...]) -> tup
             missing.append(matcher)
             continue
         if current != (matcher.operator, matcher.value):
-            raise BindingSelectorError(
-                f'PromQL already contains a conflicting matcher for binding label {label!r}.'
-            )
+            raise BindingSelectorError(f'PromQL already contains a conflicting matcher for binding label {label!r}.')
     return tuple(missing)
 
 
@@ -183,10 +181,36 @@ def _inject_bare_metric_selectors(expression: str, matchers: tuple[BindingMatche
     label_list_ranges = _label_list_token_ranges(tokens)
     insertion = '{' + ','.join(matcher.as_filter() for matcher in matchers) + '}'
     reserved = {
-        'and', 'or', 'unless', 'offset', 'bool', 'by', 'without', 'on', 'ignoring',
-        'group_left', 'group_right', 'sum', 'min', 'max', 'avg', 'group', 'stddev',
-        'stdvar', 'count', 'count_values', 'bottomk', 'topk', 'quantile', 'limitk',
-        'limit_ratio', 'atan2', 'start', 'end', 'inf', 'nan',
+        'and',
+        'or',
+        'unless',
+        'offset',
+        'bool',
+        'by',
+        'without',
+        'on',
+        'ignoring',
+        'group_left',
+        'group_right',
+        'sum',
+        'min',
+        'max',
+        'avg',
+        'group',
+        'stddev',
+        'stdvar',
+        'count',
+        'count_values',
+        'bottomk',
+        'topk',
+        'quantile',
+        'limitk',
+        'limit_ratio',
+        'atan2',
+        'start',
+        'end',
+        'inf',
+        'nan',
     }
     insert_positions: list[int] = []
     brace_depth = 0
@@ -265,7 +289,7 @@ def _tokenize(expression: str) -> list[_Token]:
             tokens.append(_Token('number', expression[index:end], index, end))
             index = end
             continue
-        two = expression[index:index + 2]
+        two = expression[index : index + 2]
         if two in {'=~', '!~', '!=', '==', '>=', '<='}:
             tokens.append(_Token('symbol', two, index, index + 2))
             index += 2
@@ -303,7 +327,7 @@ def _label_list_token_ranges(tokens: list[_Token]) -> set[int]:
 
 
 def _next_significant(tokens: list[_Token], index: int) -> _Token | None:
-    for token in tokens[index + 1:]:
+    for token in tokens[index + 1 :]:
         if token.kind != 'comment':
             return token
     return None

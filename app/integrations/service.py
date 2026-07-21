@@ -7,8 +7,9 @@ from app.cluster.constants import get_environment_label
 from app.extensions.db import db
 from app.common.presentation import present_user_datetime
 from app.models import AlertmanagerInstance, Cluster, PrometheusInstance, Report, ReportSchedule
-from app.models.integration import IntegrationBinding, IntegrationInstance, KubernetesConnection
-from app.models.integration_runtime import IntegrationRuntimeObservation
+from app.models.integration import IntegrationBinding, IntegrationInstance
+from app.models.kubernetes import KubernetesConnection
+from app.models.runtime import IntegrationRuntimeObservation
 from app.integrations.coverage import build_provider_coverage, bound_source_for_scope
 from app.integrations.deletion import kubernetes_deletion_guard
 from app.prometheus.repository import cluster_bindings_for_instance
@@ -178,7 +179,7 @@ def build_kubernetes_page(*, page: int = 1, per_page: int = 5) -> dict[str, Any]
             'cluster_id': cluster.id,
             'cluster_name': cluster.name,
             'environment': get_environment_label(cluster.environment),
-            'server': connection.server or cluster.server or 'Not discovered',
+            'server': connection.server or 'Not discovered',
             'readiness': connection.readiness_status or cluster.kubernetes_readiness_status or 'validation_required',
             'compatibility_profile': connection.compatibility_profile or cluster.kubernetes_compatibility_profile,
             'version': cluster.kubernetes_version,
@@ -208,7 +209,7 @@ def build_kubernetes_page(*, page: int = 1, per_page: int = 5) -> dict[str, Any]
 
 
 def build_kubernetes_detail(cluster_id: str) -> dict[str, Any] | None:
-    from app.integrations.runtime.kubernetes_adapter import runtime_adapter
+    from app.integrations.registry import get_integration
     from app.integrations.runtime.presentation import runtime_state_view
     from app.integrations.runtime.repository import list_runtime_history
 
@@ -237,7 +238,7 @@ def build_kubernetes_detail(cluster_id: str) -> dict[str, Any] | None:
             'stability': selected.get('stability') or '-',
             'message': value.get('message') or '',
         })
-    state = runtime_adapter.get_state(connection)
+    state = get_integration('kubernetes').adapter.get_state(connection)
     capability_scope = next((
         binding.capability_scope or []
         for binding in connection.integration_instance.bindings
@@ -595,7 +596,7 @@ def _runtime_overview_rows(
         attention = sum(1 for item in assessments if item.get('status') != 'available')
         observed_at = observation.observed_at if observation else instance.last_checked_at
         latency_ms = observation.latency_ms if observation else instance.last_response_time_ms
-        enabled_bindings = [binding for binding in instance.bindings if binding.enabled]
+        enabled_bindings = [binding for binding in instance.integration_instance.bindings if binding.enabled]
         rows.append({
             'provider': 'prometheus',
             'provider_label': 'Prometheus / Thanos',
@@ -628,7 +629,7 @@ def _runtime_overview_rows(
             'provider_label': 'Alertmanager',
             'instance_id': str(instance.id),
             'instance_name': instance.name,
-            'scope_label': f'{len(instance.bindings)} asset binding(s)',
+            'scope_label': f'{len(instance.integration_instance.bindings)} asset binding(s)',
             'endpoint_product': 'Alertmanager',
             'health_status': observation.health_status if observation else 'not_observed',
             'health_score': observation.health_score if observation else None,

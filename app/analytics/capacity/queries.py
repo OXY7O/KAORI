@@ -1,6 +1,6 @@
 """Compatibility exports backed by the versioned PromQL query catalog."""
 
-from app.prometheus.query_profiles import get_query_expression
+from app.integrations.prometheus.query_profiles import get_query_expression
 
 CURRENT_PODS_QUERY = get_query_expression('analytics.capacity.queries.CURRENT_PODS_QUERY')
 CURRENT_WORKER_PODS_QUERY = get_query_expression('analytics.capacity.queries.CURRENT_WORKER_PODS_QUERY')

@@ -190,3 +190,10 @@ uploads/
 
 .agent/*
 instance/*
+# =====================================
+# Local Source Archives
+# =====================================
+
+/KAORI-APP.zip
+/KAORI*.zip
+

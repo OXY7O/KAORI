@@ -16,14 +16,14 @@ from app.integrations.compatibility import (
 )
 from app.integrations.binding_selectors import build_selector, selector_is_configured
 from app.integrations.lifecycle import bind_instance, ensure_canonical_instance, invalidate_bindings
+from app.integrations.registry import get_integration
 from app.integrations.deletion import DeletionBlocked, provider_deletion_guard
 from app.models import Cluster, PrometheusInstance
 from app.models.integration import IntegrationBinding, IntegrationInstance
-from app.prometheus.client import PrometheusClient
 from app.prometheus.consumer import PrometheusConsumer
-from app.prometheus.exceptions import PrometheusError
+from app.integrations.prometheus.exceptions import PrometheusError
 from app.prometheus.forms import PrometheusConfigForm, PrometheusInstanceForm
-from app.prometheus.query_profiles.audit import PromQLProfileAuditor
+from app.integrations.prometheus.query_profiles.audit import PromQLProfileAuditor
 from app.prometheus.repository import KUBERNETES_CLUSTER_SCOPE, resolve_instance_for_cluster
 
 
@@ -59,7 +59,7 @@ class PrometheusService:
                 raise PrometheusError('No Prometheus runtime is bound to the selected Kubernetes cluster')
 
         self.instance = config
-        self.client = PrometheusClient(config)
+        self.client = get_integration('prometheus').execute('client.build', config)
         self.consumer = PrometheusConsumer(self.cluster) if self.cluster is not None else None
 
     def instant_query(self, query: str) -> dict[str, Any]:
@@ -223,7 +223,8 @@ class PrometheusService:
             query_status = 'blocked'
             readiness = 'blocked'
         else:
-            validation_client = PrometheusClient(
+            validation_client = get_integration('prometheus').execute(
+                'client.build',
                 config,
                 request_timeout_seconds=max(int(config.timeout or 5), 30),
             )
@@ -700,7 +701,8 @@ def validate_prometheus_binding(
     matched_signal: str | None = None
     matched = 0.0
     try:
-        client = PrometheusClient(
+        client = get_integration('prometheus').execute(
+            'client.build',
             instance,
             scope_selector=binding.selector_json,
             request_timeout_seconds=max(int(instance.timeout or 5), 15),
@@ -773,11 +775,10 @@ def remove_prometheus_instance(instance: PrometheusInstance) -> None:
         canonical_binding_count = IntegrationBinding.query.filter_by(
             integration_instance_id=instance.integration_instance_id,
         ).count()
-    legacy_binding_count = len(instance.bindings or ())
-    if canonical_binding_count or legacy_binding_count:
+    if canonical_binding_count:
         raise ValueError(
             'Remove all scope bindings before deleting this Prometheus instance. '
-            f'Canonical bindings: {canonical_binding_count}; legacy bindings: {legacy_binding_count}.'
+            f'Canonical bindings: {canonical_binding_count}.'
         )
 
     guard = provider_deletion_guard(

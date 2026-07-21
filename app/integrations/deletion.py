@@ -55,6 +55,10 @@ def kubernetes_active_job_count(*, connection_id: int, cluster_id: str) -> int:
                     (JobExecution.scope_type == 'kubernetes_cluster')
                     & (JobExecution.scope_key == cluster_id)
                 ),
+                (
+                    (JobExecution.provider_type == 'kubernetes')
+                    & (JobExecution.operation == 'inventory_sync_all')
+                ),
             )
         )
         .count()

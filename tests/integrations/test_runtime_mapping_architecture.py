@@ -2,11 +2,13 @@ from pathlib import Path
 
 
 def test_prometheus_runtime_is_standalone_and_bound():
-    source = Path('app/models/prometheus.py').read_text()
-    assert "__tablename__ = 'prometheus_instances'" in source
-    assert "__tablename__ = 'prometheus_bindings'" in source
-    assert "scope_type" in source
-    assert "scope_key" in source
+    provider = Path('app/models/prometheus.py').read_text()
+    integration = Path('app/models/integration.py').read_text()
+    assert "__tablename__ = 'prometheus_instances'" in provider
+    assert "__tablename__ = 'prometheus_bindings'" not in provider
+    assert "__tablename__ = 'integration_bindings'" in integration
+    assert 'asset_type' in integration
+    assert 'asset_key' in integration
 
 
 def test_selected_cluster_fallback_uses_registration_order():
@@ -18,7 +20,8 @@ def test_selected_cluster_fallback_uses_registration_order():
 def test_runtime_panels_do_not_build_cluster_routes_in_template():
     source = Path('app/templates/prometheus/partials/_runtime_panel.html').read_text()
     assert 'cluster.id' not in source
-    assert "url_for('prometheus.refresh_runtime', instance_id=instance.id)" in source
+    assert 'runtime_state.refresh_url' in source
+    assert "url_for('prometheus.refresh_runtime'" not in source
     assert "url_for('prometheus.runtime_refresh_status', instance_id=instance.id" in source
 
 

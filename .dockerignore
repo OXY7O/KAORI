@@ -30,6 +30,7 @@ node_modules
 .devcontainer
 
 *.log
+*.zip
 celerybeat-schedule
 celerybeat.pid
 

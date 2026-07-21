@@ -8,7 +8,7 @@ from kubernetes.client.exceptions import ApiException
 from kubernetes.config.config_exception import ConfigException
 from urllib3.exceptions import HTTPError as Urllib3HTTPError
 
-from app.kubernetes.tls import legacy_tls_context
+from app.integrations.kubernetes.tls import legacy_tls_context
 from app.kubernetes_operations.secrets.live_service import (
     LiveSecretSnapshot,
     core_api,
@@ -186,7 +186,7 @@ def execute_secret_deletion(form: Any, *, dry_run: bool) -> SecretDeletionResult
     )
 
     def perform_delete(*, server_dry_run: bool) -> None:
-        with legacy_tls_context(enabled=bool(target.cluster.kube_allow_weak_tls)):
+        with legacy_tls_context(enabled=bool(target.cluster.kubernetes_connection.allow_weak_tls)):
             core_api(target.cluster).delete_namespaced_secret(
                 name=target.name,
                 namespace=target.namespace,

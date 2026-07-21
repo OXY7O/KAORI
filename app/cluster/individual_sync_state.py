@@ -8,6 +8,9 @@ from celery.result import AsyncResult
 from flask import current_app
 from redis import Redis
 
+from app.jobs.constants import ACTIVE_JOB_STATUSES
+from app.models.job import JobExecution, JobExecutionSubscriber
+
 INDIVIDUAL_CLUSTER_SYNC_TASK_NAME = 'app.cluster.tasks.sync_single_cluster'
 INDIVIDUAL_CLUSTER_SYNC_QUEUE = 'inventory'
 INDIVIDUAL_SYNC_ACTIVE_PREFIX = 'kaori:cluster-individual-sync:active:'
@@ -68,8 +71,24 @@ def get_individual_sync_metadata(task_id: str) -> dict[str, Any]:
 
 
 def get_tracked_individual_sync_task_ids(user_id: int) -> list[str]:
-    values = _redis_client().smembers(_active_key(user_id))
-    return sorted(cast(set[str], values))
+    jobs = (
+        JobExecution.query
+        .join(JobExecutionSubscriber, JobExecutionSubscriber.job_execution_id == JobExecution.id)
+        .filter(
+            JobExecutionSubscriber.user_id == user_id,
+            JobExecution.operation == 'inventory_sync_cluster',
+            JobExecution.status.in_((*ACTIVE_JOB_STATUSES, 'succeeded', 'partially_succeeded', 'failed')),
+        )
+        .order_by(JobExecution.created_at.desc())
+        .limit(20)
+        .all()
+    )
+    task_ids = {str(job.celery_task_id) for job in jobs if job.celery_task_id}
+    try:
+        task_ids.update(cast(set[str], _redis_client().smembers(_active_key(user_id))))
+    except Exception:
+        pass
+    return sorted(task_ids)
 
 
 def dismiss_individual_sync_result(*, task_id: str, user_id: int) -> None:
@@ -106,7 +125,21 @@ def _elapsed_seconds(payload: dict[str, Any]) -> int:
 
 def build_individual_sync_snapshot(task_id: str) -> dict[str, Any]:
     result: AsyncResult = current_app.extensions['celery'].AsyncResult(task_id)
-    payload = get_individual_sync_metadata(task_id)
+    try:
+        payload = get_individual_sync_metadata(task_id)
+    except Exception:
+        payload = {}
+    job = JobExecution.query.filter_by(celery_task_id=task_id).first()
+    if job is not None:
+        payload.setdefault('created_at', job.queued_at.isoformat() if job.queued_at else None)
+        payload.setdefault('started_at', job.started_at.isoformat() if job.started_at else None)
+        payload.setdefault('finished_at', job.completed_at.isoformat() if job.completed_at else None)
+        payload.setdefault('requested_by_user_id', job.requested_by_user_id)
+        payload.setdefault('cluster_id', job.scope_key)
+        payload.setdefault('message', job.progress_message)
+        if job.result_summary_json:
+            for key, value in job.result_summary_json.items():
+                payload.setdefault(key, value)
     if isinstance(result.info, dict):
         payload.update(result.info)
     if result.state == 'SUCCESS' and isinstance(result.result, dict):
@@ -116,11 +149,24 @@ def build_individual_sync_snapshot(task_id: str) -> dict[str, Any]:
         payload.setdefault('title', 'Cluster inventory sync interrupted')
         payload.setdefault('message', 'The background worker could not complete the cluster inventory sync.')
         payload.setdefault('detail', 'Review the Celery worker and application logs before retrying.')
+    state = result.state
+    if job is not None:
+        state = {
+            'queued': 'PENDING',
+            'running': 'PROGRESS',
+            'retrying': 'RETRY',
+            'cancel_requested': 'PROGRESS',
+            'succeeded': 'SUCCESS',
+            'partially_succeeded': 'SUCCESS',
+            'failed': 'FAILURE',
+            'canceled': 'REVOKED',
+            'expired': 'REVOKED',
+        }.get(job.status, state)
     return {
         'task_id': task_id,
-        'celery_state': result.state,
-        'state_label': result.state.lower().replace('_', ' '),
-        'is_active': result.state in ACTIVE_CELERY_STATES,
+        'celery_state': state,
+        'state_label': state.lower().replace('_', ' '),
+        'is_active': state in ACTIVE_CELERY_STATES,
         'status': payload.get('status', 'info'),
         'title': payload.get('title') or 'Cluster inventory sync in progress',
         'message': payload.get('message') or f"Synchronizing Kubernetes inventory for {payload.get('cluster_name', 'the selected cluster')}.",

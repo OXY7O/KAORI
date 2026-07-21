@@ -8,6 +8,9 @@ from celery.result import AsyncResult
 from flask import current_app
 from redis import Redis
 
+from app.jobs.constants import ACTIVE_JOB_STATUSES
+from app.models.job import JobExecution
+
 CLUSTER_SYNC_TASK_NAME = 'app.cluster.tasks.sync_all_clusters'
 CLUSTER_SYNC_QUEUE = 'inventory'
 CLUSTER_SYNC_LOCK_KEY = 'kaori:cluster-sync:lock'
@@ -114,10 +117,21 @@ def acquire_cluster_sync_lock(
 
 
 def get_active_cluster_sync_task_id() -> str | None:
-    task_id = _redis_client().get(
-        CLUSTER_SYNC_LOCK_KEY,
+    job = (
+        JobExecution.query
+        .filter(
+            JobExecution.operation == 'inventory_sync_all',
+            JobExecution.status.in_(ACTIVE_JOB_STATUSES),
+        )
+        .order_by(JobExecution.created_at.desc())
+        .first()
     )
-
+    if job is not None and job.celery_task_id:
+        return str(job.celery_task_id)
+    try:
+        task_id = _redis_client().get(CLUSTER_SYNC_LOCK_KEY)
+    except Exception:
+        return None
     return cast(str | None, task_id) or None
 
 
@@ -306,9 +320,35 @@ def build_cluster_sync_snapshot(task_id: str) -> dict[str, Any]:
         task_id,
     )
     state = async_result.state
-    payload = get_cluster_sync_metadata(
-        task_id,
-    )
+    job = JobExecution.query.filter_by(celery_task_id=task_id).first()
+    if job is not None:
+        state = {
+            'queued': 'PENDING',
+            'running': 'PROGRESS',
+            'retrying': 'RETRY',
+            'cancel_requested': 'PROGRESS',
+            'succeeded': 'SUCCESS',
+            'partially_succeeded': 'SUCCESS',
+            'failed': 'FAILURE',
+            'canceled': 'REVOKED',
+            'expired': 'REVOKED',
+        }.get(job.status, state)
+    try:
+        payload = get_cluster_sync_metadata(task_id)
+    except Exception:
+        payload = {}
+    job = JobExecution.query.filter_by(celery_task_id=task_id).first()
+    if job is not None:
+        payload.setdefault('created_at', job.queued_at.isoformat() if job.queued_at else None)
+        payload.setdefault('started_at', job.started_at.isoformat() if job.started_at else None)
+        payload.setdefault('finished_at', job.completed_at.isoformat() if job.completed_at else None)
+        payload.setdefault('requested_by_user_id', job.requested_by_user_id)
+        payload['processed_count'] = max(int(job.progress_current or 0), int(payload.get('processed_count') or 0))
+        payload['total_count'] = max(int(job.progress_total or 0), int(payload.get('total_count') or 0))
+        payload.setdefault('message', job.progress_message)
+        if job.result_summary_json:
+            for key, value in job.result_summary_json.items():
+                payload.setdefault(key, value)
 
     info = async_result.info
     if isinstance(info, dict):

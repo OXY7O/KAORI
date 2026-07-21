@@ -4,11 +4,11 @@ from dataclasses import dataclass
 
 import pytest
 
-from app.prometheus.client import PrometheusClient
-from app.prometheus.exceptions import PrometheusQueryError
-from app.prometheus.query_profiles import audit as audit_module
-from app.prometheus.query_profiles.audit import PromQLProfileAuditor, _unresolved_runtime_tokens
-from app.prometheus.query_profiles.types import QueryDefinition
+from app.integrations.prometheus.client import PrometheusClient
+from app.integrations.prometheus.exceptions import PrometheusQueryError
+from app.integrations.prometheus.query_profiles import audit as audit_module
+from app.integrations.prometheus.query_profiles.audit import PromQLProfileAuditor, _unresolved_runtime_tokens
+from app.integrations.prometheus.query_profiles.types import QueryDefinition
 
 
 class FakeClient:

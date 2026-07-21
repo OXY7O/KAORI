@@ -2,14 +2,11 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import UTC, datetime
 from time import perf_counter
-from uuid import uuid4
 
 from flask import (
     Blueprint,
     abort,
-    current_app,
     flash,
     make_response,
     redirect,
@@ -33,6 +30,7 @@ from app.cluster.individual_sync_state import (
     is_individual_sync_result_dismissed,
 )
 from app.cluster.onboarding import has_registered_clusters
+from app.cluster.sync_jobs import enqueue_all_cluster_inventory_sync
 from app.cluster.service import (
     build_cluster_context,
     create_cluster,
@@ -42,21 +40,16 @@ from app.cluster.service import (
     update_cluster,
 )
 from app.cluster.sync_state import (
-    CLUSTER_SYNC_QUEUE,
-    CLUSTER_SYNC_TASK_NAME,
-    acquire_cluster_sync_lock,
     build_cluster_sync_snapshot,
     dismiss_cluster_sync_result,
     get_active_cluster_sync_task_id,
     is_cluster_sync_result_dismissed,
-    release_cluster_sync_lock,
 )
 from app.models import Cluster
-from app.models.integration import KubernetesConnection
+from app.models.kubernetes import KubernetesConnection
 from app.notifications.service import (
     create_notification,
     get_navigation_notification_context,
-    queue_quick_action_feedback,
     record_operational_activity,
 )
 from app.rbac.decorators import permission_required
@@ -193,9 +186,7 @@ def _render_enqueue_error(
 
 @cluster_bp.route(
     '/sync-all',
-    methods=[
-        'POST',
-    ],
+    methods=['POST'],
 )
 @permission_required('clusters.sync')
 def sync_all_clusters() -> ResponseReturnValue:
@@ -209,11 +200,7 @@ def sync_all_clusters() -> ResponseReturnValue:
         title = 'Sync skipped'
         message = 'No Kubernetes clusters are registered yet.'
         detail = 'Add a Kubernetes cluster before running global inventory sync.'
-        duration_seconds = round(
-            perf_counter() - started_at,
-            1,
-        )
-
+        duration_seconds = round(perf_counter() - started_at, 1)
         create_notification(
             user_id=current_user.id,
             event_type='kubernetes_inventory_sync',
@@ -229,12 +216,7 @@ def sync_all_clusters() -> ResponseReturnValue:
                 'duration_seconds': duration_seconds,
             },
         )
-
         if is_htmx:
-            notification_context = get_navigation_notification_context(
-                user_id=current_user.id,
-            )
-
             return render_template(
                 'components/navigation/_quick_sync_result.html',
                 status=status,
@@ -247,154 +229,36 @@ def sync_all_clusters() -> ResponseReturnValue:
                 failed_count=0,
                 duration_seconds=duration_seconds,
                 completed_label='Completed just now',
-                notification_context=notification_context,
+                notification_context=get_navigation_notification_context(user_id=current_user.id),
                 notification_saved=True,
             )
-
-        flash(
-            message,
-            status,
-        )
-        return redirect(
-            request.referrer or view_url,
-        )
+        flash(message, status)
+        return redirect(request.referrer or view_url)
 
     try:
-        active_task_id = get_active_cluster_sync_task_id()
-
-        if active_task_id:
-            active_snapshot = build_cluster_sync_snapshot(
-                active_task_id,
-            )
-
-            if active_snapshot['is_active']:
-                if is_htmx:
-                    return _render_sync_snapshot(
-                        active_snapshot,
-                        response_status=202,
-                    )
-
-                flash(
-                    'A Kubernetes inventory synchronization is already running.',
-                    'info',
-                )
-                return redirect(
-                    request.referrer or view_url,
-                )
-
-            release_cluster_sync_lock(
-                active_task_id,
-            )
-
-        task_id = str(
-            uuid4(),
+        job, created = enqueue_all_cluster_inventory_sync(
+            requested_by_user_id=int(current_user.id),
         )
-        created_at = datetime.now(
-            UTC,
-        ).isoformat()
-        metadata = {
-            'requested_by_user_id': current_user.id,
-            'created_at': created_at,
-            'total_count': total_count,
-            'processed_count': 0,
-            'synced_count': 0,
-            'failed_count': 0,
-            'current_cluster_name': None,
-        }
-
-        acquired = acquire_cluster_sync_lock(
-            task_id=task_id,
-            metadata=metadata,
-        )
-
-        if not acquired:
-            active_task_id = get_active_cluster_sync_task_id()
-            if active_task_id:
-                snapshot = build_cluster_sync_snapshot(
-                    active_task_id,
-                )
-                if is_htmx:
-                    return _render_sync_snapshot(
-                        snapshot,
-                        response_status=202,
-                    )
-
-            flash(
-                'A Kubernetes inventory synchronization is already running.',
-                'info',
-            )
-            return redirect(
-                request.referrer or view_url,
-            )
-
-        try:
-            current_app.extensions['celery'].send_task(
-                CLUSTER_SYNC_TASK_NAME,
-                kwargs={
-                    'requested_by_user_id': current_user.id,
-                },
-                task_id=task_id,
-                queue=CLUSTER_SYNC_QUEUE,
-            )
-        except Exception:
-            release_cluster_sync_lock(
-                task_id,
-            )
-            raise
-
-        snapshot = build_cluster_sync_snapshot(
-            task_id,
-        )
-
+        snapshot = build_cluster_sync_snapshot(str(job.celery_task_id))
         if is_htmx:
-            return _render_sync_snapshot(
-                snapshot,
-                response_status=202,
-            )
-
+            return _render_sync_snapshot(snapshot, response_status=202)
         flash(
-            'Kubernetes inventory synchronization started in the Celery worker.',
-            'success',
+            'Kubernetes inventory synchronization started in the inventory worker.'
+            if created
+            else 'The existing Kubernetes inventory synchronization is already serving this request.',
+            'success' if created else 'info',
         )
-        return redirect(
-            request.referrer or view_url,
-        )
-    except RedisError:
-        logger.exception(
-            'Redis could not create or read the cluster synchronization state.',
-        )
-        if is_htmx:
-            return _render_enqueue_error(
-                message='Redis is unavailable, so KAORI cannot persist the synchronization state.',
-                detail='Verify the Redis container and CELERY_BROKER_URL before retrying.',
-                response_status=503,
-            )
-
-        flash(
-            'Redis is unavailable. Cluster synchronization was not started.',
-            'danger',
-        )
-        return redirect(
-            request.referrer or view_url,
-        )
+        return redirect(request.referrer or view_url)
     except Exception:
-        logger.exception(
-            'Celery could not enqueue the cluster synchronization task.',
-        )
+        logger.exception('KAORI could not enqueue the canonical Kubernetes inventory job.')
         if is_htmx:
             return _render_enqueue_error(
-                message='The Celery task could not be added to the inventory queue.',
-                detail='Verify the Celery worker and Redis broker, then retry the operation.',
+                message='The inventory job could not be added to the canonical job registry.',
+                detail='Verify PostgreSQL, Redis, and the Celery inventory worker before retrying.',
                 response_status=503,
             )
-
-        flash(
-            'Celery could not start the cluster synchronization task.',
-            'danger',
-        )
-        return redirect(
-            request.referrer or view_url,
-        )
+        flash('KAORI could not start the Kubernetes inventory job.', 'danger')
+        return redirect(request.referrer or view_url)
 
 
 @cluster_bp.route('/sync-all/status')
@@ -674,7 +538,7 @@ def add_cluster() -> ResponseReturnValue:
                                 'cluster_id': cluster.id,
                                 'cluster_name': cluster.name,
                                 'environment': cluster.environment,
-                                'server': cluster.server,
+                                'server': cluster.kubernetes_connection.server if cluster.kubernetes_connection else None,
                                 'registration_stage': 'persisted_after_recheck',
                             },
                             queue_feedback=True,
@@ -937,11 +801,7 @@ def test_edit_cluster_connection(cluster_id: str) -> ResponseReturnValue:
                 kubeconfig_source = 'replacement'
             else:
                 connection = cluster.kubernetes_connection
-                kube_content = (
-                    connection.kubeconfig
-                    if connection is not None and connection.kubeconfig
-                    else cluster.kubeconfig
-                )
+                kube_content = connection.kubeconfig if connection is not None else None
                 if not kube_content:
                     raise RuntimeError('No saved Kubernetes kubeconfig is available for this connection.')
                 kubeconfig_source = 'saved'
@@ -1006,9 +866,14 @@ def edit_cluster(cluster_id: str) -> ResponseReturnValue:
         cluster_id,
     )
 
-    form = ClusterEditForm(
-        obj=cluster,
-    )
+    connection = cluster.kubernetes_connection
+    if connection is None:
+        abort(409, description='Cluster has no canonical Kubernetes connection.')
+
+    form = ClusterEditForm(obj=cluster)
+    if request.method == 'GET':
+        form.kube_verify_ssl.data = bool(connection.verify_ssl)
+        form.kube_allow_weak_tls.data = bool(connection.allow_weak_tls)
     if form.validate_on_submit():
         name = form.name.data
         environment = form.environment.data
@@ -1023,8 +888,8 @@ def edit_cluster(cluster_id: str) -> ResponseReturnValue:
             if form.kubeconfig.data:
                 replacement_kubeconfig = form.kubeconfig.data.read().decode('utf-8')
             connection_contract_changed = bool(replacement_kubeconfig) or (
-                bool(cluster.kube_verify_ssl) != bool(form.kube_verify_ssl.data)
-                or bool(cluster.kube_allow_weak_tls) != bool(form.kube_allow_weak_tls.data)
+                bool(connection.verify_ssl) != bool(form.kube_verify_ssl.data)
+                or bool(connection.allow_weak_tls) != bool(form.kube_allow_weak_tls.data)
             )
             update_cluster(
                 cluster=cluster,
@@ -1060,8 +925,8 @@ def edit_cluster(cluster_id: str) -> ResponseReturnValue:
                     'previous_name': previous_name,
                     'environment': cluster.environment,
                     'previous_environment': previous_environment,
-                    'verify_ssl': cluster.kube_verify_ssl,
-                    'allow_weak_tls': cluster.kube_allow_weak_tls,
+                    'verify_ssl': connection.verify_ssl,
+                    'allow_weak_tls': connection.allow_weak_tls,
                     'connection_contract_changed': connection_contract_changed,
                     'kubeconfig_replaced': bool(replacement_kubeconfig),
                 },
@@ -1159,7 +1024,7 @@ def delete_cluster_route(cluster_id: str) -> ResponseReturnValue:
 
     cluster_name = cluster.name
     cluster_environment = cluster.environment
-    cluster_server = cluster.server
+    cluster_server = cluster.kubernetes_connection.server if cluster.kubernetes_connection else None
 
     deletion_summary: dict[str, int] = {}
 
