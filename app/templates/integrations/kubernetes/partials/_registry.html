@@ -33,14 +33,14 @@
   </header>
 
   <div class="overflow-x-auto">
-    <table class="w-full min-w-[1380px] table-fixed divide-y divide-outline-subtle text-left text-sm">
+    <table class="w-full min-w-[1240px] table-fixed divide-y divide-outline-subtle text-left text-sm">
       <thead class="bg-surface-hover text-xs text-content-muted">
         <tr>
-          <th class="w-[360px] px-5 py-3">Connection</th>
-          <th class="w-[190px] px-4 py-3">Kubernetes API</th>
-          <th class="w-[180px] px-4 py-3">Coverage</th>
-          <th class="w-[170px] px-4 py-3">Version</th>
-          <th class="w-[500px] px-3 py-3 text-right">Actions</th>
+          <th class="w-[300px] px-5 py-3">Connection</th>
+          <th class="w-[170px] px-4 py-3">Kubernetes API</th>
+          <th class="w-[170px] px-4 py-3">Coverage</th>
+          <th class="w-[160px] px-4 py-3">Version</th>
+          <th class="w-[440px] px-5 py-3 text-right">Actions</th>
         </tr>
       </thead>
 
@@ -100,7 +100,7 @@
             </td>
 
             <td class="px-4 py-4">
-              <p class="font-semibold text-content-primary">
+              <p class="truncate font-semibold text-content-primary" title="{{ row.version or 'Not Discovered' }}">
                 {{ row.version or 'Not Discovered' }}
               </p>
               <p class="mt-1 truncate text-xs text-content-muted"
@@ -109,7 +109,7 @@
               </p>
             </td>
 
-            <td class="px-3 py-4 text-right">
+            <td class="px-5 py-4 text-right">
               <div class="flex flex-nowrap justify-end gap-1.5 whitespace-nowrap">
                 <a href="{{ url_for('integrations.kubernetes_detail', cluster_id=row.cluster_id) }}"
                    title="Open {{ row.cluster_name }}"
@@ -185,13 +185,14 @@
 
           <tr x-show="expanded"
               x-cloak
-              class="bg-surface-hover/60">
+              class="bg-surface-hover/50">
             <td colspan="5" class="px-5 py-0">
               <div class="border-t border-outline-subtle py-5">
-                <div class="mb-4 flex items-start gap-3">
+                <div class="mb-5 flex items-start gap-3">
                   <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                     <i data-lucide="panel-top-open" class="h-4 w-4" aria-hidden="true"></i>
                   </span>
+
                   <div>
                     <h3 class="text-sm font-semibold text-content-primary">
                       Kubernetes Connection Details
@@ -202,122 +203,125 @@
                   </div>
                 </div>
 
-                <div class="grid divide-y divide-outline-subtle lg:grid-cols-3 lg:divide-x lg:divide-y-0">
-                  <section class="py-1 lg:pr-5">
-                    <div class="mb-3 flex items-center gap-2">
+                <div class="grid gap-6 xl:grid-cols-3">
+                  <section class="min-w-0">
+                    <div class="mb-3 flex items-center gap-2 border-b border-outline-subtle pb-2.5">
                       <i data-lucide="network" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
                       <h4 class="text-xs font-semibold uppercase tracking-wide text-content-muted">
                         Connection Identity
                       </h4>
                     </div>
 
-                    <dl class="grid gap-3 text-xs">
-                      <div>
+                    <dl class="grid gap-3">
+                      <div class="grid grid-cols-[120px_minmax(0,1fr)] gap-3 text-xs">
                         <dt class="text-content-muted">API Endpoint</dt>
-                        <dd class="mt-1 break-all font-mono font-medium text-content-secondary">
+                        <dd class="min-w-0 break-all font-mono font-medium text-content-secondary">
                           {{ row.server }}
                         </dd>
                       </div>
 
-                      <div class="grid grid-cols-2 gap-4">
-                        <div>
-                          <dt class="text-content-muted">Environment</dt>
-                          <dd class="mt-1 font-medium text-content-secondary">
-                            {{ row.environment }}
-                          </dd>
-                        </div>
-                        <div>
-                          <dt class="text-content-muted">Connection ID</dt>
-                          <dd class="mt-1 font-medium text-content-secondary">
-                            #{{ row.connection_id }}
-                          </dd>
-                        </div>
+                      <div class="grid grid-cols-[120px_minmax(0,1fr)] gap-3 text-xs">
+                        <dt class="text-content-muted">Environment</dt>
+                        <dd class="font-medium text-content-secondary">
+                          {{ row.environment }}
+                        </dd>
                       </div>
 
-                      <div>
+                      <div class="grid grid-cols-[120px_minmax(0,1fr)] gap-3 text-xs">
+                        <dt class="text-content-muted">Connection ID</dt>
+                        <dd class="font-medium text-content-secondary">
+                          #{{ row.connection_id }}
+                        </dd>
+                      </div>
+
+                      <div class="grid grid-cols-[120px_minmax(0,1fr)] gap-3 text-xs">
                         <dt class="text-content-muted">Canonical Instance</dt>
-                        <dd class="mt-1 font-medium text-content-secondary">
+                        <dd class="font-medium text-content-secondary">
                           #{{ row.integration_instance_id }}
                         </dd>
                       </div>
                     </dl>
                   </section>
 
-                  <section class="py-5 lg:px-5 lg:py-1">
-                    <div class="mb-3 flex items-center gap-2">
+                  <section class="min-w-0">
+                    <div class="mb-3 flex items-center gap-2 border-b border-outline-subtle pb-2.5">
                       <i data-lucide="shield-check" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
                       <h4 class="text-xs font-semibold uppercase tracking-wide text-content-muted">
                         Runtime &amp; Readiness
                       </h4>
                     </div>
 
-                    <dl class="grid gap-3 text-xs">
-                      <div class="flex items-center justify-between gap-4">
+                    <dl class="grid gap-3">
+                      <div class="flex items-center justify-between gap-4 text-xs">
                         <dt class="font-medium text-content-secondary">Kubernetes API</dt>
-                        <dd>{{ status_badge(row.readiness) }}</dd>
+                        <dd class="shrink-0">{{ status_badge(row.readiness) }}</dd>
                       </div>
 
-                      <div class="flex items-center justify-between gap-4">
+                      <div class="flex items-center justify-between gap-4 text-xs">
                         <dt class="font-medium text-content-secondary">Inventory</dt>
-                        <dd>{{ status_badge(row.inventory_coverage.status, row.inventory_coverage.label) }}</dd>
+                        <dd class="shrink-0">
+                          {{ status_badge(row.inventory_coverage.status, row.inventory_coverage.label) }}
+                        </dd>
                       </div>
 
-                      <div class="flex items-center justify-between gap-4">
+                      <div class="flex items-center justify-between gap-4 text-xs">
                         <dt class="font-medium text-content-secondary">Analytics</dt>
-                        <dd>{{ status_badge(row.metrics_coverage.status, row.metrics_coverage.label) }}</dd>
+                        <dd class="shrink-0">
+                          {{ status_badge(row.metrics_coverage.status, row.metrics_coverage.label) }}
+                        </dd>
                       </div>
 
-                      <div class="flex items-center justify-between gap-4">
+                      <div class="flex items-center justify-between gap-4 text-xs">
                         <dt class="font-medium text-content-secondary">Alerts</dt>
-                        <dd>{{ status_badge(row.alerts_coverage.status, row.alerts_coverage.label) }}</dd>
+                        <dd class="shrink-0">
+                          {{ status_badge(row.alerts_coverage.status, row.alerts_coverage.label) }}
+                        </dd>
                       </div>
                     </dl>
                   </section>
 
-                  <section class="py-5 lg:pl-5 lg:py-1">
-                    <div class="mb-3 flex items-center gap-2">
+                  <section class="min-w-0">
+                    <div class="mb-3 flex items-center gap-2 border-b border-outline-subtle pb-2.5">
                       <i data-lucide="waypoints" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
                       <h4 class="text-xs font-semibold uppercase tracking-wide text-content-muted">
                         Compatibility &amp; Sources
                       </h4>
                     </div>
 
-                    <dl class="grid gap-3 text-xs">
-                      <div class="grid grid-cols-2 gap-4">
-                        <div>
-                          <dt class="text-content-muted">Version</dt>
-                          <dd class="mt-1 font-medium text-content-secondary">
-                            {{ row.version or 'Not Discovered' }}
-                          </dd>
-                        </div>
-                        <div>
-                          <dt class="text-content-muted">Last Validated</dt>
-                          <dd class="mt-1 font-medium text-content-secondary">
-                            {{ row.last_validated_at }}
-                          </dd>
-                        </div>
+                    <dl class="grid gap-3">
+                      <div class="grid grid-cols-[130px_minmax(0,1fr)] gap-3 text-xs">
+                        <dt class="text-content-muted">Version</dt>
+                        <dd class="font-medium text-content-secondary">
+                          {{ row.version or 'Not Discovered' }}
+                        </dd>
                       </div>
 
-                      <div>
-                        <dt class="text-content-muted">Compatibility Profile</dt>
-                        <dd class="mt-1 font-medium text-content-secondary">
+                      <div class="grid grid-cols-[130px_minmax(0,1fr)] gap-3 text-xs">
+                        <dt class="text-content-muted">Last Validated</dt>
+                        <dd class="font-medium text-content-secondary">
+                          {{ row.last_validated_at }}
+                        </dd>
+                      </div>
+
+                      <div class="grid grid-cols-[130px_minmax(0,1fr)] gap-3 text-xs">
+                        <dt class="text-content-muted">Compatibility</dt>
+                        <dd class="min-w-0 break-words font-medium text-content-secondary">
                           {{ row.compatibility_profile or 'Validation Required' }}
                         </dd>
                       </div>
 
-                      <div class="grid grid-cols-2 gap-4">
-                        <div>
-                          <dt class="text-content-muted">Prometheus</dt>
-                          <dd class="mt-1 font-medium text-content-secondary">
-                            {{ row.prometheus_name or 'Not Bound' }}
-                          </dd>
-                        </div>
-                        <div>
-                          <dt class="text-content-muted">Alertmanager</dt>
-                          <dd class="mt-1 font-medium text-content-secondary">
-                            {{ row.alertmanager_name or 'Not Bound' }}
-                          </dd>
-                        </div>
+                      <div class="grid grid-cols-[130px_minmax(0,1fr)] gap-3 text-xs">
+                        <dt class="text-content-muted">Prometheus</dt>
+                        <dd class="min-w-0 break-words font-medium text-content-secondary">
+                          {{ row.prometheus_name or 'Not Bound' }}
+                        </dd>
+                      </div>
+
+                      <div class="grid grid-cols-[130px_minmax(0,1fr)] gap-3 text-xs">
+                        <dt class="text-content-muted">Alertmanager</dt>
+                        <dd class="min-w-0 break-words font-medium text-content-secondary">
+                          {{ row.alertmanager_name or 'Not Bound' }}
+                        </dd>
                       </div>
                     </dl>
                   </section>
