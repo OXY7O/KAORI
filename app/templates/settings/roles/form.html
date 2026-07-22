@@ -127,7 +127,7 @@
                 <div class="flex items-start gap-3">
                     <i data-lucide="lock-keyhole" class="mt-0.5 h-5 w-5 shrink-0"></i>
                     <div>
-                        <h2 class="text-sm font-bold">Protected default role</h2>
+                        <h2 class="text-sm font-bold">Protected Default Role</h2>
                         <p class="mt-1 text-sm leading-6">Name, description, status, and permissions are code-owned. Clone this role to create an editable variant.</p>
                     </div>
                     {% if current_user.has_permission('roles.manage') %}
@@ -156,7 +156,7 @@
                     <div class="flex items-start gap-3">
                         <i data-lucide="circle-alert" class="mt-0.5 h-5 w-5 shrink-0"></i>
                         <div>
-                            <h2 class="text-sm font-bold">Review the role configuration</h2>
+                            <h2 class="text-sm font-bold">Review the Role Configuration</h2>
                             <ul class="mt-1 list-disc space-y-1 pl-5 text-sm">
                                 {% for field_errors in form.errors.values() %}
                                     {% for error in field_errors %}
@@ -175,7 +175,7 @@
                             <div class="flex items-center gap-3">
                                 <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="badge" class="h-5 w-5"></i></span>
                                 <div>
-                                    <h2 class="text-base font-bold text-content-primary">Role configuration</h2>
+                                    <h2 class="text-base font-bold text-content-primary">Role Configuration</h2>
                                     <p class="mt-0.5 text-sm text-content-muted">Identity and assignment state for this access profile.</p>
                                 </div>
                             </div>
@@ -186,7 +186,7 @@
                                     <div class="flex items-start gap-3">
                                         <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="fingerprint" class="h-4 w-4"></i></span>
                                         <div>
-                                            <h3 class="text-sm font-bold text-content-primary">Role identity</h3>
+                                            <h3 class="text-sm font-bold text-content-primary">Role Identity</h3>
                                             <p class="mt-0.5 text-xs leading-5 text-content-muted">Stable machine identity and user-facing access label.</p>
                                         </div>
                                     </div>
@@ -209,7 +209,7 @@
                                 <div class="mb-3 flex items-start gap-3">
                                     <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-content-secondary shadow-sm"><i data-lucide="align-left" class="h-4 w-4"></i></span>
                                     <div>
-                                        <h3 class="text-sm font-bold text-content-primary">Operational purpose</h3>
+                                        <h3 class="text-sm font-bold text-content-primary">Operational Purpose</h3>
                                         <p class="mt-0.5 text-xs leading-5 text-content-muted">Describe who should receive this role and the responsibility boundary it represents.</p>
                                     </div>
                                 </div>
@@ -240,7 +240,7 @@
                             <div class="flex min-w-0 items-center gap-3">
                                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="grid-2x2-check" class="h-5 w-5"></i></span>
                                 <div class="min-w-0">
-                                    <h2 class="text-base font-bold text-content-primary">Permission matrix</h2>
+                                    <h2 class="text-base font-bold text-content-primary">Permission Matrix</h2>
                                     <p class="mt-0.5 text-sm leading-5 text-content-muted">Review {{ selected_count }} mapped permissions across {{ selected_module_ns.count }} modules. Expand only the modules you need.</p>
                                 </div>
                             </div>
@@ -382,7 +382,7 @@
                             <div class="flex items-center gap-3">
                                 <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="bar-chart-3" class="h-5 w-5"></i></span>
                                 <div>
-                                    <h2 class="text-base font-bold text-content-primary">Role summary</h2>
+                                    <h2 class="text-base font-bold text-content-primary">Role Summary</h2>
                                     <p class="mt-0.5 text-xs leading-5 text-content-muted">Effective scope and assignment posture.</p>
                                 </div>
                             </div>
@@ -450,7 +450,7 @@
                             <div class="flex items-center gap-3">
                                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="shield-check" class="h-5 w-5"></i></span>
                                 <div>
-                                    <h2 class="text-base font-bold text-content-primary">Access guardrails</h2>
+                                    <h2 class="text-base font-bold text-content-primary">Access Guardrails</h2>
                                     <p class="mt-0.5 text-xs leading-5 text-content-muted">Operational rules applied when this role is saved and assigned.</p>
                                 </div>
                             </div>
