@@ -12,38 +12,58 @@
                             {{ 'Add User' if mode == 'create' else 'Edit User' }}
                         </h1>
                         <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">
-                            {{ 'Create a Local Database account, then assign lifecycle state and RBAC authorization. External identities follow their provider-specific provisioning path.' if mode == 'create' else 'Update the KAORI identity profile, lifecycle state, assigned role, and administrative tier while preserving the authoritative provider link.' }}
+                            {{ 'Create a Local Database identity, assign access, and control lifecycle state. LDAP and SSO identities use their provider-owned workflows.' if mode == 'create' else 'Update the KAORI profile, lifecycle state, role assignment, and administrative tier without changing the authoritative identity provider.' }}
                         </p>
                         <div class="mt-5 flex flex-wrap gap-2">
                             {% if mode == 'edit' and user %}
                                 {{ page_hero.meta_label('user', user.display_label) }}
                                 {{ page_hero.meta_label(identity_context.icon, identity_context.provider_name) }}
                                 {{ page_hero.meta_label('shield', user.role_display_name) }}
-                                {{ page_hero.meta_label('circle-check' if user.account_is_active else 'circle-pause', 'Active Account' if user.account_is_active else 'Inactive Account') }}
                             {% else %}
                                 {{ page_hero.meta_label('database', 'Local Database') }}
-                                {{ page_hero.meta_label('building-2', 'LDAP Directory') }}
-                                {{ page_hero.meta_label('key-round', 'Google & GitHub SSO') }}
+                                {{ page_hero.meta_label('shield-check', 'RBAC Assignment') }}
+                                {{ page_hero.meta_label('toggle-right', 'Lifecycle Control') }}
                             {% endif %}
                         </div>
                     {% endcall %}
                 </div>
                 <aside class="{{ page_hero.aside_classes() }}">
                     <div class="{{ page_hero.context_panel_classes() }}">
-                        <div>
-                            <p class="{{ page_hero.context_panel_eyebrow_classes() }}">
-                                {{ 'Account creation paths' if mode == 'create' else 'Administrative update' }}
-                            </p>
-                            <p class="mt-2 text-sm font-semibold leading-6 text-brand-foreground">
-                                {% if mode == 'create' %}
-                                    Create Local Database users here. Provision LDAP users from Directory Provisioning, while Google and GitHub users enter through a linked identity or controlled JIT.
-                                {% else %}
-                                    {{ identity_context.provider_name }} remains the authoritative authentication source. This page updates the KAORI profile, lifecycle state, role, and administrative tier without changing provider ownership.
-                                {% endif %}
-                            </p>
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <p class="{{ page_hero.context_panel_eyebrow_classes() }}">
+                                    {{ 'Creation Scope' if mode == 'create' else 'Identity Context' }}
+                                </p>
+                                <p class="mt-1 text-sm font-semibold text-brand-foreground">
+                                    {{ 'Local Database Account' if mode == 'create' else identity_context.provider_name }}
+                                </p>
+                            </div>
+                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/30 bg-white/10 text-white">
+                                <i data-lucide="{{ 'database' if mode == 'create' else identity_context.icon }}" class="h-5 w-5"></i>
+                            </div>
                         </div>
+
+                        <div class="mt-4 grid grid-cols-2 gap-2">
+                            <div class="rounded-lg border border-white/20 bg-white/10 px-3 py-2.5">
+                                <p class="text-[10px] font-semibold uppercase tracking-widest text-brand-foreground-muted">
+                                    {{ 'Credential Owner' if mode == 'create' else 'Provider Type' }}
+                                </p>
+                                <p class="mt-1 text-sm font-semibold text-brand-foreground">
+                                    {{ 'KAORI' if mode == 'create' else identity_context.type_label }}
+                                </p>
+                            </div>
+                            <div class="rounded-lg border border-white/20 bg-white/10 px-3 py-2.5">
+                                <p class="text-[10px] font-semibold uppercase tracking-widest text-brand-foreground-muted">
+                                    {{ 'Provisioning' if mode == 'create' else 'Account State' }}
+                                </p>
+                                <p class="mt-1 text-sm font-semibold text-brand-foreground">
+                                    {{ 'This Form' if mode == 'create' else ('Active' if user.account_is_active else 'Inactive') }}
+                                </p>
+                            </div>
+                        </div>
+
                         <a href="{{ url_for('users.index') }}"
-                           class="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-brand-outline bg-brand-surface-strong px-4 text-sm font-semibold text-brand-foreground transition hover:bg-brand-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
+                           class="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-white/80 bg-white px-4 text-sm font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft hover:text-kaori-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80">
                             <i data-lucide="arrow-left" class="h-4 w-4"></i>
                             Back to Users
                         </a>
@@ -348,7 +368,7 @@
 
         {% if mode == 'create' %}
             <aside class="space-y-4 xl:col-span-4 xl:sticky xl:top-5">
-                <details class="group overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+                <details open class="group overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
                     <summary class="flex cursor-pointer list-none items-start justify-between gap-3 border-b border-outline-subtle bg-surface-hover px-4 py-3.5 transition hover:bg-kaori-soft/40 [&::-webkit-details-marker]:hidden">
                         <div class="flex items-start gap-3">
                             <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">

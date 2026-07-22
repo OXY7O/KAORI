@@ -81,3 +81,23 @@ def test_related_user_management_is_provider_aware() -> None:
     assert "'User Registry'" in content
     assert "'Identity Providers'" in content
     assert "boundary=identity_context.provider_name ~" in content
+
+
+def test_add_and_edit_user_hero_uses_compact_kaori_context_panel() -> None:
+    content = TEMPLATE.read_text(encoding='utf-8')
+
+    assert "{{ 'Creation Scope' if mode == 'create' else 'Identity Context' }}" in content
+    assert "{{ 'Credential Owner' if mode == 'create' else 'Provider Type' }}" in content
+    assert "{{ 'Provisioning' if mode == 'create' else 'Account State' }}" in content
+    assert "Create Local Database users here. Provision LDAP users" not in content
+    assert "remains the authoritative authentication source. This page updates" not in content
+    assert 'w-full items-center justify-center gap-2 rounded-lg border border-white/80 bg-white' in content
+
+
+def test_add_user_provider_guidance_is_open_by_default() -> None:
+    content = TEMPLATE.read_text(encoding='utf-8')
+
+    heading_index = content.index('Add User by Identity Provider')
+    details_index = content.rfind('<details open', 0, heading_index)
+
+    assert details_index != -1
