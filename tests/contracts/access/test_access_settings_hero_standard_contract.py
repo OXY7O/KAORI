@@ -71,14 +71,15 @@ def test_hero_context_labels_use_title_case() -> None:
         assert f">{label}<" not in combined
 
 
-def test_shared_hero_description_typography_is_responsive_and_not_overridden() -> None:
+def test_shared_hero_description_typography_is_consistent_and_not_overridden() -> None:
     component = _text(Path("app/templates/components/page_hero.html"))
-    assert "max-w-[44rem] text-sm font-normal leading-6" in component
-    assert "lg:text-[15px]" in component
+    assert "max-w-[44rem] text-[15px] font-normal leading-6" in component
+    assert "lg:text-base" not in component
 
     forbidden_local_typography = (
         'max-w-[44rem] text-sm font-normal leading-6 text-brand-foreground-muted',
         'max-w-[44rem] text-[15px] font-normal leading-6 text-brand-foreground-muted',
+        'max-w-[44rem] text-base font-normal leading-6 text-brand-foreground-muted',
     )
     for template in HERO_TEMPLATES:
         text = _text(template)
