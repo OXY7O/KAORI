@@ -91,14 +91,14 @@ def test_shared_hero_description_typography_is_consistent_and_not_overridden() -
 def test_shared_hero_title_typography_is_slightly_larger_and_reusable() -> None:
     component = _text(Path("app/templates/components/page_hero.html"))
     assert (
-        "text-[32px] font-bold leading-10 tracking-[-0.02em] "
-        "text-brand-foreground lg:text-[34px] lg:leading-[42px]"
+        "text-3xl font-bold leading-10 tracking-[-0.02em] "
+        "text-brand-foreground sm:text-4xl"
     ) in component
 
     forbidden_local_title_typography = (
         'text-[30px] font-bold leading-9 tracking-[-0.02em]',
-        'text-[32px] font-bold leading-10 tracking-[-0.02em]',
-        'lg:text-[34px] lg:leading-[42px]',
+        'text-3xl font-bold leading-10 tracking-[-0.02em]',
+        'sm:text-4xl',
     )
     for template in HERO_TEMPLATES:
         text = _text(template)
