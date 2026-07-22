@@ -28,5 +28,6 @@ def test_add_user_hero_matches_connection_registration_pattern() -> None:
     assert "page_hero.context_panel_metrics_classes" in form
     assert "page_hero.context_metric('key-round', 'Credential Owner', 'KAORI'" in form
     assert "page_hero.context_metric('shield-check', 'After Save', 'Role Assignment'" in form
-    assert "text-sm font-normal leading-6 text-brand-foreground-muted" in form
+    assert 'page_hero.description_classes()' in form
+    assert 'max-w-[44rem] text-sm font-normal leading-6 text-brand-foreground-muted' not in form
     assert "Create one Local Database identity" in form

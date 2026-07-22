@@ -23,7 +23,8 @@ def test_user_management_hero_description_matches_kaori_standard() -> None:
     )
     assert expected in hero
     assert "Manage identity records, lifecycle state" not in hero
-    assert "page_hero.description_classes()" in hero
+    assert 'page_hero.description_classes()' in hero
+    assert 'max-w-[44rem] text-sm font-normal leading-6 text-brand-foreground-muted' not in hero
 
 
 def test_user_facing_copy_uses_emergency_access_term() -> None:
