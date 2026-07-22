@@ -51,6 +51,17 @@ class PrometheusRuntimeAdapter:
             return self.refresh_health(instance)
         if operation == 'runtime.state':
             return self.get_state(instance, validation_result=kwargs.get('validation_result'))
+        if operation == 'binding.validate':
+            from app.prometheus.service import validate_prometheus_binding
+
+            binding = kwargs.get('binding')
+            if binding is None:
+                raise ValueError('Prometheus binding.validate requires a binding.')
+            return validate_prometheus_binding(
+                instance=instance,
+                binding=binding,
+                commit=bool(kwargs.get('commit', True)),
+            )
         raise ValueError(f'Unsupported Prometheus integration operation: {operation}')
 
     def get_state(self, instance: PrometheusInstance, *, validation_result: dict[str, Any] | None = None) -> RuntimeState:

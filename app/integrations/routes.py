@@ -2,7 +2,7 @@ from flask import Blueprint, abort, current_app, redirect, render_template, requ
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 
-from app.extensions import db
+from app.integrations.binding_service import create_cluster_source_binding
 from app.integrations.coverage import build_binding_workspace
 from app.integrations.service import build_alertmanager_page, build_integrations_overview, build_kubernetes_detail, build_kubernetes_page, build_kubernetes_registry_row, build_prometheus_page
 from app.rbac.decorators import permission_required
@@ -17,9 +17,8 @@ from app.integrations.validation.web import (
     snapshot_feedback_for_user,
     validate_snapshot_access,
 )
-from app.models import AlertmanagerInstance, Cluster, PrometheusInstance
 from app.models.job import JobExecution
-from app.models.kubernetes import KubernetesConnection
+from app.integrations.repository import get_kubernetes_connection_by_cluster_id
 from app.notifications.service import get_navigation_notification_context, record_operational_activity
 
 integrations_bp = Blueprint('integrations', __name__, url_prefix='/integrations')
@@ -240,7 +239,9 @@ def kubernetes_detail(cluster_id: str) -> ResponseReturnValue:
 @integrations_bp.post('/kubernetes/<string:cluster_id>/capabilities/validate')
 @permission_required('clusters.sync')
 def kubernetes_capability_validate(cluster_id: str) -> ResponseReturnValue:
-    connection = KubernetesConnection.query.filter_by(cluster_id=cluster_id).first_or_404()
+    connection = get_kubernetes_connection_by_cluster_id(cluster_id)
+    if connection is None:
+        abort(404)
     is_htmx = request.headers.get('HX-Request') == 'true'
     try:
         validation_job, created = enqueue_instance_validation(
@@ -304,7 +305,9 @@ def kubernetes_capability_validate(cluster_id: str) -> ResponseReturnValue:
 @integrations_bp.get('/kubernetes/<string:cluster_id>/capabilities/validate/status/<string:task_id>')
 @permission_required('clusters.view')
 def kubernetes_capability_validation_status(cluster_id: str, task_id: str) -> ResponseReturnValue:
-    connection = KubernetesConnection.query.filter_by(cluster_id=cluster_id).first_or_404()
+    connection = get_kubernetes_connection_by_cluster_id(cluster_id)
+    if connection is None:
+        abort(404)
     snapshot = build_validation_snapshot(task_id)
     if not validate_snapshot_access(
         snapshot,
@@ -325,7 +328,9 @@ def kubernetes_capability_validation_status(cluster_id: str, task_id: str) -> Re
 @integrations_bp.post('/kubernetes/<string:cluster_id>/runtime/refresh')
 @permission_required('clusters.sync')
 def kubernetes_runtime_refresh(cluster_id: str) -> ResponseReturnValue:
-    connection = KubernetesConnection.query.filter_by(cluster_id=cluster_id).first_or_404()
+    connection = get_kubernetes_connection_by_cluster_id(cluster_id)
+    if connection is None:
+        abort(404)
     is_htmx = request.headers.get('HX-Request') == 'true'
     try:
         validation_job, created = enqueue_runtime_health_refresh(
@@ -389,7 +394,9 @@ def kubernetes_runtime_refresh(cluster_id: str) -> ResponseReturnValue:
 @integrations_bp.get('/kubernetes/<string:cluster_id>/runtime/refresh/status/<string:task_id>')
 @permission_required('clusters.view')
 def kubernetes_runtime_refresh_status(cluster_id: str, task_id: str) -> ResponseReturnValue:
-    connection = KubernetesConnection.query.filter_by(cluster_id=cluster_id).first_or_404()
+    connection = get_kubernetes_connection_by_cluster_id(cluster_id)
+    if connection is None:
+        abort(404)
     snapshot = build_validation_snapshot(task_id)
     if not validate_snapshot_access(
         snapshot,
@@ -410,7 +417,9 @@ def kubernetes_runtime_refresh_status(cluster_id: str, task_id: str) -> Response
 @integrations_bp.get('/kubernetes/<string:cluster_id>/runtime/history')
 @permission_required('clusters.view')
 def kubernetes_runtime_history(cluster_id: str) -> ResponseReturnValue:
-    connection = KubernetesConnection.query.filter_by(cluster_id=cluster_id).first_or_404()
+    connection = get_kubernetes_connection_by_cluster_id(cluster_id)
+    if connection is None:
+        abort(404)
     rows, pagination = paginate_runtime_history(
         'kubernetes',
         str(connection.id),
@@ -488,48 +497,26 @@ def _binding_response(provider_type: str, *, scope_key: str) -> ResponseReturnVa
         selector_operator = request.form.get('selector_operator', '=').strip() or '='
         role = request.form.get('binding_role', 'primary').strip().lower()
         priority = request.form.get('priority', 100, type=int) or 100
-        cluster = Cluster.query.filter_by(id=cluster_id).first()
         source = None
+        cluster = None
+        binding = None
         try:
-            if cluster is None:
-                raise ValueError('The selected Kubernetes scope no longer exists.')
             if source_id is None:
                 raise ValueError(f'Select an existing {provider_type.title()} source.')
-            if provider_type == 'prometheus':
-                from app.prometheus.service import create_prometheus_binding
-                source = PrometheusInstance.query.filter_by(id=source_id).first()
-                if source is None:
-                    raise ValueError('The selected Prometheus source no longer exists.')
-                binding = create_prometheus_binding(
-                    instance=source,
-                    cluster=cluster,
-                    role=role,
-                    priority=priority,
-                    selector_label=selector_label,
-                    selector_value=selector_value,
-                    selector_operator=selector_operator,
-                )
-            else:
-                from app.alertmanager.forms import AlertmanagerBindingForm
-                from app.alertmanager.service import add_alertmanager_binding
-                source = AlertmanagerInstance.query.filter_by(id=source_id).first()
-                if source is None:
-                    raise ValueError('The selected Alertmanager source no longer exists.')
-                binding = add_alertmanager_binding(
-                    instance=source,
-                    form=AlertmanagerBindingForm(
-                        scope_type='kubernetes_cluster',
-                        scope_key=cluster.id,
-                        binding_role=role,
-                        priority=priority,
-                        enabled=True,
-                        selector_label=selector_label,
-                        selector_value=selector_value,
-                        selector_operator=selector_operator,
-                    ),
-                )
+            created_binding = create_cluster_source_binding(
+                provider_type,
+                source_id=source_id,
+                cluster_id=cluster_id,
+                role=role,
+                priority=priority,
+                selector_label=selector_label,
+                selector_value=selector_value,
+                selector_operator=selector_operator,
+            )
+            source = created_binding.source
+            cluster = created_binding.cluster
+            binding = created_binding.binding
         except ValueError as exc:
-            db.session.rollback()
             feedback = record_operational_activity(
                 user_id=current_user.id,
                 event_type=f'{provider_type}_binding_create_rejected',
@@ -550,7 +537,6 @@ def _binding_response(provider_type: str, *, scope_key: str) -> ResponseReturnVa
                 queue_feedback=not _is_htmx_request(),
             )
         except Exception as exc:
-            db.session.rollback()
             feedback = record_operational_activity(
                 user_id=current_user.id,
                 event_type=f'{provider_type}_binding_create_failed',

@@ -16,8 +16,15 @@ integration_module = IntegrationModule(
         'runtime.validate': 'integration-validation',
         'runtime.health': 'integration-runtime',
         'runtime.state': 'inline',
+        'binding.validate': 'integration-validation',
     },
-    operations=frozenset({'client.build', 'runtime.validate', 'runtime.health', 'runtime.state'}),
+    operations=frozenset({
+        'client.build',
+        'runtime.validate',
+        'runtime.health',
+        'runtime.state',
+        'binding.validate',
+    }),
     capability_keys=CAPABILITY_KEYS,
     compatibility_profiles=COMPATIBILITY_PROFILES,
 )

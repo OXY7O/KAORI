@@ -7,12 +7,9 @@ from typing import Any
 from celery import shared_task
 from flask import current_app
 
-from app.alertmanager.service import (
-    validate_alertmanager_binding,
-)
 from app.extensions import db
 from app.integrations.lifecycle import ensure_canonical_instance
-from app.integrations.registry import get_integration
+from app.integrations.registry import execute_integration_operation, get_integration
 from app.integrations.runtime.monitoring import refresh_and_record
 from app.integrations.runtime.repository import persist_runtime_state
 from app.integrations.validation.state import (
@@ -37,7 +34,6 @@ from app.models.integration import IntegrationBinding
 from app.models.kubernetes import KubernetesConnection
 from app.models.prometheus import PrometheusInstance
 from app.notifications.service import record_operational_activity
-from app.prometheus.service import validate_prometheus_binding
 
 logger = logging.getLogger(__name__)
 
@@ -496,7 +492,9 @@ def _refresh_prometheus_bindings(instance: PrometheusInstance) -> dict[str, Any]
     ready = 0
     results: list[dict[str, Any]] = []
     for binding in bindings:
-        result = validate_prometheus_binding(
+        result = execute_integration_operation(
+            'prometheus',
+            'binding.validate',
             instance=instance,
             binding=binding,
             commit=False,
@@ -532,7 +530,9 @@ def _refresh_alertmanager_bindings(instance: AlertmanagerInstance) -> dict[str, 
     ready = 0
     results: list[dict[str, Any]] = []
     for binding in bindings:
-        result = validate_alertmanager_binding(
+        result = execute_integration_operation(
+            'alertmanager',
+            'binding.validate',
             instance=instance,
             binding=binding,
             commit=False,
@@ -601,20 +601,21 @@ def validate_integration_binding(
         binding = db.session.get(IntegrationBinding, binding_id)
         if binding is None:
             raise LookupError('Integration binding no longer exists.')
-        if provider_type == 'prometheus':
-            instance = db.session.get(PrometheusInstance, instance_id)
-            if instance is None or binding.integration_instance_id != instance.integration_instance_id:
-                raise LookupError('Prometheus binding does not belong to the selected source.')
-            result_payload = validate_prometheus_binding(instance=instance, binding=binding)
-            instance_name = instance.name
-        elif provider_type == 'alertmanager':
-            instance = db.session.get(AlertmanagerInstance, instance_id)
-            if instance is None or binding.integration_instance_id != instance.integration_instance_id:
-                raise LookupError('Alertmanager binding does not belong to the selected source.')
-            result_payload = validate_alertmanager_binding(instance=instance, binding=binding)
-            instance_name = instance.name
-        else:
-            raise ValueError(f'Unsupported binding provider: {provider_type}')
+        module = get_integration(provider_type)
+        if 'binding.validate' not in module.operations:
+            raise ValueError(f'{module.label} does not support binding validation.')
+        instance = module.get_instance(instance_id)
+        if binding.integration_instance_id != instance.integration_instance_id:
+            raise LookupError(
+                f'{module.label} binding does not belong to the selected source.'
+            )
+        result_payload = execute_integration_operation(
+            provider_type,
+            'binding.validate',
+            instance=instance,
+            binding=binding,
+        )
+        instance_name = instance.name
 
         _update_worker_phase(self, current=2, total=3, message='The provider accepted the binding probe; finalizing scope evidence.')
         binding_status = str(result_payload.get('status') or 'validation_required')

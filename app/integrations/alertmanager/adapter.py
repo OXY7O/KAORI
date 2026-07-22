@@ -37,6 +37,17 @@ class AlertmanagerRuntimeAdapter:
             return self.refresh_health(instance)
         if operation == 'runtime.state':
             return self.get_state(instance, validation_result=kwargs.get('validation_result'))
+        if operation == 'binding.validate':
+            from app.alertmanager.service import validate_alertmanager_binding
+
+            binding = kwargs.get('binding')
+            if binding is None:
+                raise ValueError('Alertmanager binding.validate requires a binding.')
+            return validate_alertmanager_binding(
+                instance=instance,
+                binding=binding,
+                commit=bool(kwargs.get('commit', True)),
+            )
         raise ValueError(f'Unsupported Alertmanager integration operation: {operation}')
 
     def get_state(
