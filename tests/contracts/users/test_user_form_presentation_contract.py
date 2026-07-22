@@ -19,7 +19,6 @@ def test_user_form_uses_kaori_title_case_for_section_titles() -> None:
         'Assigned Role',
         'Active Account',
         'Add User by Identity Provider',
-        'Related User Management',
         'Administrative Boundary',
         'Current Identity Source',
         'Editable Administrative Controls',
@@ -41,13 +40,12 @@ def test_add_user_guidance_is_provider_specific() -> None:
     assert "url_for('users.providers')" in content
 
 
-def test_edit_user_sidebar_contains_provider_and_related_context() -> None:
+def test_edit_user_sidebar_contains_provider_context() -> None:
     content = TEMPLATE.read_text(encoding='utf-8')
 
     assert 'Current Identity Source' in content
     assert '{{ identity_context.provider_name }}' in content
     assert '{{ identity_context.credential_owner }}' in content
-    assert content.count('Related User Management') == 2
 
 
 def test_add_user_provider_guidance_is_collapsible() -> None:
@@ -64,9 +62,22 @@ def test_add_user_provider_guidance_is_collapsible() -> None:
     assert 'group-open:rotate-180' in content[summary_index:closing_index]
 
 
-def test_related_user_management_uses_kaori_violet_style() -> None:
+def test_related_user_management_reuses_integration_related_card_component() -> None:
     content = TEMPLATE.read_text(encoding='utf-8')
 
-    assert content.count('border border-brand-outline bg-kaori-soft shadow-sm') >= 2
-    assert content.count('text-kaori-strong">Related User Management') == 2
-    assert content.count('border-brand-outline bg-surface-card/80') >= 6
+    assert '{% import "components/related_page_card.html" as related_page_card %}' in content
+    assert content.count('related_page_card.render(') == 4
+    assert content.count("eyebrow='Related User Management'") == 4
+    assert 'border border-brand-outline bg-kaori-soft shadow-sm' not in content
+    assert 'border-brand-outline bg-surface-card/80' not in content
+
+
+def test_related_user_management_is_provider_aware() -> None:
+    content = TEMPLATE.read_text(encoding='utf-8')
+
+    assert "user.auth_source == 'ldap'" in content
+    assert "user.auth_source == 'database'" in content
+    assert "'LDAP Directory Provisioning'" in content
+    assert "'User Registry'" in content
+    assert "'Identity Providers'" in content
+    assert "boundary=identity_context.provider_name ~" in content
