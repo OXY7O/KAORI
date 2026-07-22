@@ -21,3 +21,10 @@ Registration and configuration uses the shared Info Flow component for ordered
 operator guidance. Validation uses the shared Context Guidance Card only for
 secondary remediation context; provider execution remains owned by the
 Integration Registry adapter.
+
+## Provider invocation
+
+The domain facade preserves route and workspace call sites, but provider runtime
+and binding operations are dispatched through the Integration Registry. API
+validation, health persistence, binding mutation, and scope-filter probes must
+not be reimplemented in this package.

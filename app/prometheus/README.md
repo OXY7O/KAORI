@@ -31,3 +31,10 @@ the provider record and its canonical integration identity atomically.
 Historical runtime observations and Activity Audit records remain available.
 The Delete Instance control is shown only in the contextual Scope & Resolution
 workspace, adjacent to its binding and job blockers.
+
+## Provider invocation
+
+The domain facade preserves route, analytics, and report call sites, but all
+provider runtime and binding operations are dispatched through the Integration
+Registry. Provider compatibility, query validation, binding mutation, and scope
+probe logic must not be reimplemented in this package.

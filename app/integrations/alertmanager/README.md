@@ -22,9 +22,12 @@ validation, evidence, and runtime translation.
 | Operation | Queue | Meaning |
 |---|---|---|
 | `client.build` | `inline` | Build an API v2 client; no network call. |
-| `runtime.validate` | `integration-validation` | Full API/capability validation. |
-| `runtime.health` | `integration-runtime` | Lightweight status observation. |
-| `runtime.state` | `inline` | Translate evidence into shared runtime state. |
+| `runtime.validate` | `integration-validation` | Run full API, compatibility, and capability validation. |
+| `runtime.health` | `integration-runtime` | Run a lightweight status endpoint observation. |
+| `runtime.state` | `inline` | Translate provider evidence into shared runtime state. |
+| `binding.create` | `inline` | Create a provider-neutral operational-scope binding. |
+| `binding.selector.update` | `inline` | Update the alert selector and invalidate prior binding evidence. |
+| `binding.validate` | `integration-validation` | Validate the scoped Alertmanager filter against active alerts. |
 
 ## Persistence and authority
 
@@ -33,3 +36,11 @@ source. `IntegrationBinding` is the only scope-binding table. Alertmanager
 remains authoritative for routing, grouping, inhibition, receivers, and
 silences; KAORI currently performs read-only provider operations and governed
 source resolution.
+
+## Canonical application boundary
+
+Provider runtime and binding behavior is implemented in `runtime.py`,
+`binding_management.py`, and `binding_validation.py`. The adapter dispatches
+every operation directly to those modules. This package must not import
+`app.alertmanager`; the web/domain package calls it only through the Integration
+Registry.

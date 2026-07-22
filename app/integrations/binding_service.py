@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from app.extensions import db
+from app.integrations.registry import get_integration
 from app.integrations.repository import get_cluster, get_provider_record
 
 
@@ -38,35 +39,27 @@ def create_cluster_source_binding(
         raise ValueError(f'The selected {provider.title()} source no longer exists.')
 
     try:
+        module = get_integration(provider)
+        binding_arguments: dict[str, Any] = {
+            'role': role,
+            'priority': priority,
+            'selector_label': selector_label,
+            'selector_value': selector_value,
+            'selector_operator': selector_operator,
+        }
         if provider == 'prometheus':
-            from app.prometheus.service import create_prometheus_binding
-
-            binding = create_prometheus_binding(
-                instance=source,
-                cluster=cluster,
-                role=role,
-                priority=priority,
-                selector_label=selector_label,
-                selector_value=selector_value,
-                selector_operator=selector_operator,
-            )
+            binding_arguments['cluster'] = cluster
         else:
-            from app.alertmanager.forms import AlertmanagerBindingForm
-            from app.alertmanager.service import add_alertmanager_binding
-
-            binding = add_alertmanager_binding(
-                instance=source,
-                form=AlertmanagerBindingForm(
-                    scope_type='kubernetes_cluster',
-                    scope_key=cluster.id,
-                    binding_role=role,
-                    priority=priority,
-                    enabled=True,
-                    selector_label=selector_label,
-                    selector_value=selector_value,
-                    selector_operator=selector_operator,
-                ),
-            )
+            binding_arguments.update({
+                'scope_type': 'kubernetes_cluster',
+                'scope_key': cluster.id,
+                'enabled': True,
+            })
+        binding = module.execute(
+            'binding.create',
+            source,
+            **binding_arguments,
+        )
     except Exception:
         db.session.rollback()
         raise

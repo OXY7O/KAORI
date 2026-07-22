@@ -233,3 +233,14 @@ CAPABILITY_BY_KEY = {item.key: item for item in CAPABILITIES}
 
 CAPABILITY_KEYS = tuple(item.key for item in CAPABILITIES)
 COMPATIBILITY_PROFILES = ('alertmanager-v0-25', 'alertmanager-v0-33')
+
+
+BINDING_CAPABILITY_KEYS = (
+    'alerts',
+    'alerts_v2',
+    'silences',
+    'silences_v2',
+    'routing',
+    'receivers',
+    'status_v2',
+)

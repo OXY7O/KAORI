@@ -4,16 +4,16 @@ from typing import Any
 from urllib.parse import urlsplit
 
 from app.cluster.constants import get_environment_label
-from app.extensions.db import db
 from app.common.presentation import present_user_datetime
+from app.extensions.db import db
+from app.integrations.coverage import build_provider_coverage, bound_source_for_scope
+from app.integrations.deletion import kubernetes_deletion_guard
+from app.integrations.prometheus.scope import cluster_bindings_for_instance
+from app.integrations.readiness import resolve_binding_operational_status, resolve_cluster_coverage
 from app.models import AlertmanagerInstance, Cluster, PrometheusInstance, Report, ReportSchedule
 from app.models.integration import IntegrationInstance
 from app.models.kubernetes import KubernetesConnection
 from app.models.runtime import IntegrationRuntimeObservation
-from app.integrations.coverage import build_provider_coverage, bound_source_for_scope
-from app.integrations.deletion import kubernetes_deletion_guard
-from app.prometheus.repository import cluster_bindings_for_instance
-from app.integrations.readiness import resolve_binding_operational_status, resolve_cluster_coverage
 
 
 def safe_endpoint(value: str | None) -> str:
@@ -129,9 +129,6 @@ def build_integrations_overview(
             {'value': 'validation_required', 'label': 'Validation Required'},
         ],
     }
-
-
-
 
 
 def _kubernetes_readiness(connection: KubernetesConnection) -> str:
@@ -572,7 +569,6 @@ def build_alertmanager_page(
     )
 
 
-
 def _coverage(
     *,
     kubernetes_connections: list[KubernetesConnection],
@@ -655,8 +651,6 @@ def _catalog(
             'description': 'External secret and credential management with controlled access and auditability.',
         },
     ]
-
-
 
 
 def _ordered_status_options(rows: list[dict[str, Any]], field: str, order: list[str]) -> list[str]:

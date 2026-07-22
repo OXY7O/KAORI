@@ -7,15 +7,15 @@ from flask import url_for
 from app.extensions.db import db
 from app.integrations.binding_selectors import selector_form_values, selector_is_configured, selector_summary
 from app.integrations.deletion import provider_deletion_guard
+from app.integrations.prometheus.capabilities import CAPABILITIES, definition as capability_definition
+from app.integrations.prometheus.scope import KUBERNETES_CLUSTER_SCOPE, cluster_bindings_for_instance
+from app.integrations.readiness import resolve_binding_operational_status
+from app.integrations.registry import get_integration
 from app.integrations.runtime.presentation import runtime_history_view, runtime_state_view
 from app.integrations.runtime.repository import paginate_runtime_history
 from app.models import Cluster, PrometheusInstance
 from app.models.integration import IntegrationBinding
-from app.integrations.prometheus.capabilities import CAPABILITIES, definition as capability_definition
-from app.prometheus.repository import KUBERNETES_CLUSTER_SCOPE, cluster_bindings_for_instance
-from app.integrations.registry import get_integration
 from app.prometheus.resolver import PrometheusSourceResolution, resolve_prometheus_sources
-from app.integrations.readiness import resolve_binding_operational_status
 
 
 _CORE_CAPABILITIES = {
@@ -434,4 +434,3 @@ def _resolution_view(
         'current_instance_selected': bool(selected and selected.instance.id == current_instance_id),
         'candidates': candidates,
     }
-

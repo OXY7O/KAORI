@@ -1,0 +1,105 @@
+from __future__ import annotations
+
+from datetime import UTC, datetime
+from typing import Any
+
+from app.extensions.db import db
+from app.integrations.binding_selectors import selector_is_configured
+from app.integrations.prometheus.client import PrometheusClient
+from app.integrations.prometheus.exceptions import PrometheusError
+from app.models.integration import IntegrationBinding
+from app.models.prometheus import PrometheusInstance
+
+
+def validate_binding(
+    *,
+    instance: PrometheusInstance,
+    binding: IntegrationBinding,
+    commit: bool = True,
+) -> dict[str, Any]:
+    """Validate one Prometheus scope selector with low-cost identity probes."""
+    if instance.integration_instance_id != binding.integration_instance_id:
+        raise ValueError('The selected binding does not belong to this Prometheus source.')
+    if not selector_is_configured(binding.selector_json):
+        binding.validation_status = 'blocked'
+        binding.validation_message = 'Configure a metrics identity selector before validating this binding.'
+        binding.last_validated_at = datetime.now(UTC)
+        if commit:
+            db.session.commit()
+        return {
+            'status': binding.validation_status,
+            'message': binding.validation_message,
+            'matched_series': 0,
+            'matched_signal': None,
+            'probe_results': [],
+        }
+
+    probes = (
+        ('kube_node_info', 'Kubernetes node identity'),
+        ('kube_namespace_status_phase', 'Kubernetes namespace identity'),
+        ('kube_pod_info', 'Kubernetes pod identity'),
+    )
+    probe_results: list[dict[str, Any]] = []
+    matched_signal: str | None = None
+    matched = 0.0
+    try:
+        client = PrometheusClient(
+            instance,
+            scope_selector=binding.selector_json,
+            request_timeout_seconds=max(int(instance.timeout or 5), 15),
+        )
+        for metric, label in probes:
+            payload = client.query(f'count({metric})')
+            if not isinstance(payload, dict) or payload.get('status') != 'success':
+                detail = (
+                    str((payload or {}).get('error') or 'Prometheus returned an unsuccessful query response.')
+                    if isinstance(payload, dict)
+                    else 'Prometheus returned an invalid query response.'
+                )
+                raise PrometheusError(detail)
+            result = ((payload.get('data') or {}).get('result') or [])
+            value = 0.0
+            if result and isinstance(result[0], dict):
+                sample = result[0].get('value') or []
+                if len(sample) > 1:
+                    value = float(sample[1])
+            probe_results.append({
+                'metric': metric,
+                'label': label,
+                'matched_series': int(value),
+            })
+            if value > 0 and matched_signal is None:
+                matched_signal = metric
+                matched = value
+
+        if matched_signal is not None:
+            binding.validation_status = 'ready'
+            binding.validation_message = (
+                f'Metrics identity matched {int(matched)} scoped series through {matched_signal}.'
+            )
+        else:
+            binding.validation_status = 'degraded'
+            binding.validation_message = (
+                'The selector was accepted, but no scoped kube-state-metrics identity series matched. '
+                'Verify the selector label/value on kube_node_info, kube_namespace_status_phase, or kube_pod_info.'
+            )
+    except Exception as exc:
+        binding.validation_status = 'blocked'
+        binding.validation_message = f'Binding validation failed: {exc}'
+        matched = 0.0
+        matched_signal = None
+
+    binding.last_validated_at = datetime.now(UTC)
+    if commit:
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            raise
+    return {
+        'status': binding.validation_status,
+        'message': binding.validation_message,
+        'matched_series': int(matched),
+        'matched_signal': matched_signal,
+        'probe_results': probe_results,
+    }

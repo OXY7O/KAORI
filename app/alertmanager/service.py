@@ -11,7 +11,6 @@ from app.alertmanager.consumer import (
     list_alerts_for_scope,
     list_silences_for_scope,
 )
-from app.integrations.alertmanager.exceptions import AlertmanagerError
 from app.alertmanager.forms import (
     AlertmanagerBindingForm,
     AlertmanagerInstanceForm,
@@ -24,17 +23,15 @@ from app.alertmanager.repository import (
     list_instances,
 )
 from app.alertmanager.resolver import AlertmanagerSourceResolution, resolve_alertmanager_sources
-from app.integrations.alertmanager.validation import validate_source
-from app.integrations.alertmanager.status import mark_status
 from app.common.integration_errors import describe_integration_failure
 from app.extensions import db
-from app.integrations.binding_selectors import build_selector, selector_filters
+from app.integrations.alertmanager.exceptions import AlertmanagerError
+from app.integrations.deletion import DeletionBlocked, provider_deletion_guard
 from app.integrations.lifecycle import ensure_canonical_instance, invalidate_bindings
 from app.integrations.registry import get_integration
-from app.integrations.deletion import DeletionBlocked, provider_deletion_guard
 from app.models.alertmanager import AlertmanagerInstance
-from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.models.cluster import Cluster
+from app.models.integration import IntegrationBinding, IntegrationInstance
 
 
 def get_cluster_by_id(cluster_id: str) -> Cluster | None:
@@ -180,47 +177,20 @@ def create_alertmanager_instance(
     return instance
 
 
-
 def validate_alertmanager_binding(
     *,
     instance: AlertmanagerInstance,
     binding: IntegrationBinding,
     commit: bool = True,
 ) -> dict[str, Any]:
-    if instance.integration_instance_id != binding.integration_instance_id:
-        raise ValueError('The selected binding does not belong to this Alertmanager source.')
-    filters = list(selector_filters(binding.selector_json))
-    if binding.asset_type != 'global' and not filters:
-        binding.validation_status = 'blocked'
-        binding.validation_message = 'Configure an alert identity selector before validating this binding.'
-        binding.last_validated_at = datetime.now(UTC)
-        if commit:
-            db.session.commit()
-        return {'status': binding.validation_status, 'message': binding.validation_message, 'matched_alerts': 0}
+    """Validate one scope binding through the canonical provider adapter."""
+    return get_integration('alertmanager').execute(
+        'binding.validate',
+        instance,
+        binding=binding,
+        commit=commit,
+    )
 
-    try:
-        alerts = build_alertmanager_client(instance).get_alerts(filters=filters)
-        binding.validation_status = 'ready'
-        binding.validation_message = (
-            f'Alertmanager accepted the scope filter and returned {len(alerts)} active alert records.'
-        )
-        matched = len(alerts)
-    except Exception as exc:
-        binding.validation_status = 'blocked'
-        binding.validation_message = f'Binding validation failed: {exc}'
-        matched = 0
-    binding.last_validated_at = datetime.now(UTC)
-    if commit:
-        try:
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-            raise
-    return {
-        'status': binding.validation_status,
-        'message': binding.validation_message,
-        'matched_alerts': matched,
-    }
 
 def remove_alertmanager_instance(instance: AlertmanagerInstance) -> None:
     canonical_bindings = get_alertmanager_bindings(instance.id)
@@ -253,37 +223,13 @@ def remove_alertmanager_instance(instance: AlertmanagerInstance) -> None:
 
 
 def refresh_alertmanager_runtime_health(instance: AlertmanagerInstance) -> dict[str, Any]:
-    """Refresh Alertmanager reachability without rebuilding capability evidence."""
-    try:
-        result = get_integration('alertmanager').execute('client.build', instance).test_connection()
-    except Exception as exc:
-        mark_status(
-            instance,
-            status='disconnected',
-            error=str(exc),
-            response_time_ms=None,
-            commit=True,
-        )
-        raise
-    instance.detected_version = str(result.get('version') or instance.detected_version or 'unknown')
-    mark_status(
-        instance,
-        status='connected',
-        error=None,
-        response_time_ms=int(result.get('response_time_ms') or 0),
-        commit=False,
-    )
-    if not instance.readiness_status:
-        instance.readiness_status = 'validation_required'
-        instance.validation_message = (
-            'Runtime health is available. Run Full Validation to establish capability evidence.'
-        )
-    db.session.commit()
-    return result
+    """Refresh provider health through the canonical registry adapter."""
+    return get_integration('alertmanager').execute('runtime.health', instance)
 
 
 def validate_alertmanager_instance(instance: AlertmanagerInstance) -> dict[str, Any]:
-    return validate_source(instance, source_label=instance.name).to_dict()
+    result = get_integration('alertmanager').execute('runtime.validate', instance)
+    return result.to_dict() if hasattr(result, 'to_dict') else dict(result)
 
 
 def test_alertmanager_form_connection(
@@ -402,32 +348,15 @@ def update_alertmanager_binding_selector(
     selector_operator: str = '=',
     commit: bool = True,
 ) -> IntegrationBinding:
-    if instance.integration_instance_id != binding.integration_instance_id:
-        raise ValueError('The selected binding does not belong to this Alertmanager source.')
-    if binding.asset_type == 'global':
-        raise ValueError('Global Alertmanager bindings do not require an alert identity selector.')
-    selector_json = build_selector(
-        label=selector_label,
-        value=selector_value,
-        operator=selector_operator,
+    return get_integration('alertmanager').execute(
+        'binding.selector.update',
+        instance,
+        binding=binding,
+        selector_label=selector_label,
+        selector_value=selector_value,
+        selector_operator=selector_operator,
+        commit=commit,
     )
-    if selector_json is None:
-        raise ValueError('Define an alert identity selector before saving this binding.')
-    binding.selector_json = selector_json
-    binding.validation_status = 'validation_required'
-    binding.validation_message = (
-        'Alert identity changed. Validate this binding before KAORI uses it for operational requests.'
-    )
-    binding.last_validated_at = None
-    if commit:
-        try:
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-            raise
-    else:
-        db.session.flush()
-    return binding
 
 
 def remove_alertmanager_binding(binding_id: int) -> IntegrationBinding | None:
@@ -442,7 +371,6 @@ def get_alertmanager_binding(binding_id: int) -> IntegrationBinding | None:
 
 def get_alertmanager_bindings(instance_id: int) -> list[IntegrationBinding]:
     return list_bindings_for_instance(instance_id)
-
 
 
 def build_alertmanager_client(config: AlertmanagerInstance):
@@ -472,4 +400,3 @@ def get_alertmanager_alerts(*, cluster_id: str) -> dict[str, Any]:
 
 def get_alertmanager_silences(*, cluster_id: str) -> dict[str, Any]:
     return list_silences_for_scope(scope_type=KUBERNETES_CLUSTER_SCOPE, scope_key=cluster_id)
-

@@ -4,24 +4,30 @@ from datetime import UTC, datetime
 from typing import Any
 
 from app.integrations.contracts import CapabilitySnapshot, DiagnosticResult, HealthFactor, RuntimeState
+from app.integrations.prometheus.binding_management import (
+    create_binding,
+    update_binding_selector,
+)
+from app.integrations.prometheus.binding_validation import validate_binding
+from app.integrations.prometheus.client import PrometheusClient
+from app.integrations.prometheus.runtime import (
+    PrometheusRuntimeService,
+    refresh_instance_health,
+    validate_instance,
+)
+from app.integrations.prometheus.scope import primary_cluster_id_for_instance
 from app.integrations.runtime.scoring import calculate_health
 from app.models.prometheus import PrometheusInstance
-from app.prometheus.repository import primary_cluster_id_for_instance
 
 
 class PrometheusRuntimeAdapter:
     provider = 'prometheus'
 
     def refresh(self, instance: PrometheusInstance) -> dict[str, Any]:
-        from app.prometheus.service import PrometheusService
-
-        return PrometheusService(instance).validate_integration()
+        return validate_instance(instance)
 
     def refresh_health(self, instance: PrometheusInstance) -> dict[str, Any]:
-        from app.prometheus.service import PrometheusService
-
-        return PrometheusService(instance).refresh_runtime_health()
-
+        return refresh_instance_health(instance)
 
     def build_client(
         self,
@@ -30,8 +36,6 @@ class PrometheusRuntimeAdapter:
         scope_selector: dict[str, Any] | None = None,
         request_timeout_seconds: int | None = None,
     ):
-        from app.integrations.prometheus.client import PrometheusClient
-
         return PrometheusClient(
             instance,
             scope_selector=scope_selector,
@@ -45,19 +49,55 @@ class PrometheusRuntimeAdapter:
                 scope_selector=kwargs.get('scope_selector'),
                 request_timeout_seconds=kwargs.get('request_timeout_seconds'),
             )
+        if operation == 'connection.test':
+            return PrometheusRuntimeService(
+                instance,
+                client=self.build_client(instance),
+            ).test_connection(persist=bool(kwargs.get('persist', True)))
+        if operation == 'query_profile.audit':
+            return PrometheusRuntimeService(
+                instance,
+                client=self.build_client(instance),
+            ).audit_query_profile(
+                execute_queries=bool(kwargs.get('execute_queries', True)),
+            )
         if operation == 'runtime.validate':
             return self.refresh(instance)
         if operation == 'runtime.health':
             return self.refresh_health(instance)
         if operation == 'runtime.state':
             return self.get_state(instance, validation_result=kwargs.get('validation_result'))
+        if operation == 'binding.create':
+            cluster = kwargs.get('cluster')
+            if cluster is None:
+                raise ValueError('Prometheus binding.create requires a cluster.')
+            return create_binding(
+                instance=instance,
+                cluster=cluster,
+                role=kwargs.get('role', 'primary'),
+                priority=int(kwargs.get('priority', 100)),
+                selector_label=kwargs.get('selector_label'),
+                selector_value=kwargs.get('selector_value'),
+                selector_operator=kwargs.get('selector_operator', '='),
+                commit=bool(kwargs.get('commit', True)),
+            )
+        if operation == 'binding.selector.update':
+            binding = kwargs.get('binding')
+            if binding is None:
+                raise ValueError('Prometheus binding.selector.update requires a binding.')
+            return update_binding_selector(
+                instance=instance,
+                binding=binding,
+                selector_label=kwargs.get('selector_label'),
+                selector_value=kwargs.get('selector_value'),
+                selector_operator=kwargs.get('selector_operator', '='),
+                commit=bool(kwargs.get('commit', True)),
+            )
         if operation == 'binding.validate':
-            from app.prometheus.service import validate_prometheus_binding
-
             binding = kwargs.get('binding')
             if binding is None:
                 raise ValueError('Prometheus binding.validate requires a binding.')
-            return validate_prometheus_binding(
+            return validate_binding(
                 instance=instance,
                 binding=binding,
                 commit=bool(kwargs.get('commit', True)),

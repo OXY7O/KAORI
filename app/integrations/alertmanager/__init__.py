@@ -16,6 +16,8 @@ integration_module = IntegrationModule(
         'runtime.validate': 'integration-validation',
         'runtime.health': 'integration-runtime',
         'runtime.state': 'inline',
+        'binding.create': 'inline',
+        'binding.selector.update': 'inline',
         'binding.validate': 'integration-validation',
     },
     operations=frozenset({
@@ -23,6 +25,8 @@ integration_module = IntegrationModule(
         'runtime.validate',
         'runtime.health',
         'runtime.state',
+        'binding.create',
+        'binding.selector.update',
         'binding.validate',
     }),
     capability_keys=CAPABILITY_KEYS,

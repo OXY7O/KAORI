@@ -1,18 +1,8 @@
 from __future__ import annotations
 
+from app.integrations.prometheus.capabilities import BINDING_CAPABILITY_KEYS
+from app.integrations.prometheus.scope import KUBERNETES_CLUSTER_SCOPE
 from app.models.integration import IntegrationBinding
-from app.prometheus.repository import KUBERNETES_CLUSTER_SCOPE
-
-PROMETHEUS_BINDING_CAPABILITIES: tuple[str, ...] = (
-    'metrics',
-    'capacity',
-    'utilization',
-    'storage',
-    'workload',
-    'forecast',
-    'top_consumers',
-    'alert_metrics',
-)
 
 
 def effective_prometheus_binding_capabilities(binding: IntegrationBinding) -> tuple[str, ...]:
@@ -31,7 +21,7 @@ def effective_prometheus_binding_capabilities(binding: IntegrationBinding) -> tu
     )
     if binding.asset_type != KUBERNETES_CLUSTER_SCOPE:
         return tuple(dict.fromkeys(current))
-    return tuple(dict.fromkeys((*PROMETHEUS_BINDING_CAPABILITIES, *current)))
+    return tuple(dict.fromkeys((*BINDING_CAPABILITY_KEYS, *current)))
 
 
 def normalize_prometheus_binding_capabilities(binding: IntegrationBinding) -> bool:

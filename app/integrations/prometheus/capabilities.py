@@ -123,3 +123,15 @@ def definition(key: str) -> CapabilityDefinition | None:
 
 CAPABILITY_KEYS = tuple(CAPABILITIES)
 COMPATIBILITY_PROFILES = ('prometheus-v2', 'prometheus-v3')
+
+
+BINDING_CAPABILITY_KEYS = (
+    'metrics',
+    'capacity',
+    'utilization',
+    'storage',
+    'workload',
+    'forecast',
+    'top_consumers',
+    'alert_metrics',
+)

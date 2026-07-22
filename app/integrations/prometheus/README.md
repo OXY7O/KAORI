@@ -20,9 +20,14 @@ compatibility profiles, and runtime translation.
 | Operation | Queue | Meaning |
 |---|---|---|
 | `client.build` | `inline` | Build a scoped or unscoped provider client; no network call. |
-| `runtime.validate` | `integration-validation` | Full compatibility, metric, label, query, and retention validation. |
-| `runtime.health` | `integration-runtime` | Lightweight endpoint health observation. |
+| `connection.test` | `inline` | Test draft or persisted endpoint identity and compatibility. |
+| `query_profile.audit` | `integration-validation` | Run the canonical PromQL feature-contract audit. |
+| `runtime.validate` | `integration-validation` | Run full compatibility, metric, label, query, and retention validation. |
+| `runtime.health` | `integration-runtime` | Run a lightweight endpoint health observation. |
 | `runtime.state` | `inline` | Translate provider evidence into shared runtime state. |
+| `binding.create` | `inline` | Create a provider-neutral managed-scope binding. |
+| `binding.selector.update` | `inline` | Update the scope selector and invalidate prior binding evidence. |
+| `binding.validate` | `integration-validation` | Validate scoped Kubernetes identity metrics. |
 
 ## Persistence and binding
 
@@ -57,3 +62,11 @@ the provider record and its canonical integration identity atomically.
 Historical runtime observations and Activity Audit records remain available.
 The delete control is therefore shown only in the contextual Scope & Resolution
 workspace, next to its binding and job blockers.
+
+## Canonical application boundary
+
+Provider runtime and binding behavior is implemented in `runtime.py`,
+`binding_management.py`, `binding_validation.py`, and `scope.py`. The adapter
+dispatches every operation directly to those modules. This package must not
+import `app.prometheus`; the web/domain package calls it only through the
+Integration Registry.

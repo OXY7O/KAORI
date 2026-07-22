@@ -4,7 +4,14 @@ from collections.abc import Mapping
 from datetime import UTC, datetime
 from typing import Any
 
+from app.integrations.alertmanager.binding_management import (
+    create_binding,
+    update_binding_selector,
+)
+from app.integrations.alertmanager.binding_validation import validate_binding
+from app.integrations.alertmanager.client_factory import build_client
 from app.integrations.alertmanager.contracts import ValidationResult
+from app.integrations.alertmanager.runtime import refresh_instance_health
 from app.integrations.alertmanager.validation import validate_source
 from app.integrations.contracts import CapabilitySnapshot, DiagnosticResult, HealthFactor, RuntimeState
 from app.integrations.runtime.scoring import calculate_health
@@ -18,14 +25,9 @@ class AlertmanagerRuntimeAdapter:
         return validate_source(instance, source_label=instance.name)
 
     def refresh_health(self, instance: AlertmanagerInstance) -> dict:
-        from app.alertmanager.service import refresh_alertmanager_runtime_health
-
-        return refresh_alertmanager_runtime_health(instance)
-
+        return refresh_instance_health(instance)
 
     def build_client(self, instance: AlertmanagerInstance):
-        from app.integrations.alertmanager.client_factory import build_client
-
         return build_client(instance)
 
     def execute(self, operation: str, instance: AlertmanagerInstance, **kwargs):
@@ -37,13 +39,36 @@ class AlertmanagerRuntimeAdapter:
             return self.refresh_health(instance)
         if operation == 'runtime.state':
             return self.get_state(instance, validation_result=kwargs.get('validation_result'))
+        if operation == 'binding.create':
+            return create_binding(
+                instance=instance,
+                scope_type=kwargs.get('scope_type'),
+                scope_key=kwargs.get('scope_key'),
+                role=kwargs.get('role', 'primary'),
+                priority=int(kwargs.get('priority', 100)),
+                enabled=bool(kwargs.get('enabled', True)),
+                selector_label=kwargs.get('selector_label'),
+                selector_value=kwargs.get('selector_value'),
+                selector_operator=kwargs.get('selector_operator', '='),
+                commit=bool(kwargs.get('commit', True)),
+            )
+        if operation == 'binding.selector.update':
+            binding = kwargs.get('binding')
+            if binding is None:
+                raise ValueError('Alertmanager binding.selector.update requires a binding.')
+            return update_binding_selector(
+                instance=instance,
+                binding=binding,
+                selector_label=kwargs.get('selector_label'),
+                selector_value=kwargs.get('selector_value'),
+                selector_operator=kwargs.get('selector_operator', '='),
+                commit=bool(kwargs.get('commit', True)),
+            )
         if operation == 'binding.validate':
-            from app.alertmanager.service import validate_alertmanager_binding
-
             binding = kwargs.get('binding')
             if binding is None:
                 raise ValueError('Alertmanager binding.validate requires a binding.')
-            return validate_alertmanager_binding(
+            return validate_binding(
                 instance=instance,
                 binding=binding,
                 commit=bool(kwargs.get('commit', True)),

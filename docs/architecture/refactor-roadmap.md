@@ -30,6 +30,24 @@ Exit criteria:
 
 ## Batch 2 — Integration Ownership
 
+Status: first ownership cutover implemented; remaining presentation/resolver edges are tracked.
+
+Implemented in this slice:
+
+- Prometheus runtime, compatibility, query-profile audit, and binding validation moved behind canonical provider operations;
+- Alertmanager runtime health and binding validation moved behind canonical provider operations;
+- binding creation and selector mutation use provider-neutral registry operations;
+- provider packages no longer import their corresponding web/domain packages;
+- shared binding orchestration no longer imports WTForms or provider services;
+- architecture and contract guards prevent reciprocal imports from returning.
+
+Remaining before package-path movement:
+
+- characterization tests with database/provider fakes for source selection and transaction behavior;
+- move source-resolution persistence behind provider application contracts;
+- remove remaining integration-to-provider presentation imports;
+- remove Kubernetes adapter reverse imports into cluster and inventory modules.
+
 Target:
 
 ```text

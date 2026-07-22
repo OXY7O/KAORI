@@ -9,6 +9,12 @@ from pathlib import Path
 from typing import Iterable
 
 
+_PROVIDER_DOMAIN_BOUNDARIES = {
+    'prometheus': 'app.prometheus',
+    'alertmanager': 'app.alertmanager',
+}
+
+
 @dataclass(frozen=True)
 class ImportRecord:
     source: Path
@@ -149,6 +155,33 @@ def validate_boundaries(
         relative_source = record.source.relative_to(app_root.parent).as_posix()
         if record.wildcard:
             errors.append(f'{relative_source}:{record.line}: wildcard import from {record.target!r} is forbidden')
+
+        relative_to_app = record.source.relative_to(app_root)
+        provider = (
+            relative_to_app.parts[1]
+            if len(relative_to_app.parts) >= 3 and relative_to_app.parts[0] == 'integrations'
+            else None
+        )
+        forbidden_domain = _PROVIDER_DOMAIN_BOUNDARIES.get(provider or '')
+        if forbidden_domain and (
+            record.target == forbidden_domain
+            or record.target.startswith(f'{forbidden_domain}.')
+        ):
+            errors.append(
+                f'{relative_source}:{record.line}: canonical {provider.title()} provider code may not '
+                f'import its web/domain package ({record.target})'
+            )
+
+        if record.source == app_root / 'integrations' / 'binding_service.py':
+            forbidden_binding_import = any(
+                record.target == domain or record.target.startswith(f'{domain}.')
+                for domain in _PROVIDER_DOMAIN_BOUNDARIES.values()
+            )
+            if forbidden_binding_import:
+                errors.append(
+                    f'{relative_source}:{record.line}: provider-neutral binding orchestration may not '
+                    f'import provider web/domain modules ({record.target})'
+                )
 
         target_parts = record.target.split('.')
         imports_routes = 'routes' in target_parts
