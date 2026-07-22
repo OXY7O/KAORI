@@ -46,8 +46,8 @@ The page title is the page's single `h1`.
 - Renders as one or two lines on the target desktop viewport.
 - Maximum text width: 44rem, approximately 704 px.
 - The shared `page_hero.description_classes()` macro is the only source of description typography.
-- It renders at 15 px consistently across compact and desktop viewports.
-- Page-local `text-sm`, `text-[15px]`, font-weight, line-height, color, or width overrides are prohibited.
+- It renders at 13 px with a 20 px line height consistently across compact and desktop viewports.
+- Page-local `text-sm`, `text-[13px]`, `text-[15px]`, font-weight, line-height, color, or width overrides are prohibited.
 - Uses active, direct language.
 - Does not contain diagnostics, remediation, endpoint detail, full workflow, or multi-sentence guidance.
 
