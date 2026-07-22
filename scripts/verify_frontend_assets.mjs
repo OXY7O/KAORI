@@ -16,15 +16,24 @@ const expectedPackages = new Map([
     ['chart.js', 'app/static/vendor/chartjs/chart.umd.min.js'],
 ])
 
+const expectedFonts = new Map([
+    ['@fontsource-variable/inter', 'app/static/fonts/inter/inter-latin-wght-normal.woff2'],
+])
+
 function sha256(buffer) {
     return createHash('sha256').update(buffer).digest('hex')
 }
 
-if (manifest.schema_version !== 1 || !Array.isArray(manifest.assets)) {
+if (
+    manifest.schema_version !== 1 ||
+    !Array.isArray(manifest.assets) ||
+    !Array.isArray(manifest.fonts)
+) {
     throw new Error('Invalid frontend vendor manifest schema.')
 }
 
 const records = new Map(manifest.assets.map((record) => [record.package, record]))
+const fontRecords = new Map(manifest.fonts.map((record) => [record.package, record]))
 
 for (const [packageName, runtimePath] of expectedPackages) {
     const record = records.get(packageName)
@@ -64,4 +73,36 @@ if (records.size !== expectedPackages.size) {
     throw new Error('Vendor manifest contains an unexpected or unmanaged runtime package.')
 }
 
-console.log(`Verified ${expectedPackages.size} pinned frontend runtime assets.`)
+for (const [packageName, runtimePath] of expectedFonts) {
+    const record = fontRecords.get(packageName)
+    if (!record) {
+        throw new Error(`Missing local font manifest entry for ${packageName}.`)
+    }
+
+    const pinnedVersion = packageJson.devDependencies?.[packageName]
+    if (!pinnedVersion || pinnedVersion !== record.version || /[~^*xX]/u.test(pinnedVersion)) {
+        throw new Error(`${packageName} must use one exact version in package.json and manifest.`)
+    }
+
+    if (record.runtime_path !== runtimePath) {
+        throw new Error(`Unexpected runtime path for ${packageName}: ${record.runtime_path}`)
+    }
+
+    const absolutePath = path.join(projectRoot, runtimePath)
+    const content = await readFile(absolutePath)
+    if (content.length !== record.bytes || sha256(content) !== record.sha256) {
+        throw new Error(`${runtimePath} does not match its committed manifest checksum.`)
+    }
+
+    if (record.license_path) {
+        await access(path.join(projectRoot, record.license_path))
+    }
+}
+
+if (fontRecords.size !== expectedFonts.size) {
+    throw new Error('Vendor manifest contains an unexpected or unmanaged local font package.')
+}
+
+console.log(
+    `Verified ${expectedPackages.size} pinned frontend runtime assets and ${expectedFonts.size} local font.`
+)

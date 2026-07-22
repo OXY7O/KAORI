@@ -35,6 +35,19 @@ const assets = [
         minimumBytes: 150000,
         globalName: 'Chart',
     },
+
+]
+
+const fonts = [
+    {
+        packageName: '@fontsource-variable/inter',
+        source: 'files/inter-latin-wght-normal.woff2',
+        target: 'inter/inter-latin-wght-normal.woff2',
+        minimumBytes: 30000,
+        family: 'Inter Variable',
+        weight: '100 900',
+        style: 'normal',
+    },
 ]
 
 function sha256(buffer) {
@@ -71,6 +84,7 @@ const manifest = {
     schema_version: 1,
     policy: 'Runtime assets are committed and served by KAORI. Network access is not required at runtime.',
     assets: [],
+    fonts: [],
 }
 
 for (const asset of assets) {
@@ -116,7 +130,49 @@ for (const asset of assets) {
     })
 }
 
+
+for (const font of fonts) {
+    const { packageRoot, metadata } = await packageMetadata(font.packageName)
+    const sourcePath = path.join(packageRoot, font.source)
+    const targetPath = path.join(projectRoot, 'app', 'static', 'fonts', font.target)
+    const targetDirectory = path.dirname(targetPath)
+
+    await access(sourcePath)
+    await mkdir(targetDirectory, { recursive: true })
+
+    const content = await readFile(sourcePath)
+    if (content.length < font.minimumBytes) {
+        throw new Error(`${font.packageName} font is unexpectedly small: ${content.length} bytes`)
+    }
+
+    await writeFile(targetPath, content)
+
+    const licensePath = await findLicense(packageRoot)
+    let licenseTarget = null
+    if (licensePath) {
+        licenseTarget = path.join(targetDirectory, 'LICENSE.txt')
+        await copyFile(licensePath, licenseTarget)
+    }
+
+    manifest.fonts.push({
+        package: font.packageName,
+        version: metadata.version,
+        license: metadata.license || null,
+        source_path: path.posix.join('node_modules', font.packageName, font.source),
+        runtime_path: path.posix.join('app/static/fonts', font.target),
+        sha256: sha256(content),
+        bytes: content.length,
+        family: font.family,
+        weight: font.weight,
+        style: font.style,
+        license_path: licenseTarget
+            ? path.posix.relative(projectRoot, licenseTarget).replaceAll('\\', '/')
+            : null,
+    })
+}
+
 manifest.assets.sort((left, right) => left.package.localeCompare(right.package))
+manifest.fonts.sort((left, right) => left.package.localeCompare(right.package))
 await writeFile(
     path.join(vendorRoot, 'manifest.json'),
     `${JSON.stringify(manifest, null, 2)}\n`,
@@ -133,4 +189,4 @@ for (const directory of managedDirectories) {
     )
 }
 
-console.log(`Vendored ${manifest.assets.length} frontend runtime assets.`)
+console.log(`Vendored ${manifest.assets.length} frontend runtime assets and ${manifest.fonts.length} local font.`)

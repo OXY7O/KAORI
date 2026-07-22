@@ -50,5 +50,20 @@
       "browser_global": "lucide",
       "license_path": "app/static/vendor/lucide/LICENSE.txt"
     }
+  ],
+  "fonts": [
+    {
+      "package": "@fontsource-variable/inter",
+      "version": "5.3.0",
+      "license": "OFL-1.1",
+      "source_path": "node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2",
+      "runtime_path": "app/static/fonts/inter/inter-latin-wght-normal.woff2",
+      "sha256": "3100e775e8616cd2611beecfa23a4263d7037586789b43f035236a2e6fbd4c62",
+      "bytes": 48256,
+      "family": "Inter Variable",
+      "weight": "100 900",
+      "style": "normal",
+      "license_path": "app/static/fonts/inter/LICENSE.txt"
+    }
   ]
 }

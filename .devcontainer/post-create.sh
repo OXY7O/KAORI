@@ -14,6 +14,6 @@ node --version
 npm --version
 
 printf '\nKAORI development container is ready.\n'
-printf 'Tailwind CSS was rebuilt and validated from frontend/styles.css.\n'
+printf 'Frontend vendor assets and Tailwind CSS were rebuilt and validated locally.\n'
 printf 'Run "bash scripts/init_db.sh --bootstrap-admin" for the first clean database setup.\n'
 printf 'Press F5 to start Flask with the debugger.\n'

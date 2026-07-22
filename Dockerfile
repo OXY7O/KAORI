@@ -64,9 +64,11 @@ RUN npm ci
 COPY frontend ./frontend
 COPY app/templates ./app/templates
 COPY app/static/js ./app/static/js
+COPY app/static/vendor/cytoscape ./app/static/vendor/cytoscape
 
-RUN mkdir -p app/static/css \
-    && npm run build-css
+RUN mkdir -p app/static/css app/static/vendor app/static/fonts \
+    && npm run build-frontend \
+    && npm run verify-frontend
 
 
 FROM base AS production
@@ -78,6 +80,12 @@ COPY --chown=kaori:kaori . /app
 COPY --from=frontend-build --chown=kaori:kaori \
     /build/app/static/css/output.css \
     /app/app/static/css/output.css
+COPY --from=frontend-build --chown=kaori:kaori \
+    /build/app/static/vendor \
+    /app/app/static/vendor
+COPY --from=frontend-build --chown=kaori:kaori \
+    /build/app/static/fonts \
+    /app/app/static/fonts
 
 RUN mkdir -p \
         /app/instance \

@@ -74,6 +74,7 @@ def test_runtime_dependencies_are_exactly_pinned() -> None:
         'htmx.org': '2.0.10',
         'lucide': '1.20.0',
         'chart.js': '4.5.1',
+        '@fontsource-variable/inter': '5.3.0',
     }
 
     assert {name: dev_dependencies.get(name) for name in expected} == expected
@@ -96,3 +97,13 @@ def test_canonical_layouts_reference_local_vendor_paths() -> None:
     ):
         content = (TEMPLATES / relative_path).read_text(encoding='utf8')
         assert "vendor/chartjs/chart.umd.min.js" in content
+
+
+def test_inter_font_is_self_hosted_from_the_canonical_tailwind_source() -> None:
+    source = (ROOT / 'frontend' / 'styles.css').read_text(encoding='utf8')
+
+    assert "font-family: 'Inter Variable'" in source
+    assert "../fonts/inter/inter-latin-wght-normal.woff2" in source
+    assert "--font-sans: 'Inter Variable', Inter" in source
+    assert 'fonts.googleapis.com' not in source
+    assert 'fonts.gstatic.com' not in source

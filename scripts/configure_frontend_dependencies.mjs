@@ -14,6 +14,7 @@ packageJson.scripts = {
 
 const dependencies = {
     ...(packageJson.devDependencies || {}),
+    '@fontsource-variable/inter': '5.3.0',
     alpinejs: '3.15.12',
     'chart.js': '4.5.1',
     'htmx.org': '2.0.10',

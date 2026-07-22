@@ -57,3 +57,27 @@ def test_compiled_kaori_css_is_served_without_remote_font_imports() -> None:
     assert response.data
     assert b'fonts.googleapis.com' not in response.data
     assert b'fonts.gstatic.com' not in response.data
+
+
+def test_local_inter_variable_font_is_served_by_kaori_static_route() -> None:
+    manifest = json.loads(MANIFEST_PATH.read_text(encoding='utf8'))
+    client = _static_client()
+
+    assert len(manifest['fonts']) == 1
+    font = manifest['fonts'][0]
+    relative_static_path = font['runtime_path'].removeprefix('app/static/')
+    response = client.get(f'/static/{relative_static_path}')
+
+    assert response.status_code == 200
+    assert response.content_type.lower().startswith(('font/woff2', 'application/font-woff', 'application/octet-stream'))
+    assert len(response.data) == font['bytes']
+    assert response.data[:4] == b'wOF2'
+
+
+def test_compiled_css_declares_local_inter_variable_font() -> None:
+    client = _static_client()
+    response = client.get('/static/css/output.css')
+
+    assert response.status_code == 200
+    assert b'Inter Variable' in response.data
+    assert b'../fonts/inter/inter-latin-wght-normal.woff2' in response.data
