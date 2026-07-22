@@ -175,7 +175,7 @@ app/integrations/runtime/
 └── tasks.py                 # Beat dispatcher only
 
 app/integrations/validation/
-├── state.py                 # Redis compatibility locks and polling metadata
+├── state.py                 # Redis distributed locks and transient polling metadata
 ├── tasks.py                 # full, binding, and lightweight runtime jobs
 └── web.py                   # canonical job enqueue and polling boundary
 

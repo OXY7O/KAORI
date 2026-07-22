@@ -1,5 +1,5 @@
 {% set breadcrumb_items = navigation_breadcrumb|default([], true) %}
-{% set current_user_role = current_user.role|default('admin', true)|replace('_', ' ')|title %}
+{% set current_user_role = current_user.role_name|default('Viewer', true)|replace('_', ' ')|title %}
 <header class="sticky top-0 z-30 border-b border-outline-subtle bg-surface-card/90 backdrop-blur-xl transition-colors duration-300"
         x-data="{ quickOpen: false, notificationOpen: false, userOpen: false }">
     <div class="flex h-16 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">

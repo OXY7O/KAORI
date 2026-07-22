@@ -509,7 +509,7 @@ def build_reader_overview(
         ],
         [
             'Report family',
-            f'{REPORT_DOMAIN_LABELS.get(getattr(report, "report_domain", ""), "KubeReport")} / {SOURCE_KIND_LABELS.get(getattr(report, "source_kind", ""), "Kubernetes")}',
+            f'{REPORT_DOMAIN_LABELS.get(getattr(report, "report_domain", ""), "KAORI Kubernetes Reports")} / {SOURCE_KIND_LABELS.get(getattr(report, "source_kind", ""), "Kubernetes")}',
         ],
         [
             'Report scope',
@@ -534,7 +534,7 @@ def build_reader_overview(
         ),
         Paragraph(
             safe_text(
-                f'This {report_type} PDF is designed to be read as a standalone report. It summarizes the selected inventory and analytics context so the reader does not need to open the dashboard UI first. The report engine is domain-aware: KubeReport currently owns Kubernetes reports, while ServerReport is reserved for future VM and HCI reports.'
+                f'This {report_type} PDF is designed to be read as a standalone report. It summarizes the selected inventory and analytics context so the reader does not need to open the dashboard UI first. The report engine is domain-aware: KAORI Kubernetes Reports currently owns Kubernetes reports, while KAORI Server Reports is reserved for future VM and HCI reports.'
             ),
             styles['normal'],
         ),
@@ -683,7 +683,7 @@ def build_metadata_table_body(
                 'Report Domain',
                 REPORT_DOMAIN_LABELS.get(
                     getattr(report, 'report_domain', ''),
-                    'KubeReport',
+                    'KAORI Kubernetes Reports',
                 ),
             ],
             [

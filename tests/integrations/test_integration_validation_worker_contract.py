@@ -89,15 +89,16 @@ def test_manual_full_validation_routes_only_enqueue_and_poll() -> None:
     assert "get_integration('alertmanager').adapter" in tasks
 
 
-def test_legacy_kubernetes_cluster_test_route_is_removed() -> None:
+def test_retired_kubernetes_cluster_test_route_is_removed() -> None:
     routes = read('app/cluster/routes.py')
-    table = read('app/templates/cluster/partials/_table.html')
+    registry = read('app/templates/integrations/kubernetes/partials/_registry.html')
     assert 'def test_cluster(cluster_id: str)' not in routes
-    assert "url_for('cluster.test_cluster'" not in table
-    assert "url_for('integrations.kubernetes_detail'" in table
+    assert "url_for('cluster.test_cluster'" not in registry
+    assert "url_for('integrations.kubernetes_detail'" in registry
+    assert not (ROOT / 'app/templates/cluster/partials/_table.html').exists()
 
 
-def test_legacy_provider_bookmark_blueprint_is_removed() -> None:
+def test_retired_provider_bookmark_blueprint_is_removed() -> None:
     assert not (ROOT / 'app/integrations/legacy_routes.py').exists()
     application = read('app/__init__.py')
     assert 'legacy_integrations_bp' not in application
@@ -182,7 +183,7 @@ def test_test_connection_remains_synchronous_and_lightweight() -> None:
     prom_block = route_block(
         prom_routes,
         'def test_new_instance_connection()',
-        "@prometheus_bp.get('/instances/<int:instance_id>/edit')",
+        "@prometheus_bp.post('/instances/<int:instance_id>/test-configuration')",
     )
     alert_block = route_block(
         alert_routes,

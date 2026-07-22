@@ -92,7 +92,7 @@
 (function() {
     const panelId = 'utilization-trend-panel';
     const canvasId = 'utilizationTrendChart';
-    const chartKey = 'kubeReportUtilizationTrendChart';
+    const chartKey = 'kaoriUtilizationTrendChart';
 
     const renderTrendChart = function() {
         const cpuTrend = {{ trends.cpu|default([])|tojson }};

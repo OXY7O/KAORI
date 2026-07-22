@@ -1,26 +1,28 @@
 # Inventory Persistence and Synchronization Boundary
 
-## Public API
-
-`app.inventory.service` remains the stable public facade used by routes, tasks,
-and reporting modules. Existing imports do not need to change.
-
-## Persistence
+## Persistence Authority
 
 `app.inventory.persistence` owns replacement writes for Kubernetes inventory
-resources. Each `save_*` function translates collector payloads into SQLAlchemy
+resources. Each `save_*` function converts collector payloads into SQLAlchemy
 records and does not commit the transaction.
 
-## Synchronization
+## Synchronization Authority
 
 `app.inventory.synchronization` owns one-cluster synchronization orchestration:
 
 - row-level cluster lock;
-- Kubernetes client construction;
+- canonical Kubernetes client construction through the integration registry;
 - API discovery and compatibility state;
 - ordered resource collection;
 - flush boundaries;
 - final commit and rollback.
 
-Persistence modules must not import the service facade. This keeps dependency
-direction one-way and prevents circular imports when collector modules are split.
+The Kubernetes runtime adapter imports `sync_inventory` from this module
+directly. No `app.inventory.service` compatibility facade exists.
+
+## Dependency Direction
+
+`Integration Adapter -> Synchronization -> Persistence -> Concrete Collectors`
+
+Persistence and synchronization may share models and utilities, but neither may
+import routes or a re-export module.

@@ -13,11 +13,10 @@ _ROLE_ORDER: Final[dict[str, int]] = {
     'secondary': 1,
     'fallback': 2,
 }
-_BLOCKED_READINESS: Final[set[str]] = {'blocked', 'unavailable', 'disabled', 'incompatible'}
 _READY_READINESS: Final[set[str]] = {'ready'}
 _DEGRADED_READINESS: Final[set[str]] = {'degraded'}
 _FAILED_HEALTH: Final[set[str]] = {'disconnected', 'error', 'incompatible'}
-_ELIGIBLE_BINDING_VALIDATION: Final[set[str]] = {'ready', 'legacy_unscoped'}
+_ELIGIBLE_BINDING_VALIDATION: Final[set[str]] = {'ready'}
 
 
 @dataclass(frozen=True, slots=True)
@@ -128,11 +127,9 @@ def _evaluate_binding(
         capability_rank = 0
         capability_eligible = True
     elif not observed_capabilities:
-        # Existing migrated instances may predate capability probing. Keep them usable
-        # during the compatibility window, but rank a positively verified source first.
-        capability_state = 'unknown'
-        capability_rank = 1
-        capability_eligible = True
+        capability_state = 'validation_required'
+        capability_rank = 2
+        capability_eligible = False
     elif missing:
         capability_state = 'missing_required'
         capability_rank = 2
@@ -146,7 +143,7 @@ def _evaluate_binding(
     selector_eligible = not selector_required or selector_is_configured(binding.selector_json)
     binding_validation = (binding.validation_status or 'validation_required').strip().lower()
     binding_validation_eligible = binding_validation in _ELIGIBLE_BINDING_VALIDATION
-    readiness_eligible = readiness not in _BLOCKED_READINESS
+    readiness_eligible = readiness in (_READY_READINESS | _DEGRADED_READINESS)
     eligible = bool(
         instance.enabled
         and binding.enabled
@@ -224,20 +221,18 @@ def _decision_reason(
             f'Binding validation state {binding_validation or "validation_required"} blocks source selection. '
             'Validate the scope selector before operational use.'
         )
+    if capability_state == 'validation_required':
+        return 'Required Alertmanager capability evidence has not been recorded. Run Full Validation before operational use.'
     if capability_state == 'missing_required':
         return f'Missing required capabilities: {", ".join(missing)}.'
-    if readiness in _BLOCKED_READINESS:
-        return f'Readiness state {readiness or "unknown"} blocks source selection.'
+    if readiness not in (_READY_READINESS | _DEGRADED_READINESS):
+        return f'Readiness state {readiness or "validation_required"} blocks source selection. Run Full Validation.'
     if not eligible:
         return 'Source is not eligible for selection.'
-    if capability_state == 'unknown':
-        return 'Capability validation has not been observed; source remains available for compatibility.'
     if health in _FAILED_HEALTH:
         return 'Source is eligible but currently unhealthy; a healthier bound source is preferred.'
     if readiness in _DEGRADED_READINESS:
         return 'Source is usable with degraded readiness.'
-    if readiness not in _READY_READINESS:
-        return 'Source is usable but requires validation; a validated source is preferred.'
     return 'Source satisfies readiness, health, and capability requirements.'
 
 

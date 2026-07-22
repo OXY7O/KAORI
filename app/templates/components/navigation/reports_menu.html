@@ -1,6 +1,6 @@
 {% set endpoint = request.endpoint or '' %}
 {% set reports_active = endpoint.startswith('reports.') %}
-{% set overview_active = endpoint in ['reports.overview', 'reports.overview_alias'] %}
+{% set overview_active = endpoint == 'reports.overview' %}
 {% set generate_active = endpoint == 'reports.generate_report' %}
 {% set generated_active = endpoint in [
     'reports.generated_reports',
@@ -10,11 +10,9 @@
     'reports.bulk_archive_generated_reports',
     'reports.archive_generated_report',
     'reports.restore_generated_report',
-    'reports.generated_reports_alias',
 ] %}
 {% set templates_active = endpoint in [
     'reports.report_templates',
-    'reports.report_templates_alias',
     'reports.create_report_template',
     'reports.update_report_template',
     'reports.delete_report_template',
@@ -29,7 +27,7 @@
     'reports.delete_schedule',
     'reports.run_schedule',
 ] %}
-{% set storage_active = endpoint in ['reports.storage', 'reports.storage_alias'] %}
+{% set storage_active = endpoint == 'reports.storage' %}
 <details class="sidebar-menu space-y-1" {% if reports_active %}open{% endif %}>
     <summary class="{{ 'bg-kaori-primary text-white shadow-lg shadow-kaori-primary/20 ring-1 ring-white/10' if reports_active else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} sidebar-parent-link group flex cursor-pointer select-none items-center justify-between min-h-11 rounded-lg px-2.5 py-2 text-[12px] font-semibold transition [.sidebar-collapsed_&]:justify-center [.sidebar-collapsed_&]:px-2 leading-5"
              title="Reports"

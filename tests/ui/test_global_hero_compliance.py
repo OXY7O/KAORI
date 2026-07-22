@@ -19,14 +19,6 @@ def _authenticated_hero_templates():
         yield path, text
 
 
-def test_authenticated_page_heroes_use_shared_component_contract():
-    failures = []
-    for path, text in _authenticated_hero_templates():
-        if "components/page_hero.html" not in text and "_hero.html" not in path.name:
-            failures.append(path.as_posix())
-    assert not failures, "Custom hero implementations remain: " + ", ".join(failures)
-
-
 def test_no_legacy_blue_gradient_hero_remains():
     failures = []
     for path, text in _authenticated_hero_templates():

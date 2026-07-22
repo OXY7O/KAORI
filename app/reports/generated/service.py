@@ -864,10 +864,10 @@ def _serialize_report(
             report.report_type,
         ),
         'raw_report_type': report.report_type,
-        'report_domain': _format_report_domain(getattr(report, 'report_domain', 'kubereport')),
+        'report_domain': _format_report_domain(getattr(report, 'report_domain', 'kubernetes')),
         'source_kind': _format_source_kind(getattr(report, 'source_kind', 'kubernetes')),
         'source_badge': _format_source_badge(
-            getattr(report, 'report_domain', 'kubereport'),
+            getattr(report, 'report_domain', 'kubernetes'),
             getattr(report, 'source_kind', 'kubernetes'),
         ),
         'cluster': cluster_map.get(
@@ -976,10 +976,10 @@ def _serialize_report_detail(
         'namespace': report.namespace or 'All Namespaces',
         'raw_status': report.status,
         'raw_report_type': report.report_type,
-        'report_domain': _format_report_domain(getattr(report, 'report_domain', 'kubereport')),
+        'report_domain': _format_report_domain(getattr(report, 'report_domain', 'kubernetes')),
         'source_kind': _format_source_kind(getattr(report, 'source_kind', 'kubernetes')),
         'source_badge': _format_source_badge(
-            getattr(report, 'report_domain', 'kubereport'),
+            getattr(report, 'report_domain', 'kubernetes'),
             getattr(report, 'source_kind', 'kubernetes'),
         ),
         'raw_period': report.period,
@@ -1662,8 +1662,8 @@ def _parse_storage_location(
 
     if ':' not in value:
         return {
-            'backend': 'legacy-local',
-            'backend_label': 'Legacy Local',
+            'backend': 'invalid',
+            'backend_label': 'Invalid Storage URI',
             'object_key': value,
             'display': value,
         }
@@ -1681,7 +1681,7 @@ def _parse_storage_location(
     }
 
     return {
-        'backend': backend or 'legacy-local',
+        'backend': backend or 'invalid',
         'backend_label': backend_labels.get(
             backend,
             backend.replace(
@@ -1689,7 +1689,7 @@ def _parse_storage_location(
                 ' ',
             ).title()
             if backend
-            else 'Legacy Local',
+            else 'Invalid Storage URI',
         ),
         'object_key': object_key or value,
         'display': value,
@@ -2019,18 +2019,24 @@ def _count_reports_by_status(
 def _format_report_domain(
     report_domain: str | None,
 ) -> str:
-    if report_domain == 'serverreport':
-        return 'ServerReport'
-
-    return 'KubeReport'
+    labels = {
+        'kubernetes': 'KAORI Kubernetes Reports',
+        'server': 'KAORI Server Reports',
+        'hci': 'KAORI HCI Reports',
+    }
+    normalized = str(report_domain or 'kubernetes').strip().lower()
+    return labels.get(normalized, normalized.replace('_', ' ').title())
 
 
 def _format_source_badge(
     report_domain: str | None,
     source_kind: str | None,
 ) -> str:
-    if report_domain == 'serverreport':
+    normalized_domain = str(report_domain or 'kubernetes').strip().lower()
+    if normalized_domain == 'server':
         return 'Server'
+    if normalized_domain == 'hci':
+        return 'HCI'
 
     if (source_kind or 'kubernetes') == 'kubernetes':
         return 'Kubernetes'
@@ -2043,6 +2049,7 @@ def _format_source_kind(
 ) -> str:
     labels = {
         'kubernetes': 'Kubernetes',
+        'server': 'Server',
         'vm': 'VM',
         'hci': 'HCI',
     }

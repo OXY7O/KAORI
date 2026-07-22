@@ -1,3 +1,1 @@
-from .routes import bp
-
-__all__ = ['bp']
+"""Protected secret reveal settings workspace."""

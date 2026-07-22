@@ -25,7 +25,7 @@ from app.notifications.service import record_operational_activity
 ```
 
 They must not directly import writer, query, feedback, presentation, metadata, or
-event-catalog helpers. `service.py` is not a re-export facade; it owns normalization,
+event-catalog helpers. `service.py` owns normalization,
 persistence retry behavior, feedback orchestration, and public use-case boundaries.
 
 ## Event contract

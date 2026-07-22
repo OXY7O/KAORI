@@ -13,7 +13,6 @@ from app.alertmanager.consumer import get_scope_status, list_alerts_for_scope  #
 from app.alertmanager.forms import AlertmanagerBindingForm, AlertmanagerInstanceForm  # noqa: E402
 from app.alertmanager.service import (  # noqa: E402
     create_alertmanager_instance,
-    materialize_legacy_cluster_config,
     save_alertmanager_instance,
 )
 from app.extensions import db  # noqa: E402
@@ -227,39 +226,3 @@ def test_instance_and_initial_binding_are_created_atomically(app) -> None:
     assert AlertmanagerInstance.query.filter_by(name='Rejected New Source').one_or_none() is None
     assert AlertmanagerInstance.query.count() == 1
     assert IntegrationBinding.query.count() == 1
-
-def test_legacy_cluster_bookmark_helper_resolves_canonical_binding(app) -> None:
-    cluster = _cluster('Legacy Cluster')
-    source = save_alertmanager_instance(
-        form=_instance_form(
-            name='Canonical Alertmanager',
-            deployment_type='cluster_managed',
-            endpoint='http://canonical-alertmanager:9093',
-            auth_type='none',
-            username=None,
-            password=None,
-        )
-    )
-    binding = create_or_update_binding(
-        instance=source,
-        form=AlertmanagerBindingForm(
-            scope_type='kubernetes_cluster',
-            scope_key=cluster.id,
-            binding_role='primary',
-            priority=100,
-            enabled=True,
-            selector_label='cluster',
-            selector_value=cluster.id,
-        ),
-    )
-    binding.validation_status = 'ready'
-    db.session.commit()
-
-    instance = materialize_legacy_cluster_config(cluster.id)
-    assert instance is not None
-    assert instance.id == source.id
-    assert instance.endpoint == 'http://canonical-alertmanager:9093'
-    assert len(instance.integration_instance.bindings) == 1
-    assert instance.integration_instance.bindings[0].asset_type == 'kubernetes_cluster'
-    assert instance.integration_instance.bindings[0].asset_key == cluster.id
-    assert AlertmanagerInstance.query.count() == 1

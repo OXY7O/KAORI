@@ -280,9 +280,6 @@ def create_or_update_user(form: UserForm, user: User | None = None) -> User:
         user.auth_source = (form.auth_source.data or 'database').strip() or 'database'
         user.external_id = normalize_optional_text(form.external_id.data)
     user.role_id = role_id
-    role = db.session.get(Role, role_id)
-    if role:
-        user.role = role.name
     user.account_is_active = bool(form.is_active.data)
     user.is_super_admin = bool(form.is_super_admin.data)
 
@@ -553,11 +550,6 @@ def build_user_action_policies(actor: User | None, users: list[User]) -> dict[in
 
     return policies
 
-
-# Backward-compatible helper retained for older imports. New code should use the
-# action-specific guards above.
-def can_mutate_target(actor: User, target: User) -> tuple[bool, str | None]:
-    return can_delete_user(actor, target)
 
 
 def set_user_active(target: User, active: bool) -> None:

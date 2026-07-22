@@ -14,7 +14,7 @@ from kubernetes.config.config_exception import ConfigException
 from urllib3.exceptions import HTTPError as Urllib3HTTPError
 
 from app.extensions import db
-from app.integrations.kubernetes.tls import legacy_tls_context
+from app.integrations.kubernetes.tls import weak_tls_context
 from app.models import Cluster, SecretRevealRequest
 from app.kubernetes_operations.secrets.live_service import (
     LiveSecretSnapshot,
@@ -31,7 +31,6 @@ from app.kubernetes_operations.secrets.reveal_policy import (
     get_namespace_policy,
 )
 
-REVEAL_POLICIES = REVEAL_NAMESPACE_POLICIES
 
 SUPPORTED_REVEAL_TYPES = {
     'Opaque': {
@@ -426,7 +425,7 @@ def get_reveal_page_context(
         'my_reveal_pagination': my_pagination,
         'pending_reveal_requests': pending_requests,
         'pending_reveal_pagination': pending_pagination,
-        'reveal_policies': REVEAL_POLICIES,
+        'reveal_policies': REVEAL_NAMESPACE_POLICIES,
         'reveal_window_seconds': int(
             current_app.config.get('KUBERNETES_SECRET_REVEAL_WINDOW_SECONDS', 15)
         ),
@@ -686,7 +685,7 @@ def reveal_secret_value(request_id: str, *, user_id: int) -> RevealedSecretValue
     secret_object = None
     secret_data: dict[str, str] = {}
     try:
-        with legacy_tls_context(enabled=bool(cluster.kubernetes_connection.allow_weak_tls)):
+        with weak_tls_context(enabled=bool(cluster.kubernetes_connection.allow_weak_tls)):
             secret_object = core_api(cluster).read_namespaced_secret(
                 name=record.secret_name,
                 namespace=record.namespace,

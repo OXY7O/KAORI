@@ -16,7 +16,6 @@ BLOCKED_BOOTSTRAP_PASSWORDS = {
     'change-me',
     'password',
     'password123',
-    'kubereport',
     'kaori',
 }
 
@@ -109,7 +108,6 @@ def bootstrap_admin() -> None:
     user.username = username
     user.email = email
     user.display_name = 'Super Administrator'
-    user.role = 'admin'
     user.role_id = admin_role.id if admin_role else None
     user.account_is_active = True
     user.is_super_admin = True

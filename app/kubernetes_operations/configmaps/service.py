@@ -11,7 +11,7 @@ from kubernetes.client.exceptions import ApiException
 from kubernetes.config.config_exception import ConfigException
 from urllib3.exceptions import HTTPError as Urllib3HTTPError
 
-from app.integrations.kubernetes.tls import legacy_tls_context
+from app.integrations.kubernetes.tls import weak_tls_context
 from app.integrations.registry import get_integration
 from app.models.cluster import Cluster
 from app.models.inventory import ConfigurationInventory, PodInventory
@@ -262,7 +262,7 @@ def _api(cluster: Cluster) -> CoreV1Api:
 
 def _live_call(cluster: Cluster, operation: str, callback: Any) -> Any:
     try:
-        with legacy_tls_context(enabled=bool(cluster.kubernetes_connection.allow_weak_tls)):
+        with weak_tls_context(enabled=bool(cluster.kubernetes_connection.allow_weak_tls)):
             return callback(_api(cluster))
     except ApiException:
         raise

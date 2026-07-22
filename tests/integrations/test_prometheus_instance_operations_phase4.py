@@ -29,5 +29,5 @@ def test_prometheus_instance_detail_uses_instance_operations() -> None:
 
 
 def test_runtime_history_refresh_is_instance_scoped() -> None:
-    source = _read('app/templates/prometheus/partials/_runtime_history.html')
+    source = _read('app/templates/prometheus/partials/_detail_runtime.html')
     assert "prometheus.instance_runtime_history" in source

@@ -1,15 +1,14 @@
-# Inventory Service Boundary
+# Inventory Domain Boundary
 
-`app.inventory.service` remains the stable public facade used by routes, tasks,
-and other KAORI modules. Read-only list, filter, and detail construction is
-implemented by resource modules under `app.inventory.resources`.
+KAORI no longer exposes `app.inventory.service` as an aggregate import facade.
+Every caller imports the module that owns the use case:
 
-Resource modules are divided into nodes, namespaces, configuration, workloads,
-pods, services, ingresses, and storage. Shared presentation-neutral formatting
-and selector helpers live in `resources/common.py`.
+- `app.inventory.overview` for landing-page aggregation and cluster lookup;
+- `app.inventory.resources.<resource>` for list, filter, and detail payloads;
+- `app.inventory.synchronization` for inventory synchronization;
+- `app.inventory.persistence` for database replacement writes;
+- `app.inventory.formatting` for inventory-specific formatting.
 
-Inventory synchronization and database persistence remain in the service facade
-during this batch. They will be moved separately so synchronization behavior is
-not changed in the same deployment as the read-query split. Routes and templates
-must continue importing from `app.inventory.service`; resource modules are an
-internal implementation boundary.
+Routes may import several owner modules explicitly. This is intentional: import
+paths now document ownership and prevent a broad compatibility surface from
+silently growing as Inventory features expand.

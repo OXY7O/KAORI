@@ -50,7 +50,7 @@ class KubernetesRuntimeAdapter:
         if operation == 'runtime.state':
             return self.get_state(instance, validation_result=kwargs.get('validation_result'))
         if operation == 'inventory.sync':
-            from app.inventory.service import sync_inventory
+            from app.inventory.synchronization import sync_inventory
 
             return sync_inventory(self._cluster(instance))
         raise ValueError(f'Unsupported Kubernetes integration operation: {operation}')

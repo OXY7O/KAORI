@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-REPORT_DOMAIN_KUBEREPORT = 'kubereport'
-REPORT_DOMAIN_SERVERREPORT = 'serverreport'
-REPORT_DOMAIN_HCIREPORT = 'hcireport'
+REPORT_DOMAIN_KUBERNETES = 'kubernetes'
+REPORT_DOMAIN_SERVER = 'server'
+REPORT_DOMAIN_HCI = 'hci'
 
 SOURCE_KIND_KUBERNETES = 'kubernetes'
 SOURCE_KIND_SERVER = 'server'
@@ -10,15 +10,15 @@ SOURCE_KIND_VM = 'vm'
 SOURCE_KIND_HCI = 'hci'
 
 REPORT_DOMAIN_LABELS = {
-    REPORT_DOMAIN_KUBEREPORT: 'KubeReport',
-    REPORT_DOMAIN_SERVERREPORT: 'ServerReport',
-    REPORT_DOMAIN_HCIREPORT: 'HCIReport',
+    REPORT_DOMAIN_KUBERNETES: 'KAORI Kubernetes Reports',
+    REPORT_DOMAIN_SERVER: 'KAORI Server Reports',
+    REPORT_DOMAIN_HCI: 'KAORI HCI Reports',
 }
 
 REPORT_DOMAIN_DESCRIPTIONS = {
-    REPORT_DOMAIN_KUBEREPORT: 'Kubernetes inventory, Prometheus/Alertmanager analytics, governance, and operational reports.',
-    REPORT_DOMAIN_SERVERREPORT: 'Server and VM infrastructure reports using server inventory plus Node Exporter metrics.',
-    REPORT_DOMAIN_HCIREPORT: 'HCI cluster, host, datastore, and VM placement reports using HCI API integration.',
+    REPORT_DOMAIN_KUBERNETES: 'Kubernetes inventory, Prometheus/Alertmanager analytics, governance, and operational reports.',
+    REPORT_DOMAIN_SERVER: 'Server and VM infrastructure reports using server inventory plus Node Exporter metrics.',
+    REPORT_DOMAIN_HCI: 'HCI cluster, host, datastore, and VM placement reports using HCI API integration.',
 }
 
 SOURCE_KIND_LABELS = {
@@ -29,12 +29,12 @@ SOURCE_KIND_LABELS = {
 }
 
 REPORT_DOMAIN_SOURCE_KINDS = {
-    REPORT_DOMAIN_KUBEREPORT: [SOURCE_KIND_KUBERNETES],
-    REPORT_DOMAIN_SERVERREPORT: [SOURCE_KIND_SERVER, SOURCE_KIND_VM],
-    REPORT_DOMAIN_HCIREPORT: [SOURCE_KIND_HCI],
+    REPORT_DOMAIN_KUBERNETES: [SOURCE_KIND_KUBERNETES],
+    REPORT_DOMAIN_SERVER: [SOURCE_KIND_SERVER, SOURCE_KIND_VM],
+    REPORT_DOMAIN_HCI: [SOURCE_KIND_HCI],
 }
 
-DEFAULT_REPORT_DOMAIN = REPORT_DOMAIN_KUBEREPORT
+DEFAULT_REPORT_DOMAIN = REPORT_DOMAIN_KUBERNETES
 DEFAULT_REPORT_SOURCE_KIND = SOURCE_KIND_KUBERNETES
 
 REPORT_TYPE_LABELS = {

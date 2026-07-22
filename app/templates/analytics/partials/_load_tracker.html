@@ -167,10 +167,10 @@
         Array.prototype.slice.call(document.querySelectorAll('[data-analytics-load-tracker="true"]')).forEach(initTracker);
     }
 
-    window.kubeReportInitAnalyticsLoadTrackers = initAllTrackers;
+    window.kaoriInitAnalyticsLoadTrackers = initAllTrackers;
 
-    if (!window.kubeReportAnalyticsLoadTrackerBound) {
-        window.kubeReportAnalyticsLoadTrackerBound = true;
+    if (!window.kaoriAnalyticsLoadTrackerBound) {
+        window.kaoriAnalyticsLoadTrackerBound = true;
 
         document.body.addEventListener('htmx:beforeRequest', function (event) {
             var tracker = getTrackerForElement(event.detail && event.detail.elt ? event.detail.elt : event.target);

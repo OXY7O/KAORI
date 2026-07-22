@@ -89,11 +89,10 @@ Compatibility exists at two different layers and must not be confused:
 1. **Provider compatibility profiles** are supported runtime contracts such as
    Kubernetes API lifecycle bands, Prometheus v2/v3 query contracts, and
    Alertmanager v0.25/v0.33 API contracts.
-2. **Application URL compatibility** is limited to GET-only redirects for old
-   bookmarks. Old URLs do not expose POST, validation, delete, or runtime
-   operations and do not retain legacy persistence or Python import facades.
-
-Current URL compatibility sunset: **31 December 2026**.
+2. **Application compatibility layers are not retained.** Replaced URLs return
+   `404`, retired Python import paths are removed, and persisted transition fields
+   are converted by an explicit Alembic migration. External runtime compatibility
+   remains implemented only through provider profiles and capability evidence.
 
 ## Worker ownership
 

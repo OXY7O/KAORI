@@ -139,11 +139,11 @@
                         <div class="mt-3 grid gap-3 text-sm md:grid-cols-2">
                             <div class="rounded-xl border border-outline-default bg-surface-subtle p-4 dark:border-outline-default bg-surface-subtle">
                                 <p class="font-semibold text-content-primary dark:text-content-primary">Local backend</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted dark:text-content-muted">Set <code>REPORT_STORAGE_BACKEND=local</code> and optionally <code>REPORT_LOCAL_STORAGE_DIR</code>. Best for local development or single-node deployment. Artifact keys are namespaced by report family, for example <code>reports/kubereport/kubernetes/...</code>.</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted dark:text-content-muted">Set <code>REPORT_STORAGE_BACKEND=local</code> and optionally <code>REPORT_LOCAL_STORAGE_DIR</code>. Best for local development or single-node deployment. Artifact keys are namespaced by report family, for example <code>reports/kubernetes/kubernetes/...</code>.</p>
                             </div>
                             <div class="rounded-xl border border-outline-default bg-surface-subtle p-4 dark:border-outline-default bg-surface-subtle">
                                 <p class="font-semibold text-content-primary dark:text-content-primary">S3-compatible backend</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted dark:text-content-muted">Set <code>REPORT_STORAGE_BACKEND=s3</code>, bucket, region, endpoint for MinIO if needed, and credentials through ENV or Kubernetes Secrets. The same bucket can later separate <code>kubereport/kubernetes</code> from <code>serverreport/vm</code> or <code>serverreport/hci</code> prefixes.</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted dark:text-content-muted">Set <code>REPORT_STORAGE_BACKEND=s3</code>, bucket, region, endpoint for MinIO if needed, and credentials through ENV or Kubernetes Secrets. The same bucket can later separate <code>kubernetes/kubernetes</code> from <code>server/vm</code> or <code>server/hci</code> prefixes.</p>
                             </div>
                         </div>
                     </div>
@@ -233,7 +233,6 @@
                                                     ('Reports With Files', payload.artifact_summary.reports_with_files),
                                                     ('Local Records', payload.artifact_summary.local_reports),
                                                     ('S3 Records', payload.artifact_summary.s3_reports),
-                                                    ('Legacy Records', payload.artifact_summary.legacy_reports),
                                                     ('Ready Reports', payload.artifact_summary.ready_reports),
                                                     ('Tracked Size', payload.artifact_summary.total_size)
                                                 ] %}

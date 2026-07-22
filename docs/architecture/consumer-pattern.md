@@ -113,7 +113,7 @@ Kubernetes analytics
 
 ## Required usage
 
-New asset domains must consume providers through public consumer facades. Direct imports of provider models, repositories, credentials, clients, or validation services are prohibited outside the provider package and its approved compatibility layer.
+New asset domains must consume providers through the canonical consumer API. Direct imports of provider models, repositories, credentials, clients, or validation services are prohibited outside the provider package.
 
 ## Canonical consumer result
 

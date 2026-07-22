@@ -56,8 +56,6 @@ def resolve_app_path(
 def get_local_storage_root_path() -> Path:
     configured_root = current_app.config.get(
         'REPORT_LOCAL_STORAGE_DIR',
-    ) or current_app.config.get(
-        'REPORT_STORAGE_ROOT_DIR',
     )
 
     return resolve_app_path(
@@ -338,7 +336,6 @@ def build_storage_artifact_summary() -> dict[str, Any]:
     s3_reports = count_reports_by_file_prefix(
         's3:',
     )
-    legacy_reports = count_legacy_file_path_reports()
     reports_with_files = count_reports_with_file_path()
     total_size_bytes = sum_report_file_size_bytes()
     retention_policy = build_storage_retention_policy()
@@ -349,7 +346,6 @@ def build_storage_artifact_summary() -> dict[str, Any]:
         'reports_with_files': reports_with_files,
         'local_reports': local_reports,
         's3_reports': s3_reports,
-        'legacy_reports': legacy_reports,
         'total_size': format_file_size(
             total_size_bytes,
         ),
@@ -468,30 +464,6 @@ def count_reports_by_file_prefix(
                 Report.file_path.ilike(
                     f'{prefix}%',
                 )
-            )
-        )
-        or 0
-    )
-
-
-def count_legacy_file_path_reports() -> int:
-    return (
-        db.session.scalar(
-            select(
-                func.count(
-                    Report.id,
-                )
-            ).where(
-                Report.file_path.is_not(
-                    None,
-                ),
-                Report.file_path != '',
-                ~Report.file_path.ilike(
-                    'local:%',
-                ),
-                ~Report.file_path.ilike(
-                    's3:%',
-                ),
             )
         )
         or 0

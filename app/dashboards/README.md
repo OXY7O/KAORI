@@ -12,7 +12,7 @@ Welcome is intentionally outside this package because it is a platform-wide land
 | Server Dashboard | `app/dashboards/server` | `templates/dashboards/server` | reserved | reserved |
 | HCI Dashboard | `app/dashboards/hci` | `templates/dashboards/hci` | reserved | reserved |
 
-Dashboard routing is canonical-only. Welcome is owned by `welcome.index`, while Kubernetes Dashboard is owned by `kubernetes_dashboard.index` and `kubernetes_dashboard.section`. Legacy `dashboard.*` endpoints and compatibility redirects must not be restored.
+Dashboard routing is canonical-only. Welcome is owned by `welcome.index`, while Kubernetes Dashboard is owned by `kubernetes_dashboard.index` and `kubernetes_dashboard.section`. Retired `dashboard.*` endpoints and alternate redirects must not be restored.
 
 ## Mandatory domain rules
 
@@ -40,6 +40,6 @@ Database loading and defensive queries are isolated in `repository.py`. Reusable
 
 A new dashboard section must not be implemented directly in the orchestration function. Add a section builder module, return a typed schema object, and let the orchestrator compose it.
 
-## Compatibility boundary
+## Retired path guardrail
 
 `app/dashboard`, `templates/dashboard`, and `app/dashboards/routes.py` are retired paths. New imports, endpoints, and template references must use the canonical packages above.

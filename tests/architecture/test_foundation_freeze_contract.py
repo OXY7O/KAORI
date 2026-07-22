@@ -45,23 +45,24 @@ def test_binding_worker_uses_registry_operation_dispatch() -> None:
     assert 'validate_alertmanager_binding' not in tasks
 
 
-def test_inventory_facades_remain_thin_and_dependency_direction_is_one_way() -> None:
-    service = read('app/inventory/service.py')
-    collector = read('app/inventory/collector.py')
+def test_inventory_uses_explicit_owner_modules_without_forwarding_facades() -> None:
+    assert not (ROOT / 'app/inventory/service.py').exists()
+    assert not (ROOT / 'app/inventory/collector.py').exists()
 
-    assert len(service.splitlines()) < 180
-    assert len(collector.splitlines()) < 60
-    assert 'def get_inventory_overview(' not in service
-    assert 'def sync_inventory(' not in service
-    assert 'def get_nodes(' not in collector
+    routes = read('app/inventory/routes.py')
+    persistence = read('app/inventory/persistence.py')
+    adapter = read('app/integrations/kubernetes/adapter.py')
 
-    for path in (ROOT / 'app/inventory/resources').glob('*.py'):
+    assert 'from app.inventory.overview import' in routes
+    assert 'from app.inventory.resources.nodes import' in routes
+    assert 'from app.inventory.collectors.runtime import' in persistence
+    assert 'from app.inventory.collectors.configuration import' in persistence
+    assert 'from app.inventory.synchronization import sync_inventory' in adapter
+
+    for path in ROOT.joinpath('app').rglob('*.py'):
         source = path.read_text(encoding='utf-8')
         assert 'from app.inventory.service import' not in source
         assert 'import app.inventory.service' not in source
-
-    for path in (ROOT / 'app/inventory/collectors').glob('*.py'):
-        source = path.read_text(encoding='utf-8')
         assert 'from app.inventory.collector import' not in source
         assert 'import app.inventory.collector' not in source
 

@@ -1,6 +1,6 @@
 """Integration operational commands.
 
-One-shot legacy audit, reconciliation, and factory-reset commands were retired after
+One-shot cutover audit, reconciliation, and factory-reset commands were retired after
 canonical runtime cutover. Provider runtime refresh is handled by Celery and the
 provider workspaces.
 """

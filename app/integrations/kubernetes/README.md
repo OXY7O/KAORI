@@ -9,17 +9,14 @@ contracts.
 
 ## Files
 
-- `adapter.py`: stable operations exposed to the registry.
+- `__init__.py`: registers the provider module with the integration registry.
+- `adapter.py`: operation dispatch, inventory delegation, and runtime-state translation.
 - `client.py`: Kubernetes Python client construction.
-- `capabilities.py`: capability keys and compatibility profile declarations.
-- `compatibility.py`: API-version discovery and feature adapter selection.
-- `validation.py`: connectivity and runtime validation.
-- `discovery.py`: provider discovery facade.
-- `inventory.py`: inventory operation facade.
-- `actions.py`: provider action boundary for future write operations.
+- `capabilities.py`: capability keys and supported runtime profiles.
+- `compatibility.py`: served-API discovery and version-aware adapter selection.
+- `validation.py`: connection, version, RBAC, and runtime validation.
 - `resolver.py`: canonical cluster-to-connection resolution.
-- `schemas.py`: provider-owned schemas.
-- `tls.py`: bounded weak-TLS compatibility context.
+- `tls.py`: bounded operator-approved weak-TLS context.
 
 ## Registry contract
 

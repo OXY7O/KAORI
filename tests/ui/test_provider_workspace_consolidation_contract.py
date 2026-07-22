@@ -40,14 +40,24 @@ def test_alertmanager_validation_scope_oob_does_not_duplicate_feedback() -> None
     assert "{% if not scope_oob|default(false) %}" in scope
 
 
-def test_runtime_history_is_shared_by_all_three_providers() -> None:
+def test_runtime_history_is_shared_without_provider_wrappers() -> None:
     shared = read('app/templates/integrations/partials/_runtime_history.html')
-    for wrapper in (
+    wrappers = (
         'app/templates/prometheus/partials/_runtime_history.html',
         'app/templates/alertmanager/partials/_runtime_history.html',
         'app/templates/integrations/kubernetes/partials/_runtime_history.html',
-    ):
-        assert "integrations/partials/_runtime_history.html" in read(wrapper)
+    )
+    for wrapper in wrappers:
+        assert not (ROOT / wrapper).exists()
+
+    owners = (
+        'app/templates/prometheus/partials/_detail_runtime.html',
+        'app/templates/alertmanager/partials/_detail_runtime.html',
+        'app/templates/integrations/kubernetes/detail.html',
+    )
+    for owner in owners:
+        assert "integrations/partials/_runtime_history.html" in read(owner)
+
     for fragment in (
         'Recent Runtime Observations',
         'Runtime observations per page',
@@ -56,7 +66,6 @@ def test_runtime_history_is_shared_by_all_three_providers() -> None:
         'aria-disabled="true"',
     ):
         assert fragment in shared
-
 
 def test_kubernetes_registration_requires_test_connection_proof() -> None:
     form = read('app/templates/cluster/partials/_form.html')
@@ -115,18 +124,6 @@ def test_kubernetes_manage_workspace_matches_provider_tab_contract() -> None:
     assert 'Runnable Kubernetes Script' in capability
     assert 'Kubernetes API and RBAC Check' in capability
     assert 'Remediation Priority' in capability
-
-
-def test_kubernetes_registry_uses_compact_icon_actions() -> None:
-    registry = read('app/templates/integrations/kubernetes/partials/_registry.html')
-    assert 'w-full min-w-[1088px] table-fixed' in registry
-    assert 'w-[290px]' in registry
-    assert 'w-[208px]' in registry
-    assert registry.count('inline-flex h-8 w-8') >= 5
-    for label in ('Manage', 'Configure', 'Bind Prometheus', 'Bind Alertmanager', 'Delete'):
-        assert f'<span class="sr-only">{label}</span>' in registry
-    assert '>Manage</a>' not in registry
-    assert '>Configure</a>' not in registry
 
 
 def test_integrations_overview_hero_uses_standard_compact_context_panel() -> None:

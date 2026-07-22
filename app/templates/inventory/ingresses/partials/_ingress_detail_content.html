@@ -214,11 +214,7 @@
                 </section>
             </div>
 
-            {% if not ingress.details_reported %}
-                {{ info_box('Collection update required', 'Legacy snapshot detected. Restart the worker and sync again.', 'triangle-alert', 'warning') }}
-            {% else %}
-                {{ info_box('Inventory boundary', 'This view shows snapshot configuration. Traffic and certificate posture remain in Analytics and Governance.', 'info') }}
-            {% endif %}
+            {{ info_box('Inventory boundary', 'This view shows snapshot configuration. Traffic and certificate posture remain in Analytics and Governance.', 'info') }}
         </div>
     </div>
 </div>

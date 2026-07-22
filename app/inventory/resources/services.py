@@ -265,7 +265,6 @@ def get_service_detail(service_id: int) -> dict[str, Any] | None:
         'endpoints_truncated': len(ready_endpoints) > 12 or len(not_ready_endpoints) > 12,
         'labels': sorted(labels.items()),
         'annotations': sorted(annotations.items()),
-        'details_reported': bool(details),
     }
 
 

@@ -47,7 +47,7 @@ A future Server domain may bind multiple server assets to one centralized Promet
 - Deprecated PromQL definition: resolve its registered replacement key.
 - Missing metric or label schema: only dependent capabilities are degraded or blocked.
 
-The deprecation registry is `app/integrations/deprecations.py`. PromQL profile details are documented in `docs/PROMQL_QUERY_PROFILES.md`.
+Query deprecation and replacement metadata is owned by `app/integrations/prometheus/query_profiles/types.py` and each registered `QueryDefinition`. PromQL profile details are documented in `docs/PROMQL_QUERY_PROFILES.md`.
 
 ## Canonical navigation and route ownership
 
@@ -56,10 +56,10 @@ Integration inventory and configuration are owned by the top-level `Integrations
 - `/integrations/` — cross-cluster integration overview.
 - `/integrations/prometheus` — Prometheus inventory.
 - `/integrations/alertmanager` — Alertmanager inventory.
-- `/integrations/prometheus/cluster/<cluster_id>` — Prometheus configuration and validation.
-- `/integrations/alertmanager/cluster/<cluster_id>` — Alertmanager configuration and validation.
+- `/prometheus/instances/<instance_id>` — Prometheus manage workspace and operations.
+- `/alertmanager/instances/<instance_id>` — Alertmanager manage workspace and operations.
 
-Legacy `/settings/prometheus`, `/settings/alertmanager`, `/prometheus/...`, and `/alertmanager/...` URLs redirect to canonical routes. Remove the redirect layer only after external bookmarks and activity records have aged out.
+Retired settings, provider registry, cluster-configuration, and edit URLs are not registered. Bookmarks must be updated to the canonical routes; KAORI does not keep an internal redirect layer.
 
 ## Safe presentation boundary
 

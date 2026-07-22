@@ -557,8 +557,6 @@ class Config:
         BASE_DIR / 'instance',
     )
 
-    # Backward-compatible alias for older report storage code.
-    REPORT_STORAGE_ROOT_DIR = REPORT_LOCAL_STORAGE_DIR
 
     # Temporary staging directory used while rendering PDFs before they are
     # copied/uploaded to the configured storage backend.

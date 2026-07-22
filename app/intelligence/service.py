@@ -62,10 +62,10 @@ LOGIC_TYPE_OPTIONS = [
 SIGNAL_SOURCE_OPTIONS = [
     {'value': '', 'label': 'All Signal Sources'},
     {'value': 'kubernetes_api', 'label': 'Kubernetes API'},
-    {'value': 'kubreport_analysis', 'label': 'KAORI Kubernetes Analysis'},
+    {'value': 'kaori_kubernetes_analysis', 'label': 'KAORI Kubernetes Analysis'},
     {'value': 'alertmanager', 'label': 'Alertmanager'},
     {'value': 'prometheus_metrics', 'label': 'Prometheus Metrics'},
-    {'value': 'serverreport_inventory', 'label': 'Server Node Exporter'},
+    {'value': 'server_inventory', 'label': 'Server Node Exporter'},
     {'value': 'hci_provider_api', 'label': 'HCI API'},
 ]
 
@@ -104,10 +104,10 @@ def _status_label(value: str) -> str:
 def _signal_label(value: str) -> str:
     return {
         'kubernetes_api': 'Kubernetes API',
-        'kubreport_analysis': 'KAORI Kubernetes Analysis',
+        'kaori_kubernetes_analysis': 'KAORI Kubernetes Analysis',
         'alertmanager': 'Alertmanager',
         'prometheus_metrics': 'Prometheus Metrics',
-        'serverreport_inventory': 'Server Node Exporter',
+        'server_inventory': 'Server Node Exporter',
         'hci_provider_api': 'HCI API',
     }.get(value, _format_label(value))
 
@@ -129,7 +129,7 @@ def _normalize_rule(rule: dict[str, Any]) -> dict[str, Any]:
     category = str(rule['category'])
     source_kind = str(rule['source_kind'])
     logic_type = str(rule.get('logic_type', 'recommendation'))
-    signal_source = str(rule.get('signal_source', 'kubreport_analysis'))
+    signal_source = str(rule.get('signal_source', 'kaori_kubernetes_analysis'))
     return {
         **rule,
         'domain_label': _domain_label(domain),
@@ -878,7 +878,7 @@ def get_recommendations_payload(args: MultiDict[str, str], *, page_mode: str = '
                     'status': 'Ready',
                     'description': 'Uses Kubernetes inventory, Prometheus metrics, and Alertmanager signals per connected cluster.',
                     'icon': 'boxes',
-                    'report_family': 'KubeReport',
+                    'report_family': 'KAORI Kubernetes Reports',
                     'signal_source': 'Kubernetes API · Prometheus · Alertmanager',
                     'count': kubernetes_count,
                 },
@@ -887,7 +887,7 @@ def get_recommendations_payload(args: MultiDict[str, str], *, page_mode: str = '
                     'status': 'Integration Scope',
                     'description': 'Server recommendations are categorized for Node Exporter metrics and future server inventory context.',
                     'icon': 'server',
-                    'report_family': 'ServerReport',
+                    'report_family': 'KAORI Server Reports',
                     'signal_source': 'Node Exporter',
                     'count': server_count,
                 },
@@ -896,7 +896,7 @@ def get_recommendations_payload(args: MultiDict[str, str], *, page_mode: str = '
                     'status': 'Integration Scope',
                     'description': 'HCI recommendations are categorized for provider API signals, datastore health, host balance, and VM placement.',
                     'icon': 'network',
-                    'report_family': 'HCIReport',
+                    'report_family': 'KAORI HCI Reports',
                     'signal_source': 'HCI API',
                     'count': hci_count,
                 },
@@ -940,12 +940,12 @@ def get_alert_intelligence_payload() -> dict[str, Any]:
             },
             {
                 'title': 'Server signal path',
-                'description': 'Node Exporter supplies server-level CPU, memory, disk, and network metrics for ServerReport intelligence.',
+                'description': 'Node Exporter supplies server-level CPU, memory, disk, and network metrics for KAORI Server Reports intelligence.',
                 'icon': 'server',
             },
             {
                 'title': 'HCI signal path',
-                'description': 'HCI API integration supplies datastore, host balance, cluster health, and VM placement context for HCIReport intelligence.',
+                'description': 'HCI API integration supplies datastore, host balance, cluster health, and VM placement context for KAORI HCI Reports intelligence.',
                 'icon': 'network',
             },
         ],

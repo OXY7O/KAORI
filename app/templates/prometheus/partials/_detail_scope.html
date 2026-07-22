@@ -118,7 +118,7 @@
                             <section class="rounded-lg border border-brand-outline bg-kaori-soft p-3.5">
                                 <p class="text-xs font-semibold text-content-muted">Metrics Identity</p>
                                 <p class="mt-1 break-words text-sm font-medium leading-5 text-content-primary" title="{{ row.selector_summary }}">{{ row.selector_summary }}</p>
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ 'Scoped query isolation' if row.selector_configured else 'Legacy unscoped binding' }}</p>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ 'Scoped query isolation' if row.selector_configured else 'Dedicated source identity' }}</p>
                             </section>
                         </div>
 
@@ -364,25 +364,18 @@
                 <p class="mt-1 text-xs leading-5 text-content-secondary">Bindings and active provider jobs block deletion. Historical runtime observations, JobExecution records, and Activity Audit remain available.</p>
                 {% if deletion_guard and deletion_guard.active_jobs %}<p class="mt-2 inline-flex items-center gap-1.5 rounded-md border border-status-warning-border bg-status-warning-soft px-2 py-1 text-[11px] font-semibold text-status-warning-text"><i data-lucide="loader-circle" class="h-3.5 w-3.5"></i>{{ deletion_guard.active_jobs }} Active Job{% if deletion_guard.active_jobs != 1 %}s{% endif %}</p>{% endif %}
             </div>
-            {% if delete_instance_url %}
-                <button type="button"
-                        data-prometheus-delete-button
-                        data-delete-url="{{ delete_instance_url }}"
-                        data-delete-title="Delete Prometheus Instance?"
-                        data-delete-name="{{ instance.name }}"
-                        data-delete-detail="The connection identity, endpoint configuration, and stored credentials will be removed. Runtime observations, JobExecution history, and Activity Audit records remain available."
-                        data-delete-action-label="Delete Instance"
-                        {% if bindings or (deletion_guard and deletion_guard.blocked) %}disabled{% endif %}
-                        class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-status-critical-border bg-surface-card px-4 text-sm font-semibold text-status-critical-text transition hover:bg-status-critical-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-not-allowed disabled:opacity-50">
-                    <i data-lucide="trash-2" class="h-4 w-4"></i>
-                    Delete Instance
-                </button>
-            {% else %}
-                <span class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-hover px-4 text-sm font-semibold text-content-disabled" aria-disabled="true">
-                    <i data-lucide="route-off" class="h-4 w-4"></i>
-                    Delete Unavailable
-                </span>
-            {% endif %}
+            <button type="button"
+                    data-prometheus-delete-button
+                    data-delete-url="{{ delete_instance_url }}"
+                    data-delete-title="Delete Prometheus Instance?"
+                    data-delete-name="{{ instance.name }}"
+                    data-delete-detail="The connection identity, endpoint configuration, and stored credentials will be removed. Runtime observations, JobExecution history, and Activity Audit records remain available."
+                    data-delete-action-label="Delete Instance"
+                    {% if bindings or (deletion_guard and deletion_guard.blocked) %}disabled{% endif %}
+                    class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-status-critical-border bg-surface-card px-4 text-sm font-semibold text-status-critical-text transition hover:bg-status-critical-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-not-allowed disabled:opacity-50">
+                <i data-lucide="trash-2" class="h-4 w-4"></i>
+                Delete Instance
+            </button>
         </div>
     </details>
 </div>

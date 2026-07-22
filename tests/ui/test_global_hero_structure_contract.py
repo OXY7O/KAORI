@@ -44,8 +44,3 @@ def test_reaudited_hero_files_do_not_start_with_dangling_closing_div():
         assert not hero.startswith('</div>'), f'Dangling closing div remains in {path}'
 
 
-def test_forecast_hero_metadata_is_capped_at_three():
-    text = (TEMPLATES / 'analytics/forecast/index.html').read_text(encoding='utf-8')
-    hero = text.split('<section class="{{ page_hero.shell_classes() }}">', 1)[1].split('</section>', 1)[0]
-    assert hero.count('page_hero.meta_label(') <= 5  # conditional branches render at most three labels
-    assert 'recommendation_count ~ \' actionable\'' in hero

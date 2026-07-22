@@ -6,7 +6,7 @@ from app.integrations.kubernetes.compatibility import (
     KubernetesDiscovery,
     list_cluster_resource,
 )
-from app.integrations.kubernetes.tls import legacy_tls_context
+from app.integrations.kubernetes.tls import weak_tls_context
 from app.integrations.registry import get_integration
 from app.inventory.persistence import (
     save_cluster_info,
@@ -50,7 +50,7 @@ def sync_inventory(
             cluster.id,
         )
 
-        with legacy_tls_context(
+        with weak_tls_context(
             enabled=allow_weak_tls,
         ):
             client = get_integration('kubernetes').execute('client.build', connection)

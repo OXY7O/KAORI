@@ -30,12 +30,12 @@ from app.models.archive import (
 from app.retention.domains import get_archive_domain
 from app.retention.lock import retention_lock
 from app.retention.types import ArchiveBoundary, PartialCleanupError, RetentionPolicy
-from app.storage import (
+from app.storage.service import (
     build_artifact_storage,
     build_artifact_storage_for_backend,
     build_storage_locator,
+    resolve_app_path,
 )
-from app.storage.service import resolve_app_path
 
 logger = logging.getLogger(__name__)
 

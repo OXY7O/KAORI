@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from app.extensions import db
-from app.integrations.kubernetes import kubeconfig_for_cluster
+from app.integrations.kubernetes.resolver import kubeconfig_for_cluster
 from app.kubernetes_operations.secrets.live_service import (
     list_live_namespaces,
     verify_live_namespace,

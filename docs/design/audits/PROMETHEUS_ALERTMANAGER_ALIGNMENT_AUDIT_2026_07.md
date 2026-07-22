@@ -83,7 +83,7 @@ The shared component now uses intrinsic content height and `mt-6` action spacing
 
 ### Route resilience
 
-The delete route has an explicit endpoint name. The instance detail route builds the lifecycle URL through `_optional_endpoint_url()`. If a partial deployment has not registered the endpoint, the page renders a disabled `Delete Unavailable` state and logs the deployment inconsistency instead of raising `BuildError` from Jinja.
+The delete route has an explicit endpoint name. The instance detail context builds its URL directly with `url_for()`. Because the endpoint is declared in the same blueprint module, a missing endpoint is treated as an application assembly error instead of being hidden behind a disabled compatibility state.
 
 A static regression test also checks every `prometheus.*` endpoint referenced by Prometheus templates against the handlers declared in `app/prometheus/routes.py`.
 
@@ -96,5 +96,5 @@ A static regression test also checks every `prometheus.*` endpoint referenced by
 - Compatibility Detection uses Information Guide Card;
 - After Registration uses ordered Context Guidance Card;
 - Related Page Card uses intrinsic height;
-- instance detail never builds an optional delete endpoint directly in Jinja;
+- instance detail receives one canonical delete endpoint from the route context;
 - every Prometheus template route reference maps to a declared Prometheus handler.

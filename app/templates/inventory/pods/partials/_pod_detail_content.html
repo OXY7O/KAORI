@@ -272,11 +272,7 @@
                 </section>
             </div>
 
-            {% if not pod.details_reported %}
-                {{ info_box('Collection update required', 'Legacy snapshot detected. Restart the worker and sync again.', 'triangle-alert', 'warning') }}
-            {% else %}
-                {{ info_box('Inventory boundary', 'This view shows snapshot data. Trends and recommendations remain in Analytics and Intelligence.', 'info') }}
-            {% endif %}
+            {{ info_box('Inventory boundary', 'This view shows snapshot data. Trends and recommendations remain in Analytics and Intelligence.', 'info') }}
         </div>
     </div>
 </div>

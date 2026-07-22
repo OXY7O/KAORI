@@ -163,7 +163,7 @@ def test_runtime_failure_falls_through_and_records_selection_trace(app, monkeypa
     assert result['source_errors']
 
 
-def test_unobserved_capabilities_remain_compatible_during_cutover(app) -> None:
+def test_unobserved_capabilities_block_operational_selection(app) -> None:
     cluster = _cluster()
     source = _instance('Migrated Source', role='primary', cluster_id=cluster.id)
     source.readiness_status = 'ready'
@@ -177,9 +177,10 @@ def test_unobserved_capabilities_remain_compatible_during_cutover(app) -> None:
         required_capabilities=('alerts_v2',),
     )
 
-    assert resolution.selected is not None
-    assert resolution.selected.instance.id == source.id
-    assert resolution.selected.capability_state == 'unknown'
+    assert resolution.selected is None
+    assert resolution.candidates[0].instance.id == source.id
+    assert resolution.candidates[0].eligible is False
+    assert resolution.candidates[0].capability_state == 'validation_required'
 
 
 def test_instance_context_exposes_effective_source_decision_trace(app) -> None:

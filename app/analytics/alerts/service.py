@@ -12,11 +12,7 @@ from app.alertmanager.service import (
     get_alertmanager_silences,
     get_alertmanager_status,
 )
-from app.analytics.alerts.queries import (
-    POD_NOT_READY_ANOMALY_QUERY,
-    POD_RESTART_ANOMALY_QUERY,
-    PROMETHEUS_ALERTS_QUERY,
-)
+from app.integrations.prometheus.query_profiles import get_query_expression
 from app.common.dependencies import (
     alert_source_connection_blocker,
     alert_source_setup_blocker,
@@ -32,6 +28,16 @@ from app.models import Cluster, NamespaceInventory
 from app.integrations.prometheus.exceptions import PrometheusError
 from app.prometheus.repository import resolve_instance_for_cluster
 from app.prometheus.service import PrometheusService
+
+PROMETHEUS_ALERTS_QUERY = get_query_expression(
+    'analytics.alerts.queries.PROMETHEUS_ALERTS_QUERY'
+)
+POD_RESTART_ANOMALY_QUERY = get_query_expression(
+    'analytics.alerts.queries.POD_RESTART_ANOMALY_QUERY'
+)
+POD_NOT_READY_ANOMALY_QUERY = get_query_expression(
+    'analytics.alerts.queries.POD_NOT_READY_ANOMALY_QUERY'
+)
 
 DEFAULT_PER_PAGE = 5
 

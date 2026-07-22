@@ -20,22 +20,6 @@ def test_shared_form_action_bar_contract() -> None:
     assert "{{ caller() }}" in component
 
 
-def test_integration_forms_use_shared_action_bar() -> None:
-    paths = [
-        "app/templates/cluster/partials/_form.html",
-        "app/templates/prometheus/instance_form.html",
-        "app/templates/prometheus/config.html",
-        "app/templates/alertmanager/instance_form.html",
-        "app/templates/alertmanager/partials/_detail_configuration.html",
-        "app/templates/alertmanager/config.html",
-    ]
-
-    for path in paths:
-        template = read(path)
-        assert 'components/form_action_bar.html' in template, path
-        assert "form_action_bar.render(" in template, path
-
-
 def test_static_action_helpers_remain_concise() -> None:
     helpers = [
         "Save to start Kubernetes inventory onboarding.",

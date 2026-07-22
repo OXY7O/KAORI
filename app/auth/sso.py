@@ -104,7 +104,6 @@ def _jit_project(provider: IdentityProvider, identity: SsoIdentity) -> User:
     user.auth_source = provider.provider_type
     user.external_id = identity.subject
     user.role_id = role.id
-    user.role = role.name
     user.account_is_active = True
     user.is_super_admin = False
     user.password_hash = ''

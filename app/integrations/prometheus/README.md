@@ -8,14 +8,12 @@ compatibility profiles, and runtime translation.
 
 ## Files
 
-- `adapter.py`: registry operations and shared runtime translation.
+- `__init__.py`: registers the provider module with the integration registry.
+- `adapter.py`: operation dispatch and shared runtime-state translation.
 - `client.py`: Prometheus-compatible HTTP API transport.
-- `capabilities.py`: capability catalog and compatibility profiles.
-- `validation.py`: provider validation entry point.
-- `queries.py`: reusable provider query helpers.
-- `query_profiles/`: versioned Analytics PromQL contracts and audit logic.
-- `evidence.py`: provider evidence schemas/builders.
-- `schemas.py`: provider-owned schemas.
+- `capabilities.py`: capability keys and supported runtime profiles.
+- `exceptions.py`: provider transport and query failures.
+- `query_profiles/`: canonical versioned PromQL definitions, feature contracts, and audits.
 
 ## Registry contract
 
@@ -39,3 +37,23 @@ Endpoint product/version detection and the declared Prometheus source profile
 are separate. Thanos may expose Prometheus-compatible query APIs without a
 Prometheus `/version` identity. Full Validation therefore treats successful
 query contracts and observed labels/series as authoritative evidence.
+
+## Prometheus Manage UI and lifecycle contract
+
+Prometheus and Prometheus-compatible query endpoints are registered as reusable
+provider instances. Each instance has one canonical manage workspace containing
+Configuration, Validation & Capabilities, Runtime & History, and Scope &
+Resolution. Provider-local configuration pages and cluster-scoped bookmark
+routes are not part of the active contract.
+
+### Instance deletion
+
+Instance deletion is a governed database lifecycle action and has no live
+Prometheus or Thanos dependency. Every provider-neutral scope binding must be
+removed first, including disabled bindings. Active provider jobs also block the
+operation. KAORI repeats these checks in the service boundary before deleting
+the provider record and its canonical integration identity atomically.
+
+Historical runtime observations and Activity Audit records remain available.
+The delete control is therefore shown only in the contextual Scope & Resolution
+workspace, next to its binding and job blockers.

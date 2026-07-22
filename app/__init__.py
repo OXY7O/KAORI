@@ -41,7 +41,7 @@ from app.notifications.service import (
 from app.prometheus.routes import prometheus_bp
 from app.reports.routes import reports_bp
 from app.settings import bp as settings_bp
-from app.users import bp as users_bp
+from app.users.routes import bp as users_bp
 from app.welcome.routes import welcome_bp
 
 

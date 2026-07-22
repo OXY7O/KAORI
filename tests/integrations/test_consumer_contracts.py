@@ -2,7 +2,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from app.integrations.consumer import ConsumerDiagnostic, ConsumerResult, ConsumerSource
+from app.integrations.consumer.contracts import ConsumerDiagnostic, ConsumerResult, ConsumerSource
 from app.prometheus.consumer import PrometheusConsumer
 from app.integrations.prometheus.exceptions import PrometheusError
 

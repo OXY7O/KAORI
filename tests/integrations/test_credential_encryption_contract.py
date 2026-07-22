@@ -2,8 +2,13 @@ from __future__ import annotations
 
 from cryptography.fernet import Fernet
 from flask import Flask
+import pytest
 
-from app.security.credentials import decrypt_credential, encrypt_credential
+from app.security.credentials import (
+    CredentialEncryptionError,
+    decrypt_credential,
+    encrypt_credential,
+)
 
 
 def test_integration_credentials_are_encrypted_and_round_trip() -> None:
@@ -19,13 +24,13 @@ def test_integration_credentials_are_encrypted_and_round_trip() -> None:
         assert decrypt_credential(encrypted) == 'sensitive-value'
 
 
-def test_plaintext_read_is_supported_only_as_cutover_input() -> None:
+def test_plaintext_credential_is_rejected_after_cutover() -> None:
     app = Flask(__name__)
     app.config['INTEGRATION_CREDENTIAL_KEY'] = Fernet.generate_key().decode('ascii')
     app.config['SECRET_KEY'] = 'test-only-secret'
 
-    with app.app_context():
-        assert decrypt_credential('legacy-plaintext') == 'legacy-plaintext'
+    with app.app_context(), pytest.raises(CredentialEncryptionError):
+        decrypt_credential('plaintext-credential')
 
 
 def test_previous_key_can_decrypt_during_rotation() -> None:

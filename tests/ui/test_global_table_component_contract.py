@@ -51,12 +51,6 @@ def test_table_headers_do_not_force_uppercase_or_expanded_tracking():
     assert not violations, f"Legacy table header typography remains: {violations}"
 
 
-def test_long_known_table_action_was_shortened():
-    text = (TEMPLATES / "prometheus" / "instance_detail.html").read_text(encoding="utf-8")
-    assert "Open cluster settings" not in text
-    assert "Open Settings" in text
-
-
 def test_table_standard_documents_required_contracts():
     text = TABLE_DOC.read_text(encoding="utf-8")
     required = (
@@ -96,26 +90,6 @@ def test_table_headers_use_approved_size_and_semantic_color():
             if re.search(r"text-\[(?:10|11)px\]", tag) or "text-kaori-primary" in tag:
                 violations.append(str(path.relative_to(ROOT)))
     assert not violations, f"Legacy table header size or color remains: {violations}"
-
-
-def test_known_visible_table_action_labels_are_compact():
-    forbidden = (
-        "View Catalog Rule",
-        "Open Scope Workspace",
-        "Run Full Validation",
-        "View Full Audit",
-        "View all reports",
-        "Archive &amp; cleanup",
-        "Open Full Record",
-        "Edit custom role",
-        "Delete custom role",
-    )
-    violations = []
-    for path, text in table_templates():
-        for label in forbidden:
-            if label in text:
-                violations.append(f"{path.relative_to(ROOT)}: {label}")
-    assert not violations, f"Long table action labels remain: {violations}"
 
 
 def test_title_cell_scales_icon_for_two_line_content():

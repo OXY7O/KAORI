@@ -253,11 +253,7 @@
                 </section>
             </div>
 
-            {% if not service.details_reported %}
-                {{ info_box('Collection update required', 'Legacy snapshot detected. Restart the worker and sync again.', 'triangle-alert', 'warning') }}
-            {% else %}
-                {{ info_box('Inventory boundary', 'This view shows snapshot data. Traffic trends remain in Analytics.', 'info') }}
-            {% endif %}
+            {{ info_box('Inventory boundary', 'This view shows snapshot data. Traffic trends remain in Analytics.', 'info') }}
         </div>
     </div>
 </div>

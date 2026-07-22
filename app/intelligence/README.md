@@ -1,8 +1,8 @@
 # Intelligence domain
 
 Intelligence is KAORI's central rule, recommendation, and alert-enrichment domain.
-Analytics workspaces consume this domain instead of maintaining independent legacy
-recommendation logic.
+Analytics workspaces consume this domain instead of maintaining duplicate
+page-specific recommendation logic.
 
 ## Responsibilities
 

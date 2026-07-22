@@ -48,7 +48,7 @@ The Configuration tab contains:
 - one primary Info Flow explaining how a saved change returns to governed use;
 - optional Information Guide and Related Page Card in the right-side contextual column.
 
-A legacy edit URL may redirect to `#configuration` for bookmark compatibility, but it must not render a separate edit workspace.
+Retired edit URLs are not registered. The canonical detail route owns inline configuration and returns to `#configuration` after a successful save.
 
 ## Validation & Capabilities contract
 
@@ -137,7 +137,7 @@ The provider remains authoritative for execution. KAORI provides validation, gov
 ## Review checklist
 
 - [ ] Configuration saves inline and returns to `#configuration`.
-- [ ] Legacy edit URL redirects to the inline tab.
+- [ ] Retired edit URLs are not registered.
 - [ ] Validation shows the complete technical capability catalog.
 - [ ] Full Validation refreshes the matrix through the shared workspace.
 - [ ] Runtime matches the shared Health Interpretation and history layout.
@@ -171,7 +171,7 @@ Capability Technical Detail separates explanation from executable evidence:
 
 ## Shared runtime-history component
 
-Prometheus, Alertmanager, and Kubernetes use one Recent Runtime Observations component. Provider wrappers supply only the provider label, route, loading ID, and runtime-history context. The shared component owns:
+Prometheus, Alertmanager, and Kubernetes include one Recent Runtime Observations component directly. Each owning workspace supplies the provider label, route, loading ID, and runtime-history context; provider-local wrapper templates are prohibited. The shared component owns:
 
 - title box and a `Manage Lifecycle` button when the user can view Data Lifecycle;
 - summary metrics;
@@ -207,7 +207,7 @@ A size series alone proves filesystem capacity collection but cannot calculate u
 
 Provider deletion is a dependency-aware lifecycle operation, not a raw row delete.
 
-- Prometheus and Alertmanager require all canonical and legacy scope bindings to be removed first.
+- Prometheus and Alertmanager require all canonical scope bindings to be removed first.
 - Kubernetes removes only bindings that target the deleted cluster; reusable Prometheus and Alertmanager source instances remain intact.
 - Active validation, runtime, analytics, forecasting, or maintenance jobs block deletion while they still reference the provider or Kubernetes scope.
 - Kubernetes deletion is also blocked while Protected Secret Reveal requests remain `pending` or `approved`.

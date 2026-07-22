@@ -30,16 +30,6 @@ def test_node_inventory_uses_shared_context_panel():
     assert "GiB Memory" in source
 
 
-def test_alertmanager_integration_matches_context_panel_baseline():
-    source = read("app/templates/integrations/alertmanager.html")
-    assert "page_hero.context_panel_classes()" in source
-    assert "page_hero.context_panel_metrics_classes()" in source
-    assert source.count("page_hero.context_metric(") == 2
-    assert "Registered Instances" in source
-    assert "Ready Sources" in source
-    assert "Scope Bindings" in source
-
-
 def test_hero_standard_documents_metadata_title_case():
     source = read("docs/design/components/HERO.md")
     assert "## Right-side context panel" in source

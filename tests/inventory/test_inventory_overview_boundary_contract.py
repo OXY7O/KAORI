@@ -3,17 +3,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def test_inventory_service_is_a_thin_public_facade():
-    source = (ROOT / 'app/inventory/service.py').read_text(encoding='utf-8')
-
-    assert len(source.splitlines()) < 180
-    assert 'def get_inventory_overview(' not in source
-    assert 'def get_inventory_health(' not in source
-    assert 'def get_recent_inventory_activity(' not in source
-    assert 'from app.inventory.overview import (' in source
+def test_retired_inventory_service_facade_is_absent() -> None:
+    assert not (ROOT / 'app/inventory/service.py').exists()
 
 
-def test_overview_module_owns_operational_summary():
+def test_overview_module_owns_operational_summary() -> None:
     source = (ROOT / 'app/inventory/overview.py').read_text(encoding='utf-8')
 
     for function_name in (
@@ -29,11 +23,8 @@ def test_overview_module_owns_operational_summary():
     assert 'INVENTORY_FRESHNESS_HOURS = 24' in source
 
 
-def test_resource_descriptions_are_not_owned_by_service_facade():
-    service = (ROOT / 'app/inventory/service.py').read_text(encoding='utf-8')
-    descriptions = (
-        ROOT / 'app/inventory/resources/descriptions.py'
-    ).read_text(encoding='utf-8')
+def test_resource_descriptions_have_single_authority() -> None:
+    descriptions = (ROOT / 'app/inventory/resources/descriptions.py').read_text(encoding='utf-8')
 
     for constant_name in (
         'NODE_ROLE_DESCRIPTIONS',
@@ -41,11 +32,10 @@ def test_resource_descriptions_are_not_owned_by_service_facade():
         'SERVICE_TYPE_DESCRIPTIONS',
         'STORAGE_TYPE_DESCRIPTIONS',
     ):
-        assert constant_name not in service
         assert constant_name in descriptions
 
 
-def test_resource_modules_import_their_description_authority():
+def test_resource_modules_import_their_description_authority() -> None:
     expected = {
         'nodes.py': 'NODE_ROLE_DESCRIPTIONS',
         'workloads.py': 'WORKLOAD_TYPE_DESCRIPTIONS',
@@ -54,8 +44,6 @@ def test_resource_modules_import_their_description_authority():
     }
 
     for filename, constant_name in expected.items():
-        source = (
-            ROOT / 'app/inventory/resources' / filename
-        ).read_text(encoding='utf-8')
+        source = (ROOT / 'app/inventory/resources' / filename).read_text(encoding='utf-8')
         assert 'from app.inventory.resources.descriptions import' in source
         assert constant_name in source

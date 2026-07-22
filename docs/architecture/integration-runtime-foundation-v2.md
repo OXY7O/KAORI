@@ -21,7 +21,7 @@ Infrastructure asset
 - `PrometheusInstance`: Prometheus/Thanos-specific connection and query-validation state.
 - `AlertmanagerInstance`: Alertmanager-specific connection and capability state.
 
-Provider binding tables remain readable only during the compatibility window. New consumers resolve through `app.integrations.resolver.resolve_integration()`.
+Provider-specific binding tables are removed. Consumers resolve exclusively through `app.integrations.resolver.resolve_integration()` and the canonical `IntegrationBinding` contract.
 
 ## Asset-scoped dependency policy
 
@@ -41,7 +41,7 @@ Templates receive display-ready datetime, unit, percentage, status, and action v
 2. Switch all resolvers and scheduled runtime refresh to canonical instances.
 3. Stop writing cluster-scoped Prometheus and Alertmanager configurations.
 4. Move Kubernetes credentials from `Cluster` to `KubernetesConnection`.
-5. Remove compatibility fallbacks after repository search and integration tests show no consumers.
+5. PostgreSQL JobExecution is the only active-job read authority; Redis remains limited to distributed locks and transient metadata.
 6. Drop provider-specific binding and legacy configuration tables in a dedicated destructive migration.
 
 The destructive schema cleanup is deliberately separated from the canonical cutover so production upgrades remain recoverable. Development environments may reset the database after the cutover migration.

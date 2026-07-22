@@ -474,7 +474,6 @@ def get_pod_detail(
         'age': format_age(pod.created_at),
         'created_at': pod.created_at,
         'collected_at': pod.collected_at,
-        'details_reported': bool(details),
     }
 
 

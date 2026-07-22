@@ -1,6 +1,6 @@
 # Versioned PromQL query profiles
 
-KAORI does not permit PromQL to be added directly to routes, templates, or service methods. Every query is registered under a stable key in `app/prometheus/query_profiles/kubernetes_v1.py` and consumed through the compatibility export modules already imported by Analytics, Dashboard, Reports, Notifications, and Intelligence.
+KAORI does not permit PromQL to be added directly to routes, templates, or service methods. Every query is registered under a stable key in `app/integrations/prometheus/query_profiles/kubernetes_v1.py` and consumed directly from the canonical query-profile registry by Analytics, Dashboard, Reports, Notifications, and Intelligence.
 
 ## Current profile
 
@@ -22,7 +22,7 @@ Each `QueryDefinition` declares:
 - replacement query key;
 - technical notes.
 
-The existing `queries.py` modules are now compatibility exports. They no longer own independent PromQL strings, which prevents silent drift between pages.
+Domain services resolve stable query keys from the canonical registry. Provider-local and analytics-local `queries.py` export facades are removed so independent PromQL ownership cannot reappear.
 
 ## Validation lifecycle
 
@@ -49,7 +49,7 @@ KAORI must detect the Prometheus server runtime from `/api/v1/status/buildinfo`.
 
 ## Deprecation and replacement
 
-Cross-product API and metric deprecations are stored in `app/integrations/deprecations.py`. Query-specific deprecations remain attached to `QueryDefinition` so a profile can resolve a replacement without editing every consumer.
+Query deprecation and replacement metadata remains attached to `QueryDefinition`, allowing the canonical profile registry to resolve a replacement without editing every consumer. Provider API lifecycle data remains in each provider capability profile rather than a cross-product compatibility facade.
 
 Current queries use the kube-state-metrics v2 resource/unit metric shape. Legacy typed metrics such as `kube_pod_container_resource_requests_cpu_cores` are not used.
 

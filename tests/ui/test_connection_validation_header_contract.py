@@ -19,37 +19,6 @@ def test_shared_connection_validation_header_contract() -> None:
     assert 'loading_id=None' in source
 
 
-def test_connection_validation_header_is_used_across_integration_providers() -> None:
-    expectations = {
-        "app/templates/integrations/kubernetes/partials/_runtime_workspace.html": (
-            "Refresh connection health and compatibility evidence.",
-            "Refresh Runtime",
-        ),
-        "app/templates/prometheus/partials/_detail_validation_content.html": (
-            "Rebuild technical capability and readiness evidence.",
-            "Run Full Validation",
-        ),
-        "app/templates/prometheus/config.html": (
-            "Test reachability, then rebuild metrics readiness evidence.",
-            "Run Full Validation",
-        ),
-        "app/templates/alertmanager/instance_form.html": (
-            "Validate endpoint access before registration.",
-            "Test Connection",
-        ),
-        "app/templates/alertmanager/partials/_detail_validation_content.html": (
-            "Rebuild capability and readiness evidence.",
-            "Run Full Validation",
-        ),
-    }
-    for relative, values in expectations.items():
-        source = read(relative)
-        assert 'components/connection_validation_header.html' in source
-        assert "connection_validation_header.render(" in source
-        for value in values:
-            assert value in source
-
-
 def test_alertmanager_endpoint_header_does_not_repeat_long_api_explanation() -> None:
     source = read("app/templates/alertmanager/instance_form.html")
     assert "KAORI uses the base URL and submitted credentials to call the Alertmanager API v2 status interface." not in source

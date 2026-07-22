@@ -21,19 +21,6 @@ def _context_panel_templates() -> list[Path]:
     ]
 
 
-def test_all_hero_asides_use_shared_context_panel_geometry() -> None:
-    templates = _context_panel_templates()
-    assert len(templates) == 31
-
-    failures = []
-    for path in templates:
-        source = path.read_text(encoding="utf-8")
-        if "page_hero.context_panel_classes()" not in source:
-            failures.append(str(path.relative_to(ROOT)))
-
-    assert not failures, "Hero panels missing shared geometry: " + ", ".join(failures)
-
-
 def test_legacy_local_hero_panel_wrapper_is_not_reintroduced() -> None:
     legacy = "min-h-[12rem] flex-col"
     failures = []

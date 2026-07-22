@@ -12,7 +12,7 @@ from typing import Any
 from app.analytics.common.base_service import AnalyticsBaseService
 from app.analytics.common.context import build_analysis_utilization_context
 from app.analytics.common.params import get_query_value
-from app.analytics.forecast import queries
+from app.integrations.prometheus.query_profiles import get_query_expression
 from app.analytics.utilization.service import UtilizationService
 from app.common.dependencies import prometheus_connection_blocker
 from app.intelligence.recommendation_engine import (
@@ -23,6 +23,21 @@ from app.intelligence.recommendation_engine import (
 from app.models import Cluster
 from app.integrations.prometheus.exceptions import PrometheusError
 from app.prometheus.service import PrometheusService
+
+CPU_USAGE_BY_NAMESPACE_QUERY = get_query_expression('analytics.forecast.queries.CPU_USAGE_BY_NAMESPACE_QUERY')
+CPU_USAGE_QUERY = get_query_expression('analytics.forecast.queries.CPU_USAGE_QUERY')
+CPU_WORKER_CAPACITY_QUERY = get_query_expression('analytics.forecast.queries.CPU_WORKER_CAPACITY_QUERY')
+MEMORY_USAGE_BY_NAMESPACE_QUERY = get_query_expression('analytics.forecast.queries.MEMORY_USAGE_BY_NAMESPACE_QUERY')
+MEMORY_USAGE_QUERY = get_query_expression('analytics.forecast.queries.MEMORY_USAGE_QUERY')
+MEMORY_WORKER_CAPACITY_QUERY = get_query_expression('analytics.forecast.queries.MEMORY_WORKER_CAPACITY_QUERY')
+NAMESPACE_ACTIVE_QUERY = get_query_expression('analytics.forecast.queries.NAMESPACE_ACTIVE_QUERY')
+POD_USAGE_BY_NAMESPACE_QUERY = get_query_expression('analytics.forecast.queries.POD_USAGE_BY_NAMESPACE_QUERY')
+POD_USAGE_QUERY = get_query_expression('analytics.forecast.queries.POD_USAGE_QUERY')
+POD_WORKER_CAPACITY_QUERY = get_query_expression('analytics.forecast.queries.POD_WORKER_CAPACITY_QUERY')
+STORAGE_CAPACITY_BY_NAMESPACE_QUERY = get_query_expression('analytics.forecast.queries.STORAGE_CAPACITY_BY_NAMESPACE_QUERY')
+STORAGE_CAPACITY_QUERY = get_query_expression('analytics.forecast.queries.STORAGE_CAPACITY_QUERY')
+STORAGE_USAGE_BY_NAMESPACE_QUERY = get_query_expression('analytics.forecast.queries.STORAGE_USAGE_BY_NAMESPACE_QUERY')
+STORAGE_USAGE_QUERY = get_query_expression('analytics.forecast.queries.STORAGE_USAGE_QUERY')
 
 WARNING_THRESHOLD = 75.0
 CRITICAL_THRESHOLD = 90.0
@@ -147,7 +162,7 @@ class ForecastAnalysisService(AnalyticsBaseService):
         self,
     ) -> list[str]:
         result = self.get_prometheus_result(
-            queries.NAMESPACE_ACTIVE_QUERY,
+            NAMESPACE_ACTIVE_QUERY,
         )
 
         namespaces: set[str] = set()
@@ -282,8 +297,6 @@ class ForecastAnalysisService(AnalyticsBaseService):
             'recommendation_count': count_actionable_recommendations(
                 actionable_recommendations,
             ),
-            # Backward-compatible key for older templates.
-            'recommendations': recommendation_cards,
         }
 
     def _build_resource_forecast(
@@ -647,10 +660,10 @@ def _get_resource_definitions(
             description='Projected CPU usage growth compared with worker-node allocatable CPU.',
             usage_query=_render_namespace_query(
                 namespace=namespace,
-                all_query=queries.CPU_USAGE_QUERY,
-                namespace_query=queries.CPU_USAGE_BY_NAMESPACE_QUERY,
+                all_query=CPU_USAGE_QUERY,
+                namespace_query=CPU_USAGE_BY_NAMESPACE_QUERY,
             ),
-            capacity_query=queries.CPU_WORKER_CAPACITY_QUERY,
+            capacity_query=CPU_WORKER_CAPACITY_QUERY,
         ),
         ForecastResourceDefinition(
             key='memory',
@@ -660,10 +673,10 @@ def _get_resource_definitions(
             description='Projected memory working set growth compared with worker-node allocatable memory.',
             usage_query=_render_namespace_query(
                 namespace=namespace,
-                all_query=queries.MEMORY_USAGE_QUERY,
-                namespace_query=queries.MEMORY_USAGE_BY_NAMESPACE_QUERY,
+                all_query=MEMORY_USAGE_QUERY,
+                namespace_query=MEMORY_USAGE_BY_NAMESPACE_QUERY,
             ),
-            capacity_query=queries.MEMORY_WORKER_CAPACITY_QUERY,
+            capacity_query=MEMORY_WORKER_CAPACITY_QUERY,
         ),
         ForecastResourceDefinition(
             key='storage',
@@ -673,13 +686,13 @@ def _get_resource_definitions(
             description='Projected PVC storage growth compared with PVC capacity.',
             usage_query=_render_namespace_query(
                 namespace=namespace,
-                all_query=queries.STORAGE_USAGE_QUERY,
-                namespace_query=queries.STORAGE_USAGE_BY_NAMESPACE_QUERY,
+                all_query=STORAGE_USAGE_QUERY,
+                namespace_query=STORAGE_USAGE_BY_NAMESPACE_QUERY,
             ),
             capacity_query=_render_namespace_query(
                 namespace=namespace,
-                all_query=queries.STORAGE_CAPACITY_QUERY,
-                namespace_query=queries.STORAGE_CAPACITY_BY_NAMESPACE_QUERY,
+                all_query=STORAGE_CAPACITY_QUERY,
+                namespace_query=STORAGE_CAPACITY_BY_NAMESPACE_QUERY,
             ),
         ),
         ForecastResourceDefinition(
@@ -690,10 +703,10 @@ def _get_resource_definitions(
             description='Projected running pod growth compared with worker-node pod capacity.',
             usage_query=_render_namespace_query(
                 namespace=namespace,
-                all_query=queries.POD_USAGE_QUERY,
-                namespace_query=queries.POD_USAGE_BY_NAMESPACE_QUERY,
+                all_query=POD_USAGE_QUERY,
+                namespace_query=POD_USAGE_BY_NAMESPACE_QUERY,
             ),
-            capacity_query=queries.POD_WORKER_CAPACITY_QUERY,
+            capacity_query=POD_WORKER_CAPACITY_QUERY,
         ),
     ]
 
@@ -1496,7 +1509,6 @@ def _empty_payload(
         'actionable_recommendations': [],
         'recommendation_cards': [],
         'recommendation_count': 0,
-        'recommendations': [],
     }
 
 

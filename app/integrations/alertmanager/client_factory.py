@@ -4,10 +4,9 @@ from app.integrations.alertmanager.client import AlertmanagerClient
 from app.integrations.alertmanager.contracts import AlertmanagerConnectionSpec
 from app.models.alertmanager import AlertmanagerInstance
 
-AlertmanagerConnectionSource = AlertmanagerInstance
 
 
-def connection_spec(source: AlertmanagerConnectionSource) -> AlertmanagerConnectionSpec:
+def connection_spec(source: AlertmanagerInstance) -> AlertmanagerConnectionSpec:
     return AlertmanagerConnectionSpec(
         endpoint=source.endpoint,
         auth_type=source.auth_type,
@@ -19,7 +18,7 @@ def connection_spec(source: AlertmanagerConnectionSource) -> AlertmanagerConnect
     )
 
 
-def build_client(source: AlertmanagerConnectionSource) -> AlertmanagerClient:
+def build_client(source: AlertmanagerInstance) -> AlertmanagerClient:
     spec = connection_spec(source)
     return AlertmanagerClient(
         endpoint=spec.endpoint,

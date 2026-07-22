@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.integrations.consumer import ConsumerDiagnostic, ConsumerResult, ConsumerSource
+from app.integrations.consumer.contracts import ConsumerDiagnostic, ConsumerResult, ConsumerSource
 from app.integrations.registry import get_integration
 from app.models import Cluster
 from app.integrations.prometheus.exceptions import PrometheusError
@@ -13,11 +13,11 @@ DEFAULT_RANGE_CAPABILITIES = ('range_query',)
 
 
 class PrometheusConsumer:
-    """Canonical read facade for Prometheus-compatible query endpoints.
+    """Canonical read boundary for Prometheus-compatible query endpoints.
 
-    Analytics code must use this facade, or the compatibility ``PrometheusService``
-    wrapper that delegates to it. Validation and configuration workflows continue to
-    use the provider service directly.
+    Analytics query paths use this consumer directly or through the canonical
+    ``PrometheusService`` domain service. Validation and configuration workflows use
+    the provider lifecycle service because they own persistence and evidence updates.
     """
 
     def __init__(self, cluster: Cluster) -> None:
@@ -254,10 +254,6 @@ class PrometheusConsumer:
         for capability in required:
             status = assessments.get(capability)
             if capability in available or status == 'available':
-                continue
-            # Old/migrated configurations may not have a capability snapshot yet.
-            # Readiness remains the compatibility gate until full validation is rerun.
-            if status is None and not capability_data:
                 continue
             missing.append(capability)
         return tuple(missing)

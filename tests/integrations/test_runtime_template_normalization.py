@@ -3,10 +3,9 @@ from __future__ import annotations
 from pathlib import Path
 
 RUNTIME_TEMPLATES = (
+    'app/templates/integrations/partials/_runtime_history.html',
     'app/templates/alertmanager/partials/_runtime_panel.html',
-    'app/templates/alertmanager/partials/_runtime_history.html',
     'app/templates/prometheus/partials/_runtime_panel.html',
-    'app/templates/prometheus/partials/_runtime_history.html',
 )
 
 

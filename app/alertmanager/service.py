@@ -444,15 +444,6 @@ def get_alertmanager_bindings(instance_id: int) -> list[IntegrationBinding]:
     return list_bindings_for_instance(instance_id)
 
 
-def materialize_legacy_cluster_config(cluster_id: str) -> AlertmanagerInstance | None:
-    """Compatibility route helper backed only by canonical bindings.
-
-    The historical name is retained until cluster-centric URLs are removed. It no
-    longer reads or materializes AlertmanagerConfig records.
-    """
-    sources = resolve_sources(scope_type=KUBERNETES_CLUSTER_SCOPE, scope_key=cluster_id)
-    return sources[0] if sources else None
-
 
 def build_alertmanager_client(config: AlertmanagerInstance):
     return get_integration('alertmanager').execute('client.build', config)

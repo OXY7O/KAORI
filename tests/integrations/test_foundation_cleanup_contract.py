@@ -7,7 +7,7 @@ def read(path: str) -> str:
     return (ROOT / path).read_text(encoding='utf-8')
 
 
-def test_legacy_integration_http_facade_is_removed() -> None:
+def test_retired_integration_http_facade_is_removed() -> None:
     assert not (ROOT / 'app/integrations/legacy_routes.py').exists()
     application = read('app/__init__.py')
     assert 'legacy_integrations_bp' not in application

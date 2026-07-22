@@ -35,7 +35,6 @@ class TestingConfig(Config):
         ),
     )
 
-    REPORT_STORAGE_ROOT_DIR = REPORT_LOCAL_STORAGE_DIR
 
     REPORT_RENDER_STAGING_DIR = os.getenv(
         'TEST_REPORT_RENDER_STAGING_DIR',

@@ -23,7 +23,11 @@ class Binding:
 def test_binding_requires_source_and_binding_readiness():
     assert resolve_binding_operational_status(
         source_readiness='ready', binding_validation='ready'
-    ) == {'status': 'ready', 'label': 'Ready'}
+    ) == {
+        'status': 'ready',
+        'label': 'Ready',
+        'message': 'Source readiness and binding validation are both Ready.',
+    }
     assert resolve_binding_operational_status(
         source_readiness='validation_required', binding_validation='ready'
     )['label'] == 'Source Validation Required'
@@ -36,11 +40,19 @@ def test_cluster_downstream_coverage_waits_for_kubernetes_api():
     result = resolve_cluster_coverage(
         kubernetes_readiness='validation_required', source=Source(), binding=Binding()
     )
-    assert result == {'status': 'validation_required', 'label': 'Waiting For Kubernetes'}
+    assert result == {
+        'status': 'validation_required',
+        'label': 'Kubernetes Validation Required',
+        'message': 'Run Kubernetes Full Validation before enabling downstream consumers.',
+    }
 
 
 def test_cluster_downstream_coverage_becomes_ready_after_all_gates():
     result = resolve_cluster_coverage(
         kubernetes_readiness='ready', source=Source(), binding=Binding()
     )
-    assert result == {'status': 'ready', 'label': 'Ready'}
+    assert result == {
+        'status': 'ready',
+        'label': 'Ready',
+        'message': 'Source readiness and binding validation are both Ready.',
+    }

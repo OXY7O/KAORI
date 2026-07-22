@@ -10,7 +10,7 @@ from app.common.integration_errors import describe_integration_failure
 from app.integrations.kubernetes.client import KubernetesClient
 from app.integrations.compatibility import evaluate_compatibility, kubernetes_lifecycle
 from app.integrations.kubernetes.compatibility import KubernetesDiscovery
-from app.integrations.kubernetes.tls import legacy_tls_context
+from app.integrations.kubernetes.tls import weak_tls_context
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ def test_cluster_runtime_health(
     runtime monitoring does not rebuild the full capability contract.
     """
     try:
-        with legacy_tls_context(enabled=allow_weak_tls):
+        with weak_tls_context(enabled=allow_weak_tls):
             client_factory = KubernetesClient(
                 kubeconfig_content=kubeconfig_content,
                 verify_ssl=verify_ssl,
@@ -91,7 +91,7 @@ def test_cluster_connection(
     allow_weak_tls: bool = False,
 ) -> dict[str, Any]:
     try:
-        with legacy_tls_context(
+        with weak_tls_context(
             enabled=allow_weak_tls,
         ):
             client_factory = KubernetesClient(

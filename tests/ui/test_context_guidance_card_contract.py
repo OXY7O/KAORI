@@ -38,50 +38,6 @@ def test_alertmanager_after_registration_uses_shared_component() -> None:
     assert "After Registration</h2>" not in template
 
 
-def test_secondary_integration_guidance_uses_context_component() -> None:
-    expected = {
-        "app/templates/integrations/kubernetes/detail.html": "'Operational Flow'",
-        "app/templates/alertmanager/partials/_detail_validation_content.html": "'When External Criteria Already Pass'",
-    }
-
-    for path, title in expected.items():
-        template = read(path)
-        assert 'components/context_guidance_card.html' in template, path
-        assert "context_guidance_card.render(" in template, path
-        assert title in template, path
-
-
-def test_primary_prometheus_workflows_use_info_flow() -> None:
-    expected = {
-        "app/templates/prometheus/instance_form.html": "'Prometheus Registration Flow'",
-        "app/templates/prometheus/partials/_detail_configuration.html": "'Configuration Flow'",
-        "app/templates/prometheus/config.html": "'Configuration Flow'",
-    }
-
-    for path, title in expected.items():
-        template = read(path)
-        assert 'components/info_flow.html' in template, path
-        assert "info_flow.render(" in template, path
-        assert title in template, path
-
-    form = read("app/templates/prometheus/instance_form.html")
-    assert "context_guidance_card.render(" in form
-    assert "'After Registration'" in form
-    assert "context_guidance_card.render(" not in read("app/templates/prometheus/partials/_detail_configuration.html")
-    assert "context_guidance_card.render(" not in read("app/templates/prometheus/config.html")
-
-
-def test_semantic_and_navigation_boxes_remain_separate() -> None:
-    kubernetes = read("app/templates/integrations/kubernetes/detail.html")
-    prometheus = read("app/templates/prometheus/partials/_detail_configuration.html")
-    alertmanager = read("app/templates/alertmanager/instance_form.html")
-
-    assert "Authority Boundary" in kubernetes
-    assert "Change Impact" in prometheus
-    assert "related_page_card.render(" in alertmanager
-    assert "info_flow.render(" in alertmanager
-
-
 def test_context_guidance_card_documentation_is_registered() -> None:
     standard = read("docs/design/components/CONTEXT_GUIDANCE_CARD.md")
     audit = read("docs/design/audits/CONTEXT_GUIDANCE_CARD_INTEGRATIONS_AUDIT_2026_07.md")

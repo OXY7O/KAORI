@@ -36,7 +36,7 @@ class Report(db.Model):
     report_domain: Mapped[str] = mapped_column(
         db.String(50),
         nullable=False,
-        default='kubereport',
+        default='kubernetes',
         index=True,
     )
 
@@ -194,7 +194,7 @@ class ReportTemplate(db.Model):
     report_domain: Mapped[str] = mapped_column(
         db.String(50),
         nullable=False,
-        default='kubereport',
+        default='kubernetes',
         index=True,
     )
 
@@ -318,7 +318,7 @@ class ReportSchedule(db.Model):
     report_domain: Mapped[str] = mapped_column(
         db.String(50),
         nullable=False,
-        default='kubereport',
+        default='kubernetes',
         index=True,
     )
 

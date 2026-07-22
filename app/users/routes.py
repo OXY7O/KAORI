@@ -26,7 +26,7 @@ from app.users.forms import (
     UserForm,
 )
 from app.users.notifications import user_management_feedback
-from app.users.providers import ExternalIdentity, ExternalProviderError, LdapDirectoryProvider
+from app.users.providers.ldap import ExternalIdentity, ExternalProviderError, LdapDirectoryProvider
 from app.users.service import (
     assign_user_form_choices,
     build_user_identity_context,

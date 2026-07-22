@@ -31,39 +31,9 @@ def test_shared_source_isolation_is_applied_at_consumer_boundaries() -> None:
     assert 'selector_filters(candidate.binding.selector_json)' in alertmanager_consumer
 
 
-def test_binding_validation_routes_enqueue_dedicated_worker_jobs() -> None:
-    prom_routes = read('app/prometheus/routes.py')
-    alert_routes = read('app/alertmanager/routes.py')
-    tasks = read('app/integrations/validation/tasks.py')
-    prom_scope = read('app/templates/prometheus/partials/_detail_scope.html')
-    alert_scope = read('app/templates/alertmanager/partials/_detail_scope.html')
-
-    assert 'def validate_instance_binding(' in prom_routes
-    assert "enqueue_binding_validation(\n            provider_type='prometheus'" in prom_routes
-    assert 'def validate_binding(instance_id: int, binding_id: int)' in alert_routes
-    assert "enqueue_binding_validation(\n            provider_type='alertmanager'" in alert_routes
-    assert 'validate_prometheus_binding(instance=instance, binding=binding)' in tasks
-    assert 'validate_alertmanager_binding(instance=instance, binding=binding)' in tasks
-    assert "url_for('prometheus.validate_instance_binding'" in prom_scope
-    assert "url_for('alertmanager.validate_binding'" in alert_scope
-    assert 'hx-trigger="load delay:1500ms"' in prom_scope
-    assert 'hx-trigger="load delay:1500ms"' in alert_scope
-
-
 def test_legacy_negative_coverage_templates_are_removed() -> None:
     assert not (ROOT / 'app/templates/components/uncovered_operational_scopes.html').exists()
     assert not (ROOT / 'app/templates/integrations/partials/_table.html').exists()
-
-
-def test_binding_validation_is_an_operational_resolution_gate() -> None:
-    prom_resolver = read('app/prometheus/resolver.py')
-    alert_resolver = read('app/alertmanager/resolver.py')
-
-    for resolver in (prom_resolver, alert_resolver):
-        assert "_ELIGIBLE_BINDING_VALIDATION" in resolver
-        assert "{'ready', 'legacy_unscoped'}" in resolver
-        assert 'binding_validation_eligible' in resolver
-        assert 'Validate the scope selector before operational use.' in resolver
 
 
 def test_binding_workspace_blocks_provider_sources_with_blocked_readiness() -> None:
@@ -82,17 +52,17 @@ def test_alertmanager_bindings_advertise_the_v2_capabilities_consumers_request()
         assert f"'{capability}'" in bindings
 
 
-def test_legacy_unscoped_source_cannot_be_shared_until_selector_replacement() -> None:
+def test_transitional_unscoped_status_is_removed_from_runtime_contract() -> None:
     coverage = read('app/integrations/coverage.py')
-    migration = read('migrations/versions/20260720_binding_selectors.py')
+    migration = read('migrations/versions/20260722_foundation_compatibility_cleanup.py')
+    resolvers = read('app/prometheus/resolver.py') + read('app/alertmanager/resolver.py')
 
-    assert 'unscoped_counts' in coverage
-    assert 'legacy_unscoped_count == 0' in coverage
-    assert 'Replace existing legacy unscoped bindings' in coverage
-    assert "validation_status = 'legacy_unscoped'" in migration
+    assert 'legacy_unscoped' not in coverage
+    assert "validation_status == 'legacy_unscoped'" in migration
+    assert 'legacy_unscoped' not in resolvers
+    assert "validation_status='validation_required'" in migration
 
-
-def test_legacy_binding_selector_can_be_configured_in_place_for_both_providers() -> None:
+def test_binding_selector_can_be_reconfigured_in_place_for_both_providers() -> None:
     prom_routes = read('app/prometheus/routes.py')
     alert_routes = read('app/alertmanager/routes.py')
     prom_service = read('app/prometheus/service.py')

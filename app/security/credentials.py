@@ -21,20 +21,15 @@ def _configured_secrets() -> tuple[str, ...]:
     if has_app_context():
         configured = str(current_app.config.get('INTEGRATION_CREDENTIAL_KEY') or '').strip()
         previous_raw = str(current_app.config.get('INTEGRATION_CREDENTIAL_PREVIOUS_KEYS') or '')
-        fallback = str(current_app.config.get('SECRET_KEY') or '').strip()
     else:
         configured = (os.getenv('INTEGRATION_CREDENTIAL_KEY') or '').strip()
         previous_raw = os.getenv('INTEGRATION_CREDENTIAL_PREVIOUS_KEYS') or ''
-        fallback = (os.getenv('SECRET_KEY') or '').strip()
 
-    # Production validation requires a dedicated key. SECRET_KEY fallback is
-    # retained only for local/test bootstrapping and must not be used for a
-    # production deployment or credential migration.
-    current = configured or fallback
-    if not current:
+    if not configured:
         raise CredentialEncryptionError(
-            'INTEGRATION_CREDENTIAL_KEY is not configured and SECRET_KEY is unavailable.'
+            'INTEGRATION_CREDENTIAL_KEY is required for integration credentials.'
         )
+    current = configured
     previous = tuple(value.strip() for value in previous_raw.split(',') if value.strip())
     return tuple(dict.fromkeys((current, *previous)))
 
@@ -65,10 +60,11 @@ def encrypt_credential(value: str | None) -> str | None:
 def decrypt_credential(value: str | None) -> str | None:
     if value is None or value == '':
         return value
-    # Compatibility is read-only: plaintext rows from pre-cutover databases can
-    # still boot long enough for the destructive migration to encrypt them.
     if not value.startswith(_PREFIX):
-        return value
+        raise CredentialEncryptionError(
+            'Stored integration credential is not encrypted with the canonical enc:v1 format. '
+            'Run the integration-domain migration or restore a valid database backup.'
+        )
     token = value[len(_PREFIX):]
     last_error: InvalidToken | None = None
     for secret in _configured_secrets():

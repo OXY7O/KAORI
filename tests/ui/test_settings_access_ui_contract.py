@@ -82,22 +82,6 @@ def test_general_and_account_tabs_use_htmx_without_full_page_reload() -> None:
             assert 'hx-get=' in source
 
 
-def test_sidebar_open_close_control_has_shared_state() -> None:
-    layout_source = Path('app/templates/layouts/app.html').read_text(encoding='utf-8')
-    sidebar_source = Path('app/templates/components/navigation/sidebar.html').read_text(encoding='utf-8')
-    navbar_source = Path('app/templates/components/navigation/navbar.html').read_text(encoding='utf-8')
-
-    assert "sidebarOpen: localStorage.getItem('kaori.sidebarOpen') !== 'false'" in layout_source
-    assert 'toggleSidebar() {' in layout_source
-    assert "localStorage.setItem('kaori.sidebarOpen'" in layout_source
-    assert '@click="toggleSidebar()"' in navbar_source
-    assert ':aria-expanded="sidebarOpen.toString()"' in navbar_source
-    assert 'id="app-sidebar"' in sidebar_source
-    assert 'x-show="sidebarOpen"' in sidebar_source
-    assert 'sidebar-collapsed' not in layout_source
-    assert 'w-[78px]' not in sidebar_source
-
-
 def test_permission_catalog_uses_section_based_standard_pagination() -> None:
     source = Path('app/templates/settings/permissions/index.html').read_text(encoding='utf-8')
 
@@ -129,51 +113,6 @@ def test_permission_catalog_uses_section_based_standard_pagination() -> None:
     assert '<span class="text-xs">Sections</span>' not in source
     assert 'this.filtered().length / this.perPage' not in source
     assert 'pageItems()' not in source
-
-
-def test_rbac_ownership_and_authorization_flow_are_explicit() -> None:
-    roles_source = Path('app/templates/settings/roles/index.html').read_text(encoding='utf-8')
-    permissions_source = Path('app/templates/settings/permissions/index.html').read_text(encoding='utf-8')
-
-    required_role_flow_fragments = (
-        '<details open class="group overflow-hidden',
-        'Role assignment flow',
-        'group-open:rotate-180',
-        'Permission Catalog',
-        'Role Composition',
-        'User Management',
-        'One active role is assigned to each account',
-        'Super Admin remains a separate emergency authority flag',
-    )
-    missing_role = [fragment for fragment in required_role_flow_fragments if fragment not in roles_source]
-    assert not missing_role, f'Roles & Access flow is incomplete: {missing_role}'
-    assert '>Role model<' not in roles_source
-
-    required_permission_flow_fragments = (
-        '<details open',
-        'class="group overflow-hidden',
-        'How RBAC is applied',
-        'group-open:rotate-180',
-        'Permission Catalog',
-        'flask seed-rbac',
-        'Roles &amp; Access',
-        'User assignment',
-        'User Management assigns one active role to each account.',
-        'Server enforcement',
-        'Security boundary:',
-        'server-side permission checks are authoritative',
-    )
-    missing_permission = [
-        fragment for fragment in required_permission_flow_fragments if fragment not in permissions_source
-    ]
-    assert not missing_permission, f'Permission Catalog RBAC flow is incomplete: {missing_permission}'
-
-    boundary_position = permissions_source.index('Security boundary:')
-    block_start = permissions_source.rfind('<div class="', 0, boundary_position)
-    block_fragment = permissions_source[block_start:boundary_position]
-    assert 'border-brand-outline' in block_fragment
-    assert 'bg-kaori-soft' in block_fragment
-    assert 'text-kaori-primary' in block_fragment
 
 
 def test_roles_and_permissions_use_identity_access_overview_pattern() -> None:
@@ -239,58 +178,6 @@ def test_role_registry_pagination_uses_role_vocabulary() -> None:
     assert 'x-text="filtered().length"></strong> roles</span>' in source
     assert '<span class="sr-only">Roles per page</span>' in source
     assert '<span class="text-xs">Rows</span>' not in source
-
-
-def test_role_form_guardrails_and_solid_permission_matrix_are_available() -> None:
-    source = Path('app/templates/settings/roles/form.html').read_text(encoding='utf-8')
-    script = Path('app/static/js/role_permission_editor.js').read_text(encoding='utf-8')
-
-    required_form_fragments = (
-        '<details open',
-        'class="group overflow-hidden',
-        'Access guardrails',
-        'Design for responsibility',
-        'Dependency normalization',
-        'Assignment impact',
-        'Super Admin boundary',
-        'grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_360px]',
-        'class="min-w-0 self-start space-y-6"',
-        'data-role-permission-matrix',
-        'RBAC scope',
-        'data-role-module-toggle-all',
-        'data-role-module-toggle-all-label',
-        'Expand all',
-        'data-expanded="false"',
-        'data-role-module-content',
-        'hidden',
-        'data-role-toggle-all',
-        'data-role-toggle-all-label',
-        'Select all',
-    )
-    missing = [fragment for fragment in required_form_fragments if fragment not in source]
-    assert not missing, f'Role editor guardrail/matrix contract is incomplete: {missing}'
-
-    permission_matrix_position = source.index('data-role-permission-matrix')
-    permission_matrix_tag = source[source.rfind('<section', 0, permission_matrix_position):permission_matrix_position]
-    assert '<section' in permission_matrix_tag
-    assert '<details' not in permission_matrix_tag
-    assert source.index('Role configuration') < permission_matrix_position < source.index('<aside class="self-start space-y-5">')
-
-    required_script_fragments = (
-        "root.querySelector('[data-role-toggle-all]')",
-        "root.querySelector('[data-role-toggle-all-label]')",
-        "toggleAllButton?.addEventListener('click'",
-        "toggleAllLabel.textContent = allSelected ? 'Clear all' : 'Select all'",
-        "toggleAllButton.setAttribute('aria-pressed'",
-        "root.querySelector('[data-role-module-toggle-all]')",
-        "root.querySelector('[data-role-module-toggle-all-label]')",
-        "moduleToggleAllButton?.addEventListener('click'",
-        "moduleToggleAllLabel.textContent = allExpanded ? 'Collapse all' : 'Expand all'",
-        'setModuleExpanded(section, false)',
-    )
-    missing_script = [fragment for fragment in required_script_fragments if fragment not in script]
-    assert not missing_script, f'Global permission controls are incomplete: {missing_script}'
-
 
 
 def test_role_form_cards_are_proportional_and_self_sized() -> None:

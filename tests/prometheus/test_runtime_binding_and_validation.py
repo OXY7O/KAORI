@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 from pathlib import Path
 
-from app.integrations.runtime.contracts import CapabilitySnapshot, HealthState, RuntimeState
+from app.integrations.contracts import CapabilitySnapshot, HealthState, RuntimeState
 from app.integrations.runtime.presentation import runtime_state_view
 
 

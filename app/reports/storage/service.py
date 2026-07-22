@@ -10,7 +10,7 @@ from sqlalchemy import select
 
 from app.extensions import db
 from app.models.report import Report
-from app.reports.storage.base import ReportStorageBackend, StoredReportFile
+from app.storage.base import ArtifactStorageBackend, StoredArtifact
 from app.reports.storage.health import (
     build_local_storage_health,
     build_s3_storage_health,
@@ -50,7 +50,7 @@ def get_configured_storage_backend_name() -> str:
     return backend_name
 
 
-def get_active_report_storage_backend() -> ReportStorageBackend:
+def get_active_report_storage_backend() -> ArtifactStorageBackend:
     return build_report_storage_backend(
         get_configured_storage_backend_name(),
     )
@@ -58,15 +58,10 @@ def get_active_report_storage_backend() -> ReportStorageBackend:
 
 def get_report_storage_backend_for_uri(
     stored_path: str,
-) -> ReportStorageBackend:
+) -> ArtifactStorageBackend:
     backend_name, _object_key = parse_report_storage_uri(
         stored_path,
     )
-
-    if backend_name == 'legacy-local':
-        return build_report_storage_backend(
-            'local',
-        )
 
     return build_report_storage_backend(
         backend_name,
@@ -75,7 +70,7 @@ def get_report_storage_backend_for_uri(
 
 def build_report_storage_backend(
     backend_name: str,
-) -> ReportStorageBackend:
+) -> ArtifactStorageBackend:
     normalized_backend = backend_name.lower().strip()
 
     if normalized_backend == 'local':
@@ -92,7 +87,7 @@ def build_report_storage_backend(
 def save_report_file(
     source_path: Path,
     object_key: str,
-) -> StoredReportFile:
+) -> StoredArtifact:
     backend = get_active_report_storage_backend()
 
     return backend.save_file(
@@ -107,11 +102,6 @@ def build_report_download_path(
     backend_name, object_key = parse_report_storage_uri(
         stored_path,
     )
-
-    if backend_name == 'legacy-local':
-        return Path(
-            object_key,
-        )
 
     backend = build_report_storage_backend(
         backend_name,
@@ -128,11 +118,6 @@ def report_file_exists(
     backend_name, object_key = parse_report_storage_uri(
         stored_path,
     )
-
-    if backend_name == 'legacy-local':
-        return Path(
-            object_key,
-        ).exists()
 
     backend = build_report_storage_backend(
         backend_name,
@@ -152,7 +137,9 @@ def parse_report_storage_uri(
         )
 
     if ':' not in stored_path:
-        return 'legacy-local', stored_path
+        raise ValueError(
+            'Report storage URI must use the local:<object_key> or s3:<object_key> format.',
+        )
 
     backend_name, object_key = stored_path.split(
         ':',
@@ -162,7 +149,9 @@ def parse_report_storage_uri(
     object_key = object_key.strip().lstrip('/')
 
     if backend_name not in SUPPORTED_REPORT_STORAGE_BACKENDS:
-        return 'legacy-local', stored_path
+        raise ValueError(
+            f'Unsupported report storage backend: {backend_name}. Supported backends: local, s3.',
+        )
 
     if not object_key:
         raise ValueError(
@@ -300,13 +289,6 @@ def build_storage_lifecycle_summary(
             else 'S3-compatible storage requires bucket configuration and boto3 availability before it can be trusted.'
         )
 
-    legacy_reports = int(
-        artifact_summary.get(
-            'legacy_reports',
-            0,
-        )
-        or 0
-    )
     reports_with_files = int(
         artifact_summary.get(
             'reports_with_files',
@@ -328,14 +310,6 @@ def build_storage_lifecycle_summary(
         description = backend_description
         icon = 'circle-alert'
         class_name = 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'
-    elif legacy_reports > 0:
-        level = 'review'
-        label = 'Storage lifecycle needs review'
-        description = (
-            'Generated report storage is active, but legacy file path records still exist and should be reviewed.'
-        )
-        icon = 'route'
-        class_name = 'bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300'
     else:
         level = 'healthy'
         label = 'Storage lifecycle healthy'
@@ -356,7 +330,7 @@ def build_storage_lifecycle_summary(
                 reports_with_files,
             ),
             'status': 'pass' if reports_with_files > 0 else 'info',
-            'description': 'Generated report records with a storage URI or legacy path.',
+            'description': 'Generated report records with a canonical storage URI.',
         },
         {
             'label': 'Ready reports',
@@ -365,14 +339,6 @@ def build_storage_lifecycle_summary(
             ),
             'status': 'pass' if ready_reports > 0 else 'info',
             'description': 'Reports marked ready in the database.',
-        },
-        {
-            'label': 'Legacy paths',
-            'value': str(
-                legacy_reports,
-            ),
-            'status': 'warning' if legacy_reports > 0 else 'pass',
-            'description': 'Legacy file_path records without local:/s3: storage prefix.',
         },
         {
             'label': 'Cleanup mode',
@@ -482,7 +448,7 @@ def verify_active_report_storage() -> dict[str, Any]:
     ):
         backend.test_connection()  # type: ignore[attr-defined]
 
-    test_key = 'reports/storage-verification/kubereport-storage-check.txt'
+    test_key = 'reports/storage-verification/kaori-report-storage-check.txt'
 
     with NamedTemporaryFile(
         mode='w',
@@ -491,7 +457,7 @@ def verify_active_report_storage() -> dict[str, Any]:
         delete=False,
     ) as temp_file:
         temp_file.write(
-            'kubereport report storage verification\n',
+            'kaori report storage verification\n',
         )
         temp_path = Path(
             temp_file.name,
@@ -557,7 +523,6 @@ def scan_report_storage_integrity(
     backend_counts: dict[str, int] = {
         'local': 0,
         's3': 0,
-        'legacy-local': 0,
         'unknown': 0,
     }
     missing_samples: list[dict[str, str]] = []
@@ -717,7 +682,6 @@ def build_report_cleanup_dry_run(
     backend_counts: dict[str, int] = {
         'local': 0,
         's3': 0,
-        'legacy-local': 0,
         'unknown': 0,
     }
     sample_candidates: list[dict[str, str]] = []

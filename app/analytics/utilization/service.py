@@ -4,11 +4,55 @@ from datetime import UTC, datetime, timedelta
 from time import perf_counter
 from typing import Any
 
-from app.analytics.utilization import queries
+from app.integrations.prometheus.query_profiles import get_query_expression
 from app.models import Cluster
 from app.prometheus.repository import resolve_instance_for_cluster
 from app.prometheus.service import PrometheusService
 
+
+CPU_CAPACITY = get_query_expression('analytics.utilization.queries.CPU_CAPACITY')
+CPU_CAPACITY_BY_NODE = get_query_expression('analytics.utilization.queries.CPU_CAPACITY_BY_NODE')
+CPU_USAGE = get_query_expression('analytics.utilization.queries.CPU_USAGE')
+CPU_USAGE_BY_NODE = get_query_expression('analytics.utilization.queries.CPU_USAGE_BY_NODE')
+CPU_UTILIZATION = get_query_expression('analytics.utilization.queries.CPU_UTILIZATION')
+CPU_UTILIZATION_BY_NODE = get_query_expression('analytics.utilization.queries.CPU_UTILIZATION_BY_NODE')
+DISK_PRESSURE_NODES = get_query_expression('analytics.utilization.queries.DISK_PRESSURE_NODES')
+DISK_PRESSURE_NODES_BY_NODE = get_query_expression('analytics.utilization.queries.DISK_PRESSURE_NODES_BY_NODE')
+KUBERNETES_VERSION = get_query_expression('analytics.utilization.queries.KUBERNETES_VERSION')
+MASTER_NODES = get_query_expression('analytics.utilization.queries.MASTER_NODES')
+MEMORY_CAPACITY = get_query_expression('analytics.utilization.queries.MEMORY_CAPACITY')
+MEMORY_CAPACITY_BY_NODE = get_query_expression('analytics.utilization.queries.MEMORY_CAPACITY_BY_NODE')
+MEMORY_PRESSURE_NODES = get_query_expression('analytics.utilization.queries.MEMORY_PRESSURE_NODES')
+MEMORY_PRESSURE_NODES_BY_NODE = get_query_expression('analytics.utilization.queries.MEMORY_PRESSURE_NODES_BY_NODE')
+MEMORY_USAGE = get_query_expression('analytics.utilization.queries.MEMORY_USAGE')
+MEMORY_USAGE_BY_NODE = get_query_expression('analytics.utilization.queries.MEMORY_USAGE_BY_NODE')
+MEMORY_UTILIZATION = get_query_expression('analytics.utilization.queries.MEMORY_UTILIZATION')
+MEMORY_UTILIZATION_BY_NODE = get_query_expression('analytics.utilization.queries.MEMORY_UTILIZATION_BY_NODE')
+NODE_LIST = get_query_expression('analytics.utilization.queries.NODE_LIST')
+NOT_READY_NODES = get_query_expression('analytics.utilization.queries.NOT_READY_NODES')
+PID_PRESSURE_NODES = get_query_expression('analytics.utilization.queries.PID_PRESSURE_NODES')
+PID_PRESSURE_NODES_BY_NODE = get_query_expression('analytics.utilization.queries.PID_PRESSURE_NODES_BY_NODE')
+POD_CAPACITY = get_query_expression('analytics.utilization.queries.POD_CAPACITY')
+POD_CAPACITY_BY_NODE = get_query_expression('analytics.utilization.queries.POD_CAPACITY_BY_NODE')
+POD_COUNT = get_query_expression('analytics.utilization.queries.POD_COUNT')
+POD_COUNT_BY_NODE = get_query_expression('analytics.utilization.queries.POD_COUNT_BY_NODE')
+POD_UTILIZATION = get_query_expression('analytics.utilization.queries.POD_UTILIZATION')
+POD_UTILIZATION_BY_NODE = get_query_expression('analytics.utilization.queries.POD_UTILIZATION_BY_NODE')
+PROMETHEUS_HEALTH = get_query_expression('analytics.utilization.queries.PROMETHEUS_HEALTH')
+READY_NODES = get_query_expression('analytics.utilization.queries.READY_NODES')
+STORAGE_AVAILABLE = get_query_expression('analytics.utilization.queries.STORAGE_AVAILABLE')
+STORAGE_AVAILABLE_BY_NODE = get_query_expression('analytics.utilization.queries.STORAGE_AVAILABLE_BY_NODE')
+STORAGE_CAPACITY = get_query_expression('analytics.utilization.queries.STORAGE_CAPACITY')
+STORAGE_CAPACITY_BY_NODE = get_query_expression('analytics.utilization.queries.STORAGE_CAPACITY_BY_NODE')
+STORAGE_USAGE = get_query_expression('analytics.utilization.queries.STORAGE_USAGE')
+STORAGE_USAGE_BY_NODE = get_query_expression('analytics.utilization.queries.STORAGE_USAGE_BY_NODE')
+STORAGE_UTILIZATION = get_query_expression('analytics.utilization.queries.STORAGE_UTILIZATION')
+STORAGE_UTILIZATION_BY_NODE = get_query_expression('analytics.utilization.queries.STORAGE_UTILIZATION_BY_NODE')
+TOP_CPU_CONSUMERS = get_query_expression('analytics.utilization.queries.TOP_CPU_CONSUMERS')
+TOP_MEMORY_CONSUMERS = get_query_expression('analytics.utilization.queries.TOP_MEMORY_CONSUMERS')
+TOTAL_NODES = get_query_expression('analytics.utilization.queries.TOTAL_NODES')
+WORKER_NODES = get_query_expression('analytics.utilization.queries.WORKER_NODES')
+WORKER_NODE_LIST = get_query_expression('analytics.utilization.queries.WORKER_NODE_LIST')
 
 def get_utilization_clusters() -> list[Cluster]:
     return Cluster.query.order_by(
@@ -77,7 +121,7 @@ class UtilizationService:
         start = perf_counter()
 
         self.consumer.query(
-            queries.PROMETHEUS_HEALTH,
+            PROMETHEUS_HEALTH,
             required_capabilities=self.REQUIRED_CAPABILITIES,
         )
 
@@ -269,11 +313,11 @@ class UtilizationService:
         self,
         node_name: str | None = None,
     ) -> float:
-        query = queries.CPU_CAPACITY
+        query = CPU_CAPACITY
 
         if node_name:
             query = self._format_node_query(
-                queries.CPU_CAPACITY_BY_NODE,
+                CPU_CAPACITY_BY_NODE,
                 node_name,
             )
 
@@ -285,11 +329,11 @@ class UtilizationService:
         self,
         node_name: str | None = None,
     ) -> float:
-        query = queries.CPU_USAGE
+        query = CPU_USAGE
 
         if node_name:
             query = self._format_node_query(
-                queries.CPU_USAGE_BY_NODE,
+                CPU_USAGE_BY_NODE,
                 node_name,
             )
 
@@ -301,11 +345,11 @@ class UtilizationService:
         self,
         node_name: str | None = None,
     ) -> float:
-        query = queries.CPU_UTILIZATION
+        query = CPU_UTILIZATION
 
         if node_name:
             query = self._format_node_query(
-                queries.CPU_UTILIZATION_BY_NODE,
+                CPU_UTILIZATION_BY_NODE,
                 node_name,
             )
 
@@ -317,11 +361,11 @@ class UtilizationService:
         self,
         node_name: str | None = None,
     ) -> float:
-        query = queries.MEMORY_CAPACITY
+        query = MEMORY_CAPACITY
 
         if node_name:
             query = self._format_node_query(
-                queries.MEMORY_CAPACITY_BY_NODE,
+                MEMORY_CAPACITY_BY_NODE,
                 node_name,
             )
 
@@ -333,11 +377,11 @@ class UtilizationService:
         self,
         node_name: str | None = None,
     ) -> float:
-        query = queries.MEMORY_USAGE
+        query = MEMORY_USAGE
 
         if node_name:
             query = self._format_node_query(
-                queries.MEMORY_USAGE_BY_NODE,
+                MEMORY_USAGE_BY_NODE,
                 node_name,
             )
 
@@ -349,11 +393,11 @@ class UtilizationService:
         self,
         node_name: str | None = None,
     ) -> float:
-        query = queries.MEMORY_UTILIZATION
+        query = MEMORY_UTILIZATION
 
         if node_name:
             query = self._format_node_query(
-                queries.MEMORY_UTILIZATION_BY_NODE,
+                MEMORY_UTILIZATION_BY_NODE,
                 node_name,
             )
 
@@ -365,11 +409,11 @@ class UtilizationService:
         self,
         node_name: str | None = None,
     ) -> float:
-        query = queries.STORAGE_CAPACITY
+        query = STORAGE_CAPACITY
 
         if node_name:
             query = self._format_node_query(
-                queries.STORAGE_CAPACITY_BY_NODE,
+                STORAGE_CAPACITY_BY_NODE,
                 node_name,
             )
 
@@ -381,11 +425,11 @@ class UtilizationService:
         self,
         node_name: str | None = None,
     ) -> float:
-        query = queries.STORAGE_AVAILABLE
+        query = STORAGE_AVAILABLE
 
         if node_name:
             query = self._format_node_query(
-                queries.STORAGE_AVAILABLE_BY_NODE,
+                STORAGE_AVAILABLE_BY_NODE,
                 node_name,
             )
 
@@ -397,11 +441,11 @@ class UtilizationService:
         self,
         node_name: str | None = None,
     ) -> float:
-        query = queries.STORAGE_USAGE
+        query = STORAGE_USAGE
 
         if node_name:
             query = self._format_node_query(
-                queries.STORAGE_USAGE_BY_NODE,
+                STORAGE_USAGE_BY_NODE,
                 node_name,
             )
 
@@ -413,11 +457,11 @@ class UtilizationService:
         self,
         node_name: str | None = None,
     ) -> float:
-        query = queries.STORAGE_UTILIZATION
+        query = STORAGE_UTILIZATION
 
         if node_name:
             query = self._format_node_query(
-                queries.STORAGE_UTILIZATION_BY_NODE,
+                STORAGE_UTILIZATION_BY_NODE,
                 node_name,
             )
 
@@ -429,11 +473,11 @@ class UtilizationService:
         self,
         node_name: str | None = None,
     ) -> int:
-        query = queries.POD_COUNT
+        query = POD_COUNT
 
         if node_name:
             query = self._format_node_query(
-                queries.POD_COUNT_BY_NODE,
+                POD_COUNT_BY_NODE,
                 node_name,
             )
 
@@ -447,11 +491,11 @@ class UtilizationService:
         self,
         node_name: str | None = None,
     ) -> int:
-        query = queries.POD_CAPACITY
+        query = POD_CAPACITY
 
         if node_name:
             query = self._format_node_query(
-                queries.POD_CAPACITY_BY_NODE,
+                POD_CAPACITY_BY_NODE,
                 node_name,
             )
 
@@ -465,11 +509,11 @@ class UtilizationService:
         self,
         node_name: str | None = None,
     ) -> float:
-        query = queries.POD_UTILIZATION
+        query = POD_UTILIZATION
 
         if node_name:
             query = self._format_node_query(
-                queries.POD_UTILIZATION_BY_NODE,
+                POD_UTILIZATION_BY_NODE,
                 node_name,
             )
 
@@ -482,7 +526,7 @@ class UtilizationService:
     ) -> int:
         return int(
             self._query_scalar(
-                queries.TOTAL_NODES,
+                TOTAL_NODES,
             )
         )
 
@@ -491,7 +535,7 @@ class UtilizationService:
     ) -> int:
         return int(
             self._query_scalar(
-                queries.READY_NODES,
+                READY_NODES,
             )
         )
 
@@ -500,7 +544,7 @@ class UtilizationService:
     ) -> int:
         return int(
             self._query_scalar(
-                queries.NOT_READY_NODES,
+                NOT_READY_NODES,
             )
         )
 
@@ -509,7 +553,7 @@ class UtilizationService:
     ) -> int:
         return int(
             self._query_scalar(
-                queries.MASTER_NODES,
+                MASTER_NODES,
             )
         )
 
@@ -518,7 +562,7 @@ class UtilizationService:
     ) -> int:
         return int(
             self._query_scalar(
-                queries.WORKER_NODES,
+                WORKER_NODES,
             )
         )
 
@@ -526,7 +570,7 @@ class UtilizationService:
         self,
     ) -> list[str]:
         response = self.consumer.query(
-            queries.NODE_LIST,
+            NODE_LIST,
             required_capabilities=self.REQUIRED_CAPABILITIES,
         )
 
@@ -539,7 +583,7 @@ class UtilizationService:
         self,
     ) -> list[str]:
         response = self.consumer.query(
-            queries.WORKER_NODE_LIST,
+            WORKER_NODE_LIST,
             required_capabilities=self.REQUIRED_CAPABILITIES,
         )
 
@@ -552,7 +596,7 @@ class UtilizationService:
         self,
     ) -> str:
         response = self.consumer.query(
-            queries.KUBERNETES_VERSION,
+            KUBERNETES_VERSION,
             required_capabilities=self.REQUIRED_CAPABILITIES,
         )
 
@@ -580,11 +624,11 @@ class UtilizationService:
         step: str = '5m',
         node_name: str | None = None,
     ) -> list[dict[str, float]]:
-        query = queries.CPU_UTILIZATION_HISTORY
+        query = CPU_UTILIZATION
 
         if node_name:
             query = self._format_node_query(
-                queries.CPU_UTILIZATION_HISTORY_BY_NODE,
+                CPU_UTILIZATION_BY_NODE,
                 node_name,
             )
 
@@ -600,11 +644,11 @@ class UtilizationService:
         step: str = '5m',
         node_name: str | None = None,
     ) -> list[dict[str, float]]:
-        query = queries.MEMORY_UTILIZATION_HISTORY
+        query = MEMORY_UTILIZATION
 
         if node_name:
             query = self._format_node_query(
-                queries.MEMORY_UTILIZATION_HISTORY_BY_NODE,
+                MEMORY_UTILIZATION_BY_NODE,
                 node_name,
             )
 
@@ -620,11 +664,11 @@ class UtilizationService:
         step: str = '5m',
         node_name: str | None = None,
     ) -> list[dict[str, float]]:
-        query = queries.POD_UTILIZATION_HISTORY
+        query = POD_UTILIZATION
 
         if node_name:
             query = self._format_node_query(
-                queries.POD_UTILIZATION_HISTORY_BY_NODE,
+                POD_UTILIZATION_BY_NODE,
                 node_name,
             )
 
@@ -795,11 +839,11 @@ class UtilizationService:
         self,
         node_name: str | None = None,
     ) -> int:
-        query = queries.MEMORY_PRESSURE_NODES
+        query = MEMORY_PRESSURE_NODES
 
         if node_name:
             query = self._format_node_query(
-                queries.MEMORY_PRESSURE_NODES_BY_NODE,
+                MEMORY_PRESSURE_NODES_BY_NODE,
                 node_name,
             )
 
@@ -813,11 +857,11 @@ class UtilizationService:
         self,
         node_name: str | None = None,
     ) -> int:
-        query = queries.DISK_PRESSURE_NODES
+        query = DISK_PRESSURE_NODES
 
         if node_name:
             query = self._format_node_query(
-                queries.DISK_PRESSURE_NODES_BY_NODE,
+                DISK_PRESSURE_NODES_BY_NODE,
                 node_name,
             )
 
@@ -831,11 +875,11 @@ class UtilizationService:
         self,
         node_name: str | None = None,
     ) -> int:
-        query = queries.PID_PRESSURE_NODES
+        query = PID_PRESSURE_NODES
 
         if node_name:
             query = self._format_node_query(
-                queries.PID_PRESSURE_NODES_BY_NODE,
+                PID_PRESSURE_NODES_BY_NODE,
                 node_name,
             )
 
@@ -997,7 +1041,7 @@ class UtilizationService:
         self,
     ) -> list[dict[str, str | float]]:
         response = self.prometheus.instant_query(
-            queries.TOP_CPU_CONSUMERS,
+            TOP_CPU_CONSUMERS,
         )
 
         return self._extract_consumers(
@@ -1008,7 +1052,7 @@ class UtilizationService:
         self,
     ) -> list[dict[str, str | float]]:
         response = self.prometheus.instant_query(
-            queries.TOP_MEMORY_CONSUMERS,
+            TOP_MEMORY_CONSUMERS,
         )
 
         return self._extract_consumers(

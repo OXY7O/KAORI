@@ -5,7 +5,7 @@ from pathlib import Path
 
 from flask import current_app
 
-from app.reports.storage.base import StoredReportFile
+from app.storage.base import StoredArtifact
 from app.storage.s3 import S3ArtifactStorage, normalize_optional_string, normalize_s3_prefix
 from app.storage.service import parse_bool_config, resolve_app_path
 
@@ -39,7 +39,7 @@ class S3ReportStorage(S3ArtifactStorage):
         *,
         content_type: str = 'application/pdf',
         metadata: Mapping[str, str] | None = None,
-    ) -> StoredReportFile:
+    ) -> StoredArtifact:
         report_metadata = {'artifact-kind': 'report', **dict(metadata or {})}
         return super().save_file(
             source_path,

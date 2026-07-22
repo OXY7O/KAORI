@@ -5,7 +5,7 @@ from typing import Any
 
 from app.common.presentation import present_count, present_key_label, present_milliseconds, present_user_datetime
 from app.integrations.compatibility import kubernetes_lifecycle_policy
-from app.integrations.runtime.contracts import RuntimeState
+from app.integrations.contracts import RuntimeState
 
 
 def runtime_state_view(
@@ -118,10 +118,13 @@ def runtime_history_view(rows, *, pagination: dict[str, object]) -> dict[str, ob
             'capability_profile': row.capability_profile,
             'capability_count': len(current_capabilities),
             'capability_count_display': present_count(len(current_capabilities), 'observed capability'),
-            'capabilities': sorted(current_capabilities),
+            'capabilities': [
+                {'key': capability, 'label': present_key_label(capability)}
+                for capability in sorted(current_capabilities)
+            ],
             'transition': transition,
-            'added_capabilities': added_capabilities,
-            'removed_capabilities': removed_capabilities,
+            'added_capabilities': [present_key_label(value) for value in added_capabilities],
+            'removed_capabilities': [present_key_label(value) for value in removed_capabilities],
             'capability_changed': bool(added_capabilities or removed_capabilities),
             'message': row.message,
             'diagnostics': diagnostics,

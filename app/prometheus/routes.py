@@ -89,19 +89,6 @@ def _render_instance_partial(
     return render_template(template_name, **context)
 
 
-def _optional_endpoint_url(endpoint: str, **values) -> str | None:
-    """Build a lifecycle URL only when the endpoint is registered.
-
-    Contextual workspaces must remain renderable even when a partial deployment
-    has not loaded an optional lifecycle route yet. The missing endpoint is
-    logged as a deployment inconsistency instead of raising BuildError in Jinja.
-    """
-    if endpoint not in current_app.view_functions:
-        logger.error('Prometheus endpoint %s is not registered.', endpoint)
-        return None
-    return url_for(endpoint, **values)
-
-
 def _instance_detail_context(
     instance: PrometheusInstance,
     *,
@@ -115,7 +102,7 @@ def _instance_detail_context(
     drift or render with missing route dependencies.
     """
     context = build_instance_context(instance, page=page, per_page=per_page)
-    context['delete_instance_url'] = _optional_endpoint_url(
+    context['delete_instance_url'] = url_for(
         'prometheus.delete_instance',
         instance_id=instance.id,
     )
@@ -493,19 +480,6 @@ def test_instance_configuration(instance_id: int) -> ResponseReturnValue:
         notification_context=get_navigation_notification_context(user_id=int(current_user.id)),
     )
 
-
-@prometheus_bp.get('/instances/<int:instance_id>/edit')
-@permission_required('settings.manage_integrations')
-def edit_instance(instance_id: int) -> ResponseReturnValue:
-    """Redirect legacy bookmarks to the canonical inline Configuration tab."""
-    instance = _instance_or_404(instance_id)
-    return redirect(url_for('prometheus.instance_detail', instance_id=instance.id) + '#configuration')
-
-@prometheus_bp.get('/instances')
-@permission_required('settings.manage_integrations')
-def instances() -> ResponseReturnValue:
-    """Redirect legacy registry bookmarks to the canonical provider landing."""
-    return redirect(url_for('integrations.prometheus'))
 
 
 @prometheus_bp.route('/instances/<int:instance_id>', methods=['GET', 'POST'])

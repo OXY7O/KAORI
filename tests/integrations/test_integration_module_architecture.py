@@ -26,9 +26,9 @@ def test_builtin_integrations_register_independent_modules() -> None:
 
 def test_provider_module_contract_files_and_readmes_exist() -> None:
     required = {
-        'kubernetes': {'adapter.py', 'client.py', 'capabilities.py', 'validation.py', 'discovery.py', 'inventory.py', 'actions.py', 'schemas.py', 'README.md'},
-        'prometheus': {'adapter.py', 'client.py', 'capabilities.py', 'validation.py', 'queries.py', 'evidence.py', 'schemas.py', 'README.md'},
-        'alertmanager': {'adapter.py', 'client.py', 'capabilities.py', 'validation.py', 'alerts.py', 'silences.py', 'schemas.py', 'README.md'},
+        'kubernetes': {'adapter.py', 'client.py', 'capabilities.py', 'validation.py', 'resolver.py', 'tls.py', 'README.md'},
+        'prometheus': {'adapter.py', 'client.py', 'capabilities.py', 'validation.py', 'README.md'},
+        'alertmanager': {'adapter.py', 'client.py', 'capabilities.py', 'validation.py', 'reader.py', 'README.md'},
     }
     for provider, files in required.items():
         root = ROOT / 'app/integrations' / provider
@@ -37,7 +37,7 @@ def test_provider_module_contract_files_and_readmes_exist() -> None:
 
 def test_domain_services_call_registry_instead_of_transport_facades() -> None:
     for path in (
-        'app/inventory/service.py',
+        'app/inventory/synchronization.py',
         'app/kubernetes_operations/configmaps/service.py',
         'app/kubernetes_operations/secrets/live_service.py',
         'app/governance/tls_certificates/collector.py',
@@ -52,7 +52,7 @@ def test_domain_services_call_registry_instead_of_transport_facades() -> None:
         assert 'AlertmanagerClient(' not in source, path
 
 
-def test_legacy_provider_http_facade_is_removed() -> None:
+def test_retired_provider_http_facade_is_removed() -> None:
     assert not (ROOT / 'app/integrations/legacy_routes.py').exists()
     assert 'legacy_integrations_bp' not in read('app/__init__.py')
 

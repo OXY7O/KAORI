@@ -7,18 +7,16 @@ from app.integrations.binding_selectors import selector_is_configured
 from app.integrations.resolver import resolve_integration
 from app.models.integration import IntegrationBinding
 from app.models.prometheus import PrometheusInstance
-from app.prometheus.binding_contract import effective_prometheus_binding_capabilities
 
 _ROLE_ORDER: Final[dict[str, int]] = {
     'primary': 0,
     'secondary': 1,
     'fallback': 2,
 }
-_BLOCKED_READINESS: Final[set[str]] = {'blocked', 'unavailable', 'disabled', 'incompatible'}
 _READY_READINESS: Final[set[str]] = {'ready'}
 _DEGRADED_READINESS: Final[set[str]] = {'degraded'}
 _FAILED_HEALTH: Final[set[str]] = {'disconnected', 'error', 'failed', 'incompatible', 'unhealthy'}
-_ELIGIBLE_BINDING_VALIDATION: Final[set[str]] = {'ready', 'legacy_unscoped'}
+_ELIGIBLE_BINDING_VALIDATION: Final[set[str]] = {'ready'}
 
 
 @dataclass(frozen=True, slots=True)
@@ -71,7 +69,7 @@ def resolve_prometheus_sources(
         ).first()
         if provider_instance is None:
             continue
-        effective_binding_scope = set(effective_prometheus_binding_capabilities(item.binding))
+        effective_binding_scope = set(item.binding.capability_scope or ())
         missing_binding_capabilities = tuple(
             sorted(set(required_binding_capabilities) - effective_binding_scope)
         )
@@ -116,11 +114,9 @@ def _evaluate_binding(
         capability_rank = 0
         technical_eligible = True
     elif not observed:
-        # Preserve migrated sources during the compatibility window while ranking
-        # positively validated sources first.
-        capability_state = 'unknown'
-        capability_rank = 1
-        technical_eligible = True
+        capability_state = 'validation_required'
+        capability_rank = 2
+        technical_eligible = False
     elif missing_technical:
         capability_state = 'missing_required'
         capability_rank = 2
@@ -139,7 +135,7 @@ def _evaluate_binding(
         and selector_eligible
         and binding_validation_eligible
     )
-    readiness_eligible = readiness not in _BLOCKED_READINESS
+    readiness_eligible = readiness in (_READY_READINESS | _DEGRADED_READINESS)
     eligible = bool(
         instance.enabled
         and binding.enabled
@@ -218,20 +214,18 @@ def _decision_reason(
         )
     if missing_binding:
         return f'Missing binding coverage: {", ".join(missing_binding)}.'
+    if capability_state == 'validation_required':
+        return 'Required technical capability evidence has not been recorded. Run Full Validation before operational use.'
     if capability_state == 'missing_required':
         return f'Missing validated technical capabilities: {", ".join(missing_technical)}.'
-    if readiness in _BLOCKED_READINESS:
-        return f'Readiness state {readiness or "unknown"} blocks source selection.'
+    if readiness not in (_READY_READINESS | _DEGRADED_READINESS):
+        return f'Readiness state {readiness or "validation_required"} blocks source selection. Run Full Validation.'
     if not eligible:
         return 'Source is not eligible for selection.'
-    if capability_state == 'unknown':
-        return 'Capability validation has not been observed; source remains available for compatibility but ranks below verified sources.'
     if health in _FAILED_HEALTH:
         return 'Source is eligible but currently unhealthy; a healthier bound source is preferred.'
     if readiness in _DEGRADED_READINESS:
         return 'Source is usable with degraded readiness.'
-    if readiness not in _READY_READINESS:
-        return 'Source is usable but requires validation; a validated source is preferred.'
     return 'Source satisfies readiness, runtime health, binding coverage, and technical capability requirements.'
 
 

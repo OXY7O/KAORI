@@ -1317,7 +1317,7 @@ def tls_secret_rotate_preview(certificate_id: int):
         record=record,
     )
     return render_template(
-        "governance/tls_certificates/partials/_update_preview.html",
+        "kubernetes_operations/secrets/_update_preview.html",
         record=record,
         payload=payload,
         operation_feedback=_notification_response_context(feedback),

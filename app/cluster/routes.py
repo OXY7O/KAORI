@@ -28,10 +28,8 @@ from app.cluster.individual_sync_state import (
     get_tracked_individual_sync_task_ids,
     is_individual_sync_result_dismissed,
 )
-from app.cluster.onboarding import has_registered_clusters
 from app.cluster.sync_jobs import enqueue_all_cluster_inventory_sync
 from app.cluster.service import (
-    build_cluster_context,
     create_cluster,
     delete_cluster,
     get_cluster_by_id,
@@ -62,27 +60,6 @@ cluster_bp = Blueprint(
 )
 
 
-def _build_cluster_context_from_request() -> dict:
-    return build_cluster_context(
-        page=request.args.get(
-            'page',
-            '1',
-        ),
-        per_page=request.args.get(
-            'per_page',
-            '5',
-        ),
-        search=request.args.get(
-            'search',
-            '',
-        ),
-        environment=request.args.get(
-            'environment',
-            'all',
-        ),
-    )
-
-
 def _render_operational_toast(
     feedback: dict,
     *,
@@ -95,27 +72,6 @@ def _render_operational_toast(
         notification_context=get_navigation_notification_context(
             user_id=current_user.id,
         ),
-    )
-
-
-@cluster_bp.route('/')
-@permission_required('clusters.view')
-def list_clusters() -> ResponseReturnValue:
-    # Compatibility route: Kubernetes lifecycle now lives under Integrations.
-    return redirect(url_for('integrations.kubernetes', **request.args))
-
-
-@cluster_bp.route('/table')
-@permission_required('clusters.view')
-def cluster_table() -> ResponseReturnValue:
-    if has_registered_clusters() is False:
-        return render_template(
-            'components/cluster/_onboarding_banner.html',
-        )
-
-    return render_template(
-        'cluster/partials/_table.html',
-        **_build_cluster_context_from_request(),
     )
 
 

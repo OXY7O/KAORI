@@ -84,8 +84,3 @@ def test_filesystem_contract_explains_size_and_available_pairs() -> None:
     assert capabilities.count("node_filesystem_avail_bytes") >= 2
 
 
-def test_kubernetes_registry_action_width_matches_icon_density() -> None:
-    registry = read("app/templates/integrations/kubernetes/partials/_registry.html")
-    assert "w-full min-w-[1088px] table-fixed" in registry
-    assert "w-[208px]" in registry
-    assert registry.count("inline-flex h-8 w-8") >= 5

@@ -167,22 +167,22 @@ def build_provider_coverage(
             continue
         readiness = (instance.readiness_status or 'validation_required').lower()
         canonical_id = instance.integration_instance_id or -1
-        legacy_unscoped_count = unscoped_counts.get(canonical_id, 0)
-        selectable = readiness not in blocked_readiness and legacy_unscoped_count == 0
+        unscoped_binding_count = unscoped_counts.get(canonical_id, 0)
+        selectable = readiness not in blocked_readiness and unscoped_binding_count == 0
         source_options.append({
             'id': instance.id,
             'name': instance.name,
             'readiness': readiness,
             'binding_count': sharing_counts.get(canonical_id, 0),
-            'unscoped_binding_count': legacy_unscoped_count,
+            'unscoped_binding_count': unscoped_binding_count,
             'endpoint_product': getattr(instance, 'endpoint_product', None) or meta['label'],
             'selectable': selectable,
             'selection_reason': (
                 'Available for binding; provider and binding validation still apply.'
                 if selectable
                 else (
-                    'Replace existing legacy unscoped bindings with validated selectors before sharing this source.'
-                    if legacy_unscoped_count
+                    'Configure and validate selectors on existing bindings before sharing this source.'
+                    if unscoped_binding_count
                     else f'Provider readiness {readiness.replace("_", " ")} blocks new bindings.'
                 )
             ),
@@ -328,7 +328,7 @@ def _coverage_status(
         return 'blocked', 'Binding Blocked', selected_binding.validation_message or 'The source binding failed scope validation.'
     if binding_status == 'degraded':
         return 'degraded', 'Binding Degraded', selected_binding.validation_message or 'The selector was accepted but did not return expected scope evidence.'
-    if binding_status in {'validation_required', 'legacy_unscoped'}:
+    if binding_status == 'validation_required':
         return 'validation_required', 'Binding Validation Required', selected_binding.validation_message or 'Validate the scope selector before operational use.'
     readiness = (selected_source.readiness_status or 'validation_required').lower()
     if readiness == 'ready':

@@ -53,7 +53,7 @@ The canonical UI is `/settings/data-lifecycle` with three workspaces:
 - Archive Storage
 - Execution History
 
-Legacy Activity Audit retention routes redirect to this workspace.
+No alternate Activity Audit retention route is registered; this workspace is the sole UI owner.
 
 CLI and worker triggers still call the same service:
 

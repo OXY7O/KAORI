@@ -1,4 +1,4 @@
-from app.integrations.runtime.contracts import HealthFactor
+from app.integrations.contracts import HealthFactor
 from app.integrations.runtime.scoring import calculate_health
 
 

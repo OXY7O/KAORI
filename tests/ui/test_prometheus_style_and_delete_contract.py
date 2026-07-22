@@ -5,9 +5,7 @@ ROUTES = Path('app/prometheus/routes.py')
 SERVICE = Path('app/prometheus/service.py')
 REPOSITORY = Path('app/prometheus/repository.py')
 DETAIL = Path('app/templates/prometheus/instance_detail.html')
-BINDINGS = Path('app/templates/prometheus/instances.html')
 FORM = Path('app/templates/prometheus/instance_form.html')
-CONFIG = Path('app/templates/prometheus/config.html')
 RUNTIME = Path('app/templates/prometheus/partials/_runtime_panel.html')
 CONFIG_DETAIL = Path('app/templates/prometheus/partials/_detail_configuration.html')
 VALIDATION_DETAIL = Path('app/templates/prometheus/partials/_detail_validation.html')
@@ -45,13 +43,14 @@ def test_prometheus_delete_action_is_contextual_and_blocked_by_bindings() -> Non
         'Instance Lifecycle &amp; Deletion',
         'data-prometheus-delete-button',
         'data-delete-url="{{ delete_instance_url }}"',
-        '{% if delete_instance_url %}',
         '{% if bindings or (deletion_guard and deletion_guard.blocked) %}disabled{% endif %}',
         'Governed Deletion Boundary',
         'Bindings and active provider jobs block deletion.',
     )
     missing = [fragment for fragment in required if fragment not in scope]
     assert not missing, f'Prometheus deletion workspace is incomplete: {missing}'
+    assert '{% if delete_instance_url %}' not in scope
+    assert 'Delete Unavailable' not in scope
 
 
 def test_prometheus_destructive_actions_use_shared_modal_not_browser_confirm() -> None:
@@ -74,12 +73,12 @@ def test_prometheus_destructive_actions_use_shared_modal_not_browser_confirm() -
     assert not missing, f'Prometheus delete modal is incomplete: {missing}'
     assert 'confirm(' not in all_prometheus_templates
     assert "{% include 'prometheus/partials/_delete_confirmation_modal.html' %}" in DETAIL.read_text(encoding='utf-8')
-    assert "{% include 'prometheus/partials/_delete_confirmation_modal.html' %}" in BINDINGS.read_text(encoding='utf-8')
+    landing = Path('app/templates/integrations/prometheus.html').read_text(encoding='utf-8')
+    assert 'data-prometheus-delete-button' not in landing
 
 
 def test_prometheus_workspaces_reuse_global_style_components() -> None:
     form = FORM.read_text(encoding='utf-8')
-    config = CONFIG.read_text(encoding='utf-8')
     inline_configuration = CONFIG_DETAIL.read_text(encoding='utf-8')
     validation = VALIDATION_DETAIL.read_text(encoding='utf-8')
     runtime_detail = RUNTIME_DETAIL.read_text(encoding='utf-8')
@@ -88,17 +87,14 @@ def test_prometheus_workspaces_reuse_global_style_components() -> None:
 
     manage_workspace = inline_configuration + validation + runtime_detail + scope
     assert manage_workspace.count('workspace_summary_card.render') >= 9
-    assert config.count('workspace_summary_card.render') >= 9
     assert 'info_flow.render' in inline_configuration
     assert 'info_flow.render' in form
-    assert 'info_flow.render' in config
     assert 'health_interpretation.render' in runtime
     assert 'stroke-dashoffset' not in runtime
     assert '<svg' not in runtime
     assert 'context_guidance_card.render' not in manage_workspace
     assert 'context_guidance_card.render' in form
     assert "'After Registration'" in form
-    assert 'context_guidance_card.render' not in config
 
 
 def test_prometheus_audit_and_module_contract_document_lifecycle() -> None:

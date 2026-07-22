@@ -1,14 +1,9 @@
 # Inventory Collector Boundary
 
-## Public Contract
+## Authority
 
-`app.inventory.collector` remains the stable public collector facade. Inventory
-persistence and synchronization code must import collectors from this facade,
-not from individual resource modules.
-
-## Resource Ownership
-
-Implementations are split under `app.inventory.collectors`:
+Kubernetes API collection is owned directly by resource modules under
+`app.inventory.collectors`. KAORI does not keep a forwarding collector facade.
 
 - `runtime.py`: cluster version and nodes;
 - `workloads.py`: Deployments, StatefulSets, DaemonSets, ReplicaSets, Jobs, and CronJobs;
@@ -17,17 +12,13 @@ Implementations are split under `app.inventory.collectors`:
 - `ingresses.py`: Ingress resources and routing evidence;
 - `configuration.py`: ConfigMaps, Secrets, and ResourceQuota;
 - `storage.py`: StorageClass, PersistentVolume, and PersistentVolumeClaim;
-- `common.py`: collector-only normalization and presentation helpers.
+- `common.py`: collector-only normalization helpers.
 
 ## Dependency Direction
 
-Resource collectors may import shared helpers from `common.py`, but they must
-never import `app.inventory.collector`. The facade imports the resource package,
-and persistence imports only the facade.
+`Synchronization -> Persistence -> Concrete Resource Collector`
 
-This preserves:
-
-`Synchronization -> Persistence -> Collector Facade -> Resource Collector`
-
-No route, template, model, payload shape, transaction boundary, or Kubernetes
-API call sequence is intentionally changed by this split.
+`app.inventory.persistence` imports each concrete collector owner explicitly.
+`app.inventory.collectors.__init__` is package metadata only and must not restore
+aggregate exports. Collector modules may share helpers from `common.py`, but may
+not import persistence, synchronization, routes, or another forwarding module.

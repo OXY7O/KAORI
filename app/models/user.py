@@ -53,10 +53,6 @@ class User(UserMixin, db.Model):
 
     password_hash: Mapped[str] = mapped_column(db.String(255), nullable=False, default='')
 
-    # Backward-compatible role slug. The normalized RBAC model uses role_id,
-    # but keeping this field prevents older data and templates from breaking.
-    role: Mapped[str] = mapped_column(db.String(50), default='viewer', nullable=False)
-
     role_id: Mapped[int | None] = mapped_column(
         db.ForeignKey('roles.id', ondelete='SET NULL'), nullable=True, index=True
     )
@@ -121,7 +117,7 @@ class User(UserMixin, db.Model):
     def role_name(self) -> str:
         if self.role_record is not None:
             return self.role_record.name
-        return self.role or 'viewer'
+        return 'viewer'
 
     @property
     def role_display_name(self) -> str:

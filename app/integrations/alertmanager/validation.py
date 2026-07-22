@@ -17,10 +17,9 @@ from app.integrations.compatibility import evaluate_compatibility
 from app.models.alertmanager import AlertmanagerInstance
 
 logger = logging.getLogger(__name__)
-ValidatableAlertmanager = AlertmanagerInstance
 
 
-def validate_source(source: ValidatableAlertmanager, *, source_label: str) -> ValidationResult:
+def validate_source(source: AlertmanagerInstance, *, source_label: str) -> ValidationResult:
     if not source.endpoint:
         return ValidationResult(
             connected=False,
@@ -103,7 +102,7 @@ def validate_source(source: ValidatableAlertmanager, *, source_label: str) -> Va
     )
 
 
-def _failure(source: ValidatableAlertmanager, exc: Exception, *, source_label: str, unexpected: bool) -> ValidationResult:
+def _failure(source: AlertmanagerInstance, exc: Exception, *, source_label: str, unexpected: bool) -> ValidationResult:
     failure = describe_integration_failure(exc, service_name='Alertmanager', endpoint=source.endpoint, request_path='/api/v2/status', timeout_seconds=min(max(int(source.timeout or 5), 1), 30))
     if unexpected:
         logger.exception('Unexpected Alertmanager validation failure for %s.', source_label)

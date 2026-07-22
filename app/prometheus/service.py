@@ -566,10 +566,10 @@ def save_prometheus_instance(
             canonical,
             asset_type=KUBERNETES_CLUSTER_SCOPE,
             asset_key=initial_cluster.id,
-            capability_scope=['metrics', 'capacity', 'utilization', 'storage', 'workload', 'forecast', 'top_consumers', 'alert_metrics'],
+            capability_scope=PROMETHEUS_BINDING_CAPABILITIES,
             selector_json=build_selector(label='cluster', value=initial_cluster.name),
             validation_status='validation_required',
-            validation_message='Legacy cluster-assisted registration created a default selector. Verify the actual source label value before use.',
+            validation_message='Registration created a provisional cluster selector. Verify the actual source label value before operational use.',
         )
     try:
         db.session.commit()

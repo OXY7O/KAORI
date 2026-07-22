@@ -81,36 +81,6 @@ def activity_log() -> ResponseReturnValue:
     )
 
 
-@notifications_bp.get('/activity/retention')
-@permission_required('settings.view_data_lifecycle')
-def activity_retention_panel() -> ResponseReturnValue:
-    return redirect(url_for('settings.data_lifecycle.index', domain='operational_activity'))
-
-
-@notifications_bp.get('/activity/retention/preview')
-@permission_required('settings.view_data_lifecycle')
-def preview_activity_retention() -> ResponseReturnValue:
-    return redirect(url_for('settings.data_lifecycle.index', domain='operational_activity', preview=1))
-
-
-@notifications_bp.post('/activity/retention/run')
-@permission_required('settings.manage_data_lifecycle')
-def run_activity_retention() -> ResponseReturnValue:
-    return redirect(url_for('settings.data_lifecycle.index', domain='operational_activity'))
-
-
-@notifications_bp.post('/activity/archives/<archive_id>/verify')
-@permission_required('settings.manage_data_lifecycle')
-def verify_activity_archive(archive_id: str) -> ResponseReturnValue:
-    return redirect(url_for('settings.data_lifecycle.index', tab='history', archive_domain='operational_activity'))
-
-
-@notifications_bp.get('/activity/archives/<archive_id>/download')
-@permission_required('settings.export_data_lifecycle')
-def download_activity_archive(archive_id: str) -> ResponseReturnValue:
-    return redirect(url_for('settings.data_lifecycle.index', tab='history', archive_domain='operational_activity'))
-
-
 @notifications_bp.post('/<int:notification_id>/read')
 @login_required
 def mark_read(notification_id: int) -> ResponseReturnValue:

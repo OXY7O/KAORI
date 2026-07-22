@@ -114,14 +114,6 @@ def seed_default_rbac() -> dict[str, int]:
             role_permission.role_id = role.id
             role_permission.permission_id = permission.id
             db.session.add(role_permission)
-
-    # Backfill role_id from the legacy User.role string.
-    for user in User.query.all():
-        if user.role_id is None:
-            role = role_by_name.get(user.role or 'viewer') or role_by_name.get('viewer')
-            if role is not None:
-                user.role_id = role.id
-
     db.session.commit()
 
     return {

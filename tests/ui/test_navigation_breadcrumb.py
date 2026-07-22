@@ -8,7 +8,7 @@ def labels(endpoint: str, path: str = "") -> list[str]:
 def test_integrations_and_cluster_routes_reference_integrations_menu():
     assert labels("integrations.prometheus") == ["Integrations", "Prometheus"]
     assert labels("prometheus.new_instance") == ["Integrations", "Prometheus", "Register Connection"]
-    assert labels("cluster.list_clusters") == ["Integrations", "Kubernetes"]
+    assert labels("integrations.kubernetes") == ["Integrations", "Kubernetes"]
     assert labels("cluster.add_cluster") == ["Integrations", "Kubernetes", "Add Cluster"]
 
 

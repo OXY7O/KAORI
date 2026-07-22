@@ -121,10 +121,10 @@
         setProgress(0, sections.length);
     }
 
-    window.kubeReportInitOverviewLoadTracker = initOverviewLoadTracker;
+    window.kaoriInitOverviewLoadTracker = initOverviewLoadTracker;
 
-    if (!window.kubeReportOverviewLoadTrackerBound) {
-        window.kubeReportOverviewLoadTrackerBound = true;
+    if (!window.kaoriOverviewLoadTrackerBound) {
+        window.kaoriOverviewLoadTrackerBound = true;
 
         document.body.addEventListener('htmx:afterSettle', function (event) {
             var section = getSectionFromEvent(event);

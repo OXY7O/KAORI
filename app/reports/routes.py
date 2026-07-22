@@ -1,4 +1,4 @@
-from flask import Blueprint, redirect, render_template, url_for
+from flask import Blueprint, render_template
 from flask.typing import ResponseReturnValue
 
 from app.rbac.decorators import permission_required
@@ -45,46 +45,6 @@ def overview() -> ResponseReturnValue:
     return render_template(
         'reports/overview/index.html',
         payload=payload,
-    )
-
-
-@reports_bp.route('/overview')
-@permission_required('reports.view')
-def overview_alias() -> ResponseReturnValue:
-    return redirect(
-        url_for(
-            'reports.overview',
-        )
-    )
-
-
-@reports_bp.route('/history')
-@permission_required('reports.view')
-def generated_reports_alias() -> ResponseReturnValue:
-    return redirect(
-        url_for(
-            'reports.generated_reports',
-        )
-    )
-
-
-@reports_bp.route('/report-templates')
-@permission_required('reports.manage_templates')
-def report_templates_alias() -> ResponseReturnValue:
-    return redirect(
-        url_for(
-            'reports.report_templates',
-        )
-    )
-
-
-@reports_bp.route('/artifacts')
-@permission_required('reports.manage_storage')
-def storage_alias() -> ResponseReturnValue:
-    return redirect(
-        url_for(
-            'reports.storage',
-        )
     )
 
 

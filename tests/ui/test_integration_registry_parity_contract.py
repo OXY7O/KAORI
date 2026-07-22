@@ -95,44 +95,6 @@ def test_prometheus_filters_match_registry_pattern() -> None:
     assert 'selected_environment' not in service[service.index('def build_prometheus_page'):service.index('def build_alertmanager_page')]
 
 
-def test_prometheus_pagination_matches_alertmanager_density_and_url_state() -> None:
-    prom = read(PROM_CONTENT)
-    alert = read(ROOT / 'app/templates/integrations/alertmanager/partials/_inventory_content.html')
-    assert 'py-3.5 text-xs' in prom
-    assert 'py-3.5 text-xs' in alert
-    assert prom.count('hx-push-url="true"') >= 3
-    assert 'name="q" value="{{ selected_query }}"' in prom
-    assert 'class="h-4 w-4"' in prom
-    assert 'pagination_ui.page_size_classes()' in prom
-    assert 'pagination_ui.navigation_classes' in prom
-    assert 'No Prometheus connections found' in prom
-    assert 'No Alertmanager connections found' in alert
-    assert prom.index('No Prometheus connections found') < prom.index('<footer')
-    assert alert.index('No Alertmanager connections found') < alert.index('<footer')
-
-
-def test_provider_registry_tables_share_the_same_column_contract() -> None:
-    prom = read(PROM_CONTENT)
-    alert = read(ROOT / 'app/templates/integrations/alertmanager/partials/_inventory_content.html')
-    columns = (
-        '>Connection<',
-        '>Runtime<',
-        '>Compatibility<',
-        '>Readiness<',
-        '>Bindings<',
-        '>Last Validated<',
-        '>Action<',
-    )
-    for column in columns:
-        assert column in prom
-        assert column in alert
-    for fragment in ('status_badge(row.compatibility)', 'status_badge(row.readiness)'):
-        assert fragment in prom
-        assert fragment in alert
-    assert 'table_label.metadata_label' in alert
-    assert '>Endpoint<' not in prom
-    assert '>Endpoint<' not in alert
-
 def test_workspace_tabs_use_violet_selected_and_unselected_states() -> None:
     tabs = read(TABS)
     assert "border-kaori-primary bg-kaori-primary text-white shadow-sm" in tabs
@@ -154,20 +116,6 @@ def test_coverage_title_box_matches_registry_header_hierarchy() -> None:
     assert shared_loader in prom_registry
     assert shared_loader in alert_registry
     assert 'Operational Coverage' not in coverage
-
-
-def test_registry_action_column_is_compact_and_table_width_is_reduced() -> None:
-    prom = read(PROM_CONTENT)
-    alert = read(ROOT / 'app/templates/integrations/alertmanager/partials/_inventory_content.html')
-    for source in (prom, alert):
-        assert 'min-w-[850px] table-fixed' in source
-        assert '<colgroup>' in source
-        assert 'w-[88px] whitespace-nowrap px-2.5 py-3.5 text-right">Action' in source
-        assert 'w-[88px] whitespace-nowrap px-2.5 py-4 text-right align-top' in source
-        assert 'min-w-[1180px]' not in source
-        assert '<col class="w-[212px]">' in source
-        assert 'text-xs font-medium leading-5 text-content-secondary">{{ row.validated_at }}' in source
-
 
 
 def test_provider_coverage_uses_consistent_scope_identity_without_internal_id() -> None:

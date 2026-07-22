@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.extensions import db
 from app.models import ExternalIdentityLink, IdentityProvider, Role, User
-from app.users.providers import ExternalIdentity
+from app.users.providers.ldap import ExternalIdentity
 
 if TYPE_CHECKING:
     from app.users.forms import ExternalIdentityProvisionForm, ExternalIdentitySearchForm
@@ -65,7 +65,6 @@ def provision_external_identity(
     user.auth_source = 'ldap'
     user.external_id = identity.subject
     user.role_id = role.id
-    user.role = role.name
     user.account_is_active = is_active
     user.is_super_admin = False
     user.password_hash = ''

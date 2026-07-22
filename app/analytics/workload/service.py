@@ -24,7 +24,7 @@ from app.analytics.common.params import (
 )
 from app.analytics.common.payloads import get_empty_workload_payload
 from app.analytics.utilization.service import UtilizationService
-from app.analytics.workload import queries
+from app.integrations.prometheus.query_profiles import get_query_expression
 from app.common.dependencies import (
     prometheus_capability_blocker,
     prometheus_connection_blocker,
@@ -37,6 +37,23 @@ from app.intelligence.recommendation_engine import (
 from app.models import Cluster
 from app.integrations.prometheus.exceptions import PrometheusError
 from app.prometheus.service import PrometheusService
+
+NAMESPACE_ACTIVE_QUERY = get_query_expression('analytics.workload.queries.NAMESPACE_ACTIVE_QUERY')
+TENANT_CPU_ACTUAL_QUERY = get_query_expression('analytics.workload.queries.TENANT_CPU_ACTUAL_QUERY')
+TENANT_MEMORY_ACTUAL_QUERY = get_query_expression('analytics.workload.queries.TENANT_MEMORY_ACTUAL_QUERY')
+TENANT_POD_ACTUAL_QUERY = get_query_expression('analytics.workload.queries.TENANT_POD_ACTUAL_QUERY')
+TENANT_QUOTA_HARD_QUERY = get_query_expression('analytics.workload.queries.TENANT_QUOTA_HARD_QUERY')
+TENANT_QUOTA_USED_QUERY = get_query_expression('analytics.workload.queries.TENANT_QUOTA_USED_QUERY')
+WORKLOAD_CPU_AVG_QUERY = get_query_expression('analytics.workload.queries.WORKLOAD_CPU_AVG_QUERY')
+WORKLOAD_CPU_LIMITS_QUERY = get_query_expression('analytics.workload.queries.WORKLOAD_CPU_LIMITS_QUERY')
+WORKLOAD_CPU_PEAK_QUERY_TEMPLATE = get_query_expression('analytics.workload.queries.WORKLOAD_CPU_PEAK_QUERY_TEMPLATE')
+WORKLOAD_CPU_REQUESTS_QUERY = get_query_expression('analytics.workload.queries.WORKLOAD_CPU_REQUESTS_QUERY')
+WORKLOAD_MEMORY_AVG_QUERY = get_query_expression('analytics.workload.queries.WORKLOAD_MEMORY_AVG_QUERY')
+WORKLOAD_MEMORY_LIMITS_QUERY = get_query_expression('analytics.workload.queries.WORKLOAD_MEMORY_LIMITS_QUERY')
+WORKLOAD_MEMORY_PEAK_QUERY_TEMPLATE = get_query_expression('analytics.workload.queries.WORKLOAD_MEMORY_PEAK_QUERY_TEMPLATE')
+WORKLOAD_MEMORY_REQUESTS_QUERY = get_query_expression('analytics.workload.queries.WORKLOAD_MEMORY_REQUESTS_QUERY')
+WORKLOAD_POD_OWNER_QUERY = get_query_expression('analytics.workload.queries.WORKLOAD_POD_OWNER_QUERY')
+WORKLOAD_QOS_QUERY = get_query_expression('analytics.workload.queries.WORKLOAD_QOS_QUERY')
 
 WORKLOAD_TIME_RANGE_STEP_MAP = {
     '1h': '5m',
@@ -266,20 +283,20 @@ class WorkloadAnalysisService(AnalyticsBaseService):
         self,
     ) -> list[str]:
         active_namespaces = self.get_prometheus_vector_map(
-            query=queries.NAMESPACE_ACTIVE_QUERY,
+            query=NAMESPACE_ACTIVE_QUERY,
             label='namespace',
         )
 
         quota_hard = self.get_resource_quota_map(
-            query=queries.TENANT_QUOTA_HARD_QUERY,
+            query=TENANT_QUOTA_HARD_QUERY,
         )
 
         quota_used = self.get_resource_quota_map(
-            query=queries.TENANT_QUOTA_USED_QUERY,
+            query=TENANT_QUOTA_USED_QUERY,
         )
 
         runtime_namespaces = self.get_prometheus_vector_map(
-            query=queries.TENANT_POD_ACTUAL_QUERY,
+            query=TENANT_POD_ACTUAL_QUERY,
             label='namespace',
         )
 
@@ -305,7 +322,7 @@ class WorkloadAnalysisService(AnalyticsBaseService):
         self,
     ) -> dict[str, dict[str, str]]:
         result = self.get_prometheus_result(
-            queries.WORKLOAD_POD_OWNER_QUERY,
+            WORKLOAD_POD_OWNER_QUERY,
         )
 
         values: dict[str, dict[str, str]] = {}
@@ -385,7 +402,7 @@ class WorkloadAnalysisService(AnalyticsBaseService):
         self,
     ) -> dict[str, str]:
         result = self.get_prometheus_result(
-            queries.WORKLOAD_QOS_QUERY,
+            WORKLOAD_QOS_QUERY,
         )
 
         values: dict[str, str] = {}
@@ -494,30 +511,30 @@ class WorkloadAnalysisService(AnalyticsBaseService):
         selected_namespace: str,
     ) -> dict[str, Any]:
         namespaces = self.get_prometheus_vector_map(
-            query=queries.NAMESPACE_ACTIVE_QUERY,
+            query=NAMESPACE_ACTIVE_QUERY,
             label='namespace',
         )
 
         hard = self.get_resource_quota_map(
-            query=queries.TENANT_QUOTA_HARD_QUERY,
+            query=TENANT_QUOTA_HARD_QUERY,
         )
 
         used = self.get_resource_quota_map(
-            query=queries.TENANT_QUOTA_USED_QUERY,
+            query=TENANT_QUOTA_USED_QUERY,
         )
 
         cpu_actual = self.get_prometheus_vector_map(
-            query=queries.TENANT_CPU_ACTUAL_QUERY,
+            query=TENANT_CPU_ACTUAL_QUERY,
             label='namespace',
         )
 
         memory_actual = self.get_prometheus_vector_map(
-            query=queries.TENANT_MEMORY_ACTUAL_QUERY,
+            query=TENANT_MEMORY_ACTUAL_QUERY,
             label='namespace',
         )
 
         pod_actual = self.get_prometheus_vector_map(
-            query=queries.TENANT_POD_ACTUAL_QUERY,
+            query=TENANT_POD_ACTUAL_QUERY,
             label='namespace',
         )
 
@@ -1363,26 +1380,26 @@ class WorkloadAnalysisService(AnalyticsBaseService):
         time_range: str,
     ) -> dict[str, Any]:
         cpu_requests = self.get_prometheus_vector_map(
-            query=queries.WORKLOAD_CPU_REQUESTS_QUERY,
+            query=WORKLOAD_CPU_REQUESTS_QUERY,
             label='pod',
             secondary_label='namespace',
         )
 
         cpu_limits = self.get_prometheus_vector_map(
-            query=queries.WORKLOAD_CPU_LIMITS_QUERY,
+            query=WORKLOAD_CPU_LIMITS_QUERY,
             label='pod',
             secondary_label='namespace',
         )
 
         cpu_avg = self.get_prometheus_vector_map(
-            query=queries.WORKLOAD_CPU_AVG_QUERY,
+            query=WORKLOAD_CPU_AVG_QUERY,
             label='pod',
             secondary_label='namespace',
         )
 
         cpu_peak = self.get_prometheus_vector_map(
             query=self.build_range_query(
-                queries.WORKLOAD_CPU_PEAK_QUERY_TEMPLATE,
+                WORKLOAD_CPU_PEAK_QUERY_TEMPLATE,
                 time_range,
             ),
             label='pod',
@@ -1390,26 +1407,26 @@ class WorkloadAnalysisService(AnalyticsBaseService):
         )
 
         memory_requests = self.get_prometheus_vector_map(
-            query=queries.WORKLOAD_MEMORY_REQUESTS_QUERY,
+            query=WORKLOAD_MEMORY_REQUESTS_QUERY,
             label='pod',
             secondary_label='namespace',
         )
 
         memory_limits = self.get_prometheus_vector_map(
-            query=queries.WORKLOAD_MEMORY_LIMITS_QUERY,
+            query=WORKLOAD_MEMORY_LIMITS_QUERY,
             label='pod',
             secondary_label='namespace',
         )
 
         memory_avg = self.get_prometheus_vector_map(
-            query=queries.WORKLOAD_MEMORY_AVG_QUERY,
+            query=WORKLOAD_MEMORY_AVG_QUERY,
             label='pod',
             secondary_label='namespace',
         )
 
         memory_peak = self.get_prometheus_vector_map(
             query=self.build_range_query(
-                queries.WORKLOAD_MEMORY_PEAK_QUERY_TEMPLATE,
+                WORKLOAD_MEMORY_PEAK_QUERY_TEMPLATE,
                 time_range,
             ),
             label='pod',

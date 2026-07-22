@@ -72,7 +72,7 @@ def block_clusterless_operations():
         ), 409
 
     flash('Add a Kubernetes cluster before running Kubernetes operations.', 'warning')
-    return redirect(url_for('cluster.list_clusters'))
+    return redirect(url_for('integrations.kubernetes'))
 
 
 def _requested_operation_label() -> str:

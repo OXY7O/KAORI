@@ -12,17 +12,16 @@ from kubernetes.client import (
 from kubernetes.client.exceptions import ApiException
 
 from app.extensions import db
-from app.inventory.collector import (
-    get_cluster_version,
+from app.inventory.collectors.configuration import (
     get_configuration_inventory,
-    get_ingresses,
-    get_nodes,
-    get_pods,
     get_resource_quotas,
-    get_services,
-    get_storage_inventory,
-    get_workloads,
 )
+from app.inventory.collectors.ingresses import get_ingresses
+from app.inventory.collectors.pods import get_pods
+from app.inventory.collectors.runtime import get_cluster_version, get_nodes
+from app.inventory.collectors.services import get_services
+from app.inventory.collectors.storage import get_storage_inventory
+from app.inventory.collectors.workloads import get_workloads
 from app.models import (
     Cluster,
     ClusterInventory,

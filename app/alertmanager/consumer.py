@@ -121,7 +121,6 @@ def get_scope_status(*, scope_type: str, scope_key: str) -> dict[str, Any]:
             'instance_name': primary.name,
             'endpoint': safe_endpoint(primary.endpoint),
             'source_count': len(resolution.eligible_candidates),
-            'legacy_source': False,
             'source_resolution': resolution.to_dict(),
         }
 
@@ -136,7 +135,6 @@ def get_scope_status(*, scope_type: str, scope_key: str) -> dict[str, Any]:
         'instance_name': None,
         'endpoint': None,
         'source_count': 0,
-        'legacy_source': False,
         'source_resolution': resolution.to_dict(),
     }
 

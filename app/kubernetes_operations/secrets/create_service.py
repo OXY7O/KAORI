@@ -12,7 +12,7 @@ from kubernetes.config.config_exception import ConfigException
 from urllib3.exceptions import HTTPError as Urllib3HTTPError
 
 from app.governance.tls_certificates.certificate import validate_certificate_pair
-from app.integrations.kubernetes.tls import legacy_tls_context
+from app.integrations.kubernetes.tls import weak_tls_context
 from app.models import Cluster
 from app.kubernetes_operations.secrets.live_service import (
     core_api,
@@ -323,7 +323,7 @@ def execute_secret_operation(
 
     created = None
     try:
-        with legacy_tls_context(enabled=bool(cluster.kubernetes_connection.allow_weak_tls)):
+        with weak_tls_context(enabled=bool(cluster.kubernetes_connection.allow_weak_tls)):
             api = _core_api(cluster)
             created = api.create_namespaced_secret(
                 namespace=namespace,

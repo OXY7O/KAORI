@@ -8,7 +8,7 @@ import pytest
 os.environ.setdefault('TEST_DATABASE_URL', 'sqlite+pysqlite:///:memory:')
 from app import create_app
 from app.extensions import db
-from app.integrations.runtime.contracts import CapabilitySnapshot, HealthState, RuntimeState
+from app.integrations.contracts import CapabilitySnapshot, HealthState, RuntimeState
 from app.integrations.runtime.repository import persist_runtime_state
 from app.models.runtime import IntegrationRuntimeObservation
 

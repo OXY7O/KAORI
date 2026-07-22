@@ -10,7 +10,7 @@ from app.integrations.contracts import (
     IntegrationInstanceNotFound,
     IntegrationNotRegistered,
     IntegrationOperationNotSupported,
-    RuntimeAdapter,
+    OperationAdapter,
 )
 
 InstanceLoader = Callable[[int], Any | None]
@@ -22,7 +22,7 @@ class IntegrationModule:
 
     provider_type: str
     label: str
-    adapter: RuntimeAdapter
+    adapter: OperationAdapter
     instance_loader: InstanceLoader
     module_path: str
     worker_queue: str
@@ -52,19 +52,7 @@ class IntegrationModule:
             raise IntegrationOperationNotSupported(
                 f'{self.label} does not implement integration operation {operation!r}.'
             )
-        execute = getattr(self.adapter, 'execute', None)
-        if callable(execute):
-            return execute(operation, instance, **kwargs)
-        if operation == 'runtime.validate':
-            return self.adapter.refresh(instance)
-        if operation == 'runtime.health':
-            refresh_health = getattr(self.adapter, 'refresh_health', None)
-            return refresh_health(instance) if callable(refresh_health) else self.adapter.refresh(instance)
-        if operation == 'runtime.state':
-            return self.adapter.get_state(instance, validation_result=kwargs.get('validation_result'))
-        raise IntegrationOperationNotSupported(
-            f'{self.label} adapter does not expose an executor for {operation!r}.'
-        )
+        return self.adapter.execute(operation, instance, **kwargs)
 
 
 class IntegrationRegistry:

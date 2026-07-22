@@ -63,7 +63,7 @@ The unique constraint `uq_role_permission(role_id, permission_id)` prevents dupl
 
 KAORI does not rely on that database behavior as the role deletion workflow. The application blocks custom-role deletion while non-deleted users still reference the role. This prevents silent access loss and orphaned user authorization state.
 
-The legacy `users.role` slug remains for compatibility and must not be expanded as a second independent role source.
+`users.role_id` is the only persisted role authority. The retired `users.role` slug is removed by the foundation cleanup migration.
 
 ## 6. `users.is_super_admin`
 
@@ -89,4 +89,4 @@ RoleScope
 - valid_until
 ```
 
-Multi-role assignment, if introduced, should use a dedicated `user_roles` association and a documented conflict strategy. It must not be implemented by parsing multiple values into the legacy `users.role` field.
+Multi-role assignment, if introduced, should use a dedicated `user_roles` association and a documented conflict strategy. It must not be implemented by overloading `users.role_id` or encoding multiple role values in one field.

@@ -163,7 +163,6 @@ def get_storage_detail(storage_id: int) -> dict[str, Any] | None:
         'pods_truncated': len(bound_pods) > 8,
         'labels': sorted(labels.items()),
         'annotations': sorted(annotations.items()),
-        'details_reported': bool(details),
     }
 
 

@@ -131,56 +131,18 @@ def get_active_validation_task_id(
     instance_id: int | str,
     binding_id: int | str | None = None,
 ) -> str | None:
-    try:
-        from app.jobs.service import find_active_job
+    from app.jobs.service import find_active_job
 
-        scope_key = f'binding:{binding_id}' if binding_id is not None else None
-        job = find_active_job(
-            provider_type=provider_type,
-            provider_instance_id=int(instance_id),
-            operation=operation,
-            scope_key=scope_key,
-        )
-        if job is not None and job.celery_task_id:
-            return job.celery_task_id
-    except Exception:
-        # During migration/bootstrap Redis remains a compatibility fallback.
-        pass
-    # Redis is a compatibility lock during the JobExecution cutover. Read paths
-    # must remain available when Redis is intentionally disabled in tests or
-    # temporarily unavailable; the persistent job registry is the authority.
-    try:
-        client = _redis_client()
-        value = client.get(
-            _lock_key(
-                provider_type=provider_type,
-                operation=operation,
-                instance_id=instance_id,
-                binding_id=binding_id,
-            )
-        )
-    except Exception:
+    scope_key = f'binding:{binding_id}' if binding_id is not None else None
+    job = find_active_job(
+        provider_type=provider_type,
+        provider_instance_id=int(instance_id),
+        operation=operation,
+        scope_key=scope_key,
+    )
+    if job is None or not job.celery_task_id:
         return None
-    task_id = cast(str | None, value) or None
-    if task_id is None:
-        return None
-    try:
-        task_state = current_app.extensions['celery'].AsyncResult(task_id).state
-    except Exception:
-        return task_id
-    if task_state in {'SUCCESS', 'FAILURE', 'REVOKED'}:
-        try:
-            release_validation_job(
-                task_id=task_id,
-                provider_type=provider_type,
-                operation=operation,
-                instance_id=instance_id,
-                binding_id=binding_id,
-            )
-        except Exception:
-            return task_id
-        return None
-    return task_id
+    return str(job.celery_task_id)
 
 
 def release_validation_job(

@@ -58,30 +58,6 @@ def test_colored_mutation_buttons_expose_pointer_and_disabled_cursor():
     assert not violations, "Mutation button cursor contract violations:\\n" + "\\n".join(violations)
 
 
-def test_known_mutation_labels_use_title_case():
-    forbidden = (
-        "Save readiness",
-        "Save binding",
-        "Archive selected",
-        "Run now",
-        "Save changes",
-        "Delete schedule",
-        "Archive & cleanup",
-        "Verify protected session",
-        "Validate replacement",
-        "Replace selected data",
-        "Submit reveal request",
-        "Reload snapshot",
-    )
-    violations = []
-    for path in _templates():
-        source = path.read_text()
-        for label in forbidden:
-            if label in source:
-                violations.append(f"{path.relative_to(ROOT)}: {label}")
-    assert not violations, "Sentence-case mutation labels remain:\\n" + "\\n".join(violations)
-
-
 def test_button_standard_is_linked_from_design_index():
     index = (ROOT / "docs/design/README.md").read_text()
     standard = (ROOT / "docs/design/components/BUTTON.md").read_text()

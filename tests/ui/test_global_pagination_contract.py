@@ -18,11 +18,9 @@ def test_pagination_document_is_indexed() -> None:
 
 def test_shared_analytics_default_page_size_is_five() -> None:
     params = read("app/analytics/common/params.py")
-    capacity = read("app/analytics/capacity/helpers.py")
     base = read("app/analytics/common/base_service.py")
     workload = read("app/analytics/workload/service.py")
     assert "default: int = 5" in params
-    assert "default: int = 5" in capacity
     assert "default_per_page: int = 5" in base
     assert "default_per_page=5" in workload
 

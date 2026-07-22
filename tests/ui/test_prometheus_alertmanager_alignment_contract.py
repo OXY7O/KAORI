@@ -47,7 +47,7 @@ def test_scope_coverage_uses_bind_existing_source_component() -> None:
 
     assert 'integration_coverage.render' in landing
     assert 'Operational Scopes Without a Prometheus Source' not in landing
-    for fragment in ('Integration Coverage', 'Bind operational scopes to existing {{ provider.label }} sources.'):
+    for fragment in ('Integration Coverage', 'Bind scopes to existing {{ provider.label }} sources.'):
         assert fragment in component
     for fragment in ('Bind Source', 'Review Binding'):
         assert fragment in content
@@ -97,23 +97,22 @@ def test_related_analytics_card_uses_intrinsic_height() -> None:
     assert 'mt-auto' not in related
 
 
-def test_delete_lifecycle_url_is_defensive_and_explicitly_registered() -> None:
+def test_delete_lifecycle_url_is_canonical_and_explicitly_registered() -> None:
     routes = ROUTES.read_text(encoding='utf-8')
-    detail = DETAIL.read_text(encoding='utf-8')
 
     required_routes = (
-        'def _optional_endpoint_url(endpoint: str, **values) -> str | None:',
-        'endpoint not in current_app.view_functions',
         "endpoint='delete_instance'",
-        "context['delete_instance_url'] = _optional_endpoint_url(",
+        "context['delete_instance_url'] = url_for(",
         "'prometheus.delete_instance'",
     )
     missing = [fragment for fragment in required_routes if fragment not in routes]
-    assert not missing, f'Prometheus delete route resilience is incomplete: {missing}'
+    assert not missing, f'Prometheus delete route contract is incomplete: {missing}'
+    assert 'def _optional_endpoint_url(' not in routes
+
     scope = (ROOT / 'app/templates/prometheus/partials/_detail_scope.html').read_text(encoding='utf-8')
-    assert "url_for('prometheus.delete_instance'" not in detail + scope
     assert 'data-delete-url="{{ delete_instance_url }}"' in scope
-    assert 'Delete Unavailable' in scope
+    assert 'Delete Unavailable' not in scope
+    assert '{% if delete_instance_url %}' not in scope
 
 
 def test_all_prometheus_template_endpoints_have_declared_handlers() -> None:

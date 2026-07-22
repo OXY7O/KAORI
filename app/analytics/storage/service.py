@@ -20,7 +20,7 @@ from app.analytics.common.params import (
     get_selected_time_range,
 )
 from app.analytics.common.payloads import get_empty_storage_payload
-from app.analytics.storage import queries
+from app.integrations.prometheus.query_profiles import get_query_expression
 from app.analytics.utilization.service import UtilizationService
 from app.common.dependencies import (
     prometheus_capability_blocker,
@@ -37,6 +37,27 @@ from app.prometheus.consumer import PrometheusConsumer
 from app.integrations.prometheus.exceptions import PrometheusError
 from app.prometheus.service import PrometheusService
 
+
+NAMESPACE_ACTIVE_QUERY = get_query_expression('analytics.storage.queries.NAMESPACE_ACTIVE_QUERY')
+NODE_ROOT_FILESYSTEM_AVAILABLE_QUERY = get_query_expression('analytics.storage.queries.NODE_ROOT_FILESYSTEM_AVAILABLE_QUERY')
+NODE_ROOT_FILESYSTEM_SIZE_QUERY = get_query_expression('analytics.storage.queries.NODE_ROOT_FILESYSTEM_SIZE_QUERY')
+NODE_VAR_FILESYSTEM_AVAILABLE_QUERY = get_query_expression('analytics.storage.queries.NODE_VAR_FILESYSTEM_AVAILABLE_QUERY')
+NODE_VAR_FILESYSTEM_SIZE_QUERY = get_query_expression('analytics.storage.queries.NODE_VAR_FILESYSTEM_SIZE_QUERY')
+PVC_AVAILABLE_BY_CLAIM_QUERY = get_query_expression('analytics.storage.queries.PVC_AVAILABLE_BY_CLAIM_QUERY')
+PVC_AVAILABLE_TOTAL_QUERY = get_query_expression('analytics.storage.queries.PVC_AVAILABLE_TOTAL_QUERY')
+PVC_COUNT_QUERY = get_query_expression('analytics.storage.queries.PVC_COUNT_QUERY')
+PVC_INFO_QUERY = get_query_expression('analytics.storage.queries.PVC_INFO_QUERY')
+PVC_REQUESTED_BY_CLAIM_QUERY = get_query_expression('analytics.storage.queries.PVC_REQUESTED_BY_CLAIM_QUERY')
+PVC_REQUESTED_TOTAL_QUERY = get_query_expression('analytics.storage.queries.PVC_REQUESTED_TOTAL_QUERY')
+PVC_STATUS_BY_CLAIM_QUERY = get_query_expression('analytics.storage.queries.PVC_STATUS_BY_CLAIM_QUERY')
+PVC_USED_BY_CLAIM_QUERY = get_query_expression('analytics.storage.queries.PVC_USED_BY_CLAIM_QUERY')
+PVC_USED_TOTAL_QUERY = get_query_expression('analytics.storage.queries.PVC_USED_TOTAL_QUERY')
+PV_CAPACITY_BY_VOLUME_QUERY = get_query_expression('analytics.storage.queries.PV_CAPACITY_BY_VOLUME_QUERY')
+PV_CAPACITY_QUERY = get_query_expression('analytics.storage.queries.PV_CAPACITY_QUERY')
+PV_COUNT_QUERY = get_query_expression('analytics.storage.queries.PV_COUNT_QUERY')
+PV_INFO_QUERY = get_query_expression('analytics.storage.queries.PV_INFO_QUERY')
+PV_RECLAIM_POLICY_QUERY = get_query_expression('analytics.storage.queries.PV_RECLAIM_POLICY_QUERY')
+PV_STATUS_BY_VOLUME_QUERY = get_query_expression('analytics.storage.queries.PV_STATUS_BY_VOLUME_QUERY')
 
 def get_selected_storage_tab(
     query_args: Mapping[str, Any],
@@ -157,12 +178,12 @@ class StorageAnalysisService(AnalyticsBaseService):
         self,
     ) -> list[str]:
         active_namespaces = self.get_prometheus_vector_map(
-            query=queries.NAMESPACE_ACTIVE_QUERY,
+            query=NAMESPACE_ACTIVE_QUERY,
             label='namespace',
         )
 
         pvc_requested = self.get_prometheus_vector_map(
-            query=queries.PVC_REQUESTED_BY_CLAIM_QUERY,
+            query=PVC_REQUESTED_BY_CLAIM_QUERY,
             label='persistentvolumeclaim',
             secondary_label='namespace',
         )
@@ -273,19 +294,19 @@ class StorageAnalysisService(AnalyticsBaseService):
         pv_per_page: int = 5,
     ) -> dict[str, Any]:
         node_var_size = self.get_filesystem_vector_map(
-            queries.NODE_VAR_FILESYSTEM_SIZE_QUERY,
+            NODE_VAR_FILESYSTEM_SIZE_QUERY,
         )
 
         node_var_available = self.get_filesystem_vector_map(
-            queries.NODE_VAR_FILESYSTEM_AVAILABLE_QUERY,
+            NODE_VAR_FILESYSTEM_AVAILABLE_QUERY,
         )
 
         node_root_size = self.get_filesystem_vector_map(
-            queries.NODE_ROOT_FILESYSTEM_SIZE_QUERY,
+            NODE_ROOT_FILESYSTEM_SIZE_QUERY,
         )
 
         node_root_available = self.get_filesystem_vector_map(
-            queries.NODE_ROOT_FILESYSTEM_AVAILABLE_QUERY,
+            NODE_ROOT_FILESYSTEM_AVAILABLE_QUERY,
         )
 
         node_size: dict[str, float] = {}
@@ -371,32 +392,32 @@ class StorageAnalysisService(AnalyticsBaseService):
         )
 
         pvc_requested = self.get_prometheus_scalar(
-            queries.PVC_REQUESTED_TOTAL_QUERY,
+            PVC_REQUESTED_TOTAL_QUERY,
         )
 
         pvc_used = self.get_prometheus_scalar(
-            queries.PVC_USED_TOTAL_QUERY,
+            PVC_USED_TOTAL_QUERY,
         )
 
         pvc_free = self.get_prometheus_scalar(
-            queries.PVC_AVAILABLE_TOTAL_QUERY,
+            PVC_AVAILABLE_TOTAL_QUERY,
         )
 
         if selected_namespace:
             pvc_requested_by_claim = self.get_prometheus_vector_map(
-                query=queries.PVC_REQUESTED_BY_CLAIM_QUERY,
+                query=PVC_REQUESTED_BY_CLAIM_QUERY,
                 label='persistentvolumeclaim',
                 secondary_label='namespace',
             )
 
             pvc_used_by_claim = self.get_prometheus_vector_map(
-                query=queries.PVC_USED_BY_CLAIM_QUERY,
+                query=PVC_USED_BY_CLAIM_QUERY,
                 label='persistentvolumeclaim',
                 secondary_label='namespace',
             )
 
             pvc_available_by_claim = self.get_prometheus_vector_map(
-                query=queries.PVC_AVAILABLE_BY_CLAIM_QUERY,
+                query=PVC_AVAILABLE_BY_CLAIM_QUERY,
                 label='persistentvolumeclaim',
                 secondary_label='namespace',
             )
@@ -426,15 +447,15 @@ class StorageAnalysisService(AnalyticsBaseService):
             )
 
         pv_capacity = self.get_prometheus_scalar(
-            queries.PV_CAPACITY_QUERY,
+            PV_CAPACITY_QUERY,
         )
 
         pv_count = self.get_prometheus_scalar(
-            queries.PV_COUNT_QUERY,
+            PV_COUNT_QUERY,
         )
 
         pvc_count = self.get_prometheus_scalar(
-            queries.PVC_COUNT_QUERY,
+            PVC_COUNT_QUERY,
         )
 
         pvc_all_rows = self.get_pvc_detail_rows(
@@ -602,7 +623,7 @@ class StorageAnalysisService(AnalyticsBaseService):
         self,
     ) -> dict[str, str]:
         result = self.get_prometheus_result(
-            queries.PV_RECLAIM_POLICY_QUERY,
+            PV_RECLAIM_POLICY_QUERY,
         )
 
         values: dict[str, str] = {}
@@ -662,7 +683,7 @@ class StorageAnalysisService(AnalyticsBaseService):
         self,
     ) -> dict[str, str]:
         result = self.get_prometheus_result(
-            queries.PVC_INFO_QUERY,
+            PVC_INFO_QUERY,
         )
 
         values: dict[str, str] = {}
@@ -755,7 +776,7 @@ class StorageAnalysisService(AnalyticsBaseService):
         self,
     ) -> dict[str, str]:
         result = self.get_prometheus_result(
-            queries.PVC_STATUS_BY_CLAIM_QUERY,
+            PVC_STATUS_BY_CLAIM_QUERY,
         )
 
         values: dict[str, str] = {}
@@ -820,25 +841,25 @@ class StorageAnalysisService(AnalyticsBaseService):
         selected_namespace: str,
     ) -> list[dict[str, Any]]:
         requested = self.get_prometheus_vector_map(
-            query=queries.PVC_REQUESTED_BY_CLAIM_QUERY,
+            query=PVC_REQUESTED_BY_CLAIM_QUERY,
             label='persistentvolumeclaim',
             secondary_label='namespace',
         )
 
         used = self.get_prometheus_vector_map(
-            query=queries.PVC_USED_BY_CLAIM_QUERY,
+            query=PVC_USED_BY_CLAIM_QUERY,
             label='persistentvolumeclaim',
             secondary_label='namespace',
         )
 
         available = self.get_prometheus_vector_map(
-            query=queries.PVC_AVAILABLE_BY_CLAIM_QUERY,
+            query=PVC_AVAILABLE_BY_CLAIM_QUERY,
             label='persistentvolumeclaim',
             secondary_label='namespace',
         )
 
         storage_classes = self.get_prometheus_label_map(
-            query=queries.PVC_INFO_QUERY,
+            query=PVC_INFO_QUERY,
             key_label='persistentvolumeclaim',
             value_label='storageclass',
             secondary_key_label='namespace',
@@ -926,12 +947,12 @@ class StorageAnalysisService(AnalyticsBaseService):
         self,
     ) -> list[dict[str, Any]]:
         capacities = self.get_prometheus_vector_map(
-            query=queries.PV_CAPACITY_BY_VOLUME_QUERY,
+            query=PV_CAPACITY_BY_VOLUME_QUERY,
             label='persistentvolume',
         )
 
         storage_classes = self.get_prometheus_label_map(
-            query=queries.PV_INFO_QUERY,
+            query=PV_INFO_QUERY,
             key_label='persistentvolume',
             value_label='storageclass',
         )
@@ -1013,7 +1034,7 @@ class StorageAnalysisService(AnalyticsBaseService):
         self,
     ) -> dict[str, str]:
         result = self.get_prometheus_result(
-            queries.PV_STATUS_BY_VOLUME_QUERY,
+            PV_STATUS_BY_VOLUME_QUERY,
         )
 
         values: dict[str, str] = {}

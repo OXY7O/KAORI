@@ -8,7 +8,7 @@ from kubernetes.client.exceptions import ApiException
 from kubernetes.config.config_exception import ConfigException
 from urllib3.exceptions import HTTPError as Urllib3HTTPError
 
-from app.integrations.kubernetes.tls import legacy_tls_context
+from app.integrations.kubernetes.tls import weak_tls_context
 from app.kubernetes_operations.secrets.live_service import (
     LiveSecretSnapshot,
     core_api,
@@ -215,7 +215,7 @@ def _patch_secret(
         "data": encoded_data,
     }
 
-    with legacy_tls_context(enabled=bool(target.cluster.kubernetes_connection.allow_weak_tls)):
+    with weak_tls_context(enabled=bool(target.cluster.kubernetes_connection.allow_weak_tls)):
         response = core_api(target.cluster).patch_namespaced_secret(
             name=target.name,
             namespace=target.namespace,

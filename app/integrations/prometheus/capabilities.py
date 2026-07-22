@@ -121,6 +121,5 @@ def definition(key: str) -> CapabilityDefinition | None:
     return CAPABILITIES.get(key)
 
 
-CAPABILITY_DEFINITIONS = tuple(CAPABILITIES.values())
 CAPABILITY_KEYS = tuple(CAPABILITIES)
 COMPATIBILITY_PROFILES = ('prometheus-v2', 'prometheus-v3')

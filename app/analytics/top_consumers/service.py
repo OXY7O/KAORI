@@ -13,7 +13,7 @@ from app.analytics.common.params import (
     get_positive_int_arg,
     get_query_value,
 )
-from app.analytics.top_consumers import queries
+from app.integrations.prometheus.query_profiles import get_query_expression
 from app.analytics.utilization.service import UtilizationService
 from app.common.dependencies import prometheus_connection_blocker
 from app.intelligence.recommendation_engine import (
@@ -24,6 +24,39 @@ from app.intelligence.recommendation_engine import (
 from app.models import Cluster
 from app.integrations.prometheus.exceptions import PrometheusError
 from app.prometheus.service import PrometheusService
+
+CPU_ALLOCATABLE_QUERY = get_query_expression('analytics.top_consumers.queries.CPU_ALLOCATABLE_QUERY')
+CPU_LIMIT_BY_CONTAINER_NAMESPACE_QUERY = get_query_expression('analytics.top_consumers.queries.CPU_LIMIT_BY_CONTAINER_NAMESPACE_QUERY')
+CPU_LIMIT_BY_CONTAINER_QUERY = get_query_expression('analytics.top_consumers.queries.CPU_LIMIT_BY_CONTAINER_QUERY')
+CPU_REQUEST_BY_CONTAINER_NAMESPACE_QUERY = get_query_expression('analytics.top_consumers.queries.CPU_REQUEST_BY_CONTAINER_NAMESPACE_QUERY')
+CPU_REQUEST_BY_CONTAINER_QUERY = get_query_expression('analytics.top_consumers.queries.CPU_REQUEST_BY_CONTAINER_QUERY')
+MEMORY_ALLOCATABLE_QUERY = get_query_expression('analytics.top_consumers.queries.MEMORY_ALLOCATABLE_QUERY')
+MEMORY_LIMIT_BY_CONTAINER_NAMESPACE_QUERY = get_query_expression('analytics.top_consumers.queries.MEMORY_LIMIT_BY_CONTAINER_NAMESPACE_QUERY')
+MEMORY_LIMIT_BY_CONTAINER_QUERY = get_query_expression('analytics.top_consumers.queries.MEMORY_LIMIT_BY_CONTAINER_QUERY')
+MEMORY_REQUEST_BY_CONTAINER_NAMESPACE_QUERY = get_query_expression('analytics.top_consumers.queries.MEMORY_REQUEST_BY_CONTAINER_NAMESPACE_QUERY')
+MEMORY_REQUEST_BY_CONTAINER_QUERY = get_query_expression('analytics.top_consumers.queries.MEMORY_REQUEST_BY_CONTAINER_QUERY')
+NAMESPACE_ACTIVE_QUERY = get_query_expression('analytics.top_consumers.queries.NAMESPACE_ACTIVE_QUERY')
+POD_CAPACITY_QUERY = get_query_expression('analytics.top_consumers.queries.POD_CAPACITY_QUERY')
+PVC_CAPACITY_BY_CLAIM_NAMESPACE_QUERY = get_query_expression('analytics.top_consumers.queries.PVC_CAPACITY_BY_CLAIM_NAMESPACE_QUERY')
+PVC_CAPACITY_BY_CLAIM_QUERY = get_query_expression('analytics.top_consumers.queries.PVC_CAPACITY_BY_CLAIM_QUERY')
+TOP_CPU_CONSUMERS_BY_NAMESPACE_QUERY = get_query_expression('analytics.top_consumers.queries.TOP_CPU_CONSUMERS_BY_NAMESPACE_QUERY')
+TOP_CPU_CONSUMERS_QUERY = get_query_expression('analytics.top_consumers.queries.TOP_CPU_CONSUMERS_QUERY')
+TOP_MEMORY_CONSUMERS_BY_NAMESPACE_QUERY = get_query_expression('analytics.top_consumers.queries.TOP_MEMORY_CONSUMERS_BY_NAMESPACE_QUERY')
+TOP_MEMORY_CONSUMERS_QUERY = get_query_expression('analytics.top_consumers.queries.TOP_MEMORY_CONSUMERS_QUERY')
+TOP_POD_CONSUMERS_BY_NAMESPACE_QUERY = get_query_expression('analytics.top_consumers.queries.TOP_POD_CONSUMERS_BY_NAMESPACE_QUERY')
+TOP_POD_CONSUMERS_QUERY = get_query_expression('analytics.top_consumers.queries.TOP_POD_CONSUMERS_QUERY')
+TOP_PVC_CONSUMERS_BY_NAMESPACE_QUERY = get_query_expression('analytics.top_consumers.queries.TOP_PVC_CONSUMERS_BY_NAMESPACE_QUERY')
+TOP_PVC_CONSUMERS_QUERY = get_query_expression('analytics.top_consumers.queries.TOP_PVC_CONSUMERS_QUERY')
+TOTAL_CPU_USAGE_BY_NAMESPACE_QUERY = get_query_expression('analytics.top_consumers.queries.TOTAL_CPU_USAGE_BY_NAMESPACE_QUERY')
+TOTAL_CPU_USAGE_QUERY = get_query_expression('analytics.top_consumers.queries.TOTAL_CPU_USAGE_QUERY')
+TOTAL_MEMORY_USAGE_BY_NAMESPACE_QUERY = get_query_expression('analytics.top_consumers.queries.TOTAL_MEMORY_USAGE_BY_NAMESPACE_QUERY')
+TOTAL_MEMORY_USAGE_QUERY = get_query_expression('analytics.top_consumers.queries.TOTAL_MEMORY_USAGE_QUERY')
+TOTAL_PVC_CAPACITY_BY_NAMESPACE_QUERY = get_query_expression('analytics.top_consumers.queries.TOTAL_PVC_CAPACITY_BY_NAMESPACE_QUERY')
+TOTAL_PVC_CAPACITY_QUERY = get_query_expression('analytics.top_consumers.queries.TOTAL_PVC_CAPACITY_QUERY')
+TOTAL_PVC_USED_BY_NAMESPACE_QUERY = get_query_expression('analytics.top_consumers.queries.TOTAL_PVC_USED_BY_NAMESPACE_QUERY')
+TOTAL_PVC_USED_QUERY = get_query_expression('analytics.top_consumers.queries.TOTAL_PVC_USED_QUERY')
+TOTAL_RUNNING_PODS_BY_NAMESPACE_QUERY = get_query_expression('analytics.top_consumers.queries.TOTAL_RUNNING_PODS_BY_NAMESPACE_QUERY')
+TOTAL_RUNNING_PODS_QUERY = get_query_expression('analytics.top_consumers.queries.TOTAL_RUNNING_PODS_QUERY')
 
 RESOURCE_OPTIONS: list[dict[str, str]] = [
     {'value': 'all', 'label': 'All Resources'},
@@ -177,7 +210,7 @@ class TopConsumersService(AnalyticsBaseService):
         self,
     ) -> list[str]:
         result = self.get_prometheus_result(
-            queries.NAMESPACE_ACTIVE_QUERY,
+            NAMESPACE_ACTIVE_QUERY,
         )
 
         namespaces: set[str] = set()
@@ -321,18 +354,18 @@ class TopConsumersService(AnalyticsBaseService):
     ) -> list[dict[str, Any]]:
         usage_query = render_namespace_query(
             namespace=selected_namespace,
-            all_query=queries.TOP_CPU_CONSUMERS_QUERY,
-            namespace_query=queries.TOP_CPU_CONSUMERS_BY_NAMESPACE_QUERY,
+            all_query=TOP_CPU_CONSUMERS_QUERY,
+            namespace_query=TOP_CPU_CONSUMERS_BY_NAMESPACE_QUERY,
         )
         request_query = render_namespace_query(
             namespace=selected_namespace,
-            all_query=queries.CPU_REQUEST_BY_CONTAINER_QUERY,
-            namespace_query=queries.CPU_REQUEST_BY_CONTAINER_NAMESPACE_QUERY,
+            all_query=CPU_REQUEST_BY_CONTAINER_QUERY,
+            namespace_query=CPU_REQUEST_BY_CONTAINER_NAMESPACE_QUERY,
         )
         limit_query = render_namespace_query(
             namespace=selected_namespace,
-            all_query=queries.CPU_LIMIT_BY_CONTAINER_QUERY,
-            namespace_query=queries.CPU_LIMIT_BY_CONTAINER_NAMESPACE_QUERY,
+            all_query=CPU_LIMIT_BY_CONTAINER_QUERY,
+            namespace_query=CPU_LIMIT_BY_CONTAINER_NAMESPACE_QUERY,
         )
 
         request_map = self.get_container_value_map(
@@ -434,18 +467,18 @@ class TopConsumersService(AnalyticsBaseService):
     ) -> list[dict[str, Any]]:
         usage_query = render_namespace_query(
             namespace=selected_namespace,
-            all_query=queries.TOP_MEMORY_CONSUMERS_QUERY,
-            namespace_query=queries.TOP_MEMORY_CONSUMERS_BY_NAMESPACE_QUERY,
+            all_query=TOP_MEMORY_CONSUMERS_QUERY,
+            namespace_query=TOP_MEMORY_CONSUMERS_BY_NAMESPACE_QUERY,
         )
         request_query = render_namespace_query(
             namespace=selected_namespace,
-            all_query=queries.MEMORY_REQUEST_BY_CONTAINER_QUERY,
-            namespace_query=queries.MEMORY_REQUEST_BY_CONTAINER_NAMESPACE_QUERY,
+            all_query=MEMORY_REQUEST_BY_CONTAINER_QUERY,
+            namespace_query=MEMORY_REQUEST_BY_CONTAINER_NAMESPACE_QUERY,
         )
         limit_query = render_namespace_query(
             namespace=selected_namespace,
-            all_query=queries.MEMORY_LIMIT_BY_CONTAINER_QUERY,
-            namespace_query=queries.MEMORY_LIMIT_BY_CONTAINER_NAMESPACE_QUERY,
+            all_query=MEMORY_LIMIT_BY_CONTAINER_QUERY,
+            namespace_query=MEMORY_LIMIT_BY_CONTAINER_NAMESPACE_QUERY,
         )
 
         request_map = self.get_container_value_map(
@@ -547,11 +580,11 @@ class TopConsumersService(AnalyticsBaseService):
     ) -> list[dict[str, Any]]:
         usage_query = render_namespace_query(
             namespace=selected_namespace,
-            all_query=queries.TOP_POD_CONSUMERS_QUERY,
-            namespace_query=queries.TOP_POD_CONSUMERS_BY_NAMESPACE_QUERY,
+            all_query=TOP_POD_CONSUMERS_QUERY,
+            namespace_query=TOP_POD_CONSUMERS_BY_NAMESPACE_QUERY,
         )
         pod_capacity = self.get_prometheus_scalar(
-            queries.POD_CAPACITY_QUERY,
+            POD_CAPACITY_QUERY,
         )
 
         rows: list[dict[str, Any]] = []
@@ -611,13 +644,13 @@ class TopConsumersService(AnalyticsBaseService):
     ) -> list[dict[str, Any]]:
         usage_query = render_namespace_query(
             namespace=selected_namespace,
-            all_query=queries.TOP_PVC_CONSUMERS_QUERY,
-            namespace_query=queries.TOP_PVC_CONSUMERS_BY_NAMESPACE_QUERY,
+            all_query=TOP_PVC_CONSUMERS_QUERY,
+            namespace_query=TOP_PVC_CONSUMERS_BY_NAMESPACE_QUERY,
         )
         capacity_query = render_namespace_query(
             namespace=selected_namespace,
-            all_query=queries.PVC_CAPACITY_BY_CLAIM_QUERY,
-            namespace_query=queries.PVC_CAPACITY_BY_CLAIM_NAMESPACE_QUERY,
+            all_query=PVC_CAPACITY_BY_CLAIM_QUERY,
+            namespace_query=PVC_CAPACITY_BY_CLAIM_NAMESPACE_QUERY,
         )
 
         capacity_map = self.get_pvc_value_map(
@@ -848,13 +881,13 @@ class TopConsumersService(AnalyticsBaseService):
         pvc_rows: list[dict[str, Any]],
     ) -> dict[str, Any]:
         cpu_allocatable = self.get_prometheus_scalar(
-            queries.CPU_ALLOCATABLE_QUERY,
+            CPU_ALLOCATABLE_QUERY,
         )
         memory_allocatable = self.get_prometheus_scalar(
-            queries.MEMORY_ALLOCATABLE_QUERY,
+            MEMORY_ALLOCATABLE_QUERY,
         )
         pod_capacity = self.get_prometheus_scalar(
-            queries.POD_CAPACITY_QUERY,
+            POD_CAPACITY_QUERY,
         )
 
         return {
@@ -905,46 +938,46 @@ class TopConsumersService(AnalyticsBaseService):
         total_cpu_usage = self.get_prometheus_scalar(
             render_namespace_query(
                 namespace=selected_namespace,
-                all_query=queries.TOTAL_CPU_USAGE_QUERY,
-                namespace_query=queries.TOTAL_CPU_USAGE_BY_NAMESPACE_QUERY,
+                all_query=TOTAL_CPU_USAGE_QUERY,
+                namespace_query=TOTAL_CPU_USAGE_BY_NAMESPACE_QUERY,
             )
         )
         total_memory_usage = self.get_prometheus_scalar(
             render_namespace_query(
                 namespace=selected_namespace,
-                all_query=queries.TOTAL_MEMORY_USAGE_QUERY,
-                namespace_query=queries.TOTAL_MEMORY_USAGE_BY_NAMESPACE_QUERY,
+                all_query=TOTAL_MEMORY_USAGE_QUERY,
+                namespace_query=TOTAL_MEMORY_USAGE_BY_NAMESPACE_QUERY,
             )
         )
         total_running_pods = self.get_prometheus_scalar(
             render_namespace_query(
                 namespace=selected_namespace,
-                all_query=queries.TOTAL_RUNNING_PODS_QUERY,
-                namespace_query=queries.TOTAL_RUNNING_PODS_BY_NAMESPACE_QUERY,
+                all_query=TOTAL_RUNNING_PODS_QUERY,
+                namespace_query=TOTAL_RUNNING_PODS_BY_NAMESPACE_QUERY,
             )
         )
         total_pvc_used = self.get_prometheus_scalar(
             render_namespace_query(
                 namespace=selected_namespace,
-                all_query=queries.TOTAL_PVC_USED_QUERY,
-                namespace_query=queries.TOTAL_PVC_USED_BY_NAMESPACE_QUERY,
+                all_query=TOTAL_PVC_USED_QUERY,
+                namespace_query=TOTAL_PVC_USED_BY_NAMESPACE_QUERY,
             )
         )
         total_pvc_capacity = self.get_prometheus_scalar(
             render_namespace_query(
                 namespace=selected_namespace,
-                all_query=queries.TOTAL_PVC_CAPACITY_QUERY,
-                namespace_query=queries.TOTAL_PVC_CAPACITY_BY_NAMESPACE_QUERY,
+                all_query=TOTAL_PVC_CAPACITY_QUERY,
+                namespace_query=TOTAL_PVC_CAPACITY_BY_NAMESPACE_QUERY,
             )
         )
         cpu_allocatable = self.get_prometheus_scalar(
-            queries.CPU_ALLOCATABLE_QUERY,
+            CPU_ALLOCATABLE_QUERY,
         )
         memory_allocatable = self.get_prometheus_scalar(
-            queries.MEMORY_ALLOCATABLE_QUERY,
+            MEMORY_ALLOCATABLE_QUERY,
         )
         pod_capacity = self.get_prometheus_scalar(
-            queries.POD_CAPACITY_QUERY,
+            POD_CAPACITY_QUERY,
         )
 
         return {

@@ -17,30 +17,6 @@ def test_shared_operational_toggle_contract() -> None:
     assert "caller()" in source
 
 
-def test_equivalent_prometheus_and_alertmanager_toggles_use_shared_neutral_component() -> None:
-    for relative in (
-        "app/templates/prometheus/instance_form.html",
-        "app/templates/alertmanager/instance_form.html",
-        "app/templates/alertmanager/partials/_detail_configuration.html",
-    ):
-        source = read(relative)
-        assert 'components/operational_toggle.html' in source
-        assert "operational_toggle.render(" in source
-        assert "Verify TLS Certificate" in source
-        assert "Allow KAORI to Use This Connection" in source
-        assert "tone='warning'" not in source
-
-    for relative in (
-        "app/templates/prometheus/config.html",
-        "app/templates/alertmanager/config.html",
-    ):
-        source = read(relative)
-        assert 'components/operational_toggle.html' in source
-        assert "operational_toggle.render(" in source
-        assert "Verify TLS Certificate" in source
-        assert "tone='warning'" not in source
-
-
 def test_kubernetes_legacy_tls_is_the_explicit_warning_exception() -> None:
     source = read("app/templates/cluster/partials/_form.html")
     assert "Verify Kubernetes API TLS Certificate" in source

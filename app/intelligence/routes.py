@@ -39,11 +39,6 @@ def catalog() -> ResponseReturnValue:
     return render_template('intelligence/recommendations.html', payload=payload)
 
 
-@intelligence_bp.route('/rule-catalog')
-@permission_required('intelligence.view')
-def rule_catalog() -> ResponseReturnValue:
-    return redirect(url_for('intelligence.catalog'))
-
 
 @intelligence_bp.route('/alert-intelligence')
 @permission_required('intelligence.view')

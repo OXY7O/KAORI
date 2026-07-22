@@ -320,7 +320,6 @@ def get_workload_detail(workload_id: int) -> dict[str, Any] | None:
         'pods_truncated': len(related_pods) > 8,
         'labels': sorted(labels.items()),
         'annotations': sorted(annotations.items()),
-        'details_reported': bool(details),
     }
 
 

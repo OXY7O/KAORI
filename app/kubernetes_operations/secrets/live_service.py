@@ -10,7 +10,7 @@ from kubernetes.client.exceptions import ApiException
 from kubernetes.config.config_exception import ConfigException
 from urllib3.exceptions import HTTPError as Urllib3HTTPError
 
-from app.integrations.kubernetes.tls import legacy_tls_context
+from app.integrations.kubernetes.tls import weak_tls_context
 from app.integrations.registry import get_integration
 from app.models import Cluster, ConfigurationInventory
 
@@ -138,7 +138,7 @@ def list_live_namespaces(
         return []
     cluster = get_cluster(normalized)
     try:
-        with legacy_tls_context(enabled=bool(cluster.kubernetes_connection.allow_weak_tls)):
+        with weak_tls_context(enabled=bool(cluster.kubernetes_connection.allow_weak_tls)):
             response = cast(V1NamespaceList, core_api(cluster).list_namespace())
     except ApiException as exc:
         raise _api_error(exc, "namespace lookup") from exc
@@ -164,7 +164,7 @@ def list_live_namespaces(
 def verify_live_namespace(cluster: Cluster, namespace: str | None) -> str:
     normalized = validate_resource_name(namespace, "Namespace", namespace=True)
     try:
-        with legacy_tls_context(enabled=bool(cluster.kubernetes_connection.allow_weak_tls)):
+        with weak_tls_context(enabled=bool(cluster.kubernetes_connection.allow_weak_tls)):
             core_api(cluster).read_namespace(name=normalized)
     except ApiException as exc:
         raise _api_error(exc, "namespace verification") from exc
@@ -197,7 +197,7 @@ def list_live_secrets(
     )
     response: V1SecretList | None = None
     try:
-        with legacy_tls_context(enabled=bool(cluster.kubernetes_connection.allow_weak_tls)):
+        with weak_tls_context(enabled=bool(cluster.kubernetes_connection.allow_weak_tls)):
             response = cast(
                 V1SecretList,
                 core_api(cluster).list_namespaced_secret(
@@ -254,7 +254,7 @@ def read_live_secret(
     normalized_name = validate_resource_name(secret_name, "Secret name")
     secret: V1Secret | None = None
     try:
-        with legacy_tls_context(enabled=bool(cluster.kubernetes_connection.allow_weak_tls)):
+        with weak_tls_context(enabled=bool(cluster.kubernetes_connection.allow_weak_tls)):
             secret = cast(
                 V1Secret,
                 core_api(cluster).read_namespaced_secret(

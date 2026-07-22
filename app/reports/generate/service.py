@@ -1023,8 +1023,8 @@ def _get_generation_readiness(
 
 def _get_data_source_context() -> list[str]:
     return [
-        'KubeReport report types currently use Kubernetes inventory and analytics data as the primary source domain.',
-        'ServerReport covers server/VM inventory with Node Exporter metrics, while HCIReport covers HCI provider API data.',
+        'KAORI Kubernetes Reports report types currently use Kubernetes inventory and analytics data as the primary source domain.',
+        'KAORI Server Reports covers server/VM inventory with Node Exporter metrics, while KAORI HCI Reports covers HCI provider API data.',
         'Generate creates a report request first; PDF rendering and artifact download happen from Generated Reports.',
         'Metrics-backed real-data reports require a specific source scope when the report type depends on one selected cluster or infrastructure domain.',
         'PDF artifacts use the active Reports Storage backend with local: or s3: storage references.',
@@ -1034,12 +1034,12 @@ def _get_data_source_context() -> list[str]:
 def _get_report_architecture_context() -> dict[str, Any]:
     return {
         'current_domain': DEFAULT_REPORT_DOMAIN,
-        'current_domain_label': REPORT_DOMAIN_LABELS.get(DEFAULT_REPORT_DOMAIN, 'KubeReport'),
+        'current_domain_label': REPORT_DOMAIN_LABELS.get(DEFAULT_REPORT_DOMAIN, 'KAORI Kubernetes Reports'),
         'current_source_kind': DEFAULT_REPORT_SOURCE_KIND,
         'current_source_label': SOURCE_KIND_LABELS.get(DEFAULT_REPORT_SOURCE_KIND, 'Kubernetes'),
         'description': (
-            'The report generator is domain-aware. KubeReport currently owns container platform reports, '
-            'while ServerReport and HCIReport separate server/VM and HCI report families. '
+            'The report generator is domain-aware. KAORI Kubernetes Reports currently owns container platform reports, '
+            'while KAORI Server Reports and KAORI HCI Reports separate server/VM and HCI report families. '
             'Both domains share the same request, template, schedule, PDF, and artifact lifecycle.'
         ),
         'capabilities': [
@@ -1055,7 +1055,7 @@ def _get_report_architecture_context() -> dict[str, Any]:
             },
             {
                 'label': 'Domain-aware storage',
-                'description': 'Artifacts are stored with domain and source prefixes so KubeReport, ServerReport, and HCIReport files do not mix.',
+                'description': 'Artifacts are stored with domain and source prefixes so KAORI Kubernetes Reports, KAORI Server Reports, and KAORI HCI Reports files do not mix.',
                 'icon': 'archive',
             },
         ],
@@ -1072,7 +1072,7 @@ def _get_report_architecture_context() -> dict[str, Any]:
 
 
 def _get_report_type_guide_groups() -> list[dict[str, Any]]:
-    kubereport_items = [
+    kubernetes_report_items = [
         {
             'label': 'Analytics Overview',
             'description': 'High-level summary for analytics landing page information.',
@@ -1115,7 +1115,7 @@ def _get_report_type_guide_groups() -> list[dict[str, Any]]:
         },
     ]
 
-    serverreport_items = [
+    server_report_items = [
         {
             'label': 'VM Inventory Report',
             'description': 'Reserved report type for VM catalog, ownership, operating system, allocation, and lifecycle state.',
@@ -1154,21 +1154,21 @@ def _get_report_type_guide_groups() -> list[dict[str, Any]]:
         },
     ]
 
-    for item in kubereport_items:
+    for item in kubernetes_report_items:
         item['status'] = 'Default system template'
 
     return [
         {
-            'key': 'kubereport',
-            'label': 'KubeReport',
+            'key': 'kubernetes',
+            'label': 'KAORI Kubernetes Reports',
             'description': 'Container platform report types backed by Kubernetes inventory and analytics data.',
-            'items': kubereport_items,
+            'items': kubernetes_report_items,
         },
         {
-            'key': 'serverreport',
-            'label': 'ServerReport',
+            'key': 'server',
+            'label': 'KAORI Server Reports',
             'description': 'Reserved server, VM, and HCI report types for the future infrastructure inventory domain.',
-            'items': serverreport_items,
+            'items': server_report_items,
         },
     ]
 

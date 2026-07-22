@@ -1,4 +1,4 @@
-from app.integrations.prometheus.adapter import PrometheusRuntimeAdapter, runtime_adapter
+from app.integrations.prometheus.adapter import runtime_adapter
 from app.integrations.prometheus.capabilities import CAPABILITY_KEYS, COMPATIBILITY_PROFILES
 from app.integrations.registry import IntegrationModule, model_loader, registry
 from app.models.prometheus import PrometheusInstance
@@ -31,4 +31,3 @@ integration_module = IntegrationModule(
 
 registry.register(integration_module)
 
-__all__ = ['PrometheusRuntimeAdapter', 'integration_module', 'runtime_adapter']

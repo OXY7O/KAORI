@@ -9,7 +9,7 @@ import urllib3.util.ssl_ as urllib3_ssl
 
 
 @contextmanager
-def legacy_tls_context(
+def weak_tls_context(
     *,
     enabled: bool,
 ) -> Iterator[None]:
@@ -24,7 +24,7 @@ def legacy_tls_context(
         None,
     )
 
-    def create_legacy_context(
+    def create_weak_tls_context(
         *args: Any,
         **kwargs: Any,
     ):
@@ -35,13 +35,13 @@ def legacy_tls_context(
             **kwargs,
         )
 
-    urllib3_ssl.create_urllib3_context = create_legacy_context
+    urllib3_ssl.create_urllib3_context = create_weak_tls_context
 
     if original_connection_create_context is not None:
         setattr(
             urllib3_connection,
             'create_urllib3_context',
-            create_legacy_context,
+            create_weak_tls_context,
         )
 
     try:

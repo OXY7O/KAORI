@@ -14,7 +14,7 @@ def build_pdf_styles() -> dict[str, ParagraphStyle]:
 
     return {
         'title': ParagraphStyle(
-            'KubeReportTitle',
+            'KAORIReportTitle',
             parent=base_styles['Title'],
             fontName='Helvetica-Bold',
             fontSize=24,
@@ -26,7 +26,7 @@ def build_pdf_styles() -> dict[str, ParagraphStyle]:
             spaceAfter=10,
         ),
         'subtitle': ParagraphStyle(
-            'KubeReportSubtitle',
+            'KAORIReportSubtitle',
             parent=base_styles['Normal'],
             fontName='Helvetica',
             fontSize=9,
@@ -38,7 +38,7 @@ def build_pdf_styles() -> dict[str, ParagraphStyle]:
             spaceAfter=12,
         ),
         'section_title': ParagraphStyle(
-            'KubeReportSectionTitle',
+            'KAORIReportSectionTitle',
             parent=base_styles['Heading2'],
             fontName='Helvetica-Bold',
             fontSize=13,
@@ -50,7 +50,7 @@ def build_pdf_styles() -> dict[str, ParagraphStyle]:
             spaceAfter=8,
         ),
         'small_section_title': ParagraphStyle(
-            'KubeReportSmallSectionTitle',
+            'KAORIReportSmallSectionTitle',
             parent=base_styles['Heading3'],
             fontName='Helvetica-Bold',
             fontSize=10,
@@ -62,7 +62,7 @@ def build_pdf_styles() -> dict[str, ParagraphStyle]:
             spaceAfter=5,
         ),
         'normal': ParagraphStyle(
-            'KubeReportNormal',
+            'KAORIReportNormal',
             parent=base_styles['Normal'],
             fontName='Helvetica',
             fontSize=9,
@@ -73,7 +73,7 @@ def build_pdf_styles() -> dict[str, ParagraphStyle]:
             alignment=TA_LEFT,
         ),
         'small': ParagraphStyle(
-            'KubeReportSmall',
+            'KAORIReportSmall',
             parent=base_styles['Normal'],
             fontName='Helvetica',
             fontSize=8,
@@ -83,7 +83,7 @@ def build_pdf_styles() -> dict[str, ParagraphStyle]:
             ),
         ),
         'muted': ParagraphStyle(
-            'KubeReportMuted',
+            'KAORIReportMuted',
             parent=base_styles['Normal'],
             fontName='Helvetica',
             fontSize=8,

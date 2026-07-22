@@ -33,7 +33,7 @@ def _login(client, user_id: int) -> None:
         session['_fresh'] = True
 
 
-def test_instance_inventory_detail_and_legacy_cluster_redirect(app) -> None:
+def test_instance_inventory_detail_and_retired_cluster_route_absent(app) -> None:
     user = User(
         username='alertmanager-admin',
         email='alertmanager-admin@example.test',
@@ -108,9 +108,8 @@ def test_instance_inventory_detail_and_legacy_cluster_redirect(app) -> None:
     assert b'Connection Contract' in detail.data
     assert b'Runtime Health &amp; Diagnostics' in detail.data
 
-    legacy = client.get(f'/alertmanager/cluster/{cluster.id}')
-    assert legacy.status_code == 302
-    assert legacy.headers['Location'].endswith(f'/integrations/alertmanager/instances/{instance.id}')
+    retired = client.get(f'/alertmanager/cluster/{cluster.id}')
+    assert retired.status_code == 404
 
 
 def test_scope_binding_save_uses_htmx_and_rejects_duplicate_scope(app) -> None:

@@ -7,7 +7,7 @@ from typing import Any
 
 from flask import current_app
 
-from app.analytics.capacity import queries
+from app.integrations.prometheus.query_profiles import get_query_expression
 from app.analytics.common.base_service import (
     AnalyticsBaseService,
     bytes_to_gib,
@@ -40,6 +40,19 @@ from app.prometheus.consumer import PrometheusConsumer
 from app.integrations.prometheus.exceptions import PrometheusError
 from app.prometheus.repository import resolve_instance_for_cluster
 from app.prometheus.service import PrometheusService
+
+CURRENT_WORKER_PODS_QUERY = get_query_expression('analytics.capacity.queries.CURRENT_WORKER_PODS_QUERY')
+WORKER_CPU_ALLOCATABLE_QUERY = get_query_expression('analytics.capacity.queries.WORKER_CPU_ALLOCATABLE_QUERY')
+WORKER_CPU_LIMITS_TOTAL_QUERY = get_query_expression('analytics.capacity.queries.WORKER_CPU_LIMITS_TOTAL_QUERY')
+WORKER_CPU_PEAK_QUERY_TEMPLATE = get_query_expression('analytics.capacity.queries.WORKER_CPU_PEAK_QUERY_TEMPLATE')
+WORKER_CPU_REQUESTS_TOTAL_QUERY = get_query_expression('analytics.capacity.queries.WORKER_CPU_REQUESTS_TOTAL_QUERY')
+WORKER_CPU_USAGE_QUERY = get_query_expression('analytics.capacity.queries.WORKER_CPU_USAGE_QUERY')
+WORKER_MEMORY_ALLOCATABLE_QUERY = get_query_expression('analytics.capacity.queries.WORKER_MEMORY_ALLOCATABLE_QUERY')
+WORKER_MEMORY_LIMITS_TOTAL_QUERY = get_query_expression('analytics.capacity.queries.WORKER_MEMORY_LIMITS_TOTAL_QUERY')
+WORKER_MEMORY_PEAK_QUERY_TEMPLATE = get_query_expression('analytics.capacity.queries.WORKER_MEMORY_PEAK_QUERY_TEMPLATE')
+WORKER_MEMORY_REQUESTS_TOTAL_QUERY = get_query_expression('analytics.capacity.queries.WORKER_MEMORY_REQUESTS_TOTAL_QUERY')
+WORKER_MEMORY_USAGE_QUERY = get_query_expression('analytics.capacity.queries.WORKER_MEMORY_USAGE_QUERY')
+WORKER_POD_ALLOCATABLE_QUERY = get_query_expression('analytics.capacity.queries.WORKER_POD_ALLOCATABLE_QUERY')
 
 CAPACITY_TIME_RANGE_STEP_MAP = {
     '1h': '5m',
@@ -346,27 +359,27 @@ class CapacityService(AnalyticsBaseService):
         summary: dict[str, Any],
     ) -> dict[str, dict[str, float]]:
         cpu_capacity = self.get_prometheus_scalar(
-            queries.WORKER_CPU_ALLOCATABLE_QUERY,
+            WORKER_CPU_ALLOCATABLE_QUERY,
         )
 
         cpu_usage = self.get_prometheus_scalar(
-            queries.WORKER_CPU_USAGE_QUERY,
+            WORKER_CPU_USAGE_QUERY,
         )
 
         memory_capacity = self.get_prometheus_scalar(
-            queries.WORKER_MEMORY_ALLOCATABLE_QUERY,
+            WORKER_MEMORY_ALLOCATABLE_QUERY,
         )
 
         memory_usage = self.get_prometheus_scalar(
-            queries.WORKER_MEMORY_USAGE_QUERY,
+            WORKER_MEMORY_USAGE_QUERY,
         )
 
         pod_capacity = self.get_prometheus_scalar(
-            queries.WORKER_POD_ALLOCATABLE_QUERY,
+            WORKER_POD_ALLOCATABLE_QUERY,
         )
 
         pod_usage = self.get_prometheus_scalar(
-            queries.CURRENT_WORKER_PODS_QUERY,
+            CURRENT_WORKER_PODS_QUERY,
         )
 
         cpu_available = max(
@@ -568,55 +581,55 @@ class CapacityService(AnalyticsBaseService):
         time_range: str,
     ) -> dict[str, dict[str, Any]]:
         cpu_allocatable = self.get_prometheus_scalar(
-            queries.WORKER_CPU_ALLOCATABLE_QUERY,
+            WORKER_CPU_ALLOCATABLE_QUERY,
         )
 
         memory_allocatable_bytes = self.get_prometheus_scalar(
-            queries.WORKER_MEMORY_ALLOCATABLE_QUERY,
+            WORKER_MEMORY_ALLOCATABLE_QUERY,
         )
 
         pod_capacity = self.get_prometheus_scalar(
-            queries.WORKER_POD_ALLOCATABLE_QUERY,
+            WORKER_POD_ALLOCATABLE_QUERY,
         )
 
         cpu_actual = self.get_prometheus_scalar(
-            queries.WORKER_CPU_USAGE_QUERY,
+            WORKER_CPU_USAGE_QUERY,
         )
 
         memory_actual_bytes = self.get_prometheus_scalar(
-            queries.WORKER_MEMORY_USAGE_QUERY,
+            WORKER_MEMORY_USAGE_QUERY,
         )
 
         current_pods = self.get_prometheus_scalar(
-            queries.CURRENT_WORKER_PODS_QUERY,
+            CURRENT_WORKER_PODS_QUERY,
         )
 
         cpu_requests = self.get_prometheus_scalar(
-            queries.WORKER_CPU_REQUESTS_TOTAL_QUERY,
+            WORKER_CPU_REQUESTS_TOTAL_QUERY,
         )
 
         cpu_limits = self.get_prometheus_scalar(
-            queries.WORKER_CPU_LIMITS_TOTAL_QUERY,
+            WORKER_CPU_LIMITS_TOTAL_QUERY,
         )
 
         memory_requests_bytes = self.get_prometheus_scalar(
-            queries.WORKER_MEMORY_REQUESTS_TOTAL_QUERY,
+            WORKER_MEMORY_REQUESTS_TOTAL_QUERY,
         )
 
         memory_limits_bytes = self.get_prometheus_scalar(
-            queries.WORKER_MEMORY_LIMITS_TOTAL_QUERY,
+            WORKER_MEMORY_LIMITS_TOTAL_QUERY,
         )
 
         cpu_peak = self.get_prometheus_scalar(
             self.build_range_query(
-                queries.WORKER_CPU_PEAK_QUERY_TEMPLATE,
+                WORKER_CPU_PEAK_QUERY_TEMPLATE,
                 time_range,
             ),
         )
 
         memory_peak_bytes = self.get_prometheus_scalar(
             self.build_range_query(
-                queries.WORKER_MEMORY_PEAK_QUERY_TEMPLATE,
+                WORKER_MEMORY_PEAK_QUERY_TEMPLATE,
                 time_range,
             ),
         )

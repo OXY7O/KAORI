@@ -231,6 +231,5 @@ CAPABILITIES: tuple[CapabilityDefinition, ...] = (
 CAPABILITY_BY_KEY = {item.key: item for item in CAPABILITIES}
 
 
-CAPABILITY_DEFINITIONS = CAPABILITIES
 CAPABILITY_KEYS = tuple(item.key for item in CAPABILITIES)
 COMPATIBILITY_PROFILES = ('alertmanager-v0-25', 'alertmanager-v0-33')

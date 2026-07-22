@@ -545,7 +545,7 @@ def build_topology_graph(
                     _field('Nodes', cluster.node_count),
                 ],
                 collected_at=inventory_row.collected_at if inventory_row else cluster.updated_at,
-                action_url=url_for('cluster.list_clusters'),
+                action_url=url_for('integrations.kubernetes'),
                 description='Registered Kubernetes cluster and inventory snapshot boundary.',
             )
         )

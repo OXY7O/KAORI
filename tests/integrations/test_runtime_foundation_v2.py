@@ -9,10 +9,11 @@ def test_canonical_runtime_models_exist():
     assert 'class KubernetesConnection' in kubernetes
 
 
-def test_analytics_dependency_uses_provider_neutral_resolution():
-    source = Path('app/analytics/common/dependencies.py').read_text()
+def test_kubernetes_runtime_uses_provider_neutral_resolution():
+    source = Path('app/integrations/kubernetes/resolver.py').read_text()
     assert 'resolve_kubernetes_for_cluster' in source
-    assert 'cluster.prometheus_config' not in source
+    assert 'cluster.kubeconfig' not in source
+    assert not Path('app/analytics/common/dependencies.py').exists()
 
 
 def test_scheduled_runtime_refresh_does_not_use_legacy_prometheus_config():

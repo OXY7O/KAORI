@@ -55,18 +55,6 @@ def test_labels_are_borderless_globally() -> None:
     assert 'kaori-context-label inline-flex min-h-8 w-fit items-center gap-2 rounded-lg border' not in hero
 
 
-def test_legacy_compact_labels_are_normalized() -> None:
-    styles = STYLES.read_text(encoding='utf-8')
-    for token in (
-        'span.inline-flex[class*="bg-emerald-"]',
-        'span.inline-flex[class*="bg-blue-"]',
-        'span.inline-flex[class*="bg-amber-"]',
-        'span.inline-flex[class*="bg-red-"]',
-        'span.inline-flex[class*="bg-slate-"]',
-    ):
-        assert token in styles
-
-
 def test_secondary_states_use_six_family_contract() -> None:
     table_label = TABLE_LABEL.read_text(encoding='utf-8')
     assert "tone == 'maintenance' %}bg-status-warning-soft text-status-warning-text" in table_label

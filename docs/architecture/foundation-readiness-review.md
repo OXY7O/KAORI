@@ -47,11 +47,14 @@ Before Inventory and Analytics expansion:
 6. README present for each high-complexity domain;
 7. architecture contract tests included in CI.
 
-## Honest Remaining Risk
+## Completed Cleanup Boundary
 
-Prometheus and Alertmanager provider tables still duplicate selected identity and
-runtime summary fields also present on `IntegrationInstance`. This is acceptable
-for the next Inventory/Analytics batch only if writes remain synchronized through
-provider lifecycle services. The next major persistence cleanup should decide
-whether provider tables become connection-only records and all shared fields move
-exclusively to `IntegrationInstance`.
+Revision `20260722_provider_authority` makes `IntegrationInstance` the only
+shared provider identity and runtime-summary authority. Revision
+`20260722_foundation_cleanup` then removes the retired `users.role` field,
+converts transitional binding validation states, normalizes Prometheus binding
+capability scope, and enforces canonical report storage URIs.
+
+Provider-version compatibility remains intentional product behavior. Internal
+URL redirects, Python import facades, provider-local runtime-history wrappers,
+and runtime fallback branches are not part of the supported foundation.

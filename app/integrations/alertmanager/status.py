@@ -5,11 +5,10 @@ from datetime import UTC, datetime
 from app.extensions import db
 from app.models.alertmanager import AlertmanagerInstance
 
-AlertmanagerStatusSource = AlertmanagerInstance
 
 
 def mark_status(
-    source: AlertmanagerStatusSource,
+    source: AlertmanagerInstance,
     *,
     status: str,
     error: str | None,

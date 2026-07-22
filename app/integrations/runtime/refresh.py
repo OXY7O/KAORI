@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.integrations.runtime.contracts import RuntimeAdapter, RuntimeState
+from app.integrations.contracts import RuntimeAdapter, RuntimeState
 
 
 def refresh_runtime(adapter: RuntimeAdapter, instance: Any) -> tuple[Any, RuntimeState]:

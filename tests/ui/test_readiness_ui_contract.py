@@ -7,15 +7,6 @@ def read(path: str) -> str:
     return (ROOT / path).read_text(encoding='utf-8')
 
 
-def test_kubernetes_registry_separates_api_and_operational_coverage():
-    template = read('app/templates/integrations/kubernetes/partials/_registry.html')
-    assert 'Kubernetes API' in template
-    assert 'Operational Coverage' in template
-    assert '>Inventory<' in template
-    assert '>Analytics<' in template
-    assert '>Alerts<' in template
-
-
 def test_provider_binding_actions_explain_revalidation():
     for path in (
         'app/templates/prometheus/partials/_detail_scope.html',

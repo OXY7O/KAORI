@@ -439,12 +439,3 @@ analytics_bp.add_url_rule(
     ],
 )
 
-
-@analytics_bp.route('/anomalies')
-@permission_required('analytics.view')
-def anomalies():
-    return redirect(
-        url_for(
-            'analytics.alerts',
-        )
-    )

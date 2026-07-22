@@ -63,9 +63,10 @@ lazy module imports. A search currently finds hundreds of references. Renaming
 it together with service decomposition would create a large, difficult-to-review
 change.
 
-The rename should be a dedicated migration with compatibility imports and route
-stability. This README establishes the target boundary now; it does not perform
-the move.
+The rename should be a coordinated direct cutover that updates imports, blueprint
+registration, templates, tests, and persisted references in one controlled release.
+Do not create an intermediate compatibility package. This README establishes the
+target boundary now; it does not perform the move.
 
 ## Source-of-truth rules
 
@@ -74,7 +75,7 @@ the move.
 - Alertmanager is authoritative for Alertmanager alert state, routing result,
   inhibition state, and silence state that its API exposes.
 - Kubernetes alert analytics consumes Alertmanager through the scope-based
-  `app.alertmanager.service`/consumer facade. It must not instantiate
+  `app.alertmanager.service` application boundary. It must not instantiate
   `AlertmanagerClient` or read Alertmanager persistence models directly.
 - Inventory data supplies identity and snapshot context only.
 - Avoid live Kubernetes API fallback in analytics pages.
@@ -107,7 +108,7 @@ A workspace normally owns:
 <workspace>/
 ├── routes.py
 ├── service.py
-├── queries.py
+├── optional domain contracts
 └── optional schema, normalizer, or presentation modules
 ```
 
@@ -223,7 +224,7 @@ Render Alerts & Anomalies and provide dashboard/report snapshots
 
 | File | Responsibility | Review |
 |---|---|---|
-| `queries.py` | Exposes Kubernetes alert and anomaly PromQL expressions through the versioned query-profile catalog. It is a compatibility layer, not the authoritative location of raw PromQL. | Correctly small. Keep query definitions in `app/prometheus/query_profiles/` and retain these exports only while existing imports require them. |
+| PromQL query usage | `service.py` resolves stable query keys directly from `app.integrations.prometheus.query_profiles`; the alerts workspace does not own a duplicate query-export module. | Keep raw PromQL and version selection in the canonical provider query-profile catalog. |
 | `routes.py` | Converts query-string filters into the alerts workspace context, enforces `analytics.view`, renders the full page, and renders HTMX alert/anomaly table partials or dependency blockers. | Approximately 89 lines and appropriately thin. `_context_from_request()` may later move to a typed request-parameter object, but no urgent split is required. |
 | `service.py` | Currently owns pagination, cluster and namespace selection, Alertmanager and Prometheus loading, source fallback, payload normalization, filtering, anomaly generation, source health, routing summaries, silence matching, inhibition summaries, ownership enrichment, incident readiness, signal overview, full page context, and dashboard/report snapshots. | Approximately 4,648 lines, 69 functions, and several 170–288-line functions. This is a critical refactor target. It contains many cohesive subdomains that should be independently testable. |
 
@@ -265,7 +266,7 @@ similar to:
 app/kubernetes/analytics/alerts/
 ├── __init__.py
 ├── routes.py
-├── queries.py
+├── optional domain contracts
 ├── params.py                 # typed request/filter normalization
 ├── pagination.py             # AlertsPagination and page slicing
 ├── models.py                 # typed internal alert/silence summary contracts
@@ -284,7 +285,7 @@ app/kubernetes/analytics/alerts/
 ├── readiness.py              # incident-readiness scoring
 ├── signals.py                # cluster and selected-cluster signal overview
 ├── snapshots.py              # dashboard/report snapshot contracts
-└── service.py                # thin orchestration facade
+└── service.py                # application orchestration and policy boundary
 ```
 
 The target `service.py` should coordinate these modules and expose stable public
@@ -314,7 +315,7 @@ Consumers should not import internal normalizers or summary builders directly.
 6. Extract routing, silences, inhibition, ownership, and readiness one at a time,
    each with focused tests.
 7. Extract signal overview and snapshot builders.
-8. Keep `service.py` as a thin public facade that delegates to canonical modules; do not retain compatibility shims.
+8. Keep `service.py` as the public application boundary. Each entry point must own request policy, dependency composition, and result contracts; it must never become a pure pass-through module.
 9. Move the package to `app/kubernetes/analytics/alerts` only after module
    boundaries and tests are stable.
 
@@ -344,15 +345,16 @@ separate technical initiative:
 1. Add complete tests for blueprint registration, lazy overview imports,
    dashboard consumers, report consumers, and query-profile audit domains.
 2. Create `app/kubernetes/analytics` and move one workspace at a time.
-3. Provide temporary compatibility modules under `app/analytics` that re-export
-   the moved public APIs.
-4. Keep public URLs and blueprint endpoint names stable during the first phase.
+3. Update all internal imports and blueprint registration in the same cutover; do
+   not leave re-export modules under `app/analytics`.
+4. Keep public URLs stable only when they remain the canonical product contract;
+   do not retain duplicate endpoint aliases.
 5. Move templates from `templates/analytics` to
-   `templates/kubernetes/analytics` after route imports are stable.
+   `templates/kubernetes/analytics` in the same controlled change.
 6. Update versioned Prometheus query-profile domain keys and any persisted audit
-   references in a controlled migration.
-7. Remove compatibility imports only after all internal consumers and tests use
-   the new path.
+   references in an explicit migration.
+7. Add CI assertions that the retired package paths and endpoint names do not
+   return after the cutover.
 
 ## Refactor priority across the current analytics package
 
@@ -412,7 +414,7 @@ The filesystem contract accepts canonical `node`, `nodename`, or
 `kubernetes_node` labels. It does not use `instance="IP:port"` as a node name.
 When the contract is incomplete, the page renders an integration capability
 blocker and directs the operator to Prometheus/Thanos remediation instead of
-executing a hidden compatibility fallback.
+executing an unvalidated alternate query path.
 
 Filesystem PromQL returns the original series so identity labels remain
 available. KAORI aggregates device series by the canonical node identity in the

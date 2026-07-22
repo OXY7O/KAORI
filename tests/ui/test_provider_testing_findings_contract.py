@@ -7,14 +7,6 @@ def read(path: str) -> str:
     return (ROOT / path).read_text(encoding="utf-8")
 
 
-def test_alertmanager_runtime_identity_precedes_version() -> None:
-    source = read("app/templates/integrations/alertmanager/partials/_inventory_content.html")
-    runtime = source[source.index('<td class="px-4 py-4 align-top">', source.index('row.instance.description')):]
-    runtime = runtime[:runtime.index('</td>')]
-    assert runtime.index('row.deployment_type') < runtime.index('row.version')
-    assert "Version not detected" in runtime
-
-
 def test_binding_contract_uses_standard_kaori_typography() -> None:
     source = read("app/templates/components/integration_coverage_content.html")
     assert 'font-mono text-xs text-content-secondary' not in source

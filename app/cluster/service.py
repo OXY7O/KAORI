@@ -9,7 +9,7 @@ import yaml
 from sqlalchemy import func, or_
 
 from app.extensions import db
-from app.integrations.kubernetes import connection_for_cluster
+from app.integrations.kubernetes.resolver import connection_for_cluster
 from app.integrations.deletion import DeletionBlocked, kubernetes_deletion_guard
 from app.alertmanager.resolver import resolve_alertmanager_sources
 from app.prometheus.repository import resolve_instance_for_cluster

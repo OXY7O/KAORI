@@ -267,7 +267,7 @@ def build_system_template_item(template: dict[str, Any]) -> dict[str, Any]:
         'delete_href': '',
         'customization_status': 'Read-only system template',
         'updated_label': 'System baseline',
-        'created_by_label': 'KubeReport',
+        'created_by_label': 'KAORI Kubernetes Reports',
         'can_edit': False,
         'can_delete': False,
         'can_duplicate': True,
@@ -643,13 +643,13 @@ def count_active_filters(selected_filters: dict[str, str]) -> int:
 
 def get_report_architecture_context() -> dict[str, Any]:
     return {
-        'current_domain_label': REPORT_DOMAIN_LABELS.get(DEFAULT_REPORT_DOMAIN, 'KubeReport'),
+        'current_domain_label': REPORT_DOMAIN_LABELS.get(DEFAULT_REPORT_DOMAIN, 'KAORI Kubernetes Reports'),
         'current_source_label': SOURCE_KIND_LABELS.get(DEFAULT_REPORT_SOURCE_KIND, 'Kubernetes'),
-        'serverreport_label': REPORT_DOMAIN_LABELS.get('serverreport', 'ServerReport'),
-        'hcireport_label': REPORT_DOMAIN_LABELS.get('hcireport', 'HCIReport'),
-        'serverreport_description': REPORT_DOMAIN_DESCRIPTIONS.get('serverreport', ''),
-        'hcireport_description': REPORT_DOMAIN_DESCRIPTIONS.get('hcireport', ''),
-        'status': 'KubeReport ready · ServerReport and HCIReport integration scope',
+        'server_label': REPORT_DOMAIN_LABELS.get('server', 'KAORI Server Reports'),
+        'hci_label': REPORT_DOMAIN_LABELS.get('hci', 'KAORI HCI Reports'),
+        'server_description': REPORT_DOMAIN_DESCRIPTIONS.get('server', ''),
+        'hci_description': REPORT_DOMAIN_DESCRIPTIONS.get('hci', ''),
+        'status': 'KAORI Kubernetes Reports ready · KAORI Server Reports and KAORI HCI Reports integration scope',
     }
 
 
@@ -666,7 +666,7 @@ def get_renderer_readiness() -> list[dict[str, str]]:
     return [
         {
             'label': 'System template catalog',
-            'description': 'Default templates are available for the implemented KubeReport report families.',
+            'description': 'Default templates are available for the implemented KAORI Kubernetes Reports report families.',
             'status': 'Ready',
             'tone': 'green',
             'icon': 'check-circle-2',

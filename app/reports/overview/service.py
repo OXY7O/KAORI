@@ -116,11 +116,11 @@ def get_reports_overview_payload() -> dict[str, Any]:
 
 def get_report_architecture_context() -> dict[str, str]:
     return {
-        'active_domain_label': REPORT_DOMAIN_LABELS.get(DEFAULT_REPORT_DOMAIN, 'KubeReport'),
+        'active_domain_label': REPORT_DOMAIN_LABELS.get(DEFAULT_REPORT_DOMAIN, 'KAORI Kubernetes Reports'),
         'active_source_label': SOURCE_KIND_LABELS.get(DEFAULT_REPORT_SOURCE_KIND, 'Container Platform'),
-        'future_domain_label': REPORT_DOMAIN_LABELS.get('serverreport', 'ServerReport'),
-        'future_domain_description': REPORT_DOMAIN_DESCRIPTIONS.get('serverreport', ''),
-        'summary': 'KubeReport owns Kubernetes reporting, ServerReport owns server/VM reporting with Node Exporter signals, and HCIReport owns HCI provider API reporting.',
+        'future_domain_label': REPORT_DOMAIN_LABELS.get('server', 'KAORI Server Reports'),
+        'future_domain_description': REPORT_DOMAIN_DESCRIPTIONS.get('server', ''),
+        'summary': 'KAORI Kubernetes Reports owns Kubernetes reporting, KAORI Server Reports owns server/VM reporting with Node Exporter signals, and KAORI HCI Reports owns HCI provider API reporting.',
     }
 
 
@@ -251,14 +251,14 @@ def get_report_type_coverage() -> dict[str, Any]:
 
     return {
         'kubernetes': {
-            'label': 'KubeReport Infrastructure Reports',
+            'label': 'KAORI Kubernetes Reports Infrastructure Reports',
             'description': 'Infrastructure report types currently backed by container platform inventory, metrics, alerts, and report templates.',
             'items': kubernetes_items,
             'available_count': sum(1 for item in kubernetes_items if item['status'] == 'Available'),
             'total_count': len(kubernetes_items),
         },
         'server': {
-            'label': 'ServerReport Infrastructure Reports',
+            'label': 'KAORI Server Reports Infrastructure Reports',
             'description': 'Infrastructure report types reserved for future VM, physical server, and HCI domains while reusing the same template, schedule, and storage model.',
             'items': server_items,
             'available_count': 0,
@@ -316,7 +316,7 @@ def get_pipeline_status(storage_context: dict[str, Any]) -> list[dict[str, str]]
         },
         {
             'name': 'Server & HCI Data Collection',
-            'description': 'Server/VM collectors belong to ServerReport, while HCI provider collectors belong to HCIReport. Both reuse this reporting workflow.',
+            'description': 'Server/VM collectors belong to KAORI Server Reports, while HCI provider collectors belong to KAORI HCI Reports. Both reuse this reporting workflow.',
             'status': 'Reserved',
             'tone': 'gray',
             'icon': 'server-cog',
@@ -356,11 +356,11 @@ def get_reporting_context(storage_context: dict[str, Any]) -> list[dict[str, Any
     return [
         {
             'title': 'Infrastructure domain ownership',
-            'description': 'The reporting engine is domain-aware. KubeReport, ServerReport, and HCIReport keep Kubernetes, server/VM, and HCI source families separated from the start.',
+            'description': 'The reporting engine is domain-aware. KAORI Kubernetes Reports, KAORI Server Reports, and KAORI HCI Reports keep Kubernetes, server/VM, and HCI source families separated from the start.',
             'icon': 'workflow',
             'bullets': [
-                'KubeReport source family: Kubernetes, Prometheus, and Alertmanager.',
-                'ServerReport source family: server/VM inventory and Node Exporter. HCIReport source family: HCI API.',
+                'KAORI Kubernetes Reports source family: Kubernetes, Prometheus, and Alertmanager.',
+                'KAORI Server Reports source family: server/VM inventory and Node Exporter. KAORI HCI Reports source family: HCI API.',
             ],
         },
         {
@@ -409,7 +409,7 @@ def get_current_status(
             'icon': 'files',
         },
         {
-            'label': 'KubeReport Coverage',
+            'label': 'KAORI Kubernetes Reports Coverage',
             'value': f'{kubernetes_coverage["available_count"]}/{kubernetes_coverage["total_count"]}',
             'description': 'Available infrastructure report types with implemented PDF contracts.',
             'tone': 'green',
@@ -437,9 +437,9 @@ def get_current_status(
             'icon': 'calendar-clock',
         },
         {
-            'label': 'ServerReport Coverage',
+            'label': 'KAORI Server Reports Coverage',
             'value': 'Reserved',
-            'description': 'Server/VM report types map to ServerReport, while HCI report types map to HCIReport provider sources.',
+            'description': 'Server/VM report types map to KAORI Server Reports, while HCI report types map to KAORI HCI Reports provider sources.',
             'tone': 'gray',
             'icon': 'server-cog',
         },
@@ -509,7 +509,7 @@ def get_data_collection_status() -> list[dict[str, Any]]:
             'items': [
                 'VM inventory, operating system, power state, placement, and ownership metadata.',
                 'Hypervisor or HCI host utilization, datastore capacity, and cluster health signals.',
-                'ServerReport and HCIReport sections reuse the same template, schedule, and storage lifecycle.',
+                'KAORI Server Reports and KAORI HCI Reports sections reuse the same template, schedule, and storage lifecycle.',
             ],
         },
     ]

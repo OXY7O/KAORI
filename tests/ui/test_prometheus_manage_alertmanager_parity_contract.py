@@ -12,7 +12,7 @@ VALIDATION = ROOT / 'app/templates/prometheus/partials/_detail_validation.html'
 VALIDATION_CONTENT = ROOT / 'app/templates/prometheus/partials/_detail_validation_content.html'
 RUNTIME = ROOT / 'app/templates/prometheus/partials/_detail_runtime.html'
 RUNTIME_PANEL = ROOT / 'app/templates/prometheus/partials/_runtime_panel.html'
-RUNTIME_HISTORY = ROOT / 'app/templates/prometheus/partials/_runtime_history.html'
+RUNTIME_HISTORY = ROOT / 'app/templates/integrations/partials/_runtime_history.html'
 SCOPE = ROOT / 'app/templates/prometheus/partials/_detail_scope.html'
 STANDARD = ROOT / 'docs/design/components/INTEGRATION_MANAGE_WORKSPACE.md'
 AUDIT = ROOT / 'docs/design/audits/PROMETHEUS_MANAGE_ALERTMANAGER_PARITY_AUDIT_2026_07.md'
@@ -22,20 +22,17 @@ def read(path: Path) -> str:
     return path.read_text(encoding='utf-8')
 
 
-def test_configuration_is_inline_and_legacy_edit_redirects() -> None:
+def test_configuration_is_inline_and_retired_edit_route_is_absent() -> None:
     routes = read(ROUTES)
     detail = read(DETAIL)
     configuration = read(CONFIGURATION)
 
     assert "@prometheus_bp.route('/instances/<int:instance_id>', methods=['GET', 'POST'])" in routes
-    assert "@prometheus_bp.get('/instances/<int:instance_id>/edit')" in routes
-    assert "return redirect(url_for('prometheus.instance_detail'" in routes
-    assert "render_template(\n        'prometheus/instance_form.html'" not in routes[routes.index('def edit_instance'):routes.index("@prometheus_bp.get('/instances')")]
-    assert "action=\"{{ url_for('prometheus.instance_detail', instance_id=instance.id) }}#configuration\"" in configuration
+    assert "/instances/<int:instance_id>/edit" not in routes
+    assert 'action="{{ url_for(\'prometheus.instance_detail\', instance_id=instance.id) }}#configuration"' in configuration
     assert 'Save Changes' in configuration
     assert 'Edit Configuration' not in detail + configuration
     assert "url_for('prometheus.edit_instance'" not in detail + configuration
-
 
 def test_configuration_uses_alertmanager_workspace_components() -> None:
     configuration = read(CONFIGURATION)
@@ -83,7 +80,7 @@ def test_validation_exposes_full_technical_capability_contract() -> None:
 def test_runtime_matches_alertmanager_health_and_history_contract() -> None:
     runtime = read(RUNTIME)
     panel = read(RUNTIME_PANEL)
-    history = read(RUNTIME_HISTORY) + read(ROOT / 'app/templates/integrations/partials/_runtime_history.html')
+    history = read(RUNTIME_HISTORY) + read(RUNTIME)
 
     assert runtime.count('workspace_summary_card.render') == 3
     for value in ('Readiness Versus Health', 'How Monitoring Works', 'Resolver Correlation'):
@@ -137,7 +134,8 @@ def test_manage_workspace_uses_one_context_builder_for_full_and_partial_response
     routes = read(ROUTES)
 
     assert 'def _instance_detail_context(' in routes
-    assert "context['delete_instance_url'] = _optional_endpoint_url(" in routes
+    assert "context['delete_instance_url'] = url_for(" in routes
+    assert 'def _optional_endpoint_url(' not in routes
     assert 'def _render_instance_partial(' in routes
     assert routes.count('_render_instance_partial(') >= 6
     assert 'ensure_canonical_instance(instance, provider_type=\'prometheus\')' in routes
@@ -163,7 +161,7 @@ def test_standard_and_audit_document_parity_contract() -> None:
         'Validation & Capabilities contract',
         'Runtime & History contract',
         'Scope & Resolution contract',
-        'legacy edit URL may redirect',
+        'Retired edit URLs are not registered',
     ):
         assert value in standard
     for value in (

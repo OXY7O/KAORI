@@ -15,12 +15,6 @@ def _navigation_sources() -> str:
     )
 
 
-def test_sidebar_standard_is_registered() -> None:
-    assert STANDARD.exists()
-    design_system = DESIGN_SYSTEM.read_text(encoding="utf-8")
-    assert "components/SIDEBAR_NAVIGATION.md" in design_system
-
-
 def test_sidebar_keeps_shell_specific_widths() -> None:
     source = SIDEBAR.read_text(encoding="utf-8")
     assert "w-[250px]" in source

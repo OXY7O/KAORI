@@ -216,7 +216,6 @@ def get_ingress_detail(
         'collected_at': ingress.collected_at,
         'labels': sorted(labels.items()),
         'annotations': sorted(annotations.items()),
-        'details_reported': bool(details),
     }
 
 

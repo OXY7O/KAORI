@@ -60,8 +60,8 @@
             <span class="truncate whitespace-nowrap">Top Consumers</span>
         </a>
         <a href="{{ url_for('analytics.alerts') }}"
-           class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint in ['analytics.alerts', 'analytics.alerts_table', 'analytics.alerts_anomalies', 'analytics.alerts_anomalies_table', 'analytics.anomalies'] else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] leading-4 transition">
-            <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint in ['analytics.alerts', 'analytics.alerts_table', 'analytics.alerts_anomalies', 'analytics.alerts_anomalies_table', 'analytics.anomalies'] else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
+           class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint in ['analytics.alerts', 'analytics.alerts_table', 'analytics.alerts_anomalies', 'analytics.alerts_anomalies_table'] else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] leading-4 transition">
+            <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint in ['analytics.alerts', 'analytics.alerts_table', 'analytics.alerts_anomalies', 'analytics.alerts_anomalies_table'] else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
             <i data-lucide="triangle-alert" class="h-3.5 w-3.5"></i>
             <span class="truncate whitespace-nowrap">Alerts &amp; Anomalies</span>
         </a>

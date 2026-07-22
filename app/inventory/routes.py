@@ -6,42 +6,58 @@ from flask_login import current_user
 from app.cluster.onboarding import has_registered_clusters
 from app.cluster.sync_jobs import enqueue_cluster_inventory_sync
 from app.cluster.service import build_cluster_context
-from app.inventory.service import (
+from app.inventory.overview import (
     get_cluster_by_id,
+    get_inventory_clusters,
+    get_inventory_overview,
+)
+from app.inventory.resources.configuration import (
     get_configuration_detail,
     get_configuration_inventory_view,
+)
+from app.inventory.resources.ingresses import (
     get_ingress_detail,
     get_ingress_filter_classes,
     get_ingress_inventory,
-    get_inventory_clusters,
-    get_inventory_overview,
+)
+from app.inventory.resources.namespaces import (
     get_namespace_detail,
     get_namespace_filter_statuses,
     get_namespace_inventory,
+)
+from app.inventory.resources.nodes import (
     get_node_detail,
     get_node_filter_roles,
     get_node_filter_statuses,
     get_node_inventory,
+)
+from app.inventory.resources.pods import (
     get_pod_detail,
     get_pod_filter_namespaces,
     get_pod_filter_nodes,
     get_pod_filter_owner_types,
     get_pod_filter_statuses,
     get_pod_inventory,
+)
+from app.inventory.resources.services import (
     get_service_detail,
     get_service_filter_types,
     get_service_inventory,
+)
+from app.inventory.resources.storage import (
     get_storage_detail,
     get_storage_filter_statuses,
     get_storage_filter_types,
     get_storage_inventory_view,
+)
+from app.inventory.resources.workloads import (
     get_workload_detail,
     get_workload_filter_namespaces,
     get_workload_filter_statuses,
     get_workload_filter_types,
     get_workload_inventory,
 )
-from app.inventory.topology import build_topology_graph, build_topology_page_context
+from app.inventory.topology.service import build_topology_graph, build_topology_page_context
 from app.notifications.service import (
     get_navigation_notification_context,
     queue_quick_action_feedback,

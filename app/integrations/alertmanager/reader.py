@@ -10,11 +10,10 @@ from app.integrations.alertmanager.normalizers.silences import normalize_silence
 from app.integrations.alertmanager.status import mark_status
 from app.models.alertmanager import AlertmanagerInstance
 
-ReadableAlertmanager = AlertmanagerInstance
 
 
 def read_alerts(
-    source: ReadableAlertmanager,
+    source: AlertmanagerInstance,
     *,
     source_name: str,
     query: AlertQuery | None = None,
@@ -54,7 +53,7 @@ def read_alerts(
 
 
 def read_silences(
-    source: ReadableAlertmanager,
+    source: AlertmanagerInstance,
     *,
     source_name: str,
     filters: tuple[str, ...] = (),
@@ -85,7 +84,7 @@ def read_silences(
     }
 
 
-def _runtime_gate_error(source: ReadableAlertmanager) -> str | None:
+def _runtime_gate_error(source: AlertmanagerInstance) -> str | None:
     if not source.endpoint:
         return 'Alertmanager endpoint is not configured.'
     if source.readiness_status in {'blocked', 'validation_required'}:

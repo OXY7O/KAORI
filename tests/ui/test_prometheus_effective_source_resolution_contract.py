@@ -3,9 +3,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def test_binding_contract_declares_complete_prometheus_consumer_scope():
-    source = (ROOT / 'app/prometheus/binding_contract.py').read_text()
-
+def test_prometheus_binding_capabilities_are_declared_at_creation_authority() -> None:
+    source = (ROOT / 'app/prometheus/service.py').read_text()
+    assert not (ROOT / 'app/prometheus/binding_contract.py').exists()
     for capability in (
         'metrics',
         'capacity',
@@ -17,31 +17,14 @@ def test_binding_contract_declares_complete_prometheus_consumer_scope():
         'alert_metrics',
     ):
         assert repr(capability) in source
-    assert 'effective_prometheus_binding_capabilities' in source
-    assert 'normalize_prometheus_binding_capabilities' in source
+    assert 'capability_scope=PROMETHEUS_BINDING_CAPABILITIES' in source
 
 
-def test_resolver_uses_effective_binding_contract_and_assessment_evidence():
-    resolver = (ROOT / 'app/prometheus/resolver.py').read_text()
-
-    assert 'effective_prometheus_binding_capabilities(item.binding)' in resolver
-    assert "capability_payload.get('assessments')" in resolver
-    assert "in {'available', 'ready'}" in resolver
-
-
-def test_full_binding_validation_persists_legacy_scope_repair():
-    service = (ROOT / 'app/prometheus/service.py').read_text()
-
-    assert 'normalize_prometheus_binding_capabilities(binding)' in service
-    assert 'capability_scope=list(PROMETHEUS_BINDING_CAPABILITIES)' in service
-
-
-def test_resolution_card_exposes_primary_blocker_without_expansion():
-    template = (
-        ROOT
-        / 'app/templates/prometheus/partials/_detail_scope.html'
+def test_foundation_migration_normalizes_prometheus_binding_scope() -> None:
+    migration = (
+        ROOT / 'migrations/versions/20260722_foundation_compatibility_cleanup.py'
     ).read_text()
-    presentation = (ROOT / 'app/prometheus/presentation.py').read_text()
+    assert '_PROMETHEUS_CAPABILITIES' in migration
+    assert 'capability_scope=list(_PROMETHEUS_CAPABILITIES)' in migration
 
-    assert 'consumer.primary_blocker' in template
-    assert "'primary_blocker':" in presentation
+

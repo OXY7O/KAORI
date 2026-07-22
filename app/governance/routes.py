@@ -4,14 +4,9 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 
 from app.cluster.onboarding import has_registered_clusters
 from app.governance.tls_certificates.routes import (
-    tls_certificates_bulk_apply,
-    tls_certificates_bulk_page,
-    tls_certificates_bulk_preview,
     tls_certificates_detail,
     tls_certificates_index,
     tls_certificates_sync,
-    tls_certificates_update_apply,
-    tls_certificates_update_preview,
 )
 from app.rbac.decorators import permission_required
 
@@ -67,37 +62,3 @@ governance_bp.add_url_rule(
     methods=['GET'],
 )
 
-governance_bp.add_url_rule(
-    '/tls-certificates/<int:certificate_id>/update/preview',
-    endpoint='tls_certificates_update_preview',
-    view_func=tls_certificates_update_preview,
-    methods=['POST'],
-)
-
-governance_bp.add_url_rule(
-    '/tls-certificates/<int:certificate_id>/update/apply',
-    endpoint='tls_certificates_update_apply',
-    view_func=tls_certificates_update_apply,
-    methods=['POST'],
-)
-
-governance_bp.add_url_rule(
-    '/tls-certificates/bulk-update',
-    endpoint='tls_certificates_bulk_update',
-    view_func=tls_certificates_bulk_page,
-    methods=['GET'],
-)
-
-governance_bp.add_url_rule(
-    '/tls-certificates/bulk-update/preview',
-    endpoint='tls_certificates_bulk_preview',
-    view_func=tls_certificates_bulk_preview,
-    methods=['POST'],
-)
-
-governance_bp.add_url_rule(
-    '/tls-certificates/bulk-update/apply',
-    endpoint='tls_certificates_bulk_apply',
-    view_func=tls_certificates_bulk_apply,
-    methods=['POST'],
-)

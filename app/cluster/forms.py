@@ -5,7 +5,6 @@ from wtforms.validators import DataRequired, Length, Optional
 
 from app.cluster.constants import ENVIRONMENTS
 
-ENVIRONMENT_CHOICES = ENVIRONMENTS
 
 
 class ClusterCreateForm(FlaskForm):
@@ -21,7 +20,7 @@ class ClusterCreateForm(FlaskForm):
 
     environment = SelectField(
         'Environment',
-        choices=ENVIRONMENT_CHOICES,
+        choices=ENVIRONMENTS,
         validators=[
             DataRequired(),
         ],
@@ -68,7 +67,7 @@ class ClusterEditForm(FlaskForm):
 
     environment = SelectField(
         'Environment',
-        choices=ENVIRONMENT_CHOICES,
+        choices=ENVIRONMENTS,
         validators=[
             DataRequired(),
         ],

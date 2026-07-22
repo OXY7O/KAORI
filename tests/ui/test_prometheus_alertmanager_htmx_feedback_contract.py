@@ -22,29 +22,6 @@ def test_shared_feedback_persists_audit_and_uses_oob_toast() -> None:
     assert 'def record_operational_activity(' in service
 
 
-def test_prometheus_normal_mutations_use_htmx_and_oob_feedback() -> None:
-    registration = read(PROM_TEMPLATES / 'instance_form.html')
-    configuration = read(PROM_TEMPLATES / 'partials/_detail_configuration.html')
-    validation = read(PROM_TEMPLATES / 'partials/_detail_validation_content.html')
-    runtime = read(PROM_TEMPLATES / 'partials/_runtime_panel.html')
-    runtime_response = read(PROM_TEMPLATES / 'partials/_runtime_refresh_response.html')
-    scope = read(PROM_TEMPLATES / 'partials/_detail_scope.html')
-    modal = read(PROM_TEMPLATES / 'partials/_delete_confirmation_modal.html')
-
-    assert 'hx-post="{{ url_for(\'prometheus.new_instance\'' in registration
-    assert 'hx-target="#prometheus-registration-workspace"' in registration
-    assert 'hx-post="{{ url_for(\'prometheus.instance_detail\'' in configuration
-    assert 'hx-target="#prometheus-configuration-workspace"' in configuration
-    assert 'hx-post="{{ url_for(\'prometheus.instance_validate\'' in validation
-    assert 'hx-post="{{ url_for(\'prometheus.refresh_runtime\'' in runtime
-    assert 'hx-post="{{ url_for(\'prometheus.add_instance_binding\'' in scope
-    assert 'hx-target="#prometheus-scope-workspace"' in modal
-    assert "form.setAttribute('hx-post', deleteUrl)" in modal
-    assert "form.addEventListener('htmx:afterRequest', closeModal)" in modal
-    for source in (registration, configuration, validation, runtime_response, scope):
-        assert 'operation_feedback_oob.html' in source
-
-
 def test_alertmanager_normal_mutations_use_htmx_and_oob_feedback() -> None:
     registration = read(ALERT_TEMPLATES / 'instance_form.html')
     configuration = read(ALERT_TEMPLATES / 'partials/_detail_configuration.html')

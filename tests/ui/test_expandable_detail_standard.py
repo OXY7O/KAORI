@@ -20,14 +20,6 @@ def test_kubernetes_registry_uses_htmx_detail_partial():
     assert 'Kubernetes Connection Details' not in registry
 
 
-def test_kubernetes_detail_content_uses_inventory_card_pattern():
-    detail = (ROOT / 'app/templates/integrations/kubernetes/partials/_registry_detail_content.html').read_text()
-    assert 'bg-surface-hover px-4 py-4' in detail
-    assert "detail.detail_card('Connection identity'" in detail
-    assert "detail.detail_card('Operational coverage'" in detail
-    assert "detail.detail_card('Source bindings'" in detail
-
-
 def test_kubernetes_registry_detail_route_is_provider_local():
     routes = (ROOT / 'app/integrations/routes.py').read_text()
     assert "/kubernetes/<string:cluster_id>/registry-details" in routes

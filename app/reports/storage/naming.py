@@ -40,8 +40,8 @@ def get_report_domain_slug(
     report: Report,
 ) -> str:
     return slugify_storage_part(
-        getattr(report, 'report_domain', None) or 'kubereport',
-        fallback='kubereport',
+        getattr(report, 'report_domain', None) or 'kubernetes',
+        fallback='kubernetes',
     )
 
 

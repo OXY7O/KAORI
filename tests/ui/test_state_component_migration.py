@@ -42,10 +42,9 @@ def test_state_adapter_templates_contain_no_duplicate_visual_markup():
 
 def test_migrated_registry_empty_states_use_shared_component():
     templates = [
-        TEMPLATE_ROOT / 'cluster/partials/_table.html',
-        TEMPLATE_ROOT / 'integrations/kubernetes.html',
         TEMPLATE_ROOT / 'integrations/kubernetes/partials/_registry.html',
-        TEMPLATE_ROOT / 'integrations/partials/_table.html',
+        TEMPLATE_ROOT / 'integrations/alertmanager/partials/_inventory_content.html',
+        TEMPLATE_ROOT / 'integrations/prometheus/partials/_inventory_content.html',
         TEMPLATE_ROOT / 'settings/data_lifecycle/partials/_history.html',
     ]
     for template in templates:

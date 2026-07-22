@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from app.integrations.runtime.contracts import HealthFactor, HealthState
+from app.integrations.contracts import HealthFactor, HealthState
 
 
 def calculate_health(factors: Iterable[HealthFactor]) -> HealthState:

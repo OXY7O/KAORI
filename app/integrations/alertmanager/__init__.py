@@ -1,4 +1,4 @@
-from app.integrations.alertmanager.adapter import AlertmanagerRuntimeAdapter, runtime_adapter
+from app.integrations.alertmanager.adapter import runtime_adapter
 from app.integrations.alertmanager.capabilities import CAPABILITY_KEYS, COMPATIBILITY_PROFILES
 from app.integrations.registry import IntegrationModule, model_loader, registry
 from app.models.alertmanager import AlertmanagerInstance
@@ -31,4 +31,3 @@ integration_module = IntegrationModule(
 
 registry.register(integration_module)
 
-__all__ = ['AlertmanagerRuntimeAdapter', 'integration_module', 'runtime_adapter']

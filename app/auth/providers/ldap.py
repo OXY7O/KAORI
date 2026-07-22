@@ -5,7 +5,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.auth.results import AuthResult
 from app.extensions import db
 from app.models import ExternalIdentityLink, User
-from app.users.providers import ExternalProviderError, LdapDirectoryProvider
+from app.users.providers.ldap import ExternalProviderError, LdapDirectoryProvider
 
 
 class LdapAuthProvider:

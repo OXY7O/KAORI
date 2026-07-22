@@ -35,7 +35,7 @@ Test at least:
 - active role grants assigned permission;
 - active role denies unassigned permission;
 - inactive role denies all role permissions;
-- legacy default-role fallback remains compatible;
+- a user without an assigned role remains fail-safe at Viewer permissions;
 - unknown permission denied for normal user.
 
 ## 3. Seed tests
@@ -48,8 +48,8 @@ Test at least:
 - updates changed permission metadata;
 - updates changed default-role metadata;
 - preserves custom role metadata and custom assignments;
-- backfills missing `role_id` from a valid legacy role;
-- falls back unknown legacy role to Viewer;
+- the foundation migration backfills `role_id` before dropping the retired role slug;
+- an unmapped retired role slug falls back to Viewer during that one-time migration;
 - second run is idempotent.
 
 ## 4. Route authorization tests

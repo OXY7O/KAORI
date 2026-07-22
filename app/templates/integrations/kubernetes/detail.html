@@ -111,7 +111,7 @@
             </div>
             <div id="kubernetes-panel-runtime" role="tabpanel" aria-labelledby="kubernetes-tab-runtime" x-show="activeTab === 'runtime'" x-cloak class="space-y-5">
                 {% with validation_job=runtime_validation_job %}{% include 'integrations/kubernetes/partials/_runtime_workspace.html' %}{% endwith %}
-                {% include 'integrations/kubernetes/partials/_runtime_history.html' %}
+                {% with runtime_history=history, runtime_history_id='kubernetes-runtime-history', runtime_history_loading_id='kubernetes-history-loading', runtime_history_url=url_for('integrations.kubernetes_runtime_history', cluster_id=cluster.id), provider_label='Kubernetes' %}{% include 'integrations/partials/_runtime_history.html' %}{% endwith %}
             </div>
             <div id="kubernetes-panel-inventory" role="tabpanel" aria-labelledby="kubernetes-tab-inventory" x-show="activeTab === 'inventory'" x-cloak>
                 {% include 'integrations/kubernetes/partials/_inventory_lifecycle.html' %}

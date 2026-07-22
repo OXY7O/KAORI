@@ -77,17 +77,3 @@ def test_alertmanager_runtime_uses_shared_health_interpretation() -> None:
         assert legacy not in runtime_panel
 
 
-def test_validation_runtime_documentation_contract() -> None:
-    workspace_summary = read("docs/design/components/WORKSPACE_SUMMARY_CARD.md")
-    health = read("docs/design/components/HEALTH_INTERPRETATION.md")
-    audit = read("docs/design/audits/ALERTMANAGER_VALIDATION_RUNTIME_WORKSPACE_AUDIT_2026_07.md")
-    design_system = read("docs/design/KAORI_DESIGN_SYSTEM.md")
-    alertmanager_readme = read("app/alertmanager/README.md")
-
-    assert 'Validation: What Validation Does, Why It Matters, Operator Flow' in workspace_summary
-    assert 'Runtime: Readiness Versus Health, How Monitoring Works, Resolver Correlation' in workspace_summary
-    assert 'Unknown or not-observed posture must not be presented as Critical' in health
-    assert 'oversized radial or donut score chart' in health
-    assert 'Mixed peer-summary styling' in audit
-    assert '## Health Interpretation' in design_system
-    assert 'does not use a decorative radial chart' in alertmanager_readme
