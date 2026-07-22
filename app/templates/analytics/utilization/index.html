@@ -168,7 +168,7 @@
             </section>
 
             {% include "analytics/utilization/partials/_recommendations.html" %}
-            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+            <script src="{{ url_for('static', filename='vendor/chartjs/chart.umd.min.js') }}"></script>
             {% include "analytics/utilization/partials/_trend.html" %}
 
             <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
