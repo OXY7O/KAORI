@@ -17,11 +17,12 @@ def test_user_management_hero_uses_standard_context_metrics() -> None:
     assert "page_hero.context_metric('circle-check', 'Active', summary.active" in source
 
 
-def test_user_management_hero_keeps_two_actions_only() -> None:
+def test_user_management_hero_keeps_two_white_context_actions_only() -> None:
     source = _source()
 
-    assert source.count("page_hero.primary_action_classes()") == 1
-    assert source.count("page_hero.secondary_action_classes()") == 1
+    assert source.count("page_hero.context_action_classes()") == 2
+    assert "page_hero.primary_action_classes()" not in source
+    assert "page_hero.secondary_action_classes()" not in source
     assert "Add User" in source
     assert "Provision LDAP" in source
 
