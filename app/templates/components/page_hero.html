@@ -24,7 +24,31 @@ text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-mute
 {%- endmacro %}
 
 {% macro context_panel_title_classes() -%}
-mt-1 text-base font-semibold text-brand-foreground
+mt-1 text-base font-semibold leading-6 text-brand-foreground
+{%- endmacro %}
+
+{% macro context_icon_classes() -%}
+flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-brand-surface text-brand-foreground
+{%- endmacro %}
+
+{% macro context_metric_card_classes() -%}
+rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5
+{%- endmacro %}
+
+{% macro context_metric_label_classes() -%}
+text-[11px] font-semibold leading-4 text-brand-foreground
+{%- endmacro %}
+
+{% macro context_metric_value_classes(compact=false) -%}
+{{ 'text-sm font-semibold leading-5' if compact else 'text-xl font-bold leading-none' }} text-brand-foreground
+{%- endmacro %}
+
+{% macro context_metric_description_classes() -%}
+mt-1 text-[10px] leading-4 text-brand-foreground-muted
+{%- endmacro %}
+
+{% macro context_single_action_classes(tone='primary') -%}
+mt-auto w-full {{ primary_action_classes() if tone == 'primary' else secondary_action_classes() }}
 {%- endmacro %}
 
 
@@ -34,7 +58,7 @@ mt-1 text-base font-semibold text-brand-foreground
             <p class="{{ context_panel_eyebrow_classes() }}">{{ eyebrow_label }}</p>
             <h2 class="{{ context_panel_title_classes() }}">{{ title }}</h2>
         </div>
-        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-brand-surface text-brand-foreground" aria-hidden="true">
+        <span class="{{ context_icon_classes() }}" aria-hidden="true">
             <i data-lucide="{{ icon }}" class="h-5 w-5"></i>
         </span>
     </div>
@@ -53,13 +77,13 @@ mt-3 grid grid-cols-2 gap-2
 {%- endmacro %}
 
 {% macro context_metric(icon, label, value, description, value_classes='text-xl font-bold leading-none') -%}
-    <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5">
+    <div class="{{ context_metric_card_classes() }}">
         <div class="flex items-center gap-2 text-brand-foreground">
             <i data-lucide="{{ icon }}" class="h-3.5 w-3.5" aria-hidden="true"></i>
-            <p class="text-[11px] font-semibold">{{ label }}</p>
+            <p class="{{ context_metric_label_classes() }}">{{ label }}</p>
         </div>
         <p class="mt-1.5 {{ value_classes }} text-brand-foreground">{{ value }}</p>
-        <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">{{ description }}</p>
+        <p class="{{ context_metric_description_classes() }}">{{ description }}</p>
     </div>
 {%- endmacro %}
 
@@ -69,7 +93,7 @@ text-[30px] font-bold leading-9 tracking-[-0.02em] text-brand-foreground lg:text
 {%- endmacro %}
 
 {% macro description_classes() -%}
-max-w-[44rem] text-sm font-normal leading-6 text-brand-foreground-muted lg:text-[15px]
+max-w-[44rem] text-[15px] font-normal leading-6 text-brand-foreground-muted lg:text-base
 {%- endmacro %}
 
 {% macro metadata_row_classes() -%}

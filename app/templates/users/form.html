@@ -42,7 +42,7 @@
                                 {{ page_hero.context_metric('circle-check' if user.account_is_active else 'circle-pause', 'Account State', 'Active' if user.account_is_active else 'Inactive', 'Current KAORI lifecycle posture', value_classes='text-sm font-semibold leading-5') }}
                             </div>
                         {% endif %}
-                        <a href="{{ url_for('users.index') }}" class="mt-auto inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-brand-outline bg-surface-card px-4 py-2 text-xs font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70">
+                        <a href="{{ url_for('users.index') }}" class="{{ page_hero.context_single_action_classes() }}">
                             <i data-lucide="arrow-left" class="h-4 w-4"></i>
                             Back to Users
                         </a>

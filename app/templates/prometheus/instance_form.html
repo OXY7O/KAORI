@@ -19,13 +19,13 @@
         <div class="{{ page_hero.layout_classes() }}">
             <div class="{{ page_hero.content_classes() }}">
                 {% call page_hero.intro('activity', 'Metrics Integration', 'chart-spline') %}
-                    <h1 class="text-2xl font-semibold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">
+                    <h1 class="{{ page_hero.title_classes() }}">
                         {{ 'Edit Prometheus Connection' if instance else 'Register Prometheus Connection' }}
                     </h1>
-                    <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">
+                    <p class="mt-2 {{ page_hero.description_classes() }}">
                         {{ 'Update the reusable metrics connection contract, then run validation again.' if instance else 'Create a reusable metrics connection before validating capabilities and assigning scope bindings.' }}
                     </p>
-                    <div class="mt-5 flex flex-wrap gap-2">
+                    <div class="{{ page_hero.metadata_row_classes() }}">
                         {{ page_hero.meta_label('database-zap', 'Prometheus-Compatible API') }}
                         {{ page_hero.meta_label('shield-check', 'Capability-Aware Validation') }}
                         {{ page_hero.meta_label('link-2', 'Governed Scope Binding') }}
@@ -48,7 +48,7 @@
                             {{ page_hero.context_metric('link-2', 'Scope Bindings', binding_count, 'Contexts eligible to use this source') }}
                         </div>
                         <a href="{{ url_for('prometheus.instance_detail', instance_id=instance.id) }}"
-                           class="mt-auto inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-brand-outline bg-surface-card px-4 py-2 text-xs font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70">
+                           class="{{ page_hero.context_single_action_classes() }}">
                             <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i>
                             Back to Connection
                         </a>
@@ -58,7 +58,7 @@
                             {{ page_hero.context_metric('scan-search', 'After Save', 'Full Validation', 'Then assign scope bindings', value_classes='text-sm font-semibold leading-5') }}
                         </div>
                         <a href="{{ url_for('integrations.prometheus') }}"
-                           class="mt-auto inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-brand-outline bg-surface-card px-4 py-2 text-xs font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70">
+                           class="{{ page_hero.context_single_action_classes() }}">
                             <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i>
                             Back to Registry
                         </a>

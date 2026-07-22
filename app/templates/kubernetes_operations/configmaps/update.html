@@ -4,13 +4,13 @@
 {% block title %}View & Update ConfigMap{% endblock title %}
 {% block dashboard_content %}
     <div class="grid gap-6">
-        <section class="relative overflow-hidden rounded-2xl border border-brand-outline bg-kaori-primary p-5 text-brand-foreground shadow-sm lg:p-6">
-            <div class="relative grid gap-5 xl:grid-cols-12 xl:items-stretch">
-                <div class="flex min-w-0 flex-col justify-center xl:col-span-7">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('file-cog', 'ConfigMap Management', 'file-pen-line') %}
-                        <h1 class="text-2xl font-semibold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">View &amp; Update ConfigMap</h1>
-                        <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">Load current Kubernetes values, review consumers, preview the effective diff, and apply a validated merge or replacement.</p>
-                        <div class="mt-5 flex flex-wrap gap-2">
+                        <h1 class="{{ page_hero.title_classes() }}">View &amp; Update ConfigMap</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Load current Kubernetes values, review consumers, preview the effective diff, and apply a validated merge or replacement.</p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('radio-tower', 'Live Kubernetes values') }}
                             {{ page_hero.meta_label('git-compare-arrows', 'Effective diff preview') }}
                             {{ page_hero.meta_label('scroll-text', 'Audited update') }}

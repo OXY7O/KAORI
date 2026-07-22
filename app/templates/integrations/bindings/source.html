@@ -8,9 +8,9 @@
         <div class="{{ page_hero.layout_classes() }}">
             <div class="{{ page_hero.content_classes() }}">
                 {% call page_hero.intro(provider.icon, 'Integration Binding', 'route') %}
-                    <h1 class="text-2xl font-semibold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">Bind {{ provider.label }} Source</h1>
-                    <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">Associate an operational scope with an existing reusable connection and define the selector that keeps shared data isolated.</p>
-                    <div class="mt-5 flex flex-wrap gap-2">
+                    <h1 class="{{ page_hero.title_classes() }}">Bind {{ provider.label }} Source</h1>
+                    <p class="mt-2 {{ page_hero.description_classes() }}">Associate an operational scope with an existing reusable connection and define the selector that keeps shared data isolated.</p>
+                    <div class="{{ page_hero.metadata_row_classes() }}">
                         {{ page_hero.meta_label('boxes', cluster.name if cluster else 'Scope unavailable') }}
                         {{ page_hero.meta_label('server-cog', source_options|length ~ ' Existing Sources') }}
                         {{ page_hero.meta_label('fingerprint', 'Selector Required for Shared Sources') }}
@@ -27,7 +27,7 @@
                         {{ page_hero.context_metric('database', 'Connection Records', source_options|length, 'Registered once and reusable') }}
                         {{ page_hero.context_metric('link-2', 'Current Binding', 1 if scope_row and scope_row.source else 0, 'One primary source per scope') }}
                     </div>
-                    <a href="{{ url_for(provider.registry_endpoint) }}" class="mt-3 inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-brand-outline bg-surface-card px-4 py-2 text-xs font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft"><i data-lucide="arrow-left" class="h-4 w-4"></i>Back to {{ provider.label }} Registry</a>
+                    <a href="{{ url_for(provider.registry_endpoint) }}" class="{{ page_hero.context_single_action_classes() }}"><i data-lucide="arrow-left" class="h-4 w-4"></i>Back to {{ provider.label }} Registry</a>
                 </div>
             </aside>
         </div>

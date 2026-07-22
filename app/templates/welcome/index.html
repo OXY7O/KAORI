@@ -4,62 +4,33 @@
 {% block title %}Welcome · KAORI{% endblock title %}
 {% block dashboard_content %}
     <div class="grid gap-6">
-        <section class="relative isolate overflow-hidden rounded-2xl bg-kaori-primary p-6 text-brand-foreground shadow-xl shadow-kaori-primary/20 sm:p-7 xl:grid xl:min-h-[284px] xl:grid-cols-[minmax(0,1fr)_360px] xl:gap-7">
-            <div class="pointer-events-none absolute -left-24 -top-28 h-72 w-72 rounded-full border border-white/10" aria-hidden="true"></div>
-            <div class="pointer-events-none absolute -left-10 -top-16 h-72 w-72 rounded-full border border-white/[0.08]" aria-hidden="true"></div>
-            <div class="pointer-events-none absolute -bottom-48 right-56 h-96 w-96 rounded-full border border-white/10" aria-hidden="true"></div>
-            <div class="pointer-events-none absolute -bottom-36 right-68 h-80 w-80 rounded-full border border-white/[0.08]" aria-hidden="true"></div>
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('orbit', 'Infrastructure Operations Workspace', 'sparkles') %}
+                        <h1 class="{{ page_hero.title_classes() }}">Welcome to KAORI</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">
+                            Operate and govern infrastructure through one extensible workspace for visibility, controlled workflows, analytics, reporting, and administration.
+                        </p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('user-round', current_user.display_label) }}
+                            {{ page_hero.meta_label('shield-user', current_user.role_display_name) }}
+                            {{ page_hero.meta_label('panels-top-left', shortcut_count ~ ' Available Workspaces') }}
+                        </div>
+                    {% endcall %}
+                </div>
 
-            <div class="relative z-10 flex min-w-0 flex-col justify-center">
-                {% call page_hero.intro('orbit', 'Infrastructure operations workspace', 'sparkles') %}
-                    <h1 class="text-[clamp(2rem,3.2vw,3.35rem)] font-extrabold leading-[1.04] tracking-[-0.045em] text-white">
-                        Welcome to KAORI, {{ current_user.role_display_name }}.
-                    </h1>
-                    <p class="mt-2 text-xl font-bold tracking-[-0.02em] text-brand-foreground-muted sm:text-2xl">
-                        {{ current_user.display_label }}
-                    </p>
-                    <p class="mt-3 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">
-                        Operate and govern infrastructure through an extensible workspace for visibility, controlled workflows, analytics, reporting, and administration.
-                    </p>
-
-                    <div class="mt-6 flex flex-wrap gap-2">
-                        {{ page_hero.meta_label('shield-user', current_user.role_display_name) }}
-                        {{ page_hero.meta_label('panels-top-left', shortcut_count ~ ' Available Workspace' ~ ('' if shortcut_count == 1 else 's')) }}
-                        {{ page_hero.meta_label('layers-3', workspace_group_count ~ ' Capability Area' ~ ('' if workspace_group_count == 1 else 's')) }}
+                <aside class="{{ page_hero.aside_classes() }}" aria-label="Current access scope">
+                    <div class="{{ page_hero.context_panel_classes() }}">
+                        {{ page_hero.context_header('Access Scope', 'Role-Aware Workspace', 'key-round') }}
+                        <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                            {{ page_hero.context_metric('panels-top-left', 'Workspaces', shortcut_count, 'Available for the current role') }}
+                            {{ page_hero.context_metric('layers-3', 'Capability Areas', workspace_group_count, 'Grouped operational domains') }}
+                        </div>
+                        {{ page_hero.context_note('KAORI renders only permitted workspaces. Protected routes and actions remain enforced server-side.') }}
                     </div>
-                {% endcall %}
+                </aside>
             </div>
-
-            <aside class="relative z-10 mt-6 flex min-w-0 flex-col justify-between overflow-hidden rounded-xl border border-brand-outline bg-black/20 p-5 shadow-2xl shadow-black/15 backdrop-blur-xl xl:mt-0" aria-label="Current access scope">
-                <div class="pointer-events-none absolute -bottom-24 -right-20 h-56 w-56 rounded-full border border-white/10" aria-hidden="true"></div>
-                <div class="relative z-10 flex items-start justify-between gap-4">
-                    <div>
-                        <p class="text-[10px] font-extrabold uppercase tracking-[0.16em] text-brand-foreground-muted">Your access scope</p>
-                        <h2 class="mt-2 text-xl font-extrabold tracking-[-0.025em] text-white">Role Aware Workspace</h2>
-                    </div>
-                    <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-brand-outline bg-black/15 text-kaori-accent" aria-hidden="true">
-                        <i data-lucide="key-round" class="h-5 w-5"></i>
-                    </span>
-                </div>
-
-                <div class="relative z-10 mt-6 grid grid-cols-2 gap-3">
-                    <div class="rounded-xl border border-brand-outline bg-black/15 p-4">
-                        <strong class="block text-3xl font-extrabold leading-none text-white">{{ shortcut_count }}</strong>
-                        <span class="mt-2 block text-[10px] font-extrabold uppercase tracking-[0.1em] text-brand-foreground-muted">Workspaces</span>
-                    </div>
-                    <div class="rounded-xl border border-brand-outline bg-black/15 p-4">
-                        <strong class="block text-3xl font-extrabold leading-none text-white">{{ workspace_group_count }}</strong>
-                        <span class="mt-2 block text-[10px] font-extrabold uppercase tracking-[0.1em] text-brand-foreground-muted">Capability Areas</span>
-                    </div>
-                </div>
-
-                <div class="relative z-10 mt-4 flex items-start gap-3 rounded-xl border border-brand-outline bg-black/15 p-3.5 text-[10px] font-medium leading-5 text-brand-foreground-muted">
-                    <i data-lucide="shield-check" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-accent" aria-hidden="true"></i>
-                    <p>
-                        Only workspaces permitted by <strong class="text-white">{{ current_user.role_display_name }}</strong> are rendered. Protected routes and actions remain enforced server-side.
-                    </p>
-                </div>
-            </aside>
         </section>
 
         <section class="grid gap-4" data-workspace-catalog>

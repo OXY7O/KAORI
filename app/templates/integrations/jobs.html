@@ -9,8 +9,8 @@
         <div class="{{ page_hero.layout_classes() }}">
             <div class="{{ page_hero.content_classes() }}">
                 {% call page_hero.intro('activity', 'Platform Operations', 'list-checks') %}
-                    <h1 class="text-2xl font-semibold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">Jobs & Executions</h1>
-                    <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">Monitor background work, progress, and execution outcomes across KAORI.</p>
+                    <h1 class="{{ page_hero.title_classes() }}">Jobs & Executions</h1>
+                    <p class="mt-2 {{ page_hero.description_classes() }}">Monitor background work, progress, and execution outcomes across KAORI.</p>
                     {% include 'integrations/jobs/partials/_hero_metadata.html' %}
                 {% endcall %}
             </div>
@@ -21,10 +21,10 @@
                             <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Execution Posture</p>
                             <p class="{{ page_hero.context_panel_title_classes() }}">Background Work Status</p>
                         </div>
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-brand-surface text-brand-foreground" aria-hidden="true"><i data-lucide="list-checks" class="h-5 w-5"></i></span>
+                        <span class="{{ page_hero.context_icon_classes() }}" aria-hidden="true"><i data-lucide="list-checks" class="h-5 w-5"></i></span>
                     </div>
                     {% include 'integrations/jobs/partials/_hero_context_metrics.html' %}
-                    <div class="mt-auto pt-3">
+                    <div class="{{ page_hero.context_actions_classes(1) }}">
                         <button type="button"
                                 hx-get="{{ url_for('integrations.jobs', fragment='status', tab=selected_job_tab, page=job_pagination.page, per_page=job_pagination.per_page, status=selected_job_status, workload=selected_job_workload, queue=selected_job_queue, search=job_search) }}"
                                 hx-target="#job-execution-workspace"

@@ -22,11 +22,11 @@
                 <div class="{{ page_hero.context_panel_classes() }}">
                     <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Lifecycle Posture</p>
                     <div class="mt-3 grid grid-cols-2 gap-3">
-                        <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-3">
+                        <div class="{{ page_hero.context_metric_card_classes() }}">
                             <p class="text-[10px] font-semibold uppercase tracking-wide text-brand-foreground-muted">Eligible</p>
                             <p class="mt-1 text-xl font-bold text-brand-foreground">{{ lifecycle.eligible_total if lifecycle.eligible_total is not none else 'Preview' }}</p>
                         </div>
-                        <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-3">
+                        <div class="{{ page_hero.context_metric_card_classes() }}">
                             <p class="text-[10px] font-semibold uppercase tracking-wide text-brand-foreground-muted">Storage</p>
                             <p class="mt-1 text-sm font-bold text-brand-foreground">{{ lifecycle.storage.status_label }}</p>
                         </div>

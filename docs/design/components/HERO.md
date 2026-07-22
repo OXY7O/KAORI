@@ -46,7 +46,7 @@ The page title is the page's single `h1`.
 - Renders as one or two lines on the target desktop viewport.
 - Maximum text width: 44rem, approximately 704 px.
 - The shared `page_hero.description_classes()` macro is the only source of description typography.
-- It renders at 14 px on compact viewports and 15 px from the desktop breakpoint.
+- It renders at 15 px on compact viewports and 16 px from the desktop breakpoint.
 - Page-local `text-sm`, `text-[15px]`, font-weight, line-height, color, or width overrides are prohibited.
 - Uses active, direct language.
 - Does not contain diagnostics, remediation, endpoint detail, full workflow, or multi-sentence guidance.
@@ -308,3 +308,21 @@ panel surface, border, minimum height, and padding are not allowed.
 Human-readable metadata fragments use Title Case. Technical identifiers retain
 their canonical casing and must not be passed through a mechanical whole-string
 Title Case transformation.
+
+## Reusability Enforcement — July 2026
+
+Infrastructure Integrations and Kubernetes Integrations are the canonical visual references, but they do not own page-local styling. Their layout is produced from the same `page_hero` primitives used throughout KAORI.
+
+The full-application audit covers 74 authenticated Hero templates. A compliant Hero must compose shared shell, layout, content, intro, title, description, metadata, aside, context-panel, metric, and action primitives. Domain-specific components may encapsulate semantic content, but must call the same shared primitives internally.
+
+The following local copies are prohibited:
+
+- Violet Hero shell geometry;
+- 7/5 grid classes;
+- title or description typography;
+- metadata row spacing;
+- right-side context-panel surface and minimum height;
+- context metric-card geometry;
+- Hero CTA geometry.
+
+The contract is enforced by `tests/contracts/ui/test_global_hero_reusability_contract.py`.

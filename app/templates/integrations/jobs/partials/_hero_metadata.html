@@ -1,4 +1,4 @@
-<div id="job-hero-metadata" class="mt-5 flex flex-wrap gap-2"{% if oob|default(false) %} hx-swap-oob="outerHTML"{% endif %}>
+<div id="job-hero-metadata" class="{{ page_hero.metadata_row_classes() }}"{% if oob|default(false) %} hx-swap-oob="outerHTML"{% endif %}>
     {{ page_hero.meta_label('layers-3', job_stats.active ~ ' Active') }}
     {{ page_hero.meta_label('cpu', job_stats.running ~ ' Running') }}
     {{ page_hero.meta_label('chart-no-axes-combined', job_stats.heavy ~ ' Heavy') }}

@@ -4,13 +4,13 @@
 {% block title %}Delete ConfigMap{% endblock title %}
 {% block dashboard_content %}
     <div class="grid gap-6">
-        <section class="relative overflow-hidden rounded-2xl border border-brand-outline bg-kaori-primary p-5 text-brand-foreground shadow-sm lg:p-6">
-            <div class="relative grid gap-5 xl:grid-cols-12 xl:items-stretch">
-                <div class="flex min-w-0 flex-col justify-center xl:col-span-7">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('file-cog', 'ConfigMap Management', 'trash-2') %}
-                        <h1 class="text-2xl font-semibold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">Delete ConfigMap</h1>
-                        <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">Load the live target, review known workload impact, validate the request, and execute an explicitly confirmed deletion.</p>
-                        <div class="mt-5 flex flex-wrap gap-2">
+                        <h1 class="{{ page_hero.title_classes() }}">Delete ConfigMap</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Load the live target, review known workload impact, validate the request, and execute an explicitly confirmed deletion.</p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('radio-tower', 'Live Kubernetes target') }}
                             {{ page_hero.meta_label('scan-search', 'Server-side dry-run') }}
                             {{ page_hero.meta_label('keyboard', 'Exact-name confirmation') }}

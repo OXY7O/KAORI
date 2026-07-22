@@ -29,9 +29,9 @@
         <div class="{{ page_hero.layout_classes() }}">
             <div class="{{ page_hero.content_classes() }}">
                 {% call page_hero.intro('server-cog', 'Kubernetes Integration', 'network') %}
-                    <h1 class="text-2xl font-semibold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">{{ cluster.name }}</h1>
-                    <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">Manage the connection contract, capability evidence, runtime health, and governed Kubernetes lifecycle.</p>
-                    <div class="mt-5 flex flex-wrap gap-2">
+                    <h1 class="{{ page_hero.title_classes() }}">{{ cluster.name }}</h1>
+                    <p class="mt-2 {{ page_hero.description_classes() }}">Manage the connection contract, capability evidence, runtime health, and governed Kubernetes lifecycle.</p>
+                    <div class="{{ page_hero.metadata_row_classes() }}">
                         {{ page_hero.meta_label('shield-check', readiness|replace('_', ' ')|title) }}
                         {{ page_hero.meta_label('layers-3', (runtime_state.capability_count|string) ~ ' Capabilities') }}
                         {{ page_hero.meta_label('network', cluster.environment|environment_name) }}
@@ -48,18 +48,18 @@
                         {{ status_badge('ready' if source_posture == 'Ready' else ('degraded' if source_posture == 'Attention' else 'validation_required'), source_posture) }}
                     </div>
                     <div class="mt-4 grid grid-cols-2 gap-2">
-                        <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5">
+                        <div class="{{ page_hero.context_metric_card_classes() }}">
                             <div class="flex items-center gap-2 text-brand-foreground"><i data-lucide="shield-check" class="h-3.5 w-3.5"></i><p class="text-[11px] font-semibold">Kubernetes API</p></div>
                             <p class="mt-1.5 truncate text-sm font-semibold text-brand-foreground">{{ readiness|replace('_', ' ')|title }}</p>
                             <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Produced by worker validation</p>
                         </div>
-                        <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5">
+                        <div class="{{ page_hero.context_metric_card_classes() }}">
                             <div class="flex items-center gap-2 text-brand-foreground"><i data-lucide="layers-3" class="h-3.5 w-3.5"></i><p class="text-[11px] font-semibold">Capabilities</p></div>
                             <p class="mt-1.5 text-xl font-semibold leading-none text-brand-foreground">{{ runtime_state.capability_count }}</p>
                             <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Served APIs and access evidence</p>
                         </div>
                     </div>
-                    <div class="mt-auto grid grid-cols-2 gap-2 pt-3">
+                    <div class="{{ page_hero.context_actions_classes() }}">
                         <button type="button"
                                 @click="setTab('validation', true)"
                                 class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-brand-outline bg-surface-card px-3 py-2 text-xs font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70">

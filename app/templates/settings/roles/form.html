@@ -100,7 +100,7 @@
                                     {% endif %}
                                 </h2>
                             </div>
-                            <span class="flex h-10 w-10 items-center justify-center rounded-lg border border-brand-outline bg-brand-surface text-brand-foreground">
+                            <span class="{{ page_hero.context_icon_classes() }}">
                                 <i data-lucide="{{ 'lock-keyhole' if is_system_role else ('pause-circle' if role and not role.is_active else 'circle-check') }}"
                                    class="h-5 w-5"></i>
                             </span>

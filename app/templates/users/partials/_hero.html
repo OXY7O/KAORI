@@ -22,7 +22,7 @@
                         <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Identity Portfolio</p>
                         <h2 class="{{ page_hero.context_panel_title_classes() }}">Managed Access</h2>
                     </div>
-                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-brand-surface text-brand-foreground">
+                    <span class="{{ page_hero.context_icon_classes() }}">
                         <i data-lucide="user-round-cog" class="h-5 w-5" aria-hidden="true"></i>
                     </span>
                 </div>
@@ -32,7 +32,7 @@
                     {{ page_hero.context_metric('circle-check', 'Active', summary.active, 'Allowed to Authenticate') }}
                 </div>
 
-                <div class="mt-auto grid grid-cols-2 gap-2 pt-3">
+                <div class="{{ page_hero.context_actions_classes() }}">
                     <a href="{{ url_for('users.create') }}" class="{{ page_hero.primary_action_classes() }}">
                         <i data-lucide="user-plus" class="h-4 w-4" aria-hidden="true"></i>
                         Add User

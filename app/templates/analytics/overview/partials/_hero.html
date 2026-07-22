@@ -4,15 +4,15 @@
 {% set active_alerts = payload.health_summary.active_alerts.value|default(0) %}
 {% set selected_cluster_name = payload.selected_cluster.name if payload.selected_cluster else 'No cluster selected' %}
 <div class="space-y-4">
-    <section class="relative overflow-hidden rounded-2xl border border-brand-outline bg-kaori-primary p-5 text-brand-foreground shadow-sm lg:p-6">
-        <div class="relative grid gap-5 xl:grid-cols-12 xl:items-stretch">
-            <div class="flex min-w-0 flex-col justify-center xl:col-span-7">
+    <section class="{{ page_hero.shell_classes() }}">
+        <div class="{{ page_hero.layout_classes() }}">
+            <div class="{{ page_hero.content_classes() }}">
                 {% call page_hero.intro('chart-no-axes-combined', 'Kubernetes analytics', 'activity') %}
-                    <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">Analytics Overview</h1>
-                    <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">
+                    <h1 class="{{ page_hero.title_classes() }}">Analytics Overview</h1>
+                    <p class="mt-2 {{ page_hero.description_classes() }}">
                         Review cluster health, resource risk, alert quality, workload posture, and actionable recommendations from one operational workspace.
                     </p>
-                    <div class="mt-5 flex flex-wrap gap-2">
+                    <div class="{{ page_hero.metadata_row_classes() }}">
                         {{ page_hero.meta_label('server', selected_cluster_name) }}
                         {% if dependency_blocker %}
                             {{ page_hero.meta_label('lock-keyhole', 'Step ' ~ dependency_blocker.stage ~ ' · ' ~ dependency_blocker.badge) }}
@@ -24,7 +24,7 @@
                 {% endcall %}
             </div>
 
-            <aside class="xl:col-span-5" aria-label="Analytics operational posture">
+            <aside class="{{ page_hero.aside_classes() }}" aria-label="Analytics operational posture">
                 {% if dependency_blocker %}
                     {% set analytics_posture_label = 'Operational Posture' %}
                     {% include 'analytics/components/_blocked_posture.html' %}

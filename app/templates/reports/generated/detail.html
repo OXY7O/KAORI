@@ -5,123 +5,73 @@
     <div class="space-y-6">
         <!-- Hero -->
         <section class="{{ page_hero.shell_classes() }}">
-            <div class="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
-                <div class="flex items-start gap-4">
-                    <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
-                        <i data-lucide="file-text" class="h-6 w-6"></i>
-                    </div>
-                    <div class="min-w-0">
-                        <div class="mb-2 flex flex-wrap items-center gap-2">
-                            {% set status_class = {
-                                                            'blue': 'bg-kaori-soft text-kaori-primary ring-brand-outline bg-kaori-soft dark:text-kaori-primary ring-brand-outline',
-                                                            'purple': 'bg-violet-50 text-violet-700 ring-violet-600/20 dark:bg-violet-950/50 dark:text-violet-300 dark:ring-violet-400/20',
-                                                            'green': 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-400/20',
-                                                            'red': 'bg-rose-50 text-rose-700 ring-rose-600/20 dark:bg-rose-950/50 dark:text-rose-300 dark:ring-rose-400/20',
-                                                            'gray': 'bg-kaori-soft text-content-secondary ring-slate-600/20 bg-kaori-soft dark:text-content-secondary dark:ring-slate-400/20'
-                                                        }.get(payload.report.status_meta.tone, 'bg-kaori-soft text-content-secondary ring-slate-600/20 bg-kaori-soft dark:text-content-secondary dark:ring-slate-400/20') %}
-                            {% set file_state_class = {
-                                                            'green': 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-400/20',
-                                                            'blue': 'bg-kaori-soft text-kaori-primary ring-brand-outline bg-kaori-soft dark:text-kaori-primary ring-brand-outline',
-                                                            'purple': 'bg-violet-50 text-violet-700 ring-violet-600/20 dark:bg-violet-950/50 dark:text-violet-300 dark:ring-violet-400/20',
-                                                            'amber': 'bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-950/50 dark:text-amber-300 dark:ring-amber-400/20',
-                                                            'red': 'bg-rose-50 text-rose-700 ring-rose-600/20 dark:bg-rose-950/50 dark:text-rose-300 dark:ring-rose-400/20'
-                                                        }.get(payload.report.file_state.tone, 'bg-kaori-soft text-content-secondary ring-slate-600/20 bg-kaori-soft dark:text-content-secondary dark:ring-slate-400/20') %}
-                            <span class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold ring-1 ring-inset {{ status_class }}">
-                                <i data-lucide="{{ payload.report.status_meta.icon }}"
-                                   class="h-3.5 w-3.5"></i>
-                                {{ payload.report.status_meta.label }}
-                            </span>
-                            <span class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold ring-1 ring-inset {{ file_state_class }}">
-                                <i data-lucide="{{ payload.report.file_state.icon }}"
-                                   class="h-3.5 w-3.5"></i>
-                                {{ payload.report.file_state.label }}
-                            </span>
-                        </div>
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('archive-restore', 'Generated Report Detail', 'file-text') %}
                         <h1 class="{{ page_hero.title_classes() }}">{{ payload.report.name }}</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">{{ payload.page_subtitle }}</p>
-                    </div>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('file-type-2', payload.report.report_type) }}
+                            {{ page_hero.meta_label('boxes', payload.report.cluster) }}
+                            {{ page_hero.meta_label('calendar-range', payload.report.period) }}
+                        </div>
+                    {% endcall %}
                 </div>
-                <div id="report-actions" class="flex flex-wrap items-center gap-3">
-                    <a href="{{ url_for('reports.generated_reports') }}"
-                       class="{{ page_hero.primary_action_classes() }}">
-                        <i data-lucide="arrow-left" class="h-4 w-4"></i>
-                        Back
-                    </a>
-                    {% if payload.report.can_download_pdf %}
-                        <a href="{{ url_for('reports.download_report_pdf', report_id=payload.report.id) }}"
-                           class="inline-flex items-center justify-center gap-2 rounded-xl bg-kaori-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 bg-kaori-primary dark:hover:bg-kaori-primary">
-                            <i data-lucide="download" class="h-4 w-4"></i>
-                            Download PDF
-                        </a>
-                    {% elif payload.report.raw_status == 'ready' and payload.report.file_path and not payload.report.file_exists %}
-                        <button type="button"
-                                disabled
-                                title="Generated artifact is missing in configured storage. Regenerate PDF to recreate the artifact."
-                                class="inline-flex items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-500 shadow-sm dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300">
-                            <i data-lucide="triangle-alert" class="h-4 w-4"></i>
-                            Missing File
-                        </button>
-                    {% else %}
-                        <button type="button"
-                                disabled
-                                class="inline-flex items-center justify-center gap-2 rounded-xl border border-outline-default bg-surface-subtle px-4 py-2 text-sm font-semibold text-content-muted shadow-sm dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
-                            <i data-lucide="download" class="h-4 w-4"></i>
-                            Download PDF
-                        </button>
-                    {% endif %}
-                    {% if payload.report.can_generate_pdf %}
-                        <form method="POST"
-                              action="{{ url_for('reports.generate_report_pdf', report_id=payload.report.id) }}">
-                            {% if csrf_token is defined %}
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <aside class="{{ page_hero.aside_classes() }}" aria-label="Generated report artifact actions">
+                    <div class="{{ page_hero.context_panel_classes() }}">
+                        {{ page_hero.context_header('Artifact Posture', 'Generated Report Artifact', 'file-check-2') }}
+                        <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                            {{ page_hero.context_metric(payload.report.status_meta.icon, 'Lifecycle', payload.report.status_meta.label, 'Current report lifecycle state', value_classes='text-sm font-semibold leading-5') }}
+                            {{ page_hero.context_metric(payload.report.file_state.icon, 'File State', payload.report.file_state.label, 'Configured storage availability', value_classes='text-sm font-semibold leading-5') }}
+                        </div>
+                        <div class="{{ page_hero.context_actions_classes() }}">
+                            <a href="{{ url_for('reports.generated_reports') }}" class="{{ page_hero.secondary_action_classes() }}"><i data-lucide="arrow-left" class="h-4 w-4"></i>Back</a>
+                            {% if payload.report.can_download_pdf %}
+                                <a href="{{ url_for('reports.download_report_pdf', report_id=payload.report.id) }}" class="{{ page_hero.primary_action_classes() }}"><i data-lucide="download" class="h-4 w-4"></i>Download PDF</a>
+                            {% elif payload.report.can_generate_pdf %}
+                                <form method="POST" action="{{ url_for('reports.generate_report_pdf', report_id=payload.report.id) }}">
+                                    {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                    <button type="submit" class="w-full {{ page_hero.primary_action_classes() }}"><i data-lucide="file-text" class="h-4 w-4"></i>Generate PDF</button>
+                                </form>
+                            {% else %}
+                                <button type="button" disabled class="w-full {{ page_hero.secondary_action_classes() }} cursor-not-allowed opacity-60"><i data-lucide="download" class="h-4 w-4"></i>Unavailable</button>
                             {% endif %}
-                            <button type="submit"
-                                    class="inline-flex items-center justify-center gap-2 rounded-xl border border-brand-outline bg-kaori-soft px-4 py-2 text-sm font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 border-brand-outline bg-kaori-soft dark:text-kaori-primary hover:bg-kaori-soft cursor-pointer disabled:cursor-not-allowed">
-                                <i data-lucide="file-text" class="h-4 w-4"></i>
-                                {% if payload.report.raw_status == 'ready' %}
-                                    Regenerate PDF
-                                {% else %}
-                                    Generate PDF
-                                {% endif %}
-                            </button>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </section>
+
+        {% if (payload.report.can_download_pdf and payload.report.can_generate_pdf) or payload.report.can_archive_report or payload.report.can_restore_report %}
+        <section id="report-actions" class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm" aria-labelledby="report-actions-title">
+            <div class="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                <div>
+                    <h2 id="report-actions-title" class="text-sm font-semibold text-content-primary">Artifact Lifecycle Actions</h2>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Regenerate, archive, or restore the stored report artifact without expanding the hero action surface.</p>
+                </div>
+                <div class="flex flex-wrap gap-2 sm:justify-end">
+                    {% if payload.report.can_download_pdf and payload.report.can_generate_pdf %}
+                        <form method="POST" action="{{ url_for('reports.generate_report_pdf', report_id=payload.report.id) }}">
+                            {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                            <button type="submit" class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-kaori-primary/25 bg-kaori-soft px-4 text-sm font-semibold text-kaori-primary transition hover:bg-kaori-primary/15"><i data-lucide="refresh-cw" class="h-4 w-4"></i>Regenerate PDF</button>
                         </form>
-                    {% else %}
-                        <button type="button"
-                                disabled
-                                class="inline-flex items-center justify-center gap-2 rounded-xl border border-outline-default bg-surface-subtle px-4 py-2 text-sm font-semibold text-content-muted shadow-sm dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
-                            <i data-lucide="file-text" class="h-4 w-4"></i>
-                            Generate PDF
-                        </button>
                     {% endif %}
                     {% if payload.report.can_archive_report %}
-                        <form method="POST"
-                              action="{{ url_for('reports.archive_generated_report', report_id=payload.report.id) }}">
-                            {% if csrf_token is defined %}
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            {% endif %}
-                            <button type="submit"
-                                    class="inline-flex items-center justify-center gap-2 rounded-xl border border-outline-default bg-white px-4 py-2 text-sm font-semibold text-content-secondary shadow-sm transition hover:border-outline-default hover:bg-surface-subtle focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 dark:border-outline-default bg-surface-subtle dark:text-content-secondary hover:bg-kaori-soft cursor-pointer disabled:cursor-not-allowed">
-                                <i data-lucide="archive" class="h-4 w-4"></i>
-                                Archive Report
-                            </button>
+                        <form method="POST" action="{{ url_for('reports.archive_generated_report', report_id=payload.report.id) }}">
+                            {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                            <button type="submit" class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:bg-surface-hover"><i data-lucide="archive" class="h-4 w-4"></i>Archive Report</button>
                         </form>
                     {% endif %}
                     {% if payload.report.can_restore_report %}
-                        <form method="POST"
-                              action="{{ url_for('reports.restore_generated_report', report_id=payload.report.id) }}">
-                            {% if csrf_token is defined %}
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            {% endif %}
-                            <button type="submit"
-                                    class="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 shadow-sm transition hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-900/50 cursor-pointer disabled:cursor-not-allowed">
-                                <i data-lucide="rotate-ccw" class="h-4 w-4"></i>
-                                Restore Report
-                            </button>
+                        <form method="POST" action="{{ url_for('reports.restore_generated_report', report_id=payload.report.id) }}">
+                            {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                            <button type="submit" class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-status-normal-border bg-status-normal-soft px-4 text-sm font-semibold text-status-normal-text transition hover:opacity-90"><i data-lucide="rotate-ccw" class="h-4 w-4"></i>Restore Report</button>
                         </form>
                     {% endif %}
                 </div>
             </div>
         </section>
+        {% endif %}
         {% if payload.report.raw_status == 'ready' and payload.report.file_path and not payload.report.file_exists %}
             <section class="rounded-2xl border border-rose-200 bg-rose-50 p-5 shadow-sm dark:border-rose-900 dark:bg-rose-950/40">
                 <div class="flex items-start gap-3">

@@ -3,9 +3,9 @@
     <div class="{{ page_hero.layout_classes() }}">
         <div class="{{ page_hero.content_classes() }}">
             {% call page_hero.intro('blocks', badge, 'blocks') %}
-                <h1 class="text-2xl font-semibold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">{{ title }}</h1>
-                <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">{{ description }}</p>
-                <div class="mt-5 flex flex-wrap gap-2">
+                <h1 class="{{ page_hero.title_classes() }}">{{ title }}</h1>
+                <p class="mt-2 {{ page_hero.description_classes() }}">{{ description }}</p>
+                <div class="{{ page_hero.metadata_row_classes() }}">
                     {{ page_hero.meta_label('package-search', available_provider_count ~ ' Available Providers') }}
                     {{ page_hero.meta_label('plug-zap', stats.configured ~ ' Configured Targets') }}
                     {{ page_hero.meta_label('scan-search', stats.ready ~ ' Ready for Use') }}
@@ -20,13 +20,13 @@
                         <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Integration Portfolio</p>
                         <h2 class="{{ page_hero.context_panel_title_classes() }}">Provider Readiness</h2>
                     </div>
-                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-brand-surface text-brand-foreground"><i data-lucide="waypoints" class="h-5 w-5"></i></span>
+                    <span class="{{ page_hero.context_icon_classes() }}"><i data-lucide="waypoints" class="h-5 w-5"></i></span>
                 </div>
                 <div class="{{ page_hero.context_panel_metrics_classes() }}">
                     {{ page_hero.context_metric('plug-zap', 'Configured', stats.configured, 'Registered provider targets') }}
                     {{ page_hero.context_metric('badge-check', 'Ready', stats.ready, 'Validated for operational use') }}
                 </div>
-                <div class="mt-auto grid grid-cols-2 gap-2 pt-3">
+                <div class="{{ page_hero.context_actions_classes() }}">
                     <a href="#integration-workspace" @click="activateTab('catalog')" class="{{ page_hero.primary_action_classes() }}"><i data-lucide="package-search" class="h-4 w-4"></i>Browse Providers</a>
                     <button type="button"
                             @click="activateTab('runtime')"

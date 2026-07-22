@@ -8,25 +8,25 @@
          x-init="syncSelected()"
          @change.window="if ($event.target && $event.target.name === 'certificate_ids') syncSelected()"
          @htmx:afterSwap.window="syncSelected()">
-        <section class="relative overflow-hidden rounded-2xl border border-brand-outline bg-kaori-primary p-5 text-brand-foreground shadow-sm lg:p-6">
-            <div class="relative grid gap-5 xl:grid-cols-12 xl:items-stretch">
-                <div class="flex min-w-0 flex-col justify-center xl:col-span-7">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('badge-check', 'Kubernetes Governance', 'shield-check') %}
-                        <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">TLS Secret Update</h1>
-                        <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">Validate and update existing Kubernetes TLS Secrets through a controlled certificate and private-key workflow.</p>
-                        <div class="mt-5 flex flex-wrap gap-2">
+                        <h1 class="{{ page_hero.title_classes() }}">TLS Secret Update</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Validate and update existing Kubernetes TLS Secrets through a controlled certificate and private-key workflow.</p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('lock-keyhole', payload.summary.total ~ ' TLS Secrets tracked') }}
                             {{ page_hero.meta_label('timer-reset', 'Selection Updates Live') }}
                             {{ page_hero.meta_label('circle-check', 'Preview Before Update') }}
                         </div>
                     {% endcall %}
                 </div>
-                <aside class="xl:col-span-5" aria-label="TLS update posture">
-                    <div class="flex h-full min-h-[13rem] flex-col rounded-lg border border-brand-outline bg-brand-surface-strong p-4">
-                        <div class="flex items-start justify-between gap-4"><div><p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Update posture</p><h2 class="mt-1 text-base font-semibold text-brand-foreground">Controlled certificate replacement</h2></div>{{ table_label.status_label('Validated', 'info', 'shield-check') }}</div>
+                <aside class="{{ page_hero.aside_classes() }}" aria-label="TLS update posture">
+                    <div class="{{ page_hero.context_panel_classes() }}">
+                        <div class="flex items-start justify-between gap-4"><div><p class="{{ page_hero.context_panel_eyebrow_classes() }}">Update posture</p><h2 class="mt-1 text-base font-semibold text-brand-foreground">Controlled certificate replacement</h2></div>{{ table_label.status_label('Validated', 'info', 'shield-check') }}</div>
                         <div class="mt-3 grid grid-cols-2 gap-2">
-                            <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5"><div class="flex items-center gap-2 text-brand-foreground"><i data-lucide="check-square" class="h-3.5 w-3.5"></i><p class="text-[11px] font-semibold">Selected</p></div><p class="mt-1.5 text-sm font-semibold text-brand-foreground" x-text="selectedCount"></p><p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Existing TLS Secrets</p></div>
-                            <div class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5"><div class="flex items-center gap-2 text-brand-foreground"><i data-lucide="scan-search" class="h-3.5 w-3.5"></i><p class="text-[11px] font-semibold">Guardrail</p></div><p class="mt-1.5 text-sm font-semibold text-brand-foreground">Preview first</p><p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Certificate/key pair validated</p></div>
+                            <div class="{{ page_hero.context_metric_card_classes() }}"><div class="flex items-center gap-2 text-brand-foreground"><i data-lucide="check-square" class="h-3.5 w-3.5"></i><p class="text-[11px] font-semibold">Selected</p></div><p class="mt-1.5 text-sm font-semibold text-brand-foreground" x-text="selectedCount"></p><p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Existing TLS Secrets</p></div>
+                            <div class="{{ page_hero.context_metric_card_classes() }}"><div class="flex items-center gap-2 text-brand-foreground"><i data-lucide="scan-search" class="h-3.5 w-3.5"></i><p class="text-[11px] font-semibold">Guardrail</p></div><p class="mt-1.5 text-sm font-semibold text-brand-foreground">Preview first</p><p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Certificate/key pair validated</p></div>
                         </div>
                         <div class="mt-3 grid grid-cols-2 gap-2">
                             <button type="button" hx-post="{{ url_for('governance.tls_certificates_bulk_preview') }}" hx-include="#tls-secret-update-form" hx-encoding="multipart/form-data" hx-target="#tls-secret-update-feedback" hx-swap="innerHTML" class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-brand-outline bg-surface-card px-3 text-xs font-semibold text-kaori-primary transition hover:bg-kaori-soft"><i data-lucide="shield-check" class="h-4 w-4"></i>Validate Selected</button>
