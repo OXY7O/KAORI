@@ -75,7 +75,7 @@
                         {% set empty_state_description = 'Register an Alertmanager connection or adjust the active filters.' %}
                         {% set empty_state_min_height = 'min-h-[190px]' %}
                         {% set empty_state_action_url = url_for('alertmanager.new_instance') if not selected_query and not selected_readiness and not selected_deployment_type else none %}
-                        {% set empty_state_action_label = 'Register Instance' if empty_state_action_url else none %}
+                        {% set empty_state_action_label = 'Register Connection' if empty_state_action_url else none %}
                         {% set empty_state_permission = 'settings.manage_integrations' %}
                         {% include 'components/states/_empty_state.html' %}
                     </td>
