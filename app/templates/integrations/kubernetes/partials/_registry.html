@@ -3,31 +3,25 @@
 {% import "components/details/_expandable_row.html" as expandable %}
 
 <section id="kubernetes-connection-registry"
-         class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+         class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
   <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-      <div class="flex items-start gap-3">
-        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-          <i data-lucide="list-tree" class="h-5 w-5" aria-hidden="true"></i>
-        </span>
-
-        <div>
-          <h2 class="text-base font-semibold text-content-primary">
-            Kubernetes Connection Registry
-          </h2>
-          <p class="mt-0.5 text-xs leading-5 text-content-muted">
-            Canonical Kubernetes API connections and downstream operational coverage.
-          </p>
-        </div>
-      </div>
-
-      <span class="kaori-context-label inline-flex min-h-6 items-center rounded-md bg-kaori-soft px-2 text-[10px] font-semibold text-kaori-primary">
-        {{ pagination.total_items }} registered
+    <div class="flex items-start gap-3">
+      <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
+        <i data-lucide="list-tree" class="h-5 w-5" aria-hidden="true"></i>
       </span>
+
+      <div>
+        <h2 class="text-lg font-semibold text-content-primary">
+          Kubernetes Connection Registry
+        </h2>
+        <p class="mt-1 text-sm leading-6 text-content-secondary">
+          Manage reusable Kubernetes API connections and their downstream operational coverage.
+        </p>
+      </div>
     </div>
 
     <div id="kubernetes-registry-loading"
-         class="htmx-indicator mt-3 h-0.5 overflow-hidden rounded-full bg-kaori-soft"
+         class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-kaori-soft"
          aria-hidden="true">
       <div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div>
     </div>
@@ -132,10 +126,10 @@
             <td colspan="5" class="p-0">
               {% set empty_state_icon = 'boxes' %}
               {% set empty_state_label = 'Setup Required' %}
-              {% set empty_state_title = 'No Kubernetes Connections Registered' %}
-              {% set empty_state_description = 'Register a Kubernetes API connection so KAORI can begin capability discovery and source binding.' %}
+              {% set empty_state_title = 'No Kubernetes Connections Found' %}
+              {% set empty_state_description = 'Register a Kubernetes API connection or adjust the active filters.' %}
               {% set empty_state_action_url = url_for('cluster.add_cluster') %}
-              {% set empty_state_action_label = 'Add Cluster' %}
+              {% set empty_state_action_label = 'Register Connection' %}
               {% set empty_state_action_icon = 'plus' %}
               {% set empty_state_permission = 'clusters.manage' %}
               {% set empty_state_show_admin_required = true %}
