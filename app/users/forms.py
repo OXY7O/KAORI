@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+from flask import current_app
 from flask_wtf import FlaskForm
 from wtforms import BooleanField, HiddenField, PasswordField, SelectField, StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, EqualTo, Length, Optional, ValidationError
 
 from app.auth.provider_configuration import normalize_provider_key
 from app.auth.providers.catalog import configurable_provider_choices
+from app.auth.providers.ldap import ExternalProviderError, resolve_ldap_transport
 
 
 class UserForm(FlaskForm):
@@ -75,8 +77,21 @@ class IdentityProviderForm(FlaskForm):
             raise ValidationError(f'{label} is required for LDAP providers.')
 
     def validate_tls_mode(self, field):
-        if self.provider_type.data == 'ldap' and field.data not in {'ldaps', 'starttls', 'plain'}:
+        if self.provider_type.data != 'ldap':
+            return
+        if field.data not in {'ldaps', 'starttls', 'plain'}:
             raise ValidationError('Select a supported LDAP TLS mode.')
+        server_uri = (self.server_uri.data or '').strip()
+        if not server_uri:
+            return
+        try:
+            resolve_ldap_transport(
+                server_uri,
+                field.data,
+                allow_plaintext=bool(current_app.config.get('AUTH_LDAP_ALLOW_PLAINTEXT', False)),
+            )
+        except ExternalProviderError as exc:
+            raise ValidationError(str(exc)) from exc
 
     def validate_username_attribute(self, field):
         self._require_ldap_attribute(field, 'Username attribute')

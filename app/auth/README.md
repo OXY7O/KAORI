@@ -93,6 +93,7 @@ This prevents a local username collision from silently authenticating against LD
 - Passwords, hashes, bind secrets, authorization codes, tokens, assertions, and raw provider payloads are never written to Activity Audit Log.
 - Unknown provider types are rejected by the provider catalog; unknown identity sources never gain KAORI password ownership.
 - LDAP invalid credentials are distinguished internally from LDAP operational outages without exposing raw directory errors.
+- LDAP transport mode and URI scheme must agree; plaintext LDAP remains disabled unless `AUTH_LDAP_ALLOW_PLAINTEXT=true` is explicitly enabled for a controlled development environment.
 - Google OIDC requires a nonce at authorization and callback validation.
 - SSO state is stored as a SHA-256 fingerprint rather than raw state.
 - Successful login rotates the session before authentication state is retained.
@@ -115,14 +116,15 @@ The last two are required because LDAP/SSO identity resolution and authenticatio
 
 ## Test Gate
 
-Function and architecture tests live under `tests/auth/`.
+Functional Auth tests live under `tests/auth/`; architecture ownership checks live under `tests/contracts/auth/`.
 
 ```bash
-pytest -q tests/auth
-pytest -q tests/auth --cov=app.auth --cov=app.users.identity --cov-report=term-missing
+pytest -q tests/auth -m functional
+pytest -q tests/contracts/auth -m contract
+pytest -q tests/auth -m functional --cov=app.auth --cov=app.users.identity --cov-report=term-missing
 ```
 
-The suite covers provider family/type mapping, credential orchestration, Database behavior, LDAP bind semantics, browser SSO strategy selection, SSO identity resolution, provider configuration projection, session policy, readiness, and domain ownership.
+The functional gate covers provider family/type mapping, credential orchestration, Database behavior, LDAP transport and bind semantics, browser SSO strategy selection and token projection, SSO identity resolution, provider configuration projection, session policy, readiness, and login transaction boundaries. Contract tests are guardrails and are not counted as evidence that a function works.
 
 ## Extension Rule
 

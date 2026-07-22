@@ -404,6 +404,12 @@ class Config:
         False,
     )
 
+    # Plain LDAP transmits credentials without transport encryption and is disabled by default.
+    AUTH_LDAP_ALLOW_PLAINTEXT = _env_bool(
+        'AUTH_LDAP_ALLOW_PLAINTEXT',
+        False,
+    )
+
     # Protected Kubernetes Secret reveal. This capability is globally disabled
     # until an operator explicitly enables it and configures per-cluster controls.
     KUBERNETES_SECRET_REVEAL_ENABLED = _env_bool(

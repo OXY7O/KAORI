@@ -5,6 +5,7 @@ from typing import Literal
 
 from flask import current_app, request
 
+from app.auth.providers.catalog import provider_label
 from app.auth.user_agent import parse_user_agent
 from app.extensions import db
 from app.models.notification import Notification
@@ -17,18 +18,7 @@ AuthenticationResult = Literal['success', 'failed']
 
 
 def _provider_label(source: str) -> str:
-    normalized = (source or 'database').strip().lower()
-    labels = {
-        'database': 'Local Database',
-        'local': 'Local Database',
-        'ldap': 'LDAP / Active Directory',
-        'google_oidc': 'Google OpenID Connect',
-        'github_oauth': 'GitHub OAuth',
-        'oidc': 'OpenID Connect',
-        'saml': 'SAML SSO',
-        'sso': 'Single Sign-On',
-    }
-    return labels.get(normalized, normalized.replace('_', ' ').title())
+    return provider_label(source)
 
 
 def _reason_label(reason: str) -> str:

@@ -92,3 +92,25 @@ def test_database_error_rolls_back_and_returns_normalized_failure(monkeypatch) -
 
     assert result.reason == 'database_unavailable'
     assert rollbacks == [True]
+
+
+def test_valid_local_password_authenticates_active_user(monkeypatch) -> None:
+    user = UserStub(password_matches=True, active=True)
+    _install_user_model(monkeypatch, QueryStub(user=user))
+
+    result = database.DatabaseAuthProvider().authenticate(' operator ', 'secret')
+
+    assert result.success is True
+    assert result.reason == 'success'
+    assert result.user is user
+
+
+def test_wrong_local_password_returns_user_bound_failure(monkeypatch) -> None:
+    user = UserStub(password_matches=False, active=True)
+    _install_user_model(monkeypatch, QueryStub(user=user))
+
+    result = database.DatabaseAuthProvider().authenticate('operator', 'wrong')
+
+    assert result.success is False
+    assert result.reason == 'invalid_credentials'
+    assert result.user is user

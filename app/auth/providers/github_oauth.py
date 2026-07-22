@@ -85,7 +85,8 @@ class GitHubOAuthProvider:
             )
             user_response.raise_for_status()
             profile = user_response.json()
-            email = self._primary_email(api_headers, provider) or profile.get('email')
+            verified_email, email_verified = self._primary_email(api_headers, provider)
+            email = verified_email or profile.get('email')
         except SsoProviderError:
             raise
         except (requests.RequestException, ValueError, KeyError) as exc:
@@ -102,7 +103,7 @@ class GitHubOAuthProvider:
             email=str(email).strip().lower() if email else None,
             display_name=str(profile.get('name') or '').strip() or username,
             avatar_url=str(profile.get('avatar_url') or '').strip() or None,
-            email_verified=bool(email),
+            email_verified=email_verified,
         )
 
     def validate_configuration(self, provider: IdentityProvider) -> str:
@@ -126,20 +127,20 @@ class GitHubOAuthProvider:
         return 'GitHub OAuth endpoints and secret references are reachable.'
 
     @staticmethod
-    def _primary_email(headers: dict[str, str], provider: IdentityProvider) -> str | None:
+    def _primary_email(headers: dict[str, str], provider: IdentityProvider) -> tuple[str | None, bool]:
         response = requests.get(
             GITHUB_EMAILS_URL,
             headers=headers,
             timeout=request_timeout_seconds(provider),
         )
         if response.status_code == 403:
-            return None
+            return None, False
         response.raise_for_status()
         emails = response.json()
         for item in emails:
             if item.get('primary') and item.get('verified') and item.get('email'):
-                return str(item['email']).lower()
+                return str(item['email']).lower(), True
         for item in emails:
             if item.get('verified') and item.get('email'):
-                return str(item['email']).lower()
-        return None
+                return str(item['email']).lower(), True
+        return None, False

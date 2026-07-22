@@ -14,3 +14,12 @@ def test_only_database_accounts_use_kaori_password_management() -> None:
     assert password_is_managed_by_kaori('google_oidc') is False
     assert password_is_managed_by_kaori('github_oauth') is False
     assert password_is_managed_by_kaori('future_external_provider') is False
+
+
+def test_unknown_identity_source_is_explicitly_fail_closed() -> None:
+    definition = identity_source_definition('future_external_provider')
+
+    assert definition.key == 'unknown'
+    assert definition.enabled is False
+    assert definition.provisioning_mode == 'unsupported'
+    assert password_is_managed_by_kaori('future_external_provider') is False

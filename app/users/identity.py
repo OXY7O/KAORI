@@ -14,6 +14,15 @@ class IdentitySourceDefinition:
     enabled: bool
 
 
+UNKNOWN_IDENTITY_SOURCE = IdentitySourceDefinition(
+    'unknown',
+    'Unknown Identity Source',
+    'Unrecognized external source',
+    'unsupported',
+    False,
+)
+
+
 IDENTITY_SOURCES: tuple[IdentitySourceDefinition, ...] = (
     IdentitySourceDefinition('database', 'Local Database', 'KAORI', 'administrative', True),
     IdentitySourceDefinition('ldap', 'LDAP / Active Directory', 'External directory', 'projection', True),
@@ -25,8 +34,8 @@ def identity_source_definition(key: str | None) -> IdentitySourceDefinition:
     try:
         family = provider_family(key).value
     except ValueError:
-        family = AuthProviderFamily.SSO.value
-    return next((item for item in IDENTITY_SOURCES if item.key == family), IDENTITY_SOURCES[0])
+        return UNKNOWN_IDENTITY_SOURCE
+    return next((item for item in IDENTITY_SOURCES if item.key == family), UNKNOWN_IDENTITY_SOURCE)
 
 
 def password_is_managed_by_kaori(identity_source: str | None) -> bool:

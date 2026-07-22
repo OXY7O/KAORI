@@ -3,9 +3,9 @@ from __future__ import annotations
 import hashlib
 import os
 import secrets
-from hmac import compare_digest
-from dataclasses import dataclass
 from collections.abc import Mapping
+from dataclasses import dataclass
+from hmac import compare_digest
 from typing import Protocol, runtime_checkable
 
 from app.models import IdentityProvider
@@ -63,7 +63,6 @@ def state_fingerprint(state: str) -> str:
     return hashlib.sha256(state.encode('utf-8')).hexdigest()
 
 
-
 def sso_flow_is_valid(
     flow: Mapping[str, object],
     *,
@@ -91,6 +90,7 @@ def sso_flow_is_valid(
     age_seconds = now_timestamp - started_at
     return started_at > 0 and 0 <= age_seconds <= bounded_ttl
 
+
 def load_client_secret(provider: IdentityProvider) -> str:
     env_name = (provider.oidc_client_secret_env or '').strip()
     if not env_name:
@@ -102,4 +102,8 @@ def load_client_secret(provider: IdentityProvider) -> str:
 
 
 def request_timeout_seconds(provider: IdentityProvider) -> int:
-    return max(2, min(int(provider.connect_timeout_seconds or 5), 30))
+    try:
+        value = int(provider.connect_timeout_seconds or 5)
+    except (TypeError, ValueError):
+        value = 5
+    return max(2, min(value, 30))

@@ -5,7 +5,12 @@ from urllib.parse import parse_qs, urlparse
 
 import pytest
 
-from app.auth.providers.browser import SsoProviderError, sso_flow_is_valid, state_fingerprint
+from app.auth.providers.browser import (
+    SsoProviderError,
+    request_timeout_seconds,
+    sso_flow_is_valid,
+    state_fingerprint,
+)
 from app.auth.providers.catalog import browser_sso_provider_types
 from app.auth.providers.registry import get_browser_sso_provider, registered_browser_sso_provider_types
 
@@ -115,3 +120,9 @@ def test_sso_flow_validation_fails_closed_for_malformed_session_values() -> None
         now_timestamp=1050.0,
         ttl_seconds=60,
     )
+
+def test_sso_request_timeout_is_bounded_and_malformed_values_use_safe_default() -> None:
+    assert request_timeout_seconds(SimpleNamespace(connect_timeout_seconds=1)) == 2
+    assert request_timeout_seconds(SimpleNamespace(connect_timeout_seconds=45)) == 30
+    assert request_timeout_seconds(SimpleNamespace(connect_timeout_seconds='invalid')) == 5
+

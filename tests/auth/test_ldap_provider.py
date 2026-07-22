@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from app.auth.providers.ldap import ExternalProviderError, LdapDirectoryClient
+from app.auth.providers.ldap import ExternalProviderError, LdapDirectoryClient, resolve_ldap_transport
 
 
 class ConnectionStub:
@@ -86,3 +86,52 @@ def test_missing_credentials_are_rejected_without_network_access(monkeypatch) ->
 
     assert client.authenticate('', 'secret') is False
     assert client.authenticate('CN=Operator', '') is False
+
+
+def test_ldaps_transport_requires_matching_secure_uri() -> None:
+    transport = resolve_ldap_transport('ldaps://directory.example.com', 'ldaps')
+
+    assert transport.host == 'directory.example.com'
+    assert transport.port == 636
+    assert transport.use_ssl is True
+    assert transport.start_tls is False
+
+    with pytest.raises(ExternalProviderError, match='requires an ldaps://'):
+        resolve_ldap_transport('ldap://directory.example.com', 'ldaps')
+
+
+def test_starttls_transport_requires_ldap_uri() -> None:
+    transport = resolve_ldap_transport('ldap://directory.example.com:1389', 'starttls')
+
+    assert transport.port == 1389
+    assert transport.use_ssl is False
+    assert transport.start_tls is True
+
+    with pytest.raises(ExternalProviderError, match='requires an ldap://'):
+        resolve_ldap_transport('ldaps://directory.example.com', 'starttls')
+
+
+def test_plain_ldap_is_fail_closed_unless_explicitly_enabled() -> None:
+    with pytest.raises(ExternalProviderError, match='disabled by KAORI'):
+        resolve_ldap_transport('ldap://directory.example.com', 'plain')
+
+    transport = resolve_ldap_transport(
+        'ldap://directory.example.com',
+        'plain',
+        allow_plaintext=True,
+    )
+    assert transport.use_ssl is False
+    assert transport.start_tls is False
+
+def test_ldap_transport_rejects_embedded_credentials_and_url_components() -> None:
+    with pytest.raises(ExternalProviderError, match='must not embed credentials'):
+        resolve_ldap_transport('ldaps://svc:secret@directory.example.com', 'ldaps')
+
+    with pytest.raises(ExternalProviderError, match='only the scheme, host, and optional port'):
+        resolve_ldap_transport('ldaps://directory.example.com/dc=example,dc=com', 'ldaps')
+
+
+def test_ldap_transport_normalizes_invalid_port_as_configuration_error() -> None:
+    with pytest.raises(ExternalProviderError, match='invalid port'):
+        resolve_ldap_transport('ldaps://directory.example.com:not-a-port', 'ldaps')
+

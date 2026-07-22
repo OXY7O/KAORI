@@ -19,7 +19,23 @@ command -v npm >/dev/null 2>&1 || fail 'npm is unavailable. Rebuild the devconta
 [[ -f package-lock.json ]] || fail 'package-lock.json was not found in /workspace/kaori.'
 
 if grep -q 'internal\.api\.openai\.org' package-lock.json; then
-    fail 'package-lock.json still references an internal package registry. Apply the canonical KAORI lockfile before rebuilding.'
+    fail 'package-lock.json still references an internal package registry.'
+fi
+
+if ! node <<'NODE'
+const lock = require('./package-lock.json')
+const expected = {
+  'node_modules/alpinejs': '3.15.12',
+  'node_modules/htmx.org': '2.0.10',
+  'node_modules/lucide': '1.20.0',
+  'node_modules/chart.js': '4.5.1',
+}
+for (const [name, version] of Object.entries(expected)) {
+  if (lock.packages?.[name]?.version !== version) process.exit(1)
+}
+NODE
+then
+    fail 'package-lock.json is not synchronized with pinned runtime assets. Run: npm run bootstrap-frontend'
 fi
 
 lock_hash="$(sha256sum package-lock.json | awk '{print $1}')"
@@ -35,6 +51,8 @@ if [[ "${1:-}" == '--install-always' ]]; then
     install_required=true
 elif [[ ! -x node_modules/.bin/tailwindcss ]]; then
     install_required=true
+elif [[ ! -f node_modules/lucide/dist/umd/lucide.min.js ]]; then
+    install_required=true
 elif [[ "$stored_hash" != "$lock_hash" ]]; then
     install_required=true
 fi
@@ -48,6 +66,6 @@ else
     log 'Frontend dependencies match package-lock.json.'
 fi
 
-log 'Building and validating Tailwind CSS...'
-npm run build-css
-log 'Tailwind CSS build completed successfully.'
+log 'Vendoring browser dependencies and building Tailwind CSS...'
+npm run prepare-frontend
+log 'Frontend assets are local, verified, and ready.'

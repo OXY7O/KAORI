@@ -86,6 +86,16 @@ def provider_family(provider_type: str | AuthProviderType | None) -> AuthProvide
     return definition.family
 
 
+def provider_label(provider_type: str | AuthProviderType | None) -> str:
+    normalized = str(provider_type or '').strip().lower()
+    if not normalized or normalized == 'local':
+        normalized = AuthProviderType.DATABASE.value
+    definition = _PROVIDER_BY_TYPE.get(normalized)
+    if definition is not None:
+        return definition.label
+    return normalized.replace('_', ' ').title() or 'Unknown Provider'
+
+
 def provider_types_for_family(family: str | AuthProviderFamily) -> tuple[str, ...]:
     normalized = AuthProviderFamily(str(family).strip().lower())
     return tuple(

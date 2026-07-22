@@ -144,8 +144,8 @@ def _jit_project(provider: IdentityProvider, identity: SsoIdentity) -> User:
         raise SsoAdmissionError('The configured default role is unavailable.')
 
     username = _unique_username(identity.username, provider)
-    email = identity.email or f'{provider.key}-{identity.subject}@external.invalid'
-    existing_email = User.query.filter(User.deleted_at.is_(None), User.email == email.lower()).first()
+    email = _jit_account_email(provider, identity)
+    existing_email = User.query.filter(User.deleted_at.is_(None), User.email == email).first()
     if existing_email is not None:
         raise SsoAdmissionError('A KAORI account already uses this external email address.')
 
@@ -174,6 +174,12 @@ def _jit_project(provider: IdentityProvider, identity: SsoIdentity) -> User:
     db.session.add(identity_link)
     db.session.flush()
     return user
+
+
+def _jit_account_email(provider: IdentityProvider, identity: SsoIdentity) -> str:
+    if identity.email and identity.email_verified:
+        return identity.email.strip().lower()
+    return f'{provider.key}-{identity.subject}@external.invalid'.lower()
 
 
 def _enforce_admission(provider: IdentityProvider, identity: SsoIdentity) -> None:

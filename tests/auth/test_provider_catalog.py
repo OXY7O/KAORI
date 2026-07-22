@@ -9,6 +9,7 @@ from app.auth.providers.catalog import (
     configurable_provider_choices,
     provider_definition,
     provider_family,
+    provider_label,
     provider_types_for_family,
 )
 
@@ -38,3 +39,10 @@ def test_unknown_provider_definition_is_rejected() -> None:
         provider_definition('unknown')
     with pytest.raises(ValueError, match='Unsupported authentication provider type'):
         provider_family('unknown')
+
+
+def test_provider_labels_are_derived_from_the_canonical_catalog() -> None:
+    assert provider_label('database') == 'Local Database'
+    assert provider_label('ldap') == 'LDAP / Active Directory'
+    assert provider_label('google_oidc') == 'Google OpenID Connect'
+    assert provider_label('future_provider') == 'Future Provider'

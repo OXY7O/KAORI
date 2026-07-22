@@ -137,3 +137,72 @@ def test_unprovisioned_identity_is_rejected_when_jit_is_disabled(monkeypatch) ->
 
     assert result.reason == 'identity_not_provisioned'
     assert result.success is False
+
+
+def test_google_jit_requires_verified_email_from_allowed_domain() -> None:
+    provider = _provider(
+        provider_type='google_oidc',
+        allowed_domains_list=['example.com'],
+    )
+
+    sso._enforce_admission(provider, _identity())
+
+    unverified = SsoIdentity(
+        subject='subject-1',
+        username='operator',
+        email='operator@example.com',
+        display_name='Operator',
+        email_verified=False,
+    )
+    try:
+        sso._enforce_admission(provider, unverified)
+    except sso.SsoAdmissionError as exc:
+        assert 'verified email' in str(exc)
+    else:
+        raise AssertionError('unverified Google identity should be rejected')
+
+
+def test_github_jit_accepts_username_or_numeric_subject_allow_list() -> None:
+    provider = _provider(
+        provider_type='github_oauth',
+        allowed_subjects_list=['operator', '999'],
+    )
+    identity = SsoIdentity(
+        subject='999',
+        username='different-login',
+        email=None,
+        display_name='Operator',
+    )
+
+    sso._enforce_admission(provider, identity)
+
+
+def test_unsupported_provider_cannot_use_jit_admission() -> None:
+    provider = _provider(provider_type='future_sso')
+    try:
+        sso._enforce_admission(provider, _identity())
+    except sso.SsoAdmissionError as exc:
+        assert 'does not support JIT' in str(exc)
+    else:
+        raise AssertionError('unsupported SSO provider should fail closed')
+
+def test_jit_account_uses_only_verified_external_email() -> None:
+    provider = _provider(key='github')
+    unverified = SsoIdentity(
+        subject='99',
+        username='operator',
+        email='public@example.com',
+        display_name='Operator',
+        email_verified=False,
+    )
+    verified = SsoIdentity(
+        subject='99',
+        username='operator',
+        email='Verified@Example.com',
+        display_name='Operator',
+        email_verified=True,
+    )
+
+    assert sso._jit_account_email(provider, unverified) == 'github-99@external.invalid'
+    assert sso._jit_account_email(provider, verified) == 'verified@example.com'
+

@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import Any
 from urllib.parse import urlparse
 
+from flask import current_app, has_app_context
 from ldap3 import ALL, SUBTREE, Connection, Server, Tls
 from ldap3.core.exceptions import LDAPException
 from ldap3.utils.conv import escape_filter_chars
@@ -27,6 +28,55 @@ from app.models import ExternalIdentityLink, IdentityProvider, User
 
 class ExternalProviderError(RuntimeError):
     pass
+
+
+@dataclass(frozen=True, slots=True)
+class LdapTransport:
+    host: str
+    port: int
+    use_ssl: bool
+    start_tls: bool
+
+
+def resolve_ldap_transport(
+    server_uri: str | None,
+    tls_mode: str | None,
+    *,
+    allow_plaintext: bool = False,
+) -> LdapTransport:
+    uri = str(server_uri or '').strip()
+    if not uri:
+        raise ExternalProviderError('LDAP server URI is not configured.')
+
+    parsed = urlparse(uri if '://' in uri else f'ldap://{uri}')
+    if parsed.scheme not in {'ldap', 'ldaps'} or not parsed.hostname:
+        raise ExternalProviderError('LDAP server URI must use ldap:// or ldaps:// and include a host.')
+    if parsed.username is not None or parsed.password is not None:
+        raise ExternalProviderError('LDAP server URI must not embed credentials.')
+    if parsed.path not in {'', '/'} or parsed.params or parsed.query or parsed.fragment:
+        raise ExternalProviderError('LDAP server URI must contain only the scheme, host, and optional port.')
+    try:
+        port = parsed.port
+    except ValueError as exc:
+        raise ExternalProviderError('LDAP server URI contains an invalid port.') from exc
+
+    mode = str(tls_mode or 'ldaps').strip().lower()
+    if mode not in {'ldaps', 'starttls', 'plain'}:
+        raise ExternalProviderError('LDAP TLS mode must be ldaps, starttls, or plain.')
+    if mode == 'ldaps' and parsed.scheme != 'ldaps':
+        raise ExternalProviderError('LDAPS mode requires an ldaps:// server URI.')
+    if mode in {'starttls', 'plain'} and parsed.scheme != 'ldap':
+        raise ExternalProviderError(f'{mode.title()} mode requires an ldap:// server URI.')
+    if mode == 'plain' and not allow_plaintext:
+        raise ExternalProviderError('Plain LDAP transport is disabled by KAORI configuration.')
+
+    use_ssl = mode == 'ldaps'
+    return LdapTransport(
+        host=parsed.hostname,
+        port=port or (636 if use_ssl else 389),
+        use_ssl=use_ssl,
+        start_tls=mode == 'starttls',
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -52,33 +102,37 @@ def _stable_subject(value: Any) -> str:
 
 
 class LdapDirectoryClient:
-    def __init__(self, config: IdentityProvider):
+    def __init__(self, config: IdentityProvider, *, allow_plaintext: bool | None = None):
         if config.provider_type != AuthProviderType.LDAP.value:
             raise ExternalProviderError('Identity provider is not an LDAP provider.')
         self.config = config
+        self.allow_plaintext = (
+            bool(current_app.config.get('AUTH_LDAP_ALLOW_PLAINTEXT', False))
+            if allow_plaintext is None and has_app_context()
+            else bool(allow_plaintext)
+        )
+        self.transport = resolve_ldap_transport(
+            config.server_uri,
+            config.tls_mode,
+            allow_plaintext=self.allow_plaintext,
+        )
+
+    def _timeout_seconds(self) -> int:
+        try:
+            value = int(self.config.connect_timeout_seconds or 5)
+        except (TypeError, ValueError):
+            value = 5
+        return max(2, min(value, 30))
 
     def _server(self) -> Server:
-        uri = (self.config.server_uri or '').strip()
-        if not uri:
-            raise ExternalProviderError('LDAP server URI is not configured.')
-
-        parsed = urlparse(uri if '://' in uri else f'ldap://{uri}')
-        if parsed.scheme not in {'ldap', 'ldaps'} or not parsed.hostname:
-            raise ExternalProviderError('LDAP server URI must use ldap:// or ldaps:// and include a host.')
-
-        tls_mode = (self.config.tls_mode or 'ldaps').lower()
-        use_ssl = parsed.scheme == 'ldaps' or tls_mode == 'ldaps'
-        host = parsed.hostname
-        port = parsed.port or (636 if use_ssl else 389)
-
-        tls = Tls(validate=ssl.CERT_REQUIRED) if tls_mode in {'ldaps', 'starttls'} or use_ssl else None
+        tls = Tls(validate=ssl.CERT_REQUIRED) if self.transport.use_ssl or self.transport.start_tls else None
         return Server(
-            host,
-            port=port,
-            use_ssl=use_ssl,
+            self.transport.host,
+            port=self.transport.port,
+            use_ssl=self.transport.use_ssl,
             tls=tls,
             get_info=ALL,
-            connect_timeout=self.config.connect_timeout_seconds,
+            connect_timeout=self._timeout_seconds(),
         )
 
     def _new_connection(self, *, user: str | None, password: str | None) -> Connection:
@@ -87,13 +141,13 @@ class LdapDirectoryClient:
             user=user or None,
             password=password or None,
             auto_bind=False,
-            receive_timeout=self.config.connect_timeout_seconds,
+            receive_timeout=self._timeout_seconds(),
         )
 
     def _open_and_secure(self, connection: Connection) -> None:
         if not connection.open():
             raise ExternalProviderError('LDAP connection could not be opened.')
-        if self.config.tls_mode == 'starttls' and not connection.server.ssl and not connection.start_tls():
+        if self.transport.start_tls and not connection.start_tls():
             raise ExternalProviderError('LDAP StartTLS negotiation failed.')
 
     def _bound_connection(self, *, user: str | None, password: str | None) -> Connection:
