@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "cycle_envelopes": [
+    {
+      "domains": ["auth", "common", "extensions", "models", "notifications", "rbac"],
+      "reason": "Authentication, authorization, notifications, and extension initialization still share model and bootstrap dependencies.",
+      "exit_plan": "Introduce explicit application events and move extension/bootstrap imports out of domain modules. The envelope may shrink, but no new domain may join it."
+    },
+    {
+      "domains": ["alertmanager", "cluster", "integrations", "inventory", "prometheus"],
+      "reason": "The integration cutover still has reciprocal imports between provider web modules and the canonical integration runtime.",
+      "exit_plan": "Move Prometheus and Alertmanager provider ownership under canonical integration provider packages and keep web routes as one-way adapters."
+    }
+  ],
+  "service_form_imports": [
+    {
+      "source": "app/alertmanager/service.py",
+      "target": "app.alertmanager.forms",
+      "exit_plan": "Replace form objects with provider-neutral command/input contracts."
+    },
+    {
+      "source": "app/prometheus/service.py",
+      "target": "app.prometheus.forms",
+      "exit_plan": "Replace form objects with provider-neutral command/input contracts."
+    },
+    {
+      "source": "app/integrations/binding_service.py",
+      "target": "app.alertmanager.forms",
+      "exit_plan": "Move binding validation input into the integration application layer."
+    },
+    {
+      "source": "app/users/service.py",
+      "target": "app.users.forms",
+      "exit_plan": "Map WTForms data to user commands in the route layer."
+    }
+  ]
+}

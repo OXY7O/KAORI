@@ -1,4 +1,4 @@
-name: Release production image
+name: Release Production Image
 
 on:
   push:
@@ -15,29 +15,33 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  quality:
+    uses: ./.github/workflows/quality.yml
+
   build-and-push:
+    needs: quality
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v7
+      - name: Check Out Repository
+        uses: actions/checkout@v6
 
-      - name: Resolve lowercase GHCR image name
+      - name: Resolve Lowercase GHCR Image Name
         id: image
         shell: bash
         run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
 
-      - name: Set up Docker Buildx
+      - name: Set Up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
-      - name: Log in to GHCR
+      - name: Log In to GHCR
         uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Generate image metadata
+      - name: Generate Image Metadata
         id: meta
         uses: docker/metadata-action@v6
         with:
@@ -47,7 +51,7 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=sha,prefix=sha-
 
-      - name: Build and push production image
+      - name: Build and Push Production Image
         uses: docker/build-push-action@v7
         with:
           context: .

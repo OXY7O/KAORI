@@ -14,3 +14,10 @@ Read the references in this order:
 8. `consumer-pattern.md`: asset-consumer boundary and simplified primary/secondary/fallback flow.
 
 Domain-specific rules live beside complex code in `app/<domain>/README.md`. General architecture rules belong here, while product direction belongs in `docs/product`, to avoid duplicated and drifting documentation.
+
+## Quality and Refactor Governance
+
+- [Quality and Architecture Gates](quality-gates.md)
+- [Controlled Refactor Roadmap](refactor-roadmap.md)
+- [`architecture-debt-baseline.json`](architecture-debt-baseline.json) — machine-readable temporary debt ledger
+
