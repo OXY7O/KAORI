@@ -12,7 +12,7 @@
     <input type="hidden" name="page" value="1">
     <input type="hidden" name="per_page" value="{{ filters.per_page }}">
     <label class="min-w-0">
-        <span class="mb-2 block text-sm font-semibold text-content-secondary">Search user</span>
+        <span class="mb-2 block text-sm font-semibold text-content-secondary">Search User</span>
         <span class="relative block">
             <i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"></i>
             <input type="search" name="search" value="{{ filters.search }}" placeholder="Username, display name, or email"
@@ -26,7 +26,7 @@
         </select>
     </label>
     <label class="min-w-0">
-        <span class="mb-2 block text-sm font-semibold text-content-secondary">Identity source</span>
+        <span class="mb-2 block text-sm font-semibold text-content-secondary">Identity Source</span>
         <select name="auth_source" class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
             {% for option in auth_source_options %}<option value="{{ option }}" {% if filters.auth_source == option %}selected{% endif %}>{{ option|upper if option != 'all' else 'All Sources' }}</option>{% endfor %}
         </select>

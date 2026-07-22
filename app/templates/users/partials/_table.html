@@ -215,26 +215,40 @@
             </select>
         </form>
         <div class="flex items-center gap-2">
-            <a href="{{ url_for('users.index', page=pagination.prev_page, per_page=filters.per_page, search=filters.search, status=filters.status, auth_source=filters.auth_source, role_id=filters.role_id or 'all') }}"
-               hx-get="{{ url_for('users.index', page=pagination.prev_page, per_page=filters.per_page, search=filters.search, status=filters.status, auth_source=filters.auth_source, role_id=filters.role_id or 'all') }}"
-               hx-target="#users-page-content"
-               hx-swap="outerHTML settle:150ms"
-               hx-push-url="true"
-               hx-indicator="#users-refresh-indicator"
-               class="{{ pagination_ui.navigation_classes(disabled=true) }}">
-                <i data-lucide="chevron-left" class="h-4 w-4"></i>
-                Previous
-            </a>
+            {% if pagination.has_prev %}
+                <a href="{{ url_for('users.index', page=pagination.prev_page, per_page=filters.per_page, search=filters.search, status=filters.status, auth_source=filters.auth_source, role_id=filters.role_id or 'all') }}"
+                   hx-get="{{ url_for('users.index', page=pagination.prev_page, per_page=filters.per_page, search=filters.search, status=filters.status, auth_source=filters.auth_source, role_id=filters.role_id or 'all') }}"
+                   hx-target="#users-page-content"
+                   hx-swap="outerHTML settle:150ms"
+                   hx-push-url="true"
+                   hx-indicator="#users-refresh-indicator"
+                   class="{{ pagination_ui.navigation_classes() }}">
+                    <i data-lucide="chevron-left" class="h-4 w-4"></i>
+                    Previous
+                </a>
+            {% else %}
+                <span class="{{ pagination_ui.navigation_classes(disabled=true) }}" aria-disabled="true">
+                    <i data-lucide="chevron-left" class="h-4 w-4"></i>
+                    Previous
+                </span>
+            {% endif %}
             {{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages) }}
-            <a href="{{ url_for('users.index', page=pagination.next_page, per_page=filters.per_page, search=filters.search, status=filters.status, auth_source=filters.auth_source, role_id=filters.role_id or 'all') }}"
-               hx-get="{{ url_for('users.index', page=pagination.next_page, per_page=filters.per_page, search=filters.search, status=filters.status, auth_source=filters.auth_source, role_id=filters.role_id or 'all') }}"
-               hx-target="#users-page-content"
-               hx-swap="outerHTML settle:150ms"
-               hx-push-url="true"
-               hx-indicator="#users-refresh-indicator"
-               class="{{ pagination_ui.navigation_classes(disabled=true) }}">
-                Next
-                <i data-lucide="chevron-right" class="h-4 w-4"></i>
-            </a>
+            {% if pagination.has_next %}
+                <a href="{{ url_for('users.index', page=pagination.next_page, per_page=filters.per_page, search=filters.search, status=filters.status, auth_source=filters.auth_source, role_id=filters.role_id or 'all') }}"
+                   hx-get="{{ url_for('users.index', page=pagination.next_page, per_page=filters.per_page, search=filters.search, status=filters.status, auth_source=filters.auth_source, role_id=filters.role_id or 'all') }}"
+                   hx-target="#users-page-content"
+                   hx-swap="outerHTML settle:150ms"
+                   hx-push-url="true"
+                   hx-indicator="#users-refresh-indicator"
+                   class="{{ pagination_ui.navigation_classes() }}">
+                    Next
+                    <i data-lucide="chevron-right" class="h-4 w-4"></i>
+                </a>
+            {% else %}
+                <span class="{{ pagination_ui.navigation_classes(disabled=true) }}" aria-disabled="true">
+                    Next
+                    <i data-lucide="chevron-right" class="h-4 w-4"></i>
+                </span>
+            {% endif %}
         </div>
     </div>
