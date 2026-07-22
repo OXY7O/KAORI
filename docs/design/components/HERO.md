@@ -29,7 +29,7 @@ KAORI uses Inter through `font-sans`.
 |---|---:|---:|---:|---|
 | Eyebrow | 10 px | 700 | 16 px | Uppercase, tracking `0.14em`, one line |
 | Title | 30 px compact / 32 px desktop | 700 | 36/40 px | Tracking `-0.02em`, one line preferred, two maximum |
-| Supporting description | 15 px | 400 | 24 px | One meaningful line minimum, two lines maximum |
+| Supporting description | 12 px | 400 | 20 px | One meaningful line minimum, two lines maximum |
 | Metadata label | 11 px | 700 | Natural in 32 px minimum height | Two minimum, three maximum |
 | Supporting-strip label | 10 px | 700 | 16 px | Uppercase, tracking `0.12em` |
 | Supporting-strip text | 12 px | 400 | 20 px | Short context only |
@@ -46,8 +46,8 @@ The page title is the page's single `h1`.
 - Renders as one or two lines on the target desktop viewport.
 - Maximum text width: 44rem, approximately 704 px.
 - The shared `page_hero.description_classes()` macro is the only source of description typography.
-- It renders at 13 px with a 20 px line height consistently across compact and desktop viewports.
-- Page-local `text-sm`, `text-[13px]`, `text-[15px]`, font-weight, line-height, color, or width overrides are prohibited.
+- It renders at 12 px with a 20 px line height consistently across compact and desktop viewports.
+- Page-local `text-xs`, `text-sm`, `text-[13px]`, `text-[15px]`, font-weight, line-height, color, or width overrides are prohibited.
 - Uses active, direct language.
 - Does not contain diagnostics, remediation, endpoint detail, full workflow, or multi-sentence guidance.
 
