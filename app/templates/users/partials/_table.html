@@ -31,12 +31,12 @@
                                             </span>
                                         {% endif %}
                                         {% if user.is_super_admin %}
-                                            <span title="Break-glass administrator with elevated control over admin-level accounts."
+                                            <span title="Emergency Access Super Admin with elevated control over administrative accounts."
                                                   class="inline-flex items-center gap-1 rounded-md bg-kaori-soft px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-kaori-primary ring-1 ring-brand-outline ">
                                                 <i data-lucide="shield-check" class="h-3 w-3"></i> Super Admin
                                             </span>
                                         {% elif user.role_name == 'admin' %}
-                                            <span title="Administrator role without super admin break-glass privileges."
+                                            <span title="Administrator role without Emergency Access privileges."
                                                   class="inline-flex items-center gap-1 rounded-md bg-kaori-soft px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-kaori-primary ring-1 ring-brand-outline ">
                                                 <i data-lucide="shield" class="h-3 w-3"></i> Admin
                                             </span>
@@ -50,7 +50,7 @@
                             <div class="flex flex-wrap items-center gap-2">
                                 <span class="rounded-md bg-surface-subtle px-2.5 py-1 text-xs font-semibold text-content-secondary">{{ user.role_display_name }}</span>
                                 {% if user.is_super_admin %}
-                                    <span class="rounded-md bg-kaori-soft px-2.5 py-1 text-xs font-semibold text-kaori-primary ">Break-glass</span>
+                                    <span class="rounded-md bg-kaori-soft px-2.5 py-1 text-xs font-semibold text-kaori-primary ">Emergency Access</span>
                                 {% endif %}
                             </div>
                         </td>
