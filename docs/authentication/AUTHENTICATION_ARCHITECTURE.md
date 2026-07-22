@@ -1,50 +1,101 @@
-# Authentication architecture
+# Authentication Architecture
 
 ## Objective
 
-KAORI uses a provider-neutral authentication layer. The application owns session establishment, local user projection, Login Activity, account-state enforcement, and the handoff to RBAC. External systems remain authoritative for external credentials when LDAP or SSO is enabled.
+KAORI uses a provider-neutral authentication core with two explicit protocol flows:
 
-## Context and boundary
+- **credential flow** for Local Database and LDAP;
+- **browser SSO flow** for Google OpenID Connect and GitHub OAuth.
+
+The application owns local user projection, account-state enforcement, session lifecycle, login metadata, and authentication Activity Audit records. External systems remain authoritative for external credentials and identities.
+
+## Context and Boundary
 
 ```mermaid
 flowchart LR
-    Browser --> AuthRoutes[Authentication routes]
-    AuthRoutes --> AuthService[Authentication service]
-    AuthService --> Registry[Provider registry]
-    Registry --> LocalDB[Local database provider]
-    Registry --> LDAP[LDAP / Active Directory]
-    Registry -. next phase .-> SSO[OIDC / SAML]
-    AuthService --> LoginAudit[Login Activity]
-    AuthRoutes --> Session[Secure session]
-    Session --> Welcome[Role-aware Welcome]
-    Welcome --> RBAC[RBAC and permissions]
-    RBAC --> Workspaces[Protected workspaces]
+    Browser --> Routes[Auth Routes]
+    Routes --> CredentialService[Credential Orchestrator]
+    CredentialService --> CredentialRegistry[Credential Registry]
+    CredentialRegistry --> Database[Local Database Provider]
+    CredentialRegistry --> LDAP[LDAP Credential Adapter]
+
+    Routes --> BrowserRegistry[Browser SSO Registry]
+    BrowserRegistry --> Google[Google OIDC Strategy]
+    BrowserRegistry --> GitHub[GitHub OAuth Strategy]
+    Google --> IdentityResolution[SSO Identity Resolution]
+    GitHub --> IdentityResolution
+
+    LDAP --> IdentityLinks[External Identity Links]
+    IdentityResolution --> IdentityLinks
+    Routes --> Session[Session Lifecycle]
+    Routes --> Audit[Authentication Activity Audit]
+    Session --> Welcome[Role-Aware Welcome]
+    Welcome --> RBAC[RBAC and Permissions]
 ```
 
-## Responsibilities
+## Canonical Provider Vocabulary
 
-Authentication owns identity verification, normalized provider results, session lifecycle, login metadata, and Login Activity. RBAC owns authorization, permission checks, role assignment, menu filtering, and action enforcement. User Management owns account lifecycle. Provider configuration will belong to Integrations or a dedicated Identity configuration workspace.
+`app/auth/providers/catalog.py` is the authority for provider vocabulary.
 
-## Provider lifecycle
+- Family: `database`, `ldap`, `sso`.
+- Concrete type: `database`, `ldap`, `google_oidc`, `github_oauth`.
+- Flow: `credentials` or `browser`.
 
-A provider progresses through these states:
+Family-level behavior includes user filtering and password ownership. Concrete types select protocol implementations and identity-provider configuration.
 
-1. **Declared** — code boundary and documentation exist.
-2. **Configured** — deployment has connection/client settings.
-3. **Validated** — connectivity, TLS, metadata, and required claims/attributes pass validation.
-4. **Enabled** — users may choose or be routed to it.
-5. **Degraded** — temporarily unavailable; local recovery remains accessible.
-6. **Disabled** — no new authentication attempts are routed to it.
+## Responsibility Boundaries
 
-LDAP and SSO are currently declared only. Configuration names do not make them actionable.
+### Authentication
 
-## Redirect contract
+Owns credential verification, browser callback validation, normalized results, provider lookup, identity resolution, JIT admission, login metadata, session lifecycle, and authentication Activity Audit records.
 
-Successful authentication always routes to the role-aware Welcome workspace. Authentication must not encode role-specific destination tables. Welcome and RBAC determine visible workspaces, while every destination independently enforces permission decorators.
+### User Management
 
-## Extension points
+Owns provider administration UI, account lifecycle, role assignment, LDAP directory search initiation, and administrative external-identity projection. It calls Authentication-owned provider configuration and LDAP client boundaries.
 
-- Provider adapters implement `AuthProvider` or a later flow-specific protocol.
-- Browser-redirect SSO will require initiation and callback contracts separate from password-based `authenticate()`.
-- External identity projection will map provider subject/DN to one local user.
-- Role mapping will consume normalized groups/claims after authentication; it must not be hidden inside provider-specific routes.
+### RBAC
+
+Owns roles, permissions, route guards, menu visibility, and operational authorization. Provider adapters must not assign hidden permissions.
+
+### Models
+
+`app/models/identity.py` and `app/models/user.py` remain the persistence authority. Protocol modules do not define ORM models.
+
+## Provider Registries
+
+### Credential Registry
+
+`CredentialProviderRegistry` always contains the Local Database provider and currently contains the LDAP adapter as its external credential provider. Local identity presence is authoritative: a wrong password for an existing Local Database user does not fall through to LDAP.
+
+### Browser SSO Registry
+
+Browser SSO is selected through `get_browser_sso_provider(provider_type)`. Routes do not contain Google/GitHub protocol branches. Unsupported provider types fail closed.
+
+## Provider Lifecycle
+
+1. **Configured** — provider record and secret references exist.
+2. **Validated** — connection/discovery, TLS, secret reference, and JIT policy pass validation.
+3. **Enabled** — new authentication attempts may use the provider.
+4. **Degraded** — the provider is temporarily unavailable; Local Database recovery remains available.
+5. **Disabled** — new attempts are rejected while existing audit history and identity links remain.
+
+## Error Normalization
+
+Provider exceptions never cross the HTTP boundary directly.
+
+- invalid password → `invalid_credentials`;
+- inactive linked user → `user_inactive`;
+- database failure → `database_unavailable`;
+- external protocol outage → `provider_unavailable`;
+- missing SSO projection/admission failure → `identity_not_provisioned`;
+- callback state/code failures → explicit SSO reason codes.
+
+LDAP user-bind rejection and operational provider failure are distinguished internally so an outage is not silently reported as a bad password.
+
+## Redirect Contract
+
+Successful authentication routes to `welcome.index`. Authentication does not encode role-specific destination logic. Every destination independently applies server-side permission checks.
+
+## Extension Contract
+
+A new browser provider implements `BrowserSsoProvider` in a dedicated module and is registered once. A new credential provider implements `CredentialAuthProvider` and declares an explicit identity-collision policy. Provider-specific branches are prohibited in `app/auth/routes.py` and `app/users/routes.py`.

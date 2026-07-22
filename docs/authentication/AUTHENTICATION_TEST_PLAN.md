@@ -1,49 +1,98 @@
-# Authentication test plan
+# Authentication Test Plan
 
-## Unit tests
+## Automated Function Tests
 
-- Database provider returns success for a valid active local user.
-- Unknown username and wrong password return the same public message and reason class.
-- Deleted or inactive users cannot authenticate.
-- Database exceptions return a normalized unavailable result without raw details.
-- Provider registry ignores unsupported names and does not activate LDAP/SSO stubs.
-- Session establishment rotates prior session data.
-- Super-admin remember-me requests are ignored by default.
-- Normal-user remember-me follows form intent.
-- Audit writer never receives password/token fields.
+The canonical suite is `tests/auth/`.
 
-## Route tests
+### Provider Core
 
-- Login GET renders the local provider state.
-- CSRF is required outside testing configuration.
-- Authenticated users are redirected to Welcome.
-- Successful POST redirects to Welcome and records last-login metadata.
-- Failed POST renders a generic error and Login Activity.
-- Rate limit returns the configured response.
-- Logout rejects GET, accepts CSRF-protected POST, and removes auth plus step-up state.
+- Catalog maps concrete types to `database`, `ldap`, and `sso` families.
+- Catalog and runtime browser registry contain the same browser-provider types.
+- Unsupported provider types fail closed.
+- Provider-form projection writes only fields owned by the selected provider type.
+- Provider validation normalizes configuration and protocol failures.
 
-## Security tests
+### Credential Orchestration
 
-- Username enumeration is not possible through body, status, or meaningful timing differences.
-- Forwarding headers are not trusted without configured ProxyFix.
-- Session identifier/state changes after login.
-- Production cookies contain Secure, HttpOnly, and SameSite attributes.
-- Passwords, cookies, tokens, assertions, and provider payloads do not appear in logs or audit rows.
-- Open redirect attempts cannot control the post-login destination.
-- Break-glass account cannot retain a persistent session by default.
+- Local success is authoritative.
+- An existing local identity with a wrong password does not fall through to LDAP.
+- Unknown local identity may continue to enabled LDAP providers.
+- Database unavailability stops external lookup.
+- LDAP provider unavailability is preserved after all external attempts.
 
-## Integration tests before LDAP/SSO activation
+### Local Database Provider
 
-- TLS validation failures fail closed.
-- Timeout and provider outage produce normalized unavailable behavior.
-- OIDC state/nonce/signature/audience/issuer checks reject invalid callbacks.
-- LDAP filters are escaped and group values normalized.
-- External identity projection is stable across mutable email/display-name changes.
-- Role mapping conflicts and removal behavior match the RBAC contract.
+- Valid active user succeeds.
+- Unknown username and wrong password have the same public rejection.
+- External-source user does not receive Local Database password ownership.
+- Inactive user is rejected.
+- SQLAlchemy failure becomes `database_unavailable` and rolls back.
 
-## Operational validation
+### LDAP
+
+- URI, port, LDAPS, StartTLS, TLS certificate validation, timeout, and bind-secret handling are covered.
+- Search input is escaped and filter placeholders are constrained.
+- Stable binary subjects are normalized deterministically.
+- User bind distinguishes invalid credentials from provider outage.
+- Enabled links are matched case-insensitively and tried deterministically.
+- Inactive, storage failure, invalid credentials, and provider-unavailable outcomes are normalized.
+
+### Browser SSO
+
+- Strategy registry is explicit and consistent with the catalog.
+- Authorization URLs contain required state, scope, callback, and nonce behavior.
+- Raw state is not persisted.
+- Provider ID, state hash, start timestamp, future timestamp, malformed values, and TTL are validated fail-closed.
+- Provider lookup storage failure is normalized.
+- Existing identity links, inactive users, controlled JIT, conflicts, and commit failures are covered.
+
+### Session, Readiness, and Identity Ownership
+
+- Successful login clears prior session state and establishes a fresh session.
+- Super-admin remember-me is denied unless explicitly enabled.
+- Logout clears auth and step-up state.
+- Readiness requires every table touched by the login path.
+- Concrete SSO sources map to the SSO family.
+- Unknown sources cannot manage a KAORI password.
+
+### Architecture Contracts
+
+- LDAP protocol code belongs to `app/auth`.
+- Combined OAuth module and Users-owned LDAP package remain absent.
+- User routes delegate provider projection/validation to Authentication.
+- Routes use strategy lookup and shared SSO flow validation rather than provider branches.
+- ORM models do not duplicate catalog predicates.
+
+## Route and Integration Tests
+
+Run inside the KAORI dev container:
+
+```bash
+pytest -q tests/auth
+pytest -q tests/auth --cov=app.auth --cov=app.users.identity --cov-report=term-missing
+```
+
+Route/integration coverage must verify CSRF, login GET/POST, authenticated redirect, login metadata, normalized flashes, rate-limit responses, SSO start/callback, POST-only logout, and Activity Audit records.
+
+## Manual Provider Matrix
+
+Test Local Database, LDAP, Google OIDC, and GitHub OAuth with:
+
+- valid active identity;
+- wrong credential or denied authorization;
+- inactive KAORI projection;
+- disabled provider;
+- missing secret;
+- PostgreSQL unavailable;
+- external endpoint unavailable or TLS failure;
+- pre-provisioned identity;
+- JIT allowed and JIT denied;
+- duplicate username/email/subject conflict;
+- expired or mismatched SSO callback state.
+
+## Operational Validation
 
 - Redis-backed limiter is shared across production web instances.
-- Proxy hop counts match the deployed ingress path.
-- Login Activity retention/archive lifecycle works without deleting unarchived evidence.
-- Break-glass validation is rehearsed and evidenced under change control.
+- Trusted proxy hop counts match the deployed ingress path.
+- Authentication Activity retention/archive lifecycle preserves required evidence.
+- Local super-admin recovery is rehearsed under change control.

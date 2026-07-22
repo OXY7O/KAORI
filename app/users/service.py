@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import and_, case, func, or_
 
+from app.auth.providers.catalog import provider_types_for_family
 from app.extensions import db
 from app.models import AuditEvent, Role, User
 
@@ -63,7 +64,8 @@ def build_users_payload(filters: dict[str, Any], actor: User | None = None) -> d
         query = query.filter(User.deleted_at.is_not(None))
 
     if filters['auth_source'] != 'all':
-        query = query.filter(User.auth_source == filters['auth_source'])
+        source_values = provider_types_for_family(filters['auth_source'])
+        query = query.filter(User.auth_source.in_(source_values))
 
     if filters['role_id']:
         query = query.filter(User.role_id == filters['role_id'])

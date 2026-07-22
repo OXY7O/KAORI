@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from app.auth.providers.catalog import AuthProviderFamily, provider_family
 
-@dataclass(frozen=True)
+
+@dataclass(frozen=True, slots=True)
 class IdentitySourceDefinition:
     key: str
     label: str
@@ -14,15 +16,21 @@ class IdentitySourceDefinition:
 
 IDENTITY_SOURCES: tuple[IdentitySourceDefinition, ...] = (
     IdentitySourceDefinition('database', 'Local Database', 'KAORI', 'administrative', True),
-    IdentitySourceDefinition('ldap', 'LDAP / Active Directory', 'External directory', 'projection', False),
-    IdentitySourceDefinition('sso', 'SSO / Identity Provider', 'External identity provider', 'projection', False),
+    IdentitySourceDefinition('ldap', 'LDAP / Active Directory', 'External directory', 'projection', True),
+    IdentitySourceDefinition('sso', 'SSO / Identity Provider', 'External identity provider', 'projection', True),
 )
 
 
 def identity_source_definition(key: str | None) -> IdentitySourceDefinition:
-    normalized = (key or 'database').strip().lower()
-    return next((item for item in IDENTITY_SOURCES if item.key == normalized), IDENTITY_SOURCES[0])
+    try:
+        family = provider_family(key).value
+    except ValueError:
+        family = AuthProviderFamily.SSO.value
+    return next((item for item in IDENTITY_SOURCES if item.key == family), IDENTITY_SOURCES[0])
 
 
 def password_is_managed_by_kaori(identity_source: str | None) -> bool:
-    return identity_source_definition(identity_source).key == 'database'
+    try:
+        return provider_family(identity_source) == AuthProviderFamily.DATABASE
+    except ValueError:
+        return False

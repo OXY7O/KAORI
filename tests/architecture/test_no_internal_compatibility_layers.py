@@ -134,7 +134,6 @@ def test_package_initializers_do_not_restore_removed_export_facades() -> None:
         'app/integrations/alertmanager/normalizers/__init__.py',
         'app/auth/providers/__init__.py',
         'app/inventory/topology/__init__.py',
-        'app/users/providers/__init__.py',
         'app/settings/secret_reveal/__init__.py',
         'app/settings/data_lifecycle/__init__.py',
     ):

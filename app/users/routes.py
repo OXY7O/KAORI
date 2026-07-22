@@ -6,8 +6,10 @@ from flask import Blueprint, redirect, render_template, request, url_for
 from flask_login import current_user
 from sqlalchemy.exc import IntegrityError
 
-from app.auth.providers.oauth import SsoProviderError, validate_sso_provider
-from app.auth.sso import SsoAdmissionError, validate_jit_configuration
+from app.auth.provider_configuration import apply_identity_provider_configuration, validate_identity_provider
+from app.auth.providers.browser import SsoProviderError
+from app.auth.providers.ldap import ExternalIdentity, ExternalProviderError, LdapDirectoryClient
+from app.auth.sso import SsoAdmissionError
 from app.extensions import db
 from app.models import IdentityProvider, Role, User
 from app.rbac.decorators import permission_required
@@ -26,7 +28,7 @@ from app.users.forms import (
     UserForm,
 )
 from app.users.notifications import user_management_feedback
-from app.users.providers.ldap import ExternalIdentity, ExternalProviderError, LdapDirectoryProvider
+from app.users.provider_forms import identity_provider_configuration_from_form
 from app.users.service import (
     assign_user_form_choices,
     build_user_identity_context,
@@ -372,7 +374,7 @@ def create_provider():
     _assign_provider_role_choices(form)
     if form.validate_on_submit():
         provider = IdentityProvider()
-        _apply_provider_form(provider, form)
+        apply_identity_provider_configuration(provider, identity_provider_configuration_from_form(form))
         db.session.add(provider)
         try:
             db.session.commit()
@@ -398,7 +400,7 @@ def edit_provider(provider_id: int):
     form = IdentityProviderForm(obj=provider)
     _assign_provider_role_choices(form)
     if form.validate_on_submit():
-        _apply_provider_form(provider, form)
+        apply_identity_provider_configuration(provider, identity_provider_configuration_from_form(form))
         try:
             db.session.commit()
         except IntegrityError:
@@ -422,12 +424,7 @@ def validate_provider(provider_id: int):
     provider = db.get_or_404(IdentityProvider, provider_id)
     status, title = 'success', 'Provider validation passed'
     try:
-        if provider.provider_type == 'ldap':
-            LdapDirectoryProvider(provider).validate()
-            message = f'{provider.display_name} accepted an LDAP service connection.'
-        else:
-            message = validate_sso_provider(provider)
-            validate_jit_configuration(provider)
+        message = validate_identity_provider(provider)
     except (ExternalProviderError, SsoProviderError, SsoAdmissionError) as exc:
         status, title, message = 'error', 'Provider validation failed', str(exc)
     user_management_feedback(
@@ -439,48 +436,6 @@ def validate_provider(provider_id: int):
     )
     return redirect(url_for('users.providers'))
 
-
-def _apply_provider_form(provider: IdentityProvider, form: IdentityProviderForm) -> None:
-    provider_type = form.provider_type.data
-    is_ldap = provider_type == 'ldap'
-    is_google = provider_type == 'google_oidc'
-    is_github = provider_type == 'github_oauth'
-
-    provider.key = (form.key.data or '').strip().lower()
-    provider.display_name = (form.display_name.data or '').strip()
-    provider.provider_type = provider_type
-    provider.enabled = bool(form.enabled.data)
-    provider.jit_enabled = bool(form.jit_enabled.data) if not is_ldap else False
-
-    provider.server_uri = ((form.server_uri.data or '').strip() or None) if is_ldap else None
-    provider.base_dn = ((form.base_dn.data or '').strip() or None) if is_ldap else None
-    provider.bind_dn = ((form.bind_dn.data or '').strip() or None) if is_ldap else None
-    provider.bind_password_env = ((form.bind_password_env.data or '').strip() or None) if is_ldap else None
-    provider.user_filter = ((form.user_filter.data or '').strip() or None) if is_ldap else None
-    provider.tls_mode = (form.tls_mode.data or 'ldaps') if is_ldap else 'ldaps'
-    provider.username_attribute = (
-        ((form.username_attribute.data or '').strip() or 'sAMAccountName') if is_ldap else 'sAMAccountName'
-    )
-    provider.email_attribute = ((form.email_attribute.data or '').strip() or 'mail') if is_ldap else 'mail'
-    provider.display_name_attribute = (
-        ((form.display_name_attribute.data or '').strip() or 'displayName') if is_ldap else 'displayName'
-    )
-    provider.stable_id_attribute = (
-        ((form.stable_id_attribute.data or '').strip() or 'objectGUID') if is_ldap else 'objectGUID'
-    )
-
-    provider.oidc_issuer = 'https://accounts.google.com' if is_google else None
-    provider.oidc_client_id = ((form.oidc_client_id.data or '').strip() or None) if not is_ldap else None
-    provider.oidc_client_secret_env = (
-        ((form.oidc_client_secret_env.data or '').strip() or None) if not is_ldap else None
-    )
-    provider.default_role_id = (form.default_role_id.data or None) if provider.jit_enabled else None
-    provider.allowed_domains = (
-        ((form.allowed_domains.data or '').strip() or None) if is_google and provider.jit_enabled else None
-    )
-    provider.allowed_subjects = (
-        ((form.allowed_subjects.data or '').strip() or None) if is_github and provider.jit_enabled else None
-    )
 
 
 def _assign_provider_role_choices(form: IdentityProviderForm) -> None:
@@ -505,7 +460,7 @@ def external_identities():
         selected_provider = db.session.get(IdentityProvider, search_form.provider_id.data)
         if selected_provider is not None:
             try:
-                results = LdapDirectoryProvider(selected_provider).search(search_form.query.data or '')
+                results = LdapDirectoryClient(selected_provider).search(search_form.query.data or '')
             except ExternalProviderError as exc:
                 user_management_feedback(
                     actor=cast(User, current_user),

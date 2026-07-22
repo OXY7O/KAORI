@@ -1,136 +1,139 @@
-# KAORI Authentication domain
+# KAORI Authentication Domain
 
 ## Purpose
 
-`app/auth` is the identity-verification boundary for KAORI. It verifies a user through an authentication provider, normalizes the result, establishes or clears the web session, records authentication events in the unified Activity Audit Log, and sends an authenticated user to the role-aware Welcome workspace.
+`app/auth` is the identity-verification boundary for KAORI. It verifies credentials or browser SSO assertions, normalizes outcomes, applies account-state checks, establishes or clears the Flask session, records authentication activity, and hands the authenticated user to the role-aware Welcome workspace.
 
-Authentication answers **who the user is**. It does not decide what the user may do. Route access, menu visibility, workspace availability, and operational actions remain enforced by `app/rbac`, permission decorators, and role/permission resolution.
+Authentication answers **who the user is**. Authorization remains owned by `app/rbac`; account administration remains owned by `app/users`.
 
-## Provider roadmap
+## Provider Model
 
-| Provider                | Status | Purpose                                                                                                           |
-| ----------------------- | ------ | ----------------------------------------------------------------------------------------------------------------- |
-| Local database          | Active | Normal local accounts and the independent break-glass super-admin recovery path.                                  |
-| LDAP / Active Directory | Active | Directory authentication for administratively provisioned KAORI users. Group-to-role mapping remains future work. |
-| Google OpenID Connect   | Active | Browser SSO with pre-provisioned identities or controlled domain-restricted JIT.                                  |
-| GitHub OAuth            | Active | Browser SSO with pre-provisioned identities or controlled user allow-list JIT.                                    |
+KAORI exposes three primary provider families:
 
-Local authentication must remain available even after external providers are enabled. LDAP and SSO failures must never remove the controlled recovery path.
+| Family | Concrete types | Flow | Credential authority |
+| --- | --- | --- | --- |
+| Database | `database` | Username/password | KAORI |
+| LDAP | `ldap` | Username/password with directory bind | LDAP / Active Directory |
+| SSO | `google_oidc`, `github_oauth` | Browser redirect/callback | Google or GitHub |
 
-## File responsibilities
+The distinction between **family** and **concrete provider type** is intentional. User filters and credential ownership operate on the family, while protocol adapters and identity links use the concrete type.
 
-### Domain files
+The canonical catalog is `app/auth/providers/catalog.py`. New provider types must be registered there and, for browser SSO, in `app/auth/providers/registry.py`.
 
-| File            | Responsibility                                                                                                                                                                                                      |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `__init__.py`   | Package marker. Keep free of side effects and provider initialization.                                                                                                                                              |
-| `forms.py`      | WTForms request validation for login and local password changes. Password policy validation belongs in reusable validators when expanded.                                                                           |
-| `results.py`    | Provider-neutral typed authentication outcomes, reason codes, and safe user-facing messages. No raw provider exception belongs here.                                                                                |
-| `services.py`   | Authentication orchestration. It invokes the active provider chain and returns a normalized `AuthResult`; it must not read Flask request fields or create sessions.                                                 |
-| `routes.py`     | HTTP boundary: form submission, rate limit binding, success/failure response, login metadata update, safe redirect, and logout endpoint. Route functions should remain thin.                                        |
-| `session.py`    | Session rotation, Flask-Login establishment, persistent-session policy, authentication-source state, and auth-owned session cleanup.                                                                                |
-| `audit.py`      | Canonical authentication audit writer. It writes login and logout directly to the Activity Audit Log with safe provider/IP/client metadata. It must never store credentials, tokens, assertions, or raw exceptions. |
-| `user_agent.py` | Stateless parsing of browser, operating-system, and device labels used by authentication audit presentation. It contains no persistence or request logic.                                                           |
+## Dependency Direction
 
-### Provider files
+```text
+app/users forms -> app/users/provider_forms.py -> Auth configuration DTO
+                                              |
+                                              v
+                                  app/auth provider services
+                                              |
+                                              v
+                                  app/models persistence records
+```
 
-| File                    | Responsibility                                                                                                                                               |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `providers/base.py`     | `AuthProvider` protocol implemented by every provider adapter.                                                                                               |
-| `providers/registry.py` | Resolve configured provider names and expose active provider instances. Local database remains mandatory.                                                    |
-| `providers/database.py` | Verify local username/password credentials against the KAORI user database and return normalized results.                                                    |
-| `providers/ldap.py`     | Reserved LDAP/Active Directory adapter boundary. It stays inactive until connection, TLS, bind, timeout, identity, and group-mapping contracts are complete. |
-| `providers/sso.py`      | Reserved federated provider boundary. OIDC should be implemented before SAML unless a deployment requirement says otherwise.                                 |
-| `providers/__init__.py` | Stable provider-domain exports only.                                                                                                                         |
+`app/auth` does not import `app/users`. LDAP connection, TLS, search, and bind behavior are owned by `app/auth/providers/ldap.py`; User Management maps WTForms into `IdentityProviderConfiguration` and invokes the Auth boundary for provider validation, directory search, and administrative projection.
 
-### Login templates
+## File Responsibilities
 
-| File                             | Responsibility                                                                                      |
-| -------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `templates/auth/index.html`      | Composition shell only. It owns page-level layout and includes the two main panels.                 |
-| `partials/_brand_panel.html`     | KAORI positioning and capability cues. Do not place provider controls or authentication logic here. |
-| `partials/_feature_cards.html`   | Compact platform-value cards shown in the brand panel.                                              |
-| `partials/_login_form.html`      | Form composition, labels, fields, submit action, theme control, and audit notice.                   |
-| `partials/_login_alerts.html`    | Safe success/error messages rendered from Flask flash messages.                                     |
-| `partials/_footer_meta.html`     | Version/legal/environment footer metadata.                                                          |
+### Domain Files
 
-## Current local authentication flow
+| File | Responsibility |
+| --- | --- |
+| `results.py` | Provider-neutral `AuthResult`, reason codes, and safe messages. |
+| `services.py` | Credential-flow orchestration and local-authority fallback rules. |
+| `routes.py` | HTTP boundary for login, SSO start/callback, logout, rate limits, and response handling. |
+| `session.py` | Session rotation, Flask-Login establishment, remember-me policy, and auth-owned cleanup. |
+| `sso.py` | SSO provider lookup, external identity resolution, JIT admission, projection, and link synchronization. |
+| `provider_configuration.py` | Provider-neutral configuration DTO, canonical key validation, model projection, and provider validation dispatch. |
+| `readiness.py` | Database/schema readiness for every table needed by authentication. |
+| `audit.py` | Authentication Activity Audit writer with safe provider, IP, browser, OS, and device metadata. |
+| `user_agent.py` | Stateless user-agent parsing. |
 
-1. `POST /auth/login` passes CSRF validation and the configured limiter.
-2. `routes.login()` calls `services.authenticate()` with username and password.
-3. `services.authenticate()` resolves the provider registry and invokes the local database provider.
-4. The provider queries a non-deleted user, verifies the password hash, and checks account state.
-5. A normalized `AuthResult` is returned; raw SQL/provider errors are not exposed.
-6. The attempt is written once to Activity Audit Log under the `authentication` event type without credentials.
-7. On success, KAORI records last-login metadata, rotates the session, and authenticates through Flask-Login.
-8. The user is redirected to `welcome.index`; RBAC controls the workspace and all protected actions.
+### Provider Files
 
-## Security invariants
+| File | Responsibility |
+| --- | --- |
+| `providers/catalog.py` | Canonical provider types, families, flows, labels, and configurable choices. |
+| `providers/base.py` | `CredentialAuthProvider` protocol for username/password providers. |
+| `providers/registry.py` | Credential registry plus explicit browser-SSO strategy registry. |
+| `providers/database.py` | Local database password verification and database-error normalization. |
+| `providers/ldap.py` | LDAP directory client, TLS/search/bind behavior, and LDAP credential adapter. |
+| `providers/browser.py` | Browser SSO contract, normalized identity, state/nonce helpers, secret lookup, and timeout policy. |
+| `providers/google_oidc.py` | Google authorization, token exchange, ID-token verification, nonce enforcement, and discovery validation. |
+| `providers/github_oauth.py` | GitHub authorization, token exchange, profile/email lookup, and endpoint validation. |
 
-- Local database authentication is always available as the recovery provider.
+## Credential Authentication Flow
+
+1. `POST /auth/login` passes CSRF and login rate-limit checks.
+2. `services.authenticate()` builds the credential registry.
+3. The Local Database provider runs first and remains authoritative when a local user exists.
+4. Only an unknown local identity may fall through to LDAP.
+5. LDAP resolves all matching enabled identity links and performs directory binds through `LdapDirectoryClient`.
+6. Invalid credentials, inactive users, database outages, and provider outages return normalized `AuthResult` values.
+7. Login metadata is committed before session establishment.
+8. A successful Activity Audit event is written only after the session has been established.
+
+This prevents a local username collision from silently authenticating against LDAP and prevents a failed metadata commit from being recorded as a completed login.
+
+## Browser SSO Flow
+
+1. `/auth/sso/<provider>/start` resolves an enabled provider from the identity-provider registry.
+2. The browser strategy is selected by concrete provider type.
+3. KAORI stores only the state fingerprint, provider ID, nonce when required, and start timestamp in the session.
+4. The callback validates provider identity, state, and the configured `AUTH_SSO_FLOW_TTL_SECONDS` window.
+5. The registered strategy exchanges and validates the authorization code.
+6. `sso.resolve_sso_identity()` resolves a pre-provisioned link or applies controlled JIT admission.
+7. Account state and database failures are normalized before session establishment.
+
+## Security Invariants
+
+- Local Database authentication remains available as the controlled recovery provider.
 - Authentication and authorization remain separate domains.
-- Login errors are generic enough to avoid username enumeration.
-- Passwords, hashes, LDAP bind credentials, authorization codes, access/refresh tokens, ID tokens, assertions, and raw provider payloads are never logged.
-- Client IP comes from `request.remote_addr`; production proxy trust is centralized in configured `ProxyFix`, not direct parsing of spoofable forwarding headers.
-- Successful login rotates the session before authentication state is established.
+- Passwords, hashes, bind secrets, authorization codes, tokens, assertions, and raw provider payloads are never written to Activity Audit Log.
+- Unknown provider types are rejected by the provider catalog; unknown identity sources never gain KAORI password ownership.
+- LDAP invalid credentials are distinguished internally from LDAP operational outages without exposing raw directory errors.
+- Google OIDC requires a nonce at authorization and callback validation.
+- SSO state is stored as a SHA-256 fingerprint rather than raw state.
+- Successful login rotates the session before authentication state is retained.
 - Logout is POST-only and CSRF-protected.
-- Persistent login for super administrators is disabled by default through `AUTH_ALLOW_SUPER_ADMIN_REMEMBER_ME=false`.
-- Production cookies are Secure, HttpOnly, and SameSite=Lax.
-- All protected-route decisions remain server-side even when navigation is role-aware.
+- Persistent login remains disabled for super administrators unless `AUTH_ALLOW_SUPER_ADMIN_REMEMBER_ME=true` is explicitly configured.
+- Production proxy trust remains centralized in `ProxyFix`; authentication reads `request.remote_addr` only.
 
-## Break-glass super administrator
+## Readiness Contract
 
-The local break-glass account is an emergency recovery control, not a daily account. Until a dedicated `is_break_glass` field and operating workflow are added, every local `is_super_admin` account receives the stricter no-persistent-session behavior.
+Authentication is not ready until these tables exist:
 
-Required future controls are documented in `docs/authentication/BREAK_GLASS_RUNBOOK.md`. The account must remain independent of LDAP/SSO, be protected from removal when it is the final recovery administrator, use a separately managed high-entropy password, and produce high-visibility audit events when used.
+- `users`
+- `roles`
+- `permissions`
+- `identity_providers`
+- `external_identity_links`
+- `notifications`
 
-## Refactor review
+The last two are required because LDAP/SSO identity resolution and authentication Activity Audit persistence are part of the login path.
 
-Current modules are cohesive and below the practical review thresholds. The previous provider parsing in `services.py` was separated into `providers/registry.py`; session mutation was separated into `session.py`; and login alerts/provider state were split into traceable partials. `routes.py` now remains focused on HTTP orchestration.
+## Test Gate
 
-No larger split is currently justified. Re-review when:
+Function and architecture tests live under `tests/auth/`.
 
-- a Python module exceeds roughly 300–400 lines;
-- a route or service function exceeds roughly 60–80 lines;
-- provider-specific branching appears in `routes.py`;
-- LDAP/SSO introduces callbacks, state/nonce verification, certificate handling, or mapping logic;
-- password policy, lockout, and recovery become independent workflows.
+```bash
+pytest -q tests/auth
+pytest -q tests/auth --cov=app.auth --cov=app.users.identity --cov-report=term-missing
+```
 
-## Documentation set
+The suite covers provider family/type mapping, credential orchestration, Database behavior, LDAP bind semantics, browser SSO strategy selection, SSO identity resolution, provider configuration projection, session policy, readiness, and domain ownership.
 
-- `docs/authentication/AUTHENTICATION_ARCHITECTURE.md`
-- `docs/authentication/AUTHENTICATION_SECURITY.md`
-- `docs/authentication/AUTHENTICATION_FLOWS.md`
-- `docs/authentication/AUTHENTICATION_DATA_MODEL.md`
-- `docs/authentication/BREAK_GLASS_RUNBOOK.md`
-- `docs/authentication/PROVIDER_INTEGRATION_CONTRACT.md`
-- `docs/authentication/AUTHENTICATION_TEST_PLAN.md`
-- `docs/authentication/IDENTITY_PROVIDER_CONFIGURATION.md`
-- `docs/authentication/EXTERNAL_IDENTITY_FLOW.md`
-- `docs/authentication/GOOGLE_GITHUB_SSO.md`
+## Extension Rule
 
-## Known implementation gaps before external providers
+Adding another provider must not add provider-specific branching to `app/auth/routes.py` or `app/users/routes.py`.
 
-- Durable account lockout and failed-attempt counters are not yet stored on the user/account model; the current limiter protects the HTTP endpoint.
-- A dedicated `is_break_glass` marker and break-glass usage event classification are not yet present.
-- LDAP group-to-role mapping is not implemented; LDAP onboarding remains administrative provisioning.
-- Generic OIDC, SAML, and provider claim/group-to-role mapping remain future provider-neutral extensions.
-- Password expiry, password history, forced rotation, and recovery codes are not implemented.
+For another browser SSO provider:
 
-## LDAP activation phase
+1. add the concrete type to `providers/catalog.py`;
+2. implement `BrowserSsoProvider` in a dedicated module;
+3. register the adapter in `providers/registry.py`;
+4. add provider-specific configuration fields and validation only where required;
+5. add unit tests for authorization URL, callback validation, admission, and configuration validation.
 
-LDAP authentication is now an active adapter for administratively projected users. The adapter resolves an `ExternalIdentityLink`, checks that its provider is enabled, verifies the user by LDAP bind, then returns the linked KAORI `User`. User lifecycle remains authoritative in KAORI.
-
-OIDC configuration fields are reserved but OIDC cannot yet be enabled. JIT provisioning is blocked until RBAC role mapping is implemented.
-
-See `docs/authentication/EXTERNAL_IDENTITY_FLOW.md`.
-
-## Google and GitHub SSO
-
-Browser SSO adapters are implemented in `app/auth/providers/oauth.py`, while projection and admission policy remain in `app/auth/sso.py`. Google uses OIDC and GitHub uses OAuth App semantics. See `docs/authentication/GOOGLE_GITHUB_SSO.md`.
-
-## Unified Activity Audit Log
-
-Every completed login attempt and every user-initiated logout is recorded under the canonical `authentication` event type in Activity Audit Log. The event metadata captures the sign-in/sign-out action, provider, result, reason code, attempted username, IP address, browser, operating system, device class, and raw user-agent. Failed attempts that cannot be mapped to a KAORI user are stored with a nullable actor and presented as unauthenticated requests.
-
-Authentication events are audit-only records and are marked reviewed when written, so routine login/logout activity does not create unread personal notification-center items. `notifications` is the only runtime persistence source; no alternate login-event model, dual-write path, or login-specific retention command is active.
+For another credential provider, implement `CredentialAuthProvider` and register it in the credential registry with an explicit authority and collision policy.

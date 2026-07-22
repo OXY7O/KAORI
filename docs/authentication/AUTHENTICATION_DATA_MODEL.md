@@ -1,57 +1,64 @@
-# Authentication data model
+# Authentication Data Model
 
-## Current model
+## Current Persistence Authority
 
 ### `users`
 
-Current authentication-relevant fields include username, email, display name, password hash, legacy and normalized role references, authentication source, external ID, active/deleted state, super-admin marker, last-login metadata, and timestamps.
+Authentication-relevant fields are:
 
-### `auth_login_events`
+- `username`, `email`, and `display_name` for the KAORI user projection;
+- `password_hash` for Local Database credentials only;
+- `role_id` as the single RBAC role reference;
+- `auth_source` as the concrete primary source: `database`, `ldap`, `google_oidc`, or `github_oauth`;
+- `external_id` as a compatibility projection of the primary external subject;
+- lifecycle state through `is_active` and `deleted_at`;
+- emergency privilege through `is_super_admin`;
+- `last_login_at`, `last_login_ip`, and `last_auth_source` for login metadata.
 
-Current fields include attempted username, optional user ID, provider source, success flag, normalized reason, IP address, user agent, and creation time.
+`users.auth_source` uses concrete provider types, not provider-family labels such as `sso`.
 
-## Target model decisions before migrations
+### `identity_providers`
 
-The following additions require a dedicated migration and compatibility review rather than ad-hoc columns during the UI review:
+One record stores the non-secret configuration for an LDAP, Google OIDC, or GitHub OAuth provider instance. The model includes:
 
-### Account security fields
+- stable key, display name, concrete provider type, enabled state, and JIT state;
+- LDAP endpoint, bind-secret reference, search/filter, TLS, timeout, and attribute mapping;
+- browser SSO issuer/client metadata and client-secret reference;
+- JIT default role and provider-specific admission allow-lists.
 
-- `is_break_glass` — explicit recovery-account marker independent from ordinary super-admin status.
-- `failed_login_count` — durable identity-level failure counter.
-- `last_failed_login_at` — support decay and incident analysis.
-- `locked_until` — time-bound lockout.
-- `password_changed_at` — rotation and age policy.
-- `must_change_password` — controlled bootstrap/reset flow.
+Runtime secrets are referenced by environment-variable name and are never stored in the table.
 
-### External identity projection
+### `external_identity_links`
 
-Prefer a separate `external_identities` table when multiple providers or identities per user are possible:
+This table is the stable mapping between one KAORI user and one provider identity. Its uniqueness contracts are:
 
-```text
-external_identities
-- id
-- user_id
-- provider_id
-- subject_identifier
-- normalized_username
-- email_snapshot
-- attributes_snapshot (strictly allow-listed)
-- last_authenticated_at
-- created_at
-- updated_at
-- disabled_at
-```
+- provider plus immutable subject is globally unique;
+- one user has at most one identity link for a specific provider instance.
 
-The stable uniqueness key is provider plus immutable subject/DN identifier, not mutable email or display name.
+The link stores only the required projection: subject, external username, optional DN, email/display-name snapshots, projection type, and synchronization timestamps. Mutable email or display name is never the identity key.
 
-### Provider configuration
+### Authentication Activity Audit
 
-Provider secrets must not be stored as plaintext model fields. A provider registry may store non-secret metadata and secret references. Validation state and last validation timestamp belong to the integration configuration domain.
+Login and logout events are written to the unified `notifications` table using:
 
-### Role mapping
+- `event_type = authentication`;
+- schema marker `authentication.v1` in `metadata_json`;
+- normalized action, source, result, reason code, client context, and known actor projection.
 
-Role mapping is intentionally deferred to the RBAC design stage. It should consume normalized provider groups/claims and produce an explicit KAORI role assignment with precedence, fallback, conflict, and removal behavior documented before schema creation.
+These rows are audit-only and are marked read so they do not create personal notification noise. The retired `auth_login_events` table is not a runtime dependency.
 
-## Data minimization
+## Identity Authority Rules
 
-Do not persist raw OIDC claims, LDAP entries, SAML assertions, access tokens, refresh tokens, ID tokens, passwords, cookies, or complete provider responses. Any attribute snapshot must be allow-listed and justified for operations or audit.
+- Local Database credentials are valid only for a user whose `auth_source` is `database`.
+- LDAP authentication resolves through an enabled LDAP provider and an `external_identity_links` row.
+- Browser SSO resolves through provider ID plus immutable external subject.
+- Unknown source values fail closed and do not receive KAORI password ownership.
+- A local username collision is authoritative: an existing Local Database user with a wrong password does not fall through to LDAP.
+
+## Data Minimization
+
+Do not persist raw OIDC claims, LDAP entries, access tokens, refresh tokens, ID tokens, authorization codes, passwords, cookies, or complete provider responses. Any future snapshot must be allow-listed and justified for operations or audit.
+
+## Deferred Account-Security Fields
+
+Durable identity lockout is not yet modeled. A future migration may add `failed_login_count`, `last_failed_login_at`, `locked_until`, `password_changed_at`, `must_change_password`, and an explicit `is_break_glass` marker. These fields must be implemented with service-level tests and Activity Audit behavior, not appended only for UI display.

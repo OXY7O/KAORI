@@ -64,18 +64,6 @@ class IdentityProvider(db.Model):
     default_role = relationship('Role', lazy='joined')
 
     @property
-    def is_ldap(self) -> bool:
-        return self.provider_type == 'ldap'
-
-    @property
-    def is_oidc(self) -> bool:
-        return self.provider_type == 'google_oidc'
-
-    @property
-    def is_sso(self) -> bool:
-        return self.provider_type in {'google_oidc', 'github_oauth'}
-
-    @property
     def allowed_domains_list(self) -> list[str]:
         return _split_policy_values(self.allowed_domains)
 

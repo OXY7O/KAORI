@@ -4,6 +4,9 @@ from flask_wtf import FlaskForm
 from wtforms import BooleanField, HiddenField, PasswordField, SelectField, StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, EqualTo, Length, Optional, ValidationError
 
+from app.auth.provider_configuration import normalize_provider_key
+from app.auth.providers.catalog import configurable_provider_choices
+
 
 class UserForm(FlaskForm):
     user_id = HiddenField()
@@ -36,11 +39,7 @@ class IdentityProviderForm(FlaskForm):
     display_name = StringField('Display Name', validators=[DataRequired(), Length(max=150)])
     provider_type = SelectField(
         'Provider Type',
-        choices=[
-            ('ldap', 'LDAP / Active Directory'),
-            ('google_oidc', 'Google OpenID Connect'),
-            ('github_oauth', 'GitHub OAuth'),
-        ],
+        choices=configurable_provider_choices(),
     )
     enabled = BooleanField('Enabled')
     jit_enabled = BooleanField('JIT Provisioning')
@@ -64,6 +63,12 @@ class IdentityProviderForm(FlaskForm):
     oidc_client_id = StringField('OAuth Client ID', validators=[Optional(), Length(max=255)])
     oidc_client_secret_env = StringField('Client Secret Environment Variable', validators=[Optional(), Length(max=150)])
     submit = SubmitField('Save Provider')
+
+    def validate_key(self, field):
+        try:
+            field.data = normalize_provider_key(field.data)
+        except ValueError as exc:
+            raise ValidationError(str(exc)) from exc
 
     def _require_ldap_attribute(self, field, label: str) -> None:
         if self.provider_type.data == 'ldap' and not (field.data or '').strip():

@@ -1,62 +1,69 @@
-# Authentication flows
+# Authentication Flows
 
-## Local database login activity
+## Credential Flow: Local Database and LDAP
 
 ```mermaid
 flowchart TD
-    A[Open login page] --> B{Already authenticated?}
-    B -- Yes --> C[Role-aware Welcome]
-    B -- No --> D[Submit local credentials]
-    D --> E[CSRF and form validation]
-    E -- Invalid --> F[Safe validation response]
-    E -- Valid --> G[Rate-limit decision]
-    G -- Blocked --> H[Generic throttling response]
-    G -- Allowed --> I[Local provider query]
-    I --> J{Database available?}
-    J -- No --> K[Record service failure]
-    K --> L[Temporary unavailable response]
-    J -- Yes --> M{Password and account valid?}
-    M -- No --> N[Record normalized failure]
-    N --> O[Generic invalid-login response]
-    M -- Yes --> P[Record successful attempt]
-    P --> Q[Update last-login metadata]
-    Q --> R[Rotate and establish session]
-    R --> C
+    A[POST Username and Password] --> B[CSRF and Rate Limit]
+    B --> C[Credential Orchestrator]
+    C --> D[Local Database Provider]
+    D --> E{Local Identity Exists?}
+    E -- Valid --> F[Normalized Success]
+    E -- Exists but Rejected --> G[Stop: Local Authority]
+    E -- No Local Identity --> H[Enabled LDAP Links]
+    H --> I[LDAP User Bind]
+    I --> J{Outcome}
+    J -- Valid --> F
+    J -- Invalid Credentials --> K[Normalized Rejection]
+    J -- Provider Failure --> L[Provider Unavailable]
+    F --> M[Commit Login Metadata]
+    M --> N[Rotate and Establish Session]
+    N --> O[Write Authentication Activity]
+    O --> P[Redirect to Welcome]
 ```
 
-## Local login sequence
+The Local Database provider is evaluated first. LDAP is attempted only when no active Local Database identity claims the submitted username. This prevents a same-name external identity from bypassing local password authority.
+
+LDAP authentication is link-based. KAORI loads enabled LDAP identity links case-insensitively and attempts them deterministically. `invalidCredentials` remains a credential rejection; connection, TLS, and operational bind failures become `provider_unavailable`.
+
+## Browser SSO Flow: Google and GitHub
 
 ```mermaid
 sequenceDiagram
     actor User
-    participant Route as Auth route
-    participant Service as Auth service
-    participant Registry as Provider registry
-    participant DBP as Database provider
-    participant Audit as Login Activity
-    participant Session as Session manager
-    participant Welcome as Welcome/RBAC
+    participant Route as Auth Route
+    participant Registry as Browser SSO Registry
+    participant Provider as Google or GitHub
+    participant Resolver as Identity Resolver
+    participant DB as PostgreSQL
+    participant Session as Session Lifecycle
+    participant Audit as Activity Audit
 
-    User->>Route: POST username/password + CSRF
-    Route->>Service: authenticate(username, password)
-    Service->>Registry: resolve active providers
-    Registry-->>Service: local provider
-    Service->>DBP: authenticate()
-    DBP-->>Service: normalized AuthResult
-    Service-->>Route: AuthResult
-    Route->>Audit: record safe result
-    alt successful and active
-        Route->>Session: rotate + login user
-        Route->>Welcome: redirect
-    else rejected
-        Route-->>User: generic safe error
-    end
+    User->>Route: Start provider sign-in
+    Route->>Registry: Resolve provider strategy
+    Route->>Route: Generate state and optional nonce
+    Route->>Provider: Redirect authorization request
+    Provider-->>Route: Callback code and state
+    Route->>Route: Validate provider, state, and TTL
+    Route->>Provider: Exchange code and validate identity
+    Provider-->>Resolver: Normalized SsoIdentity
+    Resolver->>DB: Resolve link or controlled JIT projection
+    DB-->>Resolver: Active KAORI user
+    Resolver-->>Route: Normalized AuthResult
+    Route->>DB: Commit login metadata
+    Route->>Session: Rotate and establish session
+    Route->>Audit: Record success
+    Route-->>User: Redirect to Welcome
 ```
 
-## Planned external login
+Google requires nonce validation. Both browser providers use a hashed state value stored in the signed session and a bounded flow lifetime. A malformed, mismatched, future-dated, or expired flow fails closed before code exchange.
 
-SSO browser redirects and LDAP password authentication have different transport flows but must converge on one normalized identity result. After verification, KAORI resolves or provisions the local user projection, applies explicit role mapping, checks local account state, records Login Activity, and establishes the KAORI session. Failure of an external provider must retain access to the separately controlled local login path.
+## Failure Ordering
+
+A successful authentication event is recorded only after login metadata commits and the authenticated session is established. A metadata commit failure is normalized to `database_unavailable`; KAORI does not record a false successful login.
+
+Authentication Activity write failure is non-blocking after the security-critical login transaction has completed, but it is logged as an operational warning.
 
 ## Logout
 
-Logout requires POST plus CSRF, invokes Flask-Login logout, removes auth-source and step-up session state, and redirects to login. It must not be implemented as an idempotent GET link because cross-site navigation could otherwise terminate sessions.
+Logout is POST-only and CSRF-protected. KAORI records the user-initiated logout, invokes Flask-Login logout, clears the complete authenticated session including step-up state and pending SSO flow state, then redirects to the login page.

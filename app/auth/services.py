@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from app.auth.providers.registry import build_provider_registry
+from app.auth.providers.registry import build_credential_provider_registry
 from app.auth.results import (
     DATABASE_UNAVAILABLE_MESSAGE,
     INVALID_LOGIN_MESSAGE,
@@ -12,7 +12,7 @@ from app.auth.results import (
 
 
 def authenticate(username: str, password: str) -> AuthResult:
-    registry = build_provider_registry()
+    registry = build_credential_provider_registry()
     local_result = registry.local.authenticate(username=username, password=password)
     if (
         local_result.success

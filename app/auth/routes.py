@@ -1,20 +1,20 @@
 from datetime import UTC, datetime
-from secrets import compare_digest
 from typing import cast
 
 from flask import Blueprint, current_app, flash, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_required, logout_user
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.auth.audit import record_authentication_activity
 from app.auth.forms import LoginForm
-from app.auth.providers.oauth import (
+from app.auth.providers.browser import (
     SsoProviderError,
-    build_authorization_url,
-    exchange_code,
     generate_nonce,
     generate_state,
+    sso_flow_is_valid,
     state_fingerprint,
 )
+from app.auth.providers.registry import get_browser_sso_provider
 from app.auth.readiness import check_authentication_database_readiness
 from app.auth.results import AuthResult
 from app.auth.services import (
@@ -24,9 +24,9 @@ from app.auth.services import (
     authenticate,
 )
 from app.auth.session import clear_authenticated_session, establish_authenticated_session
-from app.auth.sso import enabled_sso_providers, resolve_sso_identity
+from app.auth.sso import SsoProviderStoreError, enabled_sso_providers, find_enabled_sso_provider, resolve_sso_identity
 from app.extensions import db, limiter
-from app.models import IdentityProvider, User
+from app.models import User
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
@@ -55,7 +55,11 @@ def _complete_successful_login(result: AuthResult, *, remember_requested: bool =
     user.last_login_at = datetime.now(UTC)
     user.last_login_ip = _client_ip()
     user.last_auth_source = result.source
-    db.session.commit()
+    try:
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise
 
     establish_authenticated_session(
         user,
@@ -93,11 +97,23 @@ def login():
         username = form.username.data or ''
         password = form.password.data or ''
         result = authenticate(username, password)
-        _record_result(username, result)
 
         if result.success and result.user:
-            return _complete_successful_login(result, remember_requested=bool(form.remember.data))
+            try:
+                response = _complete_successful_login(result, remember_requested=bool(form.remember.data))
+            except SQLAlchemyError:
+                result = AuthResult(
+                    False,
+                    'database_unavailable',
+                    source=result.source,
+                    user=result.user,
+                    message=DATABASE_UNAVAILABLE_MESSAGE,
+                )
+            else:
+                _record_result(username, result)
+                return response
 
+        _record_result(username, result)
         if result.reason == 'database_unavailable':
             message = result.message or DATABASE_UNAVAILABLE_MESSAGE
         elif result.reason == 'provider_unavailable':
@@ -115,13 +131,23 @@ def sso_start(provider_key: str):
     if current_user.is_authenticated:
         return redirect(url_for('welcome.index'))
 
-    provider = IdentityProvider.query.filter_by(key=provider_key, enabled=True).first()
-    if provider is None or not provider.is_sso:
+    try:
+        provider = find_enabled_sso_provider(provider_key)
+    except SsoProviderStoreError:
+        flash(DATABASE_UNAVAILABLE_MESSAGE, 'danger')
+        return redirect(url_for('auth.login'))
+    if provider is None:
         flash('The selected SSO provider is unavailable.', 'danger')
         return redirect(url_for('auth.login'))
 
     state = generate_state()
-    nonce = generate_nonce() if provider.provider_type == 'google_oidc' else None
+    try:
+        adapter = get_browser_sso_provider(provider.provider_type)
+    except SsoProviderError:
+        flash('The selected SSO provider is unavailable.', 'danger')
+        return redirect(url_for('auth.login'))
+
+    nonce = generate_nonce() if adapter.requires_nonce else None
     redirect_uri = url_for('auth.sso_callback', provider_key=provider.key, _external=True)
     session[SSO_SESSION_KEY] = {
         'provider_id': provider.id,
@@ -130,7 +156,7 @@ def sso_start(provider_key: str):
         'started_at': datetime.now(UTC).timestamp(),
     }
     try:
-        authorization_url = build_authorization_url(
+        authorization_url = adapter.build_authorization_url(
             provider,
             redirect_uri=redirect_uri,
             state=state,
@@ -155,20 +181,29 @@ def sso_start(provider_key: str):
 @limiter.limit(lambda: current_app.config.get('AUTH_SSO_RATE_LIMIT', '20 per minute'))
 def sso_callback(provider_key: str):
     flow = session.pop(SSO_SESSION_KEY, None) or {}
-    provider = IdentityProvider.query.filter_by(key=provider_key, enabled=True).first()
-    if provider is None or not provider.is_sso:
+    try:
+        provider = find_enabled_sso_provider(provider_key)
+    except SsoProviderStoreError:
+        flash(DATABASE_UNAVAILABLE_MESSAGE, 'danger')
+        return redirect(url_for('auth.login'))
+    if provider is None:
+        flash('The selected SSO provider is unavailable.', 'danger')
+        return redirect(url_for('auth.login'))
+    try:
+        adapter = get_browser_sso_provider(provider.provider_type)
+    except SsoProviderError:
         flash('The selected SSO provider is unavailable.', 'danger')
         return redirect(url_for('auth.login'))
 
     supplied_state = request.args.get('state', '')
-    expected_hash = str(flow.get('state_hash') or '')
-    provider_matches = int(flow.get('provider_id') or 0) == provider.id
-    state_matches = bool(supplied_state and expected_hash) and compare_digest(
-        state_fingerprint(supplied_state), expected_hash
-    )
-    started_at = float(flow.get('started_at') or 0)
-    not_expired = started_at > 0 and (datetime.now(UTC).timestamp() - started_at) <= 600
-    if not (provider_matches and state_matches and not_expired):
+    flow_ttl_seconds = int(current_app.config.get('AUTH_SSO_FLOW_TTL_SECONDS', 600))
+    if not sso_flow_is_valid(
+        flow,
+        provider_id=provider.id,
+        supplied_state=supplied_state,
+        now_timestamp=datetime.now(UTC).timestamp(),
+        ttl_seconds=flow_ttl_seconds,
+    ):
         result = AuthResult(False, 'state_mismatch', source=provider.provider_type)
         _record_result(provider.key, result)
         flash('The SSO request expired or failed state validation. Start sign-in again.', 'danger')
@@ -190,7 +225,7 @@ def sso_callback(provider_key: str):
 
     redirect_uri = url_for('auth.sso_callback', provider_key=provider.key, _external=True)
     try:
-        identity = exchange_code(
+        identity = adapter.exchange_code(
             provider,
             code=code,
             redirect_uri=redirect_uri,
@@ -201,10 +236,23 @@ def sso_callback(provider_key: str):
         current_app.logger.warning('SSO callback failed for provider %s.', provider.key, exc_info=True)
         result = AuthResult(False, 'provider_unavailable', source=provider.provider_type)
 
-    _record_result(identity.username if 'identity' in locals() else provider.key, result)
+    audit_username = identity.username if 'identity' in locals() else provider.key
     if result.success and result.user:
-        return _complete_successful_login(result)
+        try:
+            response = _complete_successful_login(result)
+        except SQLAlchemyError:
+            result = AuthResult(
+                False,
+                'database_unavailable',
+                source=result.source,
+                user=result.user,
+                message=DATABASE_UNAVAILABLE_MESSAGE,
+            )
+        else:
+            _record_result(audit_username, result)
+            return response
 
+    _record_result(audit_username, result)
     flash(result.message or PROVIDER_UNAVAILABLE_MESSAGE, 'danger')
     return redirect(url_for('auth.login'))
 

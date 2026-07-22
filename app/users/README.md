@@ -27,6 +27,7 @@ Self-registration is not supported.
 | `identity.py`      | Canonical Local/LDAP/SSO identity-source definitions and credential ownership.                                         |
 | `lifecycle.py`     | Canonical active, inactive, deleted, and administrative-tier presentation.                                             |
 | `notifications.py` | Standard User Management toast and Activity Audit payload construction.                                                |
+| `provider_forms.py` | Maps the provider WTForms surface into the Auth-owned provider configuration DTO.                                      |
 
 ## Identity sources
 
@@ -61,7 +62,7 @@ User Management must not call Flask `flash()`. Every create, update, activate, d
 
 ## External-provider extension boundary
 
-Provider discovery, external subject binding, LDAP directory search, administrative LDAP provisioning, and controlled Google/GitHub JIT are implemented. Future work must keep protocol behavior in provider adapters and move any growing persistence orchestration out of routes. Generic OIDC, SAML, group/claim mapping, reconciliation, and deprovisioning remain future extensions.
+Provider discovery, external subject binding, LDAP directory search, administrative LDAP provisioning, and controlled Google/GitHub JIT are implemented. Protocol behavior remains in Auth provider adapters; Users owns only administration forms, lifecycle orchestration, and projection requests. Generic OIDC, SAML, group/claim mapping, reconciliation, and deprovisioning remain future extensions.
 
 ## Known staged work
 
@@ -71,7 +72,7 @@ Authentication events are stored only in Activity Audit Log under the `authentic
 
 All SQLAlchemy models remain centralized in `app/models/`. The User Management domain may import `User`, `Role`, audit, and future external-identity models from that package, but it must not define domain-local ORM models. This keeps migration discovery, model registration, and database ownership consistent across KAORI.
 
-Future persistence additions such as `ExternalIdentityLink`, provider configuration records, account lock state, or projection-sync metadata must therefore be added under `app/models/` and referenced by `app/users` services.
+Existing `IdentityProvider` and `ExternalIdentityLink` records remain under `app/models/identity.py`. Future additions such as durable account-lock state, group/claim mapping, or projection reconciliation metadata must also be added under `app/models/` and consumed through domain services.
 
 ## Blueprint and URL ownership
 
@@ -92,12 +93,12 @@ There are no Settings wrappers, endpoint aliases, compatibility imports, or redi
 The domain now owns:
 
 - identity-provider configuration routes;
-- LDAP connection validation;
+- provider administration and validation initiation;
 - LDAP directory search;
 - controlled administrative provisioning;
 - external identity projection.
 
-Persistence remains centralized in `app/models/identity.py`. LDAP protocol behavior is implemented in `app/users/providers/ldap.py`; authentication consumes it through `app/auth/providers/ldap.py`.
+Persistence remains centralized in `app/models/identity.py`. LDAP protocol behavior is owned by `app/auth/providers/ldap.py`; User Management consumes that boundary for validation, directory search, and administrative projection.
 
 Canonical administration routes:
 
@@ -106,7 +107,7 @@ Canonical administration routes:
 /users/external-identities
 ```
 
-Google OIDC and GitHub OAuth fields are active. LDAP remains administrative provisioning only; Google and GitHub may use pre-provisioned links or controlled JIT with a non-admin default role and provider-specific allow-list.
+LDAP users are administratively provisioned before credential authentication. Google and GitHub may use pre-provisioned links or controlled JIT with a non-admin default role and provider-specific allow-list.
 
 ## Identity provider UI structure
 

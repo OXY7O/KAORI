@@ -6,8 +6,8 @@ from app.auth.results import AuthResult
 
 
 @runtime_checkable
-class AuthProvider(Protocol):
-    """Normalized contract implemented by every KAORI authentication provider."""
+class CredentialAuthProvider(Protocol):
+    """Contract for providers that verify a username/password credential pair."""
 
     source: str
 

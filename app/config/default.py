@@ -357,19 +357,6 @@ class Config:
 
     WTF_CSRF_ENABLED = True
 
-    # Authentication providers.
-    # Database login is always enabled as the local break-glass admin provider.
-    # Optional external providers can be enabled later when implemented.
-    # Supported future values: ldap, sso. Example: ldap,sso.
-    AUTH_ADDITIONAL_PROVIDERS = (
-        _env_str(
-            'AUTH_ADDITIONAL_PROVIDERS',
-            '',
-        )
-        .strip()
-        .lower()
-    )
-
     # Authentication rate limiting.
     # Default storage is in-memory for local MVP testing. Use Redis later for
     # multi-instance deployments, for example: redis://redis:6379/0.
@@ -391,6 +378,23 @@ class Config:
     AUTH_LOGIN_RATE_LIMIT_MESSAGE = _env_str(
         'AUTH_LOGIN_RATE_LIMIT_MESSAGE',
         'Too many login attempts. Please wait a minute and try again.',
+    )
+
+    AUTH_SSO_RATE_LIMIT = _env_str(
+        'AUTH_SSO_RATE_LIMIT',
+        '20 per minute',
+    )
+
+    AUTH_SSO_RATE_LIMIT_MESSAGE = _env_str(
+        'AUTH_SSO_RATE_LIMIT_MESSAGE',
+        'Too many SSO attempts. Please wait a minute and start sign-in again.',
+    )
+
+    AUTH_SSO_FLOW_TTL_SECONDS = _bounded_env_int(
+        'AUTH_SSO_FLOW_TTL_SECONDS',
+        600,
+        60,
+        1800,
     )
 
     # Persistent sessions are disabled for local super administrators by default.

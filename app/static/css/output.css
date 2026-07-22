@@ -1294,12 +1294,6 @@
   .w-\[64px\] {
     width: 64px;
   }
-  .w-\[78px\] {
-    width: 78px;
-  }
-  .w-\[88px\] {
-    width: 88px;
-  }
   .w-\[110px\] {
     width: 110px;
   }
@@ -1324,17 +1318,8 @@
   .w-\[180px\] {
     width: 180px;
   }
-  .w-\[208px\] {
-    width: 208px;
-  }
-  .w-\[212px\] {
-    width: 212px;
-  }
   .w-\[250px\] {
     width: 250px;
-  }
-  .w-\[290px\] {
-    width: 290px;
   }
   .w-\[min\(23rem\,calc\(100vw-2rem\)\)\] {
     width: min(23rem, calc(100vw - 2rem));
@@ -1546,9 +1531,6 @@
   .min-w-\[760px\] {
     min-width: 760px;
   }
-  .min-w-\[850px\] {
-    min-width: 850px;
-  }
   .min-w-\[860px\] {
     min-width: 860px;
   }
@@ -1563,9 +1545,6 @@
   }
   .min-w-\[1080px\] {
     min-width: 1080px;
-  }
-  .min-w-\[1088px\] {
-    min-width: 1088px;
   }
   .min-w-\[1120px\] {
     min-width: 1120px;
@@ -3216,9 +3195,6 @@
   .text-\[13px\] {
     font-size: 13px;
   }
-  .text-\[14px\] {
-    font-size: 14px;
-  }
   .text-\[15px\] {
     font-size: 15px;
   }
@@ -3227,9 +3203,6 @@
   }
   .text-\[30px\] {
     font-size: 30px;
-  }
-  .text-\[32px\] {
-    font-size: 32px;
   }
   .text-\[clamp\(2rem\,3\.2vw\,3\.35rem\)\] {
     font-size: clamp(2rem, 3.2vw, 3.35rem);
@@ -6257,11 +6230,6 @@
       grid-template-columns: minmax(0,1.1fr) minmax(320px,0.9fr);
     }
   }
-  .lg\:grid-cols-\[minmax\(0\,1fr\)_20rem\] {
-    @media (width >= 64rem) {
-      grid-template-columns: minmax(0,1fr) 20rem;
-    }
-  }
   .lg\:grid-cols-\[minmax\(0\,1fr\)_180px_auto\] {
     @media (width >= 64rem) {
       grid-template-columns: minmax(0,1fr) 180px auto;
@@ -6576,11 +6544,6 @@
   .xl\:grid-cols-5 {
     @media (width >= 80rem) {
       grid-template-columns: repeat(5, minmax(0, 1fr));
-    }
-  }
-  .xl\:grid-cols-6 {
-    @media (width >= 80rem) {
-      grid-template-columns: repeat(6, minmax(0, 1fr));
     }
   }
   .xl\:grid-cols-12 {
@@ -9150,7 +9113,7 @@ span.inline-flex.bg-kaori-soft, span.inline-flex[class*='bg-kaori-soft'] {
 .sidebar-collapsed .sidebar-parent-link, .sidebar-collapsed .sidebar-brand-card {
   justify-content: center;
 }
-.sidebar-collapsed .kaori-sidebar nav {
+.sidebar-collapsed .kubereport-sidebar nav {
   padding-inline: 0.5rem;
 }
 .sidebar-collapsed .sidebar-nav-section + .sidebar-nav-section {

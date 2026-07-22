@@ -3,6 +3,7 @@ from __future__ import annotations
 from sqlalchemy.exc import SQLAlchemyError
 from werkzeug.security import check_password_hash, generate_password_hash
 
+from app.auth.providers.catalog import AuthProviderType
 from app.auth.results import (
     DATABASE_UNAVAILABLE_MESSAGE,
     INVALID_LOGIN_MESSAGE,
@@ -16,7 +17,7 @@ _DUMMY_PASSWORD_HASH = generate_password_hash('kaori-auth-timing-placeholder')
 
 
 class DatabaseAuthProvider:
-    source = 'database'
+    source = AuthProviderType.DATABASE.value
 
     def authenticate(self, username: str, password: str) -> AuthResult:
         normalized_username = username.strip()

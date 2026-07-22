@@ -14,6 +14,8 @@ _REQUIRED_AUTH_TABLES = frozenset(
         'roles',
         'permissions',
         'identity_providers',
+        'external_identity_links',
+        'notifications',
     }
 )
 

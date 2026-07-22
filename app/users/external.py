@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.extensions import db
 from app.models import ExternalIdentityLink, IdentityProvider, Role, User
-from app.users.providers.ldap import ExternalIdentity
+from app.auth.providers.ldap import ExternalIdentity
 
 if TYPE_CHECKING:
     from app.users.forms import ExternalIdentityProvisionForm, ExternalIdentitySearchForm
