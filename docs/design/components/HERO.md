@@ -28,7 +28,7 @@ KAORI uses Inter through `font-sans`.
 | Element | Size | Weight | Line height | Rule |
 |---|---:|---:|---:|---|
 | Eyebrow | 10 px | 700 | 16 px | Uppercase, tracking `0.14em`, one line |
-| Title | 30 px compact / 32 px desktop | 700 | 36/40 px | Tracking `-0.02em`, one line preferred, two maximum |
+| Title | 32 px compact / 34 px desktop | 700 | 40/42 px | Tracking `-0.02em`, one line preferred, two maximum |
 | Supporting description | 15 px | 400 | 24 px | One meaningful line minimum, two lines maximum |
 | Metadata label | 11 px | 700 | Natural in 32 px minimum height | Two minimum, three maximum |
 | Supporting-strip label | 10 px | 700 | 16 px | Uppercase, tracking `0.12em` |
@@ -38,6 +38,8 @@ KAORI uses Inter through `font-sans`.
 | Posture metric value | 20–24 px | 700 | 28–32 px | Semantic when operational |
 
 The page title is the page's single `h1`.
+
+The shared `page_hero.title_classes()` macro is the only source of hero title typography. It renders at 32 px on compact layouts and 34 px from the desktop breakpoint. Page-local title size, weight, line-height, tracking, or color overrides are prohibited.
 
 ## Supporting description
 
