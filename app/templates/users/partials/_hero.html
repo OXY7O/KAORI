@@ -15,20 +15,32 @@
             {% endcall %}
         </div>
 
-        <aside class="{{ page_hero.aside_classes() }}">
+        <aside class="{{ page_hero.aside_classes() }}" aria-label="User management overview and actions">
             <div class="{{ page_hero.context_panel_classes() }}">
-                <div>
-                    <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Administrative action</p>
-                    <p class="mt-1 text-sm font-semibold text-brand-foreground">Provision a managed identity</p>
-                    <p class="mt-1 text-xs leading-5 text-brand-foreground-muted">Create local accounts, provision directory identities, and govern Google or GitHub SSO projections through one provider-neutral access model.</p>
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Identity Portfolio</p>
+                        <h2 class="{{ page_hero.context_panel_title_classes() }}">Managed Access</h2>
+                    </div>
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-brand-surface text-brand-foreground">
+                        <i data-lucide="user-round-cog" class="h-5 w-5" aria-hidden="true"></i>
+                    </span>
                 </div>
-                <div class="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
-                <a href="{{ url_for('users.create') }}"
-                   class="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-white/80 bg-white px-4 text-sm font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft hover:text-kaori-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80">
-                    <i data-lucide="user-plus" class="h-4 w-4"></i>
-                    Add Local User
-                </a>
-                <a href="{{ url_for('users.external_identities') }}" class="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-white/45 bg-brand-surface-strong px-4 text-sm font-semibold text-white transition hover:bg-white/15"><i data-lucide="contact-round" class="h-4 w-4"></i>Provision LDAP</a>
+
+                <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                    {{ page_hero.context_metric('users-round', 'Accounts', summary.total, 'Managed KAORI identities') }}
+                    {{ page_hero.context_metric('circle-check', 'Active', summary.active, 'Allowed to authenticate') }}
+                </div>
+
+                <div class="mt-auto grid grid-cols-2 gap-2 pt-3">
+                    <a href="{{ url_for('users.create') }}" class="{{ page_hero.primary_action_classes() }}">
+                        <i data-lucide="user-plus" class="h-4 w-4" aria-hidden="true"></i>
+                        Add User
+                    </a>
+                    <a href="{{ url_for('users.external_identities') }}" class="{{ page_hero.secondary_action_classes() }}">
+                        <i data-lucide="contact-round" class="h-4 w-4" aria-hidden="true"></i>
+                        Provision LDAP
+                    </a>
                 </div>
             </div>
         </aside>
