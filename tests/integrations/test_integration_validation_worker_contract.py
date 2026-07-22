@@ -122,8 +122,10 @@ def test_binding_validation_runs_in_worker_not_flask_request() -> None:
     assert 'enqueue_binding_validation(' in alert_block
     assert 'validate_prometheus_binding(' not in prom_block
     assert 'validate_alertmanager_binding(' not in alert_block
-    assert 'validate_prometheus_binding(instance=instance, binding=binding)' in tasks
-    assert 'validate_alertmanager_binding(instance=instance, binding=binding)' in tasks
+    assert 'validate_prometheus_binding' not in tasks
+    assert 'validate_alertmanager_binding' not in tasks
+    assert "'binding.validate'" in tasks
+    assert 'execute_integration_operation(' in tasks
 
 
 def test_runtime_monitoring_fans_out_lightweight_per_instance_jobs() -> None:
