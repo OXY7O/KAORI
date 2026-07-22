@@ -553,7 +553,6 @@ def build_user_action_policies(actor: User | None, users: list[User]) -> dict[in
     return policies
 
 
-
 def set_user_active(target: User, active: bool) -> None:
     target.account_is_active = active
     target.updated_at = datetime.now(UTC)
