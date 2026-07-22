@@ -42,7 +42,7 @@
                         </div>
                         <p class="mt-2 text-sm leading-5 text-brand-foreground-muted">Permission keys are application contracts. Access administrators assign them to roles; they do not create or rename keys from the UI.</p>
                         <a href="{{ url_for('settings.roles') }}"
-                           class="mt-auto inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-brand-outline bg-brand-surface px-3 py-2 text-sm font-semibold text-brand-foreground hover:bg-brand-surface-strong">
+                           class="{{ page_hero.context_single_action_classes() }}">
                             <i data-lucide="arrow-left" class="h-4 w-4"></i>Back to Roles &amp; Access
                         </a>
                     </div>

@@ -62,12 +62,12 @@
                     <div class="{{ page_hero.context_actions_classes() }}">
                         <button type="button"
                                 @click="setTab('validation', true)"
-                                class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-brand-outline bg-surface-card px-3 py-2 text-xs font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70">
+                                class="{{ page_hero.context_action_classes() }}">
                             <i data-lucide="scan-line" class="h-4 w-4"></i>
                             Review Validation
                         </button>
                         <a href="{{ url_for('integrations.kubernetes') }}"
-                           class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-brand-outline bg-brand-surface px-3 py-2 text-xs font-semibold text-brand-foreground transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70">
+                           class="{{ page_hero.context_action_classes() }}">
                             <i data-lucide="arrow-left" class="h-4 w-4"></i>
                             Back to Registry
                         </a>

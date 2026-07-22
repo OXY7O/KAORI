@@ -47,7 +47,7 @@
 
                         {% if not cluster_onboarding.is_blocked and current_user.has_permission('clusters.manage') %}
                             <a href="{{ url_for('cluster.add_cluster') }}"
-                               class="mt-4 inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-white/20 bg-white px-4 text-sm font-semibold text-kaori-primary-dark shadow-sm transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-kaori-primary">
+                               class="{{ page_hero.context_single_action_classes() }}">
                                 <i data-lucide="plus" class="h-4 w-4"></i>
                                 Add Kubernetes Cluster
                             </a>

@@ -24,8 +24,8 @@
                             {{ page_hero.context_metric('file-check-2', 'Ready Reports', payload.artifact_summary.ready_reports, 'Artifacts available for use') }}
                         </div>
                         <div class="{{ page_hero.context_actions_classes() }}">
-                            <a href="{{ url_for('reports.storage', verify='1') }}" class="{{ page_hero.secondary_action_classes() }}"><i data-lucide="activity" class="h-4 w-4"></i>Test Storage</a>
-                            <a href="{{ url_for('reports.storage') }}" class="{{ page_hero.primary_action_classes() }}"><i data-lucide="refresh-cw" class="h-4 w-4"></i>Refresh</a>
+                            <a href="{{ url_for('reports.storage', verify='1') }}" class="{{ page_hero.context_action_classes() }}"><i data-lucide="activity" class="h-4 w-4"></i>Test Storage</a>
+                            <a href="{{ url_for('reports.storage') }}" class="{{ page_hero.context_action_classes() }}"><i data-lucide="refresh-cw" class="h-4 w-4"></i>Refresh</a>
                         </div>
                     </div>
                 </aside>

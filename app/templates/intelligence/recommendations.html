@@ -30,8 +30,8 @@
  {{ table_label.status_label('Ready', 'normal', 'circle-check') }}
  </div>
  <div class="mt-auto grid grid-cols-2 gap-3 pt-4">
- <a href="{{ url_for('intelligence.recommendations') }}" class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-3 text-center text-xs font-semibold text-brand-foreground transition hover:bg-brand-surface-strong">Recommendations</a>
- <a href="{{ url_for('intelligence.alert_intelligence') }}" class="rounded-lg border border-brand-outline bg-brand-surface px-3 py-3 text-center text-xs font-semibold text-brand-foreground transition hover:bg-brand-surface-strong">Alert Intelligence</a>
+ <a href="{{ url_for('intelligence.recommendations') }}" class="{{ page_hero.context_action_classes() }}">Recommendations</a>
+ <a href="{{ url_for('intelligence.alert_intelligence') }}" class="{{ page_hero.context_action_classes() }}">Alert Intelligence</a>
  </div>
  </div>
  </aside>

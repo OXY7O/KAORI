@@ -24,8 +24,8 @@
                             {{ page_hero.context_metric('hard-drive', 'Storage', payload.storage_context.status, 'Artifact destination status', value_classes='text-sm font-semibold leading-5') }}
                         </div>
                         <div class="{{ page_hero.context_actions_classes() }}">
-                            <a href="{{ url_for('reports.generated_reports') }}" class="{{ page_hero.secondary_action_classes() }}"><i data-lucide="files" class="h-4 w-4"></i>Generated</a>
-                            <a href="{{ url_for('reports.schedules') }}" class="{{ page_hero.primary_action_classes() }}"><i data-lucide="refresh-cw" class="h-4 w-4"></i>Refresh</a>
+                            <a href="{{ url_for('reports.generated_reports') }}" class="{{ page_hero.context_action_classes() }}"><i data-lucide="files" class="h-4 w-4"></i>Generated</a>
+                            <a href="{{ url_for('reports.schedules') }}" class="{{ page_hero.context_action_classes() }}"><i data-lucide="refresh-cw" class="h-4 w-4"></i>Refresh</a>
                         </div>
                     </div>
                 </aside>

@@ -25,16 +25,16 @@
                             {{ page_hero.context_metric(payload.report.file_state.icon, 'File State', payload.report.file_state.label, 'Configured storage availability', value_classes='text-sm font-semibold leading-5') }}
                         </div>
                         <div class="{{ page_hero.context_actions_classes() }}">
-                            <a href="{{ url_for('reports.generated_reports') }}" class="{{ page_hero.secondary_action_classes() }}"><i data-lucide="arrow-left" class="h-4 w-4"></i>Back</a>
+                            <a href="{{ url_for('reports.generated_reports') }}" class="{{ page_hero.context_action_classes() }}"><i data-lucide="arrow-left" class="h-4 w-4"></i>Back</a>
                             {% if payload.report.can_download_pdf %}
-                                <a href="{{ url_for('reports.download_report_pdf', report_id=payload.report.id) }}" class="{{ page_hero.primary_action_classes() }}"><i data-lucide="download" class="h-4 w-4"></i>Download PDF</a>
+                                <a href="{{ url_for('reports.download_report_pdf', report_id=payload.report.id) }}" class="{{ page_hero.context_action_classes() }}"><i data-lucide="download" class="h-4 w-4"></i>Download PDF</a>
                             {% elif payload.report.can_generate_pdf %}
                                 <form method="POST" action="{{ url_for('reports.generate_report_pdf', report_id=payload.report.id) }}">
                                     {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                                    <button type="submit" class="w-full {{ page_hero.primary_action_classes() }}"><i data-lucide="file-text" class="h-4 w-4"></i>Generate PDF</button>
+                                    <button type="submit" class="w-full {{ page_hero.context_action_classes() }}"><i data-lucide="file-text" class="h-4 w-4"></i>Generate PDF</button>
                                 </form>
                             {% else %}
-                                <button type="button" disabled class="w-full {{ page_hero.secondary_action_classes() }} cursor-not-allowed opacity-60"><i data-lucide="download" class="h-4 w-4"></i>Unavailable</button>
+                                <button type="button" disabled class="w-full {{ page_hero.context_action_classes() }} cursor-not-allowed opacity-60"><i data-lucide="download" class="h-4 w-4"></i>Unavailable</button>
                             {% endif %}
                         </div>
                     </div>

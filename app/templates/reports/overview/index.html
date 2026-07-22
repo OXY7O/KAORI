@@ -21,7 +21,7 @@
         <aside class="{{ page_hero.aside_classes() }}" aria-label="Report actions">
             <div class="{{ page_hero.context_panel_classes() }}">
                 <div><p class="{{ page_hero.context_panel_eyebrow_classes() }}">Report engine</p><h2 class="{{ page_hero.context_panel_title_classes() }}">{{ payload.report_engine_status }}</h2><p class="mt-2 text-xs leading-5 text-brand-foreground-muted">Generate and govern standalone PDF artifacts from reusable templates and selected infrastructure scopes.</p></div>
-                <div class="mt-4 grid grid-cols-2 gap-2"><a href="{{ url_for('reports.report_templates') }}" class="{{ page_hero.secondary_action_classes() }}"><i data-lucide="layout-template" class="h-4 w-4"></i>Templates</a><a href="{{ url_for('reports.generate_report') }}" class="{{ page_hero.primary_action_classes() }}"><i data-lucide="plus-circle" class="h-4 w-4"></i>Generate</a></div>
+                <div class="mt-4 grid grid-cols-2 gap-2"><a href="{{ url_for('reports.report_templates') }}" class="{{ page_hero.context_action_classes() }}"><i data-lucide="layout-template" class="h-4 w-4"></i>Templates</a><a href="{{ url_for('reports.generate_report') }}" class="{{ page_hero.context_action_classes() }}"><i data-lucide="plus-circle" class="h-4 w-4"></i>Generate</a></div>
             </div>
         </aside>
     </div>

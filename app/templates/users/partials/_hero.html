@@ -33,11 +33,11 @@
                 </div>
 
                 <div class="{{ page_hero.context_actions_classes() }}">
-                    <a href="{{ url_for('users.create') }}" class="{{ page_hero.primary_action_classes() }}">
+                    <a href="{{ url_for('users.create') }}" class="{{ page_hero.context_action_classes() }}">
                         <i data-lucide="user-plus" class="h-4 w-4" aria-hidden="true"></i>
                         Add User
                     </a>
-                    <a href="{{ url_for('users.external_identities') }}" class="{{ page_hero.secondary_action_classes() }}">
+                    <a href="{{ url_for('users.external_identities') }}" class="{{ page_hero.context_action_classes() }}">
                         <i data-lucide="contact-round" class="h-4 w-4" aria-hidden="true"></i>
                         Provision LDAP
                     </a>

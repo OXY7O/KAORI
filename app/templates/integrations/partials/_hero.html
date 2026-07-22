@@ -27,13 +27,13 @@
                     {{ page_hero.context_metric('badge-check', 'Ready', stats.ready, 'Validated for operational use') }}
                 </div>
                 <div class="{{ page_hero.context_actions_classes() }}">
-                    <a href="#integration-workspace" @click="activateTab('catalog')" class="{{ page_hero.primary_action_classes() }}"><i data-lucide="package-search" class="h-4 w-4"></i>Browse Providers</a>
+                    <a href="#integration-workspace" @click="activateTab('catalog')" class="{{ page_hero.context_action_classes() }}"><i data-lucide="package-search" class="h-4 w-4"></i>Browse Providers</a>
                     <button type="button"
                             @click="activateTab('runtime')"
                             hx-get="{{ url_for('integrations.overview', tab='runtime', provider=selected_provider, health=selected_health, readiness=selected_readiness, per_page=runtime_pagination.per_page) }}"
                             hx-target="#integration-runtime-overview"
                             hx-swap="outerHTML"
-                            class="{{ page_hero.secondary_action_classes() }}"><i data-lucide="refresh-cw" class="h-4 w-4"></i>Refresh Status</button>
+                            class="{{ page_hero.context_action_classes() }}"><i data-lucide="refresh-cw" class="h-4 w-4"></i>Refresh Status</button>
                 </div>
             </div>
         </aside>

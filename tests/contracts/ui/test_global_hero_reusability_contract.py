@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -40,6 +41,7 @@ def test_shared_hero_component_owns_all_visual_primitives() -> None:
         "context_metric_value_classes",
         "context_metric_description_classes",
         "context_actions_classes",
+        "context_action_classes",
         "context_single_action_classes",
         "primary_action_classes",
         "secondary_action_classes",
@@ -139,3 +141,50 @@ def test_no_unmanaged_authenticated_violet_h1_hero_remains() -> None:
         if "page_hero.shell_classes()" not in source and relative.parts[0] != "components":
             failures.append(str(path.relative_to(ROOT)))
     assert not failures, "Unmanaged authenticated Violet heroes remain:\n" + "\n".join(failures)
+
+
+def test_right_side_hero_actions_use_shared_white_context_action() -> None:
+    component = _text(PAGE_HERO)
+    macro_match = re.search(
+        r"macro context_action_classes\(\).*?\n([\s\S]*?)\n\{%- endmacro",
+        component,
+    )
+    assert macro_match, "Shared context action macro is missing"
+    macro_classes = macro_match.group(1)
+    assert "primary_action_classes()" in macro_classes
+    assert "w-full" in macro_classes
+
+    primary_match = re.search(
+        r"macro primary_action_classes\(\).*?\n([\s\S]*?)\n\{%- endmacro",
+        component,
+    )
+    assert primary_match, "Shared primary action macro is missing"
+    primary_classes = primary_match.group(1)
+    for token in ("bg-white", "text-kaori-primary", "border-white/70"):
+        assert token in primary_classes, f"Context action must retain white KAORI treatment: {token}"
+
+    failures: list[str] = []
+    aside_pattern = re.compile(
+        r'<aside\b[^>]*page_hero\.aside_classes\(\)[\s\S]*?</aside>'
+    )
+    action_pattern = re.compile(r'<(?:a|button)\b[\s\S]*?>')
+    class_pattern = re.compile(r'class\s*=\s*(["\'])([\s\S]*?)\1')
+
+    for path in TEMPLATES.rglob("*.html"):
+        source = _text(path)
+        for aside in aside_pattern.findall(source):
+            for action in action_pattern.findall(aside):
+                class_match = class_pattern.search(action)
+                if not class_match:
+                    failures.append(f"{path.relative_to(ROOT)}: hero context action has no class")
+                    continue
+                classes = class_match.group(2)
+                if not (
+                    "page_hero.context_action_classes()" in classes
+                    or "page_hero.context_single_action_classes()" in classes
+                ):
+                    failures.append(
+                        f"{path.relative_to(ROOT)}: hero context action bypasses shared white style"
+                    )
+
+    assert not failures, "\n".join(failures)

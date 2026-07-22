@@ -29,8 +29,8 @@
                             {{ page_hero.context_metric('shield-alert', 'Requested Access', 'Blocked', 'Permission boundary remains active', value_classes='text-sm font-semibold leading-5') }}
                         </div>
                         <div class="{{ page_hero.context_actions_classes() }}">
-                            <a href="{{ url_for('welcome.index') }}" class="{{ page_hero.secondary_action_classes() }}"><i data-lucide="house" class="h-4 w-4"></i>Welcome</a>
-                            <a href="{{ url_for('settings.account') }}" class="{{ page_hero.primary_action_classes() }}"><i data-lucide="user-round-cog" class="h-4 w-4"></i>Review Access</a>
+                            <a href="{{ url_for('welcome.index') }}" class="{{ page_hero.context_action_classes() }}"><i data-lucide="house" class="h-4 w-4"></i>Welcome</a>
+                            <a href="{{ url_for('settings.account') }}" class="{{ page_hero.context_action_classes() }}"><i data-lucide="user-round-cog" class="h-4 w-4"></i>Review Access</a>
                         </div>
                     </div>
                 </aside>

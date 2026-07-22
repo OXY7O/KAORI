@@ -29,7 +29,7 @@ KAORI uses Inter through `font-sans`.
 |---|---:|---:|---:|---|
 | Eyebrow | 10 px | 700 | 16 px | Uppercase, tracking `0.14em`, one line |
 | Title | 30 px compact / 36 px from small screens | 700 | 40 px | Tracking `-0.02em`, one line preferred, two maximum |
-| Supporting description | 15 px | 400 | 24 px | One meaningful line minimum, two lines maximum |
+| Supporting description | 13 px | 400 | 20 px | One meaningful line minimum, two lines maximum |
 | Metadata label | 11 px | 700 | Natural in 32 px minimum height | Two minimum, three maximum |
 | Supporting-strip label | 10 px | 700 | 16 px | Uppercase, tracking `0.12em` |
 | Supporting-strip text | 12 px | 400 | 20 px | Short context only |
@@ -120,25 +120,28 @@ Technical identifiers preserve canonical casing and must not be transformed mech
 
 ## Actions
 
-### Primary
+### Right-Side Context Actions
+
+Every interactive button or link inside the hero right-side context panel uses `page_hero.context_action_classes()` or `page_hero.context_single_action_classes()`. This is the sole action treatment permitted inside that panel.
 
 - White background.
 - KAORI Violet text.
-- Subtle compatible border.
-- Soft Violet natural hover.
-- Visible focus ring.
+- White-compatible border and subtle shadow.
+- Soft Violet hover.
+- Visible keyboard focus ring.
 - Height 40 px.
-- Horizontal padding 16 px.
+- Full width within its action column.
+- One or two actions maximum.
 
-### Secondary
+When two actions are present, both remain white. Hierarchy is communicated through ordering, wording, and icon choice rather than a translucent secondary color. Disabled actions preserve the same white geometry with reduced opacity and no interactive hover state.
 
-Use a restrained translucent neutral treatment on the Violet hero surface.
+### Actions Outside the Context Panel
+
+`page_hero.primary_action_classes()` and `page_hero.secondary_action_classes()` remain general hero primitives, but they must not be used inside the right-side context panel.
 
 ### Destructive
 
-Use the Critical semantic family. Destructive actions are never Violet.
-
-Ideal count: one primary plus one secondary. Maximum visible actions: three. Additional actions move to a labelled overflow menu.
+Use the Critical semantic family. Destructive actions are never converted to white merely to match the context panel; move destructive workflows below the hero unless they are the page's only essential action.
 
 ## Official hero types
 
