@@ -13,6 +13,7 @@ from app.models import (
     StorageInventory, WorkloadInventory,
 )
 
+from app.inventory.resources.descriptions import SERVICE_TYPE_DESCRIPTIONS
 from app.inventory.resources.common import (
     _display_boolean, _pod_summary, _selector_matches, _service_port_rows,
     _split_inventory_values, format_age,
