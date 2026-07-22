@@ -54,7 +54,7 @@
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('shield-check', 'Access management', 'user-cog') %}
-                        <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">
+                        <h1 class="{{ page_hero.title_classes() }}">
                             {% if page_mode == 'clone' %}
                                 Clone {{ clone_source.display_name }}
                             {% elif page_mode == 'edit' %}
@@ -67,7 +67,7 @@
                                 Custom Role Detail
                             {% endif %}
                         </h1>
-                        <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">
+                        <p class="mt-2 {{ page_hero.description_classes() }}">
                             {% if page_mode == 'clone' %}
                                 Create an editable custom role from the protected {{ clone_source.display_name }} permission baseline.
                             {% elif page_mode in ['edit', 'create'] %}
@@ -78,7 +78,7 @@
                                 Review the custom role identity, status, permission scope, and current user assignments.
                             {% endif %}
                         </p>
-                        <div class="mt-5 flex flex-wrap gap-2">
+                        <div class="{{ page_hero.metadata_row_classes() }}">
                             {% if role %}{{ page_hero.meta_label('fingerprint', role.name) }}{% endif %}
                             {% if clone_source %}{{ page_hero.meta_label('copy-plus', 'Source · ' ~ clone_source.display_name) }}{% endif %}
                             {{ page_hero.meta_label('key-round', selected_count ~ ' Permissions') }}

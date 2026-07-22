@@ -11,13 +11,13 @@
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('fingerprint', 'Identity Administration', 'badge-plus') %}
-                        <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">
+                        <h1 class="{{ page_hero.title_classes() }}">
                             {{ 'Edit' if provider else 'Add' }} Identity Provider
                         </h1>
-                        <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">
+                        <p class="mt-2 {{ page_hero.description_classes() }}">
                             Select one authentication provider, then configure only the connection, admission, and lifecycle controls used by that provider.
                         </p>
-                        <div class="mt-5 flex flex-wrap gap-2">
+                        <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('blocks', selected_label, 'provider-type-meta') }}
                             {{ page_hero.meta_label('key-round', 'Secrets Externalized') }}
                             {{ page_hero.meta_label('shield-check', 'Local Break-glass Retained') }}
@@ -27,7 +27,7 @@
                 <div class="{{ page_hero.aside_classes() }}">
                     <div class="{{ page_hero.context_panel_classes() }}">
                         <div>
-                            <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Configuration sequence</p>
+                            <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Configuration Sequence</p>
                             <p class="mt-2 text-sm font-semibold leading-6 text-brand-foreground">
                                 Choose provider, configure its dedicated fields, save while disabled, validate, then enable authentication.
                             </p>

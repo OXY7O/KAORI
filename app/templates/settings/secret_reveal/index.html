@@ -8,9 +8,9 @@
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('eye', 'Security Settings', 'shield-check') %}
-                        <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">Protected Secret Reveal</h1>
-                        <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">Define which Kubernetes namespaces permit one-time Secret reveal and whether protected access requires step-up authentication or independent approval.</p>
-                        <div class="mt-5 flex flex-wrap gap-2">
+                        <h1 class="{{ page_hero.title_classes() }}">Protected Secret Reveal</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Define which Kubernetes namespaces permit one-time Secret reveal and whether protected access requires step-up authentication or independent approval.</p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('server-cog', protected_cluster_count ~ ' Protected Clusters') }}
                             {{ page_hero.meta_label('boxes', total_enabled_namespaces ~ ' Enabled Namespaces') }}
                             {{ page_hero.meta_label('key-round', 'Single Kubeconfig Boundary') }}

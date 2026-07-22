@@ -11,13 +11,13 @@
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('network', 'Identity Administration', 'contact-round') %}
-                        <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">
+                        <h1 class="{{ page_hero.title_classes() }}">
                             LDAP Directory Provisioning
                         </h1>
-                        <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">
+                        <p class="mt-2 {{ page_hero.description_classes() }}">
                             Discover an identity from an enabled LDAP directory, assign its KAORI role, and create a controlled local identity projection without storing the directory password.
                         </p>
-                        <div class="mt-5 flex flex-wrap gap-2">
+                        <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('server-cog', ldap_provider_count ~ ' Enabled LDAP Provider' ~ ('s' if ldap_provider_count != 1 else '')) }}
                             {{ page_hero.meta_label('shield-check', 'Administrative Provisioning') }}
                             {{ page_hero.meta_label('key-round', 'Credentials Remain in LDAP') }}

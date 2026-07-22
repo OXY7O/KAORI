@@ -3,17 +3,17 @@
     <div class="{{ page_hero.layout_classes() }}">
         <div class="{{ page_hero.content_classes() }}">
             {% call page_hero.intro('settings-2', 'Personal Preferences', 'sliders-horizontal') %}
-                <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">
+                <h1 class="{{ page_hero.title_classes() }}">
                     General Settings
                 </h1>
-                <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">
+                <p class="mt-2 {{ page_hero.description_classes() }}">
                     {% if active_tab == 'system-information' %}
                         Review the KAORI release identity and the capabilities included with this deployed version. Sensitive deployment configuration is never exposed here.
                     {% else %}
                         Configure per-user time zone and regional presentation preferences without changing canonical UTC data or external system clocks.
                     {% endif %}
                 </p>
-                <div class="mt-5 flex flex-wrap gap-2">
+                <div class="{{ page_hero.metadata_row_classes() }}">
                     {% if active_tab == 'system-information' %}
                         {{ page_hero.meta_label('tag', 'Version ' ~ system_information.version) }}
                         {{ page_hero.meta_label('container', system_information.environment) }}
@@ -30,13 +30,13 @@
             <div class="{{ page_hero.context_panel_classes() }}">
                 {% if active_tab == 'system-information' %}
                     <div>
-                        <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Deployed release</p>
+                        <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Deployed Release</p>
                         <p class="mt-2 text-2xl font-bold text-brand-foreground">v{{ system_information.version }}</p>
                         <p class="mt-2 text-xs leading-5 text-brand-foreground-muted">
                             The version is read from the <span class="font-semibold text-brand-foreground">APP_VERSION</span> runtime environment variable and should match the deployed image tag.
                         </p>
                     </div>
-                    <div class="mt-5 flex flex-wrap gap-2">
+                    <div class="{{ page_hero.metadata_row_classes() }}">
                         <span class="inline-flex h-9 items-center gap-2 rounded-lg border border-brand-outline bg-brand-surface-strong px-3 text-xs font-semibold text-brand-foreground">
                             <i data-lucide="shield-check" class="h-3.5 w-3.5"></i>
                             Safe user-visible metadata
@@ -44,14 +44,14 @@
                     </div>
                 {% else %}
                     <div>
-                        <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Current rendered time</p>
+                        <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Current Rendered Time</p>
                         <p id="general-current-time"
                            class="mt-2 text-lg font-bold text-brand-foreground">{{ current_time_display }}</p>
                         <p class="mt-2 text-xs leading-5 text-brand-foreground-muted">
                             KAORI stores canonical timestamps in UTC, then applies this account preference consistently across time-related views.
                         </p>
                     </div>
-                    <div class="mt-5 flex flex-wrap gap-2">
+                    <div class="{{ page_hero.metadata_row_classes() }}">
                         <span class="inline-flex h-9 items-center gap-2 rounded-lg border border-brand-outline bg-brand-surface-strong px-3 text-xs font-semibold text-brand-foreground">
                             <i data-lucide="database" class="h-3.5 w-3.5"></i>
                             UTC canonical storage

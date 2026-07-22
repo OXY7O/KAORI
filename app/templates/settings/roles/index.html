@@ -29,11 +29,11 @@
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('shield-check', 'Access management', 'key-round') %}
-                        <h1 class="text-2xl font-bold leading-tight tracking-tight text-brand-foreground lg:text-[1.75rem]">Roles &amp; Access</h1>
-                        <p class="mt-2 max-w-3xl text-sm font-medium leading-6 text-brand-foreground-muted sm:text-base">
+                        <h1 class="{{ page_hero.title_classes() }}">Roles &amp; Access</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">
                             Manage protected default roles, custom access profiles, permission coverage, and user assignment boundaries.
                         </p>
-                        <div class="mt-5 flex flex-wrap gap-2">
+                        <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('lock-keyhole', system_roles ~ ' Default Roles Locked') }}
                             {{ page_hero.meta_label('sparkles', custom_roles ~ ' Custom Roles') }}
                             {{ page_hero.meta_label('users', assigned_ns.total ~ ' User Assignments') }}
@@ -43,7 +43,7 @@
                 <aside class="{{ page_hero.aside_classes() }}" aria-label="Role management actions">
                     <div class="{{ page_hero.context_panel_classes() }}">
                         <div>
-                            <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Role lifecycle</p>
+                            <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Role Lifecycle</p>
                             <h2 class="{{ page_hero.context_panel_title_classes() }}">Default Baseline, Custom Extension</h2>
                             <p class="mt-2 text-sm leading-5 text-brand-foreground-muted">Default Roles are code-owned. Clone a baseline when a team needs a tailored permission set.</p>
                         </div>
