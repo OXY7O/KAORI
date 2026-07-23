@@ -144,9 +144,10 @@ def acquire_execution_lease(
     journal.lease_owner = owner
     journal.lease_acquired_at = current
     journal.last_heartbeat_at = current
-    journal.lease_expires_at = current + timedelta(seconds=max(1, lease_seconds))
+    expires_at = current + timedelta(seconds=max(1, lease_seconds))
+    journal.lease_expires_at = expires_at
     db.session.flush()
-    return Lease(journal.id, owner, journal.lease_expires_at, journal.attempt_count)
+    return Lease(journal.id, owner, expires_at, journal.attempt_count)
 
 
 def heartbeat_execution_lease(

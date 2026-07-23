@@ -121,10 +121,11 @@ def record_operational_failure(journal: IntelligenceExecutionJournal, *, now: da
     control = get_or_create_control(cluster_id=journal.decision.cluster_id)
     control.consecutive_failures += 1
     if control.consecutive_failures >= control.circuit_failure_threshold:
-        control.circuit_open_until = current + timedelta(seconds=control.circuit_cooldown_seconds)
+        open_until = current + timedelta(seconds=control.circuit_cooldown_seconds)
+        control.circuit_open_until = open_until
         _audit_journal(journal, 'resolver.circuit.opened', {
             'consecutive_failures': control.consecutive_failures,
-            'open_until': control.circuit_open_until.isoformat(),
+            'open_until': open_until.isoformat(),
         })
     db.session.flush()
 
@@ -141,11 +142,15 @@ def record_operational_success(journal: IntelligenceExecutionJournal) -> None:
 def resolver_metrics_snapshot(*, now: datetime | None = None) -> dict[str, int]:
     current = now or datetime.now(UTC)
     stale_before = current - timedelta(minutes=10)
-    statuses = dict(
+    statuses: dict[str, int] = {}
+    status_rows = (
         db.session.query(IntelligenceExecutionJournal.orchestration_status, func.count(IntelligenceExecutionJournal.id))
         .group_by(IntelligenceExecutionJournal.orchestration_status)
         .all()
     )
+    for status, count in status_rows:
+        if status is not None:
+            statuses[str(status)] = _count(count)
     return {
         'queued': _count(statuses.get('queued')),
         'running': _count(statuses.get('running')),
