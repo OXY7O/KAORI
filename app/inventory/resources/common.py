@@ -6,6 +6,8 @@ from typing import Any
 from app.common.inventory_generation import filter_current_generation
 from app.models import PodInventory, ServiceInventory
 
+__all__ = ['filter_current_generation']
+
 
 def format_age(
     created_at,

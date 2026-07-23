@@ -917,7 +917,8 @@ def delete_cluster_route(cluster_id: str) -> ResponseReturnValue:
 
     cluster_name = cluster.name
     cluster_environment = cluster.environment
-    cluster_server = cluster.kubernetes_connection.server if cluster.kubernetes_connection else None
+    connection = cluster.kubernetes_connection
+    cluster_server = connection.server if connection is not None else None
 
     deletion_summary: dict[str, int] = {}
 

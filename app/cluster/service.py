@@ -403,8 +403,7 @@ def _sync_kubernetes_runtime(
     Cluster is the Kubernetes asset. KubernetesConnection is the only connection
     and credential authority; this function never writes provider data to Cluster.
     """
-    connection = cluster.kubernetes_connection
-    canonical = connection.integration_instance if connection else None
+    canonical = connection.integration_instance if connection is not None else None
     if canonical is None:
         canonical = IntegrationInstance()
         canonical.provider_type = 'kubernetes'
@@ -657,7 +656,8 @@ def delete_cluster(cluster: Cluster) -> dict[str, int]:
     detaching their cluster reference before the cluster row is deleted.
     """
     cluster_id = str(cluster.id)
-    connection_id = cluster.kubernetes_connection.id if cluster.kubernetes_connection else None
+    connection = cluster.kubernetes_connection
+    connection_id = connection.id if connection is not None else None
     acquire_resource_admission_locks(
         f'kubernetes-cluster:{cluster_id}',
         f'integration:kubernetes:{connection_id}' if connection_id is not None else None,
