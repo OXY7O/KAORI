@@ -7,6 +7,7 @@ from typing import Any
 from app.cluster.individual_sync_state import register_individual_sync_task
 from app.cluster.sync_state import store_cluster_sync_metadata
 from app.cluster.tasks import sync_all_clusters_task, sync_single_cluster_task
+from app.integrations.kubernetes.resolver import connection_for_cluster
 from app.jobs.constants import WORKLOAD_STANDARD
 from app.jobs.dispatcher import enqueue_canonical_job
 from app.jobs.service import acquire_resource_admission_locks
@@ -23,11 +24,17 @@ def _now_iso() -> str:
     return datetime.now(UTC).isoformat()
 
 
+def _fleet_target_snapshot() -> list[dict[str, str]]:
+    clusters = Cluster.query.order_by(Cluster.name.asc(), Cluster.id.asc()).all()
+    return [{'cluster_id': str(cluster.id), 'cluster_name': cluster.name} for cluster in clusters]
+
+
 def enqueue_all_cluster_inventory_sync(*, requested_by_user_id: int) -> tuple[JobExecution, bool]:
-    total_count = Cluster.query.count()
+    targets = _fleet_target_snapshot()
+    total_count = len(targets)
     job, created = enqueue_canonical_job(
         task=sync_all_clusters_task,
-        task_kwargs={'requested_by_user_id': requested_by_user_id},
+        task_kwargs={'requested_by_user_id': requested_by_user_id, 'targets': targets},
         job_type='kubernetes_inventory',
         operation='inventory_sync_all',
         queue_name=INVENTORY_QUEUE,
@@ -38,8 +45,8 @@ def enqueue_all_cluster_inventory_sync(*, requested_by_user_id: int) -> tuple[Jo
         scope_type='kubernetes_fleet',
         scope_key='all',
         resource_group='kubernetes-inventory:global',
-        parameters={'scope': 'all', 'cluster_count': total_count},
-        payload={'total_count': total_count},
+        parameters={'scope': 'all', 'cluster_count': total_count, 'targets': targets},
+        payload={'total_count': total_count, 'targets': targets},
         max_attempts=3,
     )
     metadata = {
@@ -64,14 +71,12 @@ def enqueue_cluster_inventory_sync(
     cluster: Cluster,
     requested_by_user_id: int,
 ) -> tuple[JobExecution, bool]:
-    resource_group = f'kubernetes-cluster:{cluster.id}'
-    acquire_resource_admission_locks(resource_group)
+    acquire_resource_admission_locks(f'kubernetes-cluster:{cluster.id}')
     current_cluster = Cluster.query.filter_by(id=cluster.id).populate_existing().first()
     if current_cluster is None:
-        raise RuntimeError('The Kubernetes cluster was deleted before KAORI could admit the job.')
-    connection: KubernetesConnection | None = current_cluster.kubernetes_connection
-    if connection is None:
-        raise RuntimeError('The cluster has no canonical Kubernetes connection.')
+        raise LookupError('The selected Kubernetes cluster no longer exists.')
+    connection: KubernetesConnection = connection_for_cluster(current_cluster)
+    cluster = current_cluster
     job, created = enqueue_canonical_job(
         task=sync_single_cluster_task,
         task_kwargs={
@@ -87,9 +92,9 @@ def enqueue_cluster_inventory_sync(
         provider_instance_id=connection.id,
         scope_type='kubernetes_cluster',
         scope_key=str(cluster.id),
-        resource_group=resource_group,
+        resource_group=f'kubernetes-cluster:{cluster.id}',
         parameters={'cluster_id': str(cluster.id), 'scope': 'single_cluster'},
-        payload={'cluster_id': str(current_cluster.id), 'cluster_name': current_cluster.name},
+        payload={'cluster_id': str(cluster.id), 'cluster_name': cluster.name},
         max_attempts=3,
     )
     created_at = job.queued_at.isoformat() if job.queued_at else _now_iso()

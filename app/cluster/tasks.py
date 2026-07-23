@@ -10,6 +10,7 @@ from celery import shared_task
 from app.cluster.individual_sync_state import store_individual_sync_metadata
 from app.cluster.sync_state import mark_cluster_sync_completed, store_cluster_sync_metadata
 from app.extensions import db
+from app.integrations.kubernetes.resolver import connection_for_cluster
 from app.integrations.registry import get_integration
 from app.jobs.execution import JobExecutionContext
 from app.models import Cluster
@@ -95,24 +96,32 @@ def sync_all_clusters_task(
     self,
     *,
     requested_by_user_id: int,
+    targets: list[dict[str, str]] | None = None,
     job_execution_id: int | None = None,
 ) -> dict[str, Any]:
     task_id = str(self.request.id)
     context = JobExecutionContext(task_id)
     started_timer = perf_counter()
     started_at = _now_iso()
-    clusters = Cluster.query.order_by(Cluster.name.asc()).all()
-    total_count = len(clusters)
+    if targets is None:
+        targets = [
+            {'cluster_id': str(cluster.id), 'cluster_name': cluster.name}
+            for cluster in Cluster.query.order_by(Cluster.name.asc(), Cluster.id.asc()).all()
+        ]
+    total_count = len(targets)
     synced_count = 0
     failed_clusters: list[str] = []
+    failure_evidence: list[dict[str, str]] = []
     context.start(message='Synchronizing Kubernetes inventory for all registered clusters.', total=total_count)
 
     try:
-        for index, cluster in enumerate(clusters, start=1):
+        for index, target in enumerate(targets, start=1):
+            cluster_id = str(target['cluster_id'])
+            cluster_name = target['cluster_name']
             context.checkpoint(
                 current=index - 1,
                 total=total_count,
-                message=f'Synchronizing {cluster.name}.',
+                message=f'Synchronizing {cluster_name}.',
             )
             progress = {
                 'requested_by_user_id': requested_by_user_id,
@@ -123,21 +132,30 @@ def sync_all_clusters_task(
                 'processed_count': index - 1,
                 'synced_count': synced_count,
                 'failed_count': len(failed_clusters),
-                'current_cluster_name': cluster.name,
+                'current_cluster_name': cluster_name,
                 'heartbeat_at': _now_iso(),
             }
             _store_global(task_id, progress)
             self.update_state(state='PROGRESS', meta=progress)
             try:
-                connection = cluster.kubernetes_connection
-                if connection is None:
-                    raise RuntimeError('Canonical Kubernetes connection is missing.')
+                cluster = db.session.get(Cluster, cluster_id)
+                if cluster is None:
+                    raise LookupError('The cluster was deleted after the fleet job was admitted.')
+                connection = connection_for_cluster(cluster)
                 get_integration('kubernetes').execute('inventory.sync', connection)
                 synced_count += 1
-            except Exception:
+            except Exception as exc:
                 db.session.rollback()
-                failed_clusters.append(cluster.name)
-                logger.exception('Cluster inventory synchronization failed for %s.', cluster.name)
+                failed_clusters.append(cluster_name)
+                failure_evidence.append(
+                    {
+                        'cluster_id': cluster_id,
+                        'cluster_name': cluster_name,
+                        'error_type': type(exc).__name__,
+                        'message': str(exc),
+                    }
+                )
+                logger.exception('Cluster inventory synchronization failed for %s.', cluster_name)
 
         result = _build_result(
             requested_by_user_id=requested_by_user_id,
@@ -147,6 +165,7 @@ def sync_all_clusters_task(
             started_at=started_at,
             duration_seconds=round(perf_counter() - started_timer, 1),
         )
+        result['failure_evidence'] = failure_evidence
         create_notification(
             user_id=requested_by_user_id,
             event_type='kubernetes_inventory_sync',
@@ -162,6 +181,7 @@ def sync_all_clusters_task(
                 'synced_count': synced_count,
                 'failed_count': len(failed_clusters),
                 'failed_clusters': failed_clusters,
+                'failure_evidence': failure_evidence,
                 'duration_seconds': result['duration_seconds'],
             },
         )
@@ -190,6 +210,7 @@ def sync_all_clusters_task(
             'synced_count': synced_count,
             'failed_count': len(failed_clusters),
             'failed_clusters': failed_clusters,
+            'failure_evidence': failure_evidence,
             'requested_by_user_id': requested_by_user_id,
             'started_at': started_at,
             'finished_at': _now_iso(),
@@ -239,9 +260,7 @@ def sync_single_cluster_task(
     try:
         if cluster is None:
             raise LookupError('The selected Kubernetes cluster no longer exists.')
-        connection = cluster.kubernetes_connection
-        if connection is None:
-            raise RuntimeError('Canonical Kubernetes connection is missing.')
+        connection = connection_for_cluster(cluster)
         get_integration('kubernetes').execute('inventory.sync', connection)
         result = {
             **progress,
