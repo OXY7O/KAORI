@@ -9,7 +9,11 @@ if TYPE_CHECKING:
 
 
 class PrometheusConfigForm(FlaskForm):
-    existing_instance: 'PrometheusInstance | None' = None
+    _existing_instance: 'PrometheusInstance | None' = None
+
+    def set_existing_instance(self, instance: 'PrometheusInstance | None') -> None:
+        """Attach the persisted instance used by credential-preserving validators."""
+        self._existing_instance = instance
 
     endpoint = StringField(
         'Endpoint',
@@ -132,7 +136,7 @@ class PrometheusConfigForm(FlaskForm):
         self,
         field: PasswordField,
     ) -> None:
-        existing = getattr(self, 'existing_instance', None)
+        existing = self._existing_instance
         has_existing = bool(existing and existing.auth_type == 'basic' and existing.password)
         if self.auth_type.data == 'basic' and not field.data and not has_existing:
             raise ValidationError(
@@ -143,7 +147,7 @@ class PrometheusConfigForm(FlaskForm):
         self,
         field: PasswordField,
     ) -> None:
-        existing = getattr(self, 'existing_instance', None)
+        existing = self._existing_instance
         has_existing = bool(existing and existing.auth_type == 'bearer' and existing.bearer_token)
         if self.auth_type.data == 'bearer' and not field.data and not has_existing:
             raise ValidationError(
@@ -158,11 +162,6 @@ class PrometheusConfigForm(FlaskForm):
 
 
 class PrometheusInstanceForm(PrometheusConfigForm):
-    # Declare the edit-only runtime context on the concrete form as well.
-    # Some static analyzers do not preserve dynamically generated WTForms
-    # subclass attributes from the base form.
-    existing_instance: 'PrometheusInstance | None' = None
-
     name = StringField(
         'Instance Name',
         validators=[DataRequired(), Length(min=2, max=160)],

@@ -398,7 +398,7 @@ def test_instance_configuration(instance_id: int) -> ResponseReturnValue:
     """Test submitted edit settings without persisting them."""
     instance = _instance_or_404(instance_id)
     form = PrometheusInstanceForm()
-    form.existing_instance = instance
+    form.set_existing_instance(instance)
     if not form.validate_on_submit():
         result = {'connected': False}
         feedback = record_operational_activity(
@@ -467,7 +467,7 @@ def test_instance_configuration(instance_id: int) -> ResponseReturnValue:
 def instance_detail(instance_id: int) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
     form = PrometheusInstanceForm(obj=instance)
-    form.existing_instance = instance
+    form.set_existing_instance(instance)
     operation_feedback = None
     is_htmx = is_htmx_request()
 
