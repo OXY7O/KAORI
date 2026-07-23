@@ -40,7 +40,10 @@ def parse_semantic_version(version: str) -> tuple[int, int, int]:
     match = _SEMVER_RE.fullmatch(str(version or '').strip())
     if match is None:
         raise RunbookValidationError('Runbook version must use semantic versioning: MAJOR.MINOR.PATCH.')
-    return tuple(int(match.group(index)) for index in (1, 2, 3))
+    major = int(match.group(1))
+    minor = int(match.group(2))
+    patch = int(match.group(3))
+    return major, minor, patch
 
 
 def validate_version_transition(*, previous_version: str | None, candidate_version: str, change_level: str) -> None:

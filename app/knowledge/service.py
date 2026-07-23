@@ -46,9 +46,11 @@ def create_runbook(
     existing = KnowledgeRunbook.query.filter_by(runbook_key=key).first()
     if existing is not None:
         return existing
-    record = KnowledgeRunbook(
-        runbook_key=key, title=title.strip(), description=description, created_by_user_id=actor_user_id
-    )
+    record = KnowledgeRunbook()
+    record.runbook_key = key
+    record.title = title.strip()
+    record.description = description
+    record.created_by_user_id = actor_user_id
     db.session.add(record)
     _audit(actor_user_id, key, 'knowledge.runbook.created', 'KAORI runbook created.', {'title': record.title})
     db.session.commit()
