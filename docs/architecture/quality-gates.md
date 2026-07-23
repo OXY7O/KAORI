@@ -38,6 +38,8 @@ bash scripts/quality_gate.sh --tests
 
 This runs all permanent tests except the temporary `debug` category. CI provides PostgreSQL and Redis so integration behavior does not silently fall back to an unsupported local environment.
 
+Critical domain characterization suites are also invoked by explicit path after the broad test run. This prevents external marker configuration or `PYTEST_ADDOPTS` from silently deselecting behavior-preservation tests. Analytics Alerts currently uses `tests/analytics/test_alerts_characterization.py` as an explicit release gate.
+
 ### Frontend Gate
 
 ```bash

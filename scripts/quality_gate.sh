@@ -17,6 +17,11 @@ run_static() {
 
 run_tests() {
     pytest -q -m 'not debug'
+
+    # Domain characterization tests are explicit release gates. This protects
+    # them from environment-level PYTEST_ADDOPTS or marker filtering that may
+    # otherwise deselect unmarked behavioral tests.
+    pytest -q tests/analytics/test_alerts_characterization.py
 }
 
 run_frontend() {

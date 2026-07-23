@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ast
+import importlib.util
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -9,6 +10,7 @@ CONTRACTS = ALERTS / 'contracts.py'
 SOURCES = ALERTS / 'sources.py'
 SNAPSHOTS = ALERTS / 'snapshots.py'
 SERVICE = ALERTS / 'service.py'
+QUALITY_GATE = ROOT / 'scripts' / 'quality_gate.sh'
 
 TYPED_CONTRACTS = {
     'NormalizedAlert',
@@ -141,6 +143,28 @@ def test_compatibility_facade_reexports_typed_contracts() -> None:
     for contract_name in sorted(TYPED_CONTRACTS | {'AlertLoadResult'}):
         assert contract_name in source
         assert f"'{contract_name}'" in source
+
+
+def test_runtime_typed_dict_metadata_preserves_optional_provider_fields() -> None:
+    spec = importlib.util.spec_from_file_location(
+        'kaori_alert_contracts_runtimecheck',
+        CONTRACTS,
+    )
+    assert spec is not None
+    assert spec.loader is not None
+
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    normalized_alert = module.NormalizedAlert
+
+    assert {'route', 'value'} <= set(normalized_alert.__optional_keys__)
+    assert {'route', 'value'}.isdisjoint(normalized_alert.__required_keys__)
+
+
+def test_alert_characterization_is_an_explicit_release_gate() -> None:
+    source = QUALITY_GATE.read_text(encoding='utf-8')
+
+    assert 'tests/analytics/test_alerts_characterization.py' in source
 
 
 def test_runtime_dictionary_keys_match_the_typed_contracts() -> None:

@@ -74,3 +74,14 @@ Contract tests enforce that:
 - focused consumers import canonical types;
 - the compatibility façade continues to export the public contracts during migration;
 - runtime outputs retain the existing dictionary key sets.
+
+
+## Runtime TypedDict Metadata
+
+`contracts.py` intentionally does not enable postponed annotations. Python must
+evaluate `NotRequired[...]` while constructing each `TypedDict`; otherwise
+provider-specific fields such as `route` and `value` are incorrectly exposed in
+`__required_keys__`.
+
+The contract gate verifies that these fields remain optional at runtime, not only
+in the source annotation syntax.
