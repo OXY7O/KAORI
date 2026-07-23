@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[3]
 QUALITY_GATE = ROOT / 'scripts' / 'quality_gate.sh'
 PYPROJECT = ROOT / 'pyproject.toml'

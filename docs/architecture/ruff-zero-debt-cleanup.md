@@ -42,3 +42,14 @@ Historical Alembic revisions retain only narrow style exemptions in `pyproject.t
 ## Change Policy
 
 Future work must not recreate a lint baseline. When a rule requires a temporary exception, use a narrowly scoped suppression with the exact rule code, an operational reason, an owner, and a removal condition.
+
+## Final Strict Verification Follow-Up
+
+The first zero-debt pass removed the 260 diagnostics recorded by the temporary baseline. A subsequent strict run against the fully reconstructed current source exposed nine residual `I001` findings that were not part of the original baseline result:
+
+- one combined alias import in Kubernetes Secret routes;
+- one combined alias import in Prometheus presentation;
+- six combined alias imports in report section adapters;
+- one import-block spacing issue in the strict Ruff contract.
+
+These findings were normalized without changing runtime behavior. The repository must now pass the direct Ruff command with no baseline or residual import-order allowance.

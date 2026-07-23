@@ -7,8 +7,8 @@ from reportlab.lib.units import cm
 from reportlab.platypus import Paragraph, Spacer
 
 from app.analytics.capacity.service import CapacityService
+from app.analytics.utilization.service import UtilizationService
 from app.analytics.utilization.service import (
-    UtilizationService,
     get_selected_cluster as get_utilization_selected_cluster,
 )
 from app.cluster.constants import get_environment_label
