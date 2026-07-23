@@ -12,7 +12,7 @@ import json
 import click
 from flask.cli import with_appcontext
 
-from app.integrations.runtime.refresh import dispatch_integration_runtime_refresh
+from app.integrations.runtime.monitoring import dispatch_integration_runtime_refresh
 
 
 @click.command('refresh-integration-runtime')

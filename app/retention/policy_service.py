@@ -36,20 +36,19 @@ def get_or_create_policy(domain: str, fallback: RetentionPolicy) -> DataLifecycl
     stored = DataLifecyclePolicy.query.filter_by(domain=domain).first()
     if stored is not None:
         return stored
-    stored = DataLifecyclePolicy(
-        domain=domain,
-        enabled=fallback.enabled,
-        hot_retention_days=fallback.retention_days,
-        archive_retention_days=fallback.archive_retention_days,
-        batch_size=fallback.batch_size,
-        operation_mode='archive_and_cleanup',
-        schedule_enabled=True,
-        schedule_hour=_default_schedule_hour(domain),
-        schedule_minute=_default_schedule_minute(domain),
-        protect_unreviewed=fallback.protect_unreviewed,
-        protected_max_days=fallback.protected_max_days,
-        settings_json=dict(fallback.settings or {}),
-    )
+    stored = DataLifecyclePolicy()
+    stored.domain = domain
+    stored.enabled = fallback.enabled
+    stored.hot_retention_days = fallback.retention_days
+    stored.archive_retention_days = fallback.archive_retention_days
+    stored.batch_size = fallback.batch_size
+    stored.operation_mode = 'archive_and_cleanup'
+    stored.schedule_enabled = True
+    stored.schedule_hour = _default_schedule_hour(domain)
+    stored.schedule_minute = _default_schedule_minute(domain)
+    stored.protect_unreviewed = fallback.protect_unreviewed
+    stored.protected_max_days = fallback.protected_max_days
+    stored.settings_json = dict(fallback.settings or {})
     db.session.add(stored)
     db.session.commit()
     return stored
