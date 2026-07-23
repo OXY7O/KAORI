@@ -73,7 +73,7 @@ Do not move package paths before behavior and import contracts exist.
 
 ## Batch 3 — Analytics Alerts Pilot
 
-Status: structural decomposition and typed normalized contracts implemented; provider-failure characterization is next.
+Status: structural decomposition, typed normalized contracts, and provider-failure characterization implemented; provider exception normalization is next.
 
 Implemented:
 
@@ -86,11 +86,12 @@ Implemented:
 - `service.py` is a temporary compatibility façade with no implementation functions;
 - characterization and architecture contracts protect the existing behavior and dependency direction;
 - canonical `NormalizedAlert`, `AlertSourceStatus`, `AlertLoadResult`, and `AlertsSnapshot` contracts now protect internal boundaries.
+- controlled-fake tests now freeze explicit-source behavior, automatic fallback, combined failures, malformed payload handling, and provider exception boundaries.
 
 Remaining in Batch 3:
 
-1. Replace broad presentation dictionaries at internal boundaries incrementally.
-2. Add provider-failure and fallback characterization using controlled fakes.
+1. Normalize unexpected Alertmanager provider exceptions and preserve the failure in fallback diagnostics.
+2. Replace broad presentation dictionaries at internal boundaries incrementally.
 3. Decide the removal milestone for the compatibility façade.
 
 Do not combine typed-contract migration with a behavioral redesign of alert scoring or routing semantics.

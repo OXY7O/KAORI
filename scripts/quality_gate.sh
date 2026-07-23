@@ -21,7 +21,9 @@ run_tests() {
     # Domain characterization tests are explicit release gates. This protects
     # them from environment-level PYTEST_ADDOPTS or marker filtering that may
     # otherwise deselect unmarked behavioral tests.
-    pytest -q tests/analytics/test_alerts_characterization.py
+    pytest -q \
+      tests/analytics/test_alerts_characterization.py \
+      tests/analytics/test_alerts_source_fallback_characterization.py
 }
 
 run_frontend() {

@@ -6,6 +6,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 ALERTS = ROOT / 'app' / 'analytics' / 'alerts'
 SERVICE = ALERTS / 'service.py'
+QUALITY_GATE = ROOT / 'scripts' / 'quality_gate.sh'
 
 REQUIRED_MODULES = {
     '__init__.py',
@@ -82,3 +83,10 @@ def test_source_and_snapshot_public_boundaries_remain_available() -> None:
     assert 'def normalize_alertmanager_item(' in sources
     assert 'def normalize_prometheus_alert(' in sources
     assert 'def get_alerts_snapshot(' in snapshots
+
+
+
+def test_provider_failure_characterization_is_an_explicit_release_gate() -> None:
+    source = QUALITY_GATE.read_text(encoding='utf-8')
+
+    assert 'tests/analytics/test_alerts_source_fallback_characterization.py' in source
