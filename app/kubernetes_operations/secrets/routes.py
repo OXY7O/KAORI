@@ -1,36 +1,25 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import Any
 
-from datetime import UTC, datetime
-
-from flask import (
-    current_app,
-    flash,
-    make_response,
-    redirect,
-    render_template,
-    request,
-    session,
-    url_for,
-)
+from flask import current_app, flash, make_response, redirect, render_template, request, session, url_for
 from flask_login import current_user
 from flask_wtf.csrf import validate_csrf
 from wtforms.validators import ValidationError
 
 from app.cluster.onboarding import has_registered_clusters
 from app.extensions import db, limiter
-from app.models.user import User
+from app.kubernetes_operations.secrets.create_service import (
+    execute_secret_operation,
+    get_cluster_namespace_options,
+    get_secret_create_context,
+)
 from app.kubernetes_operations.secrets.delete_service import (
     execute_secret_deletion,
     get_delete_target_context,
     get_delete_workspace,
     get_secret_delete_context,
-)
-from app.kubernetes_operations.secrets.create_service import (
-    execute_secret_operation,
-    get_cluster_namespace_options,
-    get_secret_create_context,
 )
 from app.kubernetes_operations.secrets.replace_service import (
     execute_secret_replacement,
@@ -56,6 +45,7 @@ from app.kubernetes_operations.secrets.service import (
     get_tls_certificate_page,
     preview_uploaded_pair,
 )
+from app.models.user import User
 from app.notifications.service import (
     create_notification,
     get_navigation_notification_context,

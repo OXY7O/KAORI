@@ -3,23 +3,23 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from app.integrations.alertmanager.capabilities import CAPABILITIES, CAPABILITY_BY_KEY
 from app.alertmanager.repository import count_bindings_by_scope_type, list_bindings_for_instance, list_instances
-from app.integrations.alertmanager.requirements import evaluate_module_readiness
 from app.alertmanager.resolver import AlertmanagerSourceResolution, resolve_alertmanager_sources
-from app.integrations.registry import get_integration
 from app.alertmanager.sanitization import safe_endpoint
 from app.common.presentation import present_user_datetime
 from app.extensions import db
+from app.integrations.alertmanager.capabilities import CAPABILITIES, CAPABILITY_BY_KEY
+from app.integrations.alertmanager.requirements import evaluate_module_readiness
 from app.integrations.binding_selectors import selector_form_values, selector_is_configured, selector_summary
-from app.integrations.deletion import provider_deletion_guard
 from app.integrations.coverage import build_provider_coverage
+from app.integrations.deletion import provider_deletion_guard
+from app.integrations.readiness import resolve_binding_operational_status
+from app.integrations.registry import get_integration
 from app.integrations.runtime.presentation import runtime_history_view, runtime_state_view
 from app.integrations.runtime.repository import paginate_runtime_history
 from app.models.alertmanager import AlertmanagerInstance
-from app.models.integration import IntegrationBinding
 from app.models.cluster import Cluster
-from app.integrations.readiness import resolve_binding_operational_status
+from app.models.integration import IntegrationBinding
 
 
 def build_inventory_context(

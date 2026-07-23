@@ -3,9 +3,9 @@ from __future__ import annotations
 from typing import Any
 
 from app.integrations.consumer.contracts import ConsumerDiagnostic, ConsumerResult, ConsumerSource
+from app.integrations.prometheus.exceptions import PrometheusError
 from app.integrations.registry import get_integration
 from app.models import Cluster
-from app.integrations.prometheus.exceptions import PrometheusError
 from app.prometheus.resolver import resolve_prometheus_sources
 
 DEFAULT_QUERY_CAPABILITIES = ('instant_query',)

@@ -9,7 +9,6 @@ from app.models import Cluster
 from app.prometheus.repository import resolve_instance_for_cluster
 from app.prometheus.service import PrometheusService
 
-
 CPU_CAPACITY = get_query_expression('analytics.utilization.queries.CPU_CAPACITY')
 CPU_CAPACITY_BY_NODE = get_query_expression('analytics.utilization.queries.CPU_CAPACITY_BY_NODE')
 CPU_USAGE = get_query_expression('analytics.utilization.queries.CPU_USAGE')

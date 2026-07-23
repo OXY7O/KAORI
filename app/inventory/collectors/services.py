@@ -1,17 +1,12 @@
 from __future__ import annotations
 
-from typing import (
-    Any,
-    cast,
-)
-from kubernetes.client import (
-    CoreV1Api,
-    V1EndpointsList,
-    V1ServiceList,
-)
+from typing import Any, cast
+
+from kubernetes.client import CoreV1Api, V1EndpointsList, V1ServiceList
 from kubernetes.client.exceptions import ApiException
 
 from app.inventory.collectors.common import _metadata_details, _string_value
+
 
 def _service_endpoint_map(api: CoreV1Api) -> dict[tuple[str, str], dict]:
     endpoint_map: dict[tuple[str, str], dict] = {}

@@ -4,14 +4,21 @@ from __future__ import annotations
 import argparse
 import ast
 import json
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
-
 
 _PROVIDER_DOMAIN_BOUNDARIES = {
     'prometheus': 'app.prometheus',
     'alertmanager': 'app.alertmanager',
+}
+
+_RETIRED_PYTHON_MODULES = {
+    'app.inventory.collector',
+    'app.inventory.service',
+    'app.integrations.runtime.contracts',
+    'app.integrations.prometheus.evidence',
+    'app.utils.helpers',
 }
 
 
@@ -155,6 +162,11 @@ def validate_boundaries(
         relative_source = record.source.relative_to(app_root.parent).as_posix()
         if record.wildcard:
             errors.append(f'{relative_source}:{record.line}: wildcard import from {record.target!r} is forbidden')
+
+        if record.target in _RETIRED_PYTHON_MODULES:
+            errors.append(
+                f'{relative_source}:{record.line}: import targets retired module {record.target!r}'
+            )
 
         relative_to_app = record.source.relative_to(app_root)
         provider = (

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from decimal import Decimal, InvalidOperation
-from typing import Any
+
 
 def _parse_kubernetes_size_bytes(
     value: str | int | float | None,

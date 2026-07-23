@@ -6,10 +6,12 @@ from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import cm
 from reportlab.platypus import Paragraph, Spacer
 
-from app.cluster.constants import get_environment_label
 from app.analytics.capacity.service import CapacityService
-from app.analytics.utilization.service import UtilizationService
-from app.analytics.utilization.service import get_selected_cluster as get_utilization_selected_cluster
+from app.analytics.utilization.service import (
+    UtilizationService,
+    get_selected_cluster as get_utilization_selected_cluster,
+)
+from app.cluster.constants import get_environment_label
 from app.intelligence.recommendation_engine import build_capacity_actionable_recommendations
 from app.models.report import Report
 from app.prometheus.consumer import PrometheusConsumer

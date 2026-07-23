@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from importlib import import_module
 from threading import RLock
-from typing import Any, Callable, Mapping
+from typing import Any
 
 from app.extensions import db
 from app.integrations.contracts import (

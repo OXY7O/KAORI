@@ -3,10 +3,8 @@ from __future__ import annotations
 from math import ceil
 
 from app.extensions.db import db
+from app.integrations.contracts import RuntimeState
 from app.models.runtime import IntegrationRuntimeObservation
-
-from .contracts import RuntimeState
-
 
 
 def persist_runtime_state(

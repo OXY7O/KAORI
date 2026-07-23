@@ -11,7 +11,6 @@ from app.integrations.alertmanager.status import mark_status
 from app.models.alertmanager import AlertmanagerInstance
 
 
-
 def read_alerts(
     source: AlertmanagerInstance,
     *,

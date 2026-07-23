@@ -1,21 +1,10 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from decimal import Decimal
 from typing import Any
 
-from sqlalchemy import func, or_
+from app.models import PodInventory, ServiceInventory
 
-from app.extensions import db
-from app.models import (
-    Cluster, ConfigurationInventory, IngressInventory, NamespaceInventory,
-    NodeInventory, PodInventory, ResourceQuotaInventory, ServiceInventory,
-    StorageInventory, WorkloadInventory,
-)
-
-from app.inventory.formatting import (
-    format_byte_count, format_kubernetes_size, format_quota_value,
-)
 
 def format_age(
     created_at,

@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-from typing import (
-    Any,
-    cast,
-)
+from typing import Any, cast
+
 from kubernetes.client import (
     AppsV1Api,
     BatchV1Api,
@@ -13,12 +11,18 @@ from kubernetes.client import (
     V1JobList,
     V1StatefulSetList,
 )
-from kubernetes.client.exceptions import (
-    ApiException,
-    NotFoundException,
+from kubernetes.client.exceptions import ApiException, NotFoundException
+
+from app.inventory.collectors.common import (
+    _detail_row,
+    _isoformat_datetime,
+    _metadata_details,
+    _model_value,
+    _string_value,
+    _to_modelish,
+    _toleration_display,
 )
 
-from app.inventory.collectors.common import _detail_row, _isoformat_datetime, _metadata_details, _model_value, _string_value, _to_modelish, _toleration_display
 
 def _workload_pod_template_spec(workload_spec):
     template = _model_value(workload_spec, 'template')

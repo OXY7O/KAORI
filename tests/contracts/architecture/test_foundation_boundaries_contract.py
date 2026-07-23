@@ -54,3 +54,30 @@ def test_kubernetes_inventory_adapter_uses_canonical_use_case() -> None:
 
     assert 'from app.inventory.synchronization import sync_inventory' in source
     assert 'app.inventory.service' not in source
+
+
+def test_runtime_repository_uses_canonical_integration_contract() -> None:
+    source = (ROOT / 'app/integrations/runtime/repository.py').read_text(encoding='utf-8')
+
+    assert 'from app.integrations.contracts import RuntimeState' in source
+    assert 'from .contracts import RuntimeState' not in source
+
+
+def test_architecture_verifier_blocks_imports_to_retired_python_modules(tmp_path: Path) -> None:
+    verifier = _load_verifier()
+    app_root = tmp_path / 'app'
+    module = app_root / 'example.py'
+    module.parent.mkdir(parents=True)
+    module.write_text(
+        'from app.integrations.runtime.contracts import RuntimeState\n',
+        encoding='utf-8',
+    )
+
+    records = verifier.scan_imports(app_root)
+    errors = verifier.validate_boundaries(
+        app_root,
+        records,
+        {'cycle_envelopes': [], 'service_form_imports': []},
+    )
+
+    assert any('import targets retired module' in error for error in errors)

@@ -7,8 +7,8 @@ from kubernetes.client import V1NodeList
 from kubernetes.client.rest import ApiException
 
 from app.common.integration_errors import describe_integration_failure
-from app.integrations.kubernetes.client import KubernetesClient
 from app.integrations.compatibility import evaluate_compatibility, kubernetes_lifecycle
+from app.integrations.kubernetes.client import KubernetesClient
 from app.integrations.kubernetes.compatibility import KubernetesDiscovery
 from app.integrations.kubernetes.tls import weak_tls_context
 

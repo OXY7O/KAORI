@@ -10,8 +10,8 @@ from app.cluster.tasks import sync_all_clusters_task, sync_single_cluster_task
 from app.jobs.constants import WORKLOAD_STANDARD
 from app.jobs.dispatcher import enqueue_canonical_job
 from app.models.cluster import Cluster
-from app.models.kubernetes import KubernetesConnection
 from app.models.job import JobExecution
+from app.models.kubernetes import KubernetesConnection
 
 logger = logging.getLogger(__name__)
 

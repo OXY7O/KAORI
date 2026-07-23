@@ -27,10 +27,11 @@ Exit criteria:
 - all static contract tests pass;
 - full tests pass in the KAORI Dev Container/CI;
 - production image builds after all gates.
+- strict Ruff gate passes with zero configured diagnostics and no temporary lint baseline.
 
 ## Batch 2 — Integration Ownership
 
-Status: first ownership cutover implemented; remaining presentation/resolver edges are tracked.
+Status: first ownership cutover implemented; post-cutover quality cleanup completed; remaining presentation/resolver edges are tracked.
 
 Implemented in this slice:
 
@@ -39,7 +40,8 @@ Implemented in this slice:
 - binding creation and selector mutation use provider-neutral registry operations;
 - provider packages no longer import their corresponding web/domain packages;
 - shared binding orchestration no longer imports WTForms or provider services;
-- architecture and contract guards prevent reciprocal imports from returning.
+- architecture and contract guards prevent reciprocal imports from returning;
+- the post-Batch-2 cleanup removed the temporary 260-diagnostic Ruff debt ceiling and restored strict lint enforcement.
 
 Remaining before package-path movement:
 

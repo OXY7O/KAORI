@@ -4,6 +4,7 @@ import re
 from types import SimpleNamespace
 from typing import Any
 
+
 def _isoformat_datetime(value: Any) -> str | None:
     if value is None:
         return None

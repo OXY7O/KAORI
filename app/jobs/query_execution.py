@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime
 from time import time
-from typing import Iterator
 
 from app.jobs.execution import JobExecutionContext
 from app.jobs.query_planning import QueryBudgetPolicy, QueryChunk, build_query_chunks

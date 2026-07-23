@@ -6,7 +6,7 @@ from urllib.parse import urlsplit
 from app.cluster.constants import get_environment_label
 from app.common.presentation import present_user_datetime
 from app.extensions.db import db
-from app.integrations.coverage import build_provider_coverage, bound_source_for_scope
+from app.integrations.coverage import bound_source_for_scope, build_provider_coverage
 from app.integrations.deletion import kubernetes_deletion_guard
 from app.integrations.prometheus.scope import cluster_bindings_for_instance
 from app.integrations.readiness import resolve_binding_operational_status, resolve_cluster_coverage

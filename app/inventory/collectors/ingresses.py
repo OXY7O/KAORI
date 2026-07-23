@@ -1,15 +1,11 @@
 from __future__ import annotations
 
-from typing import (
-    Any,
-    cast,
-)
-from kubernetes.client import (
-    NetworkingV1Api,
-    V1IngressList,
-)
+from typing import Any, cast
+
+from kubernetes.client import NetworkingV1Api, V1IngressList
 
 from app.inventory.collectors.common import _metadata_details, _string_value, _to_modelish
+
 
 def get_ingresses(
     api: NetworkingV1Api | None = None,

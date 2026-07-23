@@ -5,7 +5,6 @@ from app.integrations.alertmanager.contracts import AlertmanagerConnectionSpec
 from app.models.alertmanager import AlertmanagerInstance
 
 
-
 def connection_spec(source: AlertmanagerInstance) -> AlertmanagerConnectionSpec:
     return AlertmanagerConnectionSpec(
         endpoint=source.endpoint,

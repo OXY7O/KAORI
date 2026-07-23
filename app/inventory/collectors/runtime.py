@@ -1,13 +1,10 @@
 from __future__ import annotations
 
 from typing import cast
-from kubernetes.client import (
-    CoreV1Api,
-    V1Node,
-    V1NodeList,
-    VersionApi,
-)
+
+from kubernetes.client import CoreV1Api, V1Node, V1NodeList, VersionApi
 from kubernetes.client.models.version_info import VersionInfo
+
 
 def get_cluster_version(
     api: CoreV1Api,

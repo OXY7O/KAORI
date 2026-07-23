@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import UTC, datetime
-from typing import Any, Callable
+from typing import Any
 
 from flask import current_app
 
@@ -18,11 +19,7 @@ from app.integrations.validation.tasks import (
 )
 from app.jobs.constants import WORKLOAD_RUNTIME, WORKLOAD_VALIDATION
 from app.jobs.fingerprint import build_deduplication_key
-from app.jobs.service import (
-    create_or_attach_job,
-    find_active_job,
-    mark_job_failed,
-)
+from app.jobs.service import create_or_attach_job, find_active_job, mark_job_failed
 from app.models.job import JobExecutionSubscriber
 
 

@@ -1,19 +1,6 @@
 from flask_wtf import FlaskForm
-from wtforms import (
-    BooleanField,
-    TextAreaField,
-    IntegerField,
-    PasswordField,
-    SelectField,
-    StringField,
-)
-from wtforms.validators import (
-    DataRequired,
-    Length,
-    NumberRange,
-    Optional,
-    ValidationError,
-)
+from wtforms import BooleanField, IntegerField, PasswordField, SelectField, StringField, TextAreaField
+from wtforms.validators import DataRequired, Length, NumberRange, Optional, ValidationError
 
 
 class PrometheusConfigForm(FlaskForm):

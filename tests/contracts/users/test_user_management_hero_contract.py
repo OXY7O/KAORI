@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[3]
 HERO = ROOT / "app/templates/users/partials/_hero.html"
 

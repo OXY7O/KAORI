@@ -6,16 +6,14 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import or_, text
-
 from flask import current_app
 from kubernetes.client.exceptions import ApiException
 from kubernetes.config.config_exception import ConfigException
+from sqlalchemy import or_, text
 from urllib3.exceptions import HTTPError as Urllib3HTTPError
 
 from app.extensions import db
 from app.integrations.kubernetes.tls import weak_tls_context
-from app.models import Cluster, SecretRevealRequest
 from app.kubernetes_operations.secrets.live_service import (
     LiveSecretSnapshot,
     best_effort_inventory_id,
@@ -30,7 +28,7 @@ from app.kubernetes_operations.secrets.reveal_policy import (
     get_configured_enabled_namespace_names,
     get_namespace_policy,
 )
-
+from app.models import Cluster, SecretRevealRequest
 
 SUPPORTED_REVEAL_TYPES = {
     'Opaque': {

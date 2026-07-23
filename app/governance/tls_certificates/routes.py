@@ -73,7 +73,8 @@ def tls_certificates_sync():
     selected_cluster_name = result['results'][0]['cluster'] if cluster_id and result['results'] else None
 
     is_htmx = bool(request.headers.get('HX-Request'))
-    feedback = _record_tls_activity(
+    feedback = record_operational_activity(
+        user_id=current_user.id,
         event_type='governance_tls_secret_sync',
         status=status,
         title=title,

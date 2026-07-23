@@ -2,13 +2,10 @@ from __future__ import annotations
 
 import base64
 from typing import cast
-from kubernetes.client import (
-    CoreV1Api,
-    V1ConfigMapList,
-    V1ResourceQuotaList,
-    V1SecretList,
-)
+
+from kubernetes.client import CoreV1Api, V1ConfigMapList, V1ResourceQuotaList, V1SecretList
 from kubernetes.client.exceptions import ApiException
+
 
 def get_configuration_inventory(
     api: CoreV1Api,

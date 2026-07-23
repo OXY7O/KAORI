@@ -1,19 +1,11 @@
 from __future__ import annotations
 
-from typing import (
-    Any,
-    cast,
-)
-from kubernetes.client import (
-    AppsV1Api,
-    BatchV1Api,
-    CoreV1Api,
-    V1JobList,
-    V1PodList,
-    V1ReplicaSetList,
-)
+from typing import Any, cast
+
+from kubernetes.client import AppsV1Api, BatchV1Api, CoreV1Api, V1JobList, V1PodList, V1ReplicaSetList
 
 from app.inventory.collectors.common import _isoformat_datetime, _model_value, _string_value, _toleration_display
+
 
 def _controller_reference(metadata) -> tuple[str | None, str | None]:
     references = getattr(metadata, 'owner_references', None) or []

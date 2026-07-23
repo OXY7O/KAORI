@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from app.extensions.db import db
 from app.integrations.binding_selectors import build_selector
-from app.integrations.prometheus.capabilities import BINDING_CAPABILITY_KEYS
 from app.integrations.lifecycle import bind_instance, ensure_canonical_instance
+from app.integrations.prometheus.capabilities import BINDING_CAPABILITY_KEYS
 from app.integrations.prometheus.scope import KUBERNETES_CLUSTER_SCOPE
 from app.models.cluster import Cluster
 from app.models.integration import IntegrationBinding, IntegrationInstance

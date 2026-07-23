@@ -1,21 +1,10 @@
 from typing import Any, cast
 
-from kubernetes.client import (
-    AppsV1Api,
-    BatchV1Api,
-    CoreV1Api,
-    NetworkingV1Api,
-    StorageV1Api,
-    V1NamespaceList,
-    V1Node,
-)
+from kubernetes.client import AppsV1Api, BatchV1Api, CoreV1Api, NetworkingV1Api, StorageV1Api, V1NamespaceList, V1Node
 from kubernetes.client.exceptions import ApiException
 
 from app.extensions import db
-from app.inventory.collectors.configuration import (
-    get_configuration_inventory,
-    get_resource_quotas,
-)
+from app.inventory.collectors.configuration import get_configuration_inventory, get_resource_quotas
 from app.inventory.collectors.ingresses import get_ingresses
 from app.inventory.collectors.pods import get_pods
 from app.inventory.collectors.runtime import get_cluster_version, get_nodes
@@ -35,6 +24,7 @@ from app.models import (
     StorageInventory,
     WorkloadInventory,
 )
+
 
 def get_node_role(
     node: V1Node,

@@ -13,13 +13,13 @@ from urllib3.exceptions import HTTPError as Urllib3HTTPError
 
 from app.governance.tls_certificates.certificate import validate_certificate_pair
 from app.integrations.kubernetes.tls import weak_tls_context
-from app.models import Cluster
 from app.kubernetes_operations.secrets.live_service import (
     core_api,
     get_cluster,
     list_live_namespaces,
     verify_live_namespace,
 )
+from app.models import Cluster
 
 SECRET_TYPE_LABELS = {
     "opaque": "Generic / Opaque",

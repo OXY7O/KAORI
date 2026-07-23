@@ -5,9 +5,9 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy.exc import IntegrityError
 
+from app.auth.providers.ldap import ExternalIdentity
 from app.extensions import db
 from app.models import ExternalIdentityLink, IdentityProvider, Role, User
-from app.auth.providers.ldap import ExternalIdentity
 
 if TYPE_CHECKING:
     from app.users.forms import ExternalIdentityProvisionForm, ExternalIdentitySearchForm

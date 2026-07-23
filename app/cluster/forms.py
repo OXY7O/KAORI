@@ -6,7 +6,6 @@ from wtforms.validators import DataRequired, Length, Optional
 from app.cluster.constants import ENVIRONMENTS
 
 
-
 class ClusterCreateForm(FlaskForm):
     name = StringField(
         'Cluster Name',

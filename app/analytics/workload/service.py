@@ -6,13 +6,7 @@ import re
 from collections.abc import Mapping
 from typing import Any
 
-from app.analytics.common.base_service import (
-    AnalyticsBaseService,
-    bytes_to_gib,
-    raw_percent,
-    safe_percent,
-    safe_round,
-)
+from app.analytics.common.base_service import AnalyticsBaseService, bytes_to_gib, raw_percent, safe_percent, safe_round
 from app.analytics.common.context import build_analysis_utilization_context
 from app.analytics.common.params import (
     ALLOWED_PER_PAGE_VALUES,
@@ -24,18 +18,15 @@ from app.analytics.common.params import (
 )
 from app.analytics.common.payloads import get_empty_workload_payload
 from app.analytics.utilization.service import UtilizationService
+from app.common.dependencies import prometheus_capability_blocker, prometheus_connection_blocker
+from app.integrations.prometheus.exceptions import PrometheusError
 from app.integrations.prometheus.query_profiles import get_query_expression
-from app.common.dependencies import (
-    prometheus_capability_blocker,
-    prometheus_connection_blocker,
-)
 from app.intelligence.recommendation_engine import (
     build_workload_actionable_recommendations,
     count_actionable_recommendations,
     format_recommendation_cards,
 )
 from app.models import Cluster
-from app.integrations.prometheus.exceptions import PrometheusError
 from app.prometheus.service import PrometheusService
 
 NAMESPACE_ACTIVE_QUERY = get_query_expression('analytics.workload.queries.NAMESPACE_ACTIVE_QUERY')

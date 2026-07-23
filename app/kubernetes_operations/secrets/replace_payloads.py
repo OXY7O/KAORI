@@ -26,7 +26,7 @@ def _validate_data_key(key: str) -> None:
 
 def _validate_secret_size(string_data: dict[str, str]) -> None:
     payload_size = sum(
-        len(key.encode('utf-8')) + len(value.encode('utf-8'))
+        len(key.encode()) + len(value.encode())
         for key, value in string_data.items()
     )
     if payload_size >= _MAX_KUBERNETES_SECRET_BYTES:
@@ -55,7 +55,7 @@ def _validate_ssh_private_key(raw_key: str) -> None:
     except ModuleNotFoundError as exc:
         raise ValueError('SSH private-key validation is unavailable on this KAORI instance.') from exc
 
-    key_bytes = raw_key.encode('utf-8')
+    key_bytes = raw_key.encode()
     try:
         try:
             serialization.load_pem_private_key(key_bytes, password=None)
@@ -149,7 +149,7 @@ def _build_registry_patch(form: Any) -> dict[str, str]:
         raise ValueError('Registry email address is invalid.')
 
     auth = base64.b64encode(
-        f'{normalized_username}:{normalized_password}'.encode('utf-8')
+        f'{normalized_username}:{normalized_password}'.encode()
     ).decode('ascii')
     auth_entry: dict[str, str] = {
         'username': normalized_username,

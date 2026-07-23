@@ -23,7 +23,7 @@ bash scripts/quality_gate.sh --static
 This gate performs:
 
 1. Python bytecode compilation for application, migrations, tests, and scripts.
-2. Ruff linting.
+2. Strict Ruff linting across application, migration, test, and script source.
 3. Python dependency-boundary validation.
 4. Alembic revision-graph validation without requiring a database.
 5. Git tracked-source hygiene validation.
@@ -49,6 +49,26 @@ This performs a clean `npm ci`, rebuilds local runtime assets and Tailwind CSS, 
 ### Production Image Gate
 
 CI builds the `production` Docker target only after static, functional, and frontend gates succeed.
+
+
+## Ruff Zero-Debt Policy
+
+KAORI no longer uses a Ruff diagnostic baseline. The temporary rollout ledger was removed after the post-Batch-2 cleanup reached zero configured diagnostics.
+
+The canonical check is:
+
+```bash
+python -m ruff check app migrations tests scripts
+```
+
+Rules:
+
+1. Every configured Ruff diagnostic blocks the static gate.
+2. New files and changed files receive the same enforcement as existing source.
+3. Unused imports must be removed rather than retained as compatibility hints.
+4. Import blocks must remain deterministic and grouped by standard library, third-party, first-party, and local imports.
+5. Historical Alembic revisions retain narrow per-file exemptions for import-order and annotation-modernization rules only; correctness diagnostics remain mandatory.
+6. Ruff suppression comments require a specific rule code and a documented operational reason.
 
 ## Architecture Debt Baseline
 
@@ -92,6 +112,7 @@ The following are enforced:
 - service modules cannot import routes;
 - wildcard imports are prohibited;
 - retired compatibility and empty placeholder files cannot return;
+- imports targeting retired Python compatibility modules are rejected even after the files are deleted;
 - route modules may only be imported by application/package bootstrap modules.
 
 ## Migration Governance

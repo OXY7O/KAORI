@@ -5,11 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-from app.analytics.common.base_service import (
-    AnalyticsBaseService,
-    raw_percent,
-    safe_round,
-)
+from app.analytics.common.base_service import AnalyticsBaseService, raw_percent, safe_round
 from app.analytics.common.context import build_analysis_utilization_context
 from app.analytics.common.params import (
     ALLOWED_PER_PAGE_VALUES,
@@ -20,23 +16,19 @@ from app.analytics.common.params import (
     get_selected_time_range,
 )
 from app.analytics.common.payloads import get_empty_storage_payload
-from app.integrations.prometheus.query_profiles import get_query_expression
 from app.analytics.utilization.service import UtilizationService
-from app.common.dependencies import (
-    prometheus_capability_blocker,
-    prometheus_connection_blocker,
-)
+from app.common.dependencies import prometheus_capability_blocker, prometheus_connection_blocker
+from app.integrations.prometheus.capabilities import definition as capability_definition
+from app.integrations.prometheus.exceptions import PrometheusError
+from app.integrations.prometheus.query_profiles import get_query_expression
 from app.intelligence.recommendation_engine import (
     build_storage_actionable_recommendations,
     count_actionable_recommendations,
     format_recommendation_cards,
 )
 from app.models import Cluster
-from app.integrations.prometheus.capabilities import definition as capability_definition
 from app.prometheus.consumer import PrometheusConsumer
-from app.integrations.prometheus.exceptions import PrometheusError
 from app.prometheus.service import PrometheusService
-
 
 NAMESPACE_ACTIVE_QUERY = get_query_expression('analytics.storage.queries.NAMESPACE_ACTIVE_QUERY')
 NODE_ROOT_FILESYSTEM_AVAILABLE_QUERY = get_query_expression('analytics.storage.queries.NODE_ROOT_FILESYSTEM_AVAILABLE_QUERY')

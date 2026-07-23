@@ -129,7 +129,7 @@ def _build_prometheus_failure_feedback(payload: dict) -> str:
         or 'The Prometheus health check did not complete successfully.'
     ).strip()
     fingerprint = sha256(
-        f'{endpoint}|{diagnostic_detail}'.encode('utf-8'),
+        f'{endpoint}|{diagnostic_detail}'.encode(),
     ).hexdigest()
 
     if not _update_prometheus_failure_state(

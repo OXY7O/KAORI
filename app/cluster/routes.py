@@ -4,31 +4,19 @@ import json
 import logging
 from time import perf_counter
 
-from flask import (
-    Blueprint,
-    abort,
-    flash,
-    make_response,
-    redirect,
-    render_template,
-    request,
-    url_for,
-)
+from flask import Blueprint, abort, flash, make_response, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 from redis.exceptions import RedisError
 
-from app.extensions import db
-from app.integrations.deletion import DeletionBlocked
 from app.cluster.forms import ClusterCreateForm, ClusterEditForm
-from app.cluster.registration import issue_cluster_registration_proof, verify_cluster_registration_proof
 from app.cluster.individual_sync_state import (
     build_individual_sync_snapshot,
     dismiss_individual_sync_result,
     get_tracked_individual_sync_task_ids,
     is_individual_sync_result_dismissed,
 )
-from app.cluster.sync_jobs import enqueue_all_cluster_inventory_sync
+from app.cluster.registration import issue_cluster_registration_proof, verify_cluster_registration_proof
 from app.cluster.service import (
     create_cluster,
     delete_cluster,
@@ -36,14 +24,16 @@ from app.cluster.service import (
     test_cluster_draft_connection,
     update_cluster,
 )
+from app.cluster.sync_jobs import enqueue_all_cluster_inventory_sync
 from app.cluster.sync_state import (
     build_cluster_sync_snapshot,
     dismiss_cluster_sync_result,
     get_active_cluster_sync_task_id,
     is_cluster_sync_result_dismissed,
 )
+from app.extensions import db
+from app.integrations.deletion import DeletionBlocked
 from app.models import Cluster
-from app.models.kubernetes import KubernetesConnection
 from app.notifications.service import (
     create_notification,
     get_navigation_notification_context,

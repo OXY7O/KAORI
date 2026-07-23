@@ -5,11 +5,7 @@ from typing import Any, cast
 from flask import current_app, render_template, request
 
 from app.analytics.common.context import build_analysis_utilization_context
-from app.analytics.utilization.service import (
-    UtilizationService,
-    get_selected_cluster,
-    get_utilization_clusters,
-)
+from app.analytics.utilization.service import UtilizationService, get_selected_cluster, get_utilization_clusters
 from app.common.dependencies import (
     DependencyBlocker,
     cluster_required_blocker,
@@ -18,12 +14,12 @@ from app.common.dependencies import (
     prometheus_setup_blocker,
     render_dependency_blocker,
 )
+from app.integrations.prometheus.exceptions import PrometheusError
 from app.intelligence.recommendation_engine import (
     build_utilization_actionable_recommendations,
     count_actionable_recommendations,
     format_recommendation_cards,
 )
-from app.integrations.prometheus.exceptions import PrometheusError
 from app.prometheus.repository import resolve_instance_for_cluster
 from app.prometheus.service import PrometheusService
 from app.rbac.decorators import permission_required

@@ -1,27 +1,20 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
-from decimal import Decimal
 from typing import Any
 
-from sqlalchemy import func, or_
+from sqlalchemy import or_
 
 from app.extensions import db
-from app.models import (
-    Cluster, ConfigurationInventory, IngressInventory, NamespaceInventory,
-    NodeInventory, PodInventory, ResourceQuotaInventory, ServiceInventory,
-    StorageInventory, WorkloadInventory,
-)
-
-from app.inventory.resources.descriptions import SERVICE_TYPE_DESCRIPTIONS
 from app.inventory.resources.common import (
-    _display_boolean, _pod_summary, _selector_matches, _service_port_rows,
-    _split_inventory_values, format_age,
+    _pod_summary,
+    _selector_matches,
+    _service_port_rows,
+    _split_inventory_values,
+    format_age,
 )
-from app.inventory.formatting import (
-    convert_ki_to_gib, convert_storage_to_gib, format_byte_count,
-    format_kubernetes_size, format_quota_value,
-)
+from app.inventory.resources.descriptions import SERVICE_TYPE_DESCRIPTIONS
+from app.models import Cluster, PodInventory, ServiceInventory
+
 
 def get_service_filter_types(
     cluster_id: str | None = None,

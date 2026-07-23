@@ -6,8 +6,8 @@ KAORI's sidebar. Child labels describe the selected submenu or workflow page.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable
 
 
 @dataclass(frozen=True)

@@ -7,25 +7,21 @@ from math import ceil
 from time import perf_counter
 from typing import Any
 
-from app.alertmanager.service import (
-    get_alertmanager_alerts,
-    get_alertmanager_silences,
-    get_alertmanager_status,
-)
-from app.integrations.prometheus.query_profiles import get_query_expression
+from app.alertmanager.service import get_alertmanager_alerts, get_alertmanager_silences, get_alertmanager_status
 from app.common.dependencies import (
     alert_source_connection_blocker,
     alert_source_setup_blocker,
     cluster_required_blocker,
 )
 from app.extensions import db
+from app.integrations.prometheus.exceptions import PrometheusError
+from app.integrations.prometheus.query_profiles import get_query_expression
 from app.intelligence.recommendation_engine import (
     build_alerts_actionable_recommendations,
     count_actionable_recommendations,
     format_recommendation_cards,
 )
 from app.models import Cluster, NamespaceInventory
-from app.integrations.prometheus.exceptions import PrometheusError
 from app.prometheus.repository import resolve_instance_for_cluster
 from app.prometheus.service import PrometheusService
 

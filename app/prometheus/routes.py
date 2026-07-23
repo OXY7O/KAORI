@@ -8,6 +8,10 @@ from flask.typing import ResponseReturnValue
 from flask_login import current_user
 
 from app.cluster.service import get_cluster_by_id
+from app.extensions.db import db
+from app.integrations.deletion import DeletionBlocked
+from app.integrations.lifecycle import ensure_canonical_instance
+from app.integrations.prometheus.exceptions import PrometheusError
 from app.integrations.runtime.presentation import runtime_history_view
 from app.integrations.runtime.repository import paginate_runtime_history
 from app.integrations.validation.state import build_validation_snapshot, get_active_validation_task_id
@@ -18,22 +22,13 @@ from app.integrations.validation.web import (
     snapshot_feedback_for_user,
     validate_snapshot_access,
 )
-from app.extensions.db import db
-from app.integrations.lifecycle import ensure_canonical_instance
-from app.integrations.deletion import DeletionBlocked
 from app.models import PrometheusInstance
 from app.models.integration import IntegrationBinding
-from app.notifications.service import (
-    get_navigation_notification_context,
-    record_operational_activity,
-)
-from app.integrations.prometheus.exceptions import PrometheusError
+from app.notifications.service import get_navigation_notification_context, record_operational_activity
 from app.prometheus.forms import PrometheusInstanceForm
 from app.prometheus.presentation import build_instance_context
 from app.prometheus.registration import issue_registration_proof, verify_registration_proof
-from app.prometheus.repository import (
-    get_instance,
-)
+from app.prometheus.repository import get_instance
 from app.prometheus.service import (
     PrometheusService,
     create_prometheus_binding,

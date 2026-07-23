@@ -8,22 +8,15 @@ from typing import Any
 import yaml
 from sqlalchemy import func, or_
 
-from app.extensions import db
-from app.integrations.kubernetes.resolver import connection_for_cluster
-from app.integrations.deletion import DeletionBlocked, kubernetes_deletion_guard
 from app.alertmanager.resolver import resolve_alertmanager_sources
-from app.prometheus.repository import resolve_instance_for_cluster
+from app.extensions import db
+from app.integrations.deletion import DeletionBlocked, kubernetes_deletion_guard
+from app.integrations.kubernetes.resolver import connection_for_cluster
 from app.integrations.kubernetes.validation import test_cluster_connection, test_cluster_runtime_health
-from app.models import (
-    Cluster,
-    ClusterInventory,
-    ClusterStatus,
-    NamespaceInventory,
-    Report,
-    ReportSchedule,
-)
+from app.models import Cluster, ClusterInventory, ClusterStatus, NamespaceInventory, Report, ReportSchedule
 from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.models.kubernetes import KubernetesConnection
+from app.prometheus.repository import resolve_instance_for_cluster
 
 DEFAULT_CLUSTER_PER_PAGE = 5
 CLUSTER_PER_PAGE_OPTIONS = [

@@ -3,9 +3,9 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any
 
+from app.integrations.compatibility import kubernetes_lifecycle_policy
 from app.integrations.contracts import CapabilitySnapshot, DiagnosticResult, HealthFactor, RuntimeState
 from app.integrations.runtime.scoring import calculate_health
-from app.integrations.compatibility import kubernetes_lifecycle_policy
 from app.models.kubernetes import KubernetesConnection
 
 

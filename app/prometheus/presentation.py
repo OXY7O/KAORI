@@ -17,7 +17,6 @@ from app.models import Cluster, PrometheusInstance
 from app.models.integration import IntegrationBinding
 from app.prometheus.resolver import PrometheusSourceResolution, resolve_prometheus_sources
 
-
 _CORE_CAPABILITIES = {
     'instant_query',
     'range_query',

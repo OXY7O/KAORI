@@ -4,10 +4,10 @@ import logging
 
 from celery import shared_task
 
+from app.integrations.validation.tasks import enqueue_runtime_refresh
 from app.models.alertmanager import AlertmanagerInstance
 from app.models.kubernetes import KubernetesConnection
 from app.models.prometheus import PrometheusInstance
-from app.integrations.validation.tasks import enqueue_runtime_refresh
 
 logger = logging.getLogger(__name__)
 

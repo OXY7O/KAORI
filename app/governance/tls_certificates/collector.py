@@ -6,10 +6,10 @@ from typing import Any
 
 from kubernetes.client import V1Ingress, V1Secret
 
-from app.governance.tls_certificates.constants import TLS_CRT_KEY, TLS_SECRET_TYPE, TLS_STATUS_INVALID
 from app.governance.tls_certificates.certificate import decode_secret_data, parse_certificate
-from app.integrations.registry import get_integration
+from app.governance.tls_certificates.constants import TLS_CRT_KEY, TLS_SECRET_TYPE, TLS_STATUS_INVALID
 from app.integrations.kubernetes.tls import weak_tls_context
+from app.integrations.registry import get_integration
 from app.models import Cluster
 
 

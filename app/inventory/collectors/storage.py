@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-from typing import (
-    Any,
-    cast,
-)
+from typing import Any, cast
+
 from kubernetes.client import (
     CoreV1Api,
     StorageV1Api,
@@ -13,6 +11,7 @@ from kubernetes.client import (
 )
 
 from app.inventory.collectors.common import _isoformat_datetime, _metadata_details, _model_value, _string_value
+
 
 def _persistent_volume_source_details(spec) -> dict[str, Any]:
     sources = [

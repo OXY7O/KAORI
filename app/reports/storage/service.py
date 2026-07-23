@@ -10,7 +10,6 @@ from sqlalchemy import select
 
 from app.extensions import db
 from app.models.report import Report
-from app.storage.base import ArtifactStorageBackend, StoredArtifact
 from app.reports.storage.health import (
     build_local_storage_health,
     build_s3_storage_health,
@@ -20,6 +19,7 @@ from app.reports.storage.health import (
 )
 from app.reports.storage.local import build_local_report_storage
 from app.reports.storage.s3 import build_s3_report_storage
+from app.storage.base import ArtifactStorageBackend, StoredArtifact
 
 SUPPORTED_REPORT_STORAGE_BACKENDS = {
     'local',

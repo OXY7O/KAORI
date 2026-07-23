@@ -4,22 +4,33 @@ from flask_login import current_user
 
 from app.integrations.binding_service import create_cluster_source_binding
 from app.integrations.coverage import build_binding_workspace
-from app.integrations.service import build_alertmanager_page, build_integrations_overview, build_kubernetes_detail, build_kubernetes_page, build_kubernetes_registry_row, build_prometheus_page
-from app.rbac.decorators import permission_required
-from app.integrations.runtime.repository import paginate_runtime_history
+from app.integrations.repository import get_kubernetes_connection_by_cluster_id
 from app.integrations.runtime.presentation import runtime_history_view
-from app.integrations.validation.state import build_validation_snapshot, get_active_validation_task_id, release_validation_job
-from app.jobs.presentation import build_job_execution_context
-from app.jobs.service import JobCancellationNotAllowed, cancel_job_execution
+from app.integrations.runtime.repository import paginate_runtime_history
+from app.integrations.service import (
+    build_alertmanager_page,
+    build_integrations_overview,
+    build_kubernetes_detail,
+    build_kubernetes_page,
+    build_kubernetes_registry_row,
+    build_prometheus_page,
+)
+from app.integrations.validation.state import (
+    build_validation_snapshot,
+    get_active_validation_task_id,
+    release_validation_job,
+)
 from app.integrations.validation.web import (
     enqueue_instance_validation,
     enqueue_runtime_health_refresh,
     snapshot_feedback_for_user,
     validate_snapshot_access,
 )
+from app.jobs.presentation import build_job_execution_context
+from app.jobs.service import JobCancellationNotAllowed, cancel_job_execution
 from app.models.job import JobExecution
-from app.integrations.repository import get_kubernetes_connection_by_cluster_id
 from app.notifications.service import get_navigation_notification_context, record_operational_activity
+from app.rbac.decorators import permission_required
 
 integrations_bp = Blueprint('integrations', __name__, url_prefix='/integrations')
 

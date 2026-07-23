@@ -4,6 +4,8 @@ import logging
 from datetime import UTC, datetime
 from typing import Any
 
+from app.common.integration_errors import describe_integration_failure
+from app.extensions import db
 from app.integrations.alertmanager.client_factory import build_client
 from app.integrations.alertmanager.contracts import ValidationResult, ValidationStep
 from app.integrations.alertmanager.exceptions import AlertmanagerError
@@ -11,8 +13,6 @@ from app.integrations.alertmanager.probes import discover_payload_capabilities
 from app.integrations.alertmanager.profiles import resolve_profile
 from app.integrations.alertmanager.requirements import evaluate_module_readiness
 from app.integrations.alertmanager.status import mark_status
-from app.common.integration_errors import describe_integration_failure
-from app.extensions import db
 from app.integrations.compatibility import evaluate_compatibility
 from app.models.alertmanager import AlertmanagerInstance
 

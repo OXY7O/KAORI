@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Any, Iterable
+from typing import Any
 
 from kubernetes.client import (
     ApiClient,
@@ -11,7 +12,6 @@ from kubernetes.client import (
     V1SelfSubjectAccessReviewSpec,
 )
 from kubernetes.client.rest import ApiException
-
 
 KUBERNETES_API_PROFILE = 'kubernetes-api-v1'
 

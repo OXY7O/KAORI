@@ -2,10 +2,7 @@ from kubernetes.client import BatchV1Api
 from sqlalchemy import select
 
 from app.extensions import db
-from app.integrations.kubernetes.compatibility import (
-    KubernetesDiscovery,
-    list_cluster_resource,
-)
+from app.integrations.kubernetes.compatibility import KubernetesDiscovery, list_cluster_resource
 from app.integrations.kubernetes.tls import weak_tls_context
 from app.integrations.registry import get_integration
 from app.inventory.persistence import (
@@ -21,6 +18,7 @@ from app.inventory.persistence import (
     save_workloads,
 )
 from app.models import Cluster
+
 
 def _lock_cluster_inventory_sync(
     cluster_id: str,

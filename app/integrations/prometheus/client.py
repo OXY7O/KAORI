@@ -6,12 +6,12 @@ import requests
 from requests.auth import HTTPBasicAuth
 
 from app.integrations.binding_selectors import BindingSelectorError, apply_promql_scope
-from app.models.prometheus import PrometheusInstance
 from app.integrations.prometheus.exceptions import (
     PrometheusAuthenticationError,
     PrometheusConnectionError,
     PrometheusQueryError,
 )
+from app.models.prometheus import PrometheusInstance
 
 
 class PrometheusClient:

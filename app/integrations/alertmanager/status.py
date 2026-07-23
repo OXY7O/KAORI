@@ -6,7 +6,6 @@ from app.extensions import db
 from app.models.alertmanager import AlertmanagerInstance
 
 
-
 def mark_status(
     source: AlertmanagerInstance,
     *,

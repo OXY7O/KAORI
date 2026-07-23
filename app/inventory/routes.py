@@ -4,22 +4,11 @@ from flask import Blueprint, abort, jsonify, redirect, render_template, request,
 from flask_login import current_user
 
 from app.cluster.onboarding import has_registered_clusters
-from app.cluster.sync_jobs import enqueue_cluster_inventory_sync
 from app.cluster.service import build_cluster_context
-from app.inventory.overview import (
-    get_cluster_by_id,
-    get_inventory_clusters,
-    get_inventory_overview,
-)
-from app.inventory.resources.configuration import (
-    get_configuration_detail,
-    get_configuration_inventory_view,
-)
-from app.inventory.resources.ingresses import (
-    get_ingress_detail,
-    get_ingress_filter_classes,
-    get_ingress_inventory,
-)
+from app.cluster.sync_jobs import enqueue_cluster_inventory_sync
+from app.inventory.overview import get_cluster_by_id, get_inventory_clusters, get_inventory_overview
+from app.inventory.resources.configuration import get_configuration_detail, get_configuration_inventory_view
+from app.inventory.resources.ingresses import get_ingress_detail, get_ingress_filter_classes, get_ingress_inventory
 from app.inventory.resources.namespaces import (
     get_namespace_detail,
     get_namespace_filter_statuses,
@@ -39,11 +28,7 @@ from app.inventory.resources.pods import (
     get_pod_filter_statuses,
     get_pod_inventory,
 )
-from app.inventory.resources.services import (
-    get_service_detail,
-    get_service_filter_types,
-    get_service_inventory,
-)
+from app.inventory.resources.services import get_service_detail, get_service_filter_types, get_service_inventory
 from app.inventory.resources.storage import (
     get_storage_detail,
     get_storage_filter_statuses,

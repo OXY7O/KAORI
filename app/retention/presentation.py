@@ -13,7 +13,6 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from flask import current_app
 from sqlalchemy import case, func
 
-from app.models.job import JobExecution
 from app.models.archive import (
     ACTIVE_ARCHIVE_STATUSES,
     ARCHIVE_STATUS_CLEANUP_PARTIAL,
@@ -21,6 +20,7 @@ from app.models.archive import (
     ARCHIVE_STATUS_READY,
     ArchiveArtifact,
 )
+from app.models.job import JobExecution
 from app.retention.domains import DOMAIN_FACTORIES, get_archive_domain
 from app.retention.policy_service import get_or_create_policy
 from app.retention.service import paginate_archives, preview_retention

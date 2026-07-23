@@ -8,18 +8,11 @@ from typing import Any
 from flask import current_app
 
 from app.analytics.common.clusters import get_selected_cluster
-from app.analytics.common.params import (
-    get_query_value,
-    get_selected_time_range,
-)
+from app.analytics.common.params import get_query_value, get_selected_time_range
 from app.analytics.utilization.service import UtilizationService
-from app.common.dependencies import (
-    cluster_required_blocker,
-    prometheus_connection_blocker,
-    prometheus_setup_blocker,
-)
-from app.models import Cluster
+from app.common.dependencies import cluster_required_blocker, prometheus_connection_blocker, prometheus_setup_blocker
 from app.integrations.prometheus.exceptions import PrometheusError
+from app.models import Cluster
 from app.prometheus.repository import resolve_instance_for_cluster
 from app.prometheus.service import PrometheusService
 
