@@ -22,7 +22,7 @@ It defines:
 - `AlertSourceStatus` — source-selection, connectivity, fallback, latency, and diagnostic state;
 - `AlertLoadResult` — canonical source loader result;
 - `AlertsSnapshot` — stable dashboard/report snapshot boundary;
-- focused source-health, routing, silence, inhibition, ownership, and incident-readiness presentation summaries;
+- focused source-health, routing, silence, inhibition, ownership, incident-readiness, and selected-cluster signal presentation summaries;
 - `AlertsPagination` — pagination state for the interactive page.
 
 ## Dependency Direction
@@ -34,7 +34,7 @@ sources.py normalization
     ↓
 NormalizedAlert + AlertSourceStatus
     ↓
-health / routing / silences / inhibition / ownership / signals
+health / routing / silences / inhibition / ownership / typed signals
     ↓
 application.py or snapshots.py
     ↓

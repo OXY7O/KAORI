@@ -15,6 +15,7 @@ SILENCES = ALERTS / 'silences.py'
 INHIBITION = ALERTS / 'inhibition.py'
 OWNERSHIP = ALERTS / 'ownership.py'
 READINESS = ALERTS / 'readiness.py'
+SIGNALS = ALERTS / 'signals.py'
 SERVICE = ALERTS / 'service.py'
 QUALITY_GATE = ROOT / 'scripts' / 'quality_gate.sh'
 
@@ -30,6 +31,10 @@ TYPED_CONTRACTS = {
     'AlertOwnershipSummary',
     'AlertRoutingGroup',
     'AlertRoutingSummary',
+    'AlertSelectedClusterSignalOverview',
+    'AlertSignalBars',
+    'AlertSignalInsight',
+    'AlertSignalPriority',
     'AlertRunbookItem',
     'AlertSilenceApiStatus',
     'AlertSilenceItem',
@@ -105,6 +110,39 @@ def _return_dictionary_keys(path: Path, function_name: str) -> set[str]:
     raise AssertionError(f'No literal dictionary return found for {function_name}')
 
 
+def _nested_dictionary_keys_from_return(
+    path: Path,
+    function_name: str,
+    key_name: str,
+) -> set[str]:
+    tree = ast.parse(path.read_text(encoding='utf-8'))
+    function = next(
+        node
+        for node in tree.body
+        if isinstance(node, ast.FunctionDef) and node.name == function_name
+    )
+
+    for node in ast.walk(function):
+        if not isinstance(node, ast.Return) or not isinstance(node.value, ast.Dict):
+            continue
+
+        for key, value in zip(node.value.keys, node.value.values, strict=True):
+            if not (
+                isinstance(key, ast.Constant)
+                and key.value == key_name
+                and isinstance(value, ast.Dict)
+            ):
+                continue
+
+            return {
+                nested_key.value
+                for nested_key in value.keys
+                if isinstance(nested_key, ast.Constant) and isinstance(nested_key.value, str)
+            }
+
+    raise AssertionError(f'No nested dictionary {key_name!r} found for {function_name}')
+
+
 def test_alert_contracts_are_explicit_typed_dictionaries() -> None:
     tree = ast.parse(CONTRACTS.read_text(encoding='utf-8'))
     typed_dicts = {
@@ -157,6 +195,8 @@ def test_snapshot_boundary_has_an_explicit_contract() -> None:
     assert 'inhibition_summary: AlertInhibitionSummary' in snapshot_source
     assert 'ownership_summary: AlertOwnershipSummary' in snapshot_source
     assert 'incident_readiness: AlertIncidentReadinessSummary' in snapshot_source
+    assert 'priority: AlertSignalPriority' in snapshot_source
+    assert 'insight: AlertSignalInsight' in snapshot_source
 
 
 def test_health_and_routing_boundaries_use_focused_contracts() -> None:
@@ -199,6 +239,16 @@ def test_ownership_and_readiness_boundaries_use_focused_contracts() -> None:
     assert 'silence_summary: AlertSilenceSummary' in readiness_source
     assert 'inhibition_summary: AlertInhibitionSummary' in readiness_source
     assert 'ownership_summary: AlertOwnershipSummary' in readiness_source
+
+
+def test_selected_cluster_signal_boundary_uses_focused_contracts() -> None:
+    signal_annotations = _function_return_annotations(SIGNALS)
+    readiness_source = READINESS.read_text(encoding='utf-8')
+
+    assert signal_annotations['build_selected_cluster_signal_overview'] == (
+        'AlertSelectedClusterSignalOverview'
+    )
+    assert 'signal_overview: AlertSelectedClusterSignalOverview' in readiness_source
 
 
 def test_alert_consumers_use_the_canonical_types() -> None:
@@ -248,6 +298,10 @@ def test_runtime_dictionary_keys_match_the_typed_contracts() -> None:
     inhibition_keys, _ = _typed_dict_keys('AlertInhibitionSummary')
     ownership_keys, _ = _typed_dict_keys('AlertOwnershipSummary')
     readiness_keys, _ = _typed_dict_keys('AlertIncidentReadinessSummary')
+    signal_overview_keys, _ = _typed_dict_keys('AlertSelectedClusterSignalOverview')
+    signal_priority_keys, _ = _typed_dict_keys('AlertSignalPriority')
+    signal_insight_keys, _ = _typed_dict_keys('AlertSignalInsight')
+    signal_bars_keys, _ = _typed_dict_keys('AlertSignalBars')
 
     alertmanager_keys = _return_dictionary_keys(SOURCES, 'normalize_alertmanager_item')
     prometheus_keys = _return_dictionary_keys(SOURCES, 'normalize_prometheus_alert')
@@ -260,6 +314,35 @@ def test_runtime_dictionary_keys_match_the_typed_contracts() -> None:
     inhibition_keys_runtime = _return_dictionary_keys(INHIBITION, 'build_inhibition_summary')
     empty_ownership_keys = _return_dictionary_keys(OWNERSHIP, 'build_empty_ownership_summary')
     empty_readiness_keys = _return_dictionary_keys(READINESS, 'build_empty_incident_readiness')
+    empty_signal_overview_keys = _return_dictionary_keys(
+        SIGNALS,
+        'build_selected_cluster_signal_overview',
+    )
+    empty_signal_priority_keys = _nested_dictionary_keys_from_return(
+        SIGNALS,
+        'build_selected_cluster_signal_overview',
+        'priority',
+    )
+    empty_signal_insight_keys = _nested_dictionary_keys_from_return(
+        SIGNALS,
+        'build_selected_cluster_signal_overview',
+        'insight',
+    )
+    empty_signal_bars_keys = _nested_dictionary_keys_from_return(
+        SIGNALS,
+        'build_selected_cluster_signal_overview',
+        'bars',
+    )
+    empty_snapshot_priority_keys = _nested_dictionary_keys_from_return(
+        SNAPSHOTS,
+        '_empty_alerts_snapshot',
+        'priority',
+    )
+    empty_snapshot_insight_keys = _nested_dictionary_keys_from_return(
+        SNAPSHOTS,
+        '_empty_alerts_snapshot',
+        'insight',
+    )
 
     assert required_alert_keys <= alertmanager_keys
     assert required_alert_keys <= prometheus_keys
@@ -272,3 +355,9 @@ def test_runtime_dictionary_keys_match_the_typed_contracts() -> None:
     assert inhibition_keys == inhibition_keys_runtime
     assert ownership_keys == empty_ownership_keys
     assert readiness_keys == empty_readiness_keys
+    assert signal_overview_keys == empty_signal_overview_keys
+    assert signal_priority_keys == empty_signal_priority_keys
+    assert signal_priority_keys == empty_snapshot_priority_keys
+    assert signal_insight_keys == empty_signal_insight_keys
+    assert signal_insight_keys == empty_snapshot_insight_keys
+    assert signal_bars_keys == empty_signal_bars_keys

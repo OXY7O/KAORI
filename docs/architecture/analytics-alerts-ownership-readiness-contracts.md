@@ -128,9 +128,10 @@ Functional characterization tests verify:
 - the existing incident-readiness penalty model still produces the same score,
   level, risks, routing state, and eight checks.
 
-## Next Slice
+## Follow-On Slice
 
-The next contract reduction should evaluate the selected-cluster signal
-overview, priority, and insight dictionaries. It must remain separate from
-signal counting, anomaly classification, recommendation behavior, and UI
-wording changes.
+The selected-cluster signal overview, priority, insight, and bar dictionaries
+are covered by Batch 3 Slice 8 in
+`docs/architecture/analytics-alerts-signal-overview-contracts.md`. That slice
+remains separate from signal counting, anomaly classification, recommendation
+behavior, and UI wording changes.

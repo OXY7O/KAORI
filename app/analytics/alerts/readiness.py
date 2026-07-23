@@ -8,6 +8,7 @@ from app.analytics.alerts.contracts import (
     AlertInhibitionSummary,
     AlertOwnershipSummary,
     AlertRoutingSummary,
+    AlertSelectedClusterSignalOverview,
     AlertSilenceSummary,
     AlertSourceHealthSummary,
 )
@@ -43,7 +44,7 @@ def clamp_score(
 
 def build_incident_readiness(
     *,
-    signal_overview: dict[str, Any],
+    signal_overview: AlertSelectedClusterSignalOverview,
     source_health: AlertSourceHealthSummary,
     routing_summary: AlertRoutingSummary,
     silence_summary: AlertSilenceSummary,

@@ -8,6 +8,10 @@ from app.analytics.alerts.contracts import (
     AlertInhibitionSummary,
     AlertOwnershipSummary,
     AlertRoutingSummary,
+    AlertSelectedClusterSignalOverview,
+    AlertSignalBars,
+    AlertSignalInsight,
+    AlertSignalPriority,
     AlertSilenceSummary,
     AlertSourceHealthSummary,
     AlertSourceStatus,
@@ -28,6 +32,7 @@ from app.analytics.alerts.ownership import (
 )
 from app.analytics.alerts.readiness import build_empty_incident_readiness, build_incident_readiness
 from app.analytics.alerts.routing import build_empty_routing_summary, build_routing_summary
+from app.analytics.alerts.signals import build_selected_cluster_signal_overview
 from app.analytics.alerts.silences import build_empty_silence_summary, silence_matches_alert
 from app.analytics.alerts.snapshots import _empty_alerts_snapshot
 from app.analytics.alerts.sources import (
@@ -522,6 +527,63 @@ def test_incident_readiness_scoring_keeps_existing_penalty_model() -> None:
     assert readiness['silence_risk'] == 1
     assert readiness['inhibition_risk'] == 1
     assert len(readiness['checks']) == 8
+
+
+def test_selected_cluster_signal_overview_preserves_existing_behavior() -> None:
+    overview = build_selected_cluster_signal_overview(
+        cluster=SimpleNamespace(id='cluster-1', name='Production'),
+        alerts=[
+            {'severity': 'critical', 'status': 'firing'},
+            {'severity': 'warning', 'status': 'pending'},
+            {'severity': 'info', 'status': 'resolved'},
+        ],
+        anomalies=[
+            {'name': 'Pod Restart Spike'},
+            {'name': 'Pod Not Ready'},
+        ],
+        source_status={
+            'resolved_source': 'alertmanager',
+            'fallback_used': False,
+            'fallback_reason': None,
+            'connected': True,
+        },
+    )
+
+    assert set(overview) == set(AlertSelectedClusterSignalOverview.__required_keys__)
+    assert set(overview['priority']) == set(AlertSignalPriority.__required_keys__)
+    assert set(overview['insight']) == set(AlertSignalInsight.__required_keys__)
+    assert set(overview['bars']) == set(AlertSignalBars.__required_keys__)
+    assert overview['active_alerts'] == 2
+    assert overview['critical_alerts'] == 1
+    assert overview['warning_alerts'] == 1
+    assert overview['info_alerts'] == 1
+    assert overview['pending_alerts'] == 1
+    assert overview['resolved_alerts'] == 1
+    assert overview['anomalies'] == 2
+    assert overview['restart_anomalies'] == 1
+    assert overview['not_ready_anomalies'] == 1
+    assert overview['total_signals'] == 4
+    assert overview['priority']['level'] == 'critical'
+    assert overview['insight']['action_hint'] == (
+        'Inspect critical alert labels, affected target, and runbook first.'
+    )
+
+
+def test_empty_selected_cluster_signal_overview_preserves_dictionary_shape() -> None:
+    overview = build_selected_cluster_signal_overview(
+        cluster=None,
+        alerts=[],
+        anomalies=[],
+        source_status={},
+    )
+
+    assert set(overview) == set(AlertSelectedClusterSignalOverview.__required_keys__)
+    assert set(overview['priority']) == set(AlertSignalPriority.__required_keys__)
+    assert set(overview['insight']) == set(AlertSignalInsight.__required_keys__)
+    assert set(overview['bars']) == set(AlertSignalBars.__required_keys__)
+    assert overview['cluster_name'] == 'No cluster selected'
+    assert overview['priority']['level'] == 'normal'
+    assert overview['total_signals'] == 0
 
 
 def test_application_context_keeps_page_contract(monkeypatch) -> None:

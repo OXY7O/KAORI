@@ -4,7 +4,11 @@ from typing import Any
 
 from app.alertmanager.service import get_alertmanager_status
 from app.analytics.alerts.anomalies import build_anomalies
-from app.analytics.alerts.contracts import AlertSourceStatus, NormalizedAlert
+from app.analytics.alerts.contracts import (
+    AlertSelectedClusterSignalOverview,
+    AlertSourceStatus,
+    NormalizedAlert,
+)
 from app.analytics.alerts.sources import load_alerts_by_source
 from app.models import Cluster
 
@@ -201,7 +205,7 @@ def build_selected_cluster_signal_overview(
     alerts: list[NormalizedAlert],
     anomalies: list[dict[str, Any]],
     source_status: AlertSourceStatus,
-) -> dict[str, Any]:
+) -> AlertSelectedClusterSignalOverview:
     if cluster is None:
         return {
             'cluster_id': '',

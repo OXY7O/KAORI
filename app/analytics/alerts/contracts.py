@@ -235,6 +235,50 @@ AlertOwnershipSummary = TypedDict(
 )
 
 
+class AlertSignalPriority(TypedDict):
+    level: Literal['critical', 'warning', 'normal']
+    label: str
+    description: str
+    icon: str
+
+
+class AlertSignalInsight(TypedDict):
+    dominant_signal: str
+    dominant_signal_count: int
+    dominant_anomaly: str
+    dominant_anomaly_count: int
+    action_hint: str
+
+
+class AlertSignalBars(TypedDict):
+    active_alerts: int
+    critical_alerts: int
+    warning_alerts: int
+    anomalies: int
+
+
+class AlertSelectedClusterSignalOverview(TypedDict):
+    cluster_id: str
+    cluster_name: str
+    source: str
+    fallback_used: bool
+    fallback_reason: str | None
+    connected: bool
+    active_alerts: int
+    critical_alerts: int
+    warning_alerts: int
+    info_alerts: int
+    pending_alerts: int
+    resolved_alerts: int
+    anomalies: int
+    restart_anomalies: int
+    not_ready_anomalies: int
+    total_signals: int
+    priority: AlertSignalPriority
+    insight: AlertSignalInsight
+    bars: AlertSignalBars
+
+
 class AlertIncidentReadinessCheck(TypedDict):
     label: str
     status: Literal['pass', 'warning', 'fail']
@@ -283,8 +327,8 @@ class AlertsSnapshot(TypedDict):
     inhibition_summary: AlertInhibitionSummary
     ownership_summary: AlertOwnershipSummary
     incident_readiness: AlertIncidentReadinessSummary
-    priority: dict[str, Any]
-    insight: dict[str, Any]
+    priority: AlertSignalPriority
+    insight: AlertSignalInsight
     recommendation_count: int
 
 
