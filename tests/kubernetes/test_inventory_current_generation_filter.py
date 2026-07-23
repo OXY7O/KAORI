@@ -1,6 +1,6 @@
 from sqlalchemy import select
 
-from app.inventory.resources.common import filter_current_generation
+from app.common.inventory_generation import filter_current_generation
 from app.models import NodeInventory
 
 

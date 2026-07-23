@@ -4,8 +4,9 @@ from typing import Any
 
 from sqlalchemy import or_
 
+from app.common.inventory_generation import filter_current_generation
 from app.extensions import db
-from app.inventory.resources.common import filter_current_generation, format_age
+from app.inventory.resources.common import format_age
 from app.models import Cluster, IngressInventory
 
 

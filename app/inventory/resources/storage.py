@@ -4,9 +4,10 @@ from typing import Any
 
 from sqlalchemy import or_
 
+from app.common.inventory_generation import filter_current_generation
 from app.extensions import db
 from app.inventory.formatting import format_kubernetes_size
-from app.inventory.resources.common import _pod_summary, filter_current_generation, format_age
+from app.inventory.resources.common import _pod_summary, format_age
 from app.inventory.resources.descriptions import STORAGE_TYPE_DESCRIPTIONS
 from app.models import Cluster, PodInventory, StorageInventory
 

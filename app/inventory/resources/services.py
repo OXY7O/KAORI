@@ -4,13 +4,13 @@ from typing import Any
 
 from sqlalchemy import or_
 
+from app.common.inventory_generation import filter_current_generation
 from app.extensions import db
 from app.inventory.resources.common import (
     _pod_summary,
     _selector_matches,
     _service_port_rows,
     _split_inventory_values,
-    filter_current_generation,
     format_age,
 )
 from app.inventory.resources.descriptions import SERVICE_TYPE_DESCRIPTIONS

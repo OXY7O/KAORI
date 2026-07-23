@@ -4,9 +4,10 @@ from typing import Any
 
 from sqlalchemy import func
 
+from app.common.inventory_generation import filter_current_generation
 from app.extensions import db
 from app.inventory.formatting import format_quota_value
-from app.inventory.resources.common import filter_current_generation, format_age
+from app.inventory.resources.common import format_age
 from app.models import (
     Cluster,
     ConfigurationInventory,

@@ -96,23 +96,22 @@ def create_revision(
     }
     if not payload['version'] or not payload['action_key'] or not payload['resolver_key'] or not payload['steps']:
         raise KnowledgeError('Version, action, resolver, and at least one runbook step are required.')
-    revision = KnowledgeRunbookRevision(
-        runbook_id=runbook.id,
-        version=payload['version'],
-        publication_status='draft',
-        action_key=payload['action_key'],
-        resolver_key=payload['resolver_key'],
-        approval_policy=approval_policy,
-        required_evidence_json=evidence,
-        required_capabilities_json=payload['required_capabilities'],
-        compatibility_profiles_json=payload['compatibility_profiles'],
-        change_level=change_level,
-        parameter_schema_json=payload['parameter_schema'],
-        steps_json=payload['steps'],
-        rollback_json=payload['rollback'],
-        content_hash=_canonical_hash(payload),
-        created_by_user_id=actor_user_id,
-    )
+    revision = KnowledgeRunbookRevision()
+    revision.runbook_id = runbook.id
+    revision.version = payload['version']
+    revision.publication_status = 'draft'
+    revision.action_key = payload['action_key']
+    revision.resolver_key = payload['resolver_key']
+    revision.approval_policy = approval_policy
+    revision.required_evidence_json = evidence
+    revision.required_capabilities_json = payload['required_capabilities']
+    revision.compatibility_profiles_json = payload['compatibility_profiles']
+    revision.change_level = change_level
+    revision.parameter_schema_json = payload['parameter_schema']
+    revision.steps_json = payload['steps']
+    revision.rollback_json = payload['rollback']
+    revision.content_hash = _canonical_hash(payload)
+    revision.created_by_user_id = actor_user_id
     db.session.add(revision)
     db.session.commit()
     return revision

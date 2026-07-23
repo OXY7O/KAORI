@@ -12,6 +12,8 @@ from app.models.prometheus import PrometheusInstance
 
 logger = logging.getLogger(__name__)
 
+__all__ = ['dispatch_integration_runtime_refresh', 'refresh_integration_runtime']
+
 
 def dispatch_integration_runtime_refresh() -> dict[str, object]:
     """Fan out lightweight provider health refreshes to the runtime queue.
