@@ -406,17 +406,16 @@ def _sync_kubernetes_runtime(
     connection = cluster.kubernetes_connection
     canonical = connection.integration_instance if connection else None
     if canonical is None:
-        canonical = IntegrationInstance(
-            provider_type='kubernetes',
-            name=f'{cluster.name} Kubernetes API',
-            description=cluster.description,
-            environment=cluster.environment,
-            enabled=True,
-            readiness_status=connection.readiness_status if connection else 'validation_required',
-            health_status=cluster.status,
-            last_checked_at=cluster.last_check,
-            metadata_json={'asset_type': 'kubernetes_cluster', 'asset_key': cluster.id},
-        )
+        canonical = IntegrationInstance()
+        canonical.provider_type = 'kubernetes'
+        canonical.name = f'{cluster.name} Kubernetes API'
+        canonical.description = cluster.description
+        canonical.environment = cluster.environment
+        canonical.enabled = True
+        canonical.readiness_status = connection.readiness_status if connection else 'validation_required'
+        canonical.health_status = cluster.status
+        canonical.last_checked_at = cluster.last_check
+        canonical.metadata_json = {'asset_type': 'kubernetes_cluster', 'asset_key': cluster.id}
         db.session.add(canonical)
         db.session.flush()
     else:
@@ -430,14 +429,13 @@ def _sync_kubernetes_runtime(
     if connection is None:
         if not kubeconfig:
             raise ValueError('Kubeconfig is required when creating a Kubernetes connection.')
-        connection = KubernetesConnection(
-            integration_instance_id=canonical.id,
-            cluster_id=cluster.id,
-            kubeconfig=kubeconfig,
-            verify_ssl=True if verify_ssl is None else bool(verify_ssl),
-            allow_weak_tls=False if allow_weak_tls is None else bool(allow_weak_tls),
-            server=server,
-        )
+        connection = KubernetesConnection()
+        connection.integration_instance_id = canonical.id
+        connection.cluster_id = cluster.id
+        connection.kubeconfig = kubeconfig
+        connection.verify_ssl = True if verify_ssl is None else bool(verify_ssl)
+        connection.allow_weak_tls = False if allow_weak_tls is None else bool(allow_weak_tls)
+        connection.server = server
         db.session.add(connection)
         cluster.kubernetes_connection = connection
     else:
@@ -462,17 +460,15 @@ def _sync_kubernetes_runtime(
         binding_role='primary',
     ).first()
     if binding is None:
-        db.session.add(
-            IntegrationBinding(
-                integration_instance_id=canonical.id,
-                asset_type='kubernetes_cluster',
-                asset_key=cluster.id,
-                binding_role='primary',
-                priority=100,
-                enabled=True,
-                capability_scope=['inventory', 'operations', 'governance', 'discovery'],
-            )
-        )
+        binding = IntegrationBinding()
+        binding.integration_instance_id = canonical.id
+        binding.asset_type = 'kubernetes_cluster'
+        binding.asset_key = cluster.id
+        binding.binding_role = 'primary'
+        binding.priority = 100
+        binding.enabled = True
+        binding.capability_scope = ['inventory', 'operations', 'governance', 'discovery']
+        db.session.add(binding)
     return connection
 
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 from celery import shared_task
 
@@ -36,9 +37,9 @@ def refresh_integration_runtime(self) -> dict[str, object]:
             for row in PrometheusInstance.query.filter_by(enabled=True).order_by(PrometheusInstance.id.asc()).all()
         ],
     }
-    result: dict[str, object] = {'queued': 0, 'skipped': 0, 'providers': {}}
+    result: dict[str, Any] = {'queued': 0, 'skipped': 0, 'providers': {}}
     for provider_type, instance_ids in provider_ids.items():
-        provider_result = {'queued': 0, 'skipped': 0, 'tasks': []}
+        provider_result: dict[str, Any] = {'queued': 0, 'skipped': 0, 'tasks': []}
         for instance_id in instance_ids:
             try:
                 task_id = enqueue_runtime_refresh(

@@ -8,7 +8,7 @@ from werkzeug.datastructures import MultiDict
 
 from app.extensions import db
 from app.intelligence.catalog import INTELLIGENCE_CATALOG
-from app.inventory.resources.common import filter_current_generation
+from app.common.inventory_generation import filter_current_generation
 
 PER_PAGE_OPTIONS = [5, 10, 25, 50]
 

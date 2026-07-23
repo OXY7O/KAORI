@@ -6,6 +6,8 @@ import re
 from collections.abc import Mapping
 from typing import Any
 
+from app.integrations.consumer.contracts import ConsumerResult
+
 from app.analytics.common.base_service import AnalyticsBaseService, bytes_to_gib, raw_percent, safe_percent, safe_round
 from app.analytics.common.context import build_analysis_utilization_context
 from app.analytics.common.params import (
@@ -237,9 +239,9 @@ class WorkloadAnalysisService(AnalyticsBaseService):
         utilization_service: UtilizationService,
     ) -> None:
         self.utilization_service = utilization_service
-        self.consumer = utilization_service.prometheus.consumer
+        self.consumer = utilization_service.consumer
 
-    def requirements(self):
+    def requirements(self) -> ConsumerResult[dict[str, Any]]:
         return self.consumer.requirements(self.REQUIRED_CAPABILITIES)
 
     def get_prometheus_result(

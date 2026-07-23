@@ -261,16 +261,15 @@ def test_alertmanager_form_connection(
         elif form.auth_type == 'bearer' and not bearer_token:
             bearer_token = existing_instance.bearer_token
 
-    draft = AlertmanagerInstance(
-        name='Connection Test',
-        endpoint=form.endpoint,
-        auth_type=form.auth_type,
-        username=form.username,
-        password=password,
-        bearer_token=bearer_token,
-        timeout=form.timeout,
-        verify_ssl=form.verify_ssl,
-    )
+    draft = AlertmanagerInstance()
+    draft.name = 'Connection Test'
+    draft.endpoint = form.endpoint
+    draft.auth_type = form.auth_type
+    draft.username = form.username
+    draft.password = password
+    draft.bearer_token = bearer_token
+    draft.timeout = form.timeout
+    draft.verify_ssl = form.verify_ssl
     client = get_integration('alertmanager').execute('client.build', draft)
     try:
         result = client.test_connection()

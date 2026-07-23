@@ -1,15 +1,18 @@
+from collections.abc import Callable
+
 from app.retention.domains.job_execution import JobExecutionArchiveDomain
 from app.retention.domains.operational_activity import OperationalActivityArchiveDomain
 from app.retention.domains.runtime_observation import RuntimeObservationArchiveDomain
+from app.retention.types import ArchiveDomain
 
-DOMAIN_FACTORIES = {
+DOMAIN_FACTORIES: dict[str, Callable[[], ArchiveDomain]] = {
     'operational_activity': OperationalActivityArchiveDomain,
     'job_execution': JobExecutionArchiveDomain,
     'runtime_observation': RuntimeObservationArchiveDomain,
 }
 
 
-def get_archive_domain(domain_name: str):
+def get_archive_domain(domain_name: str) -> ArchiveDomain:
     normalized = domain_name.strip().lower().replace('-', '_')
     factory = DOMAIN_FACTORIES.get(normalized)
     if factory is None:

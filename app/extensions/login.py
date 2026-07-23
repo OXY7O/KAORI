@@ -12,7 +12,7 @@ login_manager = LoginManager()
 login_manager.login_view = 'auth.login'  # pyright: ignore
 # Authentication notifications are emitted by the custom unauthorized handler.
 # Keeping Flask-Login's default message disabled prevents duplicate flashes.
-login_manager.login_message = None
+login_manager.login_message = ''
 
 
 @login_manager.user_loader

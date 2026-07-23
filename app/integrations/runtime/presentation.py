@@ -66,7 +66,7 @@ def runtime_state_view(
 
 
 def runtime_history_view(rows, *, pagination: dict[str, object]) -> dict[str, object]:
-    per_page = int(pagination.get('per_page', 5))
+    per_page = _safe_int(pagination.get('per_page'), default=5)
     rendered_source_rows = rows[:per_page]
     chronological = list(reversed(rows))
     previous_by_id: dict[int, object | None] = {}
@@ -218,3 +218,10 @@ def _runtime_transition(row, previous_row) -> dict[str, str] | None:
     if current == 'degraded' and previous == 'unhealthy':
         return {'kind': 'improving', 'label': 'Improving'}
     return {'kind': 'changed', 'label': f'{previous.replace("_", " ").title()} → {current.replace("_", " ").title()}'}
+
+
+def _safe_int(value: object, *, default: int = 0) -> int:
+    try:
+        return int(str(value))
+    except (TypeError, ValueError):
+        return default

@@ -160,7 +160,7 @@ def build_count_groups(
         counts.values(),
     )
 
-    grouped_rows = [
+    grouped_rows: list[AlertRoutingGroup] = [
         {
             'label': label,
             'count': count,

@@ -40,12 +40,11 @@ def ensure_canonical_instance(provider_record: Any, *, provider_type: str) -> In
         name = str(getattr(provider_record, 'name', '') or '').strip()
         if not name:
             raise ValueError('Provider identity requires a name before persistence.')
-        canonical = IntegrationInstance(
-            provider_type=provider_type,
-            name=name,
-            enabled=True,
-            readiness_status='validation_required',
-        )
+        canonical = IntegrationInstance()
+        canonical.provider_type = provider_type
+        canonical.name = name
+        canonical.enabled = True
+        canonical.readiness_status = 'validation_required'
         provider_record.integration_instance = canonical
         db.session.add(canonical)
 
@@ -106,12 +105,11 @@ def bind_instance(
         binding_role=role,
     ).first()
     if binding is None:
-        binding = IntegrationBinding(
-            integration_instance_id=canonical.id,
-            asset_type=asset_type,
-            asset_key=str(asset_key),
-            binding_role=role,
-        )
+        binding = IntegrationBinding()
+        binding.integration_instance_id = canonical.id
+        binding.asset_type = asset_type
+        binding.asset_key = str(asset_key)
+        binding.binding_role = role
         db.session.add(binding)
     binding.priority = priority
     binding.enabled = True

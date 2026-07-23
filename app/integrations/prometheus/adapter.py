@@ -74,11 +74,11 @@ class PrometheusRuntimeAdapter:
             return create_binding(
                 instance=instance,
                 cluster=cluster,
-                role=kwargs.get('role', 'primary'),
+                role=str(kwargs.get('role') or 'primary'),
                 priority=int(kwargs.get('priority', 100)),
                 selector_label=kwargs.get('selector_label'),
                 selector_value=kwargs.get('selector_value'),
-                selector_operator=kwargs.get('selector_operator', '='),
+                selector_operator=str(kwargs.get('selector_operator') or '='),
                 commit=bool(kwargs.get('commit', True)),
             )
         if operation == 'binding.selector.update':
@@ -90,7 +90,7 @@ class PrometheusRuntimeAdapter:
                 binding=binding,
                 selector_label=kwargs.get('selector_label'),
                 selector_value=kwargs.get('selector_value'),
-                selector_operator=kwargs.get('selector_operator', '='),
+                selector_operator=str(kwargs.get('selector_operator') or '='),
                 commit=bool(kwargs.get('commit', True)),
             )
         if operation == 'binding.validate':

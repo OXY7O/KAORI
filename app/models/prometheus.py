@@ -12,12 +12,12 @@ from app.security.credentials import EncryptedText
 
 
 def _prometheus_identity(name: str) -> IntegrationInstance:
-    return IntegrationInstance(
-        provider_type='prometheus',
-        name=name,
-        enabled=True,
-        readiness_status='validation_required',
-    )
+    identity = IntegrationInstance()
+    identity.provider_type = 'prometheus'
+    identity.name = name
+    identity.enabled = True
+    identity.readiness_status = 'validation_required'
+    return identity
 
 
 class PrometheusInstance(db.Model):

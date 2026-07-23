@@ -8,6 +8,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 from app.alertmanager.routes import alertmanager_bp
 from app.analytics.routes import analytics_bp
+from app.automation_control.routes import automation_control_bp
 from app.auth.routes import auth_bp
 from app.cluster.constants import get_environment_label
 from app.cluster.onboarding import build_cluster_onboarding_context
@@ -40,6 +41,7 @@ from app.notifications.service import (
 )
 from app.prometheus.routes import prometheus_bp
 from app.reports.routes import reports_bp
+from app.integrations.resolver_bootstrap import init_resolver_registry
 from app.settings import bp as settings_bp
 from app.users.routes import bp as users_bp
 from app.welcome.routes import welcome_bp
@@ -188,6 +190,9 @@ def create_app(config_name: str | None = None):
             x_prefix=app.config.get('PROXY_FIX_X_PREFIX', 0),
         )
 
+    # Build the resolver registry before Celery so web and worker runtimes use the same fail-closed configuration.
+    init_resolver_registry(app)
+
     # Initialize Celery before request handlers enqueue background tasks.
     init_celery(app)
 
@@ -216,6 +221,7 @@ def create_app(config_name: str | None = None):
     app.register_blueprint(kubernetes_operations_bp)
     app.register_blueprint(health_bp)
     app.register_blueprint(intelligence_bp)
+    app.register_blueprint(automation_control_bp)
     app.register_blueprint(integrations_bp)
     app.register_blueprint(reports_bp)
     app.register_blueprint(prometheus_bp)

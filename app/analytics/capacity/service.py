@@ -175,7 +175,10 @@ def get_capacity_page_context(
             requirements = consumer.requirements(CapacityService.REQUIRED_CAPABILITIES)
             if not requirements.ok:
                 missing = list((requirements.payload or {}).get('missing_capabilities') or [])
-                labels = [capability_definition(key).label if capability_definition(key) else key for key in missing]
+                labels: list[str] = []
+                for key in missing:
+                    definition = capability_definition(str(key))
+                    labels.append(definition.label if definition is not None else str(key))
                 dependency_blocker = prometheus_capability_blocker(
                     cluster,
                     feature_label='Capacity Analytics',

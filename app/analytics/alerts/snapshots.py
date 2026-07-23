@@ -3,7 +3,12 @@ from __future__ import annotations
 from typing import Any
 
 from app.analytics.alerts.anomalies import load_prometheus_anomaly_metrics
-from app.analytics.alerts.contracts import AlertsSnapshot, NormalizedAlert
+from app.analytics.alerts.contracts import (
+    AlertSelectedClusterSignalOverview,
+    AlertSourceStatus,
+    AlertsSnapshot,
+    NormalizedAlert,
+)
 from app.analytics.alerts.health import build_integration_status, build_source_health
 from app.analytics.alerts.inhibition import build_inhibition_summary
 from app.analytics.alerts.ownership import build_empty_ownership_summary, build_ownership_summary
@@ -229,10 +234,7 @@ def _empty_alerts_snapshot() -> AlertsSnapshot:
         'silence_summary': build_empty_silence_summary(),
         'inhibition_summary': build_inhibition_summary(
             alerts=[],
-            source_status={
-                'resolved_source': 'none',
-                'connected': False,
-            },
+            source_status=_empty_source_status(),
         ),
         'ownership_summary': build_empty_ownership_summary(),
         'incident_readiness': build_empty_incident_readiness(),
@@ -250,6 +252,23 @@ def _empty_alerts_snapshot() -> AlertsSnapshot:
             'action_hint': 'No immediate inspection is required.',
         },
         'recommendation_count': 0,
+    }
+
+
+def _empty_source_status() -> AlertSourceStatus:
+    """Return a complete unavailable-source contract for empty snapshots."""
+    return {
+        'source': 'none',
+        'selected_source': 'auto',
+        'resolved_source': 'none',
+        'label': 'No Alert Source',
+        'configured': False,
+        'connected': False,
+        'fallback_used': False,
+        'fallback_reason': None,
+        'error': None,
+        'response_time_ms': None,
+        'last_checked_at': None,
     }
 
 
@@ -344,7 +363,7 @@ def _resolve_highest_severity_description(
     *,
     highest_alert: NormalizedAlert | None,
     anomalies: list[dict[str, Any]],
-    signal_overview: dict[str, Any],
+    signal_overview: AlertSelectedClusterSignalOverview,
 ) -> str:
     if highest_alert is not None:
         description = str(

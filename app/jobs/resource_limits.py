@@ -59,11 +59,11 @@ def acquire_resource_slot(
             _ACQUIRE_SCRIPT,
             1,
             _key(resource_group),
-            int(now_epoch),
-            int(now_epoch) + selected_ttl,
+            str(int(now_epoch)),
+            str(int(now_epoch) + selected_ttl),
             task_id,
-            selected_limit,
-            selected_ttl,
+            str(selected_limit),
+            str(selected_ttl),
         )
     )
 

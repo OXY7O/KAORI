@@ -20,7 +20,7 @@ def test_inventory_views_filter_to_committed_generation() -> None:
 
 
 def test_generation_filter_uses_cluster_inventory_marker() -> None:
-    source = Path('app/inventory/resources/common.py').read_text()
+    source = Path('app/common/inventory_generation.py').read_text()
     assert 'select(ClusterInventory.collected_at)' in source
     assert 'ClusterInventory.cluster_id == model.cluster_id' in source
     assert 'model.collected_at == generation' in source

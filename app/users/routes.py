@@ -437,7 +437,6 @@ def validate_provider(provider_id: int):
     return redirect(url_for('users.providers'))
 
 
-
 def _assign_provider_role_choices(form: IdentityProviderForm) -> None:
     roles = Role.query.filter_by(is_active=True).filter(Role.name != 'admin').order_by(Role.display_name.asc()).all()
     role_choices: list[tuple[Any, str] | tuple[Any, str, dict[str, Any]]] = [

@@ -23,6 +23,7 @@ from app.governance.tls_certificates.constants import (
     TLS_SECRET_TYPE,
     TLS_STATUS_OPTIONS,
 )
+from app.integrations.kubernetes.resolver import server_for_cluster
 from app.models import Cluster, TLSCertificateInventory, TLSCertificateUpdateEvent, User
 
 
@@ -221,7 +222,7 @@ def sync_tls_certificates_for_cluster(cluster: Cluster) -> tuple[int, str | None
         failure = describe_integration_failure(
             exc,
             service_name='Kubernetes API',
-            endpoint=cluster.kubernetes_connection.server,
+            endpoint=server_for_cluster(cluster),
             request_path='/api/v1/secrets',
         )
         if 'ee key too small' in str(exc).lower():

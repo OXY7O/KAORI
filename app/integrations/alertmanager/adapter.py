@@ -42,14 +42,14 @@ class AlertmanagerRuntimeAdapter:
         if operation == 'binding.create':
             return create_binding(
                 instance=instance,
-                scope_type=kwargs.get('scope_type'),
-                scope_key=kwargs.get('scope_key'),
-                role=kwargs.get('role', 'primary'),
+                scope_type=str(kwargs.get('scope_type') or ''),
+                scope_key=str(kwargs.get('scope_key') or ''),
+                role=str(kwargs.get('role') or 'primary'),
                 priority=int(kwargs.get('priority', 100)),
                 enabled=bool(kwargs.get('enabled', True)),
                 selector_label=kwargs.get('selector_label'),
                 selector_value=kwargs.get('selector_value'),
-                selector_operator=kwargs.get('selector_operator', '='),
+                selector_operator=str(kwargs.get('selector_operator') or '='),
                 commit=bool(kwargs.get('commit', True)),
             )
         if operation == 'binding.selector.update':
@@ -61,7 +61,7 @@ class AlertmanagerRuntimeAdapter:
                 binding=binding,
                 selector_label=kwargs.get('selector_label'),
                 selector_value=kwargs.get('selector_value'),
-                selector_operator=kwargs.get('selector_operator', '='),
+                selector_operator=str(kwargs.get('selector_operator') or '='),
                 commit=bool(kwargs.get('commit', True)),
             )
         if operation == 'binding.validate':

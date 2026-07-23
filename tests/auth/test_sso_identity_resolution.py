@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
+from typing import cast
 
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -172,6 +173,24 @@ def test_github_jit_accepts_username_or_numeric_subject_allow_list() -> None:
         username='different-login',
         email=None,
         display_name='Operator',
+    )
+
+    sso._enforce_admission(provider, identity)
+
+
+def test_github_jit_handles_missing_username_without_weakening_subject_admission() -> None:
+    provider = _provider(
+        provider_type='github_oauth',
+        allowed_subjects_list=['999'],
+    )
+    identity = cast(
+        SsoIdentity,
+        SimpleNamespace(
+            subject='999',
+            username=None,
+            email=None,
+            display_name='Operator',
+        ),
     )
 
     sso._enforce_admission(provider, identity)

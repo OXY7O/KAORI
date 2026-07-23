@@ -83,3 +83,6 @@ __all__ = [
     'SecretRevealRequest',
 ]
 
+
+from app.models.resolver import ResolverDeploymentPolicy, ResolverOperationalControl
+from app.models.resolver import ResolverProductionReadinessRecord

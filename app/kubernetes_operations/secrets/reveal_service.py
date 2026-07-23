@@ -13,6 +13,7 @@ from sqlalchemy import or_, text
 from urllib3.exceptions import HTTPError as Urllib3HTTPError
 
 from app.extensions import db
+from app.integrations.kubernetes.resolver import tls_policy_for_cluster
 from app.integrations.kubernetes.tls import weak_tls_context
 from app.kubernetes_operations.secrets.live_service import (
     LiveSecretSnapshot,
@@ -656,7 +657,7 @@ def reveal_secret_value(request_id: str, *, user_id: int) -> RevealedSecretValue
     secret_object = None
     secret_data: dict[str, str] = {}
     try:
-        with weak_tls_context(enabled=bool(cluster.kubernetes_connection.allow_weak_tls)):
+        with weak_tls_context(enabled=tls_policy_for_cluster(cluster)[1]):
             secret_object = core_api(cluster).read_namespaced_secret(
                 name=record.secret_name,
                 namespace=record.namespace,

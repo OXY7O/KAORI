@@ -2,15 +2,21 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from typing import Protocol
 
 
-def header_is_true(headers: Mapping[str, str], name: str) -> bool:
+class HeaderSource(Protocol):
+    """Minimal header interface shared by mappings and Werkzeug Headers."""
+
+    def get(self, key: str, default: str | None = None) -> str | None: ...
+
+
+def header_is_true(headers: HeaderSource, name: str) -> bool:
     """Return whether an HTTP header explicitly carries a true value."""
     return str(headers.get(name, '')).strip().lower() == 'true'
 
 
-def is_htmx_request(headers: Mapping[str, str] | None = None) -> bool:
+def is_htmx_request(headers: HeaderSource | None = None) -> bool:
     """Return whether the current or supplied request is an HTMX request.
 
     Supplying ``headers`` keeps the helper usable in pure functional tests and
@@ -23,7 +29,7 @@ def is_htmx_request(headers: Mapping[str, str] | None = None) -> bool:
     return header_is_true(headers, 'HX-Request')
 
 
-def htmx_target(headers: Mapping[str, str] | None = None) -> str:
+def htmx_target(headers: HeaderSource | None = None) -> str:
     """Return the normalized HTMX target identifier for the request."""
     if headers is None:
         from flask import request

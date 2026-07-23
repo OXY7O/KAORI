@@ -162,7 +162,7 @@ def build_instance_context(instance: AlertmanagerInstance | None = None) -> dict
         'instance': instance,
         'bindings': bindings,
         'deletion_guard': deletion_guard,
-        'binding_rows': [_binding_row(binding, instance) for binding in bindings],
+        'binding_rows': [_binding_row(binding, instance) for binding in bindings] if instance is not None else [],
         'clusters': clusters,
         'capability_rows': capability_rows,
         'module_readiness_rows': evaluate_module_readiness(observed_capabilities),

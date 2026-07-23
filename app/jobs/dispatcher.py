@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from celery import Task
 
@@ -10,7 +10,7 @@ from app.models.job import JobExecution
 
 def enqueue_canonical_job(
     *,
-    task: Task,
+    task: object,
     task_kwargs: dict[str, Any],
     job_type: str,
     operation: str,
@@ -54,7 +54,7 @@ def enqueue_canonical_job(
     if not job.celery_task_id:
         raise RuntimeError('Canonical job does not have a Celery task identifier.')
     try:
-        task.apply_async(
+        cast(Task, task).apply_async(
             kwargs={**task_kwargs, 'job_execution_id': job.id},
             task_id=job.celery_task_id,
             queue=queue_name,

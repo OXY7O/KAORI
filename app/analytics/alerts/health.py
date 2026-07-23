@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from app.alertmanager.service import get_alertmanager_status
 from app.analytics.alerts.contracts import (
     AlertIntegrationStatus,
     AlertIntegrationStatusMap,
+    AlertSourceHealthCheck,
     AlertSourceHealthSummary,
     AlertSourceStatus,
     NormalizedAlert,
@@ -222,14 +223,8 @@ def build_source_health(
             ],
         }
 
-    alertmanager_status = integration_status.get(
-        'alertmanager',
-        {},
-    )
-    prometheus_status = integration_status.get(
-        'prometheus',
-        {},
-    )
+    alertmanager_status = integration_status['alertmanager']
+    prometheus_status = integration_status['prometheus']
 
     selected_source = str(
         source_status.get(
@@ -282,6 +277,8 @@ def build_source_health(
         )
     )
 
+    level: Literal['healthy', 'fallback', 'degraded', 'unavailable']
+
     if connected and resolved_source == 'alertmanager' and not fallback_used:
         score = 100
         level = 'healthy'
@@ -320,7 +317,7 @@ def build_source_health(
         icon = 'plug-zap'
         class_name = 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
 
-    checks = [
+    checks: list[AlertSourceHealthCheck] = [
         {
             'label': 'Cluster selected',
             'status': 'pass',

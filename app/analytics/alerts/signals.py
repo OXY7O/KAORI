@@ -61,7 +61,7 @@ def build_cluster_signal_overview(
     clusters: list[Cluster],
     source: str,
 ) -> list[AlertClusterSignalComparisonRow]:
-    overview: list[dict[str, Any]] = []
+    overview: list[AlertClusterSignalComparisonRow] = []
 
     for cluster in clusters:
         alerts, source_status = load_alerts_by_source(
@@ -137,6 +137,7 @@ def build_cluster_signal_overview(
                         False,
                     )
                 ),
+                'bar_width': 0,
             }
         )
 

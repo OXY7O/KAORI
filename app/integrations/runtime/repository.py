@@ -12,38 +12,37 @@ def persist_runtime_state(
     trigger_type: str,
     integration_instance_id: int | None = None,
 ) -> IntegrationRuntimeObservation:
-    row = IntegrationRuntimeObservation(
-        integration_instance_id=integration_instance_id,
-        provider=state.provider,
-        instance_id=state.instance_id,
-        instance_name=state.instance_name,
-        trigger_type=trigger_type,
-        readiness=state.readiness,
-        health_status=state.health.status,
-        health_score=state.health.score,
-        latency_ms=state.latency_ms,
-        compatibility_profile=state.snapshot.compatibility_profile,
-        capability_profile=state.snapshot.profile,
-        capability_snapshot={
-            'capabilities': list(state.snapshot.capabilities),
-            'metadata': state.snapshot.metadata,
-        },
-        diagnostics=[
-            {
-                'key': diagnostic.key,
-                'label': diagnostic.label,
-                'category': diagnostic.category,
-                'status': diagnostic.status,
-                'detail': diagnostic.detail,
-                'duration_ms': diagnostic.duration_ms,
-                'severity': diagnostic.severity,
-                'recommendation': diagnostic.recommendation,
-            }
-            for diagnostic in state.diagnostics
-        ],
-        message=state.message,
-        observed_at=state.observed_at,
-    )
+    row = IntegrationRuntimeObservation()
+    row.integration_instance_id = integration_instance_id
+    row.provider = state.provider
+    row.instance_id = state.instance_id
+    row.instance_name = state.instance_name
+    row.trigger_type = trigger_type
+    row.readiness = state.readiness
+    row.health_status = state.health.status
+    row.health_score = state.health.score
+    row.latency_ms = state.latency_ms
+    row.compatibility_profile = state.snapshot.compatibility_profile
+    row.capability_profile = state.snapshot.profile
+    row.capability_snapshot = {
+        'capabilities': list(state.snapshot.capabilities),
+        'metadata': state.snapshot.metadata,
+    }
+    row.diagnostics = [
+        {
+            'key': diagnostic.key,
+            'label': diagnostic.label,
+            'category': diagnostic.category,
+            'status': diagnostic.status,
+            'detail': diagnostic.detail,
+            'duration_ms': diagnostic.duration_ms,
+            'severity': diagnostic.severity,
+            'recommendation': diagnostic.recommendation,
+        }
+        for diagnostic in state.diagnostics
+    ]
+    row.message = state.message
+    row.observed_at = state.observed_at
     db.session.add(row)
     db.session.flush()
     db.session.commit()

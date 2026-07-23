@@ -45,6 +45,7 @@ _ENDPOINT_LABELS: dict[str, str] = {
     'intelligence.recommendations': 'Recommendations',
     'intelligence.alert_intelligence': 'Alert Intelligence',
     'intelligence.catalog': 'Catalog',
+    'automation_control.index': 'Automation Control',
     # Reports
     'reports.overview': 'Overview',
     'reports.generate_report': 'Generate',
@@ -152,7 +153,7 @@ def build_navigation_breadcrumb(endpoint: str | None, path: str = '') -> list[di
             BreadcrumbItem('K8s Analytics', 'bar-chart-3'),
             BreadcrumbItem(_leaf(endpoint, 'Overview')),
         ]
-    elif endpoint.startswith('intelligence.'):
+    elif endpoint.startswith('intelligence.') or endpoint.startswith('automation_control.'):
         items = [
             BreadcrumbItem('Intelligence', 'brain-circuit'),
             BreadcrumbItem(_leaf(endpoint, 'Recommendations')),

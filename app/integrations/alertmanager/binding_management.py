@@ -87,19 +87,18 @@ def create_binding(
     if normalized_scope_type != 'global' and selector_json is None:
         raise ValueError('Define an alert identity selector before binding this Alertmanager source.')
 
-    binding = IntegrationBinding(
-        integration_instance_id=canonical.id,
-        asset_type=normalized_scope_type,
-        asset_key=normalized_scope_key,
-        binding_role=normalized_role,
-        priority=priority,
-        enabled=enabled,
-        capability_scope=list(BINDING_CAPABILITY_KEYS),
-        selector_json=selector_json,
-        validation_status='validation_required',
-        validation_message=(
-            'Binding saved. Validate source labels and runtime evidence before relying on this shared scope.'
-        ),
+    binding = IntegrationBinding()
+    binding.integration_instance_id = canonical.id
+    binding.asset_type = normalized_scope_type
+    binding.asset_key = normalized_scope_key
+    binding.binding_role = normalized_role
+    binding.priority = priority
+    binding.enabled = enabled
+    binding.capability_scope = list(BINDING_CAPABILITY_KEYS)
+    binding.selector_json = selector_json
+    binding.validation_status = 'validation_required'
+    binding.validation_message = (
+        'Binding saved. Validate source labels and runtime evidence before relying on this shared scope.'
     )
     db.session.add(binding)
     if commit:

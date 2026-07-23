@@ -8,6 +8,7 @@ from flask import url_for
 from sqlalchemy import false
 
 from app.cluster.constants import get_environment_label
+from app.integrations.kubernetes.resolver import server_for_cluster
 from app.models import (
     Cluster,
     ClusterInventory,
@@ -547,7 +548,7 @@ def build_topology_graph(
                 fields=[
                     _field('Environment', get_environment_label(cluster.environment)),
                     _field('Status', cluster.status),
-                    _field('API server', cluster.kubernetes_connection.server),
+                    _field('API server', server_for_cluster(cluster)),
                     _field('Kubernetes version', inventory_row.kubernetes_version if inventory_row else None),
                     _field('Nodes', cluster.node_count),
                 ],

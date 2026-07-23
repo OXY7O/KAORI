@@ -4,9 +4,12 @@ from datetime import UTC, datetime, timedelta
 from time import perf_counter
 from typing import Any
 
+from app.integrations.consumer.contracts import ConsumerResult
+
 from app.integrations.prometheus.query_profiles import get_query_expression
 from app.models import Cluster
 from app.prometheus.repository import resolve_instance_for_cluster
+from app.prometheus.consumer import PrometheusConsumer
 from app.prometheus.service import PrometheusService
 
 CPU_CAPACITY = get_query_expression('analytics.utilization.queries.CPU_CAPACITY')
@@ -91,9 +94,12 @@ class UtilizationService:
         prometheus: PrometheusService,
     ) -> None:
         self.prometheus = prometheus
-        self.consumer = prometheus.consumer
+        consumer = prometheus.consumer
+        if consumer is None:
+            raise ValueError('Utilization analytics requires a cluster-scoped Prometheus service.')
+        self.consumer: PrometheusConsumer = consumer
 
-    def requirements(self):
+    def requirements(self) -> ConsumerResult[dict[str, Any]]:
         return self.consumer.requirements(self.REQUIRED_CAPABILITIES)
 
     @staticmethod

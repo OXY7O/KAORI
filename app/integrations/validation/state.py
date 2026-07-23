@@ -144,7 +144,7 @@ def claim_validation_job(
             lock_key,
             *conflict_keys,
             task_id,
-            _lock_ttl_seconds(),
+            str(_lock_ttl_seconds()),
         )
     )
     if not acquired:

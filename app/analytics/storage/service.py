@@ -1325,6 +1325,7 @@ def get_storage_snapshot(
 
         storage_service = StorageAnalysisService(
             utilization_service,
+            PrometheusConsumer(cluster),
         )
 
         storage_summary = storage_service.get_storage_capacity_summary(

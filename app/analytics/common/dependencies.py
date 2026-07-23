@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from app.alertmanager.resolver import resolve_alertmanager_sources
-from app.integrations.kubernetes import resolve_kubernetes_for_cluster
+from app.integrations.kubernetes.resolver import resolve_kubernetes_for_cluster
 from app.models import Cluster
 from app.prometheus.repository import resolve_instance_for_cluster
 

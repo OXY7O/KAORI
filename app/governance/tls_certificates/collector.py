@@ -8,6 +8,7 @@ from kubernetes.client import V1Ingress, V1Secret
 
 from app.governance.tls_certificates.certificate import decode_secret_data, parse_certificate
 from app.governance.tls_certificates.constants import TLS_CRT_KEY, TLS_SECRET_TYPE, TLS_STATUS_INVALID
+from app.integrations.kubernetes.resolver import connection_for_cluster, tls_policy_for_cluster
 from app.integrations.kubernetes.tls import weak_tls_context
 from app.integrations.registry import get_integration
 from app.models import Cluster
@@ -26,7 +27,7 @@ def _response_items(response: Any) -> list[Any]:
 def build_kubernetes_client(cluster: Cluster):
     return get_integration('kubernetes').execute(
         'client.build',
-        cluster.kubernetes_connection,
+        connection_for_cluster(cluster),
     )
 
 
@@ -62,7 +63,7 @@ def _ingress_tls_usage(ingress: V1Ingress) -> list[dict[str, Any]]:
 
 
 def collect_ingress_tls_usage(cluster: Cluster) -> dict[tuple[str, str], dict[str, Any]]:
-    with weak_tls_context(enabled=bool(cluster.kubernetes_connection.allow_weak_tls)):
+    with weak_tls_context(enabled=tls_policy_for_cluster(cluster)[1]):
         client = build_kubernetes_client(cluster)
         networking_api = client.networking_api()
         response = networking_api.list_ingress_for_all_namespaces()
@@ -159,7 +160,7 @@ def collect_tls_certificates(cluster: Cluster) -> list[dict[str, Any]]:
     except Exception:
         usage_map = {}
 
-    with weak_tls_context(enabled=bool(cluster.kubernetes_connection.allow_weak_tls)):
+    with weak_tls_context(enabled=tls_policy_for_cluster(cluster)[1]):
         client = build_kubernetes_client(cluster)
         core_api = client.core_api()
         response = core_api.list_secret_for_all_namespaces()

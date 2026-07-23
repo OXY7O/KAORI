@@ -165,6 +165,7 @@ def get_report_storage_analysis_payload(
 
         storage_service = StorageAnalysisService(
             utilization_service,
+            PrometheusConsumer(cluster),
         )
 
         prometheus_status = storage_service.get_prometheus_status()

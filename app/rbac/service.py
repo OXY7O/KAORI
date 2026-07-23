@@ -154,7 +154,7 @@ def expand_permission_keys(permission_keys: Iterable[str]) -> set[str]:
 def expand_permission_ids(permission_ids: Iterable[int]) -> set[int]:
     selected_ids = {int(permission_id) for permission_id in permission_ids}
     if not selected_ids:
-        return set()
+        return set[int]()
 
     selected_permissions = Permission.query.filter(Permission.id.in_(selected_ids)).all()
     selected_keys = {permission.key for permission in selected_permissions}

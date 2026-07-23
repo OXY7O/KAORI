@@ -25,12 +25,22 @@ class QueryChunk:
 
 def policy_from_config(config: dict[str, object]) -> QueryBudgetPolicy:
     return QueryBudgetPolicy(
-        maximum_range_days=max(int(config.get('ANALYTICS_QUERY_MAXIMUM_RANGE_DAYS', 366)), 1),
-        chunk_days=max(int(config.get('ANALYTICS_QUERY_CHUNK_DAYS', 30)), 1),
-        minimum_step_seconds=max(int(config.get('ANALYTICS_QUERY_MINIMUM_STEP_SECONDS', 3600)), 1),
-        maximum_samples_per_series=max(int(config.get('ANALYTICS_QUERY_MAXIMUM_SAMPLES_PER_SERIES', 10000)), 1),
-        maximum_concurrent_queries_per_source=max(int(config.get('ANALYTICS_QUERY_MAX_CONCURRENT_PER_SOURCE', 2)), 1),
+        maximum_range_days=max(_config_int(config, 'ANALYTICS_QUERY_MAXIMUM_RANGE_DAYS', 366), 1),
+        chunk_days=max(_config_int(config, 'ANALYTICS_QUERY_CHUNK_DAYS', 30), 1),
+        minimum_step_seconds=max(_config_int(config, 'ANALYTICS_QUERY_MINIMUM_STEP_SECONDS', 3600), 1),
+        maximum_samples_per_series=max(_config_int(config, 'ANALYTICS_QUERY_MAXIMUM_SAMPLES_PER_SERIES', 10000), 1),
+        maximum_concurrent_queries_per_source=max(
+            _config_int(config, 'ANALYTICS_QUERY_MAX_CONCURRENT_PER_SOURCE', 2), 1
+        ),
     )
+
+
+def _config_int(config: dict[str, object], key: str, default: int) -> int:
+    value = config.get(key, default)
+    try:
+        return int(str(value))
+    except (TypeError, ValueError):
+        return default
 
 
 def recommended_step_seconds(

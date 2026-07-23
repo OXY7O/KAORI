@@ -4,7 +4,14 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 from kubernetes import client, config
-from kubernetes.client import AppsV1Api, CoreV1Api, NetworkingV1Api, StorageV1Api, VersionApi
+from kubernetes.client import (
+    AppsV1Api,
+    AuthorizationV1Api,
+    CoreV1Api,
+    NetworkingV1Api,
+    StorageV1Api,
+    VersionApi,
+)
 
 
 class KubernetesClient:
@@ -89,6 +96,9 @@ class KubernetesClient:
 
     def version_api(self) -> VersionApi:
         return VersionApi(self._api_client())
+
+    def authorization_api(self) -> AuthorizationV1Api:
+        return AuthorizationV1Api(self._api_client())
 
     def connect(
         self,

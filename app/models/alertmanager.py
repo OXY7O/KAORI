@@ -12,12 +12,12 @@ from app.security.credentials import EncryptedText
 
 
 def _alertmanager_identity(name: str) -> IntegrationInstance:
-    return IntegrationInstance(
-        provider_type='alertmanager',
-        name=name,
-        enabled=True,
-        readiness_status='validation_required',
-    )
+    identity = IntegrationInstance()
+    identity.provider_type = 'alertmanager'
+    identity.name = name
+    identity.enabled = True
+    identity.readiness_status = 'validation_required'
+    return identity
 
 
 class AlertmanagerInstance(db.Model):
