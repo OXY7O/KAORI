@@ -73,7 +73,7 @@ Do not move package paths before behavior and import contracts exist.
 
 ## Batch 3 — Analytics Alerts Pilot
 
-Status: structural decomposition, typed normalized contracts, and provider-failure characterization implemented; provider exception normalization is next.
+Status: structural decomposition, typed normalized contracts, provider-failure characterization, and Alertmanager exception normalization implemented; broad dictionary boundary reduction is next.
 
 Implemented:
 
@@ -86,12 +86,13 @@ Implemented:
 - `service.py` is a temporary compatibility façade with no implementation functions;
 - characterization and architecture contracts protect the existing behavior and dependency direction;
 - canonical `NormalizedAlert`, `AlertSourceStatus`, `AlertLoadResult`, and `AlertsSnapshot` contracts now protect internal boundaries.
-- controlled-fake tests now freeze explicit-source behavior, automatic fallback, combined failures, malformed payload handling, and provider exception boundaries.
+- controlled-fake tests now freeze explicit-source behavior, automatic fallback, combined failures, malformed payload handling, and provider exception boundaries;
+- unexpected Alertmanager exceptions now become canonical source diagnostics, trigger Prometheus fallback in `auto` mode, and remain isolated for explicit Alertmanager selection.
 
 Remaining in Batch 3:
 
-1. Normalize unexpected Alertmanager provider exceptions and preserve the failure in fallback diagnostics.
-2. Replace broad presentation dictionaries at internal boundaries incrementally.
+1. Replace broad presentation dictionaries at internal boundaries incrementally.
+2. Add canonical provider diagnostic codes without changing user-facing wording.
 3. Decide the removal milestone for the compatibility façade.
 
 Do not combine typed-contract migration with a behavioral redesign of alert scoring or routing semantics.

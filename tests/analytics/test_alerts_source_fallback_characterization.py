@@ -284,11 +284,91 @@ def test_prometheus_provider_exceptions_are_normalized_into_source_status(monkey
     assert status['error'] == 'connection refused'
 
 
-def test_unexpected_alertmanager_exception_remains_visible_to_the_caller(monkeypatch) -> None:
+def test_unexpected_alertmanager_exception_is_normalized_into_source_status(monkeypatch) -> None:
+    def raise_provider_error(**_: Any) -> dict[str, Any]:
+        raise RuntimeError('unexpected alertmanager failure')
+
+    logged: list[tuple[Any, ...]] = []
+
+    monkeypatch.setattr(sources, 'get_alertmanager_alerts', raise_provider_error)
+    monkeypatch.setattr(
+        sources.logger,
+        'exception',
+        lambda *args, **_: logged.append(args),
+    )
+
+    alerts, status = sources.load_alertmanager_alerts(cluster=_cluster())
+
+    assert alerts == []
+    assert status['label'] == 'Alertmanager Error'
+    assert status['configured'] is True
+    assert status['connected'] is False
+    assert status['resolved_source'] == 'none'
+    assert status['fallback_used'] is False
+    assert status['fallback_reason'] is None
+    assert status['error'] == 'unexpected alertmanager failure'
+    assert isinstance(status['response_time_ms'], int)
+    assert status['last_checked_at'] is not None
+    assert logged == [
+        (
+            'Unexpected Alertmanager alert loading failure for cluster %s.',
+            7,
+        )
+    ]
+
+
+def test_auto_source_falls_back_after_unexpected_alertmanager_exception(monkeypatch) -> None:
+    prometheus_alert = _alert(source='Prometheus', name='HighCPU')
+
     def raise_provider_error(**_: Any) -> dict[str, Any]:
         raise RuntimeError('unexpected alertmanager failure')
 
     monkeypatch.setattr(sources, 'get_alertmanager_alerts', raise_provider_error)
+    monkeypatch.setattr(sources.logger, 'exception', lambda *_, **__: None)
+    monkeypatch.setattr(
+        sources,
+        'load_prometheus_alerts',
+        lambda **_: ([prometheus_alert], _status(source='prometheus', connected=True)),
+    )
 
-    with pytest.raises(RuntimeError, match='unexpected alertmanager failure'):
-        sources.load_alertmanager_alerts(cluster=_cluster())
+    alerts, status = sources.load_alerts_by_source(
+        cluster=_cluster(),
+        source='auto',
+    )
+
+    assert alerts == [prometheus_alert]
+    assert status['selected_source'] == 'auto'
+    assert status['resolved_source'] == 'prometheus'
+    assert status['connected'] is True
+    assert status['fallback_used'] is True
+    assert status['label'] == 'Prometheus Fallback Connected'
+    assert status['error'] is None
+    assert status['fallback_reason'] == (
+        'Alertmanager unavailable: unexpected alertmanager failure. '
+        'Using Prometheus ALERTS fallback.'
+    )
+
+
+def test_explicit_alertmanager_source_normalizes_exception_without_cross_fallback(monkeypatch) -> None:
+    def raise_provider_error(**_: Any) -> dict[str, Any]:
+        raise RuntimeError('unexpected alertmanager failure')
+
+    def unexpected_prometheus_call(**_: Any) -> tuple[list[Any], dict[str, Any]]:
+        raise AssertionError('Explicit Alertmanager selection must not call Prometheus.')
+
+    monkeypatch.setattr(sources, 'get_alertmanager_alerts', raise_provider_error)
+    monkeypatch.setattr(sources.logger, 'exception', lambda *_, **__: None)
+    monkeypatch.setattr(sources, 'load_prometheus_alerts', unexpected_prometheus_call)
+
+    alerts, status = sources.load_alerts_by_source(
+        cluster=_cluster(),
+        source='alertmanager',
+    )
+
+    assert alerts == []
+    assert status['selected_source'] == 'alertmanager'
+    assert status['resolved_source'] == 'none'
+    assert status['connected'] is False
+    assert status['fallback_used'] is False
+    assert status['fallback_reason'] is None
+    assert status['error'] == 'unexpected alertmanager failure'

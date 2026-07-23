@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from datetime import UTC, datetime
 from time import perf_counter
 from typing import Any
@@ -16,6 +17,9 @@ from app.integrations.prometheus.exceptions import PrometheusError
 from app.integrations.prometheus.query_profiles import get_query_expression
 from app.models import Cluster
 from app.prometheus.service import PrometheusService
+
+logger = logging.getLogger(__name__)
+
 
 PROMETHEUS_ALERTS_QUERY = get_query_expression('analytics.alerts.queries.PROMETHEUS_ALERTS_QUERY')
 
@@ -408,65 +412,90 @@ def load_alertmanager_alerts(
 ) -> AlertLoadResult:
     started_at = perf_counter()
 
-    result = get_alertmanager_alerts(
-        cluster_id=cluster.id,
-    )
-
-    elapsed_ms = int((perf_counter() - started_at) * 1000)
-
-    alerts = [
-        normalize_alertmanager_item(
-            item,
+    try:
+        result = get_alertmanager_alerts(
+            cluster_id=cluster.id,
         )
-        for item in result.get(
-            'alerts',
-            [],
-        )
-        if isinstance(
-            item,
-            dict,
-        )
-    ]
 
-    status = get_alertmanager_status(
-        cluster_id=cluster.id,
-    )
+        elapsed_ms = int((perf_counter() - started_at) * 1000)
 
-    connected = bool(
-        result.get(
-            'connected',
+        alerts = [
+            normalize_alertmanager_item(
+                item,
+            )
+            for item in result.get(
+                'alerts',
+                [],
+            )
+            if isinstance(
+                item,
+                dict,
+            )
+        ]
+
+        status = get_alertmanager_status(
+            cluster_id=cluster.id,
         )
-    )
 
-    source_status = {
-        'source': 'alertmanager',
-        'selected_source': 'alertmanager',
-        'resolved_source': 'alertmanager' if connected else 'none',
-        'label': 'Alertmanager Connected'
-        if connected
-        else status.get(
-            'label',
-            'Alertmanager Unavailable',
-        ),
-        'configured': bool(
-            status.get(
-                'configured',
+        connected = bool(
+            result.get(
+                'connected',
             )
         )
-        or connected,
-        'connected': connected,
-        'fallback_used': False,
-        'fallback_reason': None,
-        'error': result.get(
-            'error',
-        ),
-        'response_time_ms': elapsed_ms,
-        'last_checked_at': datetime.now(
-            UTC,
-        ),
-    }
 
-    return alerts, source_status
+        source_status: AlertSourceStatus = {
+            'source': 'alertmanager',
+            'selected_source': 'alertmanager',
+            'resolved_source': 'alertmanager' if connected else 'none',
+            'label': 'Alertmanager Connected'
+            if connected
+            else status.get(
+                'label',
+                'Alertmanager Unavailable',
+            ),
+            'configured': bool(
+                status.get(
+                    'configured',
+                )
+            )
+            or connected,
+            'connected': connected,
+            'fallback_used': False,
+            'fallback_reason': None,
+            'error': result.get(
+                'error',
+            ),
+            'response_time_ms': elapsed_ms,
+            'last_checked_at': datetime.now(
+                UTC,
+            ),
+        }
+
+        return alerts, source_status
+    except Exception as exc:
+        elapsed_ms = int((perf_counter() - started_at) * 1000)
+        error_message = str(exc).strip() or exc.__class__.__name__
+
+        logger.exception(
+            'Unexpected Alertmanager alert loading failure for cluster %s.',
+            cluster.id,
+        )
+
+        return [], {
+            'source': 'alertmanager',
+            'selected_source': 'alertmanager',
+            'resolved_source': 'none',
+            'label': 'Alertmanager Error',
+            'configured': True,
+            'connected': False,
+            'fallback_used': False,
+            'fallback_reason': None,
+            'error': error_message,
+            'response_time_ms': elapsed_ms,
+            'last_checked_at': datetime.now(
+                UTC,
+            ),
+        }
 
 
 def load_prometheus_alerts(
