@@ -19,6 +19,28 @@ from app.knowledge.service import (
     resolve_published_revision,
 )
 
+from app.resolver.contracts import DryRunResult, ResolverResult, ResolverResultStatus
+from app.resolver.registry import ResolverRegistry
+
+
+class CompatibleAdapter:
+    action_key = 'kubernetes.pod.restart'
+    capability_keys: tuple[str, ...] = ()
+    compatibility_profiles: tuple[str, ...] = ()
+    rollback_required = True
+
+    def dry_run(self, context):
+        return DryRunResult(True, 'safe')
+
+    def execute(self, context, dry_run):
+        return ResolverResult(ResolverResultStatus.SUCCEEDED, 'done')
+
+
+def _resolver_registry() -> ResolverRegistry:
+    registry = ResolverRegistry()
+    registry.register(CompatibleAdapter())
+    return registry
+
 
 @pytest.fixture
 def app() -> Flask:
@@ -47,7 +69,10 @@ def test_published_revision_is_resolved_and_locked_into_decision(app) -> None:
             steps=[{'order': 1, 'operation': 'delete_pod'}], rollback={'strategy': 'controller_recreate'},
             actor_user_id=None, actor_permissions={MANAGE_PERMISSION},
         )
-        publish_revision(revision, actor_user_id=None, actor_permissions={PUBLISH_PERMISSION}, now=datetime(2026, 7, 23, tzinfo=UTC))
+        publish_revision(
+            revision, actor_user_id=None, actor_permissions={PUBLISH_PERMISSION},
+            resolver_registry=_resolver_registry(), now=datetime(2026, 7, 23, tzinfo=UTC),
+        )
         resolved = resolve_published_revision(runbook_key=runbook.runbook_key, version='1.0.0')
         evidence = {'cluster_id': 'cluster-a', 'namespace': 'default', 'pod_name': 'api-0'}
         assert_required_evidence(resolved, evidence)
@@ -66,7 +91,10 @@ def test_published_revision_is_resolved_and_locked_into_decision(app) -> None:
         assert record.runbook_revision_id == revision.id
 
         with pytest.raises(KnowledgeError, match='Only draft'):
-            publish_revision(revision, actor_user_id=None, actor_permissions={PUBLISH_PERMISSION})
+            publish_revision(
+                revision, actor_user_id=None, actor_permissions={PUBLISH_PERMISSION},
+                resolver_registry=_resolver_registry(),
+            )
 
 
 def test_required_evidence_is_fail_closed(app) -> None:

@@ -118,7 +118,6 @@ from app.analytics.alerts.sources import (
     normalize_alertmanager_item,
     normalize_prometheus_alert,
 )
-
 __all__ = [
     'DEFAULT_PER_PAGE',
     'PER_PAGE_OPTIONS',

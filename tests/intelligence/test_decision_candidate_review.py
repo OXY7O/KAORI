@@ -1,12 +1,31 @@
 from datetime import UTC, datetime, timedelta
 
 import pytest
+from flask import Flask
 
 from app.extensions import db
 from app.knowledge.candidate_review import CandidateWorkflowError, dismiss_candidate, persist_candidate, promote_candidate
 from app.knowledge.matching import DecisionCandidate
 from app.models.intelligence import IntelligenceDecisionCandidate
 from app.models.knowledge import KnowledgeRunbook, KnowledgeRunbookAlertBinding, KnowledgeRunbookRevision
+
+
+@pytest.fixture
+def app() -> Flask:
+    application = Flask(__name__)
+    application.config.update(
+        TESTING=True,
+        SQLALCHEMY_DATABASE_URI='sqlite:///:memory:',
+        SQLALCHEMY_TRACK_MODIFICATIONS=False,
+    )
+    db.init_app(application)
+    with application.app_context():
+        import app.models  # noqa: F401
+
+        db.create_all()
+        yield application
+        db.session.remove()
+        db.drop_all()
 
 
 def _seed():
