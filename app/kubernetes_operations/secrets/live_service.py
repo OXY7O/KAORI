@@ -140,9 +140,12 @@ def list_live_namespaces(
     except (OSError, Urllib3HTTPError) as exc:
         raise _connection_error('namespace lookup') from exc
 
-    names = {
-        item.metadata.name for item in (response.items or []) if getattr(getattr(item, 'metadata', None), 'name', None)
-    }
+    names: set[str] = set()
+    for item in response.items or []:
+        metadata = getattr(item, 'metadata', None)
+        name = getattr(metadata, 'name', None)
+        if isinstance(name, str) and name:
+            names.add(name)
     if allowed_namespaces is not None:
         names.intersection_update(value.strip() for value in allowed_namespaces if value and value.strip())
     return sorted(names)
