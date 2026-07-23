@@ -4,6 +4,10 @@ from types import SimpleNamespace
 
 from app.analytics.alerts import application
 from app.analytics.alerts.contracts import (
+    AlertInhibitionSummary,
+    AlertRoutingSummary,
+    AlertSilenceSummary,
+    AlertSourceHealthSummary,
     AlertSourceStatus,
     AlertsSnapshot,
     NormalizedAlert,
@@ -11,14 +15,16 @@ from app.analytics.alerts.contracts import (
     normalize_per_page,
     paginate_items,
 )
+from app.analytics.alerts.health import build_source_health
+from app.analytics.alerts.inhibition import build_inhibition_summary
 from app.analytics.alerts.ownership import (
     extract_alert_contact_from_payload,
     extract_alert_owner_from_payload,
     extract_alert_runbook_from_payload,
 )
 from app.analytics.alerts.readiness import build_incident_readiness
-from app.analytics.alerts.routing import build_routing_summary
-from app.analytics.alerts.silences import silence_matches_alert
+from app.analytics.alerts.routing import build_empty_routing_summary, build_routing_summary
+from app.analytics.alerts.silences import build_empty_silence_summary, silence_matches_alert
 from app.analytics.alerts.snapshots import _empty_alerts_snapshot
 from app.analytics.alerts.sources import (
     build_empty_source_status,
@@ -56,6 +62,60 @@ def test_typed_contracts_match_existing_runtime_dictionary_shapes() -> None:
     assert isinstance(prometheus_alert, dict)
     assert isinstance(source_status, dict)
     assert isinstance(snapshot, dict)
+
+
+def test_source_health_and_routing_contracts_keep_dictionary_shapes() -> None:
+    integration_status = {
+        'prometheus': {
+            'configured': True,
+            'connected': False,
+            'label': 'Prometheus Configured',
+            'status': 'configured',
+            'response_time_ms': None,
+        },
+        'alertmanager': {
+            'configured': True,
+            'connected': True,
+            'label': 'Alertmanager Connected',
+            'status': 'connected',
+            'response_time_ms': 12,
+        },
+    }
+    source_status = {
+        'source': 'auto',
+        'selected_source': 'auto',
+        'resolved_source': 'alertmanager',
+        'label': 'Alertmanager Connected',
+        'configured': True,
+        'connected': True,
+        'fallback_used': False,
+        'fallback_reason': None,
+        'error': None,
+        'response_time_ms': 12,
+        'last_checked_at': None,
+    }
+
+    source_health = build_source_health(
+        cluster=SimpleNamespace(name='production'),
+        source_status=source_status,
+        integration_status=integration_status,
+    )
+    empty_source_health = build_source_health(
+        cluster=None,
+        source_status=source_status,
+        integration_status=integration_status,
+    )
+    empty_routing = build_empty_routing_summary()
+
+    assert set(AlertSourceHealthSummary.__required_keys__) <= set(source_health)
+    assert set(AlertSourceHealthSummary.__required_keys__) <= set(empty_source_health)
+    assert set(AlertSourceHealthSummary.__optional_keys__) <= set(source_health)
+    assert set(AlertSourceHealthSummary.__optional_keys__).isdisjoint(empty_source_health)
+    assert set(empty_routing) == set(AlertRoutingSummary.__required_keys__)
+    assert source_health['score'] == 100
+    assert source_health['resolved_source'] == 'alertmanager'
+    assert isinstance(source_health, dict)
+    assert isinstance(empty_routing, dict)
 
 
 def test_filter_and_pagination_normalization_is_stable() -> None:
@@ -202,6 +262,7 @@ def test_routing_summary_keeps_group_and_receiver_counts() -> None:
     assert summary['group_count'] == 3
     assert summary['fingerprint_count'] == 2
     assert summary['namespace_count'] == 2
+    assert set(summary) == set(AlertRoutingSummary.__required_keys__)
     assert summary['receiver_groups'][0] == {
         'label': 'pager',
         'count': 2,
@@ -236,6 +297,89 @@ def test_silence_matching_keeps_equal_regex_and_negative_semantics() -> None:
         alert=alert,
     )
 
+
+def test_silence_and_inhibition_contracts_keep_dictionary_shapes() -> None:
+    silence_summary = build_empty_silence_summary()
+    inhibition_summary = build_inhibition_summary(
+        alerts=[],
+        source_status={
+            'source': 'prometheus',
+            'selected_source': 'auto',
+            'resolved_source': 'prometheus',
+            'label': 'Prometheus Connected',
+            'configured': True,
+            'connected': True,
+            'fallback_used': True,
+            'fallback_reason': 'Alertmanager unavailable.',
+            'error': None,
+            'response_time_ms': 10,
+            'last_checked_at': None,
+        },
+    )
+
+    assert set(silence_summary) == set(AlertSilenceSummary.__required_keys__)
+    assert set(inhibition_summary) == set(AlertInhibitionSummary.__required_keys__)
+    assert silence_summary['enabled'] is False
+    assert silence_summary['level'] == 'unavailable'
+    assert inhibition_summary['enabled'] is False
+    assert inhibition_summary['level'] == 'limited'
+    assert isinstance(silence_summary, dict)
+    assert isinstance(inhibition_summary, dict)
+
+
+def test_inhibition_summary_keeps_existing_alert_visibility_semantics() -> None:
+    summary = build_inhibition_summary(
+        alerts=[
+            {
+                'name': 'PodDown',
+                'severity': 'critical',
+                'status': 'firing',
+                'namespace': 'production',
+                'target': 'api-0',
+                'source': 'Alertmanager',
+                'summary': '',
+                'description': '',
+                'starts_at': None,
+                'starts_at_display': '-',
+                'ends_at': None,
+                'ends_at_display': '-',
+                'labels': {
+                    'alertname': 'PodDown',
+                    'namespace': 'production',
+                    'severity': 'critical',
+                },
+                'annotations': {},
+                'owner': '-',
+                'runbook_url': '',
+                'contact': '-',
+                'generator_url': None,
+                'fingerprint': 'pod-down',
+                'inhibited': True,
+                'inhibited_by': ['critical-production'],
+            }
+        ],
+        source_status={
+            'source': 'alertmanager',
+            'selected_source': 'auto',
+            'resolved_source': 'alertmanager',
+            'label': 'Alertmanager Connected',
+            'configured': True,
+            'connected': True,
+            'fallback_used': False,
+            'fallback_reason': None,
+            'error': None,
+            'response_time_ms': 8,
+            'last_checked_at': None,
+        },
+    )
+
+    assert summary['enabled'] is True
+    assert summary['level'] == 'available'
+    assert summary['matched_alerts'] == 1
+    assert summary['rules_detected'] == 1
+    assert summary['source_equal_labels'] == ['alertname', 'namespace', 'severity']
+    assert summary['items'][0]['name'] == 'PodDown'
+    assert summary['items'][0]['inhibited_by'] == ['critical-production']
 
 def test_ownership_metadata_precedence_is_stable() -> None:
     assert (

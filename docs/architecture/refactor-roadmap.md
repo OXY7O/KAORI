@@ -73,7 +73,7 @@ Do not move package paths before behavior and import contracts exist.
 
 ## Batch 3 — Analytics Alerts Pilot
 
-Status: structural decomposition, typed normalized contracts, provider-failure characterization, and Alertmanager exception normalization implemented; broad dictionary boundary reduction is next.
+Status: structural decomposition, typed normalized contracts, provider-failure characterization, Alertmanager exception normalization, and typed health, routing, silence, and inhibition presentation contracts are implemented.
 
 Implemented:
 
@@ -87,11 +87,13 @@ Implemented:
 - characterization and architecture contracts protect the existing behavior and dependency direction;
 - canonical `NormalizedAlert`, `AlertSourceStatus`, `AlertLoadResult`, and `AlertsSnapshot` contracts now protect internal boundaries.
 - controlled-fake tests now freeze explicit-source behavior, automatic fallback, combined failures, malformed payload handling, and provider exception boundaries;
-- unexpected Alertmanager exceptions now become canonical source diagnostics, trigger Prometheus fallback in `auto` mode, and remain isolated for explicit Alertmanager selection.
+- unexpected Alertmanager exceptions now become canonical source diagnostics, trigger Prometheus fallback in `auto` mode, and remain isolated for explicit Alertmanager selection;
+- source-health, integration-status, routing-group, and routing-summary dictionaries now have focused canonical contracts while preserving their runtime shapes;
+- Alertmanager silence API status, normalized silence matchers, silence rows, silence summaries, inhibition rows, and inhibition summaries now have focused canonical contracts while preserving matcher and visibility behavior.
 
 Remaining in Batch 3:
 
-1. Replace broad presentation dictionaries at internal boundaries incrementally.
+1. Continue replacing broad presentation dictionaries, next with ownership and incident-readiness summaries.
 2. Add canonical provider diagnostic codes without changing user-facing wording.
 3. Decide the removal milestone for the compatibility façade.
 

@@ -5,14 +5,21 @@ from datetime import UTC, datetime
 from typing import Any
 
 from app.alertmanager.service import get_alertmanager_silences
-from app.analytics.alerts.contracts import AlertSourceStatus, NormalizedAlert
+from app.analytics.alerts.contracts import (
+    AlertSilenceApiStatus,
+    AlertSilenceItem,
+    AlertSilenceMatcher,
+    AlertSilenceSummary,
+    AlertSourceStatus,
+    NormalizedAlert,
+)
 from app.models import Cluster
 
 
 def load_alertmanager_silences(
     *,
     cluster: Cluster | None,
-) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+) -> tuple[list[dict[str, Any]], AlertSilenceApiStatus]:
     if cluster is None:
         return [], {
             'connected': False,
@@ -149,7 +156,7 @@ def normalize_silence_state(
 
 def normalize_silence_matchers(
     silence: dict[str, Any],
-) -> list[dict[str, Any]]:
+) -> list[AlertSilenceMatcher]:
     raw_matchers = silence.get(
         'matchers',
         [],
@@ -161,7 +168,7 @@ def normalize_silence_matchers(
     ):
         return []
 
-    matchers: list[dict[str, Any]] = []
+    matchers: list[AlertSilenceMatcher] = []
 
     for matcher in raw_matchers:
         if not isinstance(
@@ -306,7 +313,7 @@ def build_silence_summary(
     cluster: Cluster | None,
     alerts: list[NormalizedAlert],
     source_status: AlertSourceStatus,
-) -> dict[str, Any]:
+) -> AlertSilenceSummary:
     resolved_source = str(
         source_status.get(
             'resolved_source',
@@ -360,7 +367,7 @@ def build_silence_summary(
             'source': resolved_source,
         }
 
-    active_items: list[dict[str, Any]] = []
+    active_items: list[AlertSilenceItem] = []
     pending_count = 0
     expired_count = 0
     silenced_namespaces: set[str] = set()
@@ -527,7 +534,7 @@ def build_empty_silence_summary(
     *,
     label: str = 'Silence Visibility Unavailable',
     description: str = 'Alertmanager silence context is not available.',
-) -> dict[str, Any]:
+) -> AlertSilenceSummary:
     return {
         'enabled': False,
         'level': 'unavailable',

@@ -1,15 +1,18 @@
 from __future__ import annotations
 
-from typing import Any
-
-from app.analytics.alerts.contracts import AlertSourceStatus, NormalizedAlert
+from app.analytics.alerts.contracts import (
+    AlertInhibitionItem,
+    AlertInhibitionSummary,
+    AlertSourceStatus,
+    NormalizedAlert,
+)
 
 
 def build_inhibition_summary(
     *,
     alerts: list[NormalizedAlert],
     source_status: AlertSourceStatus,
-) -> dict[str, Any]:
+) -> AlertInhibitionSummary:
     resolved_source = str(
         source_status.get(
             'resolved_source',
@@ -99,7 +102,7 @@ def build_inhibition_summary(
         }
     )
 
-    items = [
+    items: list[AlertInhibitionItem] = [
         {
             'name': str(
                 alert.get(

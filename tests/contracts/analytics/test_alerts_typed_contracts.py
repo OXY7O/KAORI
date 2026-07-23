@@ -9,13 +9,29 @@ ALERTS = ROOT / 'app' / 'analytics' / 'alerts'
 CONTRACTS = ALERTS / 'contracts.py'
 SOURCES = ALERTS / 'sources.py'
 SNAPSHOTS = ALERTS / 'snapshots.py'
+HEALTH = ALERTS / 'health.py'
+ROUTING = ALERTS / 'routing.py'
+SILENCES = ALERTS / 'silences.py'
+INHIBITION = ALERTS / 'inhibition.py'
 SERVICE = ALERTS / 'service.py'
 QUALITY_GATE = ROOT / 'scripts' / 'quality_gate.sh'
 
 TYPED_CONTRACTS = {
-    'NormalizedAlert',
+    'AlertInhibitionItem',
+    'AlertInhibitionSummary',
+    'AlertIntegrationStatus',
+    'AlertIntegrationStatusMap',
+    'AlertRoutingGroup',
+    'AlertRoutingSummary',
+    'AlertSilenceApiStatus',
+    'AlertSilenceItem',
+    'AlertSilenceMatcher',
+    'AlertSilenceSummary',
+    'AlertSourceHealthCheck',
+    'AlertSourceHealthSummary',
     'AlertSourceStatus',
     'AlertsSnapshot',
+    'NormalizedAlert',
 }
 
 TYPED_CONSUMERS = {
@@ -40,27 +56,22 @@ def _function_return_annotations(path: Path) -> dict[str, str]:
     }
 
 
-def _typed_dict_keys(class_name: str) -> tuple[set[str], set[str]]:
-    tree = ast.parse(CONTRACTS.read_text(encoding='utf-8'))
-    class_node = next(
-        node
-        for node in tree.body
-        if isinstance(node, ast.ClassDef) and node.name == class_name
+def _load_contracts_module():
+    spec = importlib.util.spec_from_file_location(
+        'kaori_alert_contracts_runtimecheck',
+        CONTRACTS,
     )
-    required: set[str] = set()
-    optional: set[str] = set()
+    assert spec is not None
+    assert spec.loader is not None
 
-    for node in class_node.body:
-        if not isinstance(node, ast.AnnAssign) or not isinstance(node.target, ast.Name):
-            continue
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
-        annotation = ast.unparse(node.annotation)
-        if annotation.startswith('NotRequired['):
-            optional.add(node.target.id)
-        else:
-            required.add(node.target.id)
 
-    return required, optional
+def _typed_dict_keys(class_name: str) -> tuple[set[str], set[str]]:
+    contract = getattr(_load_contracts_module(), class_name)
+    return set(contract.__required_keys__), set(contract.__optional_keys__)
 
 
 def _return_dictionary_keys(path: Path, function_name: str) -> set[str]:
@@ -94,6 +105,15 @@ def test_alert_contracts_are_explicit_typed_dictionaries() -> None:
         if isinstance(node, ast.ClassDef)
         and any(ast.unparse(base) == 'TypedDict' for base in node.bases)
     }
+    typed_dicts.update(
+        target.id
+        for node in tree.body
+        if isinstance(node, ast.Assign)
+        and isinstance(node.value, ast.Call)
+        and ast.unparse(node.value.func) == 'TypedDict'
+        for target in node.targets
+        if isinstance(target, ast.Name)
+    )
     aliases = {
         node.name.id
         for node in tree.body
@@ -119,9 +139,40 @@ def test_source_boundary_returns_canonical_alert_contracts() -> None:
 
 def test_snapshot_boundary_has_an_explicit_contract() -> None:
     annotations = _function_return_annotations(SNAPSHOTS)
+    snapshot_source = CONTRACTS.read_text(encoding='utf-8')
 
     assert annotations['get_alerts_snapshot'] == 'AlertsSnapshot'
     assert annotations['_empty_alerts_snapshot'] == 'AlertsSnapshot'
+    assert 'source_health: AlertSourceHealthSummary' in snapshot_source
+    assert 'routing_summary: AlertRoutingSummary' in snapshot_source
+    assert 'silence_summary: AlertSilenceSummary' in snapshot_source
+    assert 'inhibition_summary: AlertInhibitionSummary' in snapshot_source
+
+
+def test_health_and_routing_boundaries_use_focused_contracts() -> None:
+    health_annotations = _function_return_annotations(HEALTH)
+    routing_annotations = _function_return_annotations(ROUTING)
+
+    assert health_annotations['build_prometheus_status'] == 'AlertIntegrationStatus'
+    assert health_annotations['build_alertmanager_integration_status'] == 'AlertIntegrationStatus'
+    assert health_annotations['build_integration_status'] == 'AlertIntegrationStatusMap'
+    assert health_annotations['build_source_health'] == 'AlertSourceHealthSummary'
+    assert routing_annotations['build_count_groups'] == 'list[AlertRoutingGroup]'
+    assert routing_annotations['build_routing_summary'] == 'AlertRoutingSummary'
+    assert routing_annotations['build_empty_routing_summary'] == 'AlertRoutingSummary'
+
+
+def test_silence_and_inhibition_boundaries_use_focused_contracts() -> None:
+    silence_annotations = _function_return_annotations(SILENCES)
+    inhibition_annotations = _function_return_annotations(INHIBITION)
+
+    assert silence_annotations['load_alertmanager_silences'] == (
+        'tuple[list[dict[str, Any]], AlertSilenceApiStatus]'
+    )
+    assert silence_annotations['normalize_silence_matchers'] == 'list[AlertSilenceMatcher]'
+    assert silence_annotations['build_silence_summary'] == 'AlertSilenceSummary'
+    assert silence_annotations['build_empty_silence_summary'] == 'AlertSilenceSummary'
+    assert inhibition_annotations['build_inhibition_summary'] == 'AlertInhibitionSummary'
 
 
 def test_alert_consumers_use_the_canonical_types() -> None:
@@ -146,19 +197,13 @@ def test_compatibility_facade_reexports_typed_contracts() -> None:
 
 
 def test_runtime_typed_dict_metadata_preserves_optional_provider_fields() -> None:
-    spec = importlib.util.spec_from_file_location(
-        'kaori_alert_contracts_runtimecheck',
-        CONTRACTS,
-    )
-    assert spec is not None
-    assert spec.loader is not None
-
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    module = _load_contracts_module()
     normalized_alert = module.NormalizedAlert
+    source_health = module.AlertSourceHealthSummary
 
     assert {'route', 'value'} <= set(normalized_alert.__optional_keys__)
     assert {'route', 'value'}.isdisjoint(normalized_alert.__required_keys__)
+    assert {'selected_source', 'resolved_source', 'fallback_used'} <= set(source_health.__optional_keys__)
 
 
 def test_alert_characterization_is_an_explicit_release_gate() -> None:
@@ -171,13 +216,27 @@ def test_runtime_dictionary_keys_match_the_typed_contracts() -> None:
     required_alert_keys, _ = _typed_dict_keys('NormalizedAlert')
     source_status_keys, _ = _typed_dict_keys('AlertSourceStatus')
     snapshot_keys, _ = _typed_dict_keys('AlertsSnapshot')
+    integration_status_keys, _ = _typed_dict_keys('AlertIntegrationStatus')
+    routing_keys, _ = _typed_dict_keys('AlertRoutingSummary')
+    silence_keys, _ = _typed_dict_keys('AlertSilenceSummary')
+    inhibition_keys, _ = _typed_dict_keys('AlertInhibitionSummary')
 
     alertmanager_keys = _return_dictionary_keys(SOURCES, 'normalize_alertmanager_item')
     prometheus_keys = _return_dictionary_keys(SOURCES, 'normalize_prometheus_alert')
     empty_source_keys = _return_dictionary_keys(SOURCES, 'build_empty_source_status')
     empty_snapshot_keys = _return_dictionary_keys(SNAPSHOTS, '_empty_alerts_snapshot')
+    prometheus_status_keys = _return_dictionary_keys(HEALTH, 'build_prometheus_status')
+    alertmanager_status_keys = _return_dictionary_keys(HEALTH, 'build_alertmanager_integration_status')
+    empty_routing_keys = _return_dictionary_keys(ROUTING, 'build_empty_routing_summary')
+    empty_silence_keys = _return_dictionary_keys(SILENCES, 'build_empty_silence_summary')
+    inhibition_keys_runtime = _return_dictionary_keys(INHIBITION, 'build_inhibition_summary')
 
     assert required_alert_keys <= alertmanager_keys
     assert required_alert_keys <= prometheus_keys
     assert source_status_keys == empty_source_keys
     assert snapshot_keys == empty_snapshot_keys
+    assert integration_status_keys == prometheus_status_keys
+    assert integration_status_keys == alertmanager_status_keys
+    assert routing_keys == empty_routing_keys
+    assert silence_keys == empty_silence_keys
+    assert inhibition_keys == inhibition_keys_runtime

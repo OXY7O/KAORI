@@ -3,7 +3,6 @@ from datetime import datetime
 from math import ceil
 from typing import Any, Literal, NotRequired, TypedDict
 
-
 DEFAULT_PER_PAGE = 5
 
 PER_PAGE_OPTIONS = [5, 10, 25, 50]
@@ -55,6 +54,143 @@ class AlertSourceStatus(TypedDict):
     last_checked_at: datetime | None
 
 
+class AlertIntegrationStatus(TypedDict):
+    configured: bool
+    connected: bool
+    label: str
+    status: Literal['not_set', 'configured', 'connected']
+    response_time_ms: int | None
+
+
+class AlertIntegrationStatusMap(TypedDict):
+    prometheus: AlertIntegrationStatus
+    alertmanager: AlertIntegrationStatus
+
+
+class AlertSourceHealthCheck(TypedDict):
+    label: str
+    status: Literal['pass', 'warning', 'fail']
+    description: str
+
+
+AlertSourceHealthSummary = TypedDict(
+    'AlertSourceHealthSummary',
+    {
+        'score': int,
+        'level': Literal['healthy', 'fallback', 'degraded', 'unavailable'],
+        'label': str,
+        'description': str,
+        'class': str,
+        'icon': str,
+        'checks': list[AlertSourceHealthCheck],
+        'selected_source': NotRequired[str],
+        'resolved_source': NotRequired[str],
+        'fallback_used': NotRequired[bool],
+    },
+)
+
+
+class AlertRoutingGroup(TypedDict):
+    label: str
+    count: int
+    percent: float
+
+
+AlertRoutingSummary = TypedDict(
+    'AlertRoutingSummary',
+    {
+        'enabled': bool,
+        'level': Literal['available', 'limited', 'unavailable'],
+        'label': str,
+        'description': str,
+        'class': str,
+        'icon': str,
+        'source': str,
+        'alert_count': int,
+        'receiver_count': int,
+        'group_count': int,
+        'fingerprint_count': int,
+        'namespace_count': int,
+        'severity_groups': list[AlertRoutingGroup],
+        'receiver_groups': list[AlertRoutingGroup],
+        'namespace_groups': list[AlertRoutingGroup],
+        'grouping_keys': list[AlertRoutingGroup],
+    },
+)
+
+
+class AlertSilenceApiStatus(TypedDict):
+    connected: bool
+    error: str | None
+
+
+class AlertSilenceMatcher(TypedDict):
+    name: str
+    value: str
+    is_regex: bool
+    is_equal: bool
+    label: str
+
+
+class AlertSilenceItem(TypedDict):
+    id: str
+    state: str
+    created_by: str
+    comment: str
+    starts_at: str
+    ends_at: str
+    matchers: list[str]
+    matched_alerts: int
+
+
+AlertSilenceSummary = TypedDict(
+    'AlertSilenceSummary',
+    {
+        'enabled': bool,
+        'level': Literal['available', 'limited', 'unavailable'],
+        'label': str,
+        'description': str,
+        'class': str,
+        'icon': str,
+        'source': str,
+        'active_silences': int,
+        'pending_silences': int,
+        'expired_silences': int,
+        'matched_alerts': int,
+        'silenced_namespaces': list[str],
+        'silenced_matchers': list[str],
+        'items': list[AlertSilenceItem],
+    },
+)
+
+
+class AlertInhibitionItem(TypedDict):
+    name: str
+    namespace: str
+    target: str
+    severity: str
+    inhibited_by: Any
+
+
+AlertInhibitionSummary = TypedDict(
+    'AlertInhibitionSummary',
+    {
+        'enabled': bool,
+        'level': Literal['available', 'limited', 'unavailable'],
+        'label': str,
+        'description': str,
+        'class': str,
+        'icon': str,
+        'source': str,
+        'rules_detected': int,
+        'matched_alerts': int,
+        'source_equal_labels': list[str],
+        'target_matchers': list[str],
+        'items': list[AlertInhibitionItem],
+    },
+)
+
+
 class AlertsSnapshot(TypedDict):
     firing_alerts: int
     pending_alerts: int
@@ -68,10 +204,10 @@ class AlertsSnapshot(TypedDict):
     fallback_used: bool
     fallback_reason: str | None
     source_connected: bool
-    source_health: dict[str, Any]
-    routing_summary: dict[str, Any]
-    silence_summary: dict[str, Any]
-    inhibition_summary: dict[str, Any]
+    source_health: AlertSourceHealthSummary
+    routing_summary: AlertRoutingSummary
+    silence_summary: AlertSilenceSummary
+    inhibition_summary: AlertInhibitionSummary
     ownership_summary: dict[str, Any]
     incident_readiness: dict[str, Any]
     priority: dict[str, Any]
