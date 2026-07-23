@@ -168,9 +168,7 @@ def general():
         'timezone_choice_groups': timezone_choice_groups(),
         'current_time_display': current_time_display,
         'preview_timestamp': now_utc.isoformat(),
-        'system_information': (
-            build_system_information(current_app.config) if can_view_system_information else None
-        ),
+        'system_information': (build_system_information(current_app.config) if can_view_system_information else None),
         'can_view_system_information': can_view_system_information,
         'page_title': 'General Settings',
         'timezone_sync_oob': bool(request.headers.get('HX-Request')),
@@ -355,11 +353,7 @@ def roles():
             .all()
         )
     }
-    role_delete_blockers = {
-        role.id: get_role_delete_blockers(role)
-        for role in roles_list
-        if not role.is_system
-    }
+    role_delete_blockers = {role.id: get_role_delete_blockers(role) for role in roles_list if not role.is_system}
     return render_template(
         'settings/roles/index.html',
         roles=roles_list,
@@ -424,9 +418,7 @@ def new_role():
     if request.method == 'GET':
         form.is_active.data = True
 
-    selected_permission_ids = {
-        int(value) for value in request.form.getlist('permission_ids') if value.isdigit()
-    }
+    selected_permission_ids = {int(value) for value in request.form.getlist('permission_ids') if value.isdigit()}
     if form.validate_on_submit():
         role = _create_custom_role_from_form(
             form=form,
@@ -478,9 +470,7 @@ def clone_role(role_id: int):
         form.description.data = f'Custom role cloned from the {source_role.display_name} default baseline.'
         form.is_active.data = True
     else:
-        selected_permission_ids = {
-            int(value) for value in request.form.getlist('permission_ids') if value.isdigit()
-        }
+        selected_permission_ids = {int(value) for value in request.form.getlist('permission_ids') if value.isdigit()}
 
     if form.validate_on_submit():
         role = _create_custom_role_from_form(
@@ -571,9 +561,7 @@ def edit_role(role_id: int):
     if request.method == 'GET':
         form.is_active.data = role.is_active
     else:
-        selected_permission_ids = {
-            int(value) for value in request.form.getlist('permission_ids') if value.isdigit()
-        }
+        selected_permission_ids = {int(value) for value in request.form.getlist('permission_ids') if value.isdigit()}
 
     if form.validate_on_submit():
         slug = normalize_role_slug(form.name.data)
@@ -680,9 +668,9 @@ def delete_role(role_id: int):
     if blockers['assigned_users'] or blockers['identity_providers']:
         blocker_parts = []
         if blockers['assigned_users']:
-            blocker_parts.append(f"{blockers['assigned_users']} user assignment(s)")
+            blocker_parts.append(f'{blockers["assigned_users"]} user assignment(s)')
         if blockers['identity_providers']:
-            blocker_parts.append(f"{blockers['identity_providers']} identity provider default mapping(s)")
+            blocker_parts.append(f'{blockers["identity_providers"]} identity provider default mapping(s)')
         role_access_feedback(
             actor=cast(User, current_user),
             event_type='rbac_role_delete_blocked',

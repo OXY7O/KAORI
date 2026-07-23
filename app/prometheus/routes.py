@@ -26,7 +26,7 @@ from app.integrations.validation.web import (
 from app.models import PrometheusInstance
 from app.models.integration import IntegrationBinding
 from app.notifications.service import get_navigation_notification_context, record_operational_activity
-from app.prometheus.forms import PrometheusInstanceForm
+from app.prometheus.forms import PrometheusInstanceForm, attach_existing_instance
 from app.prometheus.presentation import build_instance_context
 from app.prometheus.registration import issue_registration_proof, verify_registration_proof
 from app.prometheus.repository import get_instance
@@ -398,7 +398,7 @@ def test_instance_configuration(instance_id: int) -> ResponseReturnValue:
     """Test submitted edit settings without persisting them."""
     instance = _instance_or_404(instance_id)
     form = PrometheusInstanceForm()
-    form.set_existing_instance(instance)
+    attach_existing_instance(form, instance)
     if not form.validate_on_submit():
         result = {'connected': False}
         feedback = record_operational_activity(
@@ -467,7 +467,7 @@ def test_instance_configuration(instance_id: int) -> ResponseReturnValue:
 def instance_detail(instance_id: int) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
     form = PrometheusInstanceForm(obj=instance)
-    form.set_existing_instance(instance)
+    attach_existing_instance(form, instance)
     operation_feedback = None
     is_htmx = is_htmx_request()
 

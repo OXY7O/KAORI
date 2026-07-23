@@ -26,9 +26,7 @@ def _configured_secrets() -> tuple[str, ...]:
         previous_raw = os.getenv('INTEGRATION_CREDENTIAL_PREVIOUS_KEYS') or ''
 
     if not configured:
-        raise CredentialEncryptionError(
-            'INTEGRATION_CREDENTIAL_KEY is required for integration credentials.'
-        )
+        raise CredentialEncryptionError('INTEGRATION_CREDENTIAL_KEY is required for integration credentials.')
     current = configured
     previous = tuple(value.strip() for value in previous_raw.split(',') if value.strip())
     return tuple(dict.fromkeys((current, *previous)))
@@ -65,7 +63,7 @@ def decrypt_credential(value: str | None) -> str | None:
             'Stored integration credential is not encrypted with the canonical enc:v1 format. '
             'Run the integration-domain migration or restore a valid database backup.'
         )
-    token = value[len(_PREFIX):]
+    token = value[len(_PREFIX) :]
     last_error: InvalidToken | None = None
     for secret in _configured_secrets():
         try:

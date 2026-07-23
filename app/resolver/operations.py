@@ -69,7 +69,9 @@ def update_control(
     return record
 
 
-def assert_execution_allowed(journal: IntelligenceExecutionJournal, *, now: datetime | None = None) -> ResolverReadiness:
+def assert_execution_allowed(
+    journal: IntelligenceExecutionJournal, *, now: datetime | None = None
+) -> ResolverReadiness:
     current = now or datetime.now(UTC)
     cluster_id = journal.decision.cluster_id
     global_control = ResolverOperationalControl.query.filter_by(cluster_id=None).one_or_none()
@@ -83,11 +85,15 @@ def assert_execution_allowed(journal: IntelligenceExecutionJournal, *, now: date
         reasons.append('Resolver maintenance mode is active for this cluster.')
     control = cluster_control or global_control
     concurrency_limit = control.concurrency_limit if control else 1
-    active = IntelligenceExecutionJournal.query.join(IntelligenceExecutionJournal.decision).filter(
-        IntelligenceExecutionJournal.orchestration_status == 'running',
-        IntelligenceExecutionJournal.id != journal.id,
-        IntelligenceExecutionJournal.decision.has(cluster_id=cluster_id),
-    ).count()
+    active = (
+        IntelligenceExecutionJournal.query.join(IntelligenceExecutionJournal.decision)
+        .filter(
+            IntelligenceExecutionJournal.orchestration_status == 'running',
+            IntelligenceExecutionJournal.id != journal.id,
+            IntelligenceExecutionJournal.decision.has(cluster_id=cluster_id),
+        )
+        .count()
+    )
     if active >= concurrency_limit:
         reasons.append('Resolver concurrency limit has been reached for this cluster.')
     circuit_open = bool(control and control.circuit_open_until and _aware(control.circuit_open_until) > current)
@@ -123,10 +129,14 @@ def record_operational_failure(journal: IntelligenceExecutionJournal, *, now: da
     if control.consecutive_failures >= control.circuit_failure_threshold:
         open_until = current + timedelta(seconds=control.circuit_cooldown_seconds)
         control.circuit_open_until = open_until
-        _audit_journal(journal, 'resolver.circuit.opened', {
-            'consecutive_failures': control.consecutive_failures,
-            'open_until': open_until.isoformat(),
-        })
+        _audit_journal(
+            journal,
+            'resolver.circuit.opened',
+            {
+                'consecutive_failures': control.consecutive_failures,
+                'open_until': open_until.isoformat(),
+            },
+        )
     db.session.flush()
 
 

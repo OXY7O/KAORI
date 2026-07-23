@@ -156,11 +156,16 @@ def run_scheduled_retention_task(self) -> dict[str, Any]:
             db.session.rollback()
             logger.exception('Scheduled retention dispatch failed for %s.', domain_name)
             _notify_failure(
-                user_id=None, domain_name=domain_name, cleanup=True,
-                trigger_type='scheduled', error=exc,
+                user_id=None,
+                domain_name=domain_name,
+                cleanup=True,
+                trigger_type='scheduled',
+                error=exc,
             )
             results[domain_name] = {
-                'status': 'failed', 'error_type': type(exc).__name__, 'error': str(exc),
+                'status': 'failed',
+                'error_type': type(exc).__name__,
+                'error': str(exc),
             }
 
     return {'domains': results}

@@ -2,14 +2,13 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Mapping
 
 from app.extensions import db
 from app.models.audit import AuditEvent
 from app.models.resolver import ResolverDeploymentPolicy, ResolverOperationalControl, ResolverProductionReadinessRecord
-
 
 REQUIRED_CHECKS = (
     'architecture_boundaries',
@@ -51,11 +50,7 @@ def assert_deployment_policy_allows(
     if policy is None or policy.lifecycle_status != 'active':
         raise ProductionReadinessError('Resolver deployment policy is not active for this cluster and action.')
 
-    allowed_namespaces = {
-        str(item).strip()
-        for item in (policy.allowed_namespaces_json or [])
-        if str(item).strip()
-    }
+    allowed_namespaces = {str(item).strip() for item in (policy.allowed_namespaces_json or []) if str(item).strip()}
     normalized_namespace = str(namespace or '').strip()
     if not normalized_namespace or normalized_namespace not in allowed_namespaces:
         raise ProductionReadinessError('Resolver target namespace is not allowed by deployment policy.')
@@ -117,11 +112,16 @@ def record_validation(
     record.approved_by_user_id = None
     if record.rollout_stage == 'production' and not assessment.ready:
         record.rollout_stage = 'disabled'
-    _audit(record, 'resolver.production_readiness.validated', actor_user_id, {
-        'ready': assessment.ready,
-        'failed_checks': list(assessment.failed_checks),
-        'evidence_hash': assessment.evidence_hash,
-    })
+    _audit(
+        record,
+        'resolver.production_readiness.validated',
+        actor_user_id,
+        {
+            'ready': assessment.ready,
+            'failed_checks': list(assessment.failed_checks),
+            'evidence_hash': assessment.evidence_hash,
+        },
+    )
     db.session.flush()
     return record
 
@@ -161,11 +161,16 @@ def advance_rollout_stage(
         record.approved_at = None
         record.approved_by_user_id = None
     record.rollout_stage = target_stage
-    _audit(record, 'resolver.rollout_stage.changed', actor_user_id, {
-        'previous_stage': STAGE_ORDER[current_index],
-        'target_stage': target_stage,
-        'evidence_hash': record.evidence_hash,
-    })
+    _audit(
+        record,
+        'resolver.rollout_stage.changed',
+        actor_user_id,
+        {
+            'previous_stage': STAGE_ORDER[current_index],
+            'target_stage': target_stage,
+            'evidence_hash': record.evidence_hash,
+        },
+    )
     db.session.flush()
     return record
 

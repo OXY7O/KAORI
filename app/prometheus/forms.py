@@ -8,12 +8,16 @@ if TYPE_CHECKING:
     from app.models.prometheus import PrometheusInstance
 
 
+def attach_existing_instance(
+    form: 'PrometheusConfigForm',
+    instance: 'PrometheusInstance | None',
+) -> None:
+    """Attach persisted instance context without relying on WTForms metaclass members."""
+    form._existing_instance = instance
+
+
 class PrometheusConfigForm(FlaskForm):
     _existing_instance: 'PrometheusInstance | None' = None
-
-    def set_existing_instance(self, instance: 'PrometheusInstance | None') -> None:
-        """Attach the persisted instance used by credential-preserving validators."""
-        self._existing_instance = instance
 
     endpoint = StringField(
         'Endpoint',
@@ -162,10 +166,6 @@ class PrometheusConfigForm(FlaskForm):
 
 
 class PrometheusInstanceForm(PrometheusConfigForm):
-    def set_existing_instance(self, instance: 'PrometheusInstance | None') -> None:
-        """Attach persisted instance context to this concrete WTForms class."""
-        self._existing_instance = instance
-
     name = StringField(
         'Instance Name',
         validators=[DataRequired(), Length(min=2, max=160)],

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from celery import shared_task
 
-from app.integrations.runtime.dispatcher import dispatch_integration_runtime_refresh
+from app.integrations.runtime.refresh import dispatch_integration_runtime_refresh
 
 
 @shared_task(

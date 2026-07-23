@@ -7,9 +7,14 @@ from celery import shared_task
 from flask import current_app
 
 from app.extensions import db
-from app.resolver.registry import ResolverRegistry
 from app.models.cluster import Cluster
 from app.models.intelligence import IntelligenceExecutionJournal
+from app.resolver.operations import (
+    ResolverOperationalError,
+    assert_execution_allowed,
+    record_operational_failure,
+    record_operational_success,
+)
 from app.resolver.orchestration import (
     FailureClass,
     acquire_execution_lease,
@@ -17,17 +22,12 @@ from app.resolver.orchestration import (
     record_execution_failure,
     recover_stale_execution_leases,
 )
-from app.resolver.service import ResolverDispatchError, dispatch_resolver_execution
-from app.resolver.operations import (
-    ResolverOperationalError,
-    assert_execution_allowed,
-    record_operational_failure,
-    record_operational_success,
-)
 from app.resolver.production_readiness import (
     assert_deployment_policy_allows,
     assert_production_execution_ready,
 )
+from app.resolver.registry import ResolverRegistry
+from app.resolver.service import ResolverDispatchError, dispatch_resolver_execution
 
 
 @shared_task(
