@@ -6,6 +6,30 @@ from app.extensions.db import db
 from app.models.integration import IntegrationBinding, IntegrationInstance
 
 
+def ensure_provider_operational(provider_record: Any, *, provider_type: str) -> IntegrationInstance:
+    """Return the active canonical identity or fail before provider I/O.
+
+    Workers and synchronous operations must reload their provider record and call
+    this guard immediately before touching an external endpoint.  Administrative
+    lifecycle state is authoritative even when a task was queued while active.
+    """
+    if not bool(getattr(provider_record, 'enabled', False)):
+        raise RuntimeError(
+            f'{provider_type.title()} operation was canceled because the provider instance is disabled.'
+        )
+    canonical = getattr(provider_record, 'integration_instance', None)
+    if canonical is None:
+        raise RuntimeError(
+            f'{provider_type.title()} operation was canceled because canonical integration identity is missing.'
+        )
+    lifecycle_status = str(getattr(canonical, 'lifecycle_status', '') or '').strip().lower()
+    if not bool(getattr(canonical, 'enabled', False)) or lifecycle_status != 'active':
+        raise RuntimeError(
+            f'{provider_type.title()} operation was canceled because the integration is no longer active.'
+        )
+    return canonical
+
+
 def ensure_canonical_instance(provider_record: Any, *, provider_type: str) -> IntegrationInstance:
     """Return the canonical identity owned by a provider-specific record.
 

@@ -45,6 +45,7 @@ def resolve_integration(
         .filter(
             IntegrationInstance.provider_type == provider_type,
             IntegrationInstance.enabled.is_(True),
+            IntegrationInstance.lifecycle_status == 'active',
             IntegrationBinding.asset_type == asset_type,
             IntegrationBinding.asset_key == str(asset_key),
             IntegrationBinding.enabled.is_(True),
@@ -63,8 +64,17 @@ def resolve_integration(
         scope = set(binding.capability_scope or ())
         missing = tuple(sorted(set(required_capabilities) - scope)) if scope else ()
         readiness = (instance.readiness_status or '').lower()
-        eligible = bool(instance.enabled and binding.enabled and readiness not in _BLOCKED and not missing)
-        if missing:
+        lifecycle = (instance.lifecycle_status or '').strip().lower()
+        eligible = bool(
+            instance.enabled
+            and lifecycle == 'active'
+            and binding.enabled
+            and readiness not in _BLOCKED
+            and not missing
+        )
+        if lifecycle != 'active':
+            reason = f'Canonical lifecycle {lifecycle or "unknown"} blocks selection.'
+        elif missing:
             reason = f'Missing binding capabilities: {", ".join(missing)}.'
         elif readiness in _BLOCKED:
             reason = f'Runtime readiness {readiness or "unknown"} blocks selection.'

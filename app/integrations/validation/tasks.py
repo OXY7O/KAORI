@@ -8,7 +8,7 @@ from celery import shared_task
 from flask import current_app
 
 from app.extensions import db
-from app.integrations.lifecycle import ensure_canonical_instance
+from app.integrations.lifecycle import ensure_canonical_instance, ensure_provider_operational
 from app.integrations.registry import execute_integration_operation, get_integration
 from app.integrations.runtime.monitoring import refresh_and_record
 from app.integrations.runtime.repository import persist_runtime_state
@@ -160,21 +160,8 @@ def _release_job_safely(
 
 
 def _ensure_instance_operational(instance: Any, *, provider_type: str) -> None:
-    if not bool(getattr(instance, 'enabled', False)):
-        raise RuntimeError(
-            f'{provider_type.title()} operation was canceled because the provider instance is disabled.'
-        )
-    canonical = getattr(instance, 'integration_instance', None)
-    if canonical is None:
-        raise RuntimeError(
-            f'{provider_type.title()} operation was canceled because canonical integration identity is missing.'
-        )
-    if not bool(getattr(canonical, 'enabled', False)) or str(
-        getattr(canonical, 'lifecycle_status', '') or ''
-    ).strip().lower() != 'active':
-        raise RuntimeError(
-            f'{provider_type.title()} operation was canceled because the integration is no longer active.'
-        )
+    """Compatibility wrapper around the shared integration lifecycle guard."""
+    ensure_provider_operational(instance, provider_type=provider_type)
 
 
 def _persist_failure_observation(
