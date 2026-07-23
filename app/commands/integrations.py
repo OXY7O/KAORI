@@ -12,7 +12,7 @@ import json
 import click
 from flask.cli import with_appcontext
 
-from app.integrations.runtime import tasks as runtime_tasks
+from app.integrations.runtime.dispatcher import dispatch_integration_runtime_refresh
 
 
 @click.command('refresh-integration-runtime')
@@ -20,7 +20,7 @@ from app.integrations.runtime import tasks as runtime_tasks
 @with_appcontext
 def refresh_integration_runtime_command(json_output: bool) -> None:
     """Queue Kubernetes, Prometheus, and Alertmanager runtime health refreshes."""
-    result = runtime_tasks.dispatch_integration_runtime_refresh()
+    result = dispatch_integration_runtime_refresh()
     if json_output:
         click.echo(json.dumps(result, indent=2, sort_keys=True, default=str))
         return
