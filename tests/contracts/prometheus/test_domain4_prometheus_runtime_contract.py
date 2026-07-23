@@ -13,28 +13,34 @@ def test_consumer_resolves_sources_with_operation_capabilities() -> None:
     assert "DEFAULT_RANGE_CAPABILITIES = ('range_query',)" in source
 
 
-def test_validation_worker_blocks_inactive_prometheus_instances() -> None:
+def test_validation_worker_delegates_to_shared_operational_guard() -> None:
+    tasks_source = Path('app/integrations/validation/tasks.py').read_text()
+    lifecycle_source = Path('app/integrations/lifecycle.py').read_text()
+
+    helper_start = tasks_source.index('def _ensure_instance_operational(')
+    helper_end = tasks_source.index('\ndef ', helper_start + 1)
+    helper_source = tasks_source[helper_start:helper_end]
+
+    assert 'ensure_provider_operational(instance, provider_type=provider_type)' in helper_source
+    assert "getattr(provider_record, 'enabled', False)" in lifecycle_source
+    assert "getattr(canonical, 'enabled', False)" in lifecycle_source
+    assert "lifecycle_status != 'active'" in lifecycle_source
+    assert 'integration is no longer active' in lifecycle_source
+
+
+def test_prometheus_validation_calls_guard_before_runtime_refresh() -> None:
     source = Path('app/integrations/validation/tasks.py').read_text()
-
-    helper_start = source.index('def _ensure_instance_operational(')
-    helper_end = source.index('\ndef ', helper_start + 1)
-    helper_source = source[helper_start:helper_end]
-
-    assert "getattr(instance, 'enabled', False)" in helper_source
-    assert "getattr(canonical, 'enabled', False)" in helper_source
-    assert "getattr(canonical, 'lifecycle_status', '')" in helper_source
-    assert "!= 'active'" in helper_source
-
-    prometheus_branch = source.index("if provider_type == 'prometheus':", helper_end)
+    prometheus_branch = source.index("provider_type == 'prometheus'")
     guard_call = source.index(
         "_ensure_instance_operational(instance, provider_type='prometheus')",
         prometheus_branch,
     )
-    provider_call = source.index('refresh_and_record(', guard_call)
+    refresh_call = source.index('refresh_and_record(', prometheus_branch)
 
-    assert guard_call < provider_call
+    assert guard_call < refresh_call
 
 
-def test_consumer_module_remains_syntax_valid() -> None:
+def test_consumer_and_shared_guard_modules_remain_syntax_valid() -> None:
     _tree('app/prometheus/consumer.py')
+    _tree('app/integrations/lifecycle.py')
     _tree('app/integrations/validation/tasks.py')

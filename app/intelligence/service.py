@@ -8,6 +8,7 @@ from werkzeug.datastructures import MultiDict
 
 from app.extensions import db
 from app.intelligence.catalog import INTELLIGENCE_CATALOG
+from app.inventory.resources.common import filter_current_generation
 
 PER_PAGE_OPTIONS = [5, 10, 25, 50]
 
@@ -481,7 +482,7 @@ def _build_latest_image_findings(rules: dict[str, dict[str, Any]]) -> list[dict[
 
     findings: list[dict[str, Any]] = []
     try:
-        rows = db.session.query(PodInventory).all()
+        rows = filter_current_generation(db.session.query(PodInventory), PodInventory).all()
     except Exception:
         return []
 
@@ -534,24 +535,24 @@ def _build_pod_health_findings(rules: dict[str, dict[str, Any]]) -> list[dict[st
         return []
 
     try:
+        unhealthy_query = db.session.query(
+            PodInventory.cluster_id,
+            PodInventory.namespace,
+            PodInventory.phase,
+            func.count(PodInventory.id),
+        ).filter(PodInventory.phase.notin_(['Running', 'Succeeded']))
         unhealthy_rows = (
-            db.session.query(
-                PodInventory.cluster_id,
-                PodInventory.namespace,
-                PodInventory.phase,
-                func.count(PodInventory.id),
-            )
-            .filter(PodInventory.phase.notin_(['Running', 'Succeeded']))
+            filter_current_generation(unhealthy_query, PodInventory)
             .group_by(PodInventory.cluster_id, PodInventory.namespace, PodInventory.phase)
             .all()
         )
+        restart_query = db.session.query(
+            PodInventory.cluster_id,
+            PodInventory.namespace,
+            func.count(PodInventory.id),
+        ).filter(PodInventory.restart_count >= 5)
         restart_rows = (
-            db.session.query(
-                PodInventory.cluster_id,
-                PodInventory.namespace,
-                func.count(PodInventory.id),
-            )
-            .filter(PodInventory.restart_count >= 5)
+            filter_current_generation(restart_query, PodInventory)
             .group_by(PodInventory.cluster_id, PodInventory.namespace)
             .all()
         )
@@ -608,9 +609,11 @@ def _build_node_readiness_findings(rules: dict[str, dict[str, Any]]) -> list[dic
         return []
 
     try:
+        query = db.session.query(NodeInventory.cluster_id, func.count(NodeInventory.id)).filter(
+            NodeInventory.status != 'Ready'
+        )
         rows = (
-            db.session.query(NodeInventory.cluster_id, func.count(NodeInventory.id))
-            .filter(NodeInventory.status != 'Ready')
+            filter_current_generation(query, NodeInventory)
             .group_by(NodeInventory.cluster_id)
             .all()
         )
@@ -641,14 +644,14 @@ def _build_storage_binding_findings(rules: dict[str, dict[str, Any]]) -> list[di
         return []
 
     try:
+        query = db.session.query(
+            StorageInventory.cluster_id,
+            StorageInventory.namespace,
+            StorageInventory.status,
+            func.count(StorageInventory.id),
+        ).filter(StorageInventory.status.notin_(['Bound', 'Available']))
         rows = (
-            db.session.query(
-                StorageInventory.cluster_id,
-                StorageInventory.namespace,
-                StorageInventory.status,
-                func.count(StorageInventory.id),
-            )
-            .filter(StorageInventory.status.notin_(['Bound', 'Available']))
+            filter_current_generation(query, StorageInventory)
             .group_by(StorageInventory.cluster_id, StorageInventory.namespace, StorageInventory.status)
             .all()
         )
