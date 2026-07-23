@@ -213,7 +213,8 @@ def build_job_execution_context(
         ))
     query = query.order_by(JobExecution.created_at.desc(), JobExecution.id.desc())
     paginated = query.paginate(page=selected_page, per_page=selected_per_page, error_out=False)
-    total_pages = max(paginated.pages, 1)
+    total_items = int(paginated.total or 0)
+    total_pages = max(int(paginated.pages or 0), 1)
     current_page = min(max(paginated.page, 1), total_pages)
     items = [_row(job) for job in paginated.items]
 
@@ -243,7 +244,7 @@ def build_job_execution_context(
     ]
     queue_rows = _queue_activity(queue_options, cutoff)
 
-    start_item = ((current_page - 1) * selected_per_page) + 1 if paginated.total else 0
+    start_item = ((current_page - 1) * selected_per_page) + 1 if total_items else 0
     return {
         'job_rows': items,
         'active_job_rows': active_jobs,
@@ -263,10 +264,10 @@ def build_job_execution_context(
         'job_pagination': {
             'page': current_page,
             'per_page': selected_per_page,
-            'total_items': paginated.total,
+            'total_items': total_items,
             'total_pages': total_pages,
             'start_item': start_item,
-            'end_item': min(current_page * selected_per_page, paginated.total),
+            'end_item': min(current_page * selected_per_page, total_items),
             'has_prev': paginated.has_prev,
             'has_next': paginated.has_next,
             'prev_page': current_page - 1,

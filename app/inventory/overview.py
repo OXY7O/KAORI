@@ -183,20 +183,23 @@ def get_inventory_overview() -> dict[str, Any]:
         counts = _cluster_resource_counts(cluster.id)
         sync_status, sync_label, sync_tone = _sync_status(synced_at)
         connection = cluster.kubernetes_connection
+        server = connection.server if connection is not None else None
+        verify_ssl = connection.verify_ssl if connection is not None else True
+        allow_weak_tls = connection.allow_weak_tls if connection is not None else False
 
         cluster_rows.append(
             {
                 'id': cluster.id,
                 'name': cluster.name,
                 'environment': cluster.environment,
-                'server': connection.server,
+                'server': server,
                 'status': cluster.status,
                 'node_count': counts['node_count'],
                 'last_check': cluster.last_check,
                 'created_at': cluster.created_at,
                 'updated_at': cluster.updated_at,
-                'kube_verify_ssl': connection.verify_ssl,
-                'kube_allow_weak_tls': connection.allow_weak_tls,
+                'kube_verify_ssl': verify_ssl,
+                'kube_allow_weak_tls': allow_weak_tls,
                 'workload_count': counts['workload_count'],
                 'pod_count': counts['pod_count'],
                 'service_count': counts['service_count'],

@@ -4,7 +4,8 @@ from typing import Any
 
 from app.extensions import db
 from app.inventory.formatting import format_byte_count
-from app.inventory.resources.common import _pod_summary, filter_current_generation, format_age
+from app.common.inventory_generation import filter_current_generation
+from app.inventory.resources.common import _pod_summary, format_age
 from app.models import Cluster, ConfigurationInventory, PodInventory
 
 
