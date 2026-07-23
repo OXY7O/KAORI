@@ -162,6 +162,10 @@ class PrometheusConfigForm(FlaskForm):
 
 
 class PrometheusInstanceForm(PrometheusConfigForm):
+    def set_existing_instance(self, instance: 'PrometheusInstance | None') -> None:
+        """Attach persisted instance context to this concrete WTForms class."""
+        self._existing_instance = instance
+
     name = StringField(
         'Instance Name',
         validators=[DataRequired(), Length(min=2, max=160)],
