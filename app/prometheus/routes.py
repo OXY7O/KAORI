@@ -8,6 +8,7 @@ from flask.typing import ResponseReturnValue
 from flask_login import current_user
 
 from app.cluster.service import get_cluster_by_id
+from app.common.http import is_htmx_request
 from app.extensions.db import db
 from app.integrations.deletion import DeletionBlocked
 from app.integrations.lifecycle import ensure_canonical_instance
@@ -56,10 +57,6 @@ def _instance_or_404(instance_id: int) -> PrometheusInstance:
     if instance is None:
         abort(404)
     return instance
-
-
-def _is_htmx_request() -> bool:
-    return request.headers.get('HX-Request') == 'true'
 
 
 def _htmx_redirect(location: str) -> ResponseReturnValue:
@@ -145,7 +142,7 @@ def new_instance() -> ResponseReturnValue:
     form = PrometheusInstanceForm()
     operation_feedback = None
     registration_proof = None
-    is_htmx = _is_htmx_request()
+    is_htmx = is_htmx_request()
 
     if request.method == 'GET':
         form.enabled.data = True
@@ -484,7 +481,7 @@ def instance_detail(instance_id: int) -> ResponseReturnValue:
     form = PrometheusInstanceForm(obj=instance)
     form.existing_instance = instance
     operation_feedback = None
-    is_htmx = _is_htmx_request()
+    is_htmx = is_htmx_request()
 
     if request.method == 'POST':
         if form.validate_on_submit():
@@ -560,7 +557,7 @@ def add_instance_binding(instance_id: int) -> ResponseReturnValue:
     selector_label = request.form.get('selector_label', '').strip() or None
     selector_value = request.form.get('selector_value', '').strip() or None
     selector_operator = request.form.get('selector_operator', '=').strip() or '='
-    is_htmx = _is_htmx_request()
+    is_htmx = is_htmx_request()
 
     try:
         if cluster is None:
@@ -655,7 +652,7 @@ def update_instance_binding_selector(instance_id: int, binding_id: int) -> Respo
     binding = db.session.get(IntegrationBinding, binding_id)
     if binding is None or binding.integration_instance_id != instance.integration_instance_id:
         abort(404)
-    is_htmx = _is_htmx_request()
+    is_htmx = is_htmx_request()
     selector_label = request.form.get('selector_label', '').strip() or None
     selector_value = request.form.get('selector_value', '').strip() or None
     selector_operator = request.form.get('selector_operator', '=').strip() or '='
@@ -731,7 +728,7 @@ def validate_instance_binding(instance_id: int, binding_id: int) -> ResponseRetu
     binding = db.session.get(IntegrationBinding, binding_id)
     if binding is None or binding.integration_instance_id != instance.integration_instance_id:
         abort(404)
-    is_htmx = _is_htmx_request()
+    is_htmx = is_htmx_request()
     try:
         validation_job, created = enqueue_binding_validation(
             provider_type='prometheus',
@@ -818,7 +815,7 @@ def binding_validation_status(instance_id: int, binding_id: int, task_id: str) -
 @permission_required('settings.manage_integrations')
 def delete_instance_binding(instance_id: int, binding_id: int) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
-    is_htmx = _is_htmx_request()
+    is_htmx = is_htmx_request()
     binding = IntegrationBinding.query.filter_by(
         id=binding_id,
         integration_instance_id=instance.integration_instance_id,
@@ -882,7 +879,7 @@ def delete_instance_binding(instance_id: int, binding_id: int) -> ResponseReturn
 def delete_instance(instance_id: int) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
     instance_name = instance.name
-    is_htmx = _is_htmx_request()
+    is_htmx = is_htmx_request()
     try:
         remove_prometheus_instance(instance)
     except DeletionBlocked as exc:
@@ -962,7 +959,7 @@ def delete_instance(instance_id: int) -> ResponseReturnValue:
 @permission_required('settings.manage_integrations')
 def instance_test(instance_id: int) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
-    is_htmx = _is_htmx_request()
+    is_htmx = is_htmx_request()
     try:
         result = PrometheusService(instance).test_connection()
         ensure_canonical_instance(instance, provider_type='prometheus')
@@ -1022,7 +1019,7 @@ def instance_test(instance_id: int) -> ResponseReturnValue:
 @permission_required('settings.manage_integrations')
 def instance_validate(instance_id: int) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
-    is_htmx = _is_htmx_request()
+    is_htmx = is_htmx_request()
     try:
         validation_job, created = enqueue_instance_validation(
             provider_type='prometheus',
@@ -1104,7 +1101,7 @@ def instance_validation_status(instance_id: int, task_id: str) -> ResponseReturn
 @permission_required('settings.manage_integrations')
 def refresh_runtime(instance_id: int) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
-    is_htmx = _is_htmx_request()
+    is_htmx = is_htmx_request()
     try:
         runtime_refresh_job, created = enqueue_runtime_health_refresh(
             provider_type='prometheus',

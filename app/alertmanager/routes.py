@@ -28,6 +28,7 @@ from app.alertmanager.service import (
     test_alertmanager_form_connection,
     update_alertmanager_binding_selector,
 )
+from app.common.http import is_htmx_request
 from app.integrations.deletion import DeletionBlocked
 from app.integrations.validation.state import build_validation_snapshot, get_active_validation_task_id
 from app.integrations.validation.web import (
@@ -47,10 +48,6 @@ alertmanager_bp = Blueprint(
     __name__,
     url_prefix='/integrations/alertmanager',
 )
-
-
-def _is_htmx_request() -> bool:
-    return request.headers.get('HX-Request') == 'true'
 
 
 def _htmx_redirect(location: str) -> ResponseReturnValue:
@@ -120,7 +117,7 @@ def new_instance() -> ResponseReturnValue:
     draft_form = None
     registration_proof = None
     operation_feedback = None
-    is_htmx = _is_htmx_request()
+    is_htmx = is_htmx_request()
 
     if request.method == 'POST':
         form = parse_alertmanager_instance_form(request.form)
@@ -381,7 +378,7 @@ def instance_detail(instance_id: int) -> ResponseReturnValue:
     instance = get_alertmanager_instance(instance_id)
     if instance is None:
         abort(404)
-    is_htmx = _is_htmx_request()
+    is_htmx = is_htmx_request()
 
     if request.method == 'POST':
         form = parse_alertmanager_instance_form(request.form)
@@ -438,7 +435,7 @@ def refresh_runtime(instance_id: int) -> ResponseReturnValue:
     instance = get_alertmanager_instance(instance_id)
     if instance is None:
         abort(404)
-    is_htmx = _is_htmx_request()
+    is_htmx = is_htmx_request()
     try:
         runtime_refresh_job, created = enqueue_runtime_health_refresh(
             provider_type='alertmanager',
@@ -537,7 +534,7 @@ def validate_instance(instance_id: int) -> ResponseReturnValue:
     instance = get_alertmanager_instance(instance_id)
     if instance is None:
         abort(404)
-    is_htmx = _is_htmx_request()
+    is_htmx = is_htmx_request()
     try:
         validation_job, created = enqueue_instance_validation(
             provider_type='alertmanager',
@@ -620,7 +617,7 @@ def create_binding(instance_id: int) -> ResponseReturnValue:
     if instance is None:
         abort(404)
     form = parse_alertmanager_binding_form(request.form)
-    is_htmx = _is_htmx_request()
+    is_htmx = is_htmx_request()
     if form.scope_type == 'kubernetes_cluster' and get_cluster_by_id(form.scope_key) is None:
         error = 'Select a managed cluster that still exists in KAORI inventory.'
     else:
@@ -701,7 +698,7 @@ def update_binding_selector(instance_id: int, binding_id: int) -> ResponseReturn
     binding = get_alertmanager_binding(binding_id)
     if instance is None or binding is None or binding.integration_instance_id != instance.integration_instance_id:
         abort(404)
-    is_htmx = _is_htmx_request()
+    is_htmx = is_htmx_request()
     selector_label = request.form.get('selector_label', '').strip() or None
     selector_value = request.form.get('selector_value', '').strip() or None
     selector_operator = request.form.get('selector_operator', '=').strip() or '='
@@ -769,7 +766,7 @@ def validate_binding(instance_id: int, binding_id: int) -> ResponseReturnValue:
     binding = get_alertmanager_binding(binding_id)
     if instance is None or binding is None or binding.integration_instance_id != instance.integration_instance_id:
         abort(404)
-    is_htmx = _is_htmx_request()
+    is_htmx = is_htmx_request()
     try:
         validation_job, created = enqueue_binding_validation(
             provider_type='alertmanager',
@@ -853,7 +850,7 @@ def remove_binding(instance_id: int, binding_id: int) -> ResponseReturnValue:
     instance = get_alertmanager_instance(instance_id)
     if instance is None:
         abort(404)
-    is_htmx = _is_htmx_request()
+    is_htmx = is_htmx_request()
     binding = get_alertmanager_binding(binding_id)
     if binding is None or binding.integration_instance_id != instance.integration_instance_id:
         abort(404)
@@ -906,7 +903,7 @@ def delete_instance(instance_id: int) -> ResponseReturnValue:
     if instance is None:
         abort(404)
     instance_name = instance.name
-    is_htmx = _is_htmx_request()
+    is_htmx = is_htmx_request()
     try:
         remove_alertmanager_instance(instance)
     except DeletionBlocked as exc:

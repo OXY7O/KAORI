@@ -492,10 +492,6 @@ def alertmanager() -> ResponseReturnValue:
 
 
 
-def _is_htmx_request() -> bool:
-    return request.headers.get('HX-Request') == 'true'
-
-
 def _binding_response(provider_type: str, *, scope_key: str) -> ResponseReturnValue:
     submitted = dict(request.form) if request.method == 'POST' else {}
     feedback = None
@@ -545,7 +541,7 @@ def _binding_response(provider_type: str, *, scope_key: str) -> ResponseReturnVa
                     'source_id': source_id,
                     'selector_label': selector_label or None,
                 },
-                queue_feedback=not _is_htmx_request(),
+                queue_feedback=not is_htmx_request(),
             )
         except Exception as exc:
             feedback = record_operational_activity(
@@ -564,7 +560,7 @@ def _binding_response(provider_type: str, *, scope_key: str) -> ResponseReturnVa
                     'source_id': source_id,
                     'reason': type(exc).__name__,
                 },
-                queue_feedback=not _is_htmx_request(),
+                queue_feedback=not is_htmx_request(),
             )
         else:
             feedback = record_operational_activity(
@@ -589,9 +585,9 @@ def _binding_response(provider_type: str, *, scope_key: str) -> ResponseReturnVa
                     'selector_label': selector_label,
                     'selector_value': selector_value,
                 },
-                queue_feedback=not _is_htmx_request(),
+                queue_feedback=not is_htmx_request(),
             )
-            if not _is_htmx_request():
+            if not is_htmx_request():
                 return redirect(
                     url_for(
                         'integrations.prometheus' if provider_type == 'prometheus' else 'integrations.alertmanager'
@@ -611,7 +607,7 @@ def _binding_response(provider_type: str, *, scope_key: str) -> ResponseReturnVa
         if feedback is not None
         else None
     )
-    if _is_htmx_request():
+    if is_htmx_request():
         return render_template('integrations/bindings/partials/_workspace.html', **context)
     return render_template('integrations/bindings/source.html', **context)
 

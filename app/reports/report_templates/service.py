@@ -8,6 +8,7 @@ from flask import url_for
 from sqlalchemy import select
 from werkzeug.datastructures import ImmutableMultiDict, MultiDict
 
+from app.common.pagination import PER_PAGE_OPTIONS, build_pagination_window
 from app.extensions import db
 from app.models.report import ReportTemplate
 from app.models.user import User
@@ -591,32 +592,26 @@ def build_templates_pagination(
     selected_filters: dict[str, str],
     total_items: int,
 ) -> dict[str, Any]:
-    per_page_options = [5, 10, 25, 50]
-    page = parse_positive_int(args.get('page') if args is not None else None, 1)
-    per_page = parse_positive_int(args.get('per_page') if args is not None else None, 5)
-    if per_page not in per_page_options:
-        per_page = 5
-
-    total_pages = max(1, (total_items + per_page - 1) // per_page)
-    page = min(max(page, 1), total_pages)
-    offset = (page - 1) * per_page
-    start_item = 0 if total_items == 0 else offset + 1
-    end_item = min(offset + per_page, total_items)
+    pagination = build_pagination_window(
+        total_items=total_items,
+        page=args.get('page') if args is not None else 1,
+        per_page=args.get('per_page') if args is not None else PER_PAGE_OPTIONS[0],
+    )
 
     return {
-        'page': page,
-        'per_page': per_page,
-        'per_page_options': per_page_options,
-        'total_items': total_items,
-        'total_pages': total_pages,
-        'offset': offset,
-        'start_item': start_item,
-        'end_item': end_item,
-        'has_previous': page > 1,
-        'has_next': page < total_pages,
-        'previous_href': build_templates_page_href(selected_filters, max(page - 1, 1), per_page),
-        'next_href': build_templates_page_href(selected_filters, min(page + 1, total_pages), per_page),
-        'label': f'Showing {start_item} - {end_item} of {total_items} templates',
+        **pagination.as_dict(),
+        'per_page_options': list(PER_PAGE_OPTIONS),
+        'has_previous': pagination.has_prev,
+        'previous_href': build_templates_page_href(
+            selected_filters, pagination.prev_page, pagination.per_page
+        ),
+        'next_href': build_templates_page_href(
+            selected_filters, pagination.next_page, pagination.per_page
+        ),
+        'label': (
+            f'Showing {pagination.start_item} - {pagination.end_item} '
+            f'of {pagination.total_items} templates'
+        ),
     }
 
 

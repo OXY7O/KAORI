@@ -7,6 +7,12 @@ from typing import TYPE_CHECKING, Any
 from sqlalchemy import and_, case, func, or_
 
 from app.auth.providers.catalog import provider_types_for_family
+from app.common.pagination import (
+    PER_PAGE_OPTIONS,
+    build_pagination_window,
+    normalize_per_page,
+    positive_int,
+)
 from app.extensions import db
 from app.models import AuditEvent, Role, User
 
@@ -27,18 +33,8 @@ def normalize_user_filters(args: Mapping[str, str | None]) -> dict[str, Any]:
     auth_source = (args.get('auth_source') or 'all').strip().lower()
     role_id_raw = (args.get('role_id') or 'all').strip()
 
-    try:
-        page = max(int(args.get('page') or 1), 1)
-    except ValueError:
-        page = 1
-
-    try:
-        per_page = int(args.get('per_page') or 5)
-    except ValueError:
-        per_page = 5
-
-    if per_page not in [5, 10, 25, 50]:
-        per_page = 5
+    page = positive_int(args.get('page'), 1)
+    per_page = normalize_per_page(args.get('per_page'))
 
     return {
         'search': (args.get('search') or '').strip(),
@@ -81,18 +77,19 @@ def build_users_payload(filters: dict[str, Any], actor: User | None = None) -> d
         )
 
     total_items = query.count()
-    total_pages = max((total_items + filters['per_page'] - 1) // filters['per_page'], 1)
-    page = min(filters['page'], total_pages)
+    pagination = build_pagination_window(
+        total_items=total_items,
+        page=filters['page'],
+        per_page=filters['per_page'],
+    )
+    page = pagination.page
 
     users = (
         query.order_by(User.deleted_at.asc(), User.account_is_active.desc(), User.username.asc())
-        .offset((page - 1) * filters['per_page'])
-        .limit(filters['per_page'])
+        .offset(pagination.offset)
+        .limit(pagination.per_page)
         .all()
     )
-
-    start_item = ((page - 1) * filters['per_page']) + 1 if total_items else 0
-    end_item = min(page * filters['per_page'], total_items) if total_items else 0
 
     population = (
         db.session.query(
@@ -145,19 +142,8 @@ def build_users_payload(filters: dict[str, Any], actor: User | None = None) -> d
             'active_super_admins': int(population.active_super_admins or 0),
         },
         'filters': {**filters, 'page': page},
-        'pagination': {
-            'page': page,
-            'per_page': filters['per_page'],
-            'total_items': total_items,
-            'total_pages': total_pages,
-            'start_item': start_item,
-            'end_item': end_item,
-            'has_prev': page > 1,
-            'has_next': page < total_pages,
-            'prev_page': max(page - 1, 1),
-            'next_page': min(page + 1, total_pages),
-        },
-        'per_page_options': [5, 10, 25, 50],
+        'pagination': pagination.as_dict(),
+        'per_page_options': list(PER_PAGE_OPTIONS),
         'status_options': USER_STATUS_OPTIONS,
         'auth_source_options': USER_AUTH_SOURCE_OPTIONS,
         'user_actions': build_user_action_policies(actor, users),
