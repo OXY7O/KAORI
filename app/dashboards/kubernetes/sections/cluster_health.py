@@ -181,7 +181,7 @@ def _get_cluster_live_signal_snapshot(cluster: Any) -> dict[str, float | int | N
 
 def _get_cluster_alert_summary(cluster: Any) -> dict[str, int] | None:
     try:
-        from app.analytics.alerts.service import load_alerts_by_source
+        from app.analytics.alerts.sources import load_alerts_by_source
 
         alerts, source_status = load_alerts_by_source(cluster=cluster, source='auto')
         if not source_status.get('connected'):

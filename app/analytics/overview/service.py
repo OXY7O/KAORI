@@ -762,7 +762,7 @@ def _get_alerts_snapshot(*, cluster_id: str) -> dict[str, Any]:
         return default
 
     raw = _call_optional_snapshot(
-        module_path='app.analytics.alerts.service',
+        module_path='app.analytics.alerts.snapshots',
         function_names=[
             'get_alerts_snapshot',
             'get_alerts_overview_snapshot',

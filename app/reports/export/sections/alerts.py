@@ -7,7 +7,7 @@ from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import cm
 from reportlab.platypus import Paragraph, Spacer
 
-from app.analytics.alerts.service import get_alerts_context
+from app.analytics.alerts.application import get_alerts_context
 from app.cluster.constants import get_environment_label
 from app.intelligence.recommendation_engine import build_alerts_actionable_recommendations
 from app.models.report import Report

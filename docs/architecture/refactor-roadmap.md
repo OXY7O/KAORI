@@ -73,24 +73,27 @@ Do not move package paths before behavior and import contracts exist.
 
 ## Batch 3 — Analytics Alerts Pilot
 
-Use Analytics Alerts as the first large-service decomposition pilot.
+Status: structural decomposition implemented; typed normalized contracts remain the next slice.
 
-Target responsibilities:
+Implemented:
 
-```text
-sources/
-normalization/
-routing.py
-silences.py
-inhibition.py
-ownership.py
-anomalies.py
-readiness.py
-snapshots.py
-service.py
-```
+- the 4,637-line Alerts service was split by responsibility;
+- interactive orchestration moved to `application.py`;
+- dashboard/report snapshot orchestration moved to `snapshots.py`;
+- provider I/O and payload normalization moved to focused source modules;
+- routing, silences, inhibition, ownership, readiness, and signal composition now have explicit owners;
+- all known internal consumers use canonical focused modules;
+- `service.py` is a temporary compatibility façade with no implementation functions;
+- characterization and architecture contracts protect the existing behavior and dependency direction.
 
-`service.py` becomes orchestration only. Provider payloads are normalized into typed internal contracts before presentation dictionaries are built.
+Remaining in Batch 3:
+
+1. Introduce typed normalized alert and source-status contracts.
+2. Replace broad presentation dictionaries at internal boundaries incrementally.
+3. Add provider-failure and fallback characterization using controlled fakes.
+4. Decide the removal milestone for the compatibility façade.
+
+Do not combine typed-contract migration with a behavioral redesign of alert scoring or routing semantics.
 
 ## Batch 4 — Canonical Analytics Snapshots
 

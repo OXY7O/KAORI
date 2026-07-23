@@ -168,6 +168,15 @@ def validate_boundaries(
                 f'{relative_source}:{record.line}: import targets retired module {record.target!r}'
             )
 
+        if (
+            record.target == 'app.analytics.alerts.service'
+            and record.source != app_root / 'analytics' / 'alerts' / 'service.py'
+        ):
+            errors.append(
+                f'{relative_source}:{record.line}: internal code must import the focused Alerts module '
+                'instead of the compatibility service façade'
+            )
+
         relative_to_app = record.source.relative_to(app_root)
         provider = (
             relative_to_app.parts[1]

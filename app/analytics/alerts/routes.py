@@ -3,7 +3,7 @@ from __future__ import annotations
 from flask import render_template, request
 from flask.typing import ResponseReturnValue
 
-from app.analytics.alerts.service import get_alerts_context
+from app.analytics.alerts.application import get_alerts_context
 from app.common.dependencies import render_dependency_blocker
 from app.rbac.decorators import permission_required
 

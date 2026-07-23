@@ -22,7 +22,7 @@ def build_alerts_snapshot(*, live_cluster: Any | None) -> AlertsSnapshot:
         )
 
     try:
-        from app.analytics.alerts.service import load_alerts_by_source
+        from app.analytics.alerts.sources import load_alerts_by_source
 
         alerts, source_status = load_alerts_by_source(cluster=live_cluster, source='auto')
     except Exception as exc:
