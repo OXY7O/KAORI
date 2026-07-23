@@ -22,7 +22,7 @@ It defines:
 - `AlertSourceStatus` — source-selection, connectivity, fallback, latency, and diagnostic state;
 - `AlertLoadResult` — canonical source loader result;
 - `AlertsSnapshot` — stable dashboard/report snapshot boundary;
-- focused source-health, routing, silence, inhibition, ownership, incident-readiness, and selected-cluster signal presentation summaries;
+- focused source-health, routing, silence, inhibition, ownership, incident-readiness, selected-cluster signal, multi-cluster comparison, and resource-link presentation summaries;
 - `AlertsPagination` — pagination state for the interactive page.
 
 ## Dependency Direction

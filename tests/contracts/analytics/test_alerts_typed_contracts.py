@@ -20,6 +20,7 @@ SERVICE = ALERTS / 'service.py'
 QUALITY_GATE = ROOT / 'scripts' / 'quality_gate.sh'
 
 TYPED_CONTRACTS = {
+    'AlertClusterSignalComparisonRow',
     'AlertIncidentReadinessCheck',
     'AlertIncidentReadinessSummary',
     'AlertInhibitionItem',
@@ -29,6 +30,8 @@ TYPED_CONTRACTS = {
     'AlertMissingMetadataItem',
     'AlertOwnershipGroup',
     'AlertOwnershipSummary',
+    'AlertResourceLink',
+    'AlertResourceLinks',
     'AlertRoutingGroup',
     'AlertRoutingSummary',
     'AlertSelectedClusterSignalOverview',
@@ -108,6 +111,54 @@ def _return_dictionary_keys(path: Path, function_name: str) -> set[str]:
             return keys
 
     raise AssertionError(f'No literal dictionary return found for {function_name}')
+
+
+def _appended_dictionary_keys(path: Path, function_name: str) -> set[str]:
+    tree = ast.parse(path.read_text(encoding='utf-8'))
+    function = next(
+        node
+        for node in tree.body
+        if isinstance(node, ast.FunctionDef) and node.name == function_name
+    )
+
+    for node in ast.walk(function):
+        if not (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == 'append'
+            and len(node.args) == 1
+            and isinstance(node.args[0], ast.Dict)
+        ):
+            continue
+
+        keys = {
+            key.value
+            for key in node.args[0].keys
+            if isinstance(key, ast.Constant) and isinstance(key.value, str)
+        }
+        if keys:
+            return keys
+
+    raise AssertionError(f'No appended literal dictionary found for {function_name}')
+
+
+def _assigned_subscript_keys(path: Path, function_name: str) -> set[str]:
+    tree = ast.parse(path.read_text(encoding='utf-8'))
+    function = next(
+        node
+        for node in tree.body
+        if isinstance(node, ast.FunctionDef) and node.name == function_name
+    )
+
+    return {
+        target.slice.value
+        for node in ast.walk(function)
+        if isinstance(node, ast.Assign)
+        for target in node.targets
+        if isinstance(target, ast.Subscript)
+        and isinstance(target.slice, ast.Constant)
+        and isinstance(target.slice.value, str)
+    }
 
 
 def _nested_dictionary_keys_from_return(
@@ -251,6 +302,15 @@ def test_selected_cluster_signal_boundary_uses_focused_contracts() -> None:
     assert 'signal_overview: AlertSelectedClusterSignalOverview' in readiness_source
 
 
+def test_multi_cluster_and_resource_link_boundaries_use_focused_contracts() -> None:
+    signal_annotations = _function_return_annotations(SIGNALS)
+
+    assert signal_annotations['build_cluster_signal_overview'] == (
+        'list[AlertClusterSignalComparisonRow]'
+    )
+    assert signal_annotations['build_resource_links'] == 'AlertResourceLinks'
+
+
 def test_alert_consumers_use_the_canonical_types() -> None:
     offenders: list[str] = []
 
@@ -302,6 +362,9 @@ def test_runtime_dictionary_keys_match_the_typed_contracts() -> None:
     signal_priority_keys, _ = _typed_dict_keys('AlertSignalPriority')
     signal_insight_keys, _ = _typed_dict_keys('AlertSignalInsight')
     signal_bars_keys, _ = _typed_dict_keys('AlertSignalBars')
+    cluster_comparison_keys, _ = _typed_dict_keys('AlertClusterSignalComparisonRow')
+    resource_links_keys, _ = _typed_dict_keys('AlertResourceLinks')
+    resource_link_keys, resource_link_optional_keys = _typed_dict_keys('AlertResourceLink')
 
     alertmanager_keys = _return_dictionary_keys(SOURCES, 'normalize_alertmanager_item')
     prometheus_keys = _return_dictionary_keys(SOURCES, 'normalize_prometheus_alert')
@@ -333,6 +396,29 @@ def test_runtime_dictionary_keys_match_the_typed_contracts() -> None:
         'build_selected_cluster_signal_overview',
         'bars',
     )
+    cluster_comparison_keys_runtime = _appended_dictionary_keys(
+        SIGNALS,
+        'build_cluster_signal_overview',
+    ) | _assigned_subscript_keys(
+        SIGNALS,
+        'build_cluster_signal_overview',
+    )
+    resource_links_keys_runtime = _return_dictionary_keys(SIGNALS, 'build_resource_links')
+    alertmanager_link_keys_runtime = _nested_dictionary_keys_from_return(
+        SIGNALS,
+        'build_resource_links',
+        'alertmanager',
+    )
+    runbook_link_keys_runtime = _nested_dictionary_keys_from_return(
+        SIGNALS,
+        'build_resource_links',
+        'runbook',
+    )
+    contact_link_keys_runtime = _nested_dictionary_keys_from_return(
+        SIGNALS,
+        'build_resource_links',
+        'contact_point',
+    )
     empty_snapshot_priority_keys = _nested_dictionary_keys_from_return(
         SNAPSHOTS,
         '_empty_alerts_snapshot',
@@ -361,3 +447,8 @@ def test_runtime_dictionary_keys_match_the_typed_contracts() -> None:
     assert signal_insight_keys == empty_signal_insight_keys
     assert signal_insight_keys == empty_snapshot_insight_keys
     assert signal_bars_keys == empty_signal_bars_keys
+    assert cluster_comparison_keys == cluster_comparison_keys_runtime
+    assert resource_links_keys == resource_links_keys_runtime
+    assert resource_link_keys == alertmanager_link_keys_runtime
+    assert resource_link_keys == runbook_link_keys_runtime
+    assert resource_link_keys | resource_link_optional_keys == contact_link_keys_runtime

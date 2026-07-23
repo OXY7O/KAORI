@@ -2,11 +2,14 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from app.analytics.alerts import application
+from app.analytics.alerts import application, signals
 from app.analytics.alerts.contracts import (
+    AlertClusterSignalComparisonRow,
     AlertIncidentReadinessSummary,
     AlertInhibitionSummary,
     AlertOwnershipSummary,
+    AlertResourceLink,
+    AlertResourceLinks,
     AlertRoutingSummary,
     AlertSelectedClusterSignalOverview,
     AlertSignalBars,
@@ -32,7 +35,11 @@ from app.analytics.alerts.ownership import (
 )
 from app.analytics.alerts.readiness import build_empty_incident_readiness, build_incident_readiness
 from app.analytics.alerts.routing import build_empty_routing_summary, build_routing_summary
-from app.analytics.alerts.signals import build_selected_cluster_signal_overview
+from app.analytics.alerts.signals import (
+    build_cluster_signal_overview,
+    build_resource_links,
+    build_selected_cluster_signal_overview,
+)
 from app.analytics.alerts.silences import build_empty_silence_summary, silence_matches_alert
 from app.analytics.alerts.snapshots import _empty_alerts_snapshot
 from app.analytics.alerts.sources import (
@@ -527,6 +534,117 @@ def test_incident_readiness_scoring_keeps_existing_penalty_model() -> None:
     assert readiness['silence_risk'] == 1
     assert readiness['inhibition_risk'] == 1
     assert len(readiness['checks']) == 8
+
+
+def test_multi_cluster_signal_overview_preserves_sorting_and_bar_behavior(monkeypatch) -> None:
+    clusters = [
+        SimpleNamespace(id='cluster-a', name='Alpha'),
+        SimpleNamespace(id='cluster-b', name='Beta'),
+        SimpleNamespace(id='cluster-c', name='Gamma'),
+    ]
+    alerts_by_cluster = {
+        'cluster-a': [
+            {'severity': 'warning', 'status': 'firing'},
+        ],
+        'cluster-b': [
+            {'severity': 'critical', 'status': 'firing'},
+            {'severity': 'warning', 'status': 'pending'},
+        ],
+        'cluster-c': [],
+    }
+    source_status_by_cluster = {
+        'cluster-a': {
+            'connected': True,
+            'resolved_source': 'alertmanager',
+            'fallback_used': False,
+        },
+        'cluster-b': {
+            'connected': True,
+            'resolved_source': 'prometheus',
+            'fallback_used': True,
+        },
+        'cluster-c': {
+            'connected': False,
+            'resolved_source': 'none',
+            'fallback_used': False,
+        },
+    }
+    anomalies_by_cluster = {
+        'cluster-a': [{'name': 'Pod Restart Spike'}],
+        'cluster-b': [],
+        'cluster-c': [],
+    }
+
+    monkeypatch.setattr(
+        signals,
+        'load_alerts_by_source',
+        lambda *, cluster, source: (
+            alerts_by_cluster[cluster.id],
+            source_status_by_cluster[cluster.id],
+        ),
+    )
+    monkeypatch.setattr(
+        signals,
+        'build_anomalies',
+        lambda *, cluster, **_: anomalies_by_cluster[cluster.id],
+    )
+
+    overview = build_cluster_signal_overview(clusters=clusters, source='auto')
+
+    assert all(
+        set(item) == set(AlertClusterSignalComparisonRow.__required_keys__)
+        for item in overview
+    )
+    assert [item['cluster_id'] for item in overview] == [
+        'cluster-b',
+        'cluster-a',
+        'cluster-c',
+    ]
+    assert overview[0]['critical_alerts'] == 1
+    assert overview[0]['total_signals'] == 2
+    assert overview[0]['bar_width'] == 100
+    assert overview[0]['fallback_used'] is True
+    assert overview[1]['total_signals'] == 2
+    assert overview[1]['bar_width'] == 100
+    assert overview[2]['bar_width'] == 8
+
+    zero_overview = build_cluster_signal_overview(
+        clusters=[clusters[2]],
+        source='auto',
+    )
+    assert zero_overview[0]['bar_width'] == 0
+
+
+def test_resource_links_preserve_existing_configuration_and_shapes(monkeypatch) -> None:
+    monkeypatch.setattr(
+        signals,
+        'get_alertmanager_status',
+        lambda *, cluster_id: {
+            'configured': True,
+            'endpoint': f'https://alertmanager.example/{cluster_id}',
+        },
+    )
+
+    links = build_resource_links(
+        cluster=SimpleNamespace(id='cluster-1'),
+    )
+
+    assert set(links) == set(AlertResourceLinks.__required_keys__)
+    assert set(links['alertmanager']) == set(AlertResourceLink.__required_keys__)
+    assert set(links['runbook']) == set(AlertResourceLink.__required_keys__)
+    assert set(links['contact_point']) == (
+        set(AlertResourceLink.__required_keys__) | set(AlertResourceLink.__optional_keys__)
+    )
+    assert links['alertmanager']['configured'] is True
+    assert links['alertmanager']['url'] == 'https://alertmanager.example/cluster-1'
+    assert links['runbook']['configured'] is False
+    assert links['runbook']['url'] is None
+    assert links['contact_point']['name'] is None
+    assert links['contact_point']['email'] is None
+
+    empty_links = build_resource_links(cluster=None)
+    assert empty_links['alertmanager']['configured'] is False
+    assert empty_links['alertmanager']['url'] is None
 
 
 def test_selected_cluster_signal_overview_preserves_existing_behavior() -> None:

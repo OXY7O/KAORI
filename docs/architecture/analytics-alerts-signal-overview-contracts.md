@@ -114,12 +114,13 @@ Functional characterization tests verify:
 - the no-cluster state retains the existing keys, normal priority, and zero
   signal count.
 
-## Next Slice
+## Follow-On Slice
 
-The next contract reduction should evaluate the multi-cluster comparison rows
-and resource-link dictionaries in `signals.py`. These boundaries should remain
-separate from provider calls, sorting behavior, bar-width calculation, link
-configuration policy, and UI redesign.
+The multi-cluster comparison rows and resource-link dictionaries are covered by
+Batch 3 Slice 9 in
+`docs/architecture/analytics-alerts-multi-cluster-resource-links-contracts.md`.
+That slice remains separate from provider calls, sorting behavior, bar-width
+calculation, link configuration policy, report presentation, and UI redesign.
 
 ## Deployment and Rollback
 

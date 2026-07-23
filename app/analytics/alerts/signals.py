@@ -5,6 +5,8 @@ from typing import Any
 from app.alertmanager.service import get_alertmanager_status
 from app.analytics.alerts.anomalies import build_anomalies
 from app.analytics.alerts.contracts import (
+    AlertClusterSignalComparisonRow,
+    AlertResourceLinks,
     AlertSelectedClusterSignalOverview,
     AlertSourceStatus,
     NormalizedAlert,
@@ -16,7 +18,7 @@ from app.models import Cluster
 def build_resource_links(
     *,
     cluster: Cluster | None,
-) -> dict[str, dict[str, Any]]:
+) -> AlertResourceLinks:
     alertmanager_url = None
     alertmanager_configured = False
 
@@ -58,7 +60,7 @@ def build_cluster_signal_overview(
     *,
     clusters: list[Cluster],
     source: str,
-) -> list[dict[str, Any]]:
+) -> list[AlertClusterSignalComparisonRow]:
     overview: list[dict[str, Any]] = []
 
     for cluster in clusters:

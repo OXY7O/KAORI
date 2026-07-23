@@ -1,9 +1,4 @@
-"""Compatibility façade for the Alerts & Anomalies application boundary.
-
-New implementation code belongs in the focused modules under this package.
-Existing consumers may continue importing the established public functions from
-``app.analytics.alerts.service`` while the migration remains in progress.
-"""
+"""Compatibility façade for legacy Alerts & Anomalies imports during package migration."""
 
 from __future__ import annotations
 
@@ -21,6 +16,7 @@ from app.analytics.alerts.contracts import (
     SEVERITY_OPTIONS,
     SOURCE_OPTIONS,
     STATUS_OPTIONS,
+    AlertClusterSignalComparisonRow,
     AlertIncidentReadinessCheck,
     AlertIncidentReadinessSummary,
     AlertInhibitionItem,
@@ -31,6 +27,8 @@ from app.analytics.alerts.contracts import (
     AlertMissingMetadataItem,
     AlertOwnershipGroup,
     AlertOwnershipSummary,
+    AlertResourceLink,
+    AlertResourceLinks,
     AlertRoutingGroup,
     AlertRoutingSummary,
     AlertRunbookItem,
@@ -127,6 +125,7 @@ __all__ = [
     'SEVERITY_OPTIONS',
     'SOURCE_OPTIONS',
     'STATUS_OPTIONS',
+    'AlertClusterSignalComparisonRow',
     'AlertInhibitionItem',
     'AlertIncidentReadinessCheck',
     'AlertIncidentReadinessSummary',
@@ -137,6 +136,7 @@ __all__ = [
     'AlertMissingMetadataItem',
     'AlertOwnershipGroup',
     'AlertOwnershipSummary',
+    'AlertResourceLink', 'AlertResourceLinks',
     'AlertRoutingGroup',
     'AlertRoutingSummary',
     'AlertRunbookItem',
