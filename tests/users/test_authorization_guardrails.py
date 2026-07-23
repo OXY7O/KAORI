@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+from app.models.rbac import Permission, Role
 from app.models.user import User
 from app.users.service import can_activate_user, can_create_user, can_deactivate_user, can_edit_user
 
@@ -31,11 +32,9 @@ def target_user() -> SimpleNamespace:
 def test_inactive_persisted_role_revokes_permission() -> None:
     user = User()
     user.is_super_admin = False
-    user.role_record = SimpleNamespace(
-        is_active=False,
-        name='admin',
-        permission_keys=lambda: {'users.manage'},
-    )
+    role = Role(name='admin', display_name='Administrator', is_active=False)
+    role.permissions = [Permission(key='users.manage', module='users', action='manage')]
+    user.role_record = role
 
     assert user.has_permission('users.manage') is False
 
@@ -43,11 +42,9 @@ def test_inactive_persisted_role_revokes_permission() -> None:
 def test_active_persisted_role_uses_assigned_permissions() -> None:
     user = User()
     user.is_super_admin = False
-    user.role_record = SimpleNamespace(
-        is_active=True,
-        name='custom_operator',
-        permission_keys=lambda: {'users.view'},
-    )
+    role = Role(name='custom_operator', display_name='Custom Operator', is_active=True)
+    role.permissions = [Permission(key='users.view', module='users', action='view')]
+    user.role_record = role
 
     assert user.has_permission('users.view') is True
     assert user.has_permission('users.manage') is False
@@ -56,7 +53,7 @@ def test_active_persisted_role_uses_assigned_permissions() -> None:
 def test_super_admin_bypasses_role_state() -> None:
     user = User()
     user.is_super_admin = True
-    user.role_record = SimpleNamespace(is_active=False, name='admin')
+    user.role_record = Role(name='admin', display_name='Administrator', is_active=False)
 
     assert user.has_permission('users.manage') is True
 
