@@ -32,10 +32,16 @@ class DeletionBlocked(ValueError):
 def provider_active_job_count(*, provider_type: str, provider_instance_id: int) -> int:
     return (
         JobExecution.query
+        .filter(JobExecution.status.in_(ACTIVE_JOB_STATUSES))
         .filter(
-            JobExecution.status.in_(ACTIVE_JOB_STATUSES),
-            JobExecution.provider_type == provider_type,
-            JobExecution.provider_instance_id == provider_instance_id,
+            or_(
+                (
+                    (JobExecution.provider_type == provider_type)
+                    & (JobExecution.provider_instance_id == provider_instance_id)
+                ),
+                JobExecution.resource_group
+                == f'integration:{provider_type}:{provider_instance_id}',
+            )
         )
         .count()
     )
@@ -59,6 +65,8 @@ def kubernetes_active_job_count(*, connection_id: int, cluster_id: str) -> int:
                     (JobExecution.provider_type == 'kubernetes')
                     & (JobExecution.operation == 'inventory_sync_all')
                 ),
+                JobExecution.resource_group == f'kubernetes-cluster:{cluster_id}',
+                JobExecution.resource_group == f'integration:kubernetes:{connection_id}',
             )
         )
         .count()
