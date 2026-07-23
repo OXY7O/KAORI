@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Protocol
+from collections.abc import Mapping
+
+from werkzeug.datastructures import Headers
 
 
-class HeaderSource(Protocol):
-    """Minimal header interface shared by mappings and Werkzeug Headers."""
-
-    def get(self, key: str, default: str | None = None) -> str | None: ...
+type HeaderSource = Mapping[str, str] | Headers
 
 
 def header_is_true(headers: HeaderSource, name: str) -> bool:
@@ -25,8 +24,10 @@ def is_htmx_request(headers: HeaderSource | None = None) -> bool:
     if headers is None:
         from flask import request
 
-        headers = request.headers
-    return header_is_true(headers, 'HX-Request')
+        resolved_headers: HeaderSource = request.headers
+    else:
+        resolved_headers = headers
+    return header_is_true(resolved_headers, 'HX-Request')
 
 
 def htmx_target(headers: HeaderSource | None = None) -> str:
@@ -34,5 +35,7 @@ def htmx_target(headers: HeaderSource | None = None) -> str:
     if headers is None:
         from flask import request
 
-        headers = request.headers
-    return str(headers.get('HX-Target', '')).strip()
+        resolved_headers: HeaderSource = request.headers
+    else:
+        resolved_headers = headers
+    return str(resolved_headers.get('HX-Target', '')).strip()

@@ -192,9 +192,10 @@ def _enforce_admission(provider: IdentityProvider, identity: SsoIdentity) -> Non
         return
 
     if provider.provider_type == AuthProviderType.GITHUB_OAUTH.value:
-        allowed = {item.strip().lower() for item in provider.allowed_subjects_list if item.strip()}
-        subject = (identity.subject or '').strip().lower()
-        username = (identity.username or '').strip().lower()
+        allowed_subjects: list[str] = provider.allowed_subjects_list
+        allowed = {item.strip().lower() for item in allowed_subjects if item.strip()}
+        subject = str(identity.subject or '').strip().lower()
+        username = str(identity.username or '').strip().lower()
         if subject not in allowed and username not in allowed:
             raise SsoAdmissionError('This GitHub account is not included in the KAORI admission allow-list.')
         return

@@ -8,6 +8,7 @@ from app.analytics.alerts.contracts import (
     AlertClusterSignalComparisonRow,
     AlertResourceLinks,
     AlertSelectedClusterSignalOverview,
+    AlertSignalPriority,
     AlertSourceStatus,
     NormalizedAlert,
 )
@@ -330,6 +331,7 @@ def build_selected_cluster_signal_overview(
 
     total_signals = active_alerts + anomaly_count
 
+    priority: AlertSignalPriority
     if critical_alerts > 0:
         priority = {
             'level': 'critical',
