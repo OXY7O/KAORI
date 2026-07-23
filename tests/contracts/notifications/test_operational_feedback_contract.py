@@ -12,6 +12,9 @@ REPORT_ROUTE_FILES = (
     ROOT / 'app/reports/generate/routes.py',
     ROOT / 'app/reports/export/routes.py',
     ROOT / 'app/reports/storage/routes.py',
+    ROOT / 'app/reports/generated/routes.py',
+    ROOT / 'app/reports/report_templates/routes.py',
+    ROOT / 'app/reports/schedules/routes.py',
 )
 
 
@@ -55,3 +58,6 @@ def test_report_mutations_record_operational_activity() -> None:
     assert "event_type='report_request_created'" in REPORT_ROUTE_FILES[0].read_text(encoding='utf-8')
     assert "event_type='report_pdf_generation'" in REPORT_ROUTE_FILES[1].read_text(encoding='utf-8')
     assert "event_type='report_storage_verification'" in REPORT_ROUTE_FILES[2].read_text(encoding='utf-8')
+    assert "event_type='generated_report_archive'" in REPORT_ROUTE_FILES[3].read_text(encoding='utf-8')
+    assert "event_type='report_template_create'" in REPORT_ROUTE_FILES[4].read_text(encoding='utf-8')
+    assert "event_type='report_schedule_create'" in REPORT_ROUTE_FILES[5].read_text(encoding='utf-8')

@@ -1,7 +1,8 @@
-from flask import flash, redirect, render_template, request, url_for
+from flask import redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 
+from app.notifications.service import queue_transient_feedback, record_operational_activity
 from app.rbac.decorators import permission_required
 from app.reports.schedules.service import (
     create_report_schedule,
@@ -14,154 +15,129 @@ from app.reports.schedules.service import (
 )
 
 
-@permission_required('reports.manage_schedules')
-def schedules() -> ResponseReturnValue:
-    payload = get_report_schedules_payload(
-        request.args,
+def _current_user_id() -> int:
+    return int(getattr(current_user, 'id', 0) or 0)
+
+
+def _queue_schedule_validation(errors: list[str]) -> None:
+    queue_transient_feedback(
+        status='error',
+        title='Report schedule validation failed',
+        message='Review the report schedule fields and try again.',
+        detail=' '.join(errors),
     )
 
-    return render_template(
-        'reports/schedules/index.html',
-        payload=payload,
+
+def _record_schedule_feedback(
+    *,
+    event_type: str,
+    success: bool,
+    title: str,
+    message: str,
+    schedule_id: int | None = None,
+    report_id: int | None = None,
+) -> None:
+    action_url = url_for('reports.schedules')
+    action_label = 'View report schedules'
+    if report_id is not None:
+        action_url = url_for('reports.generated_report_detail', report_id=report_id)
+        action_label = 'View generated report'
+    metadata: dict[str, object] = {'outcome': 'success' if success else 'failed'}
+    if schedule_id is not None:
+        metadata['schedule_id'] = schedule_id
+    if report_id is not None:
+        metadata['report_id'] = report_id
+    record_operational_activity(
+        user_id=_current_user_id(),
+        event_type=event_type,
+        status='success' if success else 'error',
+        title=title,
+        message=message,
+        action_url=action_url,
+        action_label=action_label,
+        metadata=metadata,
+        queue_feedback=True,
     )
+
+
+@permission_required('reports.manage_schedules')
+def schedules() -> ResponseReturnValue:
+    payload = get_report_schedules_payload(request.args)
+    return render_template('reports/schedules/index.html', payload=payload)
 
 
 @permission_required('reports.manage_schedules')
 def create_schedule() -> ResponseReturnValue:
-    user_id = getattr(
-        current_user,
-        'id',
-        None,
-    )
-
-    success, errors, _schedule = create_report_schedule(
-        request.form,
-        user_id,
-    )
-
+    success, errors, schedule = create_report_schedule(request.form, _current_user_id())
     if success:
-        flash(
-            'Report schedule created successfully.',
-            'success',
+        _record_schedule_feedback(
+            event_type='report_schedule_create',
+            success=True,
+            title='Report schedule created',
+            message='Report schedule created successfully.',
+            schedule_id=getattr(schedule, 'id', None),
         )
-        return redirect(
-            url_for(
-                'reports.schedules',
-            )
-        )
+        return redirect(url_for('reports.schedules'))
 
-    form_state = get_form_state_from_schedule_form(
-        request.form,
-    )
-    payload = get_report_schedules_payload(
-        request.args,
-        form_state=form_state,
-        errors=errors,
-    )
-
-    for error in errors:
-        flash(
-            error,
-            'error',
-        )
-
-    return render_template(
-        'reports/schedules/index.html',
-        payload=payload,
-    )
+    form_state = get_form_state_from_schedule_form(request.form)
+    payload = get_report_schedules_payload(request.args, form_state=form_state, errors=errors)
+    _queue_schedule_validation(errors)
+    return render_template('reports/schedules/index.html', payload=payload)
 
 
 @permission_required('reports.manage_schedules')
-def update_schedule(
-    schedule_id: int,
-) -> ResponseReturnValue:
-    success, errors = update_report_schedule(
-        schedule_id,
-        request.form,
-    )
-
+def update_schedule(schedule_id: int) -> ResponseReturnValue:
+    success, errors = update_report_schedule(schedule_id, request.form)
     if success:
-        flash(
-            'Report schedule updated successfully.',
-            'success',
+        _record_schedule_feedback(
+            event_type='report_schedule_update',
+            success=True,
+            title='Report schedule updated',
+            message='Report schedule updated successfully.',
+            schedule_id=schedule_id,
         )
     else:
-        for error in errors:
-            flash(
-                error,
-                'error',
-            )
-
-    return redirect(
-        url_for(
-            'reports.schedules',
-        )
-    )
+        _queue_schedule_validation(errors)
+    return redirect(url_for('reports.schedules'))
 
 
 @permission_required('reports.manage_schedules')
-def toggle_schedule(
-    schedule_id: int,
-) -> ResponseReturnValue:
-    success, message = toggle_report_schedule(
-        schedule_id,
+def toggle_schedule(schedule_id: int) -> ResponseReturnValue:
+    success, message = toggle_report_schedule(schedule_id)
+    _record_schedule_feedback(
+        event_type='report_schedule_toggle',
+        success=success,
+        title='Report schedule status updated' if success else 'Report schedule status update failed',
+        message=message,
+        schedule_id=schedule_id,
     )
-
-    flash(
-        message,
-        'success' if success else 'error',
-    )
-
-    return redirect(
-        url_for(
-            'reports.schedules',
-        )
-    )
+    return redirect(url_for('reports.schedules'))
 
 
 @permission_required('reports.manage_schedules')
-def delete_schedule(
-    schedule_id: int,
-) -> ResponseReturnValue:
-    success, message = delete_report_schedule(
-        schedule_id,
+def delete_schedule(schedule_id: int) -> ResponseReturnValue:
+    success, message = delete_report_schedule(schedule_id)
+    _record_schedule_feedback(
+        event_type='report_schedule_delete',
+        success=success,
+        title='Report schedule deleted' if success else 'Report schedule deletion failed',
+        message=message,
+        schedule_id=schedule_id,
     )
-
-    flash(
-        message,
-        'success' if success else 'error',
-    )
-
-    return redirect(
-        url_for(
-            'reports.schedules',
-        )
-    )
+    return redirect(url_for('reports.schedules'))
 
 
 @permission_required('reports.manage_schedules')
-def run_schedule(
-    schedule_id: int,
-) -> ResponseReturnValue:
-    success, message, report_id = run_schedule_now(
-        schedule_id,
+def run_schedule(schedule_id: int) -> ResponseReturnValue:
+    success, message, report_id = run_schedule_now(schedule_id)
+    _record_schedule_feedback(
+        event_type='report_schedule_run',
+        success=success,
+        title='Report schedule executed' if success else 'Report schedule execution failed',
+        message=message,
+        schedule_id=schedule_id,
+        report_id=report_id,
     )
-
-    flash(
-        message,
-        'success' if success else 'error',
-    )
-
     if success and report_id is not None:
-        return redirect(
-            url_for(
-                'reports.generated_report_detail',
-                report_id=report_id,
-            )
-        )
-
-    return redirect(
-        url_for(
-            'reports.schedules',
-        )
-    )
+        return redirect(url_for('reports.generated_report_detail', report_id=report_id))
+    return redirect(url_for('reports.schedules'))
