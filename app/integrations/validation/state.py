@@ -1,11 +1,16 @@
 from __future__ import annotations
 
 import json
+import logging
 from datetime import UTC, datetime
 from typing import Any, cast
 
 from flask import current_app
 from redis import Redis
+
+from app.jobs.constants import ACTIVE_JOB_STATUSES
+
+logger = logging.getLogger(__name__)
 
 ACTIVE_CELERY_STATES = {'PENDING', 'RECEIVED', 'STARTED', 'PROGRESS', 'RETRY'}
 VALIDATION_LOCK_PREFIX = 'kaori:integration-validation:lock:'
@@ -71,6 +76,38 @@ def _metadata_key(task_id: str) -> str:
     return f'{VALIDATION_METADATA_PREFIX}{task_id}'
 
 
+def _release_stale_validation_lock(client: Redis, key: str) -> bool:
+    """Release a Redis lock only when its canonical job is no longer active.
+
+    Redis is the fast cross-process mutex, while JobExecution is the durable
+    lifecycle authority. A worker crash or interrupted dispatch can leave the
+    mutex behind until its TTL expires even though the owning job has already
+    reached a terminal state. The compare-delete keeps reclamation safe when
+    another process changes the lock between inspection and deletion.
+    """
+    owner_task_id = client.get(key)
+    if not owner_task_id:
+        return False
+    owner_task_id = str(owner_task_id)
+    try:
+        from app.jobs.service import get_job_by_task_id
+
+        job = get_job_by_task_id(owner_task_id)
+    except Exception:
+        logger.exception('Could not verify validation lock owner %s for %s.', owner_task_id, key)
+        return False
+    if job is not None and str(job.status) in ACTIVE_JOB_STATUSES:
+        return False
+    released = client.eval(_COMPARE_DELETE_SCRIPT, 1, key, owner_task_id)
+    if released:
+        logger.warning(
+            'Released stale integration validation lock %s owned by terminal or missing task %s.',
+            key,
+            owner_task_id,
+        )
+    return bool(released)
+
+
 def claim_validation_job(
     *,
     task_id: str,
@@ -98,6 +135,8 @@ def claim_validation_job(
         for conflicting_operation in conflicting_operations
         if conflicting_operation and conflicting_operation != operation
     ]
+    for candidate_key in (lock_key, *conflict_keys):
+        _release_stale_validation_lock(client, candidate_key)
     acquired = bool(
         client.eval(
             _CLAIM_SCRIPT,
