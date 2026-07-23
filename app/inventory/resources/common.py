@@ -3,7 +3,17 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any
 
-from app.models import PodInventory, ServiceInventory
+from sqlalchemy import select
+
+from app.models import ClusterInventory, PodInventory, ServiceInventory
+
+
+def filter_current_generation(query, model):
+    """Limit an inventory query to the committed generation marker for each cluster."""
+    generation = (
+        select(ClusterInventory.collected_at).where(ClusterInventory.cluster_id == model.cluster_id).scalar_subquery()
+    )
+    return query.filter(model.collected_at == generation)
 
 
 def format_age(
@@ -95,5 +105,3 @@ def _service_port_rows(service: ServiceInventory) -> list[dict[str, Any]]:
         )
 
     return rows
-
-

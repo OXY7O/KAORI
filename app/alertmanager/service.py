@@ -27,9 +27,9 @@ from app.common.integration_errors import describe_integration_failure
 from app.extensions import db
 from app.integrations.alertmanager.exceptions import AlertmanagerError
 from app.integrations.deletion import DeletionBlocked, provider_deletion_guard
-from app.jobs.service import acquire_resource_admission_locks
 from app.integrations.lifecycle import ensure_canonical_instance, invalidate_bindings
 from app.integrations.registry import get_integration
+from app.jobs.service import acquire_resource_admission_locks
 from app.models.alertmanager import AlertmanagerInstance
 from app.models.cluster import Cluster
 from app.models.integration import IntegrationBinding, IntegrationInstance
@@ -71,11 +71,7 @@ def _validate_connection_settings(
             raise ValueError('Username is required for Basic authentication.')
         if not form.password and (instance is None or not instance.password):
             raise ValueError('Password is required for Basic authentication.')
-    if (
-        form.auth_type == 'bearer'
-        and not form.bearer_token
-        and (instance is None or not instance.bearer_token)
-    ):
+    if form.auth_type == 'bearer' and not form.bearer_token and (instance is None or not instance.bearer_token):
         raise ValueError('Bearer token is required for Bearer authentication.')
 
 

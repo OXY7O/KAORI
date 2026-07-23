@@ -5,7 +5,7 @@ from typing import Any
 from sqlalchemy import or_
 
 from app.extensions import db
-from app.inventory.resources.common import format_age
+from app.inventory.resources.common import filter_current_generation, format_age
 from app.models import Cluster, IngressInventory
 
 
@@ -34,6 +34,7 @@ def get_ingress_inventory(
         IngressInventory,
         Cluster.name.label('cluster_name'),
     ).join(Cluster, Cluster.id == IngressInventory.cluster_id)
+    query = filter_current_generation(query, IngressInventory)
 
     if cluster_id:
         query = query.filter(IngressInventory.cluster_id == cluster_id)
@@ -162,11 +163,7 @@ def get_ingress_detail(
     )
     tls_entries = [item for item in (details.get('tls') or []) if isinstance(item, dict)]
     tls_secrets = sorted(
-        {
-            str(item.get('secret_name'))
-            for item in tls_entries
-            if item.get('secret_name') not in (None, '', '-')
-        }
+        {str(item.get('secret_name')) for item in tls_entries if item.get('secret_name') not in (None, '', '-')}
     )
     labels = details.get('labels') or {}
     annotations = details.get('annotations') or {}
@@ -204,5 +201,3 @@ def get_ingress_detail(
         'labels': sorted(labels.items()),
         'annotations': sorted(annotations.items()),
     }
-
-

@@ -7,11 +7,11 @@ from app.common.integration_errors import describe_integration_failure
 from app.extensions.db import db
 from app.integrations.binding_selectors import build_selector
 from app.integrations.deletion import DeletionBlocked, provider_deletion_guard
-from app.jobs.service import acquire_resource_admission_locks
 from app.integrations.lifecycle import bind_instance, ensure_canonical_instance, invalidate_bindings
 from app.integrations.prometheus.capabilities import BINDING_CAPABILITY_KEYS
 from app.integrations.prometheus.exceptions import PrometheusError
 from app.integrations.registry import get_integration
+from app.jobs.service import acquire_resource_admission_locks
 from app.models import Cluster, PrometheusInstance
 from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.prometheus.consumer import PrometheusConsumer

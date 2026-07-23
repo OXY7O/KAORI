@@ -4,7 +4,7 @@ from typing import Any
 
 from app.extensions import db
 from app.inventory.formatting import format_byte_count
-from app.inventory.resources.common import _pod_summary, format_age
+from app.inventory.resources.common import _pod_summary, filter_current_generation, format_age
 from app.models import Cluster, ConfigurationInventory, PodInventory
 
 
@@ -30,6 +30,7 @@ def get_configuration_inventory_view(
         ConfigurationInventory,
         Cluster.name.label('cluster_name'),
     ).join(Cluster, Cluster.id == ConfigurationInventory.cluster_id)
+    query = filter_current_generation(query, ConfigurationInventory)
 
     if cluster_id:
         query = query.filter(ConfigurationInventory.cluster_id == cluster_id)
@@ -132,5 +133,3 @@ def get_configuration_detail(
         'used_by': used_by[:8],
         'used_by_truncated': len(used_by) > 8,
     }
-
-

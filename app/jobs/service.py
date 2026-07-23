@@ -288,6 +288,13 @@ def mark_job_succeeded(
     job = get_job_by_task_id(task_id)
     if job is None:
         return None
+    if job.is_terminal:
+        return job
+    if job.status == 'cancel_requested':
+        _terminalize(job, 'canceled')
+        job.progress_message = 'Canceled before completion was committed'
+        db.session.commit()
+        return job
     _terminalize(job, 'partially_succeeded' if partial else 'succeeded')
     job.result_summary_json = result_summary or {}
     job.result_type = result_type
@@ -303,6 +310,13 @@ def mark_job_failed(task_id: str, *, error: Exception | str, error_code: str | N
     job = get_job_by_task_id(task_id)
     if job is None:
         return None
+    if job.is_terminal:
+        return job
+    if job.status == 'cancel_requested':
+        _terminalize(job, 'canceled')
+        job.progress_message = 'Canceled before failure finalization'
+        db.session.commit()
+        return job
     _terminalize(job, 'failed')
     job.error_code = error_code or (type(error).__name__ if isinstance(error, Exception) else 'job_failed')
     job.error_message = str(error)[:4000]
@@ -326,6 +340,8 @@ def mark_job_retrying(task_id: str, *, message: str, error: Exception | str | No
     job = get_job_by_task_id(task_id)
     if job is None:
         return None
+    if job.is_terminal or job.status == 'cancel_requested':
+        return job
     job.status = 'retrying'
     job.heartbeat_at = _now()
     job.progress_message = message[:255]
@@ -340,6 +356,8 @@ def mark_job_canceled(task_id: str, *, message: str = 'Canceled') -> JobExecutio
     job = get_job_by_task_id(task_id)
     if job is None:
         return None
+    if job.is_terminal:
+        return job
     _terminalize(job, 'canceled')
     job.progress_message = message[:255]
     db.session.commit()

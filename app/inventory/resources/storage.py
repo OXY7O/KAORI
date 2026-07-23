@@ -6,7 +6,7 @@ from sqlalchemy import or_
 
 from app.extensions import db
 from app.inventory.formatting import format_kubernetes_size
-from app.inventory.resources.common import _pod_summary, format_age
+from app.inventory.resources.common import _pod_summary, filter_current_generation, format_age
 from app.inventory.resources.descriptions import STORAGE_TYPE_DESCRIPTIONS
 from app.models import Cluster, PodInventory, StorageInventory
 
@@ -194,6 +194,7 @@ def get_storage_inventory_view(
         StorageInventory,
         Cluster.name.label('cluster_name'),
     ).join(Cluster, Cluster.id == StorageInventory.cluster_id)
+    query = filter_current_generation(query, StorageInventory)
 
     if cluster_id:
         query = query.filter(StorageInventory.cluster_id == cluster_id)
@@ -301,5 +302,3 @@ def get_storage_inventory_view(
         'storage_types': storage_types,
         'storage_items': data,
     }
-
-

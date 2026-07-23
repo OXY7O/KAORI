@@ -6,7 +6,7 @@ from sqlalchemy import func
 
 from app.extensions import db
 from app.inventory.formatting import convert_ki_to_gib, convert_storage_to_gib, format_kubernetes_size
-from app.inventory.resources.common import format_age
+from app.inventory.resources.common import filter_current_generation, format_age
 from app.inventory.resources.descriptions import NODE_ROLE_DESCRIPTIONS
 from app.models import Cluster, NodeInventory, PodInventory
 
@@ -72,6 +72,7 @@ def get_node_inventory(
         Cluster,
         Cluster.id == NodeInventory.cluster_id,
     )
+    query = filter_current_generation(query, NodeInventory)
 
     if cluster_id:
         query = query.filter(NodeInventory.cluster_id == cluster_id)

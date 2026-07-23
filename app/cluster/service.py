@@ -11,9 +11,9 @@ from sqlalchemy import func, or_
 from app.alertmanager.resolver import resolve_alertmanager_sources
 from app.extensions import db
 from app.integrations.deletion import DeletionBlocked, kubernetes_deletion_guard
-from app.jobs.service import acquire_resource_admission_locks
 from app.integrations.kubernetes.resolver import connection_for_cluster
 from app.integrations.kubernetes.validation import test_cluster_connection, test_cluster_runtime_health
+from app.jobs.service import acquire_resource_admission_locks
 from app.models import Cluster, ClusterInventory, ClusterStatus, NamespaceInventory, Report, ReportSchedule
 from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.models.kubernetes import KubernetesConnection

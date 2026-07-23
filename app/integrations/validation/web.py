@@ -5,8 +5,8 @@ from datetime import UTC, datetime
 from typing import Any
 
 from flask import current_app
-from app.extensions import db
 
+from app.extensions import db
 from app.integrations.validation.state import (
     build_validation_snapshot,
     claim_validation_job,
@@ -26,8 +26,8 @@ from app.jobs.service import (
     find_active_job,
     mark_job_failed,
 )
-from app.models.job import JobExecutionSubscriber
 from app.models.alertmanager import AlertmanagerInstance
+from app.models.job import JobExecutionSubscriber
 from app.models.kubernetes import KubernetesConnection
 from app.models.prometheus import PrometheusInstance
 

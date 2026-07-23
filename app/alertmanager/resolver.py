@@ -119,6 +119,10 @@ def _evaluate_binding(
 ) -> ResolvedAlertmanagerSource:
     readiness = (instance.readiness_status or '').strip().lower()
     health = (instance.last_status or '').strip().lower()
+    canonical = instance.integration_instance
+    lifecycle = str(getattr(canonical, 'lifecycle_status', '') or '').strip().lower()
+    canonical_enabled = bool(getattr(canonical, 'enabled', False))
+    lifecycle_eligible = canonical_enabled and lifecycle == 'active'
     observed_capabilities = set(instance.capabilities or ())
     missing = tuple(sorted(set(required_capabilities) - observed_capabilities))
 
@@ -146,6 +150,7 @@ def _evaluate_binding(
     readiness_eligible = readiness in (_READY_READINESS | _DEGRADED_READINESS)
     eligible = bool(
         instance.enabled
+        and lifecycle_eligible
         and binding.enabled
         and readiness_eligible
         and capability_eligible
@@ -166,6 +171,8 @@ def _evaluate_binding(
         selector_eligible=selector_eligible,
         binding_validation=binding_validation,
         binding_validation_eligible=binding_validation_eligible,
+        lifecycle=lifecycle,
+        lifecycle_eligible=lifecycle_eligible,
     )
     return ResolvedAlertmanagerSource(
         instance=instance,
@@ -213,7 +220,14 @@ def _decision_reason(
     selector_eligible: bool,
     binding_validation: str,
     binding_validation_eligible: bool,
+    lifecycle: str,
+    lifecycle_eligible: bool,
 ) -> str:
+    if not lifecycle_eligible:
+        return (
+            f'Canonical integration lifecycle {lifecycle or "unknown"} blocks source selection. '
+            'Reactivate the integration before operational use.'
+        )
     if selector_required and not selector_eligible:
         return 'Shared Alertmanager sources require a binding selector to isolate alerts for this scope.'
     if not binding_validation_eligible:

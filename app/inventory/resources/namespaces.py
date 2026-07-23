@@ -6,7 +6,7 @@ from sqlalchemy import func
 
 from app.extensions import db
 from app.inventory.formatting import format_quota_value
-from app.inventory.resources.common import format_age
+from app.inventory.resources.common import filter_current_generation, format_age
 from app.models import (
     Cluster,
     ConfigurationInventory,
@@ -57,6 +57,7 @@ def get_namespace_inventory(
         Cluster,
         Cluster.id == NamespaceInventory.cluster_id,
     )
+    query = filter_current_generation(query, NamespaceInventory)
 
     if cluster_id:
         query = query.filter(NamespaceInventory.cluster_id == cluster_id)

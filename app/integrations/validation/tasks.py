@@ -157,6 +157,26 @@ def _release_job_safely(
         )
 
 
+
+
+def _ensure_instance_operational(instance: Any, *, provider_type: str) -> None:
+    if not bool(getattr(instance, 'enabled', False)):
+        raise RuntimeError(
+            f'{provider_type.title()} operation was canceled because the provider instance is disabled.'
+        )
+    canonical = getattr(instance, 'integration_instance', None)
+    if canonical is None:
+        raise RuntimeError(
+            f'{provider_type.title()} operation was canceled because canonical integration identity is missing.'
+        )
+    if not bool(getattr(canonical, 'enabled', False)) or str(
+        getattr(canonical, 'lifecycle_status', '') or ''
+    ).strip().lower() != 'active':
+        raise RuntimeError(
+            f'{provider_type.title()} operation was canceled because the integration is no longer active.'
+        )
+
+
 def _persist_failure_observation(
     *,
     provider_type: str,
@@ -335,6 +355,7 @@ def validate_integration_instance(
             instance = db.session.get(PrometheusInstance, instance_id)
             if instance is None:
                 raise LookupError('Prometheus instance no longer exists.')
+            _ensure_instance_operational(instance, provider_type='prometheus')
             validation_result, state, _ = refresh_and_record(
                 get_integration('prometheus').adapter,
                 instance,
@@ -357,6 +378,7 @@ def validate_integration_instance(
             instance = db.session.get(AlertmanagerInstance, instance_id)
             if instance is None:
                 raise LookupError('Alertmanager instance no longer exists.')
+            _ensure_instance_operational(instance, provider_type='alertmanager')
             validation_result, state, _ = refresh_and_record(
                 get_integration('alertmanager').adapter,
                 instance,
@@ -605,6 +627,9 @@ def validate_integration_binding(
         if 'binding.validate' not in module.operations:
             raise ValueError(f'{module.label} does not support binding validation.')
         instance = module.get_instance(instance_id)
+        _ensure_instance_operational(instance, provider_type=provider_type)
+        if not binding.enabled:
+            raise RuntimeError('Binding validation was canceled because the binding is disabled.')
         if binding.integration_instance_id != instance.integration_instance_id:
             raise LookupError(
                 f'{module.label} binding does not belong to the selected source.'
@@ -742,6 +767,7 @@ def refresh_integration_runtime_instance(
         _update_worker_phase(self, current=1, total=3, message='Connecting to the provider for a lightweight runtime health check.')
         integration = get_integration(provider_type)
         instance = integration.get_instance(instance_id)
+        _ensure_instance_operational(instance, provider_type=provider_type)
         result_payload = integration.execute('runtime.health', instance)
         state = integration.adapter.get_state(instance, validation_result=result_payload)
         persist_runtime_state(

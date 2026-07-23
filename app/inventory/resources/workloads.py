@@ -5,7 +5,7 @@ from typing import Any
 from sqlalchemy import func
 
 from app.extensions import db
-from app.inventory.resources.common import _display_boolean, _pod_summary, format_age
+from app.inventory.resources.common import _display_boolean, _pod_summary, filter_current_generation, format_age
 from app.inventory.resources.descriptions import WORKLOAD_TYPE_DESCRIPTIONS
 from app.models import Cluster, PodInventory, WorkloadInventory
 
@@ -442,6 +442,7 @@ def get_workload_inventory(
         Cluster,
         Cluster.id == WorkloadInventory.cluster_id,
     )
+    query = filter_current_generation(query, WorkloadInventory)
 
     if cluster_id:
         query = query.filter(WorkloadInventory.cluster_id == cluster_id)

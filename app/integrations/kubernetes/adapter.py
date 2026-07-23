@@ -52,7 +52,10 @@ class KubernetesRuntimeAdapter:
         if operation == 'inventory.sync':
             from app.inventory.synchronization import sync_inventory
 
-            return sync_inventory(self._cluster(instance))
+            connection = instance if isinstance(instance, KubernetesConnection) else instance.kubernetes_connection
+            if connection is None:
+                raise ValueError('The Kubernetes integration has no canonical connection.')
+            return sync_inventory(self._cluster(connection), connection)
         raise ValueError(f'Unsupported Kubernetes integration operation: {operation}')
 
     def get_state(self, instance: KubernetesConnection | Any, *, validation_result=None) -> RuntimeState:

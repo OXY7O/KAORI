@@ -10,6 +10,7 @@ from app.inventory.resources.common import (
     _selector_matches,
     _service_port_rows,
     _split_inventory_values,
+    filter_current_generation,
     format_age,
 )
 from app.inventory.resources.descriptions import SERVICE_TYPE_DESCRIPTIONS
@@ -61,6 +62,7 @@ def get_service_inventory(
         ServiceInventory,
         Cluster.name.label('cluster_name'),
     ).join(Cluster, Cluster.id == ServiceInventory.cluster_id)
+    query = filter_current_generation(query, ServiceInventory)
 
     if cluster_id:
         query = query.filter(ServiceInventory.cluster_id == cluster_id)
@@ -259,5 +261,3 @@ def get_service_detail(service_id: int) -> dict[str, Any] | None:
         'labels': sorted(labels.items()),
         'annotations': sorted(annotations.items()),
     }
-
-

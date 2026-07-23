@@ -6,7 +6,7 @@ from typing import Any
 from sqlalchemy import or_
 
 from app.extensions import db
-from app.inventory.resources.common import format_age
+from app.inventory.resources.common import filter_current_generation, format_age
 from app.models import Cluster, PodInventory
 
 
@@ -201,6 +201,7 @@ def get_pod_inventory(
         Cluster,
         Cluster.id == PodInventory.cluster_id,
     )
+    query = filter_current_generation(query, PodInventory)
 
     if cluster_id:
         query = query.filter(PodInventory.cluster_id == cluster_id)
@@ -463,5 +464,3 @@ def get_pod_detail(
         'created_at': pod.created_at,
         'collected_at': pod.collected_at,
     }
-
-
