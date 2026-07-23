@@ -180,6 +180,43 @@ def record_operational_activity(
     return feedback
 
 
+
+def queue_transient_feedback(
+    *,
+    status: str,
+    title: str,
+    message: str,
+    detail: str | None = None,
+    action_url: str | None = None,
+    action_label: str = 'View details',
+    action_icon: str = 'arrow-up-right',
+) -> dict[str, Any]:
+    """Queue one non-persistent operational toast for the next rendered response.
+
+    Use this for validation, navigation, or read-only failures that should not
+    create an Activity Audit record. Mutating operations should use
+    ``record_operational_activity`` instead.
+    """
+    normalized_status, normalized_title, normalized_message, normalized_detail = _normalize_notification_content(
+        event_type='operational_feedback',
+        status=status,
+        title=title,
+        message=message,
+        detail=detail,
+    )
+    feedback = build_quick_action_feedback(
+        status=normalized_status,
+        title=normalized_title,
+        message=normalized_message,
+        detail=normalized_detail,
+        action_url=action_url,
+        action_label=action_label,
+        action_icon=action_icon,
+        notification_saved=False,
+    )
+    _queue_quick_action_feedback(feedback)
+    return feedback
+
 def get_navigation_notification_context(
     *,
     user_id: int,
