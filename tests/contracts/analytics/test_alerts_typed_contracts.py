@@ -13,16 +13,24 @@ HEALTH = ALERTS / 'health.py'
 ROUTING = ALERTS / 'routing.py'
 SILENCES = ALERTS / 'silences.py'
 INHIBITION = ALERTS / 'inhibition.py'
+OWNERSHIP = ALERTS / 'ownership.py'
+READINESS = ALERTS / 'readiness.py'
 SERVICE = ALERTS / 'service.py'
 QUALITY_GATE = ROOT / 'scripts' / 'quality_gate.sh'
 
 TYPED_CONTRACTS = {
+    'AlertIncidentReadinessCheck',
+    'AlertIncidentReadinessSummary',
     'AlertInhibitionItem',
     'AlertInhibitionSummary',
     'AlertIntegrationStatus',
     'AlertIntegrationStatusMap',
+    'AlertMissingMetadataItem',
+    'AlertOwnershipGroup',
+    'AlertOwnershipSummary',
     'AlertRoutingGroup',
     'AlertRoutingSummary',
+    'AlertRunbookItem',
     'AlertSilenceApiStatus',
     'AlertSilenceItem',
     'AlertSilenceMatcher',
@@ -147,6 +155,8 @@ def test_snapshot_boundary_has_an_explicit_contract() -> None:
     assert 'routing_summary: AlertRoutingSummary' in snapshot_source
     assert 'silence_summary: AlertSilenceSummary' in snapshot_source
     assert 'inhibition_summary: AlertInhibitionSummary' in snapshot_source
+    assert 'ownership_summary: AlertOwnershipSummary' in snapshot_source
+    assert 'incident_readiness: AlertIncidentReadinessSummary' in snapshot_source
 
 
 def test_health_and_routing_boundaries_use_focused_contracts() -> None:
@@ -173,6 +183,22 @@ def test_silence_and_inhibition_boundaries_use_focused_contracts() -> None:
     assert silence_annotations['build_silence_summary'] == 'AlertSilenceSummary'
     assert silence_annotations['build_empty_silence_summary'] == 'AlertSilenceSummary'
     assert inhibition_annotations['build_inhibition_summary'] == 'AlertInhibitionSummary'
+
+
+def test_ownership_and_readiness_boundaries_use_focused_contracts() -> None:
+    ownership_annotations = _function_return_annotations(OWNERSHIP)
+    readiness_annotations = _function_return_annotations(READINESS)
+    readiness_source = READINESS.read_text(encoding='utf-8')
+
+    assert ownership_annotations['build_ownership_summary'] == 'AlertOwnershipSummary'
+    assert ownership_annotations['build_empty_ownership_summary'] == 'AlertOwnershipSummary'
+    assert readiness_annotations['build_incident_readiness'] == 'AlertIncidentReadinessSummary'
+    assert readiness_annotations['build_empty_incident_readiness'] == 'AlertIncidentReadinessSummary'
+    assert 'source_health: AlertSourceHealthSummary' in readiness_source
+    assert 'routing_summary: AlertRoutingSummary' in readiness_source
+    assert 'silence_summary: AlertSilenceSummary' in readiness_source
+    assert 'inhibition_summary: AlertInhibitionSummary' in readiness_source
+    assert 'ownership_summary: AlertOwnershipSummary' in readiness_source
 
 
 def test_alert_consumers_use_the_canonical_types() -> None:
@@ -220,6 +246,8 @@ def test_runtime_dictionary_keys_match_the_typed_contracts() -> None:
     routing_keys, _ = _typed_dict_keys('AlertRoutingSummary')
     silence_keys, _ = _typed_dict_keys('AlertSilenceSummary')
     inhibition_keys, _ = _typed_dict_keys('AlertInhibitionSummary')
+    ownership_keys, _ = _typed_dict_keys('AlertOwnershipSummary')
+    readiness_keys, _ = _typed_dict_keys('AlertIncidentReadinessSummary')
 
     alertmanager_keys = _return_dictionary_keys(SOURCES, 'normalize_alertmanager_item')
     prometheus_keys = _return_dictionary_keys(SOURCES, 'normalize_prometheus_alert')
@@ -230,6 +258,8 @@ def test_runtime_dictionary_keys_match_the_typed_contracts() -> None:
     empty_routing_keys = _return_dictionary_keys(ROUTING, 'build_empty_routing_summary')
     empty_silence_keys = _return_dictionary_keys(SILENCES, 'build_empty_silence_summary')
     inhibition_keys_runtime = _return_dictionary_keys(INHIBITION, 'build_inhibition_summary')
+    empty_ownership_keys = _return_dictionary_keys(OWNERSHIP, 'build_empty_ownership_summary')
+    empty_readiness_keys = _return_dictionary_keys(READINESS, 'build_empty_incident_readiness')
 
     assert required_alert_keys <= alertmanager_keys
     assert required_alert_keys <= prometheus_keys
@@ -240,3 +270,5 @@ def test_runtime_dictionary_keys_match_the_typed_contracts() -> None:
     assert routing_keys == empty_routing_keys
     assert silence_keys == empty_silence_keys
     assert inhibition_keys == inhibition_keys_runtime
+    assert ownership_keys == empty_ownership_keys
+    assert readiness_keys == empty_readiness_keys

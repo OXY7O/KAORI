@@ -2,7 +2,14 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.analytics.alerts.contracts import AlertSourceStatus, NormalizedAlert
+from app.analytics.alerts.contracts import (
+    AlertMissingMetadataItem,
+    AlertOwnershipGroup,
+    AlertOwnershipSummary,
+    AlertRunbookItem,
+    AlertSourceStatus,
+    NormalizedAlert,
+)
 
 
 def _get_first_string_value(
@@ -241,7 +248,7 @@ def build_ownership_summary(
     *,
     alerts: list[NormalizedAlert],
     source_status: AlertSourceStatus,
-) -> dict[str, Any]:
+) -> AlertOwnershipSummary:
     alert_rows = [
         alert
         for alert in alerts
@@ -264,8 +271,8 @@ def build_ownership_summary(
         }
 
     owner_groups: dict[str, int] = {}
-    runbook_items: list[dict[str, Any]] = []
-    missing_metadata_items: list[dict[str, Any]] = []
+    runbook_items: list[AlertRunbookItem] = []
+    missing_metadata_items: list[AlertMissingMetadataItem] = []
     owner_count = 0
     runbook_count = 0
     contact_count = 0
@@ -405,7 +412,7 @@ def build_ownership_summary(
         class_name = 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-300'
         icon = 'user-x'
 
-    owner_group_rows = [
+    owner_group_rows: list[AlertOwnershipGroup] = [
         {
             'label': owner,
             'count': count,
@@ -459,7 +466,7 @@ def build_ownership_summary(
     }
 
 
-def build_empty_ownership_summary() -> dict[str, Any]:
+def build_empty_ownership_summary() -> AlertOwnershipSummary:
     return {
         'score': 0,
         'level': 'unknown',

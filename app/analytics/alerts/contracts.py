@@ -191,6 +191,79 @@ AlertInhibitionSummary = TypedDict(
 )
 
 
+class AlertOwnershipGroup(TypedDict):
+    label: str
+    count: int
+    percent: float
+
+
+class AlertRunbookItem(TypedDict):
+    name: str
+    namespace: str
+    url: str
+    owner: str
+
+
+class AlertMissingMetadataItem(TypedDict):
+    name: str
+    namespace: str
+    severity: str
+    missing: list[str]
+
+
+AlertOwnershipSummary = TypedDict(
+    'AlertOwnershipSummary',
+    {
+        'score': int,
+        'level': Literal['ready', 'partial', 'weak', 'unknown'],
+        'label': str,
+        'description': str,
+        'class': str,
+        'icon': str,
+        'source': str,
+        'alert_count': int,
+        'owner_count': int,
+        'runbook_count': int,
+        'contact_count': int,
+        'missing_owner_count': int,
+        'missing_runbook_count': int,
+        'missing_contact_count': int,
+        'owner_groups': list[AlertOwnershipGroup],
+        'runbook_items': list[AlertRunbookItem],
+        'missing_metadata_items': list[AlertMissingMetadataItem],
+    },
+)
+
+
+class AlertIncidentReadinessCheck(TypedDict):
+    label: str
+    status: Literal['pass', 'warning', 'fail']
+    description: str
+
+
+AlertIncidentReadinessSummary = TypedDict(
+    'AlertIncidentReadinessSummary',
+    {
+        'score': int,
+        'level': Literal['ready', 'watch', 'degraded', 'incident_risk'],
+        'label': str,
+        'description': str,
+        'class': str,
+        'icon': str,
+        'critical_signals': int,
+        'warning_signals': int,
+        'anomaly_signals': int,
+        'ownership_score': int,
+        'source_score': int,
+        'silence_risk': int,
+        'inhibition_risk': int,
+        'routing_ready': bool,
+        'recommended_action': str,
+        'checks': list[AlertIncidentReadinessCheck],
+    },
+)
+
+
 class AlertsSnapshot(TypedDict):
     firing_alerts: int
     pending_alerts: int
@@ -208,8 +281,8 @@ class AlertsSnapshot(TypedDict):
     routing_summary: AlertRoutingSummary
     silence_summary: AlertSilenceSummary
     inhibition_summary: AlertInhibitionSummary
-    ownership_summary: dict[str, Any]
-    incident_readiness: dict[str, Any]
+    ownership_summary: AlertOwnershipSummary
+    incident_readiness: AlertIncidentReadinessSummary
     priority: dict[str, Any]
     insight: dict[str, Any]
     recommendation_count: int

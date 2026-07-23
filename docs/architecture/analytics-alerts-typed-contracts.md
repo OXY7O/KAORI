@@ -22,6 +22,7 @@ It defines:
 - `AlertSourceStatus` — source-selection, connectivity, fallback, latency, and diagnostic state;
 - `AlertLoadResult` — canonical source loader result;
 - `AlertsSnapshot` — stable dashboard/report snapshot boundary;
+- focused source-health, routing, silence, inhibition, ownership, and incident-readiness presentation summaries;
 - `AlertsPagination` — pagination state for the interactive page.
 
 ## Dependency Direction
@@ -71,6 +72,7 @@ Contract tests enforce that:
 - source normalizers return `NormalizedAlert`;
 - source loaders return `AlertLoadResult`;
 - snapshot orchestration returns `AlertsSnapshot`;
+- focused summary builders return their canonical presentation contracts;
 - focused consumers import canonical types;
 - the compatibility façade continues to export the public contracts during migration;
 - runtime outputs retain the existing dictionary key sets.

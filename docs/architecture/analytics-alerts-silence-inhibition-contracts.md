@@ -135,8 +135,8 @@ A semantic AST comparison, with type annotations removed before comparison,
 confirms that all eight silence functions and the inhibition builder preserve
 their existing executable behavior.
 
-## Next Slice
+## Follow-On Slice
 
-The next presentation-contract reduction should cover ownership and incident
-readiness. It must not be combined with scoring changes, owner-precedence
-changes, or new user-facing readiness wording.
+Ownership and incident readiness are covered by the next focused contract
+slice. That slice preserves scoring, owner precedence, penalties, runtime keys,
+and user-facing readiness wording.

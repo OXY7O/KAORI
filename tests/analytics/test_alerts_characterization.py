@@ -4,7 +4,9 @@ from types import SimpleNamespace
 
 from app.analytics.alerts import application
 from app.analytics.alerts.contracts import (
+    AlertIncidentReadinessSummary,
     AlertInhibitionSummary,
+    AlertOwnershipSummary,
     AlertRoutingSummary,
     AlertSilenceSummary,
     AlertSourceHealthSummary,
@@ -18,11 +20,13 @@ from app.analytics.alerts.contracts import (
 from app.analytics.alerts.health import build_source_health
 from app.analytics.alerts.inhibition import build_inhibition_summary
 from app.analytics.alerts.ownership import (
+    build_empty_ownership_summary,
+    build_ownership_summary,
     extract_alert_contact_from_payload,
     extract_alert_owner_from_payload,
     extract_alert_runbook_from_payload,
 )
-from app.analytics.alerts.readiness import build_incident_readiness
+from app.analytics.alerts.readiness import build_empty_incident_readiness, build_incident_readiness
 from app.analytics.alerts.routing import build_empty_routing_summary, build_routing_summary
 from app.analytics.alerts.silences import build_empty_silence_summary, silence_matches_alert
 from app.analytics.alerts.snapshots import _empty_alerts_snapshot
@@ -380,6 +384,91 @@ def test_inhibition_summary_keeps_existing_alert_visibility_semantics() -> None:
     assert summary['source_equal_labels'] == ['alertname', 'namespace', 'severity']
     assert summary['items'][0]['name'] == 'PodDown'
     assert summary['items'][0]['inhibited_by'] == ['critical-production']
+
+
+def test_ownership_and_readiness_contracts_keep_dictionary_shapes() -> None:
+    ownership_summary = build_empty_ownership_summary()
+    readiness_summary = build_empty_incident_readiness()
+
+    assert set(ownership_summary) == set(AlertOwnershipSummary.__required_keys__)
+    assert set(readiness_summary) == set(AlertIncidentReadinessSummary.__required_keys__)
+    assert ownership_summary['level'] == 'unknown'
+    assert readiness_summary['level'] == 'incident_risk'
+    assert isinstance(ownership_summary, dict)
+    assert isinstance(readiness_summary, dict)
+
+
+def test_ownership_summary_keeps_existing_coverage_scoring() -> None:
+    summary = build_ownership_summary(
+        alerts=[
+            {
+                'name': 'HighCPU',
+                'severity': 'critical',
+                'status': 'firing',
+                'namespace': 'production',
+                'target': 'api-0',
+                'source': 'Alertmanager',
+                'summary': '',
+                'description': '',
+                'starts_at': None,
+                'starts_at_display': '-',
+                'ends_at': None,
+                'ends_at_display': '-',
+                'labels': {'team': 'platform', 'contact': '#platform-oncall'},
+                'annotations': {'runbook_url': 'https://runbooks.example/high-cpu'},
+                'owner': 'platform',
+                'runbook_url': 'https://runbooks.example/high-cpu',
+                'contact': '#platform-oncall',
+                'generator_url': None,
+                'fingerprint': 'high-cpu',
+            },
+            {
+                'name': 'PodPending',
+                'severity': 'warning',
+                'status': 'pending',
+                'namespace': '-',
+                'target': 'worker-0',
+                'source': 'Alertmanager',
+                'summary': '',
+                'description': '',
+                'starts_at': None,
+                'starts_at_display': '-',
+                'ends_at': None,
+                'ends_at_display': '-',
+                'labels': {},
+                'annotations': {},
+                'owner': '-',
+                'runbook_url': '',
+                'contact': '',
+                'generator_url': None,
+                'fingerprint': 'pod-pending',
+            },
+        ],
+        source_status={
+            'source': 'alertmanager',
+            'selected_source': 'auto',
+            'resolved_source': 'alertmanager',
+            'label': 'Alertmanager Connected',
+            'configured': True,
+            'connected': True,
+            'fallback_used': False,
+            'fallback_reason': None,
+            'error': None,
+            'response_time_ms': 8,
+            'last_checked_at': None,
+        },
+    )
+
+    assert summary['score'] == 50
+    assert summary['level'] == 'weak'
+    assert summary['owner_count'] == 1
+    assert summary['runbook_count'] == 1
+    assert summary['contact_count'] == 1
+    assert summary['owner_groups'] == [{'label': 'platform', 'count': 1, 'percent': 50.0}]
+    assert summary['runbook_items'][0]['name'] == 'HighCPU'
+    assert summary['missing_metadata_items'][0]['name'] == 'PodPending'
+    assert summary['missing_metadata_items'][0]['missing'] == ['owner', 'runbook', 'contact']
+
 
 def test_ownership_metadata_precedence_is_stable() -> None:
     assert (

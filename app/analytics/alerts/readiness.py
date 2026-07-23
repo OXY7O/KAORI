@@ -2,6 +2,16 @@ from __future__ import annotations
 
 from typing import Any
 
+from app.analytics.alerts.contracts import (
+    AlertIncidentReadinessCheck,
+    AlertIncidentReadinessSummary,
+    AlertInhibitionSummary,
+    AlertOwnershipSummary,
+    AlertRoutingSummary,
+    AlertSilenceSummary,
+    AlertSourceHealthSummary,
+)
+
 
 def safe_int(
     value: Any,
@@ -34,12 +44,12 @@ def clamp_score(
 def build_incident_readiness(
     *,
     signal_overview: dict[str, Any],
-    source_health: dict[str, Any],
-    routing_summary: dict[str, Any],
-    silence_summary: dict[str, Any],
-    inhibition_summary: dict[str, Any],
-    ownership_summary: dict[str, Any],
-) -> dict[str, Any]:
+    source_health: AlertSourceHealthSummary,
+    routing_summary: AlertRoutingSummary,
+    silence_summary: AlertSilenceSummary,
+    inhibition_summary: AlertInhibitionSummary,
+    ownership_summary: AlertOwnershipSummary,
+) -> AlertIncidentReadinessSummary:
     critical_signals = safe_int(
         signal_overview.get(
             'critical_alerts',
@@ -160,7 +170,7 @@ def build_incident_readiness(
         icon = 'siren'
         class_name = 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-300'
 
-    checks = [
+    checks: list[AlertIncidentReadinessCheck] = [
         {
             'label': 'Critical signals',
             'status': 'fail' if critical_signals > 0 else 'pass',
@@ -235,7 +245,7 @@ def build_incident_readiness(
     }
 
 
-def build_empty_incident_readiness() -> dict[str, Any]:
+def build_empty_incident_readiness() -> AlertIncidentReadinessSummary:
     return {
         'score': 0,
         'level': 'incident_risk',
